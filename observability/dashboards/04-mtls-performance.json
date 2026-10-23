@@ -1,0 +1,156 @@
+{
+  "uid": "04-mtls-performance",
+  "title": "CMTC | mTLS Performance",
+  "schemaVersion": 39,
+  "version": 1,
+  "tags": [
+    "cmtc",
+    "clustermesh"
+  ],
+  "refresh": "30s",
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
+  "templating": {
+    "list": [
+      {
+        "name": "DS_PROMETHEUS",
+        "type": "datasource",
+        "query": "prometheus"
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "Mtls Handshakes Total",
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 12,
+        "h": 8
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(rate(cmtc_mtls_handshakes_total[5m]))"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "options": {}
+    },
+    {
+      "id": 2,
+      "type": "timeseries",
+      "title": "Mtls Handshakes Total",
+      "gridPos": {
+        "x": 12,
+        "y": 0,
+        "w": 12,
+        "h": 8
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(rate(cmtc_mtls_handshakes_total[5m]))"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "options": {}
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "Mtls Active Connections",
+      "gridPos": {
+        "x": 0,
+        "y": 8,
+        "w": 12,
+        "h": 8
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(cmtc_mtls_active_connections)"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "options": {}
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "Mtls Identity Validation Failures Total",
+      "gridPos": {
+        "x": 12,
+        "y": 8,
+        "w": 12,
+        "h": 8
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(rate(cmtc_mtls_identity_validation_failures_total[5m]))"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "options": {}
+    },
+    {
+      "id": 5,
+      "type": "stat",
+      "title": "Remote Identity Cache Misses Total",
+      "gridPos": {
+        "x": 0,
+        "y": 16,
+        "w": 12,
+        "h": 8
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(rate(cmtc_remote_identity_cache_misses_total[5m]))"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "options": {}
+    }
+  ]
+}

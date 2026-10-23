@@ -1,0 +1,156 @@
+{
+  "uid": "08-control-plane-safety",
+  "title": "CMTC | Control Plane Safety",
+  "schemaVersion": 39,
+  "version": 1,
+  "tags": [
+    "cmtc",
+    "clustermesh"
+  ],
+  "refresh": "30s",
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
+  "templating": {
+    "list": [
+      {
+        "name": "DS_PROMETHEUS",
+        "type": "datasource",
+        "query": "prometheus"
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "Platform Dependency Healthy",
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 12,
+        "h": 8
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(cmtc_platform_dependency_healthy)"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "options": {}
+    },
+    {
+      "id": 2,
+      "type": "timeseries",
+      "title": "Platform Dependency Healthy",
+      "gridPos": {
+        "x": 12,
+        "y": 0,
+        "w": 12,
+        "h": 8
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(cmtc_platform_dependency_healthy)"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "options": {}
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "Apiserver Probe Success",
+      "gridPos": {
+        "x": 0,
+        "y": 8,
+        "w": 12,
+        "h": 8
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(cmtc_apiserver_probe_success)"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "options": {}
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "Hostnetwork Pods Total",
+      "gridPos": {
+        "x": 12,
+        "y": 8,
+        "w": 12,
+        "h": 8
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(rate(cmtc_hostnetwork_pods_total[5m]))"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "options": {}
+    },
+    {
+      "id": 5,
+      "type": "stat",
+      "title": "Rollout Aborted Total",
+      "gridPos": {
+        "x": 0,
+        "y": 16,
+        "w": 12,
+        "h": 8
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(rate(cmtc_rollout_aborted_total[5m]))"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "options": {}
+    }
+  ]
+}

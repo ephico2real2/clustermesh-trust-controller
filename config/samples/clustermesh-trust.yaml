@@ -1,0 +1,25 @@
+# Proposed API only
+apiVersion: security.cmtc.io/v1alpha1
+kind: ClusterMeshTrust
+metadata:
+  name: production-mesh
+spec:
+  trustDomain: mesh.example.com
+  identity:
+    provider: spire
+    clusterScopedIntermediates: true
+  certificateAuthority:
+    upstreamProvider: cert-manager
+    rootBundleRef:
+      name: mesh-root-bundle
+  clusters:
+    - name: cluster-a
+    - name: cluster-b
+  distribution:
+    provider: trust-manager
+  rotation:
+    strategy: Staged
+    requireAllClustersReady: true
+  networkEncryption:
+    management: Observe
+    permittedModes: [none, wireguard, ipsec]

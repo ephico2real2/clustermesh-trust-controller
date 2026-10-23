@@ -1,0 +1,11 @@
+groups:
+- name: cmtc.recording
+  rules:
+  - record: cmtc:namespace_enrollment_coverage:ratio
+    expr: sum(cmtc_namespaces_enrolled) / clamp_min(sum(cmtc_namespaces_eligible), 1)
+  - record: cmtc:pod_protection_coverage:ratio
+    expr: sum(cmtc_pods_protected) / clamp_min(sum(cmtc_pods_protected + cmtc_pods_pending + cmtc_pods_enforcement_failed), 1)
+  - record: cmtc:mtls_handshake_success:ratio5m
+    expr: sum(rate(cmtc_mtls_handshakes_total{result="success"}[5m])) / clamp_min(sum(rate(cmtc_mtls_handshakes_total[5m])), 0.000001)
+  - record: cmtc:mtls_handshake_p95_seconds:5m
+    expr: histogram_quantile(0.95, sum by (le) (rate(cmtc_mtls_handshake_duration_seconds_bucket[5m])))

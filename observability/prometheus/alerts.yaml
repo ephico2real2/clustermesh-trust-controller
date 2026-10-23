@@ -1,0 +1,37 @@
+groups:
+- name: cmtc.alerts
+  rules:
+  - alert: CMTCUnprotectedPods
+    expr: sum(cmtc_pods_pending + cmtc_pods_enforcement_failed) > 0
+    for: 5m
+    labels: {severity: critical}
+    annotations: {summary: Eligible pods lack verified mTLS protection}
+  - alert: CMTCTrustNotReady
+    expr: cmtc_trust_bundle_ready == 0
+    for: 5m
+    labels: {severity: critical}
+    annotations: {summary: Trust bundle not ready}
+  - alert: CMTCCertificateExpiring
+    expr: cmtc_certificate_expiry_timestamp_seconds - time() < 86400
+    for: 10m
+    labels: {severity: warning}
+    annotations: {summary: Certificate expires within 24 hours}
+  - alert: CMTCNodeAgentDown
+    expr: cmtc_node_agent_ready == 0
+    for: 5m
+    labels: {severity: critical}
+    annotations: {summary: Node agent not ready}
+  - alert: CMTCTransportIncompatible
+    expr: cmtc_transport_compatibility_ready == 0
+    for: 2m
+    labels: {severity: critical}
+    annotations: {summary: Incompatible transport encryption configuration}
+  - alert: CMTCControlPlaneProbeFailed
+    expr: cmtc_platform_dependency_healthy == 0
+    for: 3m
+    labels: {severity: critical}
+    annotations: {summary: Critical control-plane dependency probe failed}
+  - alert: CMTCPlaintextBypass
+    expr: increase(cmtc_plaintext_bypass_detected_total[5m]) > 0
+    labels: {severity: critical}
+    annotations: {summary: Confirmed plaintext bypass detected}
