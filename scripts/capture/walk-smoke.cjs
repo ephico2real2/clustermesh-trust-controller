@@ -26,6 +26,9 @@ async function run(spec,name,format='json',extraEnv={}){
   assert.equal(fs.readFileSync(path.join(success.out,'fixture.png')).subarray(1,4).toString(),'PNG');
   const yaml=await run({pages:[{...page,url:'${WALK_FIXTURE_URL}'}]},'yaml-variables','yaml',{CMTC_WALK_ENV_JSON:JSON.stringify({WALK_FIXTURE_URL:page.url})});
   assert.equal(yaml.code,0,yaml.log);assert.match(yaml.log,/expectations met/);
+  const blocked=await run({pages:[{...page,blockedSignalsOnNoData:true}]},'blocked-feature');
+  assert.equal(blocked.code,0,blocked.log);assert.match(blocked.log,/feature evidence BLOCKED.*Future/);
+  assert.equal(JSON.parse(fs.readFileSync(path.join(blocked.out,'walk-results.json'),'utf8')).pages[0].featureEvidence,'blocked');
   const empty=await run({pages:[{...page,expect:{panelsMin:2,noDataAllowed:[]}}]},'unexpected-empty');
   assert.equal(empty.code,2,empty.log);assert.match(empty.log,/FAILED.*Future/);
   assert.ok(fs.statSync(path.join(empty.out,'fixture.png')).size>0,'Evidence must survive failed expectations');

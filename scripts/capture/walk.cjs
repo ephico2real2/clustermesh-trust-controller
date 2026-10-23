@@ -77,7 +77,7 @@ function check(page, ev) { // the page's expectations against its evidence; the 
   const b = await chromium.launch({ args: rules ? [`--host-resolver-rules=${rules}`] : [] });
   const ctx = await b.newContext({ ignoreHTTPSErrors: !!spec.ignoreHTTPSErrors, viewport: spec.viewport || { width: 1600, height: 1100 } }); const p = await ctx.newPage();
   if (spec.login) { const l = spec.login; await p.goto(l.url, { waitUntil: 'load', timeout: 60000 }); await p.fill(l.user[0], l.user[1]); await p.fill(l.password[0], l.password[1]); await p.click(l.submit); await p.waitForTimeout(3000); console.log(`login: ${l.url} → ${await p.title()}`); }
-  let failures = 0;
+  let failures = 0; const results = [];
   for (const page of spec.pages) {
     try {
       await p.goto(page.url, { waitUntil: 'load', timeout: 60000 });
@@ -95,9 +95,12 @@ function check(page, ev) { // the page's expectations against its evidence; the 
       if (page.screenshot !== false) await p.screenshot({ path: `${S}/${page.name}.png`, fullPage: !!page.fullPage });
       const ev = await (evidence[page.evidence || 'title'])(p);
       const why = check(page, ev);
+      const blocked = page.blockedSignalsOnNoData ? (ev.empty || []) : [];
+      results.push({name:page.name,render:why.length?'failed':'passed',featureEvidence:why.length?'failed':blocked.length?'blocked':'passed',blockedSignals:blocked,failures:why});
       if (why.length) { failures++; console.log(`${page.name}: settled ${waited}s; ${ev.line}`); console.log(`${page.name}: FAILED — ${why.join('; ')}`); }
+      else if (blocked.length) console.log(`${page.name}: settled ${waited}s; ${ev.line} — render passed; feature evidence BLOCKED: ${blocked.join(' | ')}`);
       else console.log(`${page.name}: settled ${waited}s; ${ev.line}${page.expect ? ' — expectations met' : ''}`);
-    } catch (e) { failures++; console.log(`${page.name}: FAILED — ${e.message.split('\n')[0]}`); try { await p.screenshot({ path: `${S}/${page.name}-failed.png` }); } catch {} }
+    } catch (e) { failures++; results.push({name:page.name,render:'failed',featureEvidence:'failed',error:e.message.split('\n')[0]}); console.log(`${page.name}: FAILED — ${e.message.split('\n')[0]}`); try { await p.screenshot({ path: `${S}/${page.name}-failed.png` }); } catch {} }
   }
-  await b.close(); if (failures) { console.log(`${failures} page(s) failed`); process.exit(2); }
+  await b.close(); fs.writeFileSync(`${S}/walk-results.json`, JSON.stringify({pages:results},null,2)+'\n'); if (failures) { console.log(`${failures} page(s) failed`); process.exit(2); }
 })().catch(e => { console.error('ERR', e.message); process.exit(1); });

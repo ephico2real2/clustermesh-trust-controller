@@ -53,12 +53,12 @@ out,repo,revision,directory,summary=sys.argv[1:]
 root=pathlib.Path(out)
 url=f'https://github.com/{repo}/tree/{revision}/{directory}'
 lines=[f'## Browser captures — [{directory}]({url})','',
-       'Pages as the Ubuntu browser saw them. Expectations are enforced after this evidence is published.','']
+       'Pages as the Ubuntu browser saw them. Render checks are enforced after publication; missing security evidence remains BLOCKED.','']
 log=root/'walk.log'
 if log.exists():
     for line in log.read_text().splitlines():
         if not line.strip(): continue
-        verdict='❌' if 'FAILED' in line else '✅' if 'expectations met' in line else '·'
+        verdict='❌' if 'FAILED' in line else '⏸️' if 'BLOCKED' in line else '✅' if 'expectations met' in line else '·'
         safe=line.replace('`',"'")
         lines.append(f'- {verdict} `{safe}`')
 for p in sorted(root.glob('*.png')):

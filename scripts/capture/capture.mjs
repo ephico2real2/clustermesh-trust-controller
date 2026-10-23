@@ -38,7 +38,7 @@ for(const d of dashboards.sort((a,b)=>a.uid.localeCompare(b.uid))){
     const missing=metrics.filter(m=>!available.has(m));
     if(missing.length)noDataReasons[p.title]=`Not implemented in Observe: ${[...new Set(missing)].join(', ')}`;
   }
-  spec.pages.push({name:d.uid,url:base+d.url+'?kiosk&from=now-15m&to=now',evidence:'panels',fullPage:true,before:2500,expect:{panelsMin:panels.length,noDataAllowed:Object.keys(noDataReasons)},noDataReasons});
+  spec.pages.push({name:d.uid,url:base+d.url+'?kiosk&from=now-15m&to=now',evidence:'panels',fullPage:true,before:2500,expect:{panelsMin:panels.length,noDataAllowed:Object.keys(noDataReasons)},blockedSignalsOnNoData:true,noDataReasons});
   index.push({title:d.title,file:`${d.uid}.png`,uid:d.uid});
 }
 spec.pages.push({name:'application-global-service',url:'http://127.0.0.1:18080',evidence:'text',settle:false,before:500,expect:{text:['poc2']}});

@@ -23,7 +23,7 @@ app_pid=$!
 trap 'kill "$grafana_pid" "$app_pid" 2>/dev/null || true' EXIT
 ready=0
 for _ in $(seq 1 60); do
-  if curl -fsS http://127.0.0.1:3000/api/health >/dev/null; then ready=1;break;fi
+  if curl -fsS http://127.0.0.1:3000/api/health >/dev/null 2>&1; then ready=1;break;fi
   sleep 2
 done
 [ "$ready" = 1 ] || { echo 'Grafana unavailable for screenshots' >&2;exit 1; }
