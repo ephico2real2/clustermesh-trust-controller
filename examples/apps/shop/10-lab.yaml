@@ -1,0 +1,48 @@
+# Demo 26 — a lab for "policy from observed flows": one server and two clients in their own namespace, no policy at all
+# to begin with. `shop` answers HTTP on 80; `pos` is the legitimate client (it also talks to one external name);
+# `stranger` is the client nobody intended. Every image is one already on the nodes (demo 09 / demo 19).
+apiVersion: v1
+kind: Namespace
+metadata: {name: cf2cnp-lab}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: shop, namespace: cf2cnp-lab, labels: {app: shop}}
+spec:
+  replicas: 1
+  selector: {matchLabels: {app: shop}}
+  template:
+    metadata: {labels: {app: shop, app.kubernetes.io/name: shop}}
+    spec:
+      containers:
+        - name: nginx
+          image: nginx:1.27-alpine
+          ports: [{containerPort: 80}]
+          resources: {requests: {cpu: 10m, memory: 16Mi}, limits: {memory: 64Mi}}
+---
+apiVersion: v1
+kind: Service
+metadata: {name: shop, namespace: cf2cnp-lab}
+spec:
+  selector: {app: shop}
+  ports: [{port: 80, targetPort: 80}]
+---
+apiVersion: v1
+kind: Pod
+metadata: {name: pos, namespace: cf2cnp-lab, labels: {app: pos, app.kubernetes.io/name: pos}}
+spec:
+  containers:
+    - name: client
+      image: alpine:3.20
+      command: ["sh", "-c", "while true; do wget -qO- --timeout=2 http://shop.cf2cnp-lab/ >/dev/null 2>&1; wget -qO- --timeout=3 https://example.com/ >/dev/null 2>&1; sleep 5; done"]
+      resources: {requests: {cpu: 10m, memory: 16Mi}, limits: {memory: 64Mi}}
+---
+apiVersion: v1
+kind: Pod
+metadata: {name: stranger, namespace: cf2cnp-lab, labels: {app: stranger, app.kubernetes.io/name: stranger}}
+spec:
+  containers:
+    - name: client
+      image: alpine:3.20
+      command: ["sh", "-c", "while true; do wget -qO- --timeout=2 http://shop.cf2cnp-lab/ >/dev/null 2>&1; sleep 7; done"]
+      resources: {requests: {cpu: 10m, memory: 16Mi}, limits: {memory: 64Mi}}

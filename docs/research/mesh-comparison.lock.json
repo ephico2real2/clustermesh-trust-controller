@@ -1,0 +1,108 @@
+{
+  "reviewed_at": "2026-10-23",
+  "evidence_level": "static source comparison; no Istio or Linkerd runtime deployment",
+  "cilium_integration_commit": "beb276d2f38d4aadfda14710acf8d14a0f1ba723",
+  "sources": [
+    {
+      "repository": "https://github.com/istio/istio",
+      "reference": "1.31.0",
+      "commit": "eed52ebb66ade45214088877b0f82855d954060d",
+      "tree": "f00d5b50fa153c0fcea08fb0eb39a57bba5c9748",
+      "reviewed_paths": [
+        {
+          "path": "pilot/pkg/serviceregistry/ambient/multicluster.go",
+          "blob": "50132979e5832f666d41d57bf1837e75b6fb4356"
+        },
+        {
+          "path": "pilot/pkg/serviceregistry/ambient/workloads.go",
+          "blob": "606d520a95209c63def7d901bb57f06f73e4e741"
+        },
+        {
+          "path": "pilot/pkg/serviceregistry/ambient/authorization.go",
+          "blob": "130cbb7cd1169f095490b84e780e931d261af270"
+        },
+        {
+          "path": "pilot/pkg/xds/workload.go",
+          "blob": "4f4a6e6087a3e649df85085bd3dd2a696384ec61"
+        },
+        {
+          "path": "pkg/workloadapi/security/authorization.proto",
+          "blob": "747f74e8d91a978bd34bfa277c5d7e912610c322"
+        }
+      ]
+    },
+    {
+      "repository": "https://github.com/cilium/ztunnel",
+      "reference": "v1.0.0",
+      "commit": "5bb9cf256b10a209ae9bc0624ddfbf27dbc439de",
+      "tree": "28d0e1075385bc55955085bbcbea6684da277fa7",
+      "reviewed_paths": [
+        {
+          "path": "proto/authorization.proto",
+          "blob": "6c4c03c95bfc0c28e1b54230f279aa7317d5d057"
+        },
+        {
+          "path": "src/state.rs",
+          "blob": "b0ea11e1bb8917b04eeb4bbe60eac03be721de66"
+        },
+        {
+          "path": "src/rbac.rs",
+          "blob": "265996c0b80c822c1a1f7c6a6e1dd25a2af91dce"
+        },
+        {
+          "path": "src/proxy/inbound.rs",
+          "blob": "69d85554642ccff36dd9e906ee25963cf93328d7"
+        },
+        {
+          "path": "src/state/workload.rs",
+          "blob": "a2aaad86dcfb70f1fa8e0712eb67043d3fbf52a8"
+        },
+        {
+          "path": "src/identity/manager.rs",
+          "blob": "e824cdaacf60e216b35a63f236cca10ab9ae0ddb"
+        },
+        {
+          "path": "src/tls/certificate.rs",
+          "blob": "59f66234cbe8dbe478cd9c3c18d139423721fb8b"
+        },
+        {
+          "path": "src/tls/workload.rs",
+          "blob": "92e05d40c800e40f7b7c2c8455c5ceea1c5051b5"
+        },
+        {
+          "path": "src/xds/types.rs",
+          "blob": "431ea4e5e941b3c83b43a6536100b4dbfbe5f5d7"
+        }
+      ]
+    },
+    {
+      "repository": "https://github.com/linkerd/linkerd2",
+      "reference": "main observed on 2026-10-23",
+      "commit": "5bb8ea8434bb17a679bfcf34b2045ebeea6afcc6",
+      "tree": "ff6558a3ee39ed06fc9a5ee999e35b3ec6f112c0",
+      "reviewed_paths": [
+        {
+          "path": "controller/api/destination/server.go",
+          "blob": "5ba0c67fc56280f201ed377955141fd41af9bd64"
+        },
+        {
+          "path": "controller/api/destination/endpoint_translator.go",
+          "blob": "753623077952dedc29827aa6aa43b8eb8989ae69"
+        },
+        {
+          "path": "policy-controller/grpc/src/inbound.rs",
+          "blob": "c00315226d36116fbf53f9829f1e6c0ab5b30f69"
+        },
+        {
+          "path": "multicluster/service-mirror/cluster_watcher.go",
+          "blob": "3d67d59d1fd63215aa164e279246ad7880b76c0f"
+        }
+      ]
+    }
+  ],
+  "constraints": [
+    "Cilium ztunnel image-to-source provenance remains unverified.",
+    "Istio reference protocol is not assumed wire/semantic compatible with Cilium proxy v1.0.0.",
+    "Linkerd main is pinned for comparison only, not selected as a deployment dependency."
+  ]
+}

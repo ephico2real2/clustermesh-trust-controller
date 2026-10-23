@@ -1,6 +1,6 @@
 # Observability contract and nine dashboards
 
-**Proposed names only.** Existing Cilium/Hubble/SPIRE metrics should be reused after verifying against pinned versions; new metrics require Go and/or Cilium instrumentation.
+**Target metric contract with an implemented Observe subset.** See [OBSERVE_LAB.md](../development/OBSERVE_LAB.md) and `internal/telemetry/metrics.go` for current collectors. Protection, workload mTLS, trust lifecycle and dual-encryption signals remain proposed. Existing Cilium/Hubble/SPIRE metrics still require source/scrape verification.
 
 The [observability source audit](../../observability/docs/SOURCE_AUDIT.md) records native Cilium v1.20.4 candidates and gaps across all nine dashboards. The table below is illustrative and incomplete; it does not yet define approved types, labels, freshness or ownership for every expression. Complete CMTC-701 before building exporters or treating absent series as healthy.
 

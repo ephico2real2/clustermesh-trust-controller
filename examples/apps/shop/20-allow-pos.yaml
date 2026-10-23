@@ -1,0 +1,13 @@
+# CMTC adaptation: enforce the intended shop client without putting endpoints in audit mode.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata: {name: shop-allow-pos, namespace: cf2cnp-lab}
+spec:
+  endpointSelector: {matchLabels: {app: shop}}
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            app: pos
+            k8s:io.kubernetes.pod.namespace: cf2cnp-lab
+      toPorts:
+        - ports: [{port: "80", protocol: TCP}]

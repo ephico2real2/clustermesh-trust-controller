@@ -4,6 +4,8 @@ Status: **Proposed**, 2026-10-23. Baseline: [source audit](../research/SOURCE_AU
 
 User clarification: the primary result is ztunnel workload mTLS over required WireGuard or IPsec node transport, working end to end across ClusterMesh. [Existing lab review](../research/EXISTING_LAB_REVIEW.md) pins the reusable PoC and the adaptations below. This direction does not mark all implementation contracts/ADRs approved.
 
+The user subsequently authorized a first deployable Observe build with CI, copied demo applications and screenshots. That implementation may proceed while enforcement contracts remain under review; the earlier hold on Go/CI/observation-schema scaffolding is superseded for this experimental slice. Live enrollment, Protected status and the encrypted profile retain their security gates. [OBSERVE_LAB.md](../development/OBSERVE_LAB.md) records actual scope and remaining work.
+
 ## PR 0 — Import handover and pin the design baseline
 
 Suggested title: `docs: import CMTC handover and audit pinned Cilium interfaces`.
@@ -54,7 +56,7 @@ Acceptance: protected root key never enters cluster/node/namespace secrets; unau
 
 F05 / EP05: CMTC-401..404; F09 / EP09: CMTC-805 for upstream proposal planning. Depends on PR 1; runtime proof also needs PR 4.
 
-Subtasks: small Go/Hive patches for remote workload discovery/lifecycle first, then authenticated HBONE and original application L4 policy enforcement. Document any unavoidable datapath changes separately. Send an upstream proposal only when explicitly authorized; local design does not send maintainer messages.
+Subtasks: follow the [Cilium integration contract](CILIUM_ZTUNNEL_CONTRACT.md): authenticated remote workload discovery/lifecycle, cluster identity spike, then effective Cilium L4 policy translation and fail-closed traffic admission. The [Istio/Linkerd source comparison](../research/MESH_MTLS_COMPARISON.md) finds an existing proxy authorization engine, missing-reference allow behavior, same-trust-domain verification and protocol differences that may require explicit Rust proxy changes alongside Go/Hive patches. Document datapath changes separately. Send an upstream proposal only when explicitly authorized; local design does not send maintainer messages.
 
 Acceptance: two pinned clusters pass pod-IP and Global Service tests, with matching namespace/service-account names in different clusters. Wrong cluster, unknown/stale identity, unauthorized application port, excluded→protected traffic, pod creation/relabel races, SPIRE outage, ztunnel crash, Cilium restart and cache resync all have denial/capture evidence. Keep the incompatibility guard for configurations without these capabilities. Remove/narrow it only with corresponding security tests; successful TLS alone cannot close CMTC-403.
 

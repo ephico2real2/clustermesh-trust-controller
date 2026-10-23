@@ -1,17 +1,11 @@
-# Proposed API only; requires CRD implementation
 apiVersion: security.cmtc.io/v1alpha1
 kind: NamespaceMTLSPolicy
 metadata:
   name: cluster-default
 spec:
-  defaultMode: Strict
   enrollment:
-    enabled: true
-    autoLabel: true
-    scope: ApplicationNamespaces
-    selectionMode: MatchSelectors # or AllEligible
+    selectionMode: MatchSelectors
   inclusions:
-    matchPolicy: Any
     namespaceSelectors:
       - matchLabels:
           company.net/lob: alpha
@@ -22,32 +16,5 @@ spec:
     namespaceSelectors:
       - matchLabels:
           company.net/mtls-exempt: "true"
-  platformProtection:
-    enabled: true
-    profile: AutoDetect
-    namespaceClassification:
-      protectSystemNamespaces: true
-      protectControlPlaneNamespaces: true
-      protectInfrastructureNamespaces: true
-    enrollment:
-      systemNamespaces: Never
-      requireCompatibilityValidation: true
-    communication:
-      preserveExistingConnectivity: true
-      verifyApiServerAccess: true
-      verifyDnsResolution: true
-      verifyAdmissionWebhooks: true
-      verifyNodeConnectivity: true
-    rollout:
-      strategy: Progressive
-      blockOnClusterDegradation: true
-      automaticRollback: true
   enforcement:
-    mode: Strict
-    failClosed: true
-    preventPlaintextFallback: true
-    verifyZtunnelReadiness: true
-  reconciliation:
-    repairLabelDrift: true
-  observability:
-    enabled: true
+    mode: Observe
