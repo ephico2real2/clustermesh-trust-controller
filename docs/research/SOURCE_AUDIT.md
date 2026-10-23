@@ -1,5 +1,7 @@
 # Pinned source audit — 2026-10-23
 
+This records the initial static design review, before the Observe implementation. See [OBSERVE_LAB.md](../development/OBSERVE_LAB.md) for current code, deployment and test scope; the Cilium enforcement gaps below remain open.
+
 ## Scope and evidence levels
 
 This is a static source review for CMTC-001, with initial inputs to CMTC-002/003. **No Cilium build, cluster deployment, traffic test, certificate issuance, Grafana import or Prometheus evaluation was performed.** “Verified source” below means a branch of code or a declared configuration was inspected, not that runtime behavior passed a test. Inferences and unverified interfaces are called out separately.

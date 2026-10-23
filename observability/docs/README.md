@@ -2,7 +2,7 @@
 
 Includes nine Grafana JSON dashboards, recording rules, alerts, ServiceMonitor and PodMonitor examples, and Agile stories.
 
-**Design artifacts, not a functioning CMTC deployment.** All `cmtc_*` metrics are proposed and require instrumentation. Dashboard panels will show No data until exporters are implemented. Native Cilium/ztunnel metrics must be mapped after pinning a Cilium version.
+**Experimental Observe telemetry plus proposed enforcement dashboards.** Selection, intent-label counts and node inventory now have real collectors; [OBSERVE_LAB.md](../../docs/development/OBSERVE_LAB.md) defines the implemented subset. mTLS, protected-pod, trust-rotation and transport-verification metrics remain proposed. Missing data for those signals is unknown. CI provisions the nine domain dashboards plus a separate live Observe dashboard and captures real pages; check the CI result before claiming validation.
 
 The [source audit](SOURCE_AUDIT.md) now reviews all nine files against the Cilium v1.20.4 research baseline. Imports, native scrapes, PromQL semantics, latency panels, cluster grouping and missing-data behavior still require implementation and tests. Canonical delivery IDs are CMTC-701..706 in [the main backlog](../../docs/agile/BACKLOG.md).
 

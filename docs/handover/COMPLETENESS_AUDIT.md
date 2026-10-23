@@ -1,5 +1,7 @@
 # Completeness audit — 2026-10-23
 
+Implementation continuation: [OBSERVE_LAB.md](../development/OBSERVE_LAB.md) supersedes the historical design-only inventory below for the experimental observation API/controller/agent/CI slice. No encrypted-path capability follows from that implementation; use actual CI evidence for deployment claims.
+
 ## Continuation source review
 
 The [source audit](../research/SOURCE_AUDIT.md) now records an immutable Cilium v1.20.4 baseline, exact interfaces and unresolved gaps. All nine ADRs have specific evidence/acceptance gates; an initial threat model and incremental PR plan exist. The [observability audit](../../observability/docs/SOURCE_AUDIT.md) covers all nine dashboards and rule/monitor scaffolding. This completes initial static review, not runtime compatibility or architecture approval. The input manifest's 38 hashes all matched (39 files including the manifest); the current manifest is refreshed for the expanded design snapshot.

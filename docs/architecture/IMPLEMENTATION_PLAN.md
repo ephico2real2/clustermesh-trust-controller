@@ -4,6 +4,8 @@ Status: **Proposed**, 2026-10-23. Baseline: [source audit](../research/SOURCE_AU
 
 User clarification: the primary result is ztunnel workload mTLS over required WireGuard or IPsec node transport, working end to end across ClusterMesh. [Existing lab review](../research/EXISTING_LAB_REVIEW.md) pins the reusable PoC and the adaptations below. This direction does not mark all implementation contracts/ADRs approved.
 
+The user subsequently authorized a first deployable Observe build with CI, copied demo applications and screenshots. That implementation may proceed while enforcement contracts remain under review; the earlier hold on Go/CI/observation-schema scaffolding is superseded for this experimental slice. Live enrollment, Protected status and the encrypted profile retain their security gates. [OBSERVE_LAB.md](../development/OBSERVE_LAB.md) records actual scope and remaining work.
+
 ## PR 0 — Import handover and pin the design baseline
 
 Suggested title: `docs: import CMTC handover and audit pinned Cilium interfaces`.

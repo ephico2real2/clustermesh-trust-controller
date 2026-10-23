@@ -1,0 +1,30 @@
+# A GLOBAL SERVICE — the same Service name in both clusters, backed by pods in either.
+#
+# Apply the SAME file to BOTH clusters:
+#   kubectl --context kind-poc1 apply -f demos/07-clustermesh/global-service.yaml
+#   kubectl --context kind-poc2 apply -f demos/07-clustermesh/global-service.yaml
+#
+# HOW IT WORKS. Cilium watches for Services carrying `service.cilium.io/global: "true"` and, for
+# each one, merges the endpoint sets from every cluster in the mesh into a single load-balancing
+# decision. A client in poc1 calling `rebel-base` gets a backend from poc1 OR poc2, chosen by the
+# same eBPF load balancer that handles ordinary ClusterIP traffic -- no gateway, no DNS trickery,
+# no application awareness. The pods do not know the mesh exists.
+#
+# WHY THE BACKENDS ANSWER WITH THEIR CLUSTER NAME. Otherwise you cannot see which side served a
+# request, and the whole demo becomes an act of faith. Each cluster's Deployment serves a different
+# static payload, so the response itself is the evidence.
+apiVersion: v1
+kind: Service
+metadata:
+  name: rebel-base
+  annotations:
+    # THE ONE ANNOTATION THAT MATTERS. Without it this is an ordinary, cluster-local Service and
+    # the mesh is irrelevant to it -- being in a mesh does not make every Service global, which is
+    # the right default: sharing is opt-in, per Service.
+    service.cilium.io/global: "true"
+spec:
+  type: ClusterIP
+  ports:
+    - port: 80
+  selector:
+    name: rebel-base

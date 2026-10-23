@@ -1,0 +1,31 @@
+# The poc1 side of the global service. Apply to poc1 ONLY.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rebel-base
+spec:
+  replicas: 2
+  selector:
+    matchLabels: {name: rebel-base}
+  template:
+    metadata:
+      labels: {name: rebel-base}
+    spec:
+      containers:
+        - name: nginx
+          image: nginx:1.27-alpine
+          volumeMounts:
+            - name: html
+              mountPath: /usr/share/nginx/html
+      volumes:
+        - name: html
+          configMap: {name: rebel-base-response}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: rebel-base-response
+data:
+  # The response IS the evidence of which cluster served the request.
+  index.html: |
+    {"cluster": "poc1", "message": "served by the poc1 rebel base"}
