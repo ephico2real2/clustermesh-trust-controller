@@ -38,6 +38,8 @@ Use the **pinned Cilium proxy's** `istio.security.Authorization` descriptor and 
 
 Start with a narrow, explicitly supported TCP L4 subset. Compile from the effective Cilium policy authority, preserving selector logic, explicit denials, application port and peer identity; resolve named ports against the destination incarnation. A separate CMTC allow policy must never override a Cilium deny. Reject unsupported egress, L7, FQDN, CIDR or other policy combinations until their semantics are traced and tested. Unsupported cases remain in Observe and cannot enter a Protected profile.
 
+Use exact SPIFFE principals for cluster-specific permissions; this proxy's namespace/service-account matcher ignores the trust domain. A service-account identity also cannot distinguish two pods with different policy labels that share that account. Preserve those finer Cilium restrictions through the authenticated datapath or reject the profile. Do not convert a label-specific allow into a broader service-account allow.
+
 The receiving proxy must check the authenticated source principal and resolved application destination, validate that the CONNECT target belongs to the local destination workload, and enforce the effective policy before opening the application connection. Tunnel port 15008 is transport plumbing. Allowing it broadly does not preserve an existing port 80 denial or caller restriction. Cilium's outer eBPF checks and inner proxy checks need a documented division of responsibility, including egress, return traffic, socket-LB and reverse NAT.
 
 ## Traffic admission and observation
@@ -75,6 +77,7 @@ Reuse `examples/apps/shop` with distinct service accounts for POS/stranger in th
 | Authorized source, intended application port | Success plus verified peer identities and policy generation. |
 | Different SA; same SA/namespace in unapproved cluster; wrong issuer | Denial attributable to authenticated identity policy, not only a network timeout. |
 | Correct peer, forbidden application port | Denial despite a working HBONE tunnel. |
+| Same service account, forbidden pod labels | Denial remains effective even though the pods share an mTLS principal. |
 | Direct plaintext / non-enrolled caller | Denial at a protected destination with no fallback. |
 | Missing policy, removed policy, NACK, reconnect with initial resource versions | No admission window; intended revocation takes effect. |
 | Pod/namespace recreation, endpoint IP reuse | Old identity/policy observation cannot authorize the new incarnation. |

@@ -22,9 +22,16 @@ for cluster in cmtc-a cmtc-b; do
   wait_status "$context" '{.status.conditions[?(@.type=="EnforcementVerified")].status}' Unknown
   [ "$(kubectl --context "$context" get ns -l io.cilium/mtls-enabled=true -o name | wc -l | tr -d ' ')" = 0 ]
   # Strict is an unimplemented API contract and must fail server-side validation.
-  if sed 's/mode: Observe/mode: Strict/' config/samples/namespace-mtls-policy.yaml | kubectl --context "$context" apply --dry-run=server -f -; then
+  echo "NEGATIVE TEST $cluster: the API must reject unsupported Strict mode; this rejection is expected"
+  strict_error="artifacts/$cluster-strict-rejection.txt"
+  if sed 's/mode: Observe/mode: Strict/' config/samples/namespace-mtls-policy.yaml | kubectl --context "$context" apply --dry-run=server -f - 2> "$strict_error"; then
     echo 'FAIL: API accepted unimplemented Strict mode' >&2; exit 1
   fi
+  if ! grep -Fq 'spec.enforcement.mode: Unsupported value: "Strict"' "$strict_error" || ! grep -Fq 'supported values: "Observe"' "$strict_error"; then
+    cat "$strict_error" >&2
+    echo 'FAIL: Strict request failed for an unexpected reason' >&2;exit 1
+  fi
+  echo "PASS $cluster: API rejected unsupported Strict mode as expected (full response: $strict_error)"
   kubectl --context "$context" label ns payments-alpha company.net/lob=beta --overwrite
   wait_status "$context" '{.status.selected}' 1
   kubectl --context "$context" delete ns payments-alpha --wait=true

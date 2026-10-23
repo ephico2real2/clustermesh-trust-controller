@@ -8,6 +8,8 @@ CMTC proposes a Go operator for namespace enrollment, shared public trust and ce
 
 The [deployed Observe lab runbook](docs/development/OBSERVE_LAB.md) covers the Go controller, node inventory agent, real observation CRD/metrics, two-cluster Cilium/cert-manager CI deployment, reused [demo applications](examples/apps/README.md), test assertions and browser screenshots. Run `make test build` for local Go verification. CI deploys the actual image and preserves evidence before teardown.
 
+[Deployed validation](docs/development/VALIDATION.md) records the passing two-cluster run and its eleven published browser captures, with the exact tested commit and remaining encryption limitations.
+
 1. [Source audit and verified gaps](docs/research/SOURCE_AUDIT.md), pinned to Cilium **v1.20.4**, commit `beb276d2f38d4aadfda14710acf8d14a0f1ba723`.
 2. [Incremental implementation and PR plan](docs/architecture/IMPLEMENTATION_PLAN.md).
 3. [Threat model](docs/architecture/THREAT_MODEL.md) and [nine proposed ADRs](docs/architecture/adr/ADR-001.md).

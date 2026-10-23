@@ -22,7 +22,7 @@ Source anchors: [Istio global collections](https://github.com/istio/istio/blob/e
 
 Neither mesh supplies a ready-made Cilium ClusterMesh adapter. The useful reuse is their separation of discovery, identity, destination policy and traffic admission. Linkerd uses workload sidecars; ambient Istio uses ztunnel. Their deployment shapes are not interchangeable. [Linkerd mTLS](https://linkerd.io/docs/features/automatic-mtls/), [Istio ambient overview](https://istio.io/latest/docs/ambient/overview/).
 
-## Three traps the implementation must handle
+## Four traps the implementation must handle
 
 ### Missing policy can allow traffic
 
@@ -37,6 +37,12 @@ The current proxy identity is `spiffe://<trust-domain>/ns/<namespace>/sa/<servic
 Cluster-specific trust domains are a candidate, but this proxy's inbound certificate verifier requires the peer's trust domain to match its own certificate's domain. Simply filling different `trust_domain` fields will fail the handshake. Supporting approved foreign domains needs an explicit verifier/bundle/issuer contract and negative tests; adding `/cluster/...` to the SPIFFE path also needs parser and issuer changes. [Server verifier construction](https://github.com/cilium/ztunnel/blob/5bb9cf256b10a209ae9bc0624ddfbf27dbc439de/src/tls/certificate.rs#L355-L385), [trust-domain comparison](https://github.com/cilium/ztunnel/blob/5bb9cf256b10a209ae9bc0624ddfbf27dbc439de/src/tls/workload.rs#L64-L115).
 
 Proposed direction: evaluate per-cluster trust domains with an explicit approved-peer map, issuer restrictions and SPIRE registration/attestation bound to the originating cluster. Document the compromise boundary: an unconstrained issuer chaining to the shared root must not be treated as cryptographically limited to a cluster. Test foreign issuers issuing a locally named identity. This decision remains open in [ADR-002](../architecture/adr/ADR-002.md); no identity isolation is claimed by the Observe lab's intermediate hierarchy.
+
+### Service-account authentication is coarser than pod-label policy
+
+The pinned proxy's `ServiceAccountMatch` compares namespace and service-account name while explicitly ignoring the trust domain. Use exact principal matching for cluster-specific permissions once the cluster identity scheme is implemented. [Service-account matcher](https://github.com/cilium/ztunnel/blob/5bb9cf256b10a209ae9bc0624ddfbf27dbc439de/src/rbac.rs#L286-L304).
+
+An additional design inference follows from the identity format: two pods using the same service account share a principal even when their Cilium policy labels differ. Translating a pod-label allow into a service-account allow can therefore broaden access. Preserve the finer restriction in the authenticated datapath/policy integration, or reject that enforcement profile until supported. Test a permitted and forbidden pod with the same service account and different labels; success from the permitted pod alone cannot validate the translation.
 
 ### Protocol versions and policy meanings differ
 
