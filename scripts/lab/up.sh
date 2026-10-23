@@ -98,7 +98,9 @@ EOF
   cat "$pki/$cluster.crt" "$pki/root.crt" > "$pki/$cluster.chain.crt"
   python3 - "$pki/$cluster.chain.crt" > "$pki/public-certificate-patch.json" <<'PY'
 import base64,json,pathlib,sys
-print(json.dumps({'type':'kubernetes.io/tls','data':{'tls.crt':base64.b64encode(pathlib.Path(sys.argv[1]).read_bytes()).decode()}}))
+# Secret.type is immutable. cert-manager's CA issuer consumes tls.crt/tls.key
+# from the existing Opaque Secret; only this public chain is added here.
+print(json.dumps({'data':{'tls.crt':base64.b64encode(pathlib.Path(sys.argv[1]).read_bytes()).decode()}}))
 PY
   kubectl --context "kind-$cluster" -n cert-manager patch secret cluster-intermediate --type merge --patch-file "$pki/public-certificate-patch.json"
   kubectl --context "kind-$cluster" -n cert-manager delete job/lab-ca-init rolebinding/lab-ca-init role/lab-ca-init sa/lab-ca-init
