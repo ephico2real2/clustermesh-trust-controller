@@ -2,6 +2,8 @@
 
 Status: **Proposed**, 2026-10-23. Baseline: [source audit](../research/SOURCE_AUDIT.md). Each PR is independently reviewable; none is a delivery-date commitment. Security-dependent milestones cannot be closed by operator-only work.
 
+User clarification: the primary result is ztunnel workload mTLS over required WireGuard or IPsec node transport, working end to end across ClusterMesh. [Existing lab review](../research/EXISTING_LAB_REVIEW.md) pins the reusable PoC and the adaptations below. This direction does not mark all implementation contracts/ADRs approved.
+
 ## PR 0 — Import handover and pin the design baseline
 
 Suggested title: `docs: import CMTC handover and audit pinned Cilium interfaces`.
@@ -62,6 +64,8 @@ F06 / EP06: CMTC-301..305. Depends on the secure HBONE baseline; trace spikes ma
 
 Subtasks: separate workload-authentication and transport settings; capability negotiation rejects unsupported/mixed combinations. Trace WireGuard/XFRM/eBPF marks and identity through overlay/direct routing, MTU/MSS, service translation and key rotation.
 
+Start composition qualification with WireGuard using the existing lab's measured WG exercise; then add IPsec as a separate profile. Preserve the user's existing Cilium Hubble patch on its own branch. The lab uses a 1.20.2-derived agent; review/cherry-pick applicable changes into an isolated branch against the selected CMTC pin rather than replacing the existing lab branch.
+
 Acceptance: for none/WireGuard/IPsec with mTLS off, baseline ClusterMesh regression tests pass on supported profiles. With mTLS on, TLS peer identity/policy evidence and independent WG/XFRM state plus packet captures establish both required layers. Missing keys, stale XFRM, node reboot and MTU failure produce no required-layer downgrade. No unsupported combination silently coerces to another mode.
 
 ## PR 7 — Platform, observability and release qualification
@@ -69,6 +73,8 @@ Acceptance: for none/WireGuard/IPsec with mTLS off, baseline ClusterMesh regress
 F07 / EP07: CMTC-601..606; F08 / EP08: CMTC-701..706; F09 / EP09: CMTC-802..805. Metrics contracts start earlier; release claims wait for full evidence.
 
 Subtasks: Kubernetes/OpenShift/hosted-control-plane inventory and SCC/RBAC profile; progressive rollout and verified rollback; real exporters, metric fixtures, recording/alert rules, nine dashboard imports, packaging and runbooks. Reuse native collectors only after actual scrape verification.
+
+CMTC-802 should derive its small two-cluster topology and evidence-before-teardown pattern from the pinned PoC. Adapt the root-copy bootstrap to protected root/cluster intermediates, pin agent/proxy/CRD inputs immutably, make required connectivity/security checks mandatory and convert evidence-printing checks into failing assertions. Establish the core encrypted path before adding the full observability stack.
 
 Acceptance: API, DNS UDP/TCP, webhooks, kubelet, ingress, OAuth, operators, etcd, bootstrap/recovery and upgrades remain healthy. Failure stops rollout; rollback requires datapath and platform recovery, not label removal. Promtool rule checks/tests and Grafana imports cover success, denial, zero traffic, absent exporter and missing cluster series. Security-negative, resilience and performance suites pass the pinned version matrix before production support is stated.
 

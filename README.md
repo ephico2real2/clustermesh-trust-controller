@@ -2,7 +2,7 @@
 
 **Design only; no deployment or cross-cluster mTLS implementation.** Source review: 2026-10-23.
 
-CMTC proposes a Go operator for namespace enrollment, shared public trust and certificate rotation, with native Cilium enforcement. Preserve the protected organizational root, cluster intermediates, SPIRE/cert-manager Option A, trust-manager, platform safety, exclusion precedence, optional WireGuard/IPsec, no silent downgrade and all nine Grafana dashboards. No Linkerd or Istio deployment is proposed.
+CMTC proposes a Go operator for namespace enrollment, shared public trust and certificate rotation, with native Cilium enforcement. The primary target is ztunnel workload mTLS layered over WireGuard or IPsec node transport encryption, verified end to end across ClusterMesh. Preserve the protected organizational root, cluster intermediates, SPIRE/cert-manager Option A, trust-manager, platform safety, exclusion precedence, no silent downgrade and all nine Grafana dashboards. No Linkerd or Istio deployment is proposed.
 
 ## Start here
 
@@ -11,6 +11,8 @@ CMTC proposes a Go operator for namespace enrollment, shared public trust and ce
 3. [Threat model](docs/architecture/THREAT_MODEL.md) and [nine proposed ADRs](docs/architecture/adr/ADR-001.md).
 4. [Target architecture](docs/architecture/END_TO_END_DESIGN.md), [security test matrix](docs/architecture/SECURITY_AND_FAILURE_TEST_MATRIX.md), [backlog](docs/agile/BACKLOG.md) and [stories](docs/agile/stories.csv).
 5. [Observability audit](observability/docs/SOURCE_AUDIT.md) and [handover](docs/handover/CODEX_START_HERE.md).
+
+Existing test foundation: the [Cilium lab review](docs/research/EXISTING_LAB_REVIEW.md) pins the user's working PoC, identifies reusable topology/cert-manager/observability patterns, and records its separate ztunnel experiment and required PKI/transport adaptations.
 
 ## Current constraints
 

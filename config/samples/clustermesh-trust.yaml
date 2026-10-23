@@ -22,4 +22,7 @@ spec:
     requireAllClustersReady: true
   networkEncryption:
     management: Observe
-    permittedModes: [none, wireguard, ipsec]
+    # Primary layered profile: ztunnel workload mTLS plus one required transport.
+    # Illustrative contract only; schema and enforcement are not implemented.
+    required: true
+    permittedModes: [wireguard, ipsec]

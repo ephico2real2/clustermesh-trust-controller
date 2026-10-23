@@ -16,6 +16,8 @@ Baseline: [Cilium v1.20.4 source audit](SOURCE_AUDIT.md), [immutable pins](sourc
 | Metrics/dashboards | All nine JSON dashboards/rules/monitors reviewed; native collector candidates (V12) | Exporters, live names/labels, histogram buckets, per-cluster views, no-data semantics, promtool fixtures and Grafana imports | CMTC + Cilium / CMTC-701..706 |
 | Architecture/release | Nine ADRs reviewed; threat model and gated plan drafted | Explicit architecture/security approval, residual risks, evidence ownership and recovery qualification | CMTC-002,003,802..805 |
 
+Reference foundation: [existing lab review](EXISTING_LAB_REVIEW.md), pinned to `22fb6e14c0cca8c78af1f072d1e89ebaea6a916b`. Reproduce its topology and existing ztunnel/policy failures on the CMTC baseline; adapt root signing-key replication to Option A. The lab's 1.20.2-derived Hubble patch, control-plane certificates, optional connectivity step and evidence-printing reports cannot substitute for cross-cluster workload identity, both encryption layers and mandatory security assertions.
+
 Official reference entry points (floating documentation; do not use as immutable implementation evidence):
 
 - [Cilium ClusterMesh](https://docs.cilium.io/en/stable/network/clustermesh/)

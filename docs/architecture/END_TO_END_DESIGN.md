@@ -63,11 +63,13 @@ sequenceDiagram
 Rotation phases: `Pending -> Distributing -> Verifying -> Switching -> Draining -> Completed`; unsafe transitions -> `Blocked`. Emergency compromise has separate immediate revocation playbook. Root private key never distributed.
 
 ## A4: dual encryption target
+
+Primary target confirmed 2026-10-23: ztunnel supplies workload mTLS and WireGuard or IPsec supplies the node transport layer. A successful end-to-end result must verify both. See the [existing lab review](../research/EXISTING_LAB_REVIEW.md) for the reusable PoC baseline; none/mTLS-off remain explicit control profiles.
 ```mermaid
 flowchart LR
  A[Pod A] --> ZA[ztunnel A / HBONE TLS]
  ZA --> DA[Cilium eBPF A]
- DA --> N[Optional WireGuard / IPsec]
+ DA --> N[Required WireGuard / IPsec in layered profile]
  N --> DB[Cilium eBPF B]
  DB --> ZB[ztunnel B / SPIFFE verify]
  ZB --> B[Pod B]
@@ -76,7 +78,7 @@ flowchart LR
 
 | Network encryption | mTLS off | mTLS on (target; requires upstream work) |
 |---|---|---|
-| none | Baseline ClusterMesh | HBONE TLS |
+| none | Baseline ClusterMesh control | HBONE-only control; does not satisfy layered profile |
 | WireGuard | Existing WG ClusterMesh if supported by pinned version | HBONE over WireGuard |
 | IPsec | Existing IPsec ClusterMesh if supported by pinned version | HBONE over IPsec |
 | Mixed incompatible modes | Reject/unsupported | Reject/fail closed |
