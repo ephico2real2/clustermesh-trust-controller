@@ -23,21 +23,22 @@ The test step verifies selection/exclusion/platform precedence, relabeling and n
 
 A small Prometheus runs in each cluster; the spoke remote-writes to the hub. Grafana provisions the nine domain dashboards and a tenth, separate live evaluation view. Playwright verifies both clusters' actual metrics, requires the enforcement-unavailable value, captures all ten Grafana pages plus the imported remote app, and writes a screenshot index. Missing future mTLS/trust/transport panels remain No data/unknown. Import and screenshots do not validate those future metrics.
 
+The [capture Dockerfile](../../scripts/capture/Dockerfile) uses the official Ubuntu 24.04 Noble Playwright v1.56.1 image pinned by its manifest digest. Chromium and browser system libraries are already installed in that base; the matching npm package is installed at image build time and a real Chromium launch/close smoke check must pass. CI runs captures inside this prepared image, mounting only the artifact directory and reaching loopback port forwards through Linux host networking. Browser/OS dependencies are not downloaded onto the runner during lab setup. This follows the [official Playwright Docker guidance](https://playwright.dev/docs/docker).
+
 Evidence is collected before cleanup even on failure: policy status, node/pod/image inventory, events, CMTC logs, Cilium/mesh status, assertion results, actual metric samples and PNGs. An explicit allowlist excludes Secrets, kubeconfigs, PKI directories and full sysdumps. The job uploads `artifacts/` and deletes only the two clusters recorded as created by that run. No existing clusters are replaced.
 
 ## Local use
 
-Requires Go >=1.26, Docker running, kind, kubectl, Helm, Cilium CLI, OpenSSL, Python and Node. The bootstrap script is Linux CI-specific; local runs use installed tools.
+Requires Go >=1.26, Docker running, kind, kubectl, Helm, Cilium CLI, OpenSSL and Python. The bootstrap and containerized capture paths target Linux CI; local cluster runs use installed tools. Node/Playwright run inside the Ubuntu capture image. Use CI for screenshots from macOS unless Docker's Linux host networking is already configured.
 
 ```sh
 make test build
 make image
+make capture-image
 make lab-up
 make lab-test
 make lab-evidence
-npm ci --prefix scripts/capture
-cd scripts/capture && npx playwright install chromium && cd ../..
-bash scripts/lab/capture.sh
+make lab-capture
 make lab-down
 ```
 
