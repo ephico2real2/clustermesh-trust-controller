@@ -16,6 +16,8 @@ This remains Observe/baseline evidence. Neither the successful job nor a rendere
 
 [Cilium fork PR #1](https://github.com/ephico2real2/cilium/pull/1), commit `636e441044379d48db0686eb21becf9351f782f6`, passed [focused CI run 40022647528](https://github.com/ephico2real2/cilium/actions/runs/40022647528): authorization descriptor/independent wire fixture/Any type-URL and JSON tests under the race detector, `go vet`, checksum-verified protoc tools and reproducible regeneration. The inherited patch/signoff and workflow checks also passed. The Go generators are built with Go 1.26.10 to keep comment formatting reproducible.
 
+The same commit passed [all Go-related checks](https://github.com/ephico2real2/cilium/actions/runs/40022655803), including lint, prechecks, API generation, vendoring and licenses; [Cilium, Hubble, BPF and Ginkgo suite compilation](https://github.com/ephico2real2/cilium/actions/runs/40022655546); and [generated-documentation checks](https://github.com/ephico2real2/cilium/actions/runs/40022655568). Compilation is not an encrypted datapath test.
+
 These tests establish a pinned protocol foundation only. The patch does not implement authorization resource delivery, remote discovery, runtime policy/admission or encryption. The inherited image-publishing workflow is separately blocked by a Quay OIDC-token HTTP 401; no successful Cilium image build or deployment is claimed from this run. Existing Hubble branches and the compatibility guard remain separate from this patch.
 
 ## Earlier deployed baseline
