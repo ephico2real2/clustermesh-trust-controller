@@ -27,12 +27,18 @@ jobs:
           test -z "$(gofmt -l api internal cmd)"
           kubectl kustomize config/default > /tmp/cmtc-manifests.yaml
           bash -n scripts/lab/*.sh
+          bash -n scripts/capture/publish.sh
+          node --check scripts/capture/walk.cjs
+          node --check scripts/capture/capture.mjs
   deployed-lab:
     needs: unit
     runs-on: ubuntu-24.04
     timeout-minutes: 60
+    permissions:
+      contents: write # per-run PNG/log folders on ci-captures, as in the reference lab
     steps:
       - uses: actions/checkout@v5
+        with: {persist-credentials: false}
       - name: Pinned tools with published checksum verification
         run: bash scripts/lab/ci-bootstrap.sh
       - name: Build Ubuntu capture image with Playwright, Chromium and OS libraries installed
@@ -55,7 +61,7 @@ jobs:
       - name: Real dashboard and example application screenshots
         if: always()
         timeout-minutes: 10
-        run: bash scripts/lab/capture.sh
+        uses: ./.github/actions/browser-walk
       - name: Test summary
         if: always()
         run: |

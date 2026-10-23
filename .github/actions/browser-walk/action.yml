@@ -1,0 +1,59 @@
+# Adapted from the user's PoC browser-walk action and demo55-ci publishing flow.
+# Exact provenance: scripts/capture/SOURCE.md.
+name: CMTC browser walk
+description: Walk YAML/JSON pages in Ubuntu, publish PNG evidence, then enforce expectations
+inputs:
+  spec:
+    description: Optional YAML/JSON page spec; empty generates the CMTC dashboard/application spec
+    default: ''
+  out:
+    description: Evidence directory under artifacts/
+    default: artifacts/screenshots
+  env-json:
+    description: JSON variables for the page spec's ${VAR} placeholders
+    default: '{}'
+  image:
+    description: Prepared Ubuntu image built from scripts/capture/Dockerfile
+    default: cmtc-capture:dev
+  publish-branch:
+    description: Screenshot publication branch; empty disables publication
+    default: ci-captures
+runs:
+  using: composite
+  steps:
+    - name: Walk pages and retain the verdict
+      shell: bash
+      env:
+        CMTC_WALK_SPEC: ${{ inputs.spec }}
+        CMTC_CAPTURE_OUT: ${{ inputs.out }}
+        CMTC_CAPTURE_IMAGE: ${{ inputs.image }}
+        CMTC_WALK_ENV_JSON: ${{ inputs.env-json }}
+      run: |
+        set -euo pipefail
+        case "$CMTC_CAPTURE_OUT" in artifacts/*) ;; *) exit 1;; esac
+        case "$CMTC_CAPTURE_OUT" in *..*) exit 1;; esac
+        mkdir -p "$CMTC_CAPTURE_OUT"
+        set +e
+        bash scripts/lab/capture.sh 2>&1 | tee "$CMTC_CAPTURE_OUT/walk.log"
+        rc=${PIPESTATUS[0]}
+        set -e
+        echo "$rc" > "$CMTC_CAPTURE_OUT/walk.rc"
+    - name: Publish screenshots and run-page evidence before enforcing the verdict
+      if: inputs.publish-branch != '' && !cancelled()
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+        CAPTURE_OUT: ${{ inputs.out }}
+        CAPTURE_BRANCH: ${{ inputs.publish-branch }}
+      run: bash scripts/capture/publish.sh
+    - name: Enforce page expectations
+      shell: bash
+      env:
+        CAPTURE_OUT: ${{ inputs.out }}
+      run: |
+        rc=$(cat "$CAPTURE_OUT/walk.rc" 2>/dev/null || echo 1)
+        if [ "$rc" != 0 ]; then
+          grep -E 'FAILED|page\(s\) failed|Error|unavailable' "$CAPTURE_OUT/walk.log" || true
+          exit "$rc"
+        fi
+        echo "All browser-page and actual telemetry expectations passed"
