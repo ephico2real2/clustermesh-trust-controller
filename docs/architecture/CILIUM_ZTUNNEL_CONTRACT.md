@@ -2,6 +2,8 @@
 
 Status: proposed engineering contract, 2026-10-23. Based on the [pinned mesh comparison](../research/MESH_MTLS_COMPARISON.md) and [Cilium audit](../research/SOURCE_AUDIT.md). This is the next implementation boundary; no new production API or enforcement capability is implied.
 
+Implementation tracking: [Cilium fork PR #1](https://github.com/ephico2real2/cilium/pull/1) starts the protocol portion with the exact `cilium/ztunnel` v1.0.0 Authorization schema, a separate Go security package, independent wire fixture and reproducible generation tests. [Focused CI passed](https://github.com/ephico2real2/cilium/actions/runs/40022647528) at `636e441044379d48db0686eb21becf9351f782f6`. This is partial groundwork for slices 1 and 3 below; neither remote discovery nor authorization delivery/admission is implemented by that patch. Keep every runtime acceptance gate open.
+
 ## Ownership
 
 CMTC evaluates namespace intent, coordinates trust lifecycle and reports verified observations. Cilium owns local interception, endpoint identity, service translation, network policy and xDS. SPIRE owns workload attestation and SVID issuance. Ztunnel authenticates peers and enforces the supported destination L4 policy. WireGuard/IPsec protects node transport independently. An admission result must combine these actual capabilities without letting one stand in for another.
