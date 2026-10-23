@@ -3,6 +3,11 @@ on:
   push:
     branches: [main, 'feat/**']
   workflow_dispatch:
+    inputs:
+      cilium_image_lock_url:
+        description: Optional immutable raw GitHub URL for another published fork image lock
+        type: string
+        required: false
 permissions:
   contents: read
 concurrency:
@@ -26,6 +31,8 @@ jobs:
           git diff --exit-code config/crd
           test -z "$(gofmt -l api internal cmd)"
           kubectl kustomize config/default > /tmp/cmtc-manifests.yaml
+          bash -n scripts/cilium/*.sh
+          python3 scripts/cilium/prepare.py config/cilium-images.lock.json /tmp/cilium-image-values.json
           bash -n scripts/lab/*.sh
           bash -n scripts/capture/publish.sh
           node --check scripts/capture/walk.cjs
@@ -46,6 +53,15 @@ jobs:
         run: docker build -f scripts/capture/Dockerfile -t cmtc-capture:dev .
       - name: Build the actual CMTC image
         run: docker build -t cmtc:dev .
+      - name: Select an explicit development image bundle
+        if: inputs.cilium_image_lock_url != ''
+        env:
+          LOCK_URL: ${{ inputs.cilium_image_lock_url }}
+        run: |
+          [[ "$LOCK_URL" =~ ^https://raw[.]githubusercontent[.]com/ephico2real2/(cilium|clustermesh-trust-controller)/[0-9a-f]{40}/ ]] || { echo 'Use an immutable raw file URL in your Cilium fork'; exit 1; }
+          mkdir -p .tmp
+          curl -fsSL --retry 4 "$LOCK_URL" -o .tmp/cilium-images.override.json
+          echo 'CILIUM_IMAGE_LOCK=.tmp/cilium-images.override.json' >> "$GITHUB_ENV"
       - name: Deploy Cilium, intermediate-backed cert-manager mesh, CMTC and monitoring
         run: |
           set -o pipefail
@@ -55,6 +71,9 @@ jobs:
         run: |
           set -o pipefail
           bash scripts/lab/test.sh 2>&1 | tee artifacts/tests.log
+      - name: Start six-minute shop and cross-cluster HTTP loads
+        id: load
+        run: bash scripts/lab/load.sh start
       - name: Preserve cluster evidence
         if: always()
         run: bash scripts/lab/evidence.sh
@@ -62,16 +81,23 @@ jobs:
         if: always()
         timeout-minutes: 10
         uses: ./.github/actions/browser-walk
+      - name: Require measured HTTP load results
+        if: always() && steps.load.outcome == 'success'
+        run: bash scripts/lab/load.sh collect
       - name: Test summary
         if: always()
         run: |
-          echo '## CMTC deployed Observe lab' >> "$GITHUB_STEP_SUMMARY"
-          echo 'Policy/inventory, imported application policy, baseline ClusterMesh and screenshots are tested here. Workload mTLS and layered encryption are BLOCKED pending Cilium integration.' >> "$GITHUB_STEP_SUMMARY"
-          if [ -f artifacts/results.json ]; then
-            echo '```json' >> "$GITHUB_STEP_SUMMARY"
-            cat artifacts/results.json >> "$GITHUB_STEP_SUMMARY"
-            echo '```' >> "$GITHUB_STEP_SUMMARY"
-          fi
+          {
+            echo '## CMTC deployed Observe lab'
+            echo 'Policy/inventory, imported application policy, baseline ClusterMesh and screenshots are tested here. Workload mTLS and layered encryption are BLOCKED pending Cilium integration.'
+            for report in artifacts/cilium-images.lock.json artifacts/cilium-image-verification.json artifacts/load-results.json artifacts/results.json; do
+              if [ -f "$report" ]; then
+                echo '```json'
+                cat "$report"
+                echo '```'
+              fi
+            done
+          } >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@v4
         if: always()
         with:

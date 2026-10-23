@@ -12,6 +12,8 @@ for cluster in cmtc-a cmtc-b; do
   kubectl --context "$context" -n cmtc-system logs deployment/cmtc-controller --all-containers > "artifacts/$cluster-controller.log" 2>&1 || true
   kubectl --context "$context" -n cmtc-system logs -l app.kubernetes.io/name=cmtc-node-agent --all-containers --prefix > "artifacts/$cluster-agents.log" 2>&1 || true
   kubectl --context "$context" -n kube-system exec ds/cilium -c cilium-agent -- cilium-dbg status --verbose > "artifacts/$cluster-cilium-status.txt" 2>&1 || true
+  kubectl --context "$context" -n kube-system exec ds/cilium -c cilium-agent -- cilium-dbg version > "artifacts/$cluster-cilium-version.txt" 2>&1 || true
+  kubectl --context "$context" get crd ciliumendpoints.cilium.io -o json > "artifacts/$cluster-cep-crd.json" 2>&1 || true
   cilium clustermesh status --context "$context" > "artifacts/$cluster-mesh.txt" 2>&1 || true
 done
 git rev-parse HEAD > artifacts/source-commit.txt

@@ -4,7 +4,7 @@ export GOMODCACHE ?= $(CURDIR)/.cache/go-mod
 IMAGE ?= cmtc:dev
 CAPTURE_IMAGE ?= cmtc-capture:dev
 
-.PHONY: test build image capture-image lab-up lab-test lab-evidence lab-capture lab-down
+.PHONY: cilium-prepare cilium-build-push test build image capture-image lab-up lab-test lab-evidence lab-capture lab-down
 test:
 	$(GO) test -race ./...
 	$(GO) vet ./...
@@ -24,3 +24,9 @@ lab-capture:
 	CMTC_CAPTURE_IMAGE=$(CAPTURE_IMAGE) bash scripts/lab/capture.sh
 lab-down:
 	bash scripts/lab/down.sh
+
+cilium-prepare:
+	bash scripts/cilium/prepare.sh
+cilium-build-push:
+	@test -n "$(CILIUM_SOURCE_DIR)" || (echo 'Set CILIUM_SOURCE_DIR to your full, committed Cilium fork checkout'; exit 1)
+	bash "$(CILIUM_SOURCE_DIR)/contrib/cmtc-images/build.sh" "$(CILIUM_SOURCE_DIR)" "$(CURDIR)/artifacts/cilium-build"

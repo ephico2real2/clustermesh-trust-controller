@@ -15,7 +15,7 @@ Namespace classification is a conservative initial inventory rule: reserved syst
 
 [ci.yaml](../../.github/workflows/ci.yaml) runs on main/feature pushes. Unit/race tests, vet, binary compilation, generated-schema freshness, formatting and Kustomize/shell checks precede the deployed job.
 
-The deployed job checks published checksums for kind v0.33.0, kubectl v1.36.4, Cilium CLI v0.20.0 and Helm v3.21.4. It builds CMTC from the tested commit; creates cmtc-a/cmtc-b with separate pod/service CIDRs; installs Cilium v1.20.4 and cert-manager v1.21.1; establishes the ClusterMesh API baseline; then deploys the controller, node agents, actual policy CRD and monitoring. This is a new harness adapted from the [pinned PoC review](../research/EXISTING_LAB_REVIEW.md).
+The deployed job checks published checksums for kind v0.33.0, kubectl v1.36.4, Cilium CLI v0.20.0 and Helm v3.21.4. It builds CMTC from the tested commit; creates cmtc-a/cmtc-b with separate pod/service CIDRs; installs the digest-pinned Cilium fork agent/operator/ClusterMesh images and their source-matched chart, plus cert-manager v1.21.1; establishes the ClusterMesh API baseline; then deploys the controller, node agents, actual policy CRD and monitoring. This is a new harness adapted from the [pinned PoC review](../research/EXISTING_LAB_REVIEW.md).
 
 For the disposable certificate fixture, the organizational test root key stays on the runner. Each cluster generates its own intermediate key inside a short-lived `lab-ca-init` Job and emits only its public CSR. The runner signs the CSR and returns the public chain; it never exports an intermediate private key. The initializer has a separate temporary namespace-scoped create-Secret permission which is removed after initialization. CMTC itself has no such permission. Root signing files are never uploaded and cleanup removes them. These ClusterMesh certificates are not SPIRE workload SVIDs or a production PKI implementation.
 
@@ -36,6 +36,8 @@ A domain dashboard may pass its rendering checks while its feature evidence rema
 Evidence is collected before cleanup even on failure: policy status, node/pod/image inventory, events, CMTC logs, Cilium/mesh status, assertion results, actual metric samples and PNGs. An explicit allowlist excludes Secrets, kubeconfigs, PKI directories and full sysdumps. The job uploads `artifacts/` and deletes only the two clusters recorded as created by that run. No existing clusters are replaced.
 
 ## Local use
+
+See [CILIUM_IMAGES.md](CILIUM_IMAGES.md) for local fork builds, GHCR publication, source/chart pins and image overrides. The checked-in lock selects the development baseline for both local kind and CI.
 
 Requires Go >=1.26, Docker running, kind, kubectl, Helm, Cilium CLI, OpenSSL and Python. The bootstrap and containerized capture paths target Linux CI; local cluster runs use installed tools. Node/Playwright run inside the Ubuntu capture image. Use CI for screenshots from macOS unless Docker's Linux host networking is already configured.
 

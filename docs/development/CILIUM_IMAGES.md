@@ -1,0 +1,46 @@
+# Cilium fork image development
+
+The CMTC kind lab now consumes agent, generic operator and ClusterMesh API server images from **our fork**, with immutable digests in [the development lock](../../config/cilium-images.lock.json). The chart and its CRDs are fetched from that exact `source_sha`, rather than combining current-main binaries with a release chart. The original v1.20.4 source audit remains a historical research baseline.
+
+The public package is `ghcr.io/ephico2real2/cilium-dev`. Each component uses a distinct `sha-<full-source-commit>-<component>` tag and a two-platform image index (Linux AMD64 and ARM64). Native tags append the architecture. Digest pins, not mutable tags, select the tested version. This keeps the existing public package accessible to kind without registry Secrets.
+
+## Develop, build and select a version
+
+1. Work in a full checkout of `git@github.com:ephico2real2/cilium.git`. Keep upstream changes integrated through a reviewed fork PR; preserve existing feature branches. Commit the intended source under the configured human identity with a DCO signoff. The image helper refuses tracked source modifications.
+2. Select a working Docker engine, log in locally and build from the committed checkout. The fork's `contrib/cmtc-images/build.sh` uses the native Cilium Dockerfiles and publishes all three components. On this Mac the isolated `colima-cmtc-cilium` context is available; it does not replace the existing Docker context or MongoDB environment.
+
+   ```sh
+   export DOCKER_CONTEXT=colima-cmtc-cilium
+   gh auth token | docker login ghcr.io -u ephico2real2 --password-stdin
+   CILIUM_TARGET_PLATFORM=linux/arm64 make cilium-build-push CILIUM_SOURCE_DIR=/absolute/path/to/cilium
+   ```
+
+   Native AMD64 builders use `linux/amd64`. The local build records metadata and a native lock in `artifacts/cilium-build/`. Credentials must stay outside evidence directories.
+3. Run the fork's publisher against the **same full source SHA**. `local_arm64=true` waits for the local ARM64 set instead of rebuilding it; the Ubuntu AMD64 job builds any missing images. It verifies source/platform labels and the agent version, then publishes the multi-architecture indices and `cilium-image-bundle` artifact. Future CI publication uses only `GITHUB_TOKEN` with package-write permission. The existing package must grant `ephico2real2/cilium` Write under Manage Actions access.
+
+   ```sh
+   gh workflow run cmtc-development-images.yaml -R ephico2real2/cilium -f source_sha=<40-character-SHA> -f local_arm64=true
+   gh run download <successful-run-id> -R ephico2real2/cilium -n cilium-image-bundle -D artifacts/cilium-bundle
+   ```
+
+4. Set `CILIUM_IMAGE_LOCK=/absolute/path/to/images.lock.json` for one local run, or deliberately replace `config/cilium-images.lock.json` and open a CMTC PR to advance the default. `make cilium-prepare` validates it and fetches the exact chart. `CILIUM_SOURCE_DIR` may point at an existing clean checkout at the same SHA to avoid fetching. `make image lab-up lab-test lab-evidence` then uses those images. Use the existing capture prerequisites described in [OBSERVE_LAB.md](OBSERVE_LAB.md).
+
+The CI workflow also accepts `cilium_image_lock_url`, an immutable raw GitHub URL in either owned repository, to test an alternate lock without changing the default. The lock requires full SHA and digest references under the user's GHCR namespace. A mismatched/modified chart fails before creating clusters. All three components are overridden on both Helm install and mesh upgrade. No image source is selected with `latest`.
+
+Both clusters must pass rollout, pinned image-spec, runtime image-ID and agent binary version checks. The resulting `cilium-image-verification.json` accompanies the lock, Helm overrides and source SHA in CI artifacts. Actual shop allow/deny tests and a remote-only Global Service precede six-minute load streams (20 requests/s per local shop; 10 requests/s cross-cluster). Those streams remain active during browser capture; final Fortio summaries must show at least 99% HTTP 200, sustained duration and a minimum achieved rate. This is baseline connectivity/policy evidence; workload mTLS and transport composition remain blocked.
+
+## Which Hubble image contains the change?
+
+| Change | Component to build | Source repository |
+| --- | --- | --- |
+| Remote workload metadata, parsers, Hubble flow production and metrics | Cilium **agent**, already in this bundle; matching operator/CRDs accompany it | `ephico2real2/cilium` |
+| L7 Grafana dashboard JSON | Matching **Helm chart**, fetched at `source_sha` | `ephico2real2/cilium` |
+| Flow aggregation/Relay behavior | Custom `hubble-relay` image when its code changes | The same Cilium fork |
+| Hubble web UI | UI frontend/backend images when their code changes | Separate `cilium/hubble-ui` fork only when needed |
+| Standalone Hubble CLI behavior | CLI binary/image when its code changes | Separate `cilium/hubble` fork only when needed |
+
+The [September draft](https://github.com/ephico2real2/cilium-implementation-poc/blob/main/docs/upstream/drafts/cilium-pr-remote-workload.md) describes an older CEP-only workaround. The broader remote-workload fix [#48563](https://github.com/cilium/cilium/pull/48563) merged October 6 and is already in our current-main fork. The remaining source-All dashboard fix is also in our chart. Reapplying that old patch or creating a separate Hubble fork is unnecessary for these changes.
+
+Optional `images.hubble-relay`, `images.hubble-ui` and `images.hubble-ui-backend` entries in a bundle accept the same `{"image":"ghcr.io/ephico2real2/...@sha256:..."}` form and render the corresponding Helm image overrides. They do not enable those components implicitly. The current CMTC Observe profile keeps Hubble disabled; the separate fork dashboard CI enables it and retains [real Gateway load evidence](https://github.com/ephico2real2/cilium/actions/runs/40035107452). Future Relay/UI changes need their own source pins and tests before adding them to this bundle.
+
+The ztunnel compatibility rejection is retained. Custom images and screenshots do not establish workload mTLS, authorization enforcement or layered WireGuard/IPsec encryption.
