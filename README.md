@@ -18,7 +18,7 @@ Existing test foundation: the [Cilium lab review](docs/research/EXISTING_LAB_REV
 
 ## Current constraints
 
-The pinned Cilium source rejects ztunnel with ClusterMesh. Its xDS workload stream uses local endpoint resources and does not implement authorization policy. The chart selects one encryption type; HBONE over WireGuard/IPsec remains a research target. See the source audit for immutable citations and evidence limits.
+The pinned Cilium source rejects ztunnel with ClusterMesh. Its xDS workload stream uses local endpoint resources and sends no authorization policies. The proxy already has an L4 authorization engine; the missing integration includes remote identity records, real policy delivery and fail-closed admission. The [Istio/Linkerd comparison](docs/research/MESH_MTLS_COMPARISON.md) and [Cilium integration contract](docs/architecture/CILIUM_ZTUNNEL_CONTRACT.md) specify the adaptation and version-specific traps. The chart selects one encryption type; HBONE over WireGuard/IPsec remains a research target.
 
 Existing SPIRE enrollment support should be evaluated before adding an adapter. Cilium's ztunnel dependency is Rust and has Istio origins; [ADR-001](docs/architecture/adr/ADR-001.md) records the dependency boundary for review.
 

@@ -18,6 +18,8 @@ Baseline: [Cilium v1.20.4 source audit](SOURCE_AUDIT.md), [immutable pins](sourc
 
 Reference foundation: [existing lab review](EXISTING_LAB_REVIEW.md), pinned to `22fb6e14c0cca8c78af1f072d1e89ebaea6a916b`. Reproduce its topology and existing ztunnel/policy failures on the CMTC baseline; adapt root signing-key replication to Option A. The lab's 1.20.2-derived Hubble patch, control-plane certificates, optional connectivity step and evidence-printing reports cannot substitute for cross-cluster workload identity, both encryption layers and mandatory security assertions.
 
+The [Istio/Linkerd comparison](MESH_MTLS_COMPARISON.md), with [separate source pins](mesh-comparison.lock.json), refines the authorization and identity queue: reuse the existing proxy L4 engine, implement real policy resource delivery, close missing-reference admission windows, resolve cross-domain peer verification, and preserve exact protocol semantics. The [Cilium integration contract](../architecture/CILIUM_ZTUNNEL_CONTRACT.md) assigns the fork slices and negative tests. These findings do not mark any encrypted runtime scenario passed.
+
 Official reference entry points (floating documentation; do not use as immutable implementation evidence):
 
 - [Cilium ClusterMesh](https://docs.cilium.io/en/stable/network/clustermesh/)
