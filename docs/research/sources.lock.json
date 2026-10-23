@@ -1,0 +1,113 @@
+{
+  "reviewed_at": "2026-10-23",
+  "evidence_level": "static-source-only",
+  "cilium": {
+    "repository": "https://github.com/cilium/cilium",
+    "tag": "v1.20.4",
+    "commit": "beb276d2f38d4aadfda14710acf8d14a0f1ba723",
+    "tree": "470fefbb8620813c4c7570004a9e61122f16f488",
+    "reviewed_paths": [
+      "pkg/ztunnel/cell.go",
+      "pkg/ztunnel/config/config.go",
+      "pkg/ztunnel/reconciler/cell.go",
+      "pkg/ztunnel/reconciler/reconciler.go",
+      "pkg/ztunnel/table/enrolled_namespaces.go",
+      "pkg/ztunnel/iptables/inpod.go",
+      "pkg/ztunnel/zds/server.go",
+      "pkg/ztunnel/zds/metrics.go",
+      "pkg/ztunnel/xds/cell.go",
+      "pkg/ztunnel/xds/endpoint_event.go",
+      "pkg/ztunnel/xds/stream_processor.go",
+      "pkg/ztunnel/xds/xds_server.go",
+      "pkg/ztunnel/xds/metrics.go",
+      "pkg/ztunnel/ca/ca_server.go",
+      "pkg/ztunnel/pb/workload_ztunnel.proto",
+      "pkg/clustermesh/remote_cluster.go",
+      "operator/pkg/ztunnel/cell.go",
+      "operator/pkg/ztunnel/config/config.go",
+      "operator/pkg/ztunnel/reconciler/reconciler.go",
+      "operator/auth/spire/client.go",
+      "pkg/auth/spire/certificate_provider.go",
+      "install/kubernetes/cilium/values.yaml",
+      "install/kubernetes/cilium/templates/cilium-configmap.yaml",
+      "install/kubernetes/cilium/templates/ztunnel/daemonset.yaml",
+      "Documentation/security/network/encryption-ztunnel.rst"
+    ]
+  },
+  "ztunnel": {
+    "declared_chart_image": "quay.io/cilium/ztunnel:v1.0.0@sha256:884de5adde400e39f58e36c7a729f7690466ca4a8eb4c2a8daa9c1c025115b24",
+    "source_repository": "https://github.com/cilium/ztunnel",
+    "source_tag": "v1.0.0",
+    "source_commit": "5bb9cf256b10a209ae9bc0624ddfbf27dbc439de",
+    "reviewed_paths": [
+      "Cargo.toml"
+    ],
+    "image_to_source_provenance_verified": false
+  },
+  "spire": {
+    "repository": "https://github.com/spiffe/spire",
+    "documentation_reference_commit": "0d589ad07d7b7e7a244f5b5548bf9d2d21e9fbba",
+    "reviewed_paths": [
+      "doc/plugin_server_upstreamauthority_cert_manager.md"
+    ],
+    "deployment_version": null
+  },
+  "unselected_deployment_versions": [
+    "cert-manager",
+    "trust-manager",
+    "Kubernetes",
+    "OpenShift",
+    "controller-runtime"
+  ],
+  "runtime_validation": {
+    "build": false,
+    "cilium_tests": false,
+    "multi_cluster_mtls": false,
+    "spire_issuance": false,
+    "dual_encryption": false,
+    "grafana_import": false,
+    "prometheus_rule_evaluation": false
+  },
+  "reference_lab": {
+    "repository": "https://github.com/ephico2real2/cilium-implementation-poc",
+    "branch_observed": "main",
+    "commit": "22fb6e14c0cca8c78af1f072d1e89ebaea6a916b",
+    "evidence_level": "source-and-historical-demo-records; no new runtime verification",
+    "cilium_chart_version": "1.20.2",
+    "agent_image_tag": "ghcr.io/ephico2real2/cilium-dev:1.20.2-remote-workload-1d3a02ab",
+    "agent_image_digest_verified": false,
+    "reviewed_paths": [
+      ".github/workflows/lab-observability.yaml",
+      "scripts/bootstrap/versions.env",
+      "scripts/lab-up.sh",
+      "scripts/lab-trust.sh",
+      "scripts/lab-report.sh",
+      "scripts/lab-regression.sh",
+      "clusters/poc1.yaml",
+      "clusters/poc2.yaml",
+      "clusters/poc4.yaml",
+      "clusters/ci/poc1.yaml",
+      "clusters/ci/poc2.yaml",
+      "cilium/values-poc1.yaml",
+      "cilium/values-poc2.yaml",
+      "cilium/values-ci.yaml",
+      "cilium/values-ci-features.yaml",
+      "cilium/values-ci-certmanager.yaml",
+      "cilium/values-poc4-ztunnel.yaml",
+      "demos/08-certmanager-ca/01-root-ca-poc1.yaml",
+      "demos/08-certmanager-ca/02-issuer-poc2.yaml",
+      "demos/24-clustermesh-enterprise/poc1.yaml",
+      "demos/24-clustermesh-enterprise/poc2.yaml",
+      "demos/24-clustermesh-enterprise/clusters.yaml",
+      "demos/24-clustermesh-enterprise/check.sh",
+      "demos/24-clustermesh-enterprise/evidence.json",
+      "demos/36-trust-everywhere/20-bundle.yaml",
+      "demos/04-wireguard/README.md",
+      "demos/13-ztunnel/README.md",
+      "demos/13-ztunnel/output/transcript.txt",
+      "demos/25-hubble-observer-loki/mtls-check.sh",
+      "demos/39-remote-workload-fix/README.md",
+      "docs/upstream/drafts/cilium-pr-remote-workload.md"
+    ]
+  }
+}
