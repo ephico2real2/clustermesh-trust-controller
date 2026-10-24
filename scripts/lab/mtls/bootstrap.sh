@@ -9,7 +9,9 @@ mkdir -p "$out" .tmp/mtls-spike
 for tool in kind kubectl helm docker openssl python3; do command -v "$tool" >/dev/null; done
 if kind get clusters | grep -qx "$cluster"; then echo "Refusing to replace existing $cluster" >&2; exit 1; fi
 export KUBECONFIG=${CMTC_MTLS_KUBECONFIG:-/home/olasumbo.guest/.kube/cmtc-mtls-spike}
-fixture_image=${CMTC_MTLS_FIXTURE_IMAGE:-cmtc:spire-spike}
+fixture_image=${CMTC_MTLS_FIXTURE_IMAGE:-localhost/cmtc:spire-podman}
+fixture_archive=${CMTC_MTLS_FIXTURE_ARCHIVE:?build with scripts/lab/mtls/build.sh and supply its image archive}
+[ -f "$fixture_archive" ]
 # Bootstrap CNI with the qualified fork bundle; enable the new SPIRE agent only
 # after cert-manager and its ADS TLS server identity are ready.
 python3 scripts/cilium/prepare.py config/cilium-images.lock.json .tmp/mtls-spike/bootstrap-image-values.json
@@ -36,7 +38,7 @@ helm install cilium "$chart" -n kube-system -f .tmp/mtls-spike/bootstrap-image-v
 kubectl wait nodes --all --for=condition=Ready --timeout=5m
 helm repo add jetstack https://charts.jetstack.io --force-update
 helm upgrade --install cert-manager jetstack/cert-manager --version v1.21.1 -n cert-manager --create-namespace --set crds.enabled=true --wait --timeout 5m
-kind load docker-image "$fixture_image" --name "$cluster"
+kind load image-archive "$fixture_archive" --name "$cluster"
 kubectl -n kube-system create serviceaccount lab-identity-init
 for ns in cert-manager kube-system; do
   kubectl -n "$ns" apply -f - <<YAML

@@ -6,7 +6,12 @@ cd "$(dirname "$0")/../../.."
 export KUBECONFIG=$(cat .tmp/mtls-spike/kubeconfig-path)
 agent_image=${CILIUM_MTLS_AGENT_IMAGE:-docker.io/ephico2real2/cilium:spire-spike}
 chart=${CILIUM_SOURCE_DIR:?local SPIRE source checkout required}/install/kubernetes/cilium
-kind load docker-image "$agent_image" --name cmtc-mtls
+if [ -n "${CILIUM_MTLS_AGENT_ARCHIVE:-}" ]; then
+  kind load image-archive "$CILIUM_MTLS_AGENT_ARCHIVE" --name cmtc-mtls
+else
+  # Reuse the existing lab-runtime image; new image builds use host Podman.
+  kind load docker-image "$agent_image" --name cmtc-mtls
+fi
 kubectl -n kube-system wait certificaterequest/ztunnel-ads-server --for=condition=Ready --timeout=30s
 helm upgrade cilium "$chart" -n kube-system --reuse-values \
   --set image.override="$agent_image" --set image.pullPolicy=IfNotPresent \
