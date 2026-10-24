@@ -1,5 +1,9 @@
 # Codex continuation / session handover
 
+## Dashboard consolidation — 2026-10-24
+
+The user's latest requirement is to preserve all nine existing dashboard domains and original JSON files while combining their coverage into one or two meaningful pages. Commit `923fed1` restores the nine originals unchanged to `observability/dashboards/` and includes all original metric meanings in two provisioned pages: Operations and Workload Security. Future signals stay visible with `planned` titles and BLOCKED evidence; do not remove their panels or substitute successful zero values. The twelve native mTLS panels remain semantically unchanged inside Workload Security. See the root [dashboard guide](../../DASHBOARD_GUIDE.md), [metric contracts](../../observability/METRICS.md) and `capabilities.json`. The generator selects chart types from metric meanings and uses the user's Tableau/table style; validators verify original hashes, coverage and actual scoped queries. Default browser capture now has five cases (two pages in two themes plus remote app). Prior eleven-page CI results below are historical and remain valid for their recorded source. No new CI run is implied by the local redesign.
+
 ## Latest continuation — 2026-10-23
 
 User workflow requirement: finish the affected local tests, lint, image build and applicable load/screenshots before pushing changes that trigger CI or dispatching it. Use Podman from the MacBook host for subsequent image builds, with native Linux ARM64 or explicit target architecture as needed. The existing kind fixtures run in the dedicated Ubuntu Colima profile. Reproduce CI failures locally before rerunning.
@@ -36,13 +40,13 @@ The development lab selects a fork image bundle through [CILIUM_IMAGES.md](../de
 - `NamespaceMTLSPolicy` reconciles native namespace label `io.cilium/mtls-enabled: "true"`. Support `AllEligible` and `MatchSelectors` modes, OR across selectors, AND within selector; examples `company.net/lob=alpha` OR `company.net/mnemonic=delta`.
 - Explicit namespace exclusions override inclusions; protected Kubernetes/OpenShift system/control-plane/infrastructure namespaces never auto-enroll. Avoid breaking API, DNS, webhooks, kubelet, etc. Namespace exclusion is not permission to bypass protected destination security.
 - Target HBONE mTLS with WireGuard, IPsec or no L3 encryption; also preserve normal ClusterMesh operation when mTLS off. No silent plaintext fallback. Cilium currently has incompatibilities to solve.
-- Nine Grafana dashboards; Prometheus recording/alerting rules; metrics for enrollment, pods, trust, handshake latency, transport, platform safety, DaemonSet and controller health.
+- All nine original Grafana domains and JSON definitions, consolidated into two live pages; Prometheus recording/alerting rules; metrics for enrollment, pods, trust, handshake latency, transport, platform safety, DaemonSet and controller health.
 - Agile structure: initiative -> features -> epics -> stories -> subtasks; ADRs, DoR, DoD, security gates and architecture diagrams.
 
 ## Current status
 - Use the user's configured SSH Git access and human identity. Cilium signoff validation requires their real email from existing Cilium history; do not use a noreply signoff there.
 - `NamespaceMTLSPolicy` is a deployed Observe-only API. Its Strict rejection is intentional and tested, not a missing CRD prerequisite. Other proposed CRDs remain design-only.
-- Eleven browser pages are captured in CI. The live Observe page uses real telemetry; missing future domain signals are explicitly BLOCKED, not security test successes.
+- The current browser configuration captures five cases across two consolidated pages and the app. Operations uses real Observe telemetry; missing future domain signals are explicitly BLOCKED, not security test successes. Historical eleven-page runs below refer to the earlier layout.
 - The Cilium fork has a protocol foundation; it does not yet enforce cross-cluster workload mTLS. No namespace may be marked Protected from its label or an xDS ACK alone.
 
 ## Next implementation tasks

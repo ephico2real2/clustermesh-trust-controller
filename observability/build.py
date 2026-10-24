@@ -79,8 +79,8 @@ def operations():
     pie['fieldConfig']['defaults'].update(decimals=1)
     pie['fieldConfig']['overrides']=[color_override(label,color) for label,color in DECISIONS.values()]
     pie['options']={'pieType':'pie','displayLabels':['percent'],'reduceOptions':{'calcs':['lastNotNull'],'fields':'','values':False},'legend':{'displayMode':'table','placement':'bottom','values':['value','percent']},'tooltip':{'mode':'single'}}
-    panels.extend([pie,table(11,'Namespace decisions by cluster',(12,14,12,8),f'sum by(cluster,decision) ({metric("cmtc_namespace_decisions",end=True)})',{'cluster':'Cluster','decision':'Decision','Value':'Namespaces'},'Latest namespace decision gauges at range end, one row per cluster and decision. Zero is an observed empty category; a missing controller is not zero.'),
-       text(12,'Read the namespace categories',(12,22,12,6),'**Selected** = policy intent. **Excluded** = explicit exclusion. **Platform** = protected infrastructure. **Unselected** = remaining namespaces.\n\nThe pie includes platform namespaces in its denominator. Non-platform inventory includes excluded namespaces. Enrollment labels are observed from any actor. None of these counts proves mTLS or Protected status.'),
+    panels.extend([pie,table(11,'Namespace decisions by cluster',(12,14,12,10),f'sum by(cluster,decision) ({metric("cmtc_namespace_decisions",end=True)})',{'cluster':'Cluster','decision':'Decision','Value':'Namespaces'},'Latest namespace decision gauges at range end, one row per cluster and decision. Zero is an observed empty category; a missing controller is not zero.'),
+       text(12,'Read the namespace categories',(12,24,12,4),'**Selected** = policy intent. **Excluded** = explicit exclusion. **Platform** = protected infrastructure. **Unselected** = remaining namespaces.\n\nThe pie includes platform namespaces in its denominator. Non-platform inventory includes excluded namespaces. Enrollment labels are observed from any actor. None of these counts proves mTLS or Protected status.'),
        row(13,'Do controllers and node agents keep up?',28),
        stat(14,'Metrics targets reachable',(0,29,12,4),f'sum({metric("up",ALL,True)})','Latest successful scrapes at range end. The two-cluster lab expects six: two controllers plus four node agents. Filtered views have fewer targets. Read the target table for individual failures; this count is not an all-healthy verdict.',BLUE),
        stat(15,'Controller reconcile errors/s',(12,29,12,4),f'sum(rate({metric("controller_runtime_reconcile_errors_total")}[$__rate_interval]))','Controller-runtime reconcile errors per second over the adaptive rate interval. An observed zero means no recorded errors; missing data is unavailable.',ORANGE,unit='ops',decimals=3),
@@ -156,6 +156,9 @@ def add_planned(dashboard,page,y):
                 aggregate='min' if state else 'sum'
                 p=stat(next_id,label+' · planned',pos,f'{aggregate} by(cluster) ({name}{{{ALL}}} @ end())',desc)
                 p['targets'][0]['legendFormat']='{{cluster}}'
+                if name=='cmtc_platform_dependency_healthy':
+                    p['targets'][0]['expr']=f'{name}{{{ALL}}} @ end()'
+                    p['targets'][0]['legendFormat']='{{cluster}} · {{dependency}}'
                 p['options']['textMode']='value_and_name'
                 p['fieldConfig']['overrides']=[color_override(c,v) for c,v in CLUSTERS.items()]
                 if state:p['fieldConfig']['defaults']['mappings']=[{'type':'value','options':{'0':{'text':'Not ready','color':ORANGE},'1':{'text':'Verified','color':GREEN}}}]

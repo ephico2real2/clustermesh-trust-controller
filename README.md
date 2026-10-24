@@ -2,7 +2,7 @@
 
 **Experimental Observe implementation; cross-cluster workload mTLS is not implemented.** Updated 2026-10-24.
 
-CMTC proposes a Go operator for namespace enrollment, shared public trust and certificate rotation, with native Cilium enforcement. The primary target is ztunnel workload mTLS layered over WireGuard or IPsec node transport encryption, verified end to end across ClusterMesh. Preserve the protected organizational root, cluster intermediates, SPIRE/cert-manager Option A, trust-manager, platform safety, exclusion precedence, no silent downgrade and all nine Grafana dashboards. No Linkerd or Istio deployment is proposed.
+CMTC proposes a Go operator for namespace enrollment, shared public trust and certificate rotation, with native Cilium enforcement. The primary target is ztunnel workload mTLS layered over WireGuard or IPsec node transport encryption, verified end to end across ClusterMesh. Preserve the protected organizational root, cluster intermediates, SPIRE/cert-manager Option A, trust-manager, platform safety, exclusion precedence, no silent downgrade and all nine observability domains across two consolidated Grafana pages. No Linkerd or Istio deployment is proposed.
 
 ## Start here
 
@@ -10,6 +10,8 @@ The root-level [workload mTLS guide](MTLS_GUIDE.md) explains the native
 authenticated-only trial, its real load and restart results, retry/ACK logs,
 Grafana counter meanings and both-theme screenshots. It links the complete
 immutable evidence and identifies the remaining fail-closed and ClusterMesh gates.
+
+The [dashboard guide](DASHBOARD_GUIDE.md) maps all nine original dashboards into Operations and Workload Security, explains live versus planned panels, and retains the original JSON definitions.
 
 The [deployed Observe lab runbook](docs/development/OBSERVE_LAB.md) covers the Go controller, node inventory agent, real observation CRD/metrics, two-cluster Cilium/cert-manager CI deployment, reused [demo applications](examples/apps/README.md), test assertions and browser screenshots. Run `make test build` for local Go verification. CI deploys the actual image and preserves evidence before teardown.
 
@@ -31,7 +33,7 @@ Existing SPIRE enrollment support should be evaluated before adding an adapter. 
 
 Namespace labels and enrollment acknowledgments cannot establish `Protected`. The current API supports `enforcement.mode: Observe` only: it evaluates namespace metadata, reports counts/status and inventories local pods. Namespace RBAC is read-only, Strict is rejected, and enforcement stays Unknown. The [Observe sample](config/samples/namespace-mtls-policy.yaml) is deployable with the CRD; `*.target.yaml` and ClusterMeshTrust remain future API proposals.
 
-Nine domain dashboards remain partly proposed; CI provisions them alongside a separate live evaluation dashboard, validates actual selection/inventory metrics and captures the pages. SPIRE workload issuance, trust rotation, live enrollment and the Cilium cross-cluster/dual-encryption changes remain pending. No private CA keys belong in this repository or in bundle distribution.
+All nine domain definitions are retained unchanged. Their panels are consolidated into Operations and Workload Security, with planned instrumentation explicitly unavailable; the browser walk validates real selection/inventory metrics and captures both themes. SPIRE workload issuance, trust rotation, live enrollment and the Cilium cross-cluster/dual-encryption changes remain pending. No private CA keys belong in this repository or in bundle distribution.
 
 Repository: [ephico2real2/clustermesh-trust-controller](https://github.com/ephico2real2/clustermesh-trust-controller).
 

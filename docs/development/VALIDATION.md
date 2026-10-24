@@ -1,5 +1,16 @@
 # Deployed Observe validation
 
+## Local two-page dashboard consolidation — October 24, 2026
+
+All nine original domain JSONs are preserved byte for byte against `b68484a`; their coverage is combined into Operations (28 panels) and Workload Security (29 panels). Ten planned Operations signals and sixteen planned Security signals remain visible and explicitly BLOCKED. The twelve native mTLS panels retain their qualified query semantics. The [root dashboard guide](../../DASHBOARD_GUIDE.md) maps each original domain, defines chart meanings and shows both themes. This is local ARM64 qualification; the earlier CI runs below tested their recorded layouts.
+
+The fresh baseline load completed 7,200/7,200 HTTP 200 responses in each cluster's shop and 3,600/3,600 across the remote-only Global Service: 18,000 total. A separate fresh cross-node mTLS run completed 3,000/3,000 via Service and 3,000/3,000 via Pod IP; 900/900 unenrolled attempts received no HTTP response. These remain distinct experiments. The baseline Cilium source is `42f89f83aa`; the isolated mTLS agent daemon reports `f052d1276b`.
+
+The security screenshots use absolute UTC **05:48:03.361–05:53:03.361**, ending five seconds before the authenticated load jobs completed. Their destination-reported completed TCP pie partitions an estimated 6,890.743 connections: 86.665% authenticated without a failure flag, 13.335% unauthenticated and blocked, and zero in the other three categories. Counter increases are extrapolated estimates, so they need not equal the generators' exact request/attempt counts. TCP connections are not HTTP requests or TLS handshakes.
+
+Both generated files match live Grafana panel JSON exactly. Real queries pass for both clusters and each selected separately; namespace categories sum to their denominator, the pie totals 100%, declared live metric types match, and absent telemetry remains empty. Both themes pass panel bounds and table-row checks after enlarging the namespace table. The browser walk passes all five rendering cases, with every missing planned signal recorded as BLOCKED rather than a successful feature. Full screenshots, raw load results, query vectors, image IDs, source definitions and checksums are retained in the linked evidence bundle. Full fail-closed, ClusterMesh workload mTLS and transport composition acceptance remain open.
+
+
 ## Earlier GHCR baseline
 
 2026-10-23: [CMTC PR #4](https://github.com/ephico2real2/clustermesh-trust-controller/pull/4) merged the public GHCR bundle and separate Fortio JSON collection. [Feature-head CI 40043884931](https://github.com/ephico2real2/clustermesh-trust-controller/actions/runs/40043884931) passed at `dbb56598e5f7c64228c7a818e03188140f9e7b4c`; [merged-main CI 40046157600](https://github.com/ephico2real2/clustermesh-trust-controller/actions/runs/40046157600) passed at `90f6bc647a88a1c6b1b00fd0203a4b49f7537b83`.

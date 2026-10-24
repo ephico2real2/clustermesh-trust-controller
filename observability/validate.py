@@ -63,6 +63,15 @@ def static_check(path):
         assert metrics==set(domain['planned_metrics']),domain['domain']
         assert metrics<=set(contract),domain['domain']
         assert domain['stories'] and domain['dashboard'] in ['operations','workload-mtls']
+        for name in metrics:
+            destination=domain.get('metric_destinations',{}).get(name,domain['dashboard'])
+            page=d if destination=='operations' else security
+            names={n.removesuffix('_bucket') for n in re.findall(r'\bcmtc_[a-zA-Z0-9_]+',' '.join(t['expr'] for p in page['panels'] for t in p.get('targets',[])))}
+            if name in build.REPLACEMENTS:
+                owner,panel_id,replacement=build.REPLACEMENTS[name]
+                assert owner==destination
+                assert replacement in next(p for p in page['panels'] if p['id']==panel_id)['targets'][0]['expr']
+            else:assert name in names,'Domain coverage lost: '+domain['domain']+' / '+name
     required=set(n for domain in domains for n in domain['planned_metrics'])
     assert required<=actual|set(build.REPLACEMENTS),'Original metrics lost: '+str(required-actual-set(build.REPLACEMENTS))
     for p in panels:

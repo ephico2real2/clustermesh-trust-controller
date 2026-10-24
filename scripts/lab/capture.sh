@@ -7,7 +7,7 @@ case "$out" in *..*) echo 'Capture output cannot traverse directories' >&2;exit 
 mkdir -p "$out"
 capture_image=${CMTC_CAPTURE_IMAGE:-cmtc-capture:dev}
 docker image inspect "$capture_image" >/dev/null
-docker_args=(--rm --init --network host --shm-size=1g --env S=/captures --env CMTC_WALK_ENV_JSON --volume "$PWD/$out:/captures")
+docker_args=(--rm --init --network host --shm-size=1g --env S=/captures --env CMTC_WALK_ENV_JSON --env CMTC_REQUIRE_NATIVE_MTLS --env CMTC_CAPTURE_FROM_MS --env CMTC_CAPTURE_TO_MS --volume "$PWD/$out:/captures")
 if [ -n "${CMTC_WALK_SPEC:-}" ]; then
   spec=$(realpath "$CMTC_WALK_SPEC")
   case "$spec" in *.yaml|*.yml) container_spec=/workspace/walk.yaml;; *) container_spec=/workspace/walk.json;; esac

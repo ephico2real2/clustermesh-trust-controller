@@ -572,7 +572,7 @@
         "x": 12,
         "y": 14,
         "w": 12,
-        "h": 8
+        "h": 10
       },
       "fieldConfig": {
         "defaults": {
@@ -710,9 +710,9 @@
       "description": "Visible context and scope; documented status is not a live health metric.",
       "gridPos": {
         "x": 12,
-        "y": 22,
+        "y": 24,
         "w": 12,
-        "h": 6
+        "h": 4
       },
       "fieldConfig": {
         "defaults": {
@@ -1784,8 +1784,8 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "min by(cluster) (cmtc_platform_dependency_healthy{job=\"cmtc\",cluster=~\"$cluster\",component=~\"cmtc-controller|cmtc-node-agent\"} @ end())",
-          "legendFormat": "{{cluster}}",
+          "expr": "cmtc_platform_dependency_healthy{job=\"cmtc\",cluster=~\"$cluster\",component=~\"cmtc-controller|cmtc-node-agent\"} @ end()",
+          "legendFormat": "{{cluster}} · {{dependency}}",
           "instant": true,
           "range": false
         }

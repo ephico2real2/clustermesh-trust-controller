@@ -64,7 +64,7 @@ The chart follows the value's meaning: gauges are current levels/states, counter
 - Define freshness, restart/reset semantics, a bounded label budget and the behavior for missing sources or no observations.
 - Run the real query with success, failure, idle and absent-source cases. A percentile with no samples is unavailable; no eligible traffic has no meaningful success percentage.
 - Preserve per-cluster identity and required-gate failures; gauges across overlapping reporters and TCP opens/HTTP requests/TLS handshakes must not be mixed.
-- Capture the consolidated section under real relevant load in both themes. Add the panel in its assigned section as the story lands.
+- Capture the consolidated section under real relevant load in both themes. Activate and qualify the retained planned panel in its assigned section as the story lands.
 - Keep pending/protected/failed pod states mutually exclusive before deriving coverage. Identity/certificate serial/pod-UID detail belongs in logs or bounded drilldowns, not new unbounded CMTC labels.
 
 Reference presentation: [MongoDB chart dashboard rationale](https://github.com/ephico2real2/mongodb-poc/blob/main/chart/mongodb-search-helm/README.md#dashboards) and the pinned [diagram-kit dashboard skill](https://github.com/ephico2real2/diagram-kit/blob/26b7c19791159929c76a264ea3d5274bef72e9f6/skill/dashboard/SKILL.md).

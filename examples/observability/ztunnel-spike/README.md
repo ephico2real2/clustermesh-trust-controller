@@ -1,6 +1,6 @@
 # Experimental node mTLS views
 
-`authenticated-only.json` is the active workload-mTLS view, paired with the consolidated CMTC Operations page. The earlier `dashboard.json` and walk are retained under `historical/` for reproducibility; their duplicate live view is retired. Both active dashboards use the lab's `cmtc-prom` data source. These
+`authenticated-only.json` is the qualified 12-panel native source. `observability/build.py` incorporates it into the active Workload Security page alongside the planned TLS, trust, transport and violation sections; Operations is the other active page. All nine original domain JSONs remain unchanged in `observability/dashboards/`. The earlier `dashboard.json` and walk are retained under `historical/` for reproducibility; their duplicate live view is retired. Both active dashboards use the lab's `cmtc-prom` data source. These
 native ztunnel TCP metrics are not CMTC protection or TLS handshake metrics.
 
 The local two-node SPIRE fixture supplies real traffic. Add a Prometheus scrape
@@ -42,8 +42,7 @@ bash scripts/lab/capture.sh
 ```
 
 Use `authenticated-only-walk.json` for the native authenticated-only trial.
-The active browser walk requires all twelve panels, in dark and light themes, and permit no `No data` panels
-when capturing a recorded load window.
+The focused native browser walk requires data in all twelve native panels, in dark and light themes, when capturing a recorded load window. It also renders the retained planned sections, permitting missing data only on their explicitly named planned panels and recording those signals as BLOCKED.
 Independently save the PromQL vectors and assert positive traffic rates: a
 nonempty graph alone does not establish encrypted or authorized traffic.
 Archive request results, node placement, source/image pins, public SVID chains
