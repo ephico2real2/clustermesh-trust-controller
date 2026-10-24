@@ -1,0 +1,185 @@
+{
+  "observedAt": "2026-10-24T04:19:48.129757+00:00",
+  "panels": [
+    {
+      "panel": "Node metrics targets UP",
+      "query": "sum(up{job=\"cmtc-spire-ztunnel\",cluster=\"cmtc-mtls\"})",
+      "response": {
+        "status": "success",
+        "data": {
+          "resultType": "vector",
+          "result": [
+            {
+              "metric": {},
+              "value": [
+                1792815588.111,
+                "2"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "panel": "Native mTLS TCP connections opened \u00b7 source",
+      "query": "sum(istio_tcp_connections_opened_total{job=\"cmtc-spire-ztunnel\",cluster=\"cmtc-mtls\",connection_security_policy=\"mutual_tls\",destination_workload_namespace=\"mtls-spike\",reporter=\"source\"})",
+      "response": {
+        "status": "success",
+        "data": {
+          "resultType": "vector",
+          "result": [
+            {
+              "metric": {},
+              "value": [
+                1792815588.114,
+                "5799"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "panel": "Non-mTLS inbound TCP \u00b7 native classification",
+      "query": "sum(istio_tcp_connections_opened_total{job=\"cmtc-spire-ztunnel\",cluster=\"cmtc-mtls\",reporter=\"destination\",connection_security_policy!=\"mutual_tls\",destination_workload_namespace=\"mtls-spike\"})",
+      "response": {
+        "status": "success",
+        "data": {
+          "resultType": "vector",
+          "result": [
+            {
+              "metric": {},
+              "value": [
+                1792815588.117,
+                "1"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "panel": "mTLS outbound payload rate \u00b7 source",
+      "query": "sum(rate(istio_tcp_sent_bytes_total{job=\"cmtc-spire-ztunnel\",cluster=\"cmtc-mtls\",connection_security_policy=\"mutual_tls\",destination_workload_namespace=\"mtls-spike\",reporter=\"source\"}[1m]))",
+      "response": {
+        "status": "success",
+        "data": {
+          "resultType": "vector",
+          "result": [
+            {
+              "metric": {},
+              "value": [
+                1792815588.119,
+                "16960"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "panel": "mTLS TCP opens/s \u00b7 both nodes (not TLS handshakes)",
+      "query": "sum by(node,reporter) (rate(istio_tcp_connections_opened_total{job=\"cmtc-spire-ztunnel\",cluster=\"cmtc-mtls\",connection_security_policy=\"mutual_tls\",destination_workload_namespace=\"mtls-spike\"}[1m]))",
+      "response": {
+        "status": "success",
+        "data": {
+          "resultType": "vector",
+          "result": [
+            {
+              "metric": {
+                "node": "cmtc-mtls-worker",
+                "reporter": "source"
+              },
+              "value": [
+                1792815588.122,
+                "20"
+              ]
+            },
+            {
+              "metric": {
+                "node": "cmtc-mtls-control-plane",
+                "reporter": "destination"
+              },
+              "value": [
+                1792815588.122,
+                "19.96363636363636"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "panel": "mTLS traffic \u00b7 source-reported bytes/s",
+      "query": "sum by(node) (rate(istio_tcp_sent_bytes_total{job=\"cmtc-spire-ztunnel\",cluster=\"cmtc-mtls\",connection_security_policy=\"mutual_tls\",destination_workload_namespace=\"mtls-spike\",reporter=\"source\"}[1m]) + rate(istio_tcp_received_bytes_total{job=\"cmtc-spire-ztunnel\",cluster=\"cmtc-mtls\",connection_security_policy=\"mutual_tls\",destination_workload_namespace=\"mtls-spike\",reporter=\"source\"}[1m]))",
+      "response": {
+        "status": "success",
+        "data": {
+          "resultType": "vector",
+          "result": [
+            {
+              "metric": {
+                "node": "cmtc-mtls-worker"
+              },
+              "value": [
+                1792815588.125,
+                "18890"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "panel": "Observed peer identities and security policy \u00b7 native ztunnel counters",
+      "query": "sum by(node,reporter,source_principal,destination_principal,connection_security_policy) (istio_tcp_connections_opened_total{job=\"cmtc-spire-ztunnel\",cluster=\"cmtc-mtls\",destination_workload_namespace=\"mtls-spike\"})",
+      "response": {
+        "status": "success",
+        "data": {
+          "resultType": "vector",
+          "result": [
+            {
+              "metric": {
+                "connection_security_policy": "mutual_tls",
+                "destination_principal": "spiffe://cmtc-mtls.test/ns/mtls-spike/sa/server",
+                "node": "cmtc-mtls-worker",
+                "reporter": "source",
+                "source_principal": "spiffe://cmtc-mtls.test/ns/mtls-spike/sa/client"
+              },
+              "value": [
+                1792815588.128,
+                "5799"
+              ]
+            },
+            {
+              "metric": {
+                "connection_security_policy": "unknown",
+                "destination_principal": "spiffe://cmtc-mtls.test/ns/mtls-spike/sa/server",
+                "node": "cmtc-mtls-control-plane",
+                "reporter": "destination",
+                "source_principal": "unknown"
+              },
+              "value": [
+                1792815588.128,
+                "1"
+              ]
+            },
+            {
+              "metric": {
+                "connection_security_policy": "mutual_tls",
+                "destination_principal": "spiffe://cmtc-mtls.test/ns/mtls-spike/sa/server",
+                "node": "cmtc-mtls-control-plane",
+                "reporter": "destination",
+                "source_principal": "spiffe://cmtc-mtls.test/ns/mtls-spike/sa/client"
+              },
+              "value": [
+                1792815588.128,
+                "5741"
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

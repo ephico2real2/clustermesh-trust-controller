@@ -1,0 +1,52 @@
+# HELP process_open_fds Number of open file descriptors
+# TYPE process_open_fds gauge
+process_open_fds 28
+# HELP process_max_fds Maximum number of file descriptors
+# TYPE process_max_fds gauge
+process_max_fds 1073741816
+# HELP istio_build Istio component build info.
+# TYPE istio_build gauge
+istio_build{component="ztunnel",tag="unknown"} 1
+# HELP istio_xds_connection_terminations The total number of completed connections to xds server (unstable).
+# TYPE istio_xds_connection_terminations counter
+# HELP istio_xds_message Total number of messages received (unstable).
+# TYPE istio_xds_message counter
+istio_xds_message_total{url="type.googleapis.com/istio.security.Authorization"} 1
+istio_xds_message_total{url="type.googleapis.com/istio.workload.Address"} 6
+# HELP istio_xds_message_bytes Total number of bytes received (unstable).
+# TYPE istio_xds_message_bytes counter
+# UNIT istio_xds_message_bytes bytes
+istio_xds_message_bytes_total{url="type.googleapis.com/istio.security.Authorization"} 0
+istio_xds_message_bytes_total{url="type.googleapis.com/istio.workload.Address"} 681
+# HELP istio_tcp_connections_opened The total number of TCP connections opened.
+# TYPE istio_tcp_connections_opened counter
+istio_tcp_connections_opened_total{reporter="source",source_workload="unknown",source_canonical_service="unknown",source_canonical_revision="unknown",source_workload_namespace="mtls-spike",source_principal="spiffe://cmtc-mtls.test/ns/mtls-spike/sa/client",source_app="unknown",source_version="unknown",source_cluster="Kubernetes",destination_service="unknown",destination_service_namespace="unknown",destination_service_name="unknown",destination_workload="unknown",destination_canonical_service="unknown",destination_canonical_revision="unknown",destination_workload_namespace="mtls-spike",destination_principal="spiffe://cmtc-mtls.test/ns/mtls-spike/sa/server",destination_app="unknown",destination_version="unknown",destination_cluster="Kubernetes",request_protocol="tcp",response_flags="-",connection_security_policy="mutual_tls",source_region="unknown",source_zone="unknown",destination_region="unknown",destination_zone="unknown"} 10
+# HELP istio_tcp_connections_closed The total number of TCP connections closed.
+# TYPE istio_tcp_connections_closed counter
+istio_tcp_connections_closed_total{reporter="source",source_workload="unknown",source_canonical_service="unknown",source_canonical_revision="unknown",source_workload_namespace="mtls-spike",source_principal="spiffe://cmtc-mtls.test/ns/mtls-spike/sa/client",source_app="unknown",source_version="unknown",source_cluster="Kubernetes",destination_service="unknown",destination_service_namespace="unknown",destination_service_name="unknown",destination_workload="unknown",destination_canonical_service="unknown",destination_canonical_revision="unknown",destination_workload_namespace="mtls-spike",destination_principal="spiffe://cmtc-mtls.test/ns/mtls-spike/sa/server",destination_app="unknown",destination_version="unknown",destination_cluster="Kubernetes",request_protocol="tcp",response_flags="-",connection_security_policy="mutual_tls",source_region="unknown",source_zone="unknown",destination_region="unknown",destination_zone="unknown"} 10
+# HELP istio_tcp_received_bytes The size of total bytes received during request in case of a TCP connection.
+# TYPE istio_tcp_received_bytes counter
+istio_tcp_received_bytes_total{reporter="source",source_workload="unknown",source_canonical_service="unknown",source_canonical_revision="unknown",source_workload_namespace="mtls-spike",source_principal="spiffe://cmtc-mtls.test/ns/mtls-spike/sa/client",source_app="unknown",source_version="unknown",source_cluster="Kubernetes",destination_service="unknown",destination_service_namespace="unknown",destination_service_name="unknown",destination_workload="unknown",destination_canonical_service="unknown",destination_canonical_revision="unknown",destination_workload_namespace="mtls-spike",destination_principal="spiffe://cmtc-mtls.test/ns/mtls-spike/sa/server",destination_app="unknown",destination_version="unknown",destination_cluster="Kubernetes",request_protocol="tcp",response_flags="-",connection_security_policy="mutual_tls",source_region="unknown",source_zone="unknown",destination_region="unknown",destination_zone="unknown"} 1310
+# HELP istio_tcp_sent_bytes The size of total bytes sent during response in case of a TCP connection.
+# TYPE istio_tcp_sent_bytes counter
+istio_tcp_sent_bytes_total{reporter="source",source_workload="unknown",source_canonical_service="unknown",source_canonical_revision="unknown",source_workload_namespace="mtls-spike",source_principal="spiffe://cmtc-mtls.test/ns/mtls-spike/sa/client",source_app="unknown",source_version="unknown",source_cluster="Kubernetes",destination_service="unknown",destination_service_namespace="unknown",destination_service_name="unknown",destination_workload="unknown",destination_canonical_service="unknown",destination_canonical_revision="unknown",destination_workload_namespace="mtls-spike",destination_principal="spiffe://cmtc-mtls.test/ns/mtls-spike/sa/server",destination_app="unknown",destination_version="unknown",destination_cluster="Kubernetes",request_protocol="tcp",response_flags="-",connection_security_policy="mutual_tls",source_region="unknown",source_zone="unknown",destination_region="unknown",destination_zone="unknown"} 8480
+# HELP istio_on_demand_dns The total number of requests that used on-demand DNS (unstable).
+# TYPE istio_on_demand_dns counter
+# HELP istio_tcp_connections_failed The total number of TCP connections that failed to establish (unstable).
+# TYPE istio_tcp_connections_failed counter
+# HELP istio_tcp_sockets_open The current number of open TCP sockets (unstable).
+# TYPE istio_tcp_sockets_open gauge
+istio_tcp_sockets_open{reporter="source"} 0
+# HELP workload_manager_active_proxy_count The total number current workloads with active proxies (unstable).
+# TYPE workload_manager_active_proxy_count gauge
+workload_manager_active_proxy_count 1
+# HELP workload_manager_pending_proxy_count The total number current workloads with pending proxies (unstable).
+# TYPE workload_manager_pending_proxy_count gauge
+workload_manager_pending_proxy_count 0
+# HELP workload_manager_proxies_started The total number of proxies that were started (unstable).
+# TYPE workload_manager_proxies_started counter
+workload_manager_proxies_started_total 1
+# HELP workload_manager_proxies_stopped The total number of proxies that were stopped (unstable).
+# TYPE workload_manager_proxies_stopped counter
+workload_manager_proxies_stopped_total 0
+# EOF

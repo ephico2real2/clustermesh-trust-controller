@@ -1,0 +1,120 @@
+{
+    "apiVersion": "batch/v1",
+    "kind": "Job",
+    "metadata": {
+        "annotations": {
+            "kubectl.kubernetes.io/last-applied-configuration": "{\"apiVersion\":\"batch/v1\",\"kind\":\"Job\",\"metadata\":{\"annotations\":{},\"name\":\"plaintext-bypass-probe\",\"namespace\":\"mtls-plaintext-control\"},\"spec\":{\"activeDeadlineSeconds\":30,\"backoffLimit\":0,\"template\":{\"spec\":{\"automountServiceAccountToken\":false,\"containers\":[{\"command\":[\"sh\",\"-c\",\"wget -S -O /dev/null -T 5 --header \\\"X-CMTC-Canary: CMTC_UNENROLLED_SOURCE_NEGATIVE\\\" http://10.30.0.65/\"],\"image\":\"alpine:3.20\",\"name\":\"probe\",\"resources\":{\"limits\":{\"memory\":\"64Mi\"},\"requests\":{\"cpu\":\"10m\",\"memory\":\"16Mi\"}},\"securityContext\":{\"allowPrivilegeEscalation\":false,\"capabilities\":{\"drop\":[\"ALL\"]}}}],\"nodeSelector\":{\"kubernetes.io/hostname\":\"cmtc-mtls-worker\"},\"restartPolicy\":\"Never\",\"securityContext\":{\"runAsNonRoot\":true,\"runAsUser\":65532,\"seccompProfile\":{\"type\":\"RuntimeDefault\"}}}}}}\n"
+        },
+        "creationTimestamp": "2026-10-24T03:50:32Z",
+        "generation": 1,
+        "labels": {
+            "batch.kubernetes.io/controller-uid": "a53e874d-be77-4aab-b907-a713ab9ae499",
+            "batch.kubernetes.io/job-name": "plaintext-bypass-probe",
+            "controller-uid": "a53e874d-be77-4aab-b907-a713ab9ae499",
+            "job-name": "plaintext-bypass-probe"
+        },
+        "name": "plaintext-bypass-probe",
+        "namespace": "mtls-plaintext-control",
+        "resourceVersion": "5276",
+        "uid": "a53e874d-be77-4aab-b907-a713ab9ae499"
+    },
+    "spec": {
+        "activeDeadlineSeconds": 30,
+        "backoffLimit": 0,
+        "completionMode": "NonIndexed",
+        "completions": 1,
+        "manualSelector": false,
+        "parallelism": 1,
+        "podReplacementPolicy": "TerminatingOrFailed",
+        "selector": {
+            "matchLabels": {
+                "batch.kubernetes.io/controller-uid": "a53e874d-be77-4aab-b907-a713ab9ae499"
+            }
+        },
+        "suspend": false,
+        "template": {
+            "metadata": {
+                "labels": {
+                    "batch.kubernetes.io/controller-uid": "a53e874d-be77-4aab-b907-a713ab9ae499",
+                    "batch.kubernetes.io/job-name": "plaintext-bypass-probe",
+                    "controller-uid": "a53e874d-be77-4aab-b907-a713ab9ae499",
+                    "job-name": "plaintext-bypass-probe"
+                }
+            },
+            "spec": {
+                "automountServiceAccountToken": false,
+                "containers": [
+                    {
+                        "command": [
+                            "sh",
+                            "-c",
+                            "wget -S -O /dev/null -T 5 --header \"X-CMTC-Canary: CMTC_UNENROLLED_SOURCE_NEGATIVE\" http://10.30.0.65/"
+                        ],
+                        "image": "alpine:3.20",
+                        "imagePullPolicy": "IfNotPresent",
+                        "name": "probe",
+                        "resources": {
+                            "limits": {
+                                "memory": "64Mi"
+                            },
+                            "requests": {
+                                "cpu": "10m",
+                                "memory": "16Mi"
+                            }
+                        },
+                        "securityContext": {
+                            "allowPrivilegeEscalation": false,
+                            "capabilities": {
+                                "drop": [
+                                    "ALL"
+                                ]
+                            }
+                        },
+                        "terminationMessagePath": "/dev/termination-log",
+                        "terminationMessagePolicy": "File"
+                    }
+                ],
+                "dnsPolicy": "ClusterFirst",
+                "nodeSelector": {
+                    "kubernetes.io/hostname": "cmtc-mtls-worker"
+                },
+                "restartPolicy": "Never",
+                "schedulerName": "default-scheduler",
+                "securityContext": {
+                    "runAsNonRoot": true,
+                    "runAsUser": 65532,
+                    "seccompProfile": {
+                        "type": "RuntimeDefault"
+                    }
+                },
+                "terminationGracePeriodSeconds": 30
+            }
+        }
+    },
+    "status": {
+        "completionTime": "2026-10-24T03:50:35Z",
+        "conditions": [
+            {
+                "lastProbeTime": "2026-10-24T03:50:35Z",
+                "lastTransitionTime": "2026-10-24T03:50:35Z",
+                "message": "Reached expected number of succeeded pods",
+                "reason": "CompletionsReached",
+                "status": "True",
+                "type": "SuccessCriteriaMet"
+            },
+            {
+                "lastProbeTime": "2026-10-24T03:50:35Z",
+                "lastTransitionTime": "2026-10-24T03:50:35Z",
+                "message": "Reached expected number of succeeded pods",
+                "reason": "CompletionsReached",
+                "status": "True",
+                "type": "Complete"
+            }
+        ],
+        "ready": 0,
+        "startTime": "2026-10-24T03:50:32Z",
+        "succeeded": 1,
+        "terminating": 0,
+        "uncountedTerminatedPods": {}
+    }
+}

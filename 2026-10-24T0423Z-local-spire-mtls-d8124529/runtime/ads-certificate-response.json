@@ -1,0 +1,59 @@
+{
+    "apiVersion": "cert-manager.io/v1",
+    "kind": "CertificateRequest",
+    "metadata": {
+        "annotations": {
+            "kubectl.kubernetes.io/last-applied-configuration": "{\"apiVersion\":\"cert-manager.io/v1\",\"kind\":\"CertificateRequest\",\"metadata\":{\"annotations\":{},\"name\":\"ztunnel-ads-server\",\"namespace\":\"kube-system\"},\"spec\":{\"duration\":\"48h\",\"issuerRef\":{\"group\":\"cert-manager.io\",\"kind\":\"ClusterIssuer\",\"name\":\"cmtc-spike-intermediate\"},\"request\":\"LS0tLS1CRUdJTiBDRVJUSUZJQ0FURSBSRVFVRVNULS0tLS0KTUlJQkdqQ0J3QUlCQURBZk1SMHdHd1lEVlFRREV4UmpiWFJqTFcxMGJITWdRVVJUSUhObGNuWmxjakJaTUJNRwpCeXFHU000OUFnRUdDQ3FHU000OUF3RUhBMElBQkdaMFpuUW8vb2loR0FIZWI4UGRjRk5sdnNWa3JEdlBWN2hlCjVreXRGQ1hjeG4yZVp2dXRoTTlwWE4rSkhuWkhUU24vUGZpRHIvRlhDNWl2Wmg5UFhYS2dQekE5QmdrcWhraUcKOXcwQkNRNHhNREF1TUN3R0ExVWRFUVFsTUNPQ0NXeHZZMkZzYUc5emRJY0Vmd0FBQVljUUFBQUFBQUFBQUFBQQpBQUFBQUFBQUFUQUtCZ2dxaGtqT1BRUURBZ05KQURCR0FpRUE4Z3MyaVVRVlZYalVFWjNQRUcyQVBzRUFnSXVnCmt3ZkJMaXVUV1ByeTVGUUNJUURWZy9lNFo1RStJd3JGVnY4MDcwMXkrOXVxeEhyVjJVK0dMR09HYk9lOEN3PT0KLS0tLS1FTkQgQ0VSVElGSUNBVEUgUkVRVUVTVC0tLS0tCg==\",\"usages\":[\"digital signature\",\"server auth\"]}}\n"
+        },
+        "creationTimestamp": "2026-10-24T03:23:38Z",
+        "generation": 1,
+        "name": "ztunnel-ads-server",
+        "namespace": "kube-system",
+        "resourceVersion": "1105",
+        "uid": "b563e4a7-2675-4998-8f76-05bf4ecaa43f"
+    },
+    "spec": {
+        "duration": "48h",
+        "extra": {
+            "authentication.kubernetes.io/credential-id": [
+                "X509SHA256=625457d65a30284394dcacf1e190dfd1ff6adecd3f3a03b1b2b310bbb59e0355"
+            ]
+        },
+        "groups": [
+            "kubeadm:cluster-admins",
+            "system:authenticated"
+        ],
+        "issuerRef": {
+            "group": "cert-manager.io",
+            "kind": "ClusterIssuer",
+            "name": "cmtc-spike-intermediate"
+        },
+        "request": "LS0tLS1CRUdJTiBDRVJUSUZJQ0FURSBSRVFVRVNULS0tLS0KTUlJQkdqQ0J3QUlCQURBZk1SMHdHd1lEVlFRREV4UmpiWFJqTFcxMGJITWdRVVJUSUhObGNuWmxjakJaTUJNRwpCeXFHU000OUFnRUdDQ3FHU000OUF3RUhBMElBQkdaMFpuUW8vb2loR0FIZWI4UGRjRk5sdnNWa3JEdlBWN2hlCjVreXRGQ1hjeG4yZVp2dXRoTTlwWE4rSkhuWkhUU24vUGZpRHIvRlhDNWl2Wmg5UFhYS2dQekE5QmdrcWhraUcKOXcwQkNRNHhNREF1TUN3R0ExVWRFUVFsTUNPQ0NXeHZZMkZzYUc5emRJY0Vmd0FBQVljUUFBQUFBQUFBQUFBQQpBQUFBQUFBQUFUQUtCZ2dxaGtqT1BRUURBZ05KQURCR0FpRUE4Z3MyaVVRVlZYalVFWjNQRUcyQVBzRUFnSXVnCmt3ZkJMaXVUV1ByeTVGUUNJUURWZy9lNFo1RStJd3JGVnY4MDcwMXkrOXVxeEhyVjJVK0dMR09HYk9lOEN3PT0KLS0tLS1FTkQgQ0VSVElGSUNBVEUgUkVRVUVTVC0tLS0tCg==",
+        "uid": "",
+        "usages": [
+            "digital signature",
+            "server auth"
+        ],
+        "username": "kubernetes-admin"
+    },
+    "status": {
+        "ca": "LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUJ0RENDQVZxZ0F3SUJBZ0lVRThaVmMrKzNPUURNNTk1ay9vVXBvVkVleS93d0NnWUlLb1pJemowRUF3SXcKSmpFa01DSUdBMVVFQXd3YlEwMVVReTB4TURFZ2FYTnZiR0YwWldRZ2RHVnpkQ0J5YjI5ME1CNFhEVEkyTVRBeQpOREF6TWpNek4xb1hEVEkyTVRBeU9EQXpNak16TjFvd0pqRWtNQ0lHQTFVRUF3d2JRMDFVUXkweE1ERWdhWE52CmJHRjBaV1FnZEdWemRDQnliMjkwTUZrd0V3WUhLb1pJemowQ0FRWUlLb1pJemowREFRY0RRZ0FFd2lqV01SUTkKMlNURnpSTVVnamYzdFd1TTQ0bEhldGVnSDlvRHlDK0Y1Tk4vUGZmaTQyb3J0MjdVQlVJcGt2L1hVOFhZaGthMApvMGJkV3FnM3d0VU42S05tTUdRd0hRWURWUjBPQkJZRUZJWGVoa1lyWFBZS2Y4M2dtKzFCQXcwVHpnaW1NQjhHCkExVWRJd1FZTUJhQUZJWGVoa1lyWFBZS2Y4M2dtKzFCQXcwVHpnaW1NQklHQTFVZEV3RUIvd1FJTUFZQkFmOEMKQVFJd0RnWURWUjBQQVFIL0JBUURBZ0VHTUFvR0NDcUdTTTQ5QkFNQ0EwZ0FNRVVDSUYwWkxGR0JXdGdIK2FyZgpBYnhuTHRUT3I4UjRJQk5VL2pHMkthVURzTGdNQWlFQWdpNittblkxRzg2dnJZODlsL1JvWWRzYkZZTk9YN0grCkk5YmUzWDExTjVBPQotLS0tLUVORCBDRVJUSUZJQ0FURS0tLS0tCg==",
+        "certificate": "LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUJ6akNDQVhXZ0F3SUJBZ0lVZjZjU21VUW9GeHBzd3lZVTZ5Uk42QmNiRjhVd0NnWUlLb1pJemowRUF3SXcKS0RFbU1DUUdBMVVFQXhNZFkyMTBZeTF0ZEd4eklIUmxjM1FnWTJ4MWMzUmxjaUJwYzNOMVpYSXdIaGNOTWpZeApNREkwTURNeU16TTRXaGNOTWpZeE1ESTJNRE15TXpNNFdqQWZNUjB3R3dZRFZRUURFeFJqYlhSakxXMTBiSE1nClFVUlRJSE5sY25abGNqQlpNQk1HQnlxR1NNNDlBZ0VHQ0NxR1NNNDlBd0VIQTBJQUJHWjBablFvL29paEdBSGUKYjhQZGNGTmx2c1ZrckR2UFY3aGU1a3l0RkNYY3huMmVadnV0aE05cFhOK0pIblpIVFNuL1BmaURyL0ZYQzVpdgpaaDlQWFhLamdZVXdnWUl3RGdZRFZSMFBBUUgvQkFRREFnZUFNQk1HQTFVZEpRUU1NQW9HQ0NzR0FRVUZCd01CCk1Bd0dBMVVkRXdFQi93UUNNQUF3SHdZRFZSMGpCQmd3Rm9BVUlCTU9oMUdhTEV6SjhPQkY3byt6VitUSWYrOHcKTEFZRFZSMFJCQ1V3STRJSmJHOWpZV3hvYjNOMGh3Ui9BQUFCaHhBQUFBQUFBQUFBQUFBQUFBQUFBQUFCTUFvRwpDQ3FHU000OUJBTUNBMGNBTUVRQ0lIYXN1SkRQcEFLeTUrQ0JUQU1ZWVNKZ1M1TjExSEpwbEdORk5MS2ZENWI4CkFpQU90V1FMNjhDd0NrdWNUNForS0lNN1ArNEdUckU2dzdzZXA1L0IzNCthYWc9PQotLS0tLUVORCBDRVJUSUZJQ0FURS0tLS0tCi0tLS0tQkVHSU4gQ0VSVElGSUNBVEUtLS0tLQpNSUlCdGpDQ0FWeWdBd0lCQWdJVVhHV0dqSWpJSFdONDgwQlZIdmlpVzFLZDFBa3dDZ1lJS29aSXpqMEVBd0l3CkpqRWtNQ0lHQTFVRUF3d2JRMDFVUXkweE1ERWdhWE52YkdGMFpXUWdkR1Z6ZENCeWIyOTBNQjRYRFRJMk1UQXkKTkRBek1qTXpPRm9YRFRJMk1UQXlOekF6TWpNek9Gb3dLREVtTUNRR0ExVUVBeE1kWTIxMFl5MXRkR3h6SUhSbApjM1FnWTJ4MWMzUmxjaUJwYzNOMVpYSXdXVEFUQmdjcWhrak9QUUlCQmdncWhrak9QUU1CQndOQ0FBUk5xanJOClplVTNuOTdVM1VrU09tbk9ub1h3QkVnTjZkMFNrRTdHZ3MybFRHbnZJd3NtbytYQjBibVlDd0NudFZjUVB1c1AKOTl6c3diZ0ZleklGZXVBaW8yWXdaREFTQmdOVkhSTUJBZjhFQ0RBR0FRSC9BZ0VCTUE0R0ExVWREd0VCL3dRRQpBd0lCQmpBZEJnTlZIUTRFRmdRVUlCTU9oMUdhTEV6SjhPQkY3byt6VitUSWYrOHdId1lEVlIwakJCZ3dGb0FVCmhkNkdSaXRjOWdwL3plQ2I3VUVERFJQT0NLWXdDZ1lJS29aSXpqMEVBd0lEU0FBd1JRSWhBTEJwdktLVEk4MHQKR241czlZMzRUdDdxd2kvNldKWkRwVUNRZHVFa1VVS1JBaUEvSnAvdm1kbnRyazVzdzBPTDVsOThsZkVFdm90bgo5eWc2Mis5bnNScUtNUT09Ci0tLS0tRU5EIENFUlRJRklDQVRFLS0tLS0K",
+        "conditions": [
+            {
+                "lastTransitionTime": "2026-10-24T03:23:38Z",
+                "message": "Certificate request has been approved by cert-manager.io",
+                "reason": "cert-manager.io",
+                "status": "True",
+                "type": "Approved"
+            },
+            {
+                "lastTransitionTime": "2026-10-24T03:23:38Z",
+                "message": "Certificate fetched from issuer successfully",
+                "reason": "Issued",
+                "status": "True",
+                "type": "Ready"
+            }
+        ]
+    }
+}

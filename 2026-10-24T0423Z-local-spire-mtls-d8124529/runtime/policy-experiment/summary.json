@@ -1,0 +1,241 @@
+{
+  "observedAt": "2026-10-24T04:21:19.870112+00:00",
+  "serverPodIP": "10.30.0.65",
+  "sourceAgent": "0d787e82f2a54b0f51eec97a39c24556dd3596d5",
+  "stages": [
+    {
+      "stage": "baseline",
+      "samples": [
+        {
+          "case": "enrolled-pod-ip",
+          "commandExit": 0,
+          "http200": true,
+          "httpStatusLines": [
+            "HTTP/1.1 200 OK"
+          ]
+        },
+        {
+          "case": "enrolled-service",
+          "commandExit": 0,
+          "http200": true,
+          "httpStatusLines": [
+            "HTTP/1.1 200 OK"
+          ]
+        },
+        {
+          "case": "unenrolled-cross-node",
+          "commandExit": 0,
+          "http200": true,
+          "httpStatusLines": [
+            "HTTP/1.1 200 OK"
+          ]
+        },
+        {
+          "case": "unenrolled-same-node",
+          "commandExit": 0,
+          "http200": true,
+          "httpStatusLines": [
+            "HTTP/1.1 200 OK"
+          ]
+        },
+        {
+          "case": "host-cmtc-mtls-control-plane",
+          "commandExit": 0,
+          "http200": true,
+          "httpStatus": "200"
+        },
+        {
+          "case": "host-cmtc-mtls-worker",
+          "commandExit": 0,
+          "http200": true,
+          "httpStatus": "200"
+        }
+      ]
+    },
+    {
+      "stage": "cnp-hbone-only",
+      "samples": [
+        {
+          "case": "enrolled-pod-ip",
+          "commandExit": 0,
+          "http200": true,
+          "httpStatusLines": [
+            "HTTP/1.1 200 OK"
+          ]
+        },
+        {
+          "case": "enrolled-service",
+          "commandExit": 0,
+          "http200": true,
+          "httpStatusLines": [
+            "HTTP/1.1 200 OK"
+          ]
+        },
+        {
+          "case": "unenrolled-cross-node",
+          "commandExit": 1,
+          "http200": false,
+          "httpStatusLines": []
+        },
+        {
+          "case": "unenrolled-same-node",
+          "commandExit": 1,
+          "http200": false,
+          "httpStatusLines": []
+        },
+        {
+          "case": "host-cmtc-mtls-control-plane",
+          "commandExit": 0,
+          "http200": true,
+          "httpStatus": "200"
+        },
+        {
+          "case": "host-cmtc-mtls-worker",
+          "commandExit": 28,
+          "http200": false,
+          "httpStatus": "000"
+        }
+      ]
+    },
+    {
+      "stage": "cnp-with-broad-allow",
+      "samples": [
+        {
+          "case": "enrolled-pod-ip",
+          "commandExit": 0,
+          "http200": true,
+          "httpStatusLines": [
+            "HTTP/1.1 200 OK"
+          ]
+        },
+        {
+          "case": "enrolled-service",
+          "commandExit": 0,
+          "http200": true,
+          "httpStatusLines": [
+            "HTTP/1.1 200 OK"
+          ]
+        },
+        {
+          "case": "unenrolled-cross-node",
+          "commandExit": 0,
+          "http200": true,
+          "httpStatusLines": [
+            "HTTP/1.1 200 OK"
+          ]
+        },
+        {
+          "case": "unenrolled-same-node",
+          "commandExit": 0,
+          "http200": true,
+          "httpStatusLines": [
+            "HTTP/1.1 200 OK"
+          ]
+        },
+        {
+          "case": "host-cmtc-mtls-control-plane",
+          "commandExit": 0,
+          "http200": true,
+          "httpStatus": "200"
+        },
+        {
+          "case": "host-cmtc-mtls-worker",
+          "commandExit": 0,
+          "http200": true,
+          "httpStatus": "200"
+        }
+      ]
+    },
+    {
+      "stage": "cnp-explicit-port-deny",
+      "samples": [
+        {
+          "case": "enrolled-pod-ip",
+          "commandExit": 0,
+          "http200": true,
+          "httpStatusLines": [
+            "HTTP/1.1 200 OK"
+          ]
+        },
+        {
+          "case": "enrolled-service",
+          "commandExit": 0,
+          "http200": true,
+          "httpStatusLines": [
+            "HTTP/1.1 200 OK"
+          ]
+        },
+        {
+          "case": "unenrolled-cross-node",
+          "commandExit": 1,
+          "http200": false,
+          "httpStatusLines": []
+        },
+        {
+          "case": "unenrolled-same-node",
+          "commandExit": 1,
+          "http200": false,
+          "httpStatusLines": []
+        },
+        {
+          "case": "host-cmtc-mtls-control-plane",
+          "commandExit": 28,
+          "http200": false,
+          "httpStatus": "000"
+        },
+        {
+          "case": "host-cmtc-mtls-worker",
+          "commandExit": 28,
+          "http200": false,
+          "httpStatus": "000"
+        }
+      ]
+    },
+    {
+      "stage": "ccnp-explicit-port-deny",
+      "samples": [
+        {
+          "case": "enrolled-pod-ip",
+          "commandExit": 0,
+          "http200": true,
+          "httpStatusLines": [
+            "HTTP/1.1 200 OK"
+          ]
+        },
+        {
+          "case": "enrolled-service",
+          "commandExit": 0,
+          "http200": true,
+          "httpStatusLines": [
+            "HTTP/1.1 200 OK"
+          ]
+        },
+        {
+          "case": "unenrolled-cross-node",
+          "commandExit": 1,
+          "http200": false,
+          "httpStatusLines": []
+        },
+        {
+          "case": "unenrolled-same-node",
+          "commandExit": 1,
+          "http200": false,
+          "httpStatusLines": []
+        },
+        {
+          "case": "host-cmtc-mtls-control-plane",
+          "commandExit": 28,
+          "http200": false,
+          "httpStatus": "000"
+        },
+        {
+          "case": "host-cmtc-mtls-worker",
+          "commandExit": 28,
+          "http200": false,
+          "httpStatus": "000"
+        }
+      ]
+    }
+  ],
+  "temporaryPoliciesRemoved": true
+}

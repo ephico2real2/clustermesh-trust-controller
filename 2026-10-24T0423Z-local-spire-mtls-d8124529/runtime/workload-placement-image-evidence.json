@@ -1,0 +1,353 @@
+{
+  "observedAt": "2026-10-24T04:19:47.863788+00:00",
+  "operatorSource": "d8124529b590bfb24adbd3d2916a4a984b666f9e",
+  "agentSource": "0d787e82f2a54b0f51eec97a39c24556dd3596d5",
+  "clusterMeshEnabled": false,
+  "records": [
+    {
+      "namespace": "cilium-spire",
+      "name": "spire-agent-p8jng",
+      "uid": "59436444-c1ab-42ba-8080-fd4ca31a0405",
+      "node": "cmtc-mtls-worker",
+      "podIP": "172.18.0.7",
+      "serviceAccount": "spire-agent",
+      "containers": [
+        {
+          "name": "spire-agent",
+          "image": "ghcr.io/spiffe/spire-agent:1.15.5@sha256:3652c732b0f0d36f4dd78394230a1b1cd0ddcc29548a46c67a996b1a78c14481"
+        }
+      ],
+      "runtime": [
+        {
+          "name": "spire-agent",
+          "imageID": "ghcr.io/spiffe/spire-agent@sha256:3652c732b0f0d36f4dd78394230a1b1cd0ddcc29548a46c67a996b1a78c14481",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "namespace": "cilium-spire",
+      "name": "spire-agent-qfpg8",
+      "uid": "194882c1-e232-46cb-88de-a29c295a0715",
+      "node": "cmtc-mtls-control-plane",
+      "podIP": "172.18.0.6",
+      "serviceAccount": "spire-agent",
+      "containers": [
+        {
+          "name": "spire-agent",
+          "image": "ghcr.io/spiffe/spire-agent:1.15.5@sha256:3652c732b0f0d36f4dd78394230a1b1cd0ddcc29548a46c67a996b1a78c14481"
+        }
+      ],
+      "runtime": [
+        {
+          "name": "spire-agent",
+          "imageID": "ghcr.io/spiffe/spire-agent@sha256:3652c732b0f0d36f4dd78394230a1b1cd0ddcc29548a46c67a996b1a78c14481",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "namespace": "cilium-spire",
+      "name": "spire-server-0",
+      "uid": "9864f230-d834-4e6f-9ce6-9c003acec3c2",
+      "node": "cmtc-mtls-worker",
+      "podIP": "10.30.1.52",
+      "serviceAccount": "spire-server",
+      "containers": [
+        {
+          "name": "cilium-init",
+          "image": "docker.io/library/busybox:1.38.0@sha256:fd7dc98638c8e305f4dc34e979f1c0fdfdcaeb0fbf8fcff77ae834b6da3d7e6e"
+        },
+        {
+          "name": "spire-server",
+          "image": "ghcr.io/spiffe/spire-server:1.15.5@sha256:584a9c5cc95b9457f5033e7e4488d603fffe5ec48a80c4dba14b05c5e1c2c384"
+        }
+      ],
+      "runtime": [
+        {
+          "name": "cilium-init",
+          "imageID": "docker.io/library/busybox@sha256:fd7dc98638c8e305f4dc34e979f1c0fdfdcaeb0fbf8fcff77ae834b6da3d7e6e",
+          "ready": true
+        },
+        {
+          "name": "spire-server",
+          "imageID": "ghcr.io/spiffe/spire-server@sha256:584a9c5cc95b9457f5033e7e4488d603fffe5ec48a80c4dba14b05c5e1c2c384",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "namespace": "kube-system",
+      "name": "cilium-4ncvn",
+      "uid": "c6c03a4a-b5f9-49d4-a7c5-a89049f9e350",
+      "node": "cmtc-mtls-control-plane",
+      "podIP": "172.18.0.6",
+      "serviceAccount": "cilium",
+      "containers": [
+        {
+          "name": "cilium-agent",
+          "image": "docker.io/ephico2real2/cilium:spire-spike"
+        }
+      ],
+      "runtime": [
+        {
+          "name": "cilium-agent",
+          "imageID": "docker.io/library/import-2026-10-24@sha256:949008b5fb1b24206b95ead0c3c151294fb12096f4fbd945ece10499f07f8ec6",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "namespace": "kube-system",
+      "name": "cilium-envoy-4sx68",
+      "uid": "df5df953-a611-4807-8938-61852c74f9fb",
+      "node": "cmtc-mtls-control-plane",
+      "podIP": "172.18.0.6",
+      "serviceAccount": "cilium-envoy",
+      "containers": [
+        {
+          "name": "cilium-envoy",
+          "image": "quay.io/cilium/cilium-envoy:v1.40.0-1792539146-8cc5db890b41fe2417751ce28c23babe4b28e8b3@sha256:abbbe3c68d5f83970af87d89a2b831f52a6a865fec9da8210b5455e7bff9cf24"
+        }
+      ],
+      "runtime": [
+        {
+          "name": "cilium-envoy",
+          "imageID": "quay.io/cilium/cilium-envoy@sha256:abbbe3c68d5f83970af87d89a2b831f52a6a865fec9da8210b5455e7bff9cf24",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "namespace": "kube-system",
+      "name": "cilium-envoy-zq9nx",
+      "uid": "025962f0-f46b-4ff6-9a7f-a44bc245618a",
+      "node": "cmtc-mtls-worker",
+      "podIP": "172.18.0.7",
+      "serviceAccount": "cilium-envoy",
+      "containers": [
+        {
+          "name": "cilium-envoy",
+          "image": "quay.io/cilium/cilium-envoy:v1.40.0-1792539146-8cc5db890b41fe2417751ce28c23babe4b28e8b3@sha256:abbbe3c68d5f83970af87d89a2b831f52a6a865fec9da8210b5455e7bff9cf24"
+        }
+      ],
+      "runtime": [
+        {
+          "name": "cilium-envoy",
+          "imageID": "quay.io/cilium/cilium-envoy@sha256:abbbe3c68d5f83970af87d89a2b831f52a6a865fec9da8210b5455e7bff9cf24",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "namespace": "kube-system",
+      "name": "cilium-operator-7dbdb9f4f8-kmshv",
+      "uid": "53c1d390-24b2-4d78-b4f7-fb9f43ed962f",
+      "node": "cmtc-mtls-control-plane",
+      "podIP": "172.18.0.6",
+      "serviceAccount": "cilium-operator",
+      "containers": [
+        {
+          "name": "cilium-operator",
+          "image": "localhost/cilium-operator-generic:spire-ack"
+        }
+      ],
+      "runtime": [
+        {
+          "name": "cilium-operator",
+          "imageID": "docker.io/library/import-2026-10-24@sha256:b9c1328d17862dd6944f67ddd3f61c32ffceef44529926d52389fac95ab78114",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "namespace": "kube-system",
+      "name": "cilium-pqgn4",
+      "uid": "5dfcb6b5-3668-4692-b17a-e7656b8a932a",
+      "node": "cmtc-mtls-worker",
+      "podIP": "172.18.0.7",
+      "serviceAccount": "cilium",
+      "containers": [
+        {
+          "name": "cilium-agent",
+          "image": "docker.io/ephico2real2/cilium:spire-spike"
+        }
+      ],
+      "runtime": [
+        {
+          "name": "cilium-agent",
+          "imageID": "docker.io/library/import-2026-10-24@sha256:949008b5fb1b24206b95ead0c3c151294fb12096f4fbd945ece10499f07f8ec6",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "namespace": "kube-system",
+      "name": "ztunnel-cilium-jmb6k",
+      "uid": "280a8e14-8b72-421e-816e-d9c458e73110",
+      "node": "cmtc-mtls-worker",
+      "podIP": "172.18.0.7",
+      "serviceAccount": "ztunnel-cilium",
+      "containers": [
+        {
+          "name": "istio-proxy",
+          "image": "quay.io/cilium/ztunnel:v1.0.0@sha256:884de5adde400e39f58e36c7a729f7690466ca4a8eb4c2a8daa9c1c025115b24"
+        }
+      ],
+      "runtime": [
+        {
+          "name": "istio-proxy",
+          "imageID": "quay.io/cilium/ztunnel@sha256:884de5adde400e39f58e36c7a729f7690466ca4a8eb4c2a8daa9c1c025115b24",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "namespace": "kube-system",
+      "name": "ztunnel-cilium-wj27g",
+      "uid": "1195c5a4-b483-4f7b-8286-124c92183900",
+      "node": "cmtc-mtls-control-plane",
+      "podIP": "172.18.0.6",
+      "serviceAccount": "ztunnel-cilium",
+      "containers": [
+        {
+          "name": "istio-proxy",
+          "image": "quay.io/cilium/ztunnel:v1.0.0@sha256:884de5adde400e39f58e36c7a729f7690466ca4a8eb4c2a8daa9c1c025115b24"
+        }
+      ],
+      "runtime": [
+        {
+          "name": "istio-proxy",
+          "imageID": "quay.io/cilium/ztunnel@sha256:884de5adde400e39f58e36c7a729f7690466ca4a8eb4c2a8daa9c1c025115b24",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "namespace": "mtls-spike",
+      "name": "client",
+      "uid": "96062abf-9c0f-4fae-8a98-c7c8946c4cd9",
+      "node": "cmtc-mtls-worker",
+      "podIP": "10.30.1.238",
+      "serviceAccount": "client",
+      "containers": [
+        {
+          "name": "client",
+          "image": "alpine:3.20"
+        }
+      ],
+      "runtime": [
+        {
+          "name": "client",
+          "imageID": "docker.io/library/alpine@sha256:d9e853e87e55526f6b2917df91a2115c36dd7c696a35be12163d44e6e2a4b6bc",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "namespace": "mtls-spike",
+      "name": "mtls-capture-pod-wd9dm",
+      "uid": "724b0831-fa5d-49d0-99ec-219bc6e4cb8c",
+      "node": "cmtc-mtls-worker",
+      "podIP": "10.30.1.179",
+      "serviceAccount": "client",
+      "containers": [
+        {
+          "name": "results",
+          "image": "alpine:3.20"
+        }
+      ],
+      "runtime": [
+        {
+          "name": "results",
+          "imageID": "",
+          "ready": false
+        }
+      ]
+    },
+    {
+      "namespace": "mtls-spike",
+      "name": "mtls-capture-service-jkc5d",
+      "uid": "ba8c7663-04a9-4395-804f-5ebb3f5b8ba9",
+      "node": "cmtc-mtls-worker",
+      "podIP": "10.30.1.31",
+      "serviceAccount": "client",
+      "containers": [
+        {
+          "name": "results",
+          "image": "alpine:3.20"
+        }
+      ],
+      "runtime": [
+        {
+          "name": "results",
+          "imageID": "",
+          "ready": false
+        }
+      ]
+    },
+    {
+      "namespace": "mtls-spike",
+      "name": "mtls-load-pod-vd6kg",
+      "uid": "d1df6025-ec62-419a-b44a-b85b7e4d431a",
+      "node": "cmtc-mtls-worker",
+      "podIP": "10.30.1.70",
+      "serviceAccount": "client",
+      "containers": [
+        {
+          "name": "results",
+          "image": "alpine:3.20"
+        }
+      ],
+      "runtime": [
+        {
+          "name": "results",
+          "imageID": "docker.io/library/alpine@sha256:d9e853e87e55526f6b2917df91a2115c36dd7c696a35be12163d44e6e2a4b6bc",
+          "ready": false
+        }
+      ]
+    },
+    {
+      "namespace": "mtls-spike",
+      "name": "mtls-load-service-v9pss",
+      "uid": "a95a3503-819b-45d3-a202-af75df7445dc",
+      "node": "cmtc-mtls-worker",
+      "podIP": "10.30.1.132",
+      "serviceAccount": "client",
+      "containers": [
+        {
+          "name": "results",
+          "image": "alpine:3.20"
+        }
+      ],
+      "runtime": [
+        {
+          "name": "results",
+          "imageID": "docker.io/library/alpine@sha256:d9e853e87e55526f6b2917df91a2115c36dd7c696a35be12163d44e6e2a4b6bc",
+          "ready": false
+        }
+      ]
+    },
+    {
+      "namespace": "mtls-spike",
+      "name": "server-86d5d447b9-45n88",
+      "uid": "603341e7-a381-4bc6-b174-0ca2236f4d7a",
+      "node": "cmtc-mtls-control-plane",
+      "podIP": "10.30.0.65",
+      "serviceAccount": "server",
+      "containers": [
+        {
+          "name": "nginx",
+          "image": "nginx:1.27-alpine"
+        }
+      ],
+      "runtime": [
+        {
+          "name": "nginx",
+          "imageID": "docker.io/library/nginx@sha256:65645c7bb6a0661892a8b03b89d0743208a18dd2f3f17a54ef4b76fb8e2f2a10",
+          "ready": true
+        }
+      ]
+    }
+  ]
+}

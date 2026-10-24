@@ -1,0 +1,19 @@
+CGO_ENABLED=0 GOARCH=arm64 go build -mod=vendor -ldflags '-X "github.com/cilium/cilium/pkg/version.ciliumVersion=1.21.0-dev d8124529b5 2026-10-23T22:51:41-05:00" -s -w -X "github.com/cilium/cilium/pkg/envoy.requiredEnvoyVersionSHA=8cc5db890b41fe2417751ce28c23babe4b28e8b3" ' -tags=osusergo,ipam_provider_operator -buildvcs=false -o cilium-operator-generic
+STEP 1/3: FROM ghcr.io/ephico2real2/cilium-dev@sha256:5cfa1b276298f4a97bf4e73eb068e87fc730874975da137754062b838ac63aa7
+Trying to pull ghcr.io/ephico2real2/cilium-dev@sha256:5cfa1b276298f4a97bf4e73eb068e87fc730874975da137754062b838ac63aa7...
+Getting image source signatures
+Copying blob sha256:f14bdec07e77d9b6605c6713fc0b001ec739c49fba51e8df77c675f6a813a243
+Copying blob sha256:3471897730dd01bfb01f39e8a750776224ee74b5138b45cec436a5f5f6b9b4b0
+Copying blob sha256:3a2e308e31c843289e177b9619aeeaf793201fc5e40dad44575600466c8d4ffa
+Copying blob sha256:c3f14dc725590d1ba65e1f6feda3ff4f739347fd380cc5450e3a40bb83c9f287
+Copying blob sha256:9003c4917c87730676a7217f0f0c03ec26891e0415d1674bb1b86026db81a54b
+Copying config sha256:9e95ade029a863f40bd96238f5f04159adbde3409faf644bc8941673d3fd5bee
+Writing manifest to image destination
+STEP 2/3: COPY cilium-operator-generic /usr/bin/cilium-operator-generic
+--> 073f24a902ad
+STEP 3/3: LABEL "org.opencontainers.image.revision"="d8124529b590bfb24adbd3d2916a4a984b666f9e" "org.opencontainers.image.source"="https://github.com/ephico2real2/cilium"
+COMMIT localhost/cilium-operator-generic:spire-ack
+--> aea8a5f923d8
+Successfully tagged localhost/cilium-operator-generic:spire-ack
+aea8a5f923d8ed119b4fc9226a0f3d33452e43f655ca2bed0e498a1973eece24
+Cilium-Operator 1.21.0-dev d8124529b5 2026-10-23T22:51:41-05:00 go version go1.27.1 linux/arm64
