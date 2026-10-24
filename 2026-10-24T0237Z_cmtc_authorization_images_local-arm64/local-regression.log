@@ -1,0 +1,116 @@
+namespace "payments-alpha" deleted
+namespace "orders-delta" deleted
+namespace "legacy-payments" deleted
+namespace "cmtc-platform-fixture" deleted
+namespace "cf2cnp-lab" deleted
+namespace "mesh-example" deleted
+namespace "payments-alpha" deleted
+namespace "orders-delta" deleted
+namespace "legacy-payments" deleted
+namespace "cmtc-platform-fixture" deleted
+namespace "cf2cnp-lab" deleted
+namespace "mesh-example" deleted
+daemon set "cilium" successfully rolled out
+deployment "cilium-operator" successfully rolled out
+deployment "clustermesh-apiserver" successfully rolled out
+daemon set "cilium" successfully rolled out
+deployment "cilium-operator" successfully rolled out
+deployment "clustermesh-apiserver" successfully rolled out
+PASS: both clusters run the pinned fork components and exact agent source version
+namespace/payments-alpha created
+namespace/orders-delta created
+namespace/legacy-payments created
+namespace/cmtc-platform-fixture created
+namespace/payments-alpha labeled
+namespace/legacy-payments labeled
+namespace/cmtc-platform-fixture labeled
+namespace/orders-delta labeled
+NEGATIVE TEST cmtc-a: the API must reject unsupported Strict mode; this rejection is expected
+PASS cmtc-a: API rejected unsupported Strict mode as expected (full response: artifacts/cmtc-a-strict-rejection.txt)
+namespace/payments-alpha labeled
+namespace "payments-alpha" deleted
+namespace/payments-alpha created
+namespace/payments-alpha labeled
+namespacemtlspolicy.security.cmtc.io/conflicting-policy created
+namespacemtlspolicy.security.cmtc.io "conflicting-policy" deleted
+Warning: resource 'namespaces' is not namespace scoped
+
+no
+no
+namespace/payments-alpha created
+namespace/orders-delta created
+namespace/legacy-payments created
+namespace/cmtc-platform-fixture created
+namespace/payments-alpha labeled
+namespace/legacy-payments labeled
+namespace/cmtc-platform-fixture labeled
+namespace/orders-delta labeled
+NEGATIVE TEST cmtc-b: the API must reject unsupported Strict mode; this rejection is expected
+PASS cmtc-b: API rejected unsupported Strict mode as expected (full response: artifacts/cmtc-b-strict-rejection.txt)
+namespace/payments-alpha labeled
+namespace "payments-alpha" deleted
+namespace/payments-alpha created
+namespace/payments-alpha labeled
+namespacemtlspolicy.security.cmtc.io/conflicting-policy created
+namespacemtlspolicy.security.cmtc.io "conflicting-policy" deleted
+Warning: resource 'namespaces' is not namespace scoped
+
+no
+no
+namespace/cf2cnp-lab created
+deployment.apps/shop created
+service/shop created
+pod/pos created
+pod/stranger created
+ciliumnetworkpolicy.cilium.io/shop-allow-pos created
+Waiting for deployment "shop" rollout to finish: 0 of 1 updated replicas are available...
+deployment "shop" successfully rolled out
+pod/pos condition met
+pod/stranger condition met
+namespace/mesh-example created
+service/rebel-base created
+namespace/cf2cnp-lab labeled
+namespace/mesh-example labeled
+namespace/cf2cnp-lab created
+deployment.apps/shop created
+service/shop created
+pod/pos created
+pod/stranger created
+ciliumnetworkpolicy.cilium.io/shop-allow-pos created
+Waiting for deployment "shop" rollout to finish: 0 of 1 updated replicas are available...
+deployment "shop" successfully rolled out
+pod/pos condition met
+pod/stranger condition met
+namespace/mesh-example created
+service/rebel-base created
+namespace/cf2cnp-lab labeled
+namespace/mesh-example labeled
+deployment.apps/rebel-base created
+configmap/rebel-base-response created
+Waiting for deployment "rebel-base" rollout to finish: 0 of 2 updated replicas are available...
+Waiting for deployment "rebel-base" rollout to finish: 1 of 2 updated replicas are available...
+deployment "rebel-base" successfully rolled out
+pod/mesh-client created
+pod/mesh-client condition met
+PASS: deployed CMTC observation API, controller, node agents and baseline ClusterMesh assertions
+job.batch/cmtc-load created
+pod/cmtc-load-s4wfd condition met
+job.batch/cmtc-load created
+pod/cmtc-load-qts6v condition met
+job.batch/cmtc-load created
+pod/cmtc-load-4hd92 condition met
+01-security-overview: settled 6s; panels=5; "No data"=3 [Pods Protected | Cluster Ready | Mtls Handshakes Total]; first: Namespaces Enrolled | Namespaces Enrolled | Pods Protected | Cluster Ready | Mtls Handshakes Total — render passed; feature evidence BLOCKED: Pods Protected | Cluster Ready | Mtls Handshakes Total
+02-namespace-enrollment: settled 6s; panels=5; "No data"=2 [Namespaces Excluded | Namespace Label Drift Total]; first: Namespaces Eligible | Namespaces Eligible | Namespaces Enrolled | Namespaces Excluded | Namespace Label Drift Total — render passed; feature evidence BLOCKED: Namespaces Excluded | Namespace Label Drift Total
+03-pod-node-enforcement: settled 6s; panels=5; "No data"=4 [Pods Protected | Pods Protected | Pods Pending | Pods Enforcement Failed]; first: Pods Protected | Pods Protected | Pods Pending | Pods Enforcement Failed | Node Agent Ready — render passed; feature evidence BLOCKED: Pods Protected | Pods Protected | Pods Pending | Pods Enforcement Failed
+04-mtls-performance: settled 6s; panels=5; "No data"=5 [Mtls Handshakes Total | Mtls Handshakes Total | Mtls Active Connections | Mtls Identity Validation Failures Total | Remote Identity Cache Misses Total]; first: Mtls Handshakes Total | Mtls Handshakes Total | Mtls Active Connections | Mtls Identity Validation Failures Total | Remote Identity Cache Misses Total — render passed; feature evidence BLOCKED: Mtls Handshakes Total | Mtls Handshakes Total | Mtls Active Connections | Mtls Identity Validation Failures Total | Remote Identity Cache Misses Total
+05-ca-trust-rotation: settled 6s; panels=5; "No data"=5 [Trust Bundle Ready | Trust Bundle Ready | Spire Ready | Issuer Ready | Certificate Rotation Failures Total]; first: Trust Bundle Ready | Trust Bundle Ready | Spire Ready | Issuer Ready | Certificate Rotation Failures Total — render passed; feature evidence BLOCKED: Trust Bundle Ready | Trust Bundle Ready | Spire Ready | Issuer Ready | Certificate Rotation Failures Total
+06-network-encryption: settled 6s; panels=5; "No data"=5 [Transport Compatibility Ready | Transport Compatibility Ready | Dual Encryption Probe Success | Transport Encryption Failures Total | Mtu Validation Failures Total]; first: Transport Compatibility Ready | Transport Compatibility Ready | Dual Encryption Probe Success | Transport Encryption Failures Total | Mtu Validation Failures Total — render passed; feature evidence BLOCKED: Transport Compatibility Ready | Transport Compatibility Ready | Dual Encryption Probe Success | Transport Encryption Failures Total | Mtu Validation Failures Total
+07-security-violations: settled 6s; panels=5; "No data"=5 [Mtls Identity Validation Failures Total | Mtls Identity Validation Failures Total | Mtls Authorization Denials Total | Plaintext Bypass Detected Total | Namespace Policy Conflicts Total]; first: Mtls Identity Validation Failures Total | Mtls Identity Validation Failures Total | Mtls Authorization Denials Total | Plaintext Bypass Detected Total | Namespace Policy Conflicts Total — render passed; feature evidence BLOCKED: Mtls Identity Validation Failures Total | Mtls Identity Validation Failures Total | Mtls Authorization Denials Total | Plaintext Bypass Detected Total | Namespace Policy Conflicts Total
+08-control-plane-safety: settled 6s; panels=5; "No data"=5 [Platform Dependency Healthy | Platform Dependency Healthy | Apiserver Probe Success | Hostnetwork Pods Total | Rollout Aborted Total]; first: Platform Dependency Healthy | Platform Dependency Healthy | Apiserver Probe Success | Hostnetwork Pods Total | Rollout Aborted Total — render passed; feature evidence BLOCKED: Platform Dependency Healthy | Platform Dependency Healthy | Apiserver Probe Success | Hostnetwork Pods Total | Rollout Aborted Total
+09-operator-agents: settled 6s; panels=5; "No data"=3 [Ztunnel Ready | Reconcile Errors Total | Node Config Drift Total]; first: Node Agent Ready | Node Agent Ready | Ztunnel Ready | Reconcile Errors Total | Node Config Drift Total — render passed; feature evidence BLOCKED: Ztunnel Ready | Reconcile Errors Total | Node Config Drift Total
+cmtc-observe-lab: settled 6s; panels=6; "No data"=0; first: Selected namespaces — intent only | Node agents reporting inventory | Workload enforcement available — 0 means unavailable | Namespace decisions | Pod inventory — not protection — expectations met
+application-global-service: settled 0s; {"cluster": "poc2", "message": "served by the poc2 rebel base"} — expectations met
+job.batch/cmtc-load condition met
+job.batch/cmtc-load condition met
+job.batch/cmtc-load condition met
+PASS: measured successful local policy and cross-cluster traffic through published fork images

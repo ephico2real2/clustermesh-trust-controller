@@ -1,0 +1,54 @@
+apiVersion: v1
+items:
+- apiVersion: security.cmtc.io/v1alpha1
+  kind: NamespaceMTLSPolicy
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"security.cmtc.io/v1alpha1","kind":"NamespaceMTLSPolicy","metadata":{"annotations":{},"name":"cluster-default"},"spec":{"enforcement":{"mode":"Observe"},"enrollment":{"selectionMode":"MatchSelectors"},"exclusions":{"namespaceSelectors":[{"matchLabels":{"company.net/mtls-exempt":"true"}}],"namespaces":["legacy-payments"]},"inclusions":{"namespaceSelectors":[{"matchLabels":{"company.net/lob":"alpha"}},{"matchLabels":{"company.net/mnemonic":"delta"}}]}}}
+    creationTimestamp: "2026-10-24T00:31:57Z"
+    generation: 1
+    name: cluster-default
+    resourceVersion: "21727"
+    uid: b6268ba2-2e9b-458a-add2-048f21bd1bd6
+  spec:
+    enforcement:
+      mode: Observe
+    enrollment:
+      selectionMode: MatchSelectors
+    exclusions:
+      namespaceSelectors:
+      - matchLabels:
+          company.net/mtls-exempt: "true"
+      namespaces:
+      - legacy-payments
+    inclusions:
+      namespaceSelectors:
+      - matchLabels:
+          company.net/lob: alpha
+      - matchLabels:
+          company.net/mnemonic: delta
+  status:
+    conditions:
+    - lastTransitionTime: "2026-10-24T00:31:57Z"
+      message: Observe mode cannot verify or enable workload mTLS; namespace labels
+        are never changed.
+      observedGeneration: 1
+      reason: CiliumIntegrationUnavailable
+      status: Unknown
+      type: EnforcementVerified
+    - lastTransitionTime: "2026-10-24T02:30:42Z"
+      message: Policy evaluated against current namespaces; no enrollment or protection
+        is asserted.
+      observedGeneration: 1
+      reason: Observed
+      status: "True"
+      type: EvaluationReady
+    excluded: 1
+    observedGeneration: 1
+    platform: 7
+    selected: 4
+    unselected: 3
+kind: List
+metadata:
+  resourceVersion: ""

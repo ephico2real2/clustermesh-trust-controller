@@ -1,0 +1,122 @@
+NAMESPACE      LAST SEEN   TYPE      REASON              OBJECT                                        MESSAGE
+kube-system    11m         Normal    Killing             pod/cilium-operator-659879cdf7-qrgl2          Stopping container cilium-operator
+kube-system    11m         Normal    Scheduled           pod/cilium-operator-6ccc445565-xgb6z          Successfully assigned kube-system/cilium-operator-6ccc445565-xgb6z to cmtc-b-worker
+kube-system    11m         Normal    SuccessfulCreate    replicaset/clustermesh-apiserver-59b4b487d4   Created pod: clustermesh-apiserver-59b4b487d4-6tk2g
+kube-system    11m         Normal    Scheduled           pod/clustermesh-apiserver-59b4b487d4-6tk2g    Successfully assigned kube-system/clustermesh-apiserver-59b4b487d4-6tk2g to cmtc-b-worker
+kube-system    11m         Normal    SuccessfulCreate    daemonset/cilium                              Created pod: cilium-4r8s5
+kube-system    11m         Normal    SuccessfulCreate    daemonset/cilium                              Created pod: cilium-lvds9
+kube-system    11m         Normal    SuccessfulDelete    daemonset/cilium                              Deleted pod: cilium-lrqh4
+kube-system    11m         Normal    SuccessfulDelete    daemonset/cilium                              Deleted pod: cilium-c6qx9
+kube-system    11m         Normal    ScalingReplicaSet   deployment/cilium-operator                    Scaled down replica set cilium-operator-659879cdf7 from 1 to 0
+kube-system    11m         Normal    ScalingReplicaSet   deployment/cilium-operator                    Scaled up replica set cilium-operator-6ccc445565 from 0 to 1
+kube-system    11m         Normal    SuccessfulCreate    replicaset/cilium-operator-6ccc445565         Created pod: cilium-operator-6ccc445565-xgb6z
+kube-system    11m         Normal    Killing             pod/cilium-lrqh4                              Stopping container cilium-agent
+kube-system    11m         Normal    Scheduled           pod/cilium-lvds9                              Successfully assigned kube-system/cilium-lvds9 to cmtc-b-control-plane
+kube-system    11m         Normal    Scheduled           pod/cilium-4r8s5                              Successfully assigned kube-system/cilium-4r8s5 to cmtc-b-worker
+kube-system    11m         Normal    Killing             pod/cilium-c6qx9                              Stopping container cilium-agent
+kube-system    11m         Normal    ScalingReplicaSet   deployment/clustermesh-apiserver              Scaled up replica set clustermesh-apiserver-59b4b487d4 from 0 to 1
+kube-system    11m         Normal    SuccessfulDelete    replicaset/cilium-operator-659879cdf7         Deleted pod: cilium-operator-659879cdf7-qrgl2
+kube-system    11m         Normal    Pulling             pod/cilium-4r8s5                              Pulling image "ghcr.io/ephico2real2/cilium-dev@sha256:15cc5402e93416e8ff71f24b79b0fc1e6b3837f0c4c216b0eb377b8d47b92d68"
+kube-system    11m         Normal    Pulling             pod/cilium-operator-6ccc445565-xgb6z          Pulling image "ghcr.io/ephico2real2/cilium-dev@sha256:5cfa1b276298f4a97bf4e73eb068e87fc730874975da137754062b838ac63aa7"
+kube-system    11m         Normal    Pulling             pod/cilium-lvds9                              Pulling image "ghcr.io/ephico2real2/cilium-dev@sha256:15cc5402e93416e8ff71f24b79b0fc1e6b3837f0c4c216b0eb377b8d47b92d68"
+kube-system    11m         Normal    Pulled              pod/cilium-operator-6ccc445565-xgb6z          Successfully pulled image "ghcr.io/ephico2real2/cilium-dev@sha256:5cfa1b276298f4a97bf4e73eb068e87fc730874975da137754062b838ac63aa7" in 2.411s (2.411s including waiting). Image size: 36101733 bytes.
+kube-system    11m         Normal    Created             pod/cilium-operator-6ccc445565-xgb6z          Container created
+kube-system    11m         Warning   Unhealthy           pod/cilium-operator-6ccc445565-xgb6z          Readiness probe failed: Get "http://127.0.0.1:9234/healthz": dial tcp 127.0.0.1:9234: connect: connection refused
+kube-system    11m         Normal    Started             pod/cilium-operator-6ccc445565-xgb6z          Container started
+kube-system    11m         Normal    Pulled              pod/cilium-lvds9                              Successfully pulled image "ghcr.io/ephico2real2/cilium-dev@sha256:15cc5402e93416e8ff71f24b79b0fc1e6b3837f0c4c216b0eb377b8d47b92d68" in 6.183s (6.183s including waiting). Image size: 251830072 bytes.
+kube-system    11m         Normal    Created             pod/cilium-lvds9                              Container created
+kube-system    11m         Normal    Started             pod/cilium-lvds9                              Container started
+kube-system    11m         Normal    Pulled              pod/cilium-lvds9                              Container image "ghcr.io/ephico2real2/cilium-dev@sha256:15cc5402e93416e8ff71f24b79b0fc1e6b3837f0c4c216b0eb377b8d47b92d68" already present on machine and can be accessed by the pod
+kube-system    11m         Normal    Started             pod/cilium-lvds9                              Container started
+kube-system    11m         Normal    Created             pod/cilium-lvds9                              Container created
+kube-system    11m         Normal    Pulled              pod/cilium-lvds9                              Container image "ghcr.io/ephico2real2/cilium-dev@sha256:15cc5402e93416e8ff71f24b79b0fc1e6b3837f0c4c216b0eb377b8d47b92d68" already present on machine and can be accessed by the pod
+kube-system    11m         Normal    Created             pod/cilium-lvds9                              Container created
+kube-system    11m         Normal    Started             pod/cilium-lvds9                              Container started
+kube-system    11m         Normal    Created             pod/cilium-lvds9                              Container created
+kube-system    11m         Normal    Created             pod/cilium-4r8s5                              Container created
+kube-system    11m         Normal    Started             pod/cilium-lvds9                              Container started
+kube-system    11m         Normal    Pulled              pod/cilium-4r8s5                              Successfully pulled image "ghcr.io/ephico2real2/cilium-dev@sha256:15cc5402e93416e8ff71f24b79b0fc1e6b3837f0c4c216b0eb377b8d47b92d68" in 6.811s (9.075s including waiting). Image size: 251830072 bytes.
+kube-system    11m         Normal    Started             pod/cilium-4r8s5                              Container started
+kube-system    11m         Normal    Pulled              pod/cilium-lvds9                              Container image "ghcr.io/ephico2real2/cilium-dev@sha256:15cc5402e93416e8ff71f24b79b0fc1e6b3837f0c4c216b0eb377b8d47b92d68" already present on machine and can be accessed by the pod
+kube-system    11m         Normal    Started             pod/cilium-4r8s5                              Container started
+kube-system    11m         Normal    Started             pod/cilium-lvds9                              Container started
+kube-system    11m         Normal    Created             pod/cilium-lvds9                              Container created
+kube-system    11m         Normal    Pulled              pod/cilium-lvds9                              Container image "ghcr.io/ephico2real2/cilium-dev@sha256:15cc5402e93416e8ff71f24b79b0fc1e6b3837f0c4c216b0eb377b8d47b92d68" already present on machine and can be accessed by the pod
+kube-system    11m         Normal    Pulled              pod/cilium-4r8s5                              Container image "ghcr.io/ephico2real2/cilium-dev@sha256:15cc5402e93416e8ff71f24b79b0fc1e6b3837f0c4c216b0eb377b8d47b92d68" already present on machine and can be accessed by the pod
+kube-system    11m         Normal    Created             pod/cilium-4r8s5                              Container created
+kube-system    11m         Normal    Started             pod/cilium-4r8s5                              Container started
+kube-system    11m         Normal    Created             pod/cilium-lvds9                              Container created
+kube-system    11m         Normal    Pulled              pod/cilium-lvds9                              Container image "ghcr.io/ephico2real2/cilium-dev@sha256:15cc5402e93416e8ff71f24b79b0fc1e6b3837f0c4c216b0eb377b8d47b92d68" already present on machine and can be accessed by the pod
+kube-system    11m         Normal    Started             pod/cilium-lvds9                              Container started
+kube-system    11m         Normal    Pulled              pod/cilium-4r8s5                              Container image "ghcr.io/ephico2real2/cilium-dev@sha256:15cc5402e93416e8ff71f24b79b0fc1e6b3837f0c4c216b0eb377b8d47b92d68" already present on machine and can be accessed by the pod
+kube-system    11m         Normal    Created             pod/cilium-4r8s5                              Container created
+kube-system    11m         Normal    Pulled              pod/cilium-4r8s5                              Container image "ghcr.io/ephico2real2/cilium-dev@sha256:15cc5402e93416e8ff71f24b79b0fc1e6b3837f0c4c216b0eb377b8d47b92d68" already present on machine and can be accessed by the pod
+kube-system    11m         Normal    Started             pod/cilium-lvds9                              Container started
+kube-system    11m         Normal    Created             pod/cilium-4r8s5                              Container created
+kube-system    11m         Normal    Started             pod/cilium-4r8s5                              Container started
+kube-system    11m         Normal    Created             pod/cilium-lvds9                              Container created
+kube-system    11m         Normal    Pulled              pod/cilium-lvds9                              Container image "ghcr.io/ephico2real2/cilium-dev@sha256:15cc5402e93416e8ff71f24b79b0fc1e6b3837f0c4c216b0eb377b8d47b92d68" already present on machine and can be accessed by the pod
+kube-system    11m         Normal    Pulled              pod/cilium-4r8s5                              Container image "ghcr.io/ephico2real2/cilium-dev@sha256:15cc5402e93416e8ff71f24b79b0fc1e6b3837f0c4c216b0eb377b8d47b92d68" already present on machine and can be accessed by the pod
+kube-system    11m         Normal    Created             pod/cilium-4r8s5                              Container created
+kube-system    11m         Normal    Started             pod/cilium-4r8s5                              Container started
+kube-system    11m         Normal    Pulled              pod/cilium-4r8s5                              Container image "ghcr.io/ephico2real2/cilium-dev@sha256:15cc5402e93416e8ff71f24b79b0fc1e6b3837f0c4c216b0eb377b8d47b92d68" already present on machine and can be accessed by the pod
+kube-system    11m         Normal    Started             pod/cilium-4r8s5                              Container started
+kube-system    11m         Normal    Created             pod/cilium-4r8s5                              Container created
+kube-system    11m         Normal    Started             pod/cilium-4r8s5                              Container started
+kube-system    11m         Normal    Created             pod/cilium-4r8s5                              Container created
+kube-system    11m         Normal    Pulled              pod/cilium-4r8s5                              Container image "ghcr.io/ephico2real2/cilium-dev@sha256:15cc5402e93416e8ff71f24b79b0fc1e6b3837f0c4c216b0eb377b8d47b92d68" already present on machine and can be accessed by the pod
+kube-system    11m         Normal    Pulling             pod/clustermesh-apiserver-59b4b487d4-6tk2g    Pulling image "ghcr.io/ephico2real2/cilium-dev@sha256:be2c7e1d1028095f749cf5269942310619dd69b79a2e761a1bd6403ae5de9ac6"
+kube-system    11m         Normal    Started             pod/clustermesh-apiserver-59b4b487d4-6tk2g    Container started
+kube-system    11m         Normal    Created             pod/clustermesh-apiserver-59b4b487d4-6tk2g    Container created
+kube-system    11m         Normal    Pulled              pod/clustermesh-apiserver-59b4b487d4-6tk2g    Successfully pulled image "ghcr.io/ephico2real2/cilium-dev@sha256:be2c7e1d1028095f749cf5269942310619dd69b79a2e761a1bd6403ae5de9ac6" in 2.596s (2.596s including waiting). Image size: 33844037 bytes.
+kube-system    11m         Normal    Pulled              pod/clustermesh-apiserver-59b4b487d4-6tk2g    Container image "ghcr.io/ephico2real2/cilium-dev@sha256:be2c7e1d1028095f749cf5269942310619dd69b79a2e761a1bd6403ae5de9ac6" already present on machine and can be accessed by the pod
+kube-system    11m         Normal    Pulled              pod/clustermesh-apiserver-59b4b487d4-6tk2g    Container image "ghcr.io/ephico2real2/cilium-dev@sha256:be2c7e1d1028095f749cf5269942310619dd69b79a2e761a1bd6403ae5de9ac6" already present on machine and can be accessed by the pod
+kube-system    11m         Warning   Unhealthy           pod/clustermesh-apiserver-59b4b487d4-6tk2g    Readiness probe failed: HTTP probe failed with statuscode: 500
+kube-system    11m         Warning   Unhealthy           pod/clustermesh-apiserver-59b4b487d4-6tk2g    Readiness probe failed: Get "http://10.20.1.162:9881/readyz": dial tcp 10.20.1.162:9881: connect: connection refused
+kube-system    11m         Normal    Started             pod/clustermesh-apiserver-59b4b487d4-6tk2g    Container started
+kube-system    11m         Normal    Created             pod/clustermesh-apiserver-59b4b487d4-6tk2g    Container created
+kube-system    11m         Normal    Pulled              pod/clustermesh-apiserver-59b4b487d4-6tk2g    Container image "ghcr.io/ephico2real2/cilium-dev@sha256:be2c7e1d1028095f749cf5269942310619dd69b79a2e761a1bd6403ae5de9ac6" already present on machine and can be accessed by the pod
+kube-system    11m         Normal    Started             pod/clustermesh-apiserver-59b4b487d4-6tk2g    Container started
+kube-system    11m         Normal    Created             pod/clustermesh-apiserver-59b4b487d4-6tk2g    Container created
+kube-system    11m         Normal    Created             pod/clustermesh-apiserver-59b4b487d4-6tk2g    Container created
+kube-system    11m         Normal    Started             pod/clustermesh-apiserver-59b4b487d4-6tk2g    Container started
+kube-system    11m         Normal    Killing             pod/clustermesh-apiserver-84b49678d8-5bhr4    Stopping container kvstoremesh
+kube-system    11m         Normal    Killing             pod/clustermesh-apiserver-84b49678d8-5bhr4    Stopping container etcd
+kube-system    11m         Normal    Killing             pod/clustermesh-apiserver-84b49678d8-5bhr4    Stopping container apiserver
+kube-system    11m         Normal    SuccessfulDelete    replicaset/clustermesh-apiserver-84b49678d8   Deleted pod: clustermesh-apiserver-84b49678d8-5bhr4
+kube-system    11m         Normal    ScalingReplicaSet   deployment/clustermesh-apiserver              Scaled down replica set clustermesh-apiserver-84b49678d8 from 1 to 0
+kube-system    11m         Warning   Unhealthy           pod/clustermesh-apiserver-84b49678d8-5bhr4    Readiness probe failed: Get "http://10.20.1.31:9880/readyz": dial tcp 10.20.1.31:9880: connect: connection refused
+cf2cnp-lab     6m11s       Normal    Scheduled           pod/pos                                       Successfully assigned cf2cnp-lab/pos to cmtc-b-worker
+cf2cnp-lab     6m11s       Normal    Pulled              pod/pos                                       Container image "alpine:3.20" already present on machine and can be accessed by the pod
+cf2cnp-lab     6m11s       Normal    Scheduled           pod/stranger                                  Successfully assigned cf2cnp-lab/stranger to cmtc-b-worker
+cf2cnp-lab     6m11s       Normal    ScalingReplicaSet   deployment/shop                               Scaled up replica set shop-6d7d797759 from 0 to 1
+cf2cnp-lab     6m11s       Normal    SuccessfulCreate    replicaset/shop-6d7d797759                    Created pod: shop-6d7d797759-tcm64
+cf2cnp-lab     6m11s       Normal    Pulled              pod/shop-6d7d797759-tcm64                     Container image "nginx:1.27-alpine" already present on machine and can be accessed by the pod
+cf2cnp-lab     6m11s       Normal    Scheduled           pod/shop-6d7d797759-tcm64                     Successfully assigned cf2cnp-lab/shop-6d7d797759-tcm64 to cmtc-b-worker
+cf2cnp-lab     6m10s       Normal    Started             pod/pos                                       Container started
+cf2cnp-lab     6m10s       Normal    Pulled              pod/stranger                                  Container image "alpine:3.20" already present on machine and can be accessed by the pod
+cf2cnp-lab     6m10s       Normal    Created             pod/pos                                       Container created
+cf2cnp-lab     6m10s       Normal    Started             pod/stranger                                  Container started
+cf2cnp-lab     6m10s       Normal    Created             pod/stranger                                  Container created
+cf2cnp-lab     6m10s       Normal    Created             pod/shop-6d7d797759-tcm64                     Container created
+cf2cnp-lab     6m10s       Normal    Started             pod/shop-6d7d797759-tcm64                     Container started
+mesh-example   6m6s        Normal    Started             pod/rebel-base-5bbc557b76-7whqj               Container started
+mesh-example   6m6s        Normal    Scheduled           pod/rebel-base-5bbc557b76-x8477               Successfully assigned mesh-example/rebel-base-5bbc557b76-x8477 to cmtc-b-worker
+mesh-example   6m6s        Normal    ScalingReplicaSet   deployment/rebel-base                         Scaled up replica set rebel-base-5bbc557b76 from 0 to 2
+mesh-example   6m6s        Normal    SuccessfulCreate    replicaset/rebel-base-5bbc557b76              Created pod: rebel-base-5bbc557b76-x8477
+mesh-example   6m6s        Normal    SuccessfulCreate    replicaset/rebel-base-5bbc557b76              Created pod: rebel-base-5bbc557b76-7whqj
+mesh-example   6m6s        Normal    Started             pod/rebel-base-5bbc557b76-x8477               Container started
+mesh-example   6m6s        Normal    Created             pod/rebel-base-5bbc557b76-x8477               Container created
+mesh-example   6m6s        Normal    Pulled              pod/rebel-base-5bbc557b76-x8477               Container image "nginx:1.27-alpine" already present on machine and can be accessed by the pod
+mesh-example   6m6s        Normal    Created             pod/rebel-base-5bbc557b76-7whqj               Container created
+mesh-example   6m6s        Normal    Scheduled           pod/rebel-base-5bbc557b76-7whqj               Successfully assigned mesh-example/rebel-base-5bbc557b76-7whqj to cmtc-b-worker
+mesh-example   6m6s        Normal    Pulled              pod/rebel-base-5bbc557b76-7whqj               Container image "nginx:1.27-alpine" already present on machine and can be accessed by the pod
+cf2cnp-lab     6m5s        Normal    Scheduled           pod/cmtc-load-qts6v                           Successfully assigned cf2cnp-lab/cmtc-load-qts6v to cmtc-b-worker
+cf2cnp-lab     6m5s        Normal    SuccessfulCreate    job/cmtc-load                                 Created pod: cmtc-load-qts6v
+cf2cnp-lab     6m4s        Normal    Started             pod/cmtc-load-qts6v                           Container started
+cf2cnp-lab     6m4s        Normal    Created             pod/cmtc-load-qts6v                           Container created
+cf2cnp-lab     6m4s        Normal    Pulled              pod/cmtc-load-qts6v                           Container image "fortio/fortio:1.75.3" already present on machine and can be accessed by the pod
+cf2cnp-lab     6s          Normal    Started             pod/cmtc-load-qts6v                           Container started
+cf2cnp-lab     6s          Normal    Pulled              pod/cmtc-load-qts6v                           Container image "alpine:3.20" already present on machine and can be accessed by the pod
+cf2cnp-lab     6s          Normal    Created             pod/cmtc-load-qts6v                           Container created
+cf2cnp-lab     3s          Normal    Completed           job/cmtc-load                                 Job completed

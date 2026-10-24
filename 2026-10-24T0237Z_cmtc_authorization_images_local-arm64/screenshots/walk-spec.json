@@ -1,0 +1,230 @@
+{
+  "viewport": {
+    "width": 1600,
+    "height": 1100
+  },
+  "pages": [
+    {
+      "name": "01-security-overview",
+      "url": "http://127.0.0.1:3000/d/01-security-overview/cmtc-7c-security-overview?kiosk&from=now-15m&to=now",
+      "evidence": "panels",
+      "fullPage": true,
+      "before": 2500,
+      "expect": {
+        "panelsMin": 5,
+        "noDataAllowed": [
+          "Pods Protected",
+          "Cluster Ready",
+          "Mtls Handshakes Total"
+        ]
+      },
+      "blockedSignalsOnNoData": true,
+      "noDataReasons": {
+        "Pods Protected": "Not implemented in Observe: cmtc_pods_protected",
+        "Cluster Ready": "Not implemented in Observe: cmtc_cluster_ready",
+        "Mtls Handshakes Total": "Not implemented in Observe: cmtc_mtls_handshakes_total"
+      }
+    },
+    {
+      "name": "02-namespace-enrollment",
+      "url": "http://127.0.0.1:3000/d/02-namespace-enrollment/cmtc-7c-namespace-enrollment?kiosk&from=now-15m&to=now",
+      "evidence": "panels",
+      "fullPage": true,
+      "before": 2500,
+      "expect": {
+        "panelsMin": 5,
+        "noDataAllowed": [
+          "Namespaces Excluded",
+          "Namespace Label Drift Total"
+        ]
+      },
+      "blockedSignalsOnNoData": true,
+      "noDataReasons": {
+        "Namespaces Excluded": "Not implemented in Observe: cmtc_namespaces_excluded",
+        "Namespace Label Drift Total": "Not implemented in Observe: cmtc_namespace_label_drift_total"
+      }
+    },
+    {
+      "name": "03-pod-node-enforcement",
+      "url": "http://127.0.0.1:3000/d/03-pod-node-enforcement/cmtc-7c-pod-and-node-enforcement?kiosk&from=now-15m&to=now",
+      "evidence": "panels",
+      "fullPage": true,
+      "before": 2500,
+      "expect": {
+        "panelsMin": 5,
+        "noDataAllowed": [
+          "Pods Protected",
+          "Pods Pending",
+          "Pods Enforcement Failed"
+        ]
+      },
+      "blockedSignalsOnNoData": true,
+      "noDataReasons": {
+        "Pods Protected": "Not implemented in Observe: cmtc_pods_protected",
+        "Pods Pending": "Not implemented in Observe: cmtc_pods_pending",
+        "Pods Enforcement Failed": "Not implemented in Observe: cmtc_pods_enforcement_failed"
+      }
+    },
+    {
+      "name": "04-mtls-performance",
+      "url": "http://127.0.0.1:3000/d/04-mtls-performance/cmtc-7c-mtls-performance?kiosk&from=now-15m&to=now",
+      "evidence": "panels",
+      "fullPage": true,
+      "before": 2500,
+      "expect": {
+        "panelsMin": 5,
+        "noDataAllowed": [
+          "Mtls Handshakes Total",
+          "Mtls Active Connections",
+          "Mtls Identity Validation Failures Total",
+          "Remote Identity Cache Misses Total"
+        ]
+      },
+      "blockedSignalsOnNoData": true,
+      "noDataReasons": {
+        "Mtls Handshakes Total": "Not implemented in Observe: cmtc_mtls_handshakes_total",
+        "Mtls Active Connections": "Not implemented in Observe: cmtc_mtls_active_connections",
+        "Mtls Identity Validation Failures Total": "Not implemented in Observe: cmtc_mtls_identity_validation_failures_total",
+        "Remote Identity Cache Misses Total": "Not implemented in Observe: cmtc_remote_identity_cache_misses_total"
+      }
+    },
+    {
+      "name": "05-ca-trust-rotation",
+      "url": "http://127.0.0.1:3000/d/05-ca-trust-rotation/cmtc-7c-ca-trust-and-rotation?kiosk&from=now-15m&to=now",
+      "evidence": "panels",
+      "fullPage": true,
+      "before": 2500,
+      "expect": {
+        "panelsMin": 5,
+        "noDataAllowed": [
+          "Trust Bundle Ready",
+          "Spire Ready",
+          "Issuer Ready",
+          "Certificate Rotation Failures Total"
+        ]
+      },
+      "blockedSignalsOnNoData": true,
+      "noDataReasons": {
+        "Trust Bundle Ready": "Not implemented in Observe: cmtc_trust_bundle_ready",
+        "Spire Ready": "Not implemented in Observe: cmtc_spire_ready",
+        "Issuer Ready": "Not implemented in Observe: cmtc_issuer_ready",
+        "Certificate Rotation Failures Total": "Not implemented in Observe: cmtc_certificate_rotation_failures_total"
+      }
+    },
+    {
+      "name": "06-network-encryption",
+      "url": "http://127.0.0.1:3000/d/06-network-encryption/cmtc-7c-network-encryption?kiosk&from=now-15m&to=now",
+      "evidence": "panels",
+      "fullPage": true,
+      "before": 2500,
+      "expect": {
+        "panelsMin": 5,
+        "noDataAllowed": [
+          "Transport Compatibility Ready",
+          "Dual Encryption Probe Success",
+          "Transport Encryption Failures Total",
+          "Mtu Validation Failures Total"
+        ]
+      },
+      "blockedSignalsOnNoData": true,
+      "noDataReasons": {
+        "Transport Compatibility Ready": "Not implemented in Observe: cmtc_transport_compatibility_ready",
+        "Dual Encryption Probe Success": "Not implemented in Observe: cmtc_dual_encryption_probe_success",
+        "Transport Encryption Failures Total": "Not implemented in Observe: cmtc_transport_encryption_failures_total",
+        "Mtu Validation Failures Total": "Not implemented in Observe: cmtc_mtu_validation_failures_total"
+      }
+    },
+    {
+      "name": "07-security-violations",
+      "url": "http://127.0.0.1:3000/d/07-security-violations/cmtc-7c-security-violations?kiosk&from=now-15m&to=now",
+      "evidence": "panels",
+      "fullPage": true,
+      "before": 2500,
+      "expect": {
+        "panelsMin": 5,
+        "noDataAllowed": [
+          "Mtls Identity Validation Failures Total",
+          "Mtls Authorization Denials Total",
+          "Plaintext Bypass Detected Total",
+          "Namespace Policy Conflicts Total"
+        ]
+      },
+      "blockedSignalsOnNoData": true,
+      "noDataReasons": {
+        "Mtls Identity Validation Failures Total": "Not implemented in Observe: cmtc_mtls_identity_validation_failures_total",
+        "Mtls Authorization Denials Total": "Not implemented in Observe: cmtc_mtls_authorization_denials_total",
+        "Plaintext Bypass Detected Total": "Not implemented in Observe: cmtc_plaintext_bypass_detected_total",
+        "Namespace Policy Conflicts Total": "Not implemented in Observe: cmtc_namespace_policy_conflicts_total"
+      }
+    },
+    {
+      "name": "08-control-plane-safety",
+      "url": "http://127.0.0.1:3000/d/08-control-plane-safety/cmtc-7c-control-plane-safety?kiosk&from=now-15m&to=now",
+      "evidence": "panels",
+      "fullPage": true,
+      "before": 2500,
+      "expect": {
+        "panelsMin": 5,
+        "noDataAllowed": [
+          "Platform Dependency Healthy",
+          "Apiserver Probe Success",
+          "Hostnetwork Pods Total",
+          "Rollout Aborted Total"
+        ]
+      },
+      "blockedSignalsOnNoData": true,
+      "noDataReasons": {
+        "Platform Dependency Healthy": "Not implemented in Observe: cmtc_platform_dependency_healthy",
+        "Apiserver Probe Success": "Not implemented in Observe: cmtc_apiserver_probe_success",
+        "Hostnetwork Pods Total": "Not implemented in Observe: cmtc_hostnetwork_pods_total",
+        "Rollout Aborted Total": "Not implemented in Observe: cmtc_rollout_aborted_total"
+      }
+    },
+    {
+      "name": "09-operator-agents",
+      "url": "http://127.0.0.1:3000/d/09-operator-agents/cmtc-7c-operator-and-node-agents?kiosk&from=now-15m&to=now",
+      "evidence": "panels",
+      "fullPage": true,
+      "before": 2500,
+      "expect": {
+        "panelsMin": 5,
+        "noDataAllowed": [
+          "Ztunnel Ready",
+          "Reconcile Errors Total",
+          "Node Config Drift Total"
+        ]
+      },
+      "blockedSignalsOnNoData": true,
+      "noDataReasons": {
+        "Ztunnel Ready": "Not implemented in Observe: cmtc_ztunnel_ready",
+        "Reconcile Errors Total": "Not implemented in Observe: cmtc_reconcile_errors_total",
+        "Node Config Drift Total": "Not implemented in Observe: cmtc_node_config_drift_total"
+      }
+    },
+    {
+      "name": "cmtc-observe-lab",
+      "url": "http://127.0.0.1:3000/d/cmtc-observe-lab/cmtc-7c-deployed-observe-lab?kiosk&from=now-15m&to=now",
+      "evidence": "panels",
+      "fullPage": true,
+      "before": 2500,
+      "expect": {
+        "panelsMin": 6,
+        "noDataAllowed": []
+      },
+      "blockedSignalsOnNoData": true,
+      "noDataReasons": {}
+    },
+    {
+      "name": "application-global-service",
+      "url": "http://127.0.0.1:18080",
+      "evidence": "text",
+      "settle": false,
+      "before": 500,
+      "expect": {
+        "text": [
+          "poc2"
+        ]
+      }
+    }
+  ]
+}
