@@ -2,7 +2,7 @@
 
 All nine original domain JSON files are preserved byte for byte. Their full metric coverage is consolidated into **Operations** and **Workload Security**. The stable root `DASHBOARD_GUIDE.md` maps every original domain and contains named screenshots.
 
-This evidence is from the user's local MacBook / dedicated Ubuntu Colima kind runtime on Linux ARM64. The existing qualified images were retained; this presentation/provisioning change did not rebuild a container. MacBook image builds continue to use Podman. No GitHub Actions run is claimed by this bundle.
+This evidence is from the user's local MacBook / dedicated Ubuntu Colima kind runtime on Linux ARM64. The existing qualified images were retained; this presentation/provisioning change did not rebuild a container. MacBook image builds continue to use Podman. The local sections below qualify ARM64; the separate AMD64 CI addendum records the subsequent owned-repository run.
 
 ## Measured load
 
@@ -54,3 +54,11 @@ The generated files match Grafana's live panel source exactly. Offline checks ve
 - `runtime-images.json`, `source-provenance.json`, `final-browser.log`, `SHA256SUMS`: source/runtime identity, browser output and integrity.
 
 No root private key, workload private key, kubeconfig or token belongs in this evidence. Complete fail-closed admission, general destination permissions, trust rotation, cross-cluster workload mTLS, layered WireGuard/IPsec composition and OpenShift/Perses rendering remain open acceptance gates. The presentation work does not change the Observe-only API or prove those features.
+
+## AMD64 CI and merge addendum
+
+[CI run 40068439940](https://github.com/ephico2real2/clustermesh-trust-controller/actions/runs/40068439940) passed unit and deployed-lab jobs at exact head `3e2afdc4f67b75c4d9f3daa54a214f3a0d4275db`. Its raw Fortio JSON/logs and assertions are preserved under `ci/`: 7,200 + 7,200 shop HTTP 200 responses and 3,600 remote Global Service HTTP 200 responses, **18,000/18,000** in total. All five browser cases passed. [Immutable CI PNGs and browser verdicts](https://github.com/ephico2real2/clustermesh-trust-controller/tree/35245cc/2026-10-24T0610Z_cmtc_run40068439940-1_deployed-lab) show this same consolidated layout on Linux AMD64.
+
+CI deploys the Observe ClusterMesh baseline, so its native SPIRE security panels are explicitly BLOCKED alongside planned instrumentation; populated native mTLS evidence comes from the local experiment above. No new cross-cluster mTLS or transport-composition claim follows from this run.
+
+[PR #10](https://github.com/ephico2real2/clustermesh-trust-controller/pull/10) merged normally at `b1f9c0e4140c8bd64a626c77ee1afc94f0eef489` after both exact-head checks passed. The entire merged source tree matches the tested head. Local main was fast-forwarded cleanly and only the merged feature branch was removed. All nine original JSON files remain unchanged. `semantic-mutations.json` also records rejection of gauge-as-rate, raw-counter and histogram-without-quantile mutations.

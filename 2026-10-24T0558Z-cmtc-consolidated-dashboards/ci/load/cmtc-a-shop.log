@@ -1,0 +1,47 @@
+{"ts":1792822199.378030,"level":"info","r":1,"file":"scli.go","line":124,"msg":"Starting","command":"Φορτίο","version":"1.75.3 h1:2et+WGrx6FHBEyQb2kYz07q+/AXzHIio7amwuDDn6vM= go1.25.14 amd64 linux","go-max-procs":4}
+Fortio 1.75.3 running at 20 queries per second, 4->4 procs, for 6m0s: http://shop.cf2cnp-lab/
+{"ts":1792822199.378827,"level":"info","r":1,"file":"httprunner.go","line":121,"msg":"Starting http test","run":0,"url":"http://shop.cf2cnp-lab/","threads":2,"qps":"20.0","warmup":"parallel","conn-reuse":""}
+Starting at 20 qps with 2 thread(s) [gomax 4] for 6m0s : 3600 calls each (total 7200)
+{"ts":1792822299.312409,"level":"info","r":22,"file":"http_client.go","line":1119,"msg":"Closing dead socket (err at first read)","err":"EOF","thread":0,"run":0}
+{"ts":1792822299.362038,"level":"info","r":23,"file":"http_client.go","line":1119,"msg":"Closing dead socket (err at first read)","err":"EOF","thread":1,"run":0}
+{"ts":1792822399.339647,"level":"info","r":22,"file":"http_client.go","line":1119,"msg":"Closing dead socket (err at first read)","err":"EOF","thread":0,"run":0}
+{"ts":1792822399.389329,"level":"info","r":23,"file":"http_client.go","line":1119,"msg":"Closing dead socket (err at first read)","err":"EOF","thread":1,"run":0}
+{"ts":1792822499.367230,"level":"info","r":22,"file":"http_client.go","line":1119,"msg":"Closing dead socket (err at first read)","err":"EOF","thread":0,"run":0}
+{"ts":1792822499.417694,"level":"info","r":23,"file":"http_client.go","line":1119,"msg":"Closing dead socket (err at first read)","err":"EOF","thread":1,"run":0}
+{"ts":1792822559.384618,"level":"info","r":22,"file":"periodic.go","line":882,"msg":"T000 ended after 6m0.001189633s : 3600 calls. qps=9.999966954748087"}
+{"ts":1792822559.434233,"level":"info","r":23,"file":"periodic.go","line":882,"msg":"T001 ended after 6m0.000808285s : 3600 calls. qps=9.9999775476893"}
+Ended after 6m0.050923942s : 7200 calls. qps=19.997
+{"ts":1792822559.434395,"level":"info","r":1,"file":"periodic.go","line":598,"msg":"Run ended","run":0,"elapsed":360050923942,"calls":7200,"qps":19.99717129224708}
+Sleep times : count 7198 avg 0.099219483 +/- 0.0003727 min 0.088155815 max 0.09988461 sum 714.181837
+Aggregated Function Time : count 7200 avg 0.00022344857 +/- 0.0001859 min 0.000115457 max 0.011512974 sum 1.60882974
+# range, mid point, percentile, count
+>= 0.000115457 <= 0.001 , 0.000557729 , 99.50, 7164
+> 0.001 <= 0.002 , 0.0015 , 99.88, 27
+> 0.002 <= 0.003 , 0.0025 , 99.99, 8
+> 0.011 <= 0.011513 , 0.0112565 , 100.00, 1
+# target 50% 0.00055989
+# target 75% 0.000782168
+# target 90% 0.000915534
+# target 99% 0.000995554
+# target 99.9% 0.002225
+Error cases : no data
+# Socket and IP used for each connection:
+[0]   4 socket used, resolved to 10.11.212.193:80, connection timing : count 4 avg 0.0002267445 +/- 6.803e-05 min 0.000162138 max 0.000328415 sum 0.000906978
+[1]   4 socket used, resolved to 10.11.212.193:80, connection timing : count 4 avg 0.00029749625 +/- 0.0001465 min 0.000103404 max 0.000446047 sum 0.001189985
+Connection time histogram (s) : count 8 avg 0.00026212038 +/- 0.0001196 min 0.000103404 max 0.000446047 sum 0.002096963
+# range, mid point, percentile, count
+>= 0.000103404 <= 0.000446047 , 0.000274725 , 100.00, 8
+# target 50% 0.000250251
+# target 75% 0.000348149
+# target 90% 0.000406888
+# target 99% 0.000442131
+# target 99.9% 0.000445655
+Sockets used: 8 (for perfect keepalive, would be 2)
+Uniform: true, Jitter: false, Catchup allowed: false
+IP addresses distribution:
+10.11.212.193:80: 8
+Code 200 : 7200 (100.0 %)
+Response Header Sizes : count 7200 avg 237.99583 +/- 0.1443 min 233 max 238 sum 1713570
+Response Body/Total Sizes : count 7200 avg 852.99583 +/- 0.1443 min 848 max 853 sum 6141570
+All done 7200 calls (plus 2 warmup) 0.223 ms avg, 20.0 qps
+Successfully wrote 3822 bytes of Json data to /results/fortio.json
