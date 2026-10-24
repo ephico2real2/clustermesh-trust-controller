@@ -2,9 +2,13 @@
 
 The CMTC kind lab now consumes agent, generic operator and ClusterMesh API server images from **our fork**, with immutable digests in [the development lock](../../config/cilium-images.lock.json). The chart and its CRDs are fetched from that exact `source_sha`, rather than combining current-main binaries with a release chart. The original v1.20.4 source audit remains a historical research baseline.
 
+The current selected source is `42f89f83aa5a03ea80f7a2b8cece56b27f87385a`, which adds the Authorization transport lifecycle. [Publisher CI 40053175683](https://github.com/ephico2real2/cilium/actions/runs/40053175683) passed after reusing the ARM64 images built locally on this MacBook and building native AMD64 images in GitHub. It verified source/platform labels and actual agent binary versions before assembling the two-platform indices. [Wire CI 40052995200](https://github.com/ephico2real2/cilium/actions/runs/40052995200) and local Linux ARM64 each passed 150 race-enabled tests/subtests. This source enables no policy producer or protected profile; deployed-image baseline qualifications are tracked in [VALIDATION.md](VALIDATION.md).
+
 The public package is `ghcr.io/ephico2real2/cilium-dev`. Each component uses a distinct `sha-<full-source-commit>-<component>` tag and a two-platform image index (Linux AMD64 and ARM64). Native tags append the architecture. Digest pins, not mutable tags, select the tested version. This keeps the existing public package accessible to kind without registry Secrets.
 
 ## Develop, build and select a version
+
+Complete the local qualification before pushing a change that starts CI or dispatching a workflow. Use the MacBook's dedicated Ubuntu Colima VM with the source mounted into Linux containers. Run the affected tests and lint, build the intended image locally, then verify the two-cluster policy/connectivity tests, sustained load and browser evidence against that image. For Hubble changes, run the local Gateway and dashboard qualification as well. When target architectures differ, build the required Linux platform locally with Docker before publication; record the platform and source revision. CI repeats a successful local qualification. A CI failure is reproduced and fixed locally before rerunning it.
 
 1. Work in a full checkout of `git@github.com:ephico2real2/cilium.git`. Keep upstream changes integrated through a reviewed fork PR; preserve existing feature branches. Commit the intended source under the configured human identity with a DCO signoff. The image helper refuses tracked source modifications.
 2. Select a working Docker engine, log in locally and build from the committed checkout. The fork's `contrib/cmtc-images/build.sh` uses the native Cilium Dockerfiles and publishes all three components. On this Mac the isolated `colima-cmtc-cilium` context is available; it does not replace the existing Docker context or MongoDB environment.
@@ -55,7 +59,7 @@ The Fortio Jobs write their JSON to an emptyDir from a non-root init container. 
 
 ## Run the meshing scripts on this MacBook
 
-Run the Linux lab scripts inside the dedicated Colima VM, where kind node addresses and Docker host networking are reachable. The existing profile is `cmtc-cilium` (8 CPUs, 16 GiB RAM); `/private/tmp` is mounted at the same path on both sides. Its local lab checkout is `/private/tmp/cmtc-mac-qualification`. The running `cmtc-a` and `cmtc-b` clusters use the lock in this repository; the [local qualification](https://github.com/ephico2real2/clustermesh-trust-controller/tree/18d063335fb130770003c915cb1bed1ee87528fc/2026-10-24T0033Z_cmtc_local-macos-arm64) records the actual agent source and all component digests.
+Run the Linux lab scripts inside the dedicated Colima VM, where kind node addresses and Docker host networking are reachable. The existing profile is `cmtc-cilium` (8 CPUs, 16 GiB RAM); `/private/tmp` is mounted at the same path on both sides. Its local lab checkout is `/private/tmp/cmtc-mac-qualification`. The retained clusters are `cmtc-a` and `cmtc-b`. The [initial local qualification](https://github.com/ephico2real2/clustermesh-trust-controller/tree/18d063335fb130770003c915cb1bed1ee87528fc/2026-10-24T0033Z_cmtc_local-macos-arm64) records their first GHCR bootstrap at source `93041b3f7ec55ff12c83ecd266f14fb392ea5c93`; subsequent image advances are tracked through the development lock and validation PR evidence.
 
 ```sh
 colima -p cmtc-cilium ssh
