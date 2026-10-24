@@ -1,0 +1,18 @@
+{
+  "status": "kernel-qualified; exact-image cluster integration pending",
+  "architecture": "linux/arm64",
+  "unique_top_level_tests": 24,
+  "unique_subtests": 49,
+  "failed": 0,
+  "skipped": 0,
+  "checks": [
+    "clang -target bpfel -O2 -g -Wall -Werror",
+    "go test -race ordinary and cmtc_bpf_privileged profiles",
+    "go vet ordinary and cmtc_bpf_privileged profiles",
+    "gofmt"
+  ],
+  "bpf_elf_sha256": "74c67287b17c8f346db54bd8e7a02ba3bc7fb83b92a822762b5de1b3edcc8716",
+  "builder_config_id": "sha256:f0093acd3f0ab3a1966ebe348eaa3c78ac706f94839f52209ae7120508cf2529",
+  "enforcement_available": false,
+  "ci_dispatched": false
+}

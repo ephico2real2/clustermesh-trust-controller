@@ -1,0 +1,43 @@
+Linux 88aef49f1a19 6.8.0-117-generic #117-Ubuntu SMP PREEMPT_DYNAMIC Thu May  7 17:26:37 UTC 2026 aarch64 GNU/Linux
+ip utility, iproute2-6.19.0, libbpf 1.6.3
+=== RUN   TestValidateConfig
+=== RUN   TestValidateConfig/cluster
+=== RUN   TestValidateConfig/node
+=== RUN   TestValidateConfig/pod
+=== RUN   TestValidateConfig/netns
+=== RUN   TestValidateConfig/ifindex
+=== RUN   TestValidateConfig/ifname
+=== RUN   TestValidateConfig/mac
+=== RUN   TestValidateConfig/peer
+=== RUN   TestValidateConfig/anchor
+=== RUN   TestValidateConfig/program
+=== RUN   TestValidateConfig/direction
+--- PASS: TestValidateConfig (0.00s)
+    --- PASS: TestValidateConfig/cluster (0.00s)
+    --- PASS: TestValidateConfig/node (0.00s)
+    --- PASS: TestValidateConfig/pod (0.00s)
+    --- PASS: TestValidateConfig/netns (0.00s)
+    --- PASS: TestValidateConfig/ifindex (0.00s)
+    --- PASS: TestValidateConfig/ifname (0.00s)
+    --- PASS: TestValidateConfig/mac (0.00s)
+    --- PASS: TestValidateConfig/peer (0.00s)
+    --- PASS: TestValidateConfig/anchor (0.00s)
+    --- PASS: TestValidateConfig/program (0.00s)
+    --- PASS: TestValidateConfig/direction (0.00s)
+=== RUN   TestCloseZeroValue
+--- PASS: TestCloseZeroValue (0.00s)
+=== RUN   TestPrivilegedVerifierReturnsNextUnchanged
+    observer_privileged_test.go:115: actual kernel verifier rejected ELF: map observed: map create: operation not permitted (MEMLOCK may be too low, consider rlimit.RemoveMemlock)
+--- FAIL: TestPrivilegedVerifierReturnsNextUnchanged (0.00s)
+=== RUN   TestPrivilegedAttachPacketsDriftAndRecovery
+    observer_privileged_test.go:153: load real TCX fixture: load program: operation not permitted (MEMLOCK may be too low, consider rlimit.RemoveMemlock)
+--- FAIL: TestPrivilegedAttachPacketsDriftAndRecovery (0.01s)
+=== RUN   TestPrivilegedRejectLegacyTCWithoutMutation
+    observer_privileged_test.go:268: load real TCX fixture: load program: operation not permitted (MEMLOCK may be too low, consider rlimit.RemoveMemlock)
+--- FAIL: TestPrivilegedRejectLegacyTCWithoutMutation (0.01s)
+=== RUN   TestPrivilegedOwnerDetachIsNotPinnedByObserver
+    observer_privileged_test.go:312: load real TCX fixture: load program: operation not permitted (MEMLOCK may be too low, consider rlimit.RemoveMemlock)
+--- FAIL: TestPrivilegedOwnerDetachIsNotPinnedByObserver (0.01s)
+FAIL
+FAIL	github.com/ephico2real2/clustermesh-trust-controller/internal/datapath	0.035s
+FAIL

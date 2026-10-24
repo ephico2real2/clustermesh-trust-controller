@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: cmtc-bpf-observer
+  namespace: cmtc-system
+spec:
+  selector:
+    matchLabels: {app.kubernetes.io/name: cmtc-bpf-observer}
+  template:
+    metadata:
+      labels: {app.kubernetes.io/name: cmtc-bpf-observer}
+    spec:
+      hostNetwork: true
+      automountServiceAccountToken: false
+      nodeSelector: {security.cmtc.io/bpf-observer-lab: "true"}
+      tolerations: [{operator: Exists}]
+      terminationGracePeriodSeconds: 10
+      containers:
+        - name: observer
+          image: IMAGE_WITH_VERIFIED_SHA_DIGEST
+          command: [/cmtc-bpf-observer]
+          args: ["--config=/config/$(NODE_NAME).json", "--listen=127.0.0.1:18082"]
+          env:
+            - name: NODE_NAME
+              valueFrom: {fieldRef: {fieldPath: spec.nodeName}}
+            - {name: CLUSTER_NAME, value: CLUSTER_NAME}
+          securityContext:
+            privileged: true
+            runAsUser: 0
+            readOnlyRootFilesystem: true
+          resources:
+            requests: {cpu: 10m, memory: 32Mi}
+            limits: {cpu: 200m, memory: 128Mi}
+          readinessProbe: {exec: {command: [/cmtc-bpf-observer, "--health-check=ready"]}}
+          livenessProbe: {exec: {command: [/cmtc-bpf-observer, "--health-check=live"]}}
+          volumeMounts: [{name: config, mountPath: /config, readOnly: true}]
+      volumes:
+        - name: config
+          configMap: {name: cmtc-bpf-observer-RUN_ID}
