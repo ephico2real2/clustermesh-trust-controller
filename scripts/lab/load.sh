@@ -20,15 +20,33 @@ spec:
       labels: {app: pos, app.kubernetes.io/name: cmtc-load}
     spec:
       restartPolicy: Never
-      containers:
+      securityContext: {runAsNonRoot: true, runAsUser: 65532, fsGroup: 65532}
+      volumes: [{name: results, emptyDir: {}}]
+      initContainers:
         - name: fortio
           image: fortio/fortio:1.75.3
-          args: [load, '-qps', '$qps', '-c', '2', '-t', 6m, '-nocatchup', '-uniform', '-json', /dev/stdout, '$target']
+          args: [load, '-qps', '$qps', '-c', '2', '-t', 6m, '-nocatchup', '-uniform', '-json', /results/fortio.json, '$target']
+          volumeMounts: [{name: results, mountPath: /results}]
           resources:
             requests: {cpu: 25m, memory: 32Mi}
             limits: {memory: 128Mi}
+      containers:
+        - name: results
+          image: alpine:3.20
+          command: [cat, /results/fortio.json]
+          volumeMounts: [{name: results, mountPath: /results, readOnly: true}]
+          resources:
+            requests: {cpu: 10m, memory: 16Mi}
+            limits: {memory: 32Mi}
 EOF
-    kubectl --context "kind-$cluster" -n "$ns" wait pod -l job-name=cmtc-load --for=condition=Ready --timeout=3m
+    pod=''
+    for _ in $(seq 1 30); do
+      pod=$(kubectl --context "kind-$cluster" -n "$ns" get pods -l job-name=cmtc-load -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || true)
+      [ -z "$pod" ] || break
+      sleep 1
+    done
+    [ -n "$pod" ] || { echo "Load pod was not created: $stream" >&2; exit 1; }
+    kubectl --context "kind-$cluster" -n "$ns" wait "pod/$pod" --for=jsonpath='{.status.initContainerStatuses[0].state.running.startedAt}' --timeout=3m
   done
   ;;
 collect)
@@ -36,21 +54,14 @@ collect)
     cluster=${stream%-*}; ns=cf2cnp-lab
     [ "$stream" != cmtc-a-mesh ] || ns=mesh-example
     kubectl --context "kind-$cluster" -n "$ns" wait job/cmtc-load --for=condition=Complete --timeout=7m
-    kubectl --context "kind-$cluster" -n "$ns" logs job/cmtc-load > "artifacts/load/$stream.log"
+    kubectl --context "kind-$cluster" -n "$ns" logs job/cmtc-load -c fortio > "artifacts/load/$stream.log"
+    kubectl --context "kind-$cluster" -n "$ns" logs job/cmtc-load -c results > "artifacts/load/$stream.json"
   done
   python3 - <<'PY'
-import json,pathlib,re
+import json,pathlib
 results=[]
 for stream,qps in [('cmtc-a-shop',20),('cmtc-b-shop',20),('cmtc-a-mesh',10)]:
-    text=pathlib.Path('artifacts/load/'+stream+'.log').read_text()
-    # Fortio writes progress before its JSON summary; tolerate trailing log text.
-    data=None
-    for match in re.finditer(r'\{',text):
-        try: candidate,_=json.JSONDecoder().raw_decode(text[match.start():])
-        except json.JSONDecodeError: continue
-        if isinstance(candidate,dict) and 'RetCodes' in candidate and 'DurationHistogram' in candidate:
-            data=candidate;break
-    assert data is not None,(stream,'missing Fortio summary')
+    data=json.loads(pathlib.Path('artifacts/load/'+stream+'.json').read_text())
     total=data['DurationHistogram']['Count'];codes=data['RetCodes'];success=codes.get('200',0)
     assert total>qps*120 and success/total>=0.99,(stream,total,codes)
     assert data['ActualDuration']>=120*1e9 and data['ActualQPS']>=qps/2,(stream,data['ActualQPS'])

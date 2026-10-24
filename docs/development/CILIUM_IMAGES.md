@@ -44,3 +44,11 @@ The [September draft](https://github.com/ephico2real2/cilium-implementation-poc/
 Optional `images.hubble-relay`, `images.hubble-ui` and `images.hubble-ui-backend` entries in a bundle accept the same `{"image":"ghcr.io/ephico2real2/...@sha256:..."}` form and render the corresponding Helm image overrides. They do not enable those components implicitly. The current CMTC Observe profile keeps Hubble disabled; the separate fork dashboard CI enables it and retains [real Gateway load evidence](https://github.com/ephico2real2/cilium/actions/runs/40035107452). Future Relay/UI changes need their own source pins and tests before adding them to this bundle.
 
 The ztunnel compatibility rejection is retained. Custom images and screenshots do not establish workload mTLS, authorization enforcement or layered WireGuard/IPsec encryption.
+
+## CMTC and KVStoreMesh
+
+CMTC has no separate KVStoreMesh deployment or direct storage dependency on it. In this selected Cilium 1.21 development profile, ClusterMesh always uses KVStoreMesh for remote cluster state; the lab already runs that container in each mesh API server pod. CMTC policies/status remain Kubernetes CRDs, while Prometheus stores metrics. Missing unimplemented mTLS dashboard signals are not fixed by persisting mesh cache data. See the [Cilium 1.21 ClusterMesh command reference](https://docs.cilium.io/en/latest/cmdref/cilium_clustermesh_enable/).
+
+The Hubble dashboard workflow accepts the same published lock through `image_lock_url` with its matching `source_sha`; it tests real external Gateway, pod Gateway and direct-pod load before before/after PNGs. This is a separate observability qualification from the CMTC two-cluster Observe baseline.
+
+The Fortio Jobs write their JSON to an emptyDir from a non-root init container. A separate results container prints only the JSON after the load finishes; init-container console logs are retained separately. This avoids Kubernetes merging console output into the result document.
