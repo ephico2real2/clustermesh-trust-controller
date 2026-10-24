@@ -197,6 +197,38 @@ func TestPrivilegedSubprocessSIGKILLRestartPreservesForeignLink(t *testing.T) {
 	requireExactChain(t, f.cfg, baseline)
 }
 
+func TestPrivilegedOccupiedListenerDoesNotAttach(t *testing.T) {
+	_ = requirePrivileged(t)
+	binary := requireObserverBinary(t)
+	listener, err := net.Listen("tcp", "127.0.0.1:18082")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer listener.Close()
+	f := newFixture(t)
+	_, baseline, err := query(f.cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// A malformed but readable ELF distinguishes bind-first rejection from a
+	// loader error followed by cleanup. No BPF load should be attempted here.
+	badELF := filepath.Join(t.TempDir(), "invalid.o")
+	if err := os.WriteFile(badELF, []byte("not an ELF"), 0400); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("CMTC_BPF_ELF", badELF)
+	child := startObserverChild(t, f, binary)
+	select {
+	case <-child.done:
+	case <-time.After(5 * time.Second):
+		t.Fatal("occupied listener did not abort startup")
+	}
+	if child.err == nil || !strings.Contains(childLog(child), "reserve observer listener") {
+		t.Fatalf("expected listener rejection, got %v\n%s", child.err, childLog(child))
+	}
+	requireExactChain(t, f.cfg, baseline)
+}
+
 func TestPrivilegedConcurrentSampleClose(t *testing.T) {
 	elf := requirePrivileged(t)
 	f := newFixture(t)
@@ -232,7 +264,7 @@ func TestPrivilegedConcurrentSampleClose(t *testing.T) {
 				if err != nil {
 					select {
 					case <-closeStarted:
-						if err.Error() != "observer is closed" {
+						if !errors.Is(err, ErrClosed) {
 							errs <- err
 						}
 					default:

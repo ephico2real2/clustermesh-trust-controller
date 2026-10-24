@@ -1,0 +1,158 @@
+=== RUN   TestValidateConfig
+=== RUN   TestValidateConfig/cluster
+=== RUN   TestValidateConfig/node
+=== RUN   TestValidateConfig/pod
+=== RUN   TestValidateConfig/netns
+=== RUN   TestValidateConfig/ifindex
+=== RUN   TestValidateConfig/ifname
+=== RUN   TestValidateConfig/mac
+=== RUN   TestValidateConfig/peer
+=== RUN   TestValidateConfig/anchor
+=== RUN   TestValidateConfig/program
+=== RUN   TestValidateConfig/direction
+--- PASS: TestValidateConfig (0.00s)
+    --- PASS: TestValidateConfig/cluster (0.00s)
+    --- PASS: TestValidateConfig/node (0.00s)
+    --- PASS: TestValidateConfig/pod (0.00s)
+    --- PASS: TestValidateConfig/netns (0.00s)
+    --- PASS: TestValidateConfig/ifindex (0.00s)
+    --- PASS: TestValidateConfig/ifname (0.00s)
+    --- PASS: TestValidateConfig/mac (0.00s)
+    --- PASS: TestValidateConfig/peer (0.00s)
+    --- PASS: TestValidateConfig/anchor (0.00s)
+    --- PASS: TestValidateConfig/program (0.00s)
+    --- PASS: TestValidateConfig/direction (0.00s)
+=== RUN   TestCloseZeroValue
+--- PASS: TestCloseZeroValue (0.00s)
+=== RUN   TestValidateRejectsNoncanonicalKernelIdentifiers
+=== RUN   TestValidateRejectsNoncanonicalKernelIdentifiers/oversized-ifindex
+=== RUN   TestValidateRejectsNoncanonicalKernelIdentifiers/oversized-peer
+=== RUN   TestValidateRejectsNoncanonicalKernelIdentifiers/long-name
+=== RUN   TestValidateRejectsNoncanonicalKernelIdentifiers/nul-name
+=== RUN   TestValidateRejectsNoncanonicalKernelIdentifiers/slash-name
+=== RUN   TestValidateRejectsNoncanonicalKernelIdentifiers/malformed-mac
+=== RUN   TestValidateRejectsNoncanonicalKernelIdentifiers/eui64-mac
+=== RUN   TestValidateRejectsNoncanonicalKernelIdentifiers/noncanonical-mac
+--- PASS: TestValidateRejectsNoncanonicalKernelIdentifiers (0.00s)
+    --- PASS: TestValidateRejectsNoncanonicalKernelIdentifiers/oversized-ifindex (0.00s)
+    --- PASS: TestValidateRejectsNoncanonicalKernelIdentifiers/oversized-peer (0.00s)
+    --- PASS: TestValidateRejectsNoncanonicalKernelIdentifiers/long-name (0.00s)
+    --- PASS: TestValidateRejectsNoncanonicalKernelIdentifiers/nul-name (0.00s)
+    --- PASS: TestValidateRejectsNoncanonicalKernelIdentifiers/slash-name (0.00s)
+    --- PASS: TestValidateRejectsNoncanonicalKernelIdentifiers/malformed-mac (0.00s)
+    --- PASS: TestValidateRejectsNoncanonicalKernelIdentifiers/eui64-mac (0.00s)
+    --- PASS: TestValidateRejectsNoncanonicalKernelIdentifiers/noncanonical-mac (0.00s)
+=== RUN   TestClosedObserverReturnsStableError
+--- PASS: TestClosedObserverReturnsStableError (0.00s)
+PASS
+ok  	github.com/ephico2real2/clustermesh-trust-controller/internal/datapath	1.008s
+=== RUN   TestDecodeConfigRejectsAmbiguousOrInvalidJSON
+=== RUN   TestDecodeConfigRejectsAmbiguousOrInvalidJSON/valid
+=== RUN   TestDecodeConfigRejectsAmbiguousOrInvalidJSON/whitespace
+=== RUN   TestDecodeConfigRejectsAmbiguousOrInvalidJSON/empty
+=== RUN   TestDecodeConfigRejectsAmbiguousOrInvalidJSON/null
+=== RUN   TestDecodeConfigRejectsAmbiguousOrInvalidJSON/missing
+=== RUN   TestDecodeConfigRejectsAmbiguousOrInvalidJSON/extra-object
+=== RUN   TestDecodeConfigRejectsAmbiguousOrInvalidJSON/extra-null
+=== RUN   TestDecodeConfigRejectsAmbiguousOrInvalidJSON/garbage
+=== RUN   TestDecodeConfigRejectsAmbiguousOrInvalidJSON/unknown
+=== RUN   TestDecodeConfigRejectsAmbiguousOrInvalidJSON/wrong-field-type
+--- PASS: TestDecodeConfigRejectsAmbiguousOrInvalidJSON (0.00s)
+    --- PASS: TestDecodeConfigRejectsAmbiguousOrInvalidJSON/valid (0.00s)
+    --- PASS: TestDecodeConfigRejectsAmbiguousOrInvalidJSON/whitespace (0.00s)
+    --- PASS: TestDecodeConfigRejectsAmbiguousOrInvalidJSON/empty (0.00s)
+    --- PASS: TestDecodeConfigRejectsAmbiguousOrInvalidJSON/null (0.00s)
+    --- PASS: TestDecodeConfigRejectsAmbiguousOrInvalidJSON/missing (0.00s)
+    --- PASS: TestDecodeConfigRejectsAmbiguousOrInvalidJSON/extra-object (0.00s)
+    --- PASS: TestDecodeConfigRejectsAmbiguousOrInvalidJSON/extra-null (0.00s)
+    --- PASS: TestDecodeConfigRejectsAmbiguousOrInvalidJSON/garbage (0.00s)
+    --- PASS: TestDecodeConfigRejectsAmbiguousOrInvalidJSON/unknown (0.00s)
+    --- PASS: TestDecodeConfigRejectsAmbiguousOrInvalidJSON/wrong-field-type (0.00s)
+=== RUN   TestCollectorDistinguishesLiveZeroAndUnavailable
+--- PASS: TestCollectorDistinguishesLiveZeroAndUnavailable (0.00s)
+=== RUN   TestFreshnessControlsMetricsAndReadiness
+=== RUN   TestFreshnessControlsMetricsAndReadiness/never
+=== RUN   TestFreshnessControlsMetricsAndReadiness/fresh
+=== RUN   TestFreshnessControlsMetricsAndReadiness/expired
+=== RUN   TestFreshnessControlsMetricsAndReadiness/clock-future
+--- PASS: TestFreshnessControlsMetricsAndReadiness (0.00s)
+    --- PASS: TestFreshnessControlsMetricsAndReadiness/never (0.00s)
+    --- PASS: TestFreshnessControlsMetricsAndReadiness/fresh (0.00s)
+    --- PASS: TestFreshnessControlsMetricsAndReadiness/expired (0.00s)
+    --- PASS: TestFreshnessControlsMetricsAndReadiness/clock-future (0.00s)
+=== RUN   TestCollectorConcurrentPublicationAndGather
+--- PASS: TestCollectorConcurrentPublicationAndGather (0.00s)
+PASS
+ok  	github.com/ephico2real2/clustermesh-trust-controller/cmd/cmtc-bpf-observer	1.013s
+=== RUN   TestPrivilegedSubprocessSIGKILLRestartPreservesForeignLink
+--- PASS: TestPrivilegedSubprocessSIGKILLRestartPreservesForeignLink (0.09s)
+=== RUN   TestPrivilegedOccupiedListenerDoesNotAttach
+--- PASS: TestPrivilegedOccupiedListenerDoesNotAttach (0.04s)
+=== RUN   TestPrivilegedConcurrentSampleClose
+--- PASS: TestPrivilegedConcurrentSampleClose (0.07s)
+=== RUN   TestPrivilegedIfindexMACReuseRejectsOldAnchor
+--- PASS: TestPrivilegedIfindexMACReuseRejectsOldAnchor (0.11s)
+=== RUN   TestPrivilegedIngressEgressActualPacketCounters
+=== RUN   TestPrivilegedIngressEgressActualPacketCounters/ingress
+=== RUN   TestPrivilegedIngressEgressActualPacketCounters/egress
+--- PASS: TestPrivilegedIngressEgressActualPacketCounters (0.18s)
+    --- PASS: TestPrivilegedIngressEgressActualPacketCounters/ingress (0.08s)
+    --- PASS: TestPrivilegedIngressEgressActualPacketCounters/egress (0.10s)
+=== RUN   TestValidateConfig
+=== RUN   TestValidateConfig/cluster
+=== RUN   TestValidateConfig/node
+=== RUN   TestValidateConfig/pod
+=== RUN   TestValidateConfig/netns
+=== RUN   TestValidateConfig/ifindex
+=== RUN   TestValidateConfig/ifname
+=== RUN   TestValidateConfig/mac
+=== RUN   TestValidateConfig/peer
+=== RUN   TestValidateConfig/anchor
+=== RUN   TestValidateConfig/program
+=== RUN   TestValidateConfig/direction
+--- PASS: TestValidateConfig (0.00s)
+    --- PASS: TestValidateConfig/cluster (0.00s)
+    --- PASS: TestValidateConfig/node (0.00s)
+    --- PASS: TestValidateConfig/pod (0.00s)
+    --- PASS: TestValidateConfig/netns (0.00s)
+    --- PASS: TestValidateConfig/ifindex (0.00s)
+    --- PASS: TestValidateConfig/ifname (0.00s)
+    --- PASS: TestValidateConfig/mac (0.00s)
+    --- PASS: TestValidateConfig/peer (0.00s)
+    --- PASS: TestValidateConfig/anchor (0.00s)
+    --- PASS: TestValidateConfig/program (0.00s)
+    --- PASS: TestValidateConfig/direction (0.00s)
+=== RUN   TestCloseZeroValue
+--- PASS: TestCloseZeroValue (0.00s)
+=== RUN   TestPrivilegedVerifierReturnsNextUnchanged
+--- PASS: TestPrivilegedVerifierReturnsNextUnchanged (0.00s)
+=== RUN   TestPrivilegedAttachPacketsDriftAndRecovery
+--- PASS: TestPrivilegedAttachPacketsDriftAndRecovery (0.10s)
+=== RUN   TestPrivilegedRejectLegacyTCWithoutMutation
+--- PASS: TestPrivilegedRejectLegacyTCWithoutMutation (0.03s)
+=== RUN   TestPrivilegedOwnerDetachIsNotPinnedByObserver
+--- PASS: TestPrivilegedOwnerDetachIsNotPinnedByObserver (0.06s)
+=== RUN   TestValidateRejectsNoncanonicalKernelIdentifiers
+=== RUN   TestValidateRejectsNoncanonicalKernelIdentifiers/oversized-ifindex
+=== RUN   TestValidateRejectsNoncanonicalKernelIdentifiers/oversized-peer
+=== RUN   TestValidateRejectsNoncanonicalKernelIdentifiers/long-name
+=== RUN   TestValidateRejectsNoncanonicalKernelIdentifiers/nul-name
+=== RUN   TestValidateRejectsNoncanonicalKernelIdentifiers/slash-name
+=== RUN   TestValidateRejectsNoncanonicalKernelIdentifiers/malformed-mac
+=== RUN   TestValidateRejectsNoncanonicalKernelIdentifiers/eui64-mac
+=== RUN   TestValidateRejectsNoncanonicalKernelIdentifiers/noncanonical-mac
+--- PASS: TestValidateRejectsNoncanonicalKernelIdentifiers (0.00s)
+    --- PASS: TestValidateRejectsNoncanonicalKernelIdentifiers/oversized-ifindex (0.00s)
+    --- PASS: TestValidateRejectsNoncanonicalKernelIdentifiers/oversized-peer (0.00s)
+    --- PASS: TestValidateRejectsNoncanonicalKernelIdentifiers/long-name (0.00s)
+    --- PASS: TestValidateRejectsNoncanonicalKernelIdentifiers/nul-name (0.00s)
+    --- PASS: TestValidateRejectsNoncanonicalKernelIdentifiers/slash-name (0.00s)
+    --- PASS: TestValidateRejectsNoncanonicalKernelIdentifiers/malformed-mac (0.00s)
+    --- PASS: TestValidateRejectsNoncanonicalKernelIdentifiers/eui64-mac (0.00s)
+    --- PASS: TestValidateRejectsNoncanonicalKernelIdentifiers/noncanonical-mac (0.00s)
+=== RUN   TestClosedObserverReturnsStableError
+--- PASS: TestClosedObserverReturnsStableError (0.00s)
+PASS
+ok  	github.com/ephico2real2/clustermesh-trust-controller/internal/datapath	1.684s
+74c67287b17c8f346db54bd8e7a02ba3bc7fb83b92a822762b5de1b3edcc8716  /tmp/cmtc-observer_bpfel.o
+adc18d3af5a73b7333b1bb88c5fd5bc7cc8514437497643851257a13bbc16417  /tmp/cmtc-bpf-observer

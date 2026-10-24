@@ -1,0 +1,269 @@
+{
+  "qualification": "local-observe-update-proxy-image-staged",
+  "images": {
+    "cilium": {
+      "tag": "localhost/cilium:admission-8b01a7c954",
+      "configId": "sha256:954ecb17927d8dc20fed5509c8cdb62b4aa268ed121a2ea2d47f6a1358bc8c78",
+      "architecture": "arm64",
+      "revision": "8b01a7c95440f6db398a87bdac2136d36711d23f"
+    },
+    "cmtc": {
+      "tag": "localhost/cmtc:observe-b193510f20",
+      "configId": "sha256:e00900c6966ec7b8797a9598c65214e0a95529bc7ef74e78c7dfee4fbe7e897a",
+      "architecture": "arm64",
+      "revision": "b193510f206a8655a3f9c240728b71b0427a5b31"
+    },
+    "ztunnel": {
+      "tag": "localhost/cmtc-ztunnel:strict-1db4fb296b",
+      "configId": "sha256:f83b7282473e1430bee4cc06d0a55890d49b7e2d3d916f4343aacf11d9a2145d",
+      "architecture": "arm64",
+      "revision": "1db4fb296beb4ca4c6c12762c61d1730dc38ceab"
+    },
+    "observer": {
+      "tag": "localhost/cmtc-bpf-observer:observe-b193510f20",
+      "configId": "sha256:a66f9e5678824d15bdb45b60a70659a1534b919cc6753d8d81eb3d20eb309cdb",
+      "architecture": "arm64",
+      "revision": "b193510f206a8655a3f9c240728b71b0427a5b31"
+    }
+  },
+  "nodeImages": [
+    {
+      "node": "cmtc-a-control-plane",
+      "component": "cilium",
+      "configId": "sha256:954ecb17927d8dc20fed5509c8cdb62b4aa268ed121a2ea2d47f6a1358bc8c78",
+      "repoDigests": [
+        "docker.io/library/import-2026-10-24@sha256:cf0e42d9232b840954e5a59b0f02dfd808a50cb480c02da795316f26d96463b4"
+      ]
+    },
+    {
+      "node": "cmtc-a-control-plane",
+      "component": "cmtc",
+      "configId": "sha256:e00900c6966ec7b8797a9598c65214e0a95529bc7ef74e78c7dfee4fbe7e897a",
+      "repoDigests": [
+        "docker.io/library/import-2026-10-24@sha256:1ac83fd3f22e636306bb458e5dbcc5b00f097bad43a9f794df7e382122661da5"
+      ]
+    },
+    {
+      "node": "cmtc-a-control-plane",
+      "component": "ztunnel",
+      "configId": "sha256:f83b7282473e1430bee4cc06d0a55890d49b7e2d3d916f4343aacf11d9a2145d",
+      "repoDigests": [
+        "docker.io/library/import-2026-10-24@sha256:e1b8f049f84dbf3ff9599b7121ade13b10b851657579788adf9bf3545d6a98c0"
+      ]
+    },
+    {
+      "node": "cmtc-a-control-plane",
+      "component": "observer",
+      "configId": "sha256:a66f9e5678824d15bdb45b60a70659a1534b919cc6753d8d81eb3d20eb309cdb",
+      "repoDigests": [
+        "docker.io/library/import-2026-10-24@sha256:d3f002918d69a8dbdb74165c4c37f35b17ad64efe43dc4e5852f19f0632ee120"
+      ]
+    },
+    {
+      "node": "cmtc-a-worker",
+      "component": "cilium",
+      "configId": "sha256:954ecb17927d8dc20fed5509c8cdb62b4aa268ed121a2ea2d47f6a1358bc8c78",
+      "repoDigests": [
+        "docker.io/library/import-2026-10-24@sha256:cf0e42d9232b840954e5a59b0f02dfd808a50cb480c02da795316f26d96463b4"
+      ]
+    },
+    {
+      "node": "cmtc-a-worker",
+      "component": "cmtc",
+      "configId": "sha256:e00900c6966ec7b8797a9598c65214e0a95529bc7ef74e78c7dfee4fbe7e897a",
+      "repoDigests": [
+        "docker.io/library/import-2026-10-24@sha256:b79f2b7269fcace8b3653cb23ca7afe300635bdde29ed435f5d6bf6ccb363b70"
+      ]
+    },
+    {
+      "node": "cmtc-a-worker",
+      "component": "ztunnel",
+      "configId": "sha256:f83b7282473e1430bee4cc06d0a55890d49b7e2d3d916f4343aacf11d9a2145d",
+      "repoDigests": [
+        "docker.io/library/import-2026-10-24@sha256:fcdd9bd4621852579f5d78673b74dac1e2c5eec013f2f99eceb4e8ec49f3739c"
+      ]
+    },
+    {
+      "node": "cmtc-a-worker",
+      "component": "observer",
+      "configId": "sha256:a66f9e5678824d15bdb45b60a70659a1534b919cc6753d8d81eb3d20eb309cdb",
+      "repoDigests": [
+        "docker.io/library/import-2026-10-24@sha256:d3f002918d69a8dbdb74165c4c37f35b17ad64efe43dc4e5852f19f0632ee120"
+      ]
+    },
+    {
+      "node": "cmtc-b-control-plane",
+      "component": "cilium",
+      "configId": "sha256:954ecb17927d8dc20fed5509c8cdb62b4aa268ed121a2ea2d47f6a1358bc8c78",
+      "repoDigests": [
+        "docker.io/library/import-2026-10-24@sha256:cf0e42d9232b840954e5a59b0f02dfd808a50cb480c02da795316f26d96463b4"
+      ]
+    },
+    {
+      "node": "cmtc-b-control-plane",
+      "component": "cmtc",
+      "configId": "sha256:e00900c6966ec7b8797a9598c65214e0a95529bc7ef74e78c7dfee4fbe7e897a",
+      "repoDigests": [
+        "docker.io/library/import-2026-10-24@sha256:1ac83fd3f22e636306bb458e5dbcc5b00f097bad43a9f794df7e382122661da5"
+      ]
+    },
+    {
+      "node": "cmtc-b-control-plane",
+      "component": "ztunnel",
+      "configId": "sha256:f83b7282473e1430bee4cc06d0a55890d49b7e2d3d916f4343aacf11d9a2145d",
+      "repoDigests": [
+        "docker.io/library/import-2026-10-24@sha256:e1b8f049f84dbf3ff9599b7121ade13b10b851657579788adf9bf3545d6a98c0"
+      ]
+    },
+    {
+      "node": "cmtc-b-control-plane",
+      "component": "observer",
+      "configId": "sha256:a66f9e5678824d15bdb45b60a70659a1534b919cc6753d8d81eb3d20eb309cdb",
+      "repoDigests": [
+        "docker.io/library/import-2026-10-24@sha256:d3f002918d69a8dbdb74165c4c37f35b17ad64efe43dc4e5852f19f0632ee120"
+      ]
+    },
+    {
+      "node": "cmtc-b-worker",
+      "component": "cilium",
+      "configId": "sha256:954ecb17927d8dc20fed5509c8cdb62b4aa268ed121a2ea2d47f6a1358bc8c78",
+      "repoDigests": [
+        "docker.io/library/import-2026-10-24@sha256:cf0e42d9232b840954e5a59b0f02dfd808a50cb480c02da795316f26d96463b4"
+      ]
+    },
+    {
+      "node": "cmtc-b-worker",
+      "component": "cmtc",
+      "configId": "sha256:e00900c6966ec7b8797a9598c65214e0a95529bc7ef74e78c7dfee4fbe7e897a",
+      "repoDigests": [
+        "docker.io/library/import-2026-10-24@sha256:b79f2b7269fcace8b3653cb23ca7afe300635bdde29ed435f5d6bf6ccb363b70"
+      ]
+    },
+    {
+      "node": "cmtc-b-worker",
+      "component": "ztunnel",
+      "configId": "sha256:f83b7282473e1430bee4cc06d0a55890d49b7e2d3d916f4343aacf11d9a2145d",
+      "repoDigests": [
+        "docker.io/library/import-2026-10-24@sha256:fcdd9bd4621852579f5d78673b74dac1e2c5eec013f2f99eceb4e8ec49f3739c"
+      ]
+    },
+    {
+      "node": "cmtc-b-worker",
+      "component": "observer",
+      "configId": "sha256:a66f9e5678824d15bdb45b60a70659a1534b919cc6753d8d81eb3d20eb309cdb",
+      "repoDigests": [
+        "docker.io/library/import-2026-10-24@sha256:d3f002918d69a8dbdb74165c4c37f35b17ad64efe43dc4e5852f19f0632ee120"
+      ]
+    }
+  ],
+  "runningWorkloads": [
+    {
+      "cluster": "cmtc-a",
+      "pod": "cilium-frmxj",
+      "node": "cmtc-a-worker",
+      "container": "cilium-agent",
+      "image": "localhost/cilium:admission-8b01a7c954",
+      "runtimeImageId": "docker.io/library/import-2026-10-24@sha256:cf0e42d9232b840954e5a59b0f02dfd808a50cb480c02da795316f26d96463b4",
+      "ready": true
+    },
+    {
+      "cluster": "cmtc-a",
+      "pod": "cilium-wfknl",
+      "node": "cmtc-a-control-plane",
+      "container": "cilium-agent",
+      "image": "localhost/cilium:admission-8b01a7c954",
+      "runtimeImageId": "docker.io/library/import-2026-10-24@sha256:cf0e42d9232b840954e5a59b0f02dfd808a50cb480c02da795316f26d96463b4",
+      "ready": true
+    },
+    {
+      "cluster": "cmtc-a",
+      "pod": "cmtc-controller-d46bb9df4-t962m",
+      "node": "cmtc-a-worker",
+      "container": "controller",
+      "image": "localhost/cmtc:observe-b193510f20",
+      "runtimeImageId": "docker.io/library/import-2026-10-24@sha256:b79f2b7269fcace8b3653cb23ca7afe300635bdde29ed435f5d6bf6ccb363b70",
+      "ready": true
+    },
+    {
+      "cluster": "cmtc-a",
+      "pod": "cmtc-node-agent-bxhcp",
+      "node": "cmtc-a-worker",
+      "container": "agent",
+      "image": "localhost/cmtc:observe-b193510f20",
+      "runtimeImageId": "docker.io/library/import-2026-10-24@sha256:b79f2b7269fcace8b3653cb23ca7afe300635bdde29ed435f5d6bf6ccb363b70",
+      "ready": true
+    },
+    {
+      "cluster": "cmtc-a",
+      "pod": "cmtc-node-agent-cwmmv",
+      "node": "cmtc-a-control-plane",
+      "container": "agent",
+      "image": "localhost/cmtc:observe-b193510f20",
+      "runtimeImageId": "docker.io/library/import-2026-10-24@sha256:1ac83fd3f22e636306bb458e5dbcc5b00f097bad43a9f794df7e382122661da5",
+      "ready": true
+    },
+    {
+      "cluster": "cmtc-b",
+      "pod": "cilium-4rv7b",
+      "node": "cmtc-b-worker",
+      "container": "cilium-agent",
+      "image": "localhost/cilium:admission-8b01a7c954",
+      "runtimeImageId": "docker.io/library/import-2026-10-24@sha256:cf0e42d9232b840954e5a59b0f02dfd808a50cb480c02da795316f26d96463b4",
+      "ready": true
+    },
+    {
+      "cluster": "cmtc-b",
+      "pod": "cilium-plg4d",
+      "node": "cmtc-b-control-plane",
+      "container": "cilium-agent",
+      "image": "localhost/cilium:admission-8b01a7c954",
+      "runtimeImageId": "docker.io/library/import-2026-10-24@sha256:cf0e42d9232b840954e5a59b0f02dfd808a50cb480c02da795316f26d96463b4",
+      "ready": true
+    },
+    {
+      "cluster": "cmtc-b",
+      "pod": "cmtc-controller-84446d56dc-g4str",
+      "node": "cmtc-b-worker",
+      "container": "controller",
+      "image": "localhost/cmtc:observe-b193510f20",
+      "runtimeImageId": "docker.io/library/import-2026-10-24@sha256:b79f2b7269fcace8b3653cb23ca7afe300635bdde29ed435f5d6bf6ccb363b70",
+      "ready": true
+    },
+    {
+      "cluster": "cmtc-b",
+      "pod": "cmtc-node-agent-nx8cb",
+      "node": "cmtc-b-worker",
+      "container": "agent",
+      "image": "localhost/cmtc:observe-b193510f20",
+      "runtimeImageId": "docker.io/library/import-2026-10-24@sha256:b79f2b7269fcace8b3653cb23ca7afe300635bdde29ed435f5d6bf6ccb363b70",
+      "ready": true
+    },
+    {
+      "cluster": "cmtc-b",
+      "pod": "cmtc-node-agent-zc9xr",
+      "node": "cmtc-b-control-plane",
+      "container": "agent",
+      "image": "localhost/cmtc:observe-b193510f20",
+      "runtimeImageId": "docker.io/library/import-2026-10-24@sha256:1ac83fd3f22e636306bb458e5dbcc5b00f097bad43a9f794df7e382122661da5",
+      "ready": true
+    }
+  ],
+  "cmtc-aEncryption": {
+    "enabled": false,
+    "ztunnel": {
+      "image": {
+        "override": "localhost/cmtc-ztunnel:strict-1db4fb296b",
+        "pullPolicy": "IfNotPresent"
+      }
+    }
+  },
+  "cmtc-bEncryption": {
+    "enabled": false,
+    "ztunnel": {
+      "image": {
+        "override": "localhost/cmtc-ztunnel:strict-1db4fb296b",
+        "pullPolicy": "IfNotPresent"
+      }
+    }
+  }
+}

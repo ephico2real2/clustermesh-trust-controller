@@ -1,0 +1,1480 @@
+$ kubectl --context kind-cmtc-a -n cmtc-observer-lab exec observer-client -- curl -fsS --connect-timeout 2 --max-time 3 -D - http://10.10.0.50:80/
+exit=0
+HTTP/1.1 200 OK
+Server: nginx/1.27.5
+Date: Sat, 24 Oct 2026 23:01:44 GMT
+Content-Type: text/html
+Content-Length: 68
+Last-Modified: Sat, 24 Oct 2026 21:44:31 GMT
+Connection: keep-alive
+ETag: "6add26bf-44"
+X-CMTC-Cluster: cmtc-a
+X-CMTC-Pod: rebel-base-688ff9949b-7cbrt
+Accept-Ranges: bytes
+
+{"cluster": "cmtc-a", "message": "served by the cmtc-a rebel base"}
+
+$ kubectl --context kind-cmtc-a -n cmtc-observer-lab exec observer-client -- curl -fsS --connect-timeout 2 --max-time 3 -D - http://10.10.0.50:8080/
+exit=0
+HTTP/1.1 200 OK
+Server: nginx/1.27.5
+Date: Sat, 24 Oct 2026 23:01:44 GMT
+Content-Type: text/html
+Content-Length: 68
+Last-Modified: Sat, 24 Oct 2026 21:44:31 GMT
+Connection: keep-alive
+ETag: "6add26bf-44"
+X-CMTC-Cluster: cmtc-a
+X-CMTC-Pod: rebel-base-688ff9949b-7cbrt
+Accept-Ranges: bytes
+
+{"cluster": "cmtc-a", "message": "served by the cmtc-a rebel base"}
+
+$ kubectl --context kind-cmtc-a -n cmtc-observer-lab exec observer-client -- curl -fsS --connect-timeout 2 --max-time 3 -D - http://10.10.0.50:31337/
+exit=28
+curl: (28) Connection timed out after 2002 milliseconds
+command terminated with exit code 28
+
+$ kubectl --context kind-cmtc-a -n cmtc-observer-lab exec observer-client -- curl -fsS --connect-timeout 2 --max-time 3 -D - http://10.20.0.48:80/
+exit=0
+HTTP/1.1 200 OK
+Server: nginx/1.27.5
+Date: Sat, 24 Oct 2026 23:01:46 GMT
+Content-Type: text/html
+Content-Length: 68
+Last-Modified: Sat, 24 Oct 2026 21:44:34 GMT
+Connection: keep-alive
+ETag: "6add26c2-44"
+X-CMTC-Cluster: cmtc-b
+X-CMTC-Pod: rebel-base-7cbb476f7-rf9bf
+Accept-Ranges: bytes
+
+{"cluster": "cmtc-b", "message": "served by the cmtc-b rebel base"}
+
+$ kubectl --context kind-cmtc-a -n cmtc-observer-lab exec observer-client -- curl -fsS --connect-timeout 2 --max-time 3 -D - http://10.20.0.48:8080/
+exit=0
+HTTP/1.1 200 OK
+Server: nginx/1.27.5
+Date: Sat, 24 Oct 2026 23:01:46 GMT
+Content-Type: text/html
+Content-Length: 68
+Last-Modified: Sat, 24 Oct 2026 21:44:34 GMT
+Connection: keep-alive
+ETag: "6add26c2-44"
+X-CMTC-Cluster: cmtc-b
+X-CMTC-Pod: rebel-base-7cbb476f7-rf9bf
+Accept-Ranges: bytes
+
+{"cluster": "cmtc-b", "message": "served by the cmtc-b rebel base"}
+
+$ kubectl --context kind-cmtc-a -n cmtc-observer-lab exec observer-client -- curl -fsS --connect-timeout 2 --max-time 3 -D - http://10.20.0.48:31337/
+exit=28
+curl: (28) Connection timed out after 2001 milliseconds
+command terminated with exit code 28
+
+$ kubectl --context kind-cmtc-a -n cmtc-observer-lab exec observer-client -- curl -fsS --connect-timeout 2 --max-time 3 -D - http://10.10.0.50:80/
+exit=0
+HTTP/1.1 200 OK
+Server: nginx/1.27.5
+Date: Sat, 24 Oct 2026 23:01:48 GMT
+Content-Type: text/html
+Content-Length: 68
+Last-Modified: Sat, 24 Oct 2026 21:44:31 GMT
+Connection: keep-alive
+ETag: "6add26bf-44"
+X-CMTC-Cluster: cmtc-a
+X-CMTC-Pod: rebel-base-688ff9949b-7cbrt
+Accept-Ranges: bytes
+
+{"cluster": "cmtc-a", "message": "served by the cmtc-a rebel base"}
+
+$ kubectl --context kind-cmtc-a -n cmtc-observer-lab exec observer-client -- curl -fsS --connect-timeout 2 --max-time 3 -D - http://10.10.0.50:8080/
+exit=0
+HTTP/1.1 200 OK
+Server: nginx/1.27.5
+Date: Sat, 24 Oct 2026 23:01:48 GMT
+Content-Type: text/html
+Content-Length: 68
+Last-Modified: Sat, 24 Oct 2026 21:44:31 GMT
+Connection: keep-alive
+ETag: "6add26bf-44"
+X-CMTC-Cluster: cmtc-a
+X-CMTC-Pod: rebel-base-688ff9949b-7cbrt
+Accept-Ranges: bytes
+
+{"cluster": "cmtc-a", "message": "served by the cmtc-a rebel base"}
+
+$ kubectl --context kind-cmtc-a -n cmtc-observer-lab exec observer-client -- curl -fsS --connect-timeout 2 --max-time 3 -D - http://10.10.0.50:31337/
+exit=28
+curl: (28) Connection timed out after 2002 milliseconds
+command terminated with exit code 28
+
+$ kubectl --context kind-cmtc-a -n cmtc-observer-lab exec observer-client -- curl -fsS --connect-timeout 2 --max-time 3 -D - http://10.20.0.48:80/
+exit=0
+HTTP/1.1 200 OK
+Server: nginx/1.27.5
+Date: Sat, 24 Oct 2026 23:01:51 GMT
+Content-Type: text/html
+Content-Length: 68
+Last-Modified: Sat, 24 Oct 2026 21:44:34 GMT
+Connection: keep-alive
+ETag: "6add26c2-44"
+X-CMTC-Cluster: cmtc-b
+X-CMTC-Pod: rebel-base-7cbb476f7-rf9bf
+Accept-Ranges: bytes
+
+{"cluster": "cmtc-b", "message": "served by the cmtc-b rebel base"}
+
+$ kubectl --context kind-cmtc-a -n cmtc-observer-lab exec observer-client -- curl -fsS --connect-timeout 2 --max-time 3 -D - http://10.20.0.48:8080/
+exit=0
+HTTP/1.1 200 OK
+Server: nginx/1.27.5
+Date: Sat, 24 Oct 2026 23:01:51 GMT
+Content-Type: text/html
+Content-Length: 68
+Last-Modified: Sat, 24 Oct 2026 21:44:34 GMT
+Connection: keep-alive
+ETag: "6add26c2-44"
+X-CMTC-Cluster: cmtc-b
+X-CMTC-Pod: rebel-base-7cbb476f7-rf9bf
+Accept-Ranges: bytes
+
+{"cluster": "cmtc-b", "message": "served by the cmtc-b rebel base"}
+
+$ kubectl --context kind-cmtc-a -n cmtc-observer-lab exec observer-client -- curl -fsS --connect-timeout 2 --max-time 3 -D - http://10.20.0.48:31337/
+exit=28
+curl: (28) Connection timed out after 2001 milliseconds
+command terminated with exit code 28
+
+$ kubectl --context kind-cmtc-a -n cmtc-observer-lab exec observer-client -- curl -fsS --connect-timeout 2 --max-time 3 -D - http://10.10.0.50:80/
+exit=0
+HTTP/1.1 200 OK
+Server: nginx/1.27.5
+Date: Sat, 24 Oct 2026 23:01:55 GMT
+Content-Type: text/html
+Content-Length: 68
+Last-Modified: Sat, 24 Oct 2026 21:44:31 GMT
+Connection: keep-alive
+ETag: "6add26bf-44"
+X-CMTC-Cluster: cmtc-a
+X-CMTC-Pod: rebel-base-688ff9949b-7cbrt
+Accept-Ranges: bytes
+
+{"cluster": "cmtc-a", "message": "served by the cmtc-a rebel base"}
+
+$ kubectl --context kind-cmtc-a -n cmtc-observer-lab exec observer-client -- curl -fsS --connect-timeout 2 --max-time 3 -D - http://10.10.0.50:8080/
+exit=0
+HTTP/1.1 200 OK
+Server: nginx/1.27.5
+Date: Sat, 24 Oct 2026 23:01:55 GMT
+Content-Type: text/html
+Content-Length: 68
+Last-Modified: Sat, 24 Oct 2026 21:44:31 GMT
+Connection: keep-alive
+ETag: "6add26bf-44"
+X-CMTC-Cluster: cmtc-a
+X-CMTC-Pod: rebel-base-688ff9949b-7cbrt
+Accept-Ranges: bytes
+
+{"cluster": "cmtc-a", "message": "served by the cmtc-a rebel base"}
+
+$ kubectl --context kind-cmtc-a -n cmtc-observer-lab exec observer-client -- curl -fsS --connect-timeout 2 --max-time 3 -D - http://10.10.0.50:31337/
+exit=28
+curl: (28) Connection timed out after 2002 milliseconds
+command terminated with exit code 28
+
+$ kubectl --context kind-cmtc-a -n cmtc-observer-lab exec observer-client -- curl -fsS --connect-timeout 2 --max-time 3 -D - http://10.20.0.48:80/
+exit=0
+HTTP/1.1 200 OK
+Server: nginx/1.27.5
+Date: Sat, 24 Oct 2026 23:01:57 GMT
+Content-Type: text/html
+Content-Length: 68
+Last-Modified: Sat, 24 Oct 2026 21:44:34 GMT
+Connection: keep-alive
+ETag: "6add26c2-44"
+X-CMTC-Cluster: cmtc-b
+X-CMTC-Pod: rebel-base-7cbb476f7-rf9bf
+Accept-Ranges: bytes
+
+{"cluster": "cmtc-b", "message": "served by the cmtc-b rebel base"}
+
+$ kubectl --context kind-cmtc-a -n cmtc-observer-lab exec observer-client -- curl -fsS --connect-timeout 2 --max-time 3 -D - http://10.20.0.48:8080/
+exit=0
+HTTP/1.1 200 OK
+Server: nginx/1.27.5
+Date: Sat, 24 Oct 2026 23:01:57 GMT
+Content-Type: text/html
+Content-Length: 68
+Last-Modified: Sat, 24 Oct 2026 21:44:34 GMT
+Connection: keep-alive
+ETag: "6add26c2-44"
+X-CMTC-Cluster: cmtc-b
+X-CMTC-Pod: rebel-base-7cbb476f7-rf9bf
+Accept-Ranges: bytes
+
+{"cluster": "cmtc-b", "message": "served by the cmtc-b rebel base"}
+
+$ kubectl --context kind-cmtc-a -n cmtc-observer-lab exec observer-client -- curl -fsS --connect-timeout 2 --max-time 3 -D - http://10.20.0.48:31337/
+exit=28
+curl: (28) Connection timed out after 2001 milliseconds
+command terminated with exit code 28
+
+$ kubectl --context kind-cmtc-a -n cmtc-observer-lab exec observer-client -- curl -fsS --connect-timeout 2 --max-time 3 -D - http://10.10.0.50:80/
+exit=0
+HTTP/1.1 200 OK
+Server: nginx/1.27.5
+Date: Sat, 24 Oct 2026 23:01:59 GMT
+Content-Type: text/html
+Content-Length: 68
+Last-Modified: Sat, 24 Oct 2026 21:44:31 GMT
+Connection: keep-alive
+ETag: "6add26bf-44"
+X-CMTC-Cluster: cmtc-a
+X-CMTC-Pod: rebel-base-688ff9949b-7cbrt
+Accept-Ranges: bytes
+
+{"cluster": "cmtc-a", "message": "served by the cmtc-a rebel base"}
+
+$ kubectl --context kind-cmtc-a -n cmtc-observer-lab exec observer-client -- curl -fsS --connect-timeout 2 --max-time 3 -D - http://10.10.0.50:8080/
+exit=0
+HTTP/1.1 200 OK
+Server: nginx/1.27.5
+Date: Sat, 24 Oct 2026 23:01:59 GMT
+Content-Type: text/html
+Content-Length: 68
+Last-Modified: Sat, 24 Oct 2026 21:44:31 GMT
+Connection: keep-alive
+ETag: "6add26bf-44"
+X-CMTC-Cluster: cmtc-a
+X-CMTC-Pod: rebel-base-688ff9949b-7cbrt
+Accept-Ranges: bytes
+
+{"cluster": "cmtc-a", "message": "served by the cmtc-a rebel base"}
+
+$ kubectl --context kind-cmtc-a -n cmtc-observer-lab exec observer-client -- curl -fsS --connect-timeout 2 --max-time 3 -D - http://10.10.0.50:31337/
+exit=28
+curl: (28) Connection timed out after 2001 milliseconds
+command terminated with exit code 28
+
+$ kubectl --context kind-cmtc-a -n cmtc-observer-lab exec observer-client -- curl -fsS --connect-timeout 2 --max-time 3 -D - http://10.20.0.48:80/
+exit=0
+HTTP/1.1 200 OK
+Server: nginx/1.27.5
+Date: Sat, 24 Oct 2026 23:02:01 GMT
+Content-Type: text/html
+Content-Length: 68
+Last-Modified: Sat, 24 Oct 2026 21:44:34 GMT
+Connection: keep-alive
+ETag: "6add26c2-44"
+X-CMTC-Cluster: cmtc-b
+X-CMTC-Pod: rebel-base-7cbb476f7-rf9bf
+Accept-Ranges: bytes
+
+{"cluster": "cmtc-b", "message": "served by the cmtc-b rebel base"}
+
+$ kubectl --context kind-cmtc-a -n cmtc-observer-lab exec observer-client -- curl -fsS --connect-timeout 2 --max-time 3 -D - http://10.20.0.48:8080/
+exit=0
+HTTP/1.1 200 OK
+Server: nginx/1.27.5
+Date: Sat, 24 Oct 2026 23:02:01 GMT
+Content-Type: text/html
+Content-Length: 68
+Last-Modified: Sat, 24 Oct 2026 21:44:34 GMT
+Connection: keep-alive
+ETag: "6add26c2-44"
+X-CMTC-Cluster: cmtc-b
+X-CMTC-Pod: rebel-base-7cbb476f7-rf9bf
+Accept-Ranges: bytes
+
+{"cluster": "cmtc-b", "message": "served by the cmtc-b rebel base"}
+
+$ kubectl --context kind-cmtc-a -n cmtc-observer-lab exec observer-client -- curl -fsS --connect-timeout 2 --max-time 3 -D - http://10.20.0.48:31337/
+exit=28
+curl: (28) Connection timed out after 2001 milliseconds
+command terminated with exit code 28
+
+$ kubectl --context kind-cmtc-a -n cmtc-observer-lab exec observer-client -- curl -fsS --connect-timeout 2 --max-time 3 -D - http://10.10.0.50:80/
+exit=0
+HTTP/1.1 200 OK
+Server: nginx/1.27.5
+Date: Sat, 24 Oct 2026 23:02:03 GMT
+Content-Type: text/html
+Content-Length: 68
+Last-Modified: Sat, 24 Oct 2026 21:44:31 GMT
+Connection: keep-alive
+ETag: "6add26bf-44"
+X-CMTC-Cluster: cmtc-a
+X-CMTC-Pod: rebel-base-688ff9949b-7cbrt
+Accept-Ranges: bytes
+
+{"cluster": "cmtc-a", "message": "served by the cmtc-a rebel base"}
+
+$ kubectl --context kind-cmtc-a -n cmtc-observer-lab exec observer-client -- curl -fsS --connect-timeout 2 --max-time 3 -D - http://10.10.0.50:8080/
+exit=0
+HTTP/1.1 200 OK
+Server: nginx/1.27.5
+Date: Sat, 24 Oct 2026 23:02:03 GMT
+Content-Type: text/html
+Content-Length: 68
+Last-Modified: Sat, 24 Oct 2026 21:44:31 GMT
+Connection: keep-alive
+ETag: "6add26bf-44"
+X-CMTC-Cluster: cmtc-a
+X-CMTC-Pod: rebel-base-688ff9949b-7cbrt
+Accept-Ranges: bytes
+
+{"cluster": "cmtc-a", "message": "served by the cmtc-a rebel base"}
+
+$ kubectl --context kind-cmtc-a -n cmtc-observer-lab exec observer-client -- curl -fsS --connect-timeout 2 --max-time 3 -D - http://10.10.0.50:31337/
+exit=28
+curl: (28) Connection timed out after 2002 milliseconds
+command terminated with exit code 28
+
+$ kubectl --context kind-cmtc-a -n cmtc-observer-lab exec observer-client -- curl -fsS --connect-timeout 2 --max-time 3 -D - http://10.20.0.48:80/
+exit=0
+HTTP/1.1 200 OK
+Server: nginx/1.27.5
+Date: Sat, 24 Oct 2026 23:02:05 GMT
+Content-Type: text/html
+Content-Length: 68
+Last-Modified: Sat, 24 Oct 2026 21:44:34 GMT
+Connection: keep-alive
+ETag: "6add26c2-44"
+X-CMTC-Cluster: cmtc-b
+X-CMTC-Pod: rebel-base-7cbb476f7-rf9bf
+Accept-Ranges: bytes
+
+{"cluster": "cmtc-b", "message": "served by the cmtc-b rebel base"}
+
+$ kubectl --context kind-cmtc-a -n cmtc-observer-lab exec observer-client -- curl -fsS --connect-timeout 2 --max-time 3 -D - http://10.20.0.48:8080/
+exit=0
+HTTP/1.1 200 OK
+Server: nginx/1.27.5
+Date: Sat, 24 Oct 2026 23:02:06 GMT
+Content-Type: text/html
+Content-Length: 68
+Last-Modified: Sat, 24 Oct 2026 21:44:34 GMT
+Connection: keep-alive
+ETag: "6add26c2-44"
+X-CMTC-Cluster: cmtc-b
+X-CMTC-Pod: rebel-base-7cbb476f7-rf9bf
+Accept-Ranges: bytes
+
+{"cluster": "cmtc-b", "message": "served by the cmtc-b rebel base"}
+
+$ kubectl --context kind-cmtc-a -n cmtc-observer-lab exec observer-client -- curl -fsS --connect-timeout 2 --max-time 3 -D - http://10.20.0.48:31337/
+exit=28
+curl: (28) Connection timed out after 2001 milliseconds
+command terminated with exit code 28
+
+$ kubectl --context kind-cmtc-a -n cmtc-observer-lab exec observer-client -- curl -fsS --connect-timeout 2 --max-time 3 -D - http://10.10.0.50:80/
+exit=0
+HTTP/1.1 200 OK
+Server: nginx/1.27.5
+Date: Sat, 24 Oct 2026 23:02:08 GMT
+Content-Type: text/html
+Content-Length: 68
+Last-Modified: Sat, 24 Oct 2026 21:44:31 GMT
+Connection: keep-alive
+ETag: "6add26bf-44"
+X-CMTC-Cluster: cmtc-a
+X-CMTC-Pod: rebel-base-688ff9949b-7cbrt
+Accept-Ranges: bytes
+
+{"cluster": "cmtc-a", "message": "served by the cmtc-a rebel base"}
+
+$ kubectl --context kind-cmtc-a -n cmtc-observer-lab exec observer-client -- curl -fsS --connect-timeout 2 --max-time 3 -D - http://10.10.0.50:8080/
+exit=0
+HTTP/1.1 200 OK
+Server: nginx/1.27.5
+Date: Sat, 24 Oct 2026 23:02:08 GMT
+Content-Type: text/html
+Content-Length: 68
+Last-Modified: Sat, 24 Oct 2026 21:44:31 GMT
+Connection: keep-alive
+ETag: "6add26bf-44"
+X-CMTC-Cluster: cmtc-a
+X-CMTC-Pod: rebel-base-688ff9949b-7cbrt
+Accept-Ranges: bytes
+
+{"cluster": "cmtc-a", "message": "served by the cmtc-a rebel base"}
+
+$ kubectl --context kind-cmtc-a -n cmtc-observer-lab exec observer-client -- curl -fsS --connect-timeout 2 --max-time 3 -D - http://10.10.0.50:31337/
+exit=28
+curl: (28) Connection timed out after 2002 milliseconds
+command terminated with exit code 28
+
+$ kubectl --context kind-cmtc-a -n cmtc-observer-lab exec observer-client -- curl -fsS --connect-timeout 2 --max-time 3 -D - http://10.20.0.48:80/
+exit=0
+HTTP/1.1 200 OK
+Server: nginx/1.27.5
+Date: Sat, 24 Oct 2026 23:02:10 GMT
+Content-Type: text/html
+Content-Length: 68
+Last-Modified: Sat, 24 Oct 2026 21:44:34 GMT
+Connection: keep-alive
+ETag: "6add26c2-44"
+X-CMTC-Cluster: cmtc-b
+X-CMTC-Pod: rebel-base-7cbb476f7-rf9bf
+Accept-Ranges: bytes
+
+{"cluster": "cmtc-b", "message": "served by the cmtc-b rebel base"}
+
+$ kubectl --context kind-cmtc-a -n cmtc-observer-lab exec observer-client -- curl -fsS --connect-timeout 2 --max-time 3 -D - http://10.20.0.48:8080/
+exit=0
+HTTP/1.1 200 OK
+Server: nginx/1.27.5
+Date: Sat, 24 Oct 2026 23:02:10 GMT
+Content-Type: text/html
+Content-Length: 68
+Last-Modified: Sat, 24 Oct 2026 21:44:34 GMT
+Connection: keep-alive
+ETag: "6add26c2-44"
+X-CMTC-Cluster: cmtc-b
+X-CMTC-Pod: rebel-base-7cbb476f7-rf9bf
+Accept-Ranges: bytes
+
+{"cluster": "cmtc-b", "message": "served by the cmtc-b rebel base"}
+
+$ kubectl --context kind-cmtc-a -n cmtc-observer-lab exec observer-client -- curl -fsS --connect-timeout 2 --max-time 3 -D - http://10.20.0.48:31337/
+exit=28
+curl: (28) Connection timed out after 2001 milliseconds
+command terminated with exit code 28
+
+$ kubectl --context kind-cmtc-a -n cmtc-observer-lab exec observer-client -- curl -fsS --connect-timeout 2 --max-time 3 -D - http://10.10.0.50:80/
+exit=0
+HTTP/1.1 200 OK
+Server: nginx/1.27.5
+Date: Sat, 24 Oct 2026 23:02:17 GMT
+Content-Type: text/html
+Content-Length: 68
+Last-Modified: Sat, 24 Oct 2026 21:44:31 GMT
+Connection: keep-alive
+ETag: "6add26bf-44"
+X-CMTC-Cluster: cmtc-a
+X-CMTC-Pod: rebel-base-688ff9949b-7cbrt
+Accept-Ranges: bytes
+
+{"cluster": "cmtc-a", "message": "served by the cmtc-a rebel base"}
+
+$ kubectl --context kind-cmtc-a -n cmtc-observer-lab exec observer-client -- curl -fsS --connect-timeout 2 --max-time 3 -D - http://10.10.0.50:8080/
+exit=0
+HTTP/1.1 200 OK
+Server: nginx/1.27.5
+Date: Sat, 24 Oct 2026 23:02:17 GMT
+Content-Type: text/html
+Content-Length: 68
+Last-Modified: Sat, 24 Oct 2026 21:44:31 GMT
+Connection: keep-alive
+ETag: "6add26bf-44"
+X-CMTC-Cluster: cmtc-a
+X-CMTC-Pod: rebel-base-688ff9949b-7cbrt
+Accept-Ranges: bytes
+
+{"cluster": "cmtc-a", "message": "served by the cmtc-a rebel base"}
+
+$ kubectl --context kind-cmtc-a -n cmtc-observer-lab exec observer-client -- curl -fsS --connect-timeout 2 --max-time 3 -D - http://10.10.0.50:31337/
+exit=28
+curl: (28) Connection timed out after 2002 milliseconds
+command terminated with exit code 28
+
+$ kubectl --context kind-cmtc-a -n cmtc-observer-lab exec observer-client -- curl -fsS --connect-timeout 2 --max-time 3 -D - http://10.20.0.48:80/
+exit=0
+HTTP/1.1 200 OK
+Server: nginx/1.27.5
+Date: Sat, 24 Oct 2026 23:02:20 GMT
+Content-Type: text/html
+Content-Length: 68
+Last-Modified: Sat, 24 Oct 2026 21:44:34 GMT
+Connection: keep-alive
+ETag: "6add26c2-44"
+X-CMTC-Cluster: cmtc-b
+X-CMTC-Pod: rebel-base-7cbb476f7-rf9bf
+Accept-Ranges: bytes
+
+{"cluster": "cmtc-b", "message": "served by the cmtc-b rebel base"}
+
+$ kubectl --context kind-cmtc-a -n cmtc-observer-lab exec observer-client -- curl -fsS --connect-timeout 2 --max-time 3 -D - http://10.20.0.48:8080/
+exit=0
+HTTP/1.1 200 OK
+Server: nginx/1.27.5
+Date: Sat, 24 Oct 2026 23:02:20 GMT
+Content-Type: text/html
+Content-Length: 68
+Last-Modified: Sat, 24 Oct 2026 21:44:34 GMT
+Connection: keep-alive
+ETag: "6add26c2-44"
+X-CMTC-Cluster: cmtc-b
+X-CMTC-Pod: rebel-base-7cbb476f7-rf9bf
+Accept-Ranges: bytes
+
+{"cluster": "cmtc-b", "message": "served by the cmtc-b rebel base"}
+
+$ kubectl --context kind-cmtc-a -n cmtc-observer-lab exec observer-client -- curl -fsS --connect-timeout 2 --max-time 3 -D - http://10.20.0.48:31337/
+exit=28
+curl: (28) Connection timed out after 2001 milliseconds
+command terminated with exit code 28
+
+$ kubectl --context kind-cmtc-a -n cmtc-observer-lab exec observer-client -- curl -fsS --connect-timeout 2 --max-time 3 -D - http://10.10.0.50:80/
+exit=0
+HTTP/1.1 200 OK
+Server: nginx/1.27.5
+Date: Sat, 24 Oct 2026 23:02:24 GMT
+Content-Type: text/html
+Content-Length: 68
+Last-Modified: Sat, 24 Oct 2026 21:44:31 GMT
+Connection: keep-alive
+ETag: "6add26bf-44"
+X-CMTC-Cluster: cmtc-a
+X-CMTC-Pod: rebel-base-688ff9949b-7cbrt
+Accept-Ranges: bytes
+
+{"cluster": "cmtc-a", "message": "served by the cmtc-a rebel base"}
+
+$ kubectl --context kind-cmtc-a -n cmtc-observer-lab exec observer-client -- curl -fsS --connect-timeout 2 --max-time 3 -D - http://10.10.0.50:8080/
+exit=0
+HTTP/1.1 200 OK
+Server: nginx/1.27.5
+Date: Sat, 24 Oct 2026 23:02:24 GMT
+Content-Type: text/html
+Content-Length: 68
+Last-Modified: Sat, 24 Oct 2026 21:44:31 GMT
+Connection: keep-alive
+ETag: "6add26bf-44"
+X-CMTC-Cluster: cmtc-a
+X-CMTC-Pod: rebel-base-688ff9949b-7cbrt
+Accept-Ranges: bytes
+
+{"cluster": "cmtc-a", "message": "served by the cmtc-a rebel base"}
+
+$ kubectl --context kind-cmtc-a -n cmtc-observer-lab exec observer-client -- curl -fsS --connect-timeout 2 --max-time 3 -D - http://10.10.0.50:31337/
+exit=28
+curl: (28) Connection timed out after 2001 milliseconds
+command terminated with exit code 28
+
+$ kubectl --context kind-cmtc-a -n cmtc-observer-lab exec observer-client -- curl -fsS --connect-timeout 2 --max-time 3 -D - http://10.20.0.48:80/
+exit=0
+HTTP/1.1 200 OK
+Server: nginx/1.27.5
+Date: Sat, 24 Oct 2026 23:02:27 GMT
+Content-Type: text/html
+Content-Length: 68
+Last-Modified: Sat, 24 Oct 2026 21:44:34 GMT
+Connection: keep-alive
+ETag: "6add26c2-44"
+X-CMTC-Cluster: cmtc-b
+X-CMTC-Pod: rebel-base-7cbb476f7-rf9bf
+Accept-Ranges: bytes
+
+{"cluster": "cmtc-b", "message": "served by the cmtc-b rebel base"}
+
+$ kubectl --context kind-cmtc-a -n cmtc-observer-lab exec observer-client -- curl -fsS --connect-timeout 2 --max-time 3 -D - http://10.20.0.48:8080/
+exit=0
+HTTP/1.1 200 OK
+Server: nginx/1.27.5
+Date: Sat, 24 Oct 2026 23:02:27 GMT
+Content-Type: text/html
+Content-Length: 68
+Last-Modified: Sat, 24 Oct 2026 21:44:34 GMT
+Connection: keep-alive
+ETag: "6add26c2-44"
+X-CMTC-Cluster: cmtc-b
+X-CMTC-Pod: rebel-base-7cbb476f7-rf9bf
+Accept-Ranges: bytes
+
+{"cluster": "cmtc-b", "message": "served by the cmtc-b rebel base"}
+
+$ kubectl --context kind-cmtc-a -n cmtc-observer-lab exec observer-client -- curl -fsS --connect-timeout 2 --max-time 3 -D - http://10.20.0.48:31337/
+exit=28
+curl: (28) Connection timed out after 2002 milliseconds
+command terminated with exit code 28
+
+$ kubectl --context kind-cmtc-a -n cmtc-observer-lab exec observer-client -- curl -fsS --connect-timeout 2 --max-time 3 -D - http://10.10.0.50:80/
+exit=0
+HTTP/1.1 200 OK
+Server: nginx/1.27.5
+Date: Sat, 24 Oct 2026 23:02:29 GMT
+Content-Type: text/html
+Content-Length: 68
+Last-Modified: Sat, 24 Oct 2026 21:44:31 GMT
+Connection: keep-alive
+ETag: "6add26bf-44"
+X-CMTC-Cluster: cmtc-a
+X-CMTC-Pod: rebel-base-688ff9949b-7cbrt
+Accept-Ranges: bytes
+
+{"cluster": "cmtc-a", "message": "served by the cmtc-a rebel base"}
+
+$ kubectl --context kind-cmtc-a -n cmtc-observer-lab exec observer-client -- curl -fsS --connect-timeout 2 --max-time 3 -D - http://10.10.0.50:8080/
+exit=0
+HTTP/1.1 200 OK
+Server: nginx/1.27.5
+Date: Sat, 24 Oct 2026 23:02:29 GMT
+Content-Type: text/html
+Content-Length: 68
+Last-Modified: Sat, 24 Oct 2026 21:44:31 GMT
+Connection: keep-alive
+ETag: "6add26bf-44"
+X-CMTC-Cluster: cmtc-a
+X-CMTC-Pod: rebel-base-688ff9949b-7cbrt
+Accept-Ranges: bytes
+
+{"cluster": "cmtc-a", "message": "served by the cmtc-a rebel base"}
+
+$ kubectl --context kind-cmtc-a -n cmtc-observer-lab exec observer-client -- curl -fsS --connect-timeout 2 --max-time 3 -D - http://10.10.0.50:31337/
+exit=28
+curl: (28) Connection timed out after 2000 milliseconds
+command terminated with exit code 28
+
+$ kubectl --context kind-cmtc-a -n cmtc-observer-lab exec observer-client -- curl -fsS --connect-timeout 2 --max-time 3 -D - http://10.20.0.48:80/
+exit=0
+HTTP/1.1 200 OK
+Server: nginx/1.27.5
+Date: Sat, 24 Oct 2026 23:02:31 GMT
+Content-Type: text/html
+Content-Length: 68
+Last-Modified: Sat, 24 Oct 2026 21:44:34 GMT
+Connection: keep-alive
+ETag: "6add26c2-44"
+X-CMTC-Cluster: cmtc-b
+X-CMTC-Pod: rebel-base-7cbb476f7-rf9bf
+Accept-Ranges: bytes
+
+{"cluster": "cmtc-b", "message": "served by the cmtc-b rebel base"}
+
+$ kubectl --context kind-cmtc-a -n cmtc-observer-lab exec observer-client -- curl -fsS --connect-timeout 2 --max-time 3 -D - http://10.20.0.48:8080/
+exit=0
+HTTP/1.1 200 OK
+Server: nginx/1.27.5
+Date: Sat, 24 Oct 2026 23:02:31 GMT
+Content-Type: text/html
+Content-Length: 68
+Last-Modified: Sat, 24 Oct 2026 21:44:34 GMT
+Connection: keep-alive
+ETag: "6add26c2-44"
+X-CMTC-Cluster: cmtc-b
+X-CMTC-Pod: rebel-base-7cbb476f7-rf9bf
+Accept-Ranges: bytes
+
+{"cluster": "cmtc-b", "message": "served by the cmtc-b rebel base"}
+
+$ kubectl --context kind-cmtc-a -n cmtc-observer-lab exec observer-client -- curl -fsS --connect-timeout 2 --max-time 3 -D - http://10.20.0.48:31337/
+exit=28
+curl: (28) Connection timed out after 2002 milliseconds
+command terminated with exit code 28
+
+$ kubectl --context kind-cmtc-a -n cmtc-observer-lab exec observer-client -- curl -fsS --connect-timeout 2 --max-time 3 -D - http://10.10.0.50:80/
+exit=0
+HTTP/1.1 200 OK
+Server: nginx/1.27.5
+Date: Sat, 24 Oct 2026 23:03:10 GMT
+Content-Type: text/html
+Content-Length: 68
+Last-Modified: Sat, 24 Oct 2026 21:44:31 GMT
+Connection: keep-alive
+ETag: "6add26bf-44"
+X-CMTC-Cluster: cmtc-a
+X-CMTC-Pod: rebel-base-688ff9949b-7cbrt
+Accept-Ranges: bytes
+
+{"cluster": "cmtc-a", "message": "served by the cmtc-a rebel base"}
+
+$ kubectl --context kind-cmtc-a -n cmtc-observer-lab exec observer-client -- curl -fsS --connect-timeout 2 --max-time 3 -D - http://10.10.0.50:8080/
+exit=0
+HTTP/1.1 200 OK
+Server: nginx/1.27.5
+Date: Sat, 24 Oct 2026 23:03:10 GMT
+Content-Type: text/html
+Content-Length: 68
+Last-Modified: Sat, 24 Oct 2026 21:44:31 GMT
+Connection: keep-alive
+ETag: "6add26bf-44"
+X-CMTC-Cluster: cmtc-a
+X-CMTC-Pod: rebel-base-688ff9949b-7cbrt
+Accept-Ranges: bytes
+
+{"cluster": "cmtc-a", "message": "served by the cmtc-a rebel base"}
+
+$ kubectl --context kind-cmtc-a -n cmtc-observer-lab exec observer-client -- curl -fsS --connect-timeout 2 --max-time 3 -D - http://10.10.0.50:31337/
+exit=28
+curl: (28) Connection timed out after 2001 milliseconds
+command terminated with exit code 28
+
+$ kubectl --context kind-cmtc-a -n cmtc-observer-lab exec observer-client -- curl -fsS --connect-timeout 2 --max-time 3 -D - http://10.20.0.48:80/
+exit=0
+HTTP/1.1 200 OK
+Server: nginx/1.27.5
+Date: Sat, 24 Oct 2026 23:03:12 GMT
+Content-Type: text/html
+Content-Length: 68
+Last-Modified: Sat, 24 Oct 2026 21:44:34 GMT
+Connection: keep-alive
+ETag: "6add26c2-44"
+X-CMTC-Cluster: cmtc-b
+X-CMTC-Pod: rebel-base-7cbb476f7-rf9bf
+Accept-Ranges: bytes
+
+{"cluster": "cmtc-b", "message": "served by the cmtc-b rebel base"}
+
+$ kubectl --context kind-cmtc-a -n cmtc-observer-lab exec observer-client -- curl -fsS --connect-timeout 2 --max-time 3 -D - http://10.20.0.48:8080/
+exit=0
+HTTP/1.1 200 OK
+Server: nginx/1.27.5
+Date: Sat, 24 Oct 2026 23:03:12 GMT
+Content-Type: text/html
+Content-Length: 68
+Last-Modified: Sat, 24 Oct 2026 21:44:34 GMT
+Connection: keep-alive
+ETag: "6add26c2-44"
+X-CMTC-Cluster: cmtc-b
+X-CMTC-Pod: rebel-base-7cbb476f7-rf9bf
+Accept-Ranges: bytes
+
+{"cluster": "cmtc-b", "message": "served by the cmtc-b rebel base"}
+
+$ kubectl --context kind-cmtc-a -n cmtc-observer-lab exec observer-client -- curl -fsS --connect-timeout 2 --max-time 3 -D - http://10.20.0.48:31337/
+exit=28
+curl: (28) Connection timed out after 2001 milliseconds
+command terminated with exit code 28
+
+$ kubectl --context kind-cmtc-b -n cmtc-observer-lab exec observer-client -- curl -fsS --connect-timeout 2 --max-time 3 -D - http://10.10.0.50:80/
+exit=0
+HTTP/1.1 200 OK
+Server: nginx/1.27.5
+Date: Sat, 24 Oct 2026 23:03:17 GMT
+Content-Type: text/html
+Content-Length: 68
+Last-Modified: Sat, 24 Oct 2026 21:44:31 GMT
+Connection: keep-alive
+ETag: "6add26bf-44"
+X-CMTC-Cluster: cmtc-a
+X-CMTC-Pod: rebel-base-688ff9949b-7cbrt
+Accept-Ranges: bytes
+
+{"cluster": "cmtc-a", "message": "served by the cmtc-a rebel base"}
+
+$ kubectl --context kind-cmtc-b -n cmtc-observer-lab exec observer-client -- curl -fsS --connect-timeout 2 --max-time 3 -D - http://10.10.0.50:8080/
+exit=0
+HTTP/1.1 200 OK
+Server: nginx/1.27.5
+Date: Sat, 24 Oct 2026 23:03:17 GMT
+Content-Type: text/html
+Content-Length: 68
+Last-Modified: Sat, 24 Oct 2026 21:44:31 GMT
+Connection: keep-alive
+ETag: "6add26bf-44"
+X-CMTC-Cluster: cmtc-a
+X-CMTC-Pod: rebel-base-688ff9949b-7cbrt
+Accept-Ranges: bytes
+
+{"cluster": "cmtc-a", "message": "served by the cmtc-a rebel base"}
+
+$ kubectl --context kind-cmtc-b -n cmtc-observer-lab exec observer-client -- curl -fsS --connect-timeout 2 --max-time 3 -D - http://10.10.0.50:31337/
+exit=28
+curl: (28) Connection timed out after 2001 milliseconds
+command terminated with exit code 28
+
+$ kubectl --context kind-cmtc-b -n cmtc-observer-lab exec observer-client -- curl -fsS --connect-timeout 2 --max-time 3 -D - http://10.20.0.48:80/
+exit=0
+HTTP/1.1 200 OK
+Server: nginx/1.27.5
+Date: Sat, 24 Oct 2026 23:03:19 GMT
+Content-Type: text/html
+Content-Length: 68
+Last-Modified: Sat, 24 Oct 2026 21:44:34 GMT
+Connection: keep-alive
+ETag: "6add26c2-44"
+X-CMTC-Cluster: cmtc-b
+X-CMTC-Pod: rebel-base-7cbb476f7-rf9bf
+Accept-Ranges: bytes
+
+{"cluster": "cmtc-b", "message": "served by the cmtc-b rebel base"}
+
+$ kubectl --context kind-cmtc-b -n cmtc-observer-lab exec observer-client -- curl -fsS --connect-timeout 2 --max-time 3 -D - http://10.20.0.48:8080/
+exit=0
+HTTP/1.1 200 OK
+Server: nginx/1.27.5
+Date: Sat, 24 Oct 2026 23:03:19 GMT
+Content-Type: text/html
+Content-Length: 68
+Last-Modified: Sat, 24 Oct 2026 21:44:34 GMT
+Connection: keep-alive
+ETag: "6add26c2-44"
+X-CMTC-Cluster: cmtc-b
+X-CMTC-Pod: rebel-base-7cbb476f7-rf9bf
+Accept-Ranges: bytes
+
+{"cluster": "cmtc-b", "message": "served by the cmtc-b rebel base"}
+
+$ kubectl --context kind-cmtc-b -n cmtc-observer-lab exec observer-client -- curl -fsS --connect-timeout 2 --max-time 3 -D - http://10.20.0.48:31337/
+exit=28
+curl: (28) Connection timed out after 2001 milliseconds
+command terminated with exit code 28
+
+$ kubectl --context kind-cmtc-b -n cmtc-observer-lab exec observer-client -- curl -fsS --connect-timeout 2 --max-time 3 -D - http://10.10.0.50:80/
+exit=0
+HTTP/1.1 200 OK
+Server: nginx/1.27.5
+Date: Sat, 24 Oct 2026 23:03:21 GMT
+Content-Type: text/html
+Content-Length: 68
+Last-Modified: Sat, 24 Oct 2026 21:44:31 GMT
+Connection: keep-alive
+ETag: "6add26bf-44"
+X-CMTC-Cluster: cmtc-a
+X-CMTC-Pod: rebel-base-688ff9949b-7cbrt
+Accept-Ranges: bytes
+
+{"cluster": "cmtc-a", "message": "served by the cmtc-a rebel base"}
+
+$ kubectl --context kind-cmtc-b -n cmtc-observer-lab exec observer-client -- curl -fsS --connect-timeout 2 --max-time 3 -D - http://10.10.0.50:8080/
+exit=0
+HTTP/1.1 200 OK
+Server: nginx/1.27.5
+Date: Sat, 24 Oct 2026 23:03:21 GMT
+Content-Type: text/html
+Content-Length: 68
+Last-Modified: Sat, 24 Oct 2026 21:44:31 GMT
+Connection: keep-alive
+ETag: "6add26bf-44"
+X-CMTC-Cluster: cmtc-a
+X-CMTC-Pod: rebel-base-688ff9949b-7cbrt
+Accept-Ranges: bytes
+
+{"cluster": "cmtc-a", "message": "served by the cmtc-a rebel base"}
+
+$ kubectl --context kind-cmtc-b -n cmtc-observer-lab exec observer-client -- curl -fsS --connect-timeout 2 --max-time 3 -D - http://10.10.0.50:31337/
+exit=28
+curl: (28) Connection timed out after 2002 milliseconds
+command terminated with exit code 28
+
+$ kubectl --context kind-cmtc-b -n cmtc-observer-lab exec observer-client -- curl -fsS --connect-timeout 2 --max-time 3 -D - http://10.20.0.48:80/
+exit=0
+HTTP/1.1 200 OK
+Server: nginx/1.27.5
+Date: Sat, 24 Oct 2026 23:03:23 GMT
+Content-Type: text/html
+Content-Length: 68
+Last-Modified: Sat, 24 Oct 2026 21:44:34 GMT
+Connection: keep-alive
+ETag: "6add26c2-44"
+X-CMTC-Cluster: cmtc-b
+X-CMTC-Pod: rebel-base-7cbb476f7-rf9bf
+Accept-Ranges: bytes
+
+{"cluster": "cmtc-b", "message": "served by the cmtc-b rebel base"}
+
+$ kubectl --context kind-cmtc-b -n cmtc-observer-lab exec observer-client -- curl -fsS --connect-timeout 2 --max-time 3 -D - http://10.20.0.48:8080/
+exit=0
+HTTP/1.1 200 OK
+Server: nginx/1.27.5
+Date: Sat, 24 Oct 2026 23:03:23 GMT
+Content-Type: text/html
+Content-Length: 68
+Last-Modified: Sat, 24 Oct 2026 21:44:34 GMT
+Connection: keep-alive
+ETag: "6add26c2-44"
+X-CMTC-Cluster: cmtc-b
+X-CMTC-Pod: rebel-base-7cbb476f7-rf9bf
+Accept-Ranges: bytes
+
+{"cluster": "cmtc-b", "message": "served by the cmtc-b rebel base"}
+
+$ kubectl --context kind-cmtc-b -n cmtc-observer-lab exec observer-client -- curl -fsS --connect-timeout 2 --max-time 3 -D - http://10.20.0.48:31337/
+exit=28
+curl: (28) Connection timed out after 2000 milliseconds
+command terminated with exit code 28
+
+$ kubectl --context kind-cmtc-b -n cmtc-observer-lab exec observer-client -- curl -fsS --connect-timeout 2 --max-time 3 -D - http://10.10.0.50:80/
+exit=0
+HTTP/1.1 200 OK
+Server: nginx/1.27.5
+Date: Sat, 24 Oct 2026 23:03:27 GMT
+Content-Type: text/html
+Content-Length: 68
+Last-Modified: Sat, 24 Oct 2026 21:44:31 GMT
+Connection: keep-alive
+ETag: "6add26bf-44"
+X-CMTC-Cluster: cmtc-a
+X-CMTC-Pod: rebel-base-688ff9949b-7cbrt
+Accept-Ranges: bytes
+
+{"cluster": "cmtc-a", "message": "served by the cmtc-a rebel base"}
+
+$ kubectl --context kind-cmtc-b -n cmtc-observer-lab exec observer-client -- curl -fsS --connect-timeout 2 --max-time 3 -D - http://10.10.0.50:8080/
+exit=0
+HTTP/1.1 200 OK
+Server: nginx/1.27.5
+Date: Sat, 24 Oct 2026 23:03:27 GMT
+Content-Type: text/html
+Content-Length: 68
+Last-Modified: Sat, 24 Oct 2026 21:44:31 GMT
+Connection: keep-alive
+ETag: "6add26bf-44"
+X-CMTC-Cluster: cmtc-a
+X-CMTC-Pod: rebel-base-688ff9949b-7cbrt
+Accept-Ranges: bytes
+
+{"cluster": "cmtc-a", "message": "served by the cmtc-a rebel base"}
+
+$ kubectl --context kind-cmtc-b -n cmtc-observer-lab exec observer-client -- curl -fsS --connect-timeout 2 --max-time 3 -D - http://10.10.0.50:31337/
+exit=28
+curl: (28) Connection timed out after 2001 milliseconds
+command terminated with exit code 28
+
+$ kubectl --context kind-cmtc-b -n cmtc-observer-lab exec observer-client -- curl -fsS --connect-timeout 2 --max-time 3 -D - http://10.20.0.48:80/
+exit=0
+HTTP/1.1 200 OK
+Server: nginx/1.27.5
+Date: Sat, 24 Oct 2026 23:03:29 GMT
+Content-Type: text/html
+Content-Length: 68
+Last-Modified: Sat, 24 Oct 2026 21:44:34 GMT
+Connection: keep-alive
+ETag: "6add26c2-44"
+X-CMTC-Cluster: cmtc-b
+X-CMTC-Pod: rebel-base-7cbb476f7-rf9bf
+Accept-Ranges: bytes
+
+{"cluster": "cmtc-b", "message": "served by the cmtc-b rebel base"}
+
+$ kubectl --context kind-cmtc-b -n cmtc-observer-lab exec observer-client -- curl -fsS --connect-timeout 2 --max-time 3 -D - http://10.20.0.48:8080/
+exit=0
+HTTP/1.1 200 OK
+Server: nginx/1.27.5
+Date: Sat, 24 Oct 2026 23:03:30 GMT
+Content-Type: text/html
+Content-Length: 68
+Last-Modified: Sat, 24 Oct 2026 21:44:34 GMT
+Connection: keep-alive
+ETag: "6add26c2-44"
+X-CMTC-Cluster: cmtc-b
+X-CMTC-Pod: rebel-base-7cbb476f7-rf9bf
+Accept-Ranges: bytes
+
+{"cluster": "cmtc-b", "message": "served by the cmtc-b rebel base"}
+
+$ kubectl --context kind-cmtc-b -n cmtc-observer-lab exec observer-client -- curl -fsS --connect-timeout 2 --max-time 3 -D - http://10.20.0.48:31337/
+exit=28
+curl: (28) Connection timed out after 2001 milliseconds
+command terminated with exit code 28
+
+$ kubectl --context kind-cmtc-b -n cmtc-observer-lab exec observer-client -- curl -fsS --connect-timeout 2 --max-time 3 -D - http://10.10.0.50:80/
+exit=0
+HTTP/1.1 200 OK
+Server: nginx/1.27.5
+Date: Sat, 24 Oct 2026 23:03:32 GMT
+Content-Type: text/html
+Content-Length: 68
+Last-Modified: Sat, 24 Oct 2026 21:44:31 GMT
+Connection: keep-alive
+ETag: "6add26bf-44"
+X-CMTC-Cluster: cmtc-a
+X-CMTC-Pod: rebel-base-688ff9949b-7cbrt
+Accept-Ranges: bytes
+
+{"cluster": "cmtc-a", "message": "served by the cmtc-a rebel base"}
+
+$ kubectl --context kind-cmtc-b -n cmtc-observer-lab exec observer-client -- curl -fsS --connect-timeout 2 --max-time 3 -D - http://10.10.0.50:8080/
+exit=0
+HTTP/1.1 200 OK
+Server: nginx/1.27.5
+Date: Sat, 24 Oct 2026 23:03:32 GMT
+Content-Type: text/html
+Content-Length: 68
+Last-Modified: Sat, 24 Oct 2026 21:44:31 GMT
+Connection: keep-alive
+ETag: "6add26bf-44"
+X-CMTC-Cluster: cmtc-a
+X-CMTC-Pod: rebel-base-688ff9949b-7cbrt
+Accept-Ranges: bytes
+
+{"cluster": "cmtc-a", "message": "served by the cmtc-a rebel base"}
+
+$ kubectl --context kind-cmtc-b -n cmtc-observer-lab exec observer-client -- curl -fsS --connect-timeout 2 --max-time 3 -D - http://10.10.0.50:31337/
+exit=28
+curl: (28) Connection timed out after 2002 milliseconds
+command terminated with exit code 28
+
+$ kubectl --context kind-cmtc-b -n cmtc-observer-lab exec observer-client -- curl -fsS --connect-timeout 2 --max-time 3 -D - http://10.20.0.48:80/
+exit=0
+HTTP/1.1 200 OK
+Server: nginx/1.27.5
+Date: Sat, 24 Oct 2026 23:03:34 GMT
+Content-Type: text/html
+Content-Length: 68
+Last-Modified: Sat, 24 Oct 2026 21:44:34 GMT
+Connection: keep-alive
+ETag: "6add26c2-44"
+X-CMTC-Cluster: cmtc-b
+X-CMTC-Pod: rebel-base-7cbb476f7-rf9bf
+Accept-Ranges: bytes
+
+{"cluster": "cmtc-b", "message": "served by the cmtc-b rebel base"}
+
+$ kubectl --context kind-cmtc-b -n cmtc-observer-lab exec observer-client -- curl -fsS --connect-timeout 2 --max-time 3 -D - http://10.20.0.48:8080/
+exit=0
+HTTP/1.1 200 OK
+Server: nginx/1.27.5
+Date: Sat, 24 Oct 2026 23:03:34 GMT
+Content-Type: text/html
+Content-Length: 68
+Last-Modified: Sat, 24 Oct 2026 21:44:34 GMT
+Connection: keep-alive
+ETag: "6add26c2-44"
+X-CMTC-Cluster: cmtc-b
+X-CMTC-Pod: rebel-base-7cbb476f7-rf9bf
+Accept-Ranges: bytes
+
+{"cluster": "cmtc-b", "message": "served by the cmtc-b rebel base"}
+
+$ kubectl --context kind-cmtc-b -n cmtc-observer-lab exec observer-client -- curl -fsS --connect-timeout 2 --max-time 3 -D - http://10.20.0.48:31337/
+exit=28
+curl: (28) Connection timed out after 2001 milliseconds
+command terminated with exit code 28
+
+$ kubectl --context kind-cmtc-b -n cmtc-observer-lab exec observer-client -- curl -fsS --connect-timeout 2 --max-time 3 -D - http://10.10.0.50:80/
+exit=0
+HTTP/1.1 200 OK
+Server: nginx/1.27.5
+Date: Sat, 24 Oct 2026 23:03:36 GMT
+Content-Type: text/html
+Content-Length: 68
+Last-Modified: Sat, 24 Oct 2026 21:44:31 GMT
+Connection: keep-alive
+ETag: "6add26bf-44"
+X-CMTC-Cluster: cmtc-a
+X-CMTC-Pod: rebel-base-688ff9949b-7cbrt
+Accept-Ranges: bytes
+
+{"cluster": "cmtc-a", "message": "served by the cmtc-a rebel base"}
+
+$ kubectl --context kind-cmtc-b -n cmtc-observer-lab exec observer-client -- curl -fsS --connect-timeout 2 --max-time 3 -D - http://10.10.0.50:8080/
+exit=0
+HTTP/1.1 200 OK
+Server: nginx/1.27.5
+Date: Sat, 24 Oct 2026 23:03:36 GMT
+Content-Type: text/html
+Content-Length: 68
+Last-Modified: Sat, 24 Oct 2026 21:44:31 GMT
+Connection: keep-alive
+ETag: "6add26bf-44"
+X-CMTC-Cluster: cmtc-a
+X-CMTC-Pod: rebel-base-688ff9949b-7cbrt
+Accept-Ranges: bytes
+
+{"cluster": "cmtc-a", "message": "served by the cmtc-a rebel base"}
+
+$ kubectl --context kind-cmtc-b -n cmtc-observer-lab exec observer-client -- curl -fsS --connect-timeout 2 --max-time 3 -D - http://10.10.0.50:31337/
+exit=28
+curl: (28) Connection timed out after 2001 milliseconds
+command terminated with exit code 28
+
+$ kubectl --context kind-cmtc-b -n cmtc-observer-lab exec observer-client -- curl -fsS --connect-timeout 2 --max-time 3 -D - http://10.20.0.48:80/
+exit=0
+HTTP/1.1 200 OK
+Server: nginx/1.27.5
+Date: Sat, 24 Oct 2026 23:03:38 GMT
+Content-Type: text/html
+Content-Length: 68
+Last-Modified: Sat, 24 Oct 2026 21:44:34 GMT
+Connection: keep-alive
+ETag: "6add26c2-44"
+X-CMTC-Cluster: cmtc-b
+X-CMTC-Pod: rebel-base-7cbb476f7-rf9bf
+Accept-Ranges: bytes
+
+{"cluster": "cmtc-b", "message": "served by the cmtc-b rebel base"}
+
+$ kubectl --context kind-cmtc-b -n cmtc-observer-lab exec observer-client -- curl -fsS --connect-timeout 2 --max-time 3 -D - http://10.20.0.48:8080/
+exit=0
+HTTP/1.1 200 OK
+Server: nginx/1.27.5
+Date: Sat, 24 Oct 2026 23:03:38 GMT
+Content-Type: text/html
+Content-Length: 68
+Last-Modified: Sat, 24 Oct 2026 21:44:34 GMT
+Connection: keep-alive
+ETag: "6add26c2-44"
+X-CMTC-Cluster: cmtc-b
+X-CMTC-Pod: rebel-base-7cbb476f7-rf9bf
+Accept-Ranges: bytes
+
+{"cluster": "cmtc-b", "message": "served by the cmtc-b rebel base"}
+
+$ kubectl --context kind-cmtc-b -n cmtc-observer-lab exec observer-client -- curl -fsS --connect-timeout 2 --max-time 3 -D - http://10.20.0.48:31337/
+exit=28
+curl: (28) Connection timed out after 2001 milliseconds
+command terminated with exit code 28
+
+$ kubectl --context kind-cmtc-b -n cmtc-observer-lab exec observer-client -- curl -fsS --connect-timeout 2 --max-time 3 -D - http://10.10.0.50:80/
+exit=0
+HTTP/1.1 200 OK
+Server: nginx/1.27.5
+Date: Sat, 24 Oct 2026 23:03:40 GMT
+Content-Type: text/html
+Content-Length: 68
+Last-Modified: Sat, 24 Oct 2026 21:44:31 GMT
+Connection: keep-alive
+ETag: "6add26bf-44"
+X-CMTC-Cluster: cmtc-a
+X-CMTC-Pod: rebel-base-688ff9949b-7cbrt
+Accept-Ranges: bytes
+
+{"cluster": "cmtc-a", "message": "served by the cmtc-a rebel base"}
+
+$ kubectl --context kind-cmtc-b -n cmtc-observer-lab exec observer-client -- curl -fsS --connect-timeout 2 --max-time 3 -D - http://10.10.0.50:8080/
+exit=0
+HTTP/1.1 200 OK
+Server: nginx/1.27.5
+Date: Sat, 24 Oct 2026 23:03:40 GMT
+Content-Type: text/html
+Content-Length: 68
+Last-Modified: Sat, 24 Oct 2026 21:44:31 GMT
+Connection: keep-alive
+ETag: "6add26bf-44"
+X-CMTC-Cluster: cmtc-a
+X-CMTC-Pod: rebel-base-688ff9949b-7cbrt
+Accept-Ranges: bytes
+
+{"cluster": "cmtc-a", "message": "served by the cmtc-a rebel base"}
+
+$ kubectl --context kind-cmtc-b -n cmtc-observer-lab exec observer-client -- curl -fsS --connect-timeout 2 --max-time 3 -D - http://10.10.0.50:31337/
+exit=28
+curl: (28) Connection timed out after 2000 milliseconds
+command terminated with exit code 28
+
+$ kubectl --context kind-cmtc-b -n cmtc-observer-lab exec observer-client -- curl -fsS --connect-timeout 2 --max-time 3 -D - http://10.20.0.48:80/
+exit=0
+HTTP/1.1 200 OK
+Server: nginx/1.27.5
+Date: Sat, 24 Oct 2026 23:03:42 GMT
+Content-Type: text/html
+Content-Length: 68
+Last-Modified: Sat, 24 Oct 2026 21:44:34 GMT
+Connection: keep-alive
+ETag: "6add26c2-44"
+X-CMTC-Cluster: cmtc-b
+X-CMTC-Pod: rebel-base-7cbb476f7-rf9bf
+Accept-Ranges: bytes
+
+{"cluster": "cmtc-b", "message": "served by the cmtc-b rebel base"}
+
+$ kubectl --context kind-cmtc-b -n cmtc-observer-lab exec observer-client -- curl -fsS --connect-timeout 2 --max-time 3 -D - http://10.20.0.48:8080/
+exit=0
+HTTP/1.1 200 OK
+Server: nginx/1.27.5
+Date: Sat, 24 Oct 2026 23:03:43 GMT
+Content-Type: text/html
+Content-Length: 68
+Last-Modified: Sat, 24 Oct 2026 21:44:34 GMT
+Connection: keep-alive
+ETag: "6add26c2-44"
+X-CMTC-Cluster: cmtc-b
+X-CMTC-Pod: rebel-base-7cbb476f7-rf9bf
+Accept-Ranges: bytes
+
+{"cluster": "cmtc-b", "message": "served by the cmtc-b rebel base"}
+
+$ kubectl --context kind-cmtc-b -n cmtc-observer-lab exec observer-client -- curl -fsS --connect-timeout 2 --max-time 3 -D - http://10.20.0.48:31337/
+exit=28
+curl: (28) Connection timed out after 2002 milliseconds
+command terminated with exit code 28
+
+$ kubectl --context kind-cmtc-b -n cmtc-observer-lab exec observer-client -- curl -fsS --connect-timeout 2 --max-time 3 -D - http://10.10.0.50:80/
+exit=0
+HTTP/1.1 200 OK
+Server: nginx/1.27.5
+Date: Sat, 24 Oct 2026 23:03:49 GMT
+Content-Type: text/html
+Content-Length: 68
+Last-Modified: Sat, 24 Oct 2026 21:44:31 GMT
+Connection: keep-alive
+ETag: "6add26bf-44"
+X-CMTC-Cluster: cmtc-a
+X-CMTC-Pod: rebel-base-688ff9949b-7cbrt
+Accept-Ranges: bytes
+
+{"cluster": "cmtc-a", "message": "served by the cmtc-a rebel base"}
+
+$ kubectl --context kind-cmtc-b -n cmtc-observer-lab exec observer-client -- curl -fsS --connect-timeout 2 --max-time 3 -D - http://10.10.0.50:8080/
+exit=0
+HTTP/1.1 200 OK
+Server: nginx/1.27.5
+Date: Sat, 24 Oct 2026 23:03:49 GMT
+Content-Type: text/html
+Content-Length: 68
+Last-Modified: Sat, 24 Oct 2026 21:44:31 GMT
+Connection: keep-alive
+ETag: "6add26bf-44"
+X-CMTC-Cluster: cmtc-a
+X-CMTC-Pod: rebel-base-688ff9949b-7cbrt
+Accept-Ranges: bytes
+
+{"cluster": "cmtc-a", "message": "served by the cmtc-a rebel base"}
+
+$ kubectl --context kind-cmtc-b -n cmtc-observer-lab exec observer-client -- curl -fsS --connect-timeout 2 --max-time 3 -D - http://10.10.0.50:31337/
+exit=28
+curl: (28) Connection timed out after 2002 milliseconds
+command terminated with exit code 28
+
+$ kubectl --context kind-cmtc-b -n cmtc-observer-lab exec observer-client -- curl -fsS --connect-timeout 2 --max-time 3 -D - http://10.20.0.48:80/
+exit=0
+HTTP/1.1 200 OK
+Server: nginx/1.27.5
+Date: Sat, 24 Oct 2026 23:03:51 GMT
+Content-Type: text/html
+Content-Length: 68
+Last-Modified: Sat, 24 Oct 2026 21:44:34 GMT
+Connection: keep-alive
+ETag: "6add26c2-44"
+X-CMTC-Cluster: cmtc-b
+X-CMTC-Pod: rebel-base-7cbb476f7-rf9bf
+Accept-Ranges: bytes
+
+{"cluster": "cmtc-b", "message": "served by the cmtc-b rebel base"}
+
+$ kubectl --context kind-cmtc-b -n cmtc-observer-lab exec observer-client -- curl -fsS --connect-timeout 2 --max-time 3 -D - http://10.20.0.48:8080/
+exit=0
+HTTP/1.1 200 OK
+Server: nginx/1.27.5
+Date: Sat, 24 Oct 2026 23:03:51 GMT
+Content-Type: text/html
+Content-Length: 68
+Last-Modified: Sat, 24 Oct 2026 21:44:34 GMT
+Connection: keep-alive
+ETag: "6add26c2-44"
+X-CMTC-Cluster: cmtc-b
+X-CMTC-Pod: rebel-base-7cbb476f7-rf9bf
+Accept-Ranges: bytes
+
+{"cluster": "cmtc-b", "message": "served by the cmtc-b rebel base"}
+
+$ kubectl --context kind-cmtc-b -n cmtc-observer-lab exec observer-client -- curl -fsS --connect-timeout 2 --max-time 3 -D - http://10.20.0.48:31337/
+exit=28
+curl: (28) Connection timed out after 2002 milliseconds
+command terminated with exit code 28
+
+$ kubectl --context kind-cmtc-b -n cmtc-observer-lab exec observer-client -- curl -fsS --connect-timeout 2 --max-time 3 -D - http://10.10.0.50:80/
+exit=0
+HTTP/1.1 200 OK
+Server: nginx/1.27.5
+Date: Sat, 24 Oct 2026 23:03:56 GMT
+Content-Type: text/html
+Content-Length: 68
+Last-Modified: Sat, 24 Oct 2026 21:44:31 GMT
+Connection: keep-alive
+ETag: "6add26bf-44"
+X-CMTC-Cluster: cmtc-a
+X-CMTC-Pod: rebel-base-688ff9949b-7cbrt
+Accept-Ranges: bytes
+
+{"cluster": "cmtc-a", "message": "served by the cmtc-a rebel base"}
+
+$ kubectl --context kind-cmtc-b -n cmtc-observer-lab exec observer-client -- curl -fsS --connect-timeout 2 --max-time 3 -D - http://10.10.0.50:8080/
+exit=0
+HTTP/1.1 200 OK
+Server: nginx/1.27.5
+Date: Sat, 24 Oct 2026 23:03:56 GMT
+Content-Type: text/html
+Content-Length: 68
+Last-Modified: Sat, 24 Oct 2026 21:44:31 GMT
+Connection: keep-alive
+ETag: "6add26bf-44"
+X-CMTC-Cluster: cmtc-a
+X-CMTC-Pod: rebel-base-688ff9949b-7cbrt
+Accept-Ranges: bytes
+
+{"cluster": "cmtc-a", "message": "served by the cmtc-a rebel base"}
+
+$ kubectl --context kind-cmtc-b -n cmtc-observer-lab exec observer-client -- curl -fsS --connect-timeout 2 --max-time 3 -D - http://10.10.0.50:31337/
+exit=28
+curl: (28) Connection timed out after 2001 milliseconds
+command terminated with exit code 28
+
+$ kubectl --context kind-cmtc-b -n cmtc-observer-lab exec observer-client -- curl -fsS --connect-timeout 2 --max-time 3 -D - http://10.20.0.48:80/
+exit=0
+HTTP/1.1 200 OK
+Server: nginx/1.27.5
+Date: Sat, 24 Oct 2026 23:03:58 GMT
+Content-Type: text/html
+Content-Length: 68
+Last-Modified: Sat, 24 Oct 2026 21:44:34 GMT
+Connection: keep-alive
+ETag: "6add26c2-44"
+X-CMTC-Cluster: cmtc-b
+X-CMTC-Pod: rebel-base-7cbb476f7-rf9bf
+Accept-Ranges: bytes
+
+{"cluster": "cmtc-b", "message": "served by the cmtc-b rebel base"}
+
+$ kubectl --context kind-cmtc-b -n cmtc-observer-lab exec observer-client -- curl -fsS --connect-timeout 2 --max-time 3 -D - http://10.20.0.48:8080/
+exit=0
+HTTP/1.1 200 OK
+Server: nginx/1.27.5
+Date: Sat, 24 Oct 2026 23:03:58 GMT
+Content-Type: text/html
+Content-Length: 68
+Last-Modified: Sat, 24 Oct 2026 21:44:34 GMT
+Connection: keep-alive
+ETag: "6add26c2-44"
+X-CMTC-Cluster: cmtc-b
+X-CMTC-Pod: rebel-base-7cbb476f7-rf9bf
+Accept-Ranges: bytes
+
+{"cluster": "cmtc-b", "message": "served by the cmtc-b rebel base"}
+
+$ kubectl --context kind-cmtc-b -n cmtc-observer-lab exec observer-client -- curl -fsS --connect-timeout 2 --max-time 3 -D - http://10.20.0.48:31337/
+exit=28
+curl: (28) Connection timed out after 2000 milliseconds
+command terminated with exit code 28
+
+$ kubectl --context kind-cmtc-b -n cmtc-observer-lab exec observer-client -- curl -fsS --connect-timeout 2 --max-time 3 -D - http://10.10.0.50:80/
+exit=0
+HTTP/1.1 200 OK
+Server: nginx/1.27.5
+Date: Sat, 24 Oct 2026 23:04:00 GMT
+Content-Type: text/html
+Content-Length: 68
+Last-Modified: Sat, 24 Oct 2026 21:44:31 GMT
+Connection: keep-alive
+ETag: "6add26bf-44"
+X-CMTC-Cluster: cmtc-a
+X-CMTC-Pod: rebel-base-688ff9949b-7cbrt
+Accept-Ranges: bytes
+
+{"cluster": "cmtc-a", "message": "served by the cmtc-a rebel base"}
+
+$ kubectl --context kind-cmtc-b -n cmtc-observer-lab exec observer-client -- curl -fsS --connect-timeout 2 --max-time 3 -D - http://10.10.0.50:8080/
+exit=0
+HTTP/1.1 200 OK
+Server: nginx/1.27.5
+Date: Sat, 24 Oct 2026 23:04:00 GMT
+Content-Type: text/html
+Content-Length: 68
+Last-Modified: Sat, 24 Oct 2026 21:44:31 GMT
+Connection: keep-alive
+ETag: "6add26bf-44"
+X-CMTC-Cluster: cmtc-a
+X-CMTC-Pod: rebel-base-688ff9949b-7cbrt
+Accept-Ranges: bytes
+
+{"cluster": "cmtc-a", "message": "served by the cmtc-a rebel base"}
+
+$ kubectl --context kind-cmtc-b -n cmtc-observer-lab exec observer-client -- curl -fsS --connect-timeout 2 --max-time 3 -D - http://10.10.0.50:31337/
+exit=28
+curl: (28) Connection timed out after 2001 milliseconds
+command terminated with exit code 28
+
+$ kubectl --context kind-cmtc-b -n cmtc-observer-lab exec observer-client -- curl -fsS --connect-timeout 2 --max-time 3 -D - http://10.20.0.48:80/
+exit=0
+HTTP/1.1 200 OK
+Server: nginx/1.27.5
+Date: Sat, 24 Oct 2026 23:04:02 GMT
+Content-Type: text/html
+Content-Length: 68
+Last-Modified: Sat, 24 Oct 2026 21:44:34 GMT
+Connection: keep-alive
+ETag: "6add26c2-44"
+X-CMTC-Cluster: cmtc-b
+X-CMTC-Pod: rebel-base-7cbb476f7-rf9bf
+Accept-Ranges: bytes
+
+{"cluster": "cmtc-b", "message": "served by the cmtc-b rebel base"}
+
+$ kubectl --context kind-cmtc-b -n cmtc-observer-lab exec observer-client -- curl -fsS --connect-timeout 2 --max-time 3 -D - http://10.20.0.48:8080/
+exit=0
+HTTP/1.1 200 OK
+Server: nginx/1.27.5
+Date: Sat, 24 Oct 2026 23:04:03 GMT
+Content-Type: text/html
+Content-Length: 68
+Last-Modified: Sat, 24 Oct 2026 21:44:34 GMT
+Connection: keep-alive
+ETag: "6add26c2-44"
+X-CMTC-Cluster: cmtc-b
+X-CMTC-Pod: rebel-base-7cbb476f7-rf9bf
+Accept-Ranges: bytes
+
+{"cluster": "cmtc-b", "message": "served by the cmtc-b rebel base"}
+
+$ kubectl --context kind-cmtc-b -n cmtc-observer-lab exec observer-client -- curl -fsS --connect-timeout 2 --max-time 3 -D - http://10.20.0.48:31337/
+exit=28
+curl: (28) Connection timed out after 2002 milliseconds
+command terminated with exit code 28
+
+$ kubectl --context kind-cmtc-b -n cmtc-observer-lab exec observer-client -- curl -fsS --connect-timeout 2 --max-time 3 -D - http://10.10.0.50:80/
+exit=0
+HTTP/1.1 200 OK
+Server: nginx/1.27.5
+Date: Sat, 24 Oct 2026 23:04:42 GMT
+Content-Type: text/html
+Content-Length: 68
+Last-Modified: Sat, 24 Oct 2026 21:44:31 GMT
+Connection: keep-alive
+ETag: "6add26bf-44"
+X-CMTC-Cluster: cmtc-a
+X-CMTC-Pod: rebel-base-688ff9949b-7cbrt
+Accept-Ranges: bytes
+
+{"cluster": "cmtc-a", "message": "served by the cmtc-a rebel base"}
+
+$ kubectl --context kind-cmtc-b -n cmtc-observer-lab exec observer-client -- curl -fsS --connect-timeout 2 --max-time 3 -D - http://10.10.0.50:8080/
+exit=0
+HTTP/1.1 200 OK
+Server: nginx/1.27.5
+Date: Sat, 24 Oct 2026 23:04:42 GMT
+Content-Type: text/html
+Content-Length: 68
+Last-Modified: Sat, 24 Oct 2026 21:44:31 GMT
+Connection: keep-alive
+ETag: "6add26bf-44"
+X-CMTC-Cluster: cmtc-a
+X-CMTC-Pod: rebel-base-688ff9949b-7cbrt
+Accept-Ranges: bytes
+
+{"cluster": "cmtc-a", "message": "served by the cmtc-a rebel base"}
+
+$ kubectl --context kind-cmtc-b -n cmtc-observer-lab exec observer-client -- curl -fsS --connect-timeout 2 --max-time 3 -D - http://10.10.0.50:31337/
+exit=28
+curl: (28) Connection timed out after 2002 milliseconds
+command terminated with exit code 28
+
+$ kubectl --context kind-cmtc-b -n cmtc-observer-lab exec observer-client -- curl -fsS --connect-timeout 2 --max-time 3 -D - http://10.20.0.48:80/
+exit=0
+HTTP/1.1 200 OK
+Server: nginx/1.27.5
+Date: Sat, 24 Oct 2026 23:04:44 GMT
+Content-Type: text/html
+Content-Length: 68
+Last-Modified: Sat, 24 Oct 2026 21:44:34 GMT
+Connection: keep-alive
+ETag: "6add26c2-44"
+X-CMTC-Cluster: cmtc-b
+X-CMTC-Pod: rebel-base-7cbb476f7-rf9bf
+Accept-Ranges: bytes
+
+{"cluster": "cmtc-b", "message": "served by the cmtc-b rebel base"}
+
+$ kubectl --context kind-cmtc-b -n cmtc-observer-lab exec observer-client -- curl -fsS --connect-timeout 2 --max-time 3 -D - http://10.20.0.48:8080/
+exit=0
+HTTP/1.1 200 OK
+Server: nginx/1.27.5
+Date: Sat, 24 Oct 2026 23:04:44 GMT
+Content-Type: text/html
+Content-Length: 68
+Last-Modified: Sat, 24 Oct 2026 21:44:34 GMT
+Connection: keep-alive
+ETag: "6add26c2-44"
+X-CMTC-Cluster: cmtc-b
+X-CMTC-Pod: rebel-base-7cbb476f7-rf9bf
+Accept-Ranges: bytes
+
+{"cluster": "cmtc-b", "message": "served by the cmtc-b rebel base"}
+
+$ kubectl --context kind-cmtc-b -n cmtc-observer-lab exec observer-client -- curl -fsS --connect-timeout 2 --max-time 3 -D - http://10.20.0.48:31337/
+exit=28
+curl: (28) Connection timed out after 2002 milliseconds
+command terminated with exit code 28
+

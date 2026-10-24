@@ -1,0 +1,4166 @@
+{
+  "scope": "observe-only TCX packet counting and native policy preservation",
+  "enforcementAvailable": false,
+  "mtlsProven": false,
+  "source": "b193510f206a8655a3f9c240728b71b0427a5b31",
+  "fullRun": {
+    "started": "2026-10-24T23:01:40.891418+00:00",
+    "finished": "2026-10-24T23:05:59.066917+00:00",
+    "status": "passed",
+    "clusters": {
+      "cmtc-a": {
+        "config": {
+          "cluster": "cmtc-a",
+          "node": "cmtc-a-worker",
+          "podUID": "c80290f2-292a-4bb7-ae77-9581b14091f9",
+          "netNSInode": 4026532445,
+          "ifIndex": 93,
+          "ifName": "lxce6402f5fd361",
+          "mac": "8e:d9:15:c0:e1:dc",
+          "peerIfIndex": 92,
+          "direction": "ingress",
+          "ciliumLinkID": 726,
+          "ciliumProgramID": 14390
+        },
+        "baselineChain": [
+          {
+            "program": 14390,
+            "link": 726,
+            "name": "cil_from_container"
+          }
+        ],
+        "backend": {
+          "cluster": "cmtc-a",
+          "name": "rebel-base-688ff9949b-7cbrt",
+          "ip": "10.10.0.50",
+          "uid": "282c0cab-85fe-4de3-914f-3f3a0c4bab24"
+        },
+        "loadMetricSamples": {
+          "before": {
+            "cmtc_datapath_observer_packets_total": 0.0,
+            "cmtc_datapath_observer_bytes_total": 0.0,
+            "cmtc_datapath_observer_ready": 1.0
+          },
+          "after": {
+            "cmtc_datapath_observer_packets_total": 130.0,
+            "cmtc_datapath_observer_bytes_total": 10068.0,
+            "cmtc_datapath_observer_ready": 1.0
+          }
+        },
+        "sigkillRecovery": {
+          "containerID": "a56e4a9beb65e475dfdc335cf6ed20a080fca079b2409c86689bb1974607e3ad",
+          "pid": 30969,
+          "starttime": "1363229",
+          "termination": {
+            "containerID": "containerd://a56e4a9beb65e475dfdc335cf6ed20a080fca079b2409c86689bb1974607e3ad",
+            "exitCode": 137,
+            "finishedAt": "2026-10-24T23:02:15Z",
+            "reason": "Error",
+            "startedAt": "2026-10-24T23:01:53Z"
+          },
+          "newStatus": {
+            "allocatedResources": {
+              "cpu": "10m",
+              "memory": "32Mi"
+            },
+            "containerID": "containerd://76d0dc0218d08f5c3e362a6fc46138f197832ab79ceb98e00fd088d3c466d947",
+            "image": "localhost/cmtc-bpf-observer:observe-b193510f20",
+            "imageID": "docker.io/library/import-2026-10-24@sha256:d3f002918d69a8dbdb74165c4c37f35b17ad64efe43dc4e5852f19f0632ee120",
+            "lastState": {
+              "terminated": {
+                "containerID": "containerd://a56e4a9beb65e475dfdc335cf6ed20a080fca079b2409c86689bb1974607e3ad",
+                "exitCode": 137,
+                "finishedAt": "2026-10-24T23:02:15Z",
+                "reason": "Error",
+                "startedAt": "2026-10-24T23:01:53Z"
+              }
+            },
+            "name": "observer",
+            "ready": true,
+            "resources": {
+              "limits": {
+                "cpu": "200m",
+                "memory": "128Mi"
+              },
+              "requests": {
+                "cpu": "10m",
+                "memory": "32Mi"
+              }
+            },
+            "restartCount": 1,
+            "started": true,
+            "state": {
+              "running": {
+                "startedAt": "2026-10-24T23:02:15Z"
+              }
+            },
+            "user": {
+              "linux": {
+                "gid": 0,
+                "supplementalGroups": [
+                  0
+                ],
+                "uid": 0
+              }
+            },
+            "volumeMounts": [
+              {
+                "mountPath": "/config",
+                "name": "config",
+                "readOnly": true,
+                "recursiveReadOnly": "Disabled"
+              }
+            ]
+          },
+          "chain": [
+            {
+              "program": 14444,
+              "link": 728,
+              "name": "cmtc_observe"
+            },
+            {
+              "program": 14390,
+              "link": 726,
+              "name": "cil_from_container"
+            }
+          ]
+        },
+        "postRestartCounterDelta": 32.0,
+        "oldConfigRejectedAfterPodReplacement": {
+          "newPodUID": "3a99f8a8-e938-41db-9bd4-1d48ccca8260",
+          "observerStatus": {
+            "allocatedResources": {
+              "cpu": "10m",
+              "memory": "32Mi"
+            },
+            "conditions": [
+              {
+                "lastProbeTime": null,
+                "lastTransitionTime": "2026-10-24T23:02:33Z",
+                "observedGeneration": 1,
+                "status": "True",
+                "type": "PodReadyToStartContainers"
+              },
+              {
+                "lastProbeTime": null,
+                "lastTransitionTime": "2026-10-24T23:02:33Z",
+                "observedGeneration": 1,
+                "status": "True",
+                "type": "Initialized"
+              },
+              {
+                "lastProbeTime": null,
+                "lastTransitionTime": "2026-10-24T23:03:06Z",
+                "message": "containers with unready status: [observer]",
+                "observedGeneration": 1,
+                "reason": "ContainersNotReady",
+                "status": "False",
+                "type": "Ready"
+              },
+              {
+                "lastProbeTime": null,
+                "lastTransitionTime": "2026-10-24T23:03:06Z",
+                "message": "containers with unready status: [observer]",
+                "observedGeneration": 1,
+                "reason": "ContainersNotReady",
+                "status": "False",
+                "type": "ContainersReady"
+              },
+              {
+                "lastProbeTime": null,
+                "lastTransitionTime": "2026-10-24T23:02:33Z",
+                "observedGeneration": 1,
+                "status": "True",
+                "type": "PodScheduled"
+              }
+            ],
+            "containerStatuses": [
+              {
+                "allocatedResources": {
+                  "cpu": "10m",
+                  "memory": "32Mi"
+                },
+                "containerID": "containerd://7ecaec5184c75eeebb47a9fdcbee28a33e38df9f687de00717465884dc58e43f",
+                "image": "localhost/cmtc-bpf-observer:observe-b193510f20",
+                "imageID": "docker.io/library/import-2026-10-24@sha256:d3f002918d69a8dbdb74165c4c37f35b17ad64efe43dc4e5852f19f0632ee120",
+                "lastState": {
+                  "terminated": {
+                    "containerID": "containerd://1acafd4a122e04e16ae7a13b8db07286d348c9a988e2eecb387213166e2c0c35",
+                    "exitCode": 1,
+                    "finishedAt": "2026-10-24T23:03:06Z",
+                    "reason": "Error",
+                    "startedAt": "2026-10-24T23:02:34Z"
+                  }
+                },
+                "name": "observer",
+                "ready": false,
+                "resources": {
+                  "limits": {
+                    "cpu": "200m",
+                    "memory": "128Mi"
+                  },
+                  "requests": {
+                    "cpu": "10m",
+                    "memory": "32Mi"
+                  }
+                },
+                "restartCount": 1,
+                "started": true,
+                "state": {
+                  "running": {
+                    "startedAt": "2026-10-24T23:03:06Z"
+                  }
+                },
+                "user": {
+                  "linux": {
+                    "gid": 0,
+                    "supplementalGroups": [
+                      0
+                    ],
+                    "uid": 0
+                  }
+                },
+                "volumeMounts": [
+                  {
+                    "mountPath": "/config",
+                    "name": "config",
+                    "readOnly": true,
+                    "recursiveReadOnly": "Disabled"
+                  }
+                ]
+              }
+            ],
+            "hostIP": "172.18.0.2",
+            "hostIPs": [
+              {
+                "ip": "172.18.0.2"
+              }
+            ],
+            "observedGeneration": 1,
+            "phase": "Running",
+            "podIP": "172.18.0.2",
+            "podIPs": [
+              {
+                "ip": "172.18.0.2"
+              }
+            ],
+            "qosClass": "Burstable",
+            "resources": {
+              "limits": {
+                "cpu": "200m",
+                "memory": "128Mi"
+              },
+              "requests": {
+                "memory": "32Mi"
+              }
+            },
+            "startTime": "2026-10-24T23:02:33Z"
+          }
+        },
+        "foreignProgramUpdates": [
+          [
+            {
+              "before": {
+                "devname": "eth0",
+                "ifindex": 2,
+                "kind": "tcx/ingress",
+                "name": "cil_from_netdev",
+                "prog_id": 14348,
+                "prog_flags": [],
+                "link_id": 461,
+                "link_flags": []
+              },
+              "after": {
+                "devname": "eth0",
+                "ifindex": 2,
+                "kind": "tcx/ingress",
+                "name": "cil_from_netdev",
+                "prog_id": 14425,
+                "prog_flags": [],
+                "link_id": 461,
+                "link_flags": []
+              }
+            },
+            {
+              "before": {
+                "devname": "eth0",
+                "ifindex": 2,
+                "kind": "tcx/egress",
+                "name": "cil_to_netdev",
+                "prog_id": 14340,
+                "prog_flags": [],
+                "link_id": 462,
+                "link_flags": []
+              },
+              "after": {
+                "devname": "eth0",
+                "ifindex": 2,
+                "kind": "tcx/egress",
+                "name": "cil_to_netdev",
+                "prog_id": 14420,
+                "prog_flags": [],
+                "link_id": 462,
+                "link_flags": []
+              }
+            },
+            {
+              "before": {
+                "devname": "cilium_net",
+                "ifindex": 3,
+                "kind": "tcx/ingress",
+                "name": "cil_to_host",
+                "prog_id": 14325,
+                "prog_flags": [],
+                "link_id": 460,
+                "link_flags": []
+              },
+              "after": {
+                "devname": "cilium_net",
+                "ifindex": 3,
+                "kind": "tcx/ingress",
+                "name": "cil_to_host",
+                "prog_id": 14406,
+                "prog_flags": [],
+                "link_id": 460,
+                "link_flags": []
+              }
+            },
+            {
+              "before": {
+                "devname": "cilium_host",
+                "ifindex": 4,
+                "kind": "tcx/ingress",
+                "name": "cil_to_host",
+                "prog_id": 14315,
+                "prog_flags": [],
+                "link_id": 458,
+                "link_flags": []
+              },
+              "after": {
+                "devname": "cilium_host",
+                "ifindex": 4,
+                "kind": "tcx/ingress",
+                "name": "cil_to_host",
+                "prog_id": 14399,
+                "prog_flags": [],
+                "link_id": 458,
+                "link_flags": []
+              }
+            },
+            {
+              "before": {
+                "devname": "cilium_host",
+                "ifindex": 4,
+                "kind": "tcx/egress",
+                "name": "cil_from_host",
+                "prog_id": 14324,
+                "prog_flags": [],
+                "link_id": 459,
+                "link_flags": []
+              },
+              "after": {
+                "devname": "cilium_host",
+                "ifindex": 4,
+                "kind": "tcx/egress",
+                "name": "cil_from_host",
+                "prog_id": 14405,
+                "prog_flags": [],
+                "link_id": 459,
+                "link_flags": []
+              }
+            }
+          ]
+        ],
+        "attempts": 60,
+        "allowed": 40,
+        "denied": 20,
+        "phases": {
+          "before-observer": 12,
+          "during-observer": 24,
+          "post-sigkill": 6,
+          "after-observer": 12,
+          "after-old-config-rejection": 6
+        },
+        "cases": [
+          {
+            "phase": "before-observer",
+            "destination": "cmtc-a",
+            "port": 80,
+            "allowed": true,
+            "exit": 0
+          },
+          {
+            "phase": "before-observer",
+            "destination": "cmtc-a",
+            "port": 8080,
+            "allowed": true,
+            "exit": 0
+          },
+          {
+            "phase": "before-observer",
+            "destination": "cmtc-a",
+            "port": 31337,
+            "allowed": false,
+            "exit": 28
+          },
+          {
+            "phase": "before-observer",
+            "destination": "cmtc-b",
+            "port": 80,
+            "allowed": true,
+            "exit": 0
+          },
+          {
+            "phase": "before-observer",
+            "destination": "cmtc-b",
+            "port": 8080,
+            "allowed": true,
+            "exit": 0
+          },
+          {
+            "phase": "before-observer",
+            "destination": "cmtc-b",
+            "port": 31337,
+            "allowed": false,
+            "exit": 28
+          },
+          {
+            "phase": "before-observer",
+            "destination": "cmtc-a",
+            "port": 80,
+            "allowed": true,
+            "exit": 0
+          },
+          {
+            "phase": "before-observer",
+            "destination": "cmtc-a",
+            "port": 8080,
+            "allowed": true,
+            "exit": 0
+          },
+          {
+            "phase": "before-observer",
+            "destination": "cmtc-a",
+            "port": 31337,
+            "allowed": false,
+            "exit": 28
+          },
+          {
+            "phase": "before-observer",
+            "destination": "cmtc-b",
+            "port": 80,
+            "allowed": true,
+            "exit": 0
+          },
+          {
+            "phase": "before-observer",
+            "destination": "cmtc-b",
+            "port": 8080,
+            "allowed": true,
+            "exit": 0
+          },
+          {
+            "phase": "before-observer",
+            "destination": "cmtc-b",
+            "port": 31337,
+            "allowed": false,
+            "exit": 28
+          },
+          {
+            "phase": "during-observer",
+            "destination": "cmtc-a",
+            "port": 80,
+            "allowed": true,
+            "exit": 0
+          },
+          {
+            "phase": "during-observer",
+            "destination": "cmtc-a",
+            "port": 8080,
+            "allowed": true,
+            "exit": 0
+          },
+          {
+            "phase": "during-observer",
+            "destination": "cmtc-a",
+            "port": 31337,
+            "allowed": false,
+            "exit": 28
+          },
+          {
+            "phase": "during-observer",
+            "destination": "cmtc-b",
+            "port": 80,
+            "allowed": true,
+            "exit": 0
+          },
+          {
+            "phase": "during-observer",
+            "destination": "cmtc-b",
+            "port": 8080,
+            "allowed": true,
+            "exit": 0
+          },
+          {
+            "phase": "during-observer",
+            "destination": "cmtc-b",
+            "port": 31337,
+            "allowed": false,
+            "exit": 28
+          },
+          {
+            "phase": "during-observer",
+            "destination": "cmtc-a",
+            "port": 80,
+            "allowed": true,
+            "exit": 0
+          },
+          {
+            "phase": "during-observer",
+            "destination": "cmtc-a",
+            "port": 8080,
+            "allowed": true,
+            "exit": 0
+          },
+          {
+            "phase": "during-observer",
+            "destination": "cmtc-a",
+            "port": 31337,
+            "allowed": false,
+            "exit": 28
+          },
+          {
+            "phase": "during-observer",
+            "destination": "cmtc-b",
+            "port": 80,
+            "allowed": true,
+            "exit": 0
+          },
+          {
+            "phase": "during-observer",
+            "destination": "cmtc-b",
+            "port": 8080,
+            "allowed": true,
+            "exit": 0
+          },
+          {
+            "phase": "during-observer",
+            "destination": "cmtc-b",
+            "port": 31337,
+            "allowed": false,
+            "exit": 28
+          },
+          {
+            "phase": "during-observer",
+            "destination": "cmtc-a",
+            "port": 80,
+            "allowed": true,
+            "exit": 0
+          },
+          {
+            "phase": "during-observer",
+            "destination": "cmtc-a",
+            "port": 8080,
+            "allowed": true,
+            "exit": 0
+          },
+          {
+            "phase": "during-observer",
+            "destination": "cmtc-a",
+            "port": 31337,
+            "allowed": false,
+            "exit": 28
+          },
+          {
+            "phase": "during-observer",
+            "destination": "cmtc-b",
+            "port": 80,
+            "allowed": true,
+            "exit": 0
+          },
+          {
+            "phase": "during-observer",
+            "destination": "cmtc-b",
+            "port": 8080,
+            "allowed": true,
+            "exit": 0
+          },
+          {
+            "phase": "during-observer",
+            "destination": "cmtc-b",
+            "port": 31337,
+            "allowed": false,
+            "exit": 28
+          },
+          {
+            "phase": "during-observer",
+            "destination": "cmtc-a",
+            "port": 80,
+            "allowed": true,
+            "exit": 0
+          },
+          {
+            "phase": "during-observer",
+            "destination": "cmtc-a",
+            "port": 8080,
+            "allowed": true,
+            "exit": 0
+          },
+          {
+            "phase": "during-observer",
+            "destination": "cmtc-a",
+            "port": 31337,
+            "allowed": false,
+            "exit": 28
+          },
+          {
+            "phase": "during-observer",
+            "destination": "cmtc-b",
+            "port": 80,
+            "allowed": true,
+            "exit": 0
+          },
+          {
+            "phase": "during-observer",
+            "destination": "cmtc-b",
+            "port": 8080,
+            "allowed": true,
+            "exit": 0
+          },
+          {
+            "phase": "during-observer",
+            "destination": "cmtc-b",
+            "port": 31337,
+            "allowed": false,
+            "exit": 28
+          },
+          {
+            "phase": "post-sigkill",
+            "destination": "cmtc-a",
+            "port": 80,
+            "allowed": true,
+            "exit": 0
+          },
+          {
+            "phase": "post-sigkill",
+            "destination": "cmtc-a",
+            "port": 8080,
+            "allowed": true,
+            "exit": 0
+          },
+          {
+            "phase": "post-sigkill",
+            "destination": "cmtc-a",
+            "port": 31337,
+            "allowed": false,
+            "exit": 28
+          },
+          {
+            "phase": "post-sigkill",
+            "destination": "cmtc-b",
+            "port": 80,
+            "allowed": true,
+            "exit": 0
+          },
+          {
+            "phase": "post-sigkill",
+            "destination": "cmtc-b",
+            "port": 8080,
+            "allowed": true,
+            "exit": 0
+          },
+          {
+            "phase": "post-sigkill",
+            "destination": "cmtc-b",
+            "port": 31337,
+            "allowed": false,
+            "exit": 28
+          },
+          {
+            "phase": "after-observer",
+            "destination": "cmtc-a",
+            "port": 80,
+            "allowed": true,
+            "exit": 0
+          },
+          {
+            "phase": "after-observer",
+            "destination": "cmtc-a",
+            "port": 8080,
+            "allowed": true,
+            "exit": 0
+          },
+          {
+            "phase": "after-observer",
+            "destination": "cmtc-a",
+            "port": 31337,
+            "allowed": false,
+            "exit": 28
+          },
+          {
+            "phase": "after-observer",
+            "destination": "cmtc-b",
+            "port": 80,
+            "allowed": true,
+            "exit": 0
+          },
+          {
+            "phase": "after-observer",
+            "destination": "cmtc-b",
+            "port": 8080,
+            "allowed": true,
+            "exit": 0
+          },
+          {
+            "phase": "after-observer",
+            "destination": "cmtc-b",
+            "port": 31337,
+            "allowed": false,
+            "exit": 28
+          },
+          {
+            "phase": "after-observer",
+            "destination": "cmtc-a",
+            "port": 80,
+            "allowed": true,
+            "exit": 0
+          },
+          {
+            "phase": "after-observer",
+            "destination": "cmtc-a",
+            "port": 8080,
+            "allowed": true,
+            "exit": 0
+          },
+          {
+            "phase": "after-observer",
+            "destination": "cmtc-a",
+            "port": 31337,
+            "allowed": false,
+            "exit": 28
+          },
+          {
+            "phase": "after-observer",
+            "destination": "cmtc-b",
+            "port": 80,
+            "allowed": true,
+            "exit": 0
+          },
+          {
+            "phase": "after-observer",
+            "destination": "cmtc-b",
+            "port": 8080,
+            "allowed": true,
+            "exit": 0
+          },
+          {
+            "phase": "after-observer",
+            "destination": "cmtc-b",
+            "port": 31337,
+            "allowed": false,
+            "exit": 28
+          },
+          {
+            "phase": "after-old-config-rejection",
+            "destination": "cmtc-a",
+            "port": 80,
+            "allowed": true,
+            "exit": 0
+          },
+          {
+            "phase": "after-old-config-rejection",
+            "destination": "cmtc-a",
+            "port": 8080,
+            "allowed": true,
+            "exit": 0
+          },
+          {
+            "phase": "after-old-config-rejection",
+            "destination": "cmtc-a",
+            "port": 31337,
+            "allowed": false,
+            "exit": 28
+          },
+          {
+            "phase": "after-old-config-rejection",
+            "destination": "cmtc-b",
+            "port": 80,
+            "allowed": true,
+            "exit": 0
+          },
+          {
+            "phase": "after-old-config-rejection",
+            "destination": "cmtc-b",
+            "port": 8080,
+            "allowed": true,
+            "exit": 0
+          },
+          {
+            "phase": "after-old-config-rejection",
+            "destination": "cmtc-b",
+            "port": 31337,
+            "allowed": false,
+            "exit": 28
+          }
+        ],
+        "nativeDropPhases": [
+          "before-observer",
+          "during-observer",
+          "post-sigkill",
+          "after-observer",
+          "after-old-config-rejection"
+        ]
+      },
+      "cmtc-b": {
+        "config": {
+          "cluster": "cmtc-b",
+          "node": "cmtc-b-worker",
+          "podUID": "f209d83a-be45-45a5-986d-bb04c40dde17",
+          "netNSInode": 4026532769,
+          "ifIndex": 83,
+          "ifName": "lxc20f98100a1ef",
+          "mac": "32:ee:da:9d:40:72",
+          "peerIfIndex": 82,
+          "direction": "ingress",
+          "ciliumLinkID": 734,
+          "ciliumProgramID": 14525
+        },
+        "baselineChain": [
+          {
+            "program": 14525,
+            "link": 734,
+            "name": "cil_from_container"
+          }
+        ],
+        "backend": {
+          "cluster": "cmtc-b",
+          "name": "rebel-base-7cbb476f7-rf9bf",
+          "ip": "10.20.0.48",
+          "uid": "15ee1962-2ded-4dca-a797-b314d98e5633"
+        },
+        "loadMetricSamples": {
+          "before": {
+            "cmtc_datapath_observer_packets_total": 0.0,
+            "cmtc_datapath_observer_bytes_total": 0.0,
+            "cmtc_datapath_observer_ready": 1.0
+          },
+          "after": {
+            "cmtc_datapath_observer_packets_total": 129.0,
+            "cmtc_datapath_observer_bytes_total": 9998.0,
+            "cmtc_datapath_observer_ready": 1.0
+          }
+        },
+        "sigkillRecovery": {
+          "containerID": "89f5f5c517afa6e1e6fa5b803793412cbd6c47af014d59a21a34efd57f46429b",
+          "pid": 26079,
+          "starttime": "1372509",
+          "termination": {
+            "containerID": "containerd://89f5f5c517afa6e1e6fa5b803793412cbd6c47af014d59a21a34efd57f46429b",
+            "exitCode": 137,
+            "finishedAt": "2026-10-24T23:03:47Z",
+            "reason": "Error",
+            "startedAt": "2026-10-24T23:03:26Z"
+          },
+          "newStatus": {
+            "allocatedResources": {
+              "cpu": "10m",
+              "memory": "32Mi"
+            },
+            "containerID": "containerd://1073239d35bd1df117d861a5e177f1731100965179a1984a9b23c49957fdb04a",
+            "image": "localhost/cmtc-bpf-observer:observe-b193510f20",
+            "imageID": "docker.io/library/import-2026-10-24@sha256:d3f002918d69a8dbdb74165c4c37f35b17ad64efe43dc4e5852f19f0632ee120",
+            "lastState": {
+              "terminated": {
+                "containerID": "containerd://89f5f5c517afa6e1e6fa5b803793412cbd6c47af014d59a21a34efd57f46429b",
+                "exitCode": 137,
+                "finishedAt": "2026-10-24T23:03:47Z",
+                "reason": "Error",
+                "startedAt": "2026-10-24T23:03:26Z"
+              }
+            },
+            "name": "observer",
+            "ready": true,
+            "resources": {
+              "limits": {
+                "cpu": "200m",
+                "memory": "128Mi"
+              },
+              "requests": {
+                "cpu": "10m",
+                "memory": "32Mi"
+              }
+            },
+            "restartCount": 1,
+            "started": true,
+            "state": {
+              "running": {
+                "startedAt": "2026-10-24T23:03:48Z"
+              }
+            },
+            "user": {
+              "linux": {
+                "gid": 0,
+                "supplementalGroups": [
+                  0
+                ],
+                "uid": 0
+              }
+            },
+            "volumeMounts": [
+              {
+                "mountPath": "/config",
+                "name": "config",
+                "readOnly": true,
+                "recursiveReadOnly": "Disabled"
+              }
+            ]
+          },
+          "chain": [
+            {
+              "program": 14583,
+              "link": 736,
+              "name": "cmtc_observe"
+            },
+            {
+              "program": 14525,
+              "link": 734,
+              "name": "cil_from_container"
+            }
+          ]
+        },
+        "postRestartCounterDelta": 32.0,
+        "oldConfigRejectedAfterPodReplacement": {
+          "newPodUID": "df40bcae-2bda-44ef-9a0e-6711f65704a4",
+          "observerStatus": {
+            "allocatedResources": {
+              "cpu": "10m",
+              "memory": "32Mi"
+            },
+            "conditions": [
+              {
+                "lastProbeTime": null,
+                "lastTransitionTime": "2026-10-24T23:04:05Z",
+                "observedGeneration": 1,
+                "status": "True",
+                "type": "PodReadyToStartContainers"
+              },
+              {
+                "lastProbeTime": null,
+                "lastTransitionTime": "2026-10-24T23:04:05Z",
+                "observedGeneration": 1,
+                "status": "True",
+                "type": "Initialized"
+              },
+              {
+                "lastProbeTime": null,
+                "lastTransitionTime": "2026-10-24T23:04:37Z",
+                "message": "containers with unready status: [observer]",
+                "observedGeneration": 1,
+                "reason": "ContainersNotReady",
+                "status": "False",
+                "type": "Ready"
+              },
+              {
+                "lastProbeTime": null,
+                "lastTransitionTime": "2026-10-24T23:04:37Z",
+                "message": "containers with unready status: [observer]",
+                "observedGeneration": 1,
+                "reason": "ContainersNotReady",
+                "status": "False",
+                "type": "ContainersReady"
+              },
+              {
+                "lastProbeTime": null,
+                "lastTransitionTime": "2026-10-24T23:04:05Z",
+                "observedGeneration": 1,
+                "status": "True",
+                "type": "PodScheduled"
+              }
+            ],
+            "containerStatuses": [
+              {
+                "allocatedResources": {
+                  "cpu": "10m",
+                  "memory": "32Mi"
+                },
+                "containerID": "containerd://fd130521391da369c83d67d17ef3f6e19f45e420872bb08f9431a1e00a379b8d",
+                "image": "localhost/cmtc-bpf-observer:observe-b193510f20",
+                "imageID": "docker.io/library/import-2026-10-24@sha256:d3f002918d69a8dbdb74165c4c37f35b17ad64efe43dc4e5852f19f0632ee120",
+                "lastState": {
+                  "terminated": {
+                    "containerID": "containerd://bd35c4bb301dc37c6c69f6238998b86c6eab72d19e8744e824a5ee9993419efd",
+                    "exitCode": 1,
+                    "finishedAt": "2026-10-24T23:04:37Z",
+                    "reason": "Error",
+                    "startedAt": "2026-10-24T23:04:05Z"
+                  }
+                },
+                "name": "observer",
+                "ready": false,
+                "resources": {
+                  "limits": {
+                    "cpu": "200m",
+                    "memory": "128Mi"
+                  },
+                  "requests": {
+                    "cpu": "10m",
+                    "memory": "32Mi"
+                  }
+                },
+                "restartCount": 1,
+                "started": false,
+                "state": {
+                  "terminated": {
+                    "containerID": "containerd://fd130521391da369c83d67d17ef3f6e19f45e420872bb08f9431a1e00a379b8d",
+                    "exitCode": 1,
+                    "finishedAt": "2026-10-24T23:04:37Z",
+                    "reason": "Error",
+                    "startedAt": "2026-10-24T23:04:37Z"
+                  }
+                },
+                "user": {
+                  "linux": {
+                    "gid": 0,
+                    "supplementalGroups": [
+                      0
+                    ],
+                    "uid": 0
+                  }
+                },
+                "volumeMounts": [
+                  {
+                    "mountPath": "/config",
+                    "name": "config",
+                    "readOnly": true,
+                    "recursiveReadOnly": "Disabled"
+                  }
+                ]
+              }
+            ],
+            "hostIP": "172.18.0.5",
+            "hostIPs": [
+              {
+                "ip": "172.18.0.5"
+              }
+            ],
+            "observedGeneration": 1,
+            "phase": "Running",
+            "podIP": "172.18.0.5",
+            "podIPs": [
+              {
+                "ip": "172.18.0.5"
+              }
+            ],
+            "qosClass": "Burstable",
+            "resources": {
+              "limits": {
+                "cpu": "200m",
+                "memory": "128Mi"
+              },
+              "requests": {
+                "memory": "32Mi"
+              }
+            },
+            "startTime": "2026-10-24T23:04:05Z"
+          }
+        },
+        "foreignProgramUpdates": [
+          [
+            {
+              "before": {
+                "devname": "eth0",
+                "ifindex": 2,
+                "kind": "tcx/ingress",
+                "name": "cil_from_netdev",
+                "prog_id": 13077,
+                "prog_flags": [],
+                "link_id": 526,
+                "link_flags": []
+              },
+              "after": {
+                "devname": "eth0",
+                "ifindex": 2,
+                "kind": "tcx/ingress",
+                "name": "cil_from_netdev",
+                "prog_id": 14565,
+                "prog_flags": [],
+                "link_id": 526,
+                "link_flags": []
+              }
+            },
+            {
+              "before": {
+                "devname": "eth0",
+                "ifindex": 2,
+                "kind": "tcx/egress",
+                "name": "cil_to_netdev",
+                "prog_id": 13081,
+                "prog_flags": [],
+                "link_id": 529,
+                "link_flags": []
+              },
+              "after": {
+                "devname": "eth0",
+                "ifindex": 2,
+                "kind": "tcx/egress",
+                "name": "cil_to_netdev",
+                "prog_id": 14558,
+                "prog_flags": [],
+                "link_id": 529,
+                "link_flags": []
+              }
+            },
+            {
+              "before": {
+                "devname": "cilium_net",
+                "ifindex": 3,
+                "kind": "tcx/ingress",
+                "name": "cil_to_host",
+                "prog_id": 13072,
+                "prog_flags": [],
+                "link_id": 523,
+                "link_flags": []
+              },
+              "after": {
+                "devname": "cilium_net",
+                "ifindex": 3,
+                "kind": "tcx/ingress",
+                "name": "cil_to_host",
+                "prog_id": 14556,
+                "prog_flags": [],
+                "link_id": 523,
+                "link_flags": []
+              }
+            },
+            {
+              "before": {
+                "devname": "cilium_host",
+                "ifindex": 4,
+                "kind": "tcx/ingress",
+                "name": "cil_to_host",
+                "prog_id": 13059,
+                "prog_flags": [],
+                "link_id": 521,
+                "link_flags": []
+              },
+              "after": {
+                "devname": "cilium_host",
+                "ifindex": 4,
+                "kind": "tcx/ingress",
+                "name": "cil_to_host",
+                "prog_id": 14536,
+                "prog_flags": [],
+                "link_id": 521,
+                "link_flags": []
+              }
+            },
+            {
+              "before": {
+                "devname": "cilium_host",
+                "ifindex": 4,
+                "kind": "tcx/egress",
+                "name": "cil_from_host",
+                "prog_id": 13058,
+                "prog_flags": [],
+                "link_id": 522,
+                "link_flags": []
+              },
+              "after": {
+                "devname": "cilium_host",
+                "ifindex": 4,
+                "kind": "tcx/egress",
+                "name": "cil_from_host",
+                "prog_id": 14543,
+                "prog_flags": [],
+                "link_id": 522,
+                "link_flags": []
+              }
+            }
+          ]
+        ],
+        "attempts": 60,
+        "allowed": 40,
+        "denied": 20,
+        "phases": {
+          "before-observer": 12,
+          "during-observer": 24,
+          "post-sigkill": 6,
+          "after-observer": 12,
+          "after-old-config-rejection": 6
+        },
+        "cases": [
+          {
+            "phase": "before-observer",
+            "destination": "cmtc-a",
+            "port": 80,
+            "allowed": true,
+            "exit": 0
+          },
+          {
+            "phase": "before-observer",
+            "destination": "cmtc-a",
+            "port": 8080,
+            "allowed": true,
+            "exit": 0
+          },
+          {
+            "phase": "before-observer",
+            "destination": "cmtc-a",
+            "port": 31337,
+            "allowed": false,
+            "exit": 28
+          },
+          {
+            "phase": "before-observer",
+            "destination": "cmtc-b",
+            "port": 80,
+            "allowed": true,
+            "exit": 0
+          },
+          {
+            "phase": "before-observer",
+            "destination": "cmtc-b",
+            "port": 8080,
+            "allowed": true,
+            "exit": 0
+          },
+          {
+            "phase": "before-observer",
+            "destination": "cmtc-b",
+            "port": 31337,
+            "allowed": false,
+            "exit": 28
+          },
+          {
+            "phase": "before-observer",
+            "destination": "cmtc-a",
+            "port": 80,
+            "allowed": true,
+            "exit": 0
+          },
+          {
+            "phase": "before-observer",
+            "destination": "cmtc-a",
+            "port": 8080,
+            "allowed": true,
+            "exit": 0
+          },
+          {
+            "phase": "before-observer",
+            "destination": "cmtc-a",
+            "port": 31337,
+            "allowed": false,
+            "exit": 28
+          },
+          {
+            "phase": "before-observer",
+            "destination": "cmtc-b",
+            "port": 80,
+            "allowed": true,
+            "exit": 0
+          },
+          {
+            "phase": "before-observer",
+            "destination": "cmtc-b",
+            "port": 8080,
+            "allowed": true,
+            "exit": 0
+          },
+          {
+            "phase": "before-observer",
+            "destination": "cmtc-b",
+            "port": 31337,
+            "allowed": false,
+            "exit": 28
+          },
+          {
+            "phase": "during-observer",
+            "destination": "cmtc-a",
+            "port": 80,
+            "allowed": true,
+            "exit": 0
+          },
+          {
+            "phase": "during-observer",
+            "destination": "cmtc-a",
+            "port": 8080,
+            "allowed": true,
+            "exit": 0
+          },
+          {
+            "phase": "during-observer",
+            "destination": "cmtc-a",
+            "port": 31337,
+            "allowed": false,
+            "exit": 28
+          },
+          {
+            "phase": "during-observer",
+            "destination": "cmtc-b",
+            "port": 80,
+            "allowed": true,
+            "exit": 0
+          },
+          {
+            "phase": "during-observer",
+            "destination": "cmtc-b",
+            "port": 8080,
+            "allowed": true,
+            "exit": 0
+          },
+          {
+            "phase": "during-observer",
+            "destination": "cmtc-b",
+            "port": 31337,
+            "allowed": false,
+            "exit": 28
+          },
+          {
+            "phase": "during-observer",
+            "destination": "cmtc-a",
+            "port": 80,
+            "allowed": true,
+            "exit": 0
+          },
+          {
+            "phase": "during-observer",
+            "destination": "cmtc-a",
+            "port": 8080,
+            "allowed": true,
+            "exit": 0
+          },
+          {
+            "phase": "during-observer",
+            "destination": "cmtc-a",
+            "port": 31337,
+            "allowed": false,
+            "exit": 28
+          },
+          {
+            "phase": "during-observer",
+            "destination": "cmtc-b",
+            "port": 80,
+            "allowed": true,
+            "exit": 0
+          },
+          {
+            "phase": "during-observer",
+            "destination": "cmtc-b",
+            "port": 8080,
+            "allowed": true,
+            "exit": 0
+          },
+          {
+            "phase": "during-observer",
+            "destination": "cmtc-b",
+            "port": 31337,
+            "allowed": false,
+            "exit": 28
+          },
+          {
+            "phase": "during-observer",
+            "destination": "cmtc-a",
+            "port": 80,
+            "allowed": true,
+            "exit": 0
+          },
+          {
+            "phase": "during-observer",
+            "destination": "cmtc-a",
+            "port": 8080,
+            "allowed": true,
+            "exit": 0
+          },
+          {
+            "phase": "during-observer",
+            "destination": "cmtc-a",
+            "port": 31337,
+            "allowed": false,
+            "exit": 28
+          },
+          {
+            "phase": "during-observer",
+            "destination": "cmtc-b",
+            "port": 80,
+            "allowed": true,
+            "exit": 0
+          },
+          {
+            "phase": "during-observer",
+            "destination": "cmtc-b",
+            "port": 8080,
+            "allowed": true,
+            "exit": 0
+          },
+          {
+            "phase": "during-observer",
+            "destination": "cmtc-b",
+            "port": 31337,
+            "allowed": false,
+            "exit": 28
+          },
+          {
+            "phase": "during-observer",
+            "destination": "cmtc-a",
+            "port": 80,
+            "allowed": true,
+            "exit": 0
+          },
+          {
+            "phase": "during-observer",
+            "destination": "cmtc-a",
+            "port": 8080,
+            "allowed": true,
+            "exit": 0
+          },
+          {
+            "phase": "during-observer",
+            "destination": "cmtc-a",
+            "port": 31337,
+            "allowed": false,
+            "exit": 28
+          },
+          {
+            "phase": "during-observer",
+            "destination": "cmtc-b",
+            "port": 80,
+            "allowed": true,
+            "exit": 0
+          },
+          {
+            "phase": "during-observer",
+            "destination": "cmtc-b",
+            "port": 8080,
+            "allowed": true,
+            "exit": 0
+          },
+          {
+            "phase": "during-observer",
+            "destination": "cmtc-b",
+            "port": 31337,
+            "allowed": false,
+            "exit": 28
+          },
+          {
+            "phase": "post-sigkill",
+            "destination": "cmtc-a",
+            "port": 80,
+            "allowed": true,
+            "exit": 0
+          },
+          {
+            "phase": "post-sigkill",
+            "destination": "cmtc-a",
+            "port": 8080,
+            "allowed": true,
+            "exit": 0
+          },
+          {
+            "phase": "post-sigkill",
+            "destination": "cmtc-a",
+            "port": 31337,
+            "allowed": false,
+            "exit": 28
+          },
+          {
+            "phase": "post-sigkill",
+            "destination": "cmtc-b",
+            "port": 80,
+            "allowed": true,
+            "exit": 0
+          },
+          {
+            "phase": "post-sigkill",
+            "destination": "cmtc-b",
+            "port": 8080,
+            "allowed": true,
+            "exit": 0
+          },
+          {
+            "phase": "post-sigkill",
+            "destination": "cmtc-b",
+            "port": 31337,
+            "allowed": false,
+            "exit": 28
+          },
+          {
+            "phase": "after-observer",
+            "destination": "cmtc-a",
+            "port": 80,
+            "allowed": true,
+            "exit": 0
+          },
+          {
+            "phase": "after-observer",
+            "destination": "cmtc-a",
+            "port": 8080,
+            "allowed": true,
+            "exit": 0
+          },
+          {
+            "phase": "after-observer",
+            "destination": "cmtc-a",
+            "port": 31337,
+            "allowed": false,
+            "exit": 28
+          },
+          {
+            "phase": "after-observer",
+            "destination": "cmtc-b",
+            "port": 80,
+            "allowed": true,
+            "exit": 0
+          },
+          {
+            "phase": "after-observer",
+            "destination": "cmtc-b",
+            "port": 8080,
+            "allowed": true,
+            "exit": 0
+          },
+          {
+            "phase": "after-observer",
+            "destination": "cmtc-b",
+            "port": 31337,
+            "allowed": false,
+            "exit": 28
+          },
+          {
+            "phase": "after-observer",
+            "destination": "cmtc-a",
+            "port": 80,
+            "allowed": true,
+            "exit": 0
+          },
+          {
+            "phase": "after-observer",
+            "destination": "cmtc-a",
+            "port": 8080,
+            "allowed": true,
+            "exit": 0
+          },
+          {
+            "phase": "after-observer",
+            "destination": "cmtc-a",
+            "port": 31337,
+            "allowed": false,
+            "exit": 28
+          },
+          {
+            "phase": "after-observer",
+            "destination": "cmtc-b",
+            "port": 80,
+            "allowed": true,
+            "exit": 0
+          },
+          {
+            "phase": "after-observer",
+            "destination": "cmtc-b",
+            "port": 8080,
+            "allowed": true,
+            "exit": 0
+          },
+          {
+            "phase": "after-observer",
+            "destination": "cmtc-b",
+            "port": 31337,
+            "allowed": false,
+            "exit": 28
+          },
+          {
+            "phase": "after-old-config-rejection",
+            "destination": "cmtc-a",
+            "port": 80,
+            "allowed": true,
+            "exit": 0
+          },
+          {
+            "phase": "after-old-config-rejection",
+            "destination": "cmtc-a",
+            "port": 8080,
+            "allowed": true,
+            "exit": 0
+          },
+          {
+            "phase": "after-old-config-rejection",
+            "destination": "cmtc-a",
+            "port": 31337,
+            "allowed": false,
+            "exit": 28
+          },
+          {
+            "phase": "after-old-config-rejection",
+            "destination": "cmtc-b",
+            "port": 80,
+            "allowed": true,
+            "exit": 0
+          },
+          {
+            "phase": "after-old-config-rejection",
+            "destination": "cmtc-b",
+            "port": 8080,
+            "allowed": true,
+            "exit": 0
+          },
+          {
+            "phase": "after-old-config-rejection",
+            "destination": "cmtc-b",
+            "port": 31337,
+            "allowed": false,
+            "exit": 28
+          }
+        ],
+        "nativeDropPhases": [
+          "before-observer",
+          "during-observer",
+          "post-sigkill",
+          "after-observer",
+          "after-old-config-rejection"
+        ]
+      }
+    }
+  },
+  "loggingRun": {
+    "started": "2026-10-24T23:13:23.278514+00:00",
+    "finished": "2026-10-24T23:17:19.169606+00:00",
+    "status": "passed",
+    "clusters": {
+      "cmtc-a": {
+        "config": {
+          "cluster": "cmtc-a",
+          "node": "cmtc-a-worker",
+          "podUID": "c3bc27f9-f39e-4a7f-acba-b6b2ca6d660c",
+          "netNSInode": 4026532445,
+          "ifIndex": 97,
+          "ifName": "lxcbb9d38aac340",
+          "mac": "8a:11:42:9b:7b:e2",
+          "peerIfIndex": 96,
+          "direction": "ingress",
+          "ciliumLinkID": 739,
+          "ciliumProgramID": 14748
+        },
+        "baselineChain": [
+          {
+            "program": 14748,
+            "link": 739,
+            "name": "cil_from_container"
+          }
+        ],
+        "backend": {
+          "cluster": "cmtc-a",
+          "name": "rebel-base-688ff9949b-7cbrt",
+          "ip": "10.10.0.50",
+          "uid": "282c0cab-85fe-4de3-914f-3f3a0c4bab24"
+        },
+        "loadMetricSamples": {
+          "before": {
+            "cmtc_datapath_observer_packets_total": 0.0,
+            "cmtc_datapath_observer_bytes_total": 0.0,
+            "cmtc_datapath_observer_ready": 1.0
+          },
+          "after": {
+            "cmtc_datapath_observer_packets_total": 33.0,
+            "cmtc_datapath_observer_bytes_total": 2552.0,
+            "cmtc_datapath_observer_ready": 1.0
+          }
+        },
+        "sigkillRecovery": {
+          "containerID": "eb07181561d2b8de1e80abf59a053a0e0924c58db931422842933083539d034e",
+          "pid": 34503,
+          "starttime": "1433486",
+          "termination": {
+            "containerID": "containerd://eb07181561d2b8de1e80abf59a053a0e0924c58db931422842933083539d034e",
+            "exitCode": 137,
+            "finishedAt": "2026-10-24T23:13:44Z",
+            "reason": "Error",
+            "startedAt": "2026-10-24T23:13:36Z"
+          },
+          "newStatus": {
+            "allocatedResources": {
+              "cpu": "10m",
+              "memory": "32Mi"
+            },
+            "containerID": "containerd://5ebe81520305da3d125af53e93671d20607788a5db8d0356950f92ac55baf124",
+            "image": "localhost/cmtc-bpf-observer:observe-b193510f20",
+            "imageID": "docker.io/library/import-2026-10-24@sha256:d3f002918d69a8dbdb74165c4c37f35b17ad64efe43dc4e5852f19f0632ee120",
+            "lastState": {
+              "terminated": {
+                "containerID": "containerd://eb07181561d2b8de1e80abf59a053a0e0924c58db931422842933083539d034e",
+                "exitCode": 137,
+                "finishedAt": "2026-10-24T23:13:44Z",
+                "reason": "Error",
+                "startedAt": "2026-10-24T23:13:36Z"
+              }
+            },
+            "name": "observer",
+            "ready": true,
+            "resources": {
+              "limits": {
+                "cpu": "200m",
+                "memory": "128Mi"
+              },
+              "requests": {
+                "cpu": "10m",
+                "memory": "32Mi"
+              }
+            },
+            "restartCount": 1,
+            "started": true,
+            "state": {
+              "running": {
+                "startedAt": "2026-10-24T23:13:45Z"
+              }
+            },
+            "user": {
+              "linux": {
+                "gid": 0,
+                "supplementalGroups": [
+                  0
+                ],
+                "uid": 0
+              }
+            },
+            "volumeMounts": [
+              {
+                "mountPath": "/config",
+                "name": "config",
+                "readOnly": true,
+                "recursiveReadOnly": "Disabled"
+              }
+            ]
+          },
+          "chain": [
+            {
+              "program": 14808,
+              "link": 741,
+              "name": "cmtc_observe"
+            },
+            {
+              "program": 14748,
+              "link": 739,
+              "name": "cil_from_container"
+            }
+          ]
+        },
+        "postRestartCounterDelta": 32.0,
+        "oldConfigRejectedAfterPodReplacement": {
+          "newPodUID": "5d57f049-cf40-4f9d-8bc8-2a28cdf13864",
+          "observerStatus": {
+            "allocatedResources": {
+              "cpu": "10m",
+              "memory": "32Mi"
+            },
+            "conditions": [
+              {
+                "lastProbeTime": null,
+                "lastTransitionTime": "2026-10-24T23:14:02Z",
+                "observedGeneration": 1,
+                "status": "True",
+                "type": "PodReadyToStartContainers"
+              },
+              {
+                "lastProbeTime": null,
+                "lastTransitionTime": "2026-10-24T23:14:02Z",
+                "observedGeneration": 1,
+                "status": "True",
+                "type": "Initialized"
+              },
+              {
+                "lastProbeTime": null,
+                "lastTransitionTime": "2026-10-24T23:14:35Z",
+                "message": "containers with unready status: [observer]",
+                "observedGeneration": 1,
+                "reason": "ContainersNotReady",
+                "status": "False",
+                "type": "Ready"
+              },
+              {
+                "lastProbeTime": null,
+                "lastTransitionTime": "2026-10-24T23:14:35Z",
+                "message": "containers with unready status: [observer]",
+                "observedGeneration": 1,
+                "reason": "ContainersNotReady",
+                "status": "False",
+                "type": "ContainersReady"
+              },
+              {
+                "lastProbeTime": null,
+                "lastTransitionTime": "2026-10-24T23:14:02Z",
+                "observedGeneration": 1,
+                "status": "True",
+                "type": "PodScheduled"
+              }
+            ],
+            "containerStatuses": [
+              {
+                "allocatedResources": {
+                  "cpu": "10m",
+                  "memory": "32Mi"
+                },
+                "containerID": "containerd://825aed7a5bce6a5f88611ed5bc8f28b25cd41588e77dbeb486f4ccef75ff18fa",
+                "image": "localhost/cmtc-bpf-observer:observe-b193510f20",
+                "imageID": "docker.io/library/import-2026-10-24@sha256:d3f002918d69a8dbdb74165c4c37f35b17ad64efe43dc4e5852f19f0632ee120",
+                "lastState": {
+                  "terminated": {
+                    "containerID": "containerd://8093601b09ccc0abe7f9a480f5c4d5a5544384a9fad07878dd4f2dfda8fef937",
+                    "exitCode": 1,
+                    "finishedAt": "2026-10-24T23:14:35Z",
+                    "reason": "Error",
+                    "startedAt": "2026-10-24T23:14:02Z"
+                  }
+                },
+                "name": "observer",
+                "ready": false,
+                "resources": {
+                  "limits": {
+                    "cpu": "200m",
+                    "memory": "128Mi"
+                  },
+                  "requests": {
+                    "cpu": "10m",
+                    "memory": "32Mi"
+                  }
+                },
+                "restartCount": 1,
+                "started": true,
+                "state": {
+                  "running": {
+                    "startedAt": "2026-10-24T23:14:35Z"
+                  }
+                },
+                "user": {
+                  "linux": {
+                    "gid": 0,
+                    "supplementalGroups": [
+                      0
+                    ],
+                    "uid": 0
+                  }
+                },
+                "volumeMounts": [
+                  {
+                    "mountPath": "/config",
+                    "name": "config",
+                    "readOnly": true,
+                    "recursiveReadOnly": "Disabled"
+                  }
+                ]
+              }
+            ],
+            "hostIP": "172.18.0.2",
+            "hostIPs": [
+              {
+                "ip": "172.18.0.2"
+              }
+            ],
+            "observedGeneration": 1,
+            "phase": "Running",
+            "podIP": "172.18.0.2",
+            "podIPs": [
+              {
+                "ip": "172.18.0.2"
+              }
+            ],
+            "qosClass": "Burstable",
+            "resources": {
+              "limits": {
+                "cpu": "200m",
+                "memory": "128Mi"
+              },
+              "requests": {
+                "memory": "32Mi"
+              }
+            },
+            "startTime": "2026-10-24T23:14:02Z"
+          }
+        },
+        "foreignProgramUpdates": [
+          [
+            {
+              "before": {
+                "devname": "eth0",
+                "ifindex": 2,
+                "kind": "tcx/ingress",
+                "name": "cil_from_netdev",
+                "prog_id": 14660,
+                "prog_flags": [],
+                "link_id": 461,
+                "link_flags": []
+              },
+              "after": {
+                "devname": "eth0",
+                "ifindex": 2,
+                "kind": "tcx/ingress",
+                "name": "cil_from_netdev",
+                "prog_id": 14782,
+                "prog_flags": [],
+                "link_id": 461,
+                "link_flags": []
+              }
+            },
+            {
+              "before": {
+                "devname": "eth0",
+                "ifindex": 2,
+                "kind": "tcx/egress",
+                "name": "cil_to_netdev",
+                "prog_id": 14658,
+                "prog_flags": [],
+                "link_id": 462,
+                "link_flags": []
+              },
+              "after": {
+                "devname": "eth0",
+                "ifindex": 2,
+                "kind": "tcx/egress",
+                "name": "cil_to_netdev",
+                "prog_id": 14788,
+                "prog_flags": [],
+                "link_id": 462,
+                "link_flags": []
+              }
+            },
+            {
+              "before": {
+                "devname": "cilium_net",
+                "ifindex": 3,
+                "kind": "tcx/ingress",
+                "name": "cil_to_host",
+                "prog_id": 14652,
+                "prog_flags": [],
+                "link_id": 460,
+                "link_flags": []
+              },
+              "after": {
+                "devname": "cilium_net",
+                "ifindex": 3,
+                "kind": "tcx/ingress",
+                "name": "cil_to_host",
+                "prog_id": 14780,
+                "prog_flags": [],
+                "link_id": 460,
+                "link_flags": []
+              }
+            },
+            {
+              "before": {
+                "devname": "cilium_host",
+                "ifindex": 4,
+                "kind": "tcx/ingress",
+                "name": "cil_to_host",
+                "prog_id": 14636,
+                "prog_flags": [],
+                "link_id": 458,
+                "link_flags": []
+              },
+              "after": {
+                "devname": "cilium_host",
+                "ifindex": 4,
+                "kind": "tcx/ingress",
+                "name": "cil_to_host",
+                "prog_id": 14769,
+                "prog_flags": [],
+                "link_id": 458,
+                "link_flags": []
+              }
+            },
+            {
+              "before": {
+                "devname": "cilium_host",
+                "ifindex": 4,
+                "kind": "tcx/egress",
+                "name": "cil_from_host",
+                "prog_id": 14633,
+                "prog_flags": [],
+                "link_id": 459,
+                "link_flags": []
+              },
+              "after": {
+                "devname": "cilium_host",
+                "ifindex": 4,
+                "kind": "tcx/egress",
+                "name": "cil_from_host",
+                "prog_id": 14761,
+                "prog_flags": [],
+                "link_id": 459,
+                "link_flags": []
+              }
+            }
+          ],
+          [
+            {
+              "before": {
+                "devname": "eth0",
+                "ifindex": 2,
+                "kind": "tcx/ingress",
+                "name": "cil_from_netdev",
+                "prog_id": 14660,
+                "prog_flags": [],
+                "link_id": 461,
+                "link_flags": []
+              },
+              "after": {
+                "devname": "eth0",
+                "ifindex": 2,
+                "kind": "tcx/ingress",
+                "name": "cil_from_netdev",
+                "prog_id": 15015,
+                "prog_flags": [],
+                "link_id": 461,
+                "link_flags": []
+              }
+            },
+            {
+              "before": {
+                "devname": "eth0",
+                "ifindex": 2,
+                "kind": "tcx/egress",
+                "name": "cil_to_netdev",
+                "prog_id": 14658,
+                "prog_flags": [],
+                "link_id": 462,
+                "link_flags": []
+              },
+              "after": {
+                "devname": "eth0",
+                "ifindex": 2,
+                "kind": "tcx/egress",
+                "name": "cil_to_netdev",
+                "prog_id": 15017,
+                "prog_flags": [],
+                "link_id": 462,
+                "link_flags": []
+              }
+            },
+            {
+              "before": {
+                "devname": "cilium_net",
+                "ifindex": 3,
+                "kind": "tcx/ingress",
+                "name": "cil_to_host",
+                "prog_id": 14652,
+                "prog_flags": [],
+                "link_id": 460,
+                "link_flags": []
+              },
+              "after": {
+                "devname": "cilium_net",
+                "ifindex": 3,
+                "kind": "tcx/ingress",
+                "name": "cil_to_host",
+                "prog_id": 15001,
+                "prog_flags": [],
+                "link_id": 460,
+                "link_flags": []
+              }
+            },
+            {
+              "before": {
+                "devname": "cilium_host",
+                "ifindex": 4,
+                "kind": "tcx/ingress",
+                "name": "cil_to_host",
+                "prog_id": 14636,
+                "prog_flags": [],
+                "link_id": 458,
+                "link_flags": []
+              },
+              "after": {
+                "devname": "cilium_host",
+                "ifindex": 4,
+                "kind": "tcx/ingress",
+                "name": "cil_to_host",
+                "prog_id": 14990,
+                "prog_flags": [],
+                "link_id": 458,
+                "link_flags": []
+              }
+            },
+            {
+              "before": {
+                "devname": "cilium_host",
+                "ifindex": 4,
+                "kind": "tcx/egress",
+                "name": "cil_from_host",
+                "prog_id": 14633,
+                "prog_flags": [],
+                "link_id": 459,
+                "link_flags": []
+              },
+              "after": {
+                "devname": "cilium_host",
+                "ifindex": 4,
+                "kind": "tcx/egress",
+                "name": "cil_from_host",
+                "prog_id": 14997,
+                "prog_flags": [],
+                "link_id": 459,
+                "link_flags": []
+              }
+            }
+          ]
+        ],
+        "attempts": 42,
+        "allowed": 28,
+        "denied": 14,
+        "phases": {
+          "before-observer": 12,
+          "during-observer": 6,
+          "post-sigkill": 6,
+          "after-observer": 12,
+          "after-old-config-rejection": 6
+        },
+        "cases": [
+          {
+            "phase": "before-observer",
+            "destination": "cmtc-a",
+            "port": 80,
+            "allowed": true,
+            "exit": 0
+          },
+          {
+            "phase": "before-observer",
+            "destination": "cmtc-a",
+            "port": 8080,
+            "allowed": true,
+            "exit": 0
+          },
+          {
+            "phase": "before-observer",
+            "destination": "cmtc-a",
+            "port": 31337,
+            "allowed": false,
+            "exit": 28
+          },
+          {
+            "phase": "before-observer",
+            "destination": "cmtc-b",
+            "port": 80,
+            "allowed": true,
+            "exit": 0
+          },
+          {
+            "phase": "before-observer",
+            "destination": "cmtc-b",
+            "port": 8080,
+            "allowed": true,
+            "exit": 0
+          },
+          {
+            "phase": "before-observer",
+            "destination": "cmtc-b",
+            "port": 31337,
+            "allowed": false,
+            "exit": 28
+          },
+          {
+            "phase": "before-observer",
+            "destination": "cmtc-a",
+            "port": 80,
+            "allowed": true,
+            "exit": 0
+          },
+          {
+            "phase": "before-observer",
+            "destination": "cmtc-a",
+            "port": 8080,
+            "allowed": true,
+            "exit": 0
+          },
+          {
+            "phase": "before-observer",
+            "destination": "cmtc-a",
+            "port": 31337,
+            "allowed": false,
+            "exit": 28
+          },
+          {
+            "phase": "before-observer",
+            "destination": "cmtc-b",
+            "port": 80,
+            "allowed": true,
+            "exit": 0
+          },
+          {
+            "phase": "before-observer",
+            "destination": "cmtc-b",
+            "port": 8080,
+            "allowed": true,
+            "exit": 0
+          },
+          {
+            "phase": "before-observer",
+            "destination": "cmtc-b",
+            "port": 31337,
+            "allowed": false,
+            "exit": 28
+          },
+          {
+            "phase": "during-observer",
+            "destination": "cmtc-a",
+            "port": 80,
+            "allowed": true,
+            "exit": 0
+          },
+          {
+            "phase": "during-observer",
+            "destination": "cmtc-a",
+            "port": 8080,
+            "allowed": true,
+            "exit": 0
+          },
+          {
+            "phase": "during-observer",
+            "destination": "cmtc-a",
+            "port": 31337,
+            "allowed": false,
+            "exit": 28
+          },
+          {
+            "phase": "during-observer",
+            "destination": "cmtc-b",
+            "port": 80,
+            "allowed": true,
+            "exit": 0
+          },
+          {
+            "phase": "during-observer",
+            "destination": "cmtc-b",
+            "port": 8080,
+            "allowed": true,
+            "exit": 0
+          },
+          {
+            "phase": "during-observer",
+            "destination": "cmtc-b",
+            "port": 31337,
+            "allowed": false,
+            "exit": 28
+          },
+          {
+            "phase": "post-sigkill",
+            "destination": "cmtc-a",
+            "port": 80,
+            "allowed": true,
+            "exit": 0
+          },
+          {
+            "phase": "post-sigkill",
+            "destination": "cmtc-a",
+            "port": 8080,
+            "allowed": true,
+            "exit": 0
+          },
+          {
+            "phase": "post-sigkill",
+            "destination": "cmtc-a",
+            "port": 31337,
+            "allowed": false,
+            "exit": 28
+          },
+          {
+            "phase": "post-sigkill",
+            "destination": "cmtc-b",
+            "port": 80,
+            "allowed": true,
+            "exit": 0
+          },
+          {
+            "phase": "post-sigkill",
+            "destination": "cmtc-b",
+            "port": 8080,
+            "allowed": true,
+            "exit": 0
+          },
+          {
+            "phase": "post-sigkill",
+            "destination": "cmtc-b",
+            "port": 31337,
+            "allowed": false,
+            "exit": 28
+          },
+          {
+            "phase": "after-observer",
+            "destination": "cmtc-a",
+            "port": 80,
+            "allowed": true,
+            "exit": 0
+          },
+          {
+            "phase": "after-observer",
+            "destination": "cmtc-a",
+            "port": 8080,
+            "allowed": true,
+            "exit": 0
+          },
+          {
+            "phase": "after-observer",
+            "destination": "cmtc-a",
+            "port": 31337,
+            "allowed": false,
+            "exit": 28
+          },
+          {
+            "phase": "after-observer",
+            "destination": "cmtc-b",
+            "port": 80,
+            "allowed": true,
+            "exit": 0
+          },
+          {
+            "phase": "after-observer",
+            "destination": "cmtc-b",
+            "port": 8080,
+            "allowed": true,
+            "exit": 0
+          },
+          {
+            "phase": "after-observer",
+            "destination": "cmtc-b",
+            "port": 31337,
+            "allowed": false,
+            "exit": 28
+          },
+          {
+            "phase": "after-observer",
+            "destination": "cmtc-a",
+            "port": 80,
+            "allowed": true,
+            "exit": 0
+          },
+          {
+            "phase": "after-observer",
+            "destination": "cmtc-a",
+            "port": 8080,
+            "allowed": true,
+            "exit": 0
+          },
+          {
+            "phase": "after-observer",
+            "destination": "cmtc-a",
+            "port": 31337,
+            "allowed": false,
+            "exit": 28
+          },
+          {
+            "phase": "after-observer",
+            "destination": "cmtc-b",
+            "port": 80,
+            "allowed": true,
+            "exit": 0
+          },
+          {
+            "phase": "after-observer",
+            "destination": "cmtc-b",
+            "port": 8080,
+            "allowed": true,
+            "exit": 0
+          },
+          {
+            "phase": "after-observer",
+            "destination": "cmtc-b",
+            "port": 31337,
+            "allowed": false,
+            "exit": 28
+          },
+          {
+            "phase": "after-old-config-rejection",
+            "destination": "cmtc-a",
+            "port": 80,
+            "allowed": true,
+            "exit": 0
+          },
+          {
+            "phase": "after-old-config-rejection",
+            "destination": "cmtc-a",
+            "port": 8080,
+            "allowed": true,
+            "exit": 0
+          },
+          {
+            "phase": "after-old-config-rejection",
+            "destination": "cmtc-a",
+            "port": 31337,
+            "allowed": false,
+            "exit": 28
+          },
+          {
+            "phase": "after-old-config-rejection",
+            "destination": "cmtc-b",
+            "port": 80,
+            "allowed": true,
+            "exit": 0
+          },
+          {
+            "phase": "after-old-config-rejection",
+            "destination": "cmtc-b",
+            "port": 8080,
+            "allowed": true,
+            "exit": 0
+          },
+          {
+            "phase": "after-old-config-rejection",
+            "destination": "cmtc-b",
+            "port": 31337,
+            "allowed": false,
+            "exit": 28
+          }
+        ],
+        "nativeDropPhases": [
+          "before-observer",
+          "during-observer",
+          "post-sigkill",
+          "after-observer",
+          "after-old-config-rejection"
+        ],
+        "nodeOptinReleased": true,
+        "foreignInventoryAfterFinalCleanup": [
+          {
+            "devname": "eth0",
+            "ifindex": 2,
+            "kind": "tcx/ingress",
+            "name": "cil_from_netdev",
+            "prog_id": 15015,
+            "prog_flags": [],
+            "link_id": 461,
+            "link_flags": []
+          },
+          {
+            "devname": "eth0",
+            "ifindex": 2,
+            "kind": "tcx/egress",
+            "name": "cil_to_netdev",
+            "prog_id": 15017,
+            "prog_flags": [],
+            "link_id": 462,
+            "link_flags": []
+          },
+          {
+            "devname": "cilium_net",
+            "ifindex": 3,
+            "kind": "tcx/ingress",
+            "name": "cil_to_host",
+            "prog_id": 15001,
+            "prog_flags": [],
+            "link_id": 460,
+            "link_flags": []
+          },
+          {
+            "devname": "cilium_host",
+            "ifindex": 4,
+            "kind": "tcx/ingress",
+            "name": "cil_to_host",
+            "prog_id": 14990,
+            "prog_flags": [],
+            "link_id": 458,
+            "link_flags": []
+          },
+          {
+            "devname": "cilium_host",
+            "ifindex": 4,
+            "kind": "tcx/egress",
+            "name": "cil_from_host",
+            "prog_id": 14997,
+            "prog_flags": [],
+            "link_id": 459,
+            "link_flags": []
+          },
+          {
+            "devname": "cilium_vxlan",
+            "ifindex": 5,
+            "kind": "tcx/ingress",
+            "name": "cil_from_overlay",
+            "prog_id": 11851,
+            "prog_flags": [],
+            "link_id": 448,
+            "link_flags": []
+          },
+          {
+            "devname": "cilium_vxlan",
+            "ifindex": 5,
+            "kind": "tcx/egress",
+            "name": "cil_to_overlay",
+            "prog_id": 11854,
+            "prog_flags": [],
+            "link_id": 449,
+            "link_flags": []
+          },
+          {
+            "devname": "lxc22fec3500088",
+            "ifindex": 9,
+            "kind": "tcx/ingress",
+            "name": "cil_from_container",
+            "prog_id": 12273,
+            "prog_flags": [],
+            "link_id": 475,
+            "link_flags": []
+          },
+          {
+            "devname": "lxc795cccbe2f9c",
+            "ifindex": 11,
+            "kind": "tcx/ingress",
+            "name": "cil_from_container",
+            "prog_id": 12233,
+            "prog_flags": [],
+            "link_id": 476,
+            "link_flags": []
+          },
+          {
+            "devname": "lxc3f9febdf1b46",
+            "ifindex": 13,
+            "kind": "tcx/ingress",
+            "name": "cil_from_container",
+            "prog_id": 12179,
+            "prog_flags": [],
+            "link_id": 477,
+            "link_flags": []
+          },
+          {
+            "devname": "lxc1545a5ab6e46",
+            "ifindex": 21,
+            "kind": "tcx/ingress",
+            "name": "cil_from_container",
+            "prog_id": 12232,
+            "prog_flags": [],
+            "link_id": 542,
+            "link_flags": []
+          },
+          {
+            "devname": "lxc8251aaba5c2b",
+            "ifindex": 27,
+            "kind": "tcx/ingress",
+            "name": "cil_from_container",
+            "prog_id": 12167,
+            "prog_flags": [],
+            "link_id": 554,
+            "link_flags": []
+          },
+          {
+            "devname": "lxcfe32efdf33d5",
+            "ifindex": 29,
+            "kind": "tcx/ingress",
+            "name": "cil_from_container",
+            "prog_id": 12225,
+            "prog_flags": [],
+            "link_id": 555,
+            "link_flags": []
+          },
+          {
+            "devname": "lxc90b96705114d",
+            "ifindex": 31,
+            "kind": "tcx/ingress",
+            "name": "cil_from_container",
+            "prog_id": 13939,
+            "prog_flags": [],
+            "link_id": 557,
+            "link_flags": []
+          },
+          {
+            "devname": "lxc6792f7fefb54",
+            "ifindex": 33,
+            "kind": "tcx/ingress",
+            "name": "cil_from_container",
+            "prog_id": 13961,
+            "prog_flags": [],
+            "link_id": 559,
+            "link_flags": []
+          },
+          {
+            "devname": "lxc33a7c3f44b6e",
+            "ifindex": 35,
+            "kind": "tcx/ingress",
+            "name": "cil_from_container",
+            "prog_id": 12323,
+            "prog_flags": [],
+            "link_id": 558,
+            "link_flags": []
+          },
+          {
+            "devname": "lxcbc1d509df6e3",
+            "ifindex": 61,
+            "kind": "tcx/ingress",
+            "name": "cil_from_container",
+            "prog_id": 13925,
+            "prog_flags": [],
+            "link_id": 598,
+            "link_flags": []
+          },
+          {
+            "devname": "lxc_health",
+            "ifindex": 65,
+            "kind": "tcx/ingress",
+            "name": "cil_from_container",
+            "prog_id": 12251,
+            "prog_flags": [],
+            "link_id": 606,
+            "link_flags": []
+          },
+          {
+            "devname": "lxc1ba45a81d4e1",
+            "ifindex": 79,
+            "kind": "tcx/ingress",
+            "name": "cil_from_container",
+            "prog_id": 13699,
+            "prog_flags": [],
+            "link_id": 688,
+            "link_flags": []
+          },
+          {
+            "devname": "lxc217f45969f16",
+            "ifindex": 81,
+            "kind": "tcx/ingress",
+            "name": "cil_from_container",
+            "prog_id": 13731,
+            "prog_flags": [],
+            "link_id": 689,
+            "link_flags": []
+          },
+          {
+            "devname": "lxc0f97d0d011f9",
+            "ifindex": 83,
+            "kind": "tcx/ingress",
+            "name": "cil_from_container",
+            "prog_id": 13992,
+            "prog_flags": [],
+            "link_id": 716,
+            "link_flags": []
+          }
+        ],
+        "observerLogEvidence": [
+          {
+            "phase": "install",
+            "podName": "cmtc-bpf-observer-ln28p",
+            "podUID": "1f657814-77f9-4f75-a516-4348ff59abc0",
+            "containerID": "containerd://eb07181561d2b8de1e80abf59a053a0e0924c58db931422842933083539d034e",
+            "restartCount": 0,
+            "argv": [
+              "kubectl",
+              "--context",
+              "kind-cmtc-a",
+              "-n",
+              "cmtc-system",
+              "logs",
+              "-f",
+              "cmtc-bpf-observer-ln28p",
+              "-c",
+              "observer",
+              "--tail=-1",
+              "--pod-running-timeout=10s"
+            ],
+            "stdout": "cmtc-a-observer-01-install.jsonl",
+            "stderr": "cmtc-a-observer-01-install.kubectl-stderr.log",
+            "status": "closed",
+            "startup": {
+              "level": "info",
+              "ts": "2026-10-24T23:13:36Z",
+              "logger": "datapath-observer",
+              "msg": "starting observe-only datapath",
+              "cluster": "cmtc-a",
+              "node": "cmtc-a-worker",
+              "podUID": "c3bc27f9-f39e-4a7f-acba-b6b2ca6d660c",
+              "ifIndex": 97,
+              "direction": "ingress",
+              "enforcementAvailable": false
+            },
+            "attached": {
+              "level": "info",
+              "ts": "2026-10-24T23:13:36Z",
+              "logger": "datapath-observer",
+              "msg": "observer attached",
+              "stage": "attach",
+              "attempt": 1,
+              "elapsed": 0.005711767,
+              "enforcementAvailable": false
+            },
+            "events": [
+              {
+                "level": "info",
+                "ts": "2026-10-24T23:13:36Z",
+                "logger": "datapath-observer",
+                "msg": "starting observe-only datapath",
+                "cluster": "cmtc-a",
+                "node": "cmtc-a-worker",
+                "podUID": "c3bc27f9-f39e-4a7f-acba-b6b2ca6d660c",
+                "ifIndex": 97,
+                "direction": "ingress",
+                "enforcementAvailable": false
+              },
+              {
+                "level": "info",
+                "ts": "2026-10-24T23:13:36Z",
+                "logger": "datapath-observer",
+                "msg": "observer attached",
+                "stage": "attach",
+                "attempt": 1,
+                "elapsed": 0.005711767,
+                "enforcementAvailable": false
+              }
+            ],
+            "captureErrors": [],
+            "kubectlExit": 0,
+            "stopReason": "deliberate-SIGKILL"
+          },
+          {
+            "phase": "post-sigkill",
+            "podName": "cmtc-bpf-observer-ln28p",
+            "podUID": "1f657814-77f9-4f75-a516-4348ff59abc0",
+            "containerID": "containerd://5ebe81520305da3d125af53e93671d20607788a5db8d0356950f92ac55baf124",
+            "restartCount": 1,
+            "argv": [
+              "kubectl",
+              "--context",
+              "kind-cmtc-a",
+              "-n",
+              "cmtc-system",
+              "logs",
+              "-f",
+              "cmtc-bpf-observer-ln28p",
+              "-c",
+              "observer",
+              "--tail=-1",
+              "--pod-running-timeout=10s"
+            ],
+            "stdout": "cmtc-a-observer-02-post-sigkill.jsonl",
+            "stderr": "cmtc-a-observer-02-post-sigkill.kubectl-stderr.log",
+            "status": "closed",
+            "startup": {
+              "level": "info",
+              "ts": "2026-10-24T23:13:45Z",
+              "logger": "datapath-observer",
+              "msg": "starting observe-only datapath",
+              "cluster": "cmtc-a",
+              "node": "cmtc-a-worker",
+              "podUID": "c3bc27f9-f39e-4a7f-acba-b6b2ca6d660c",
+              "ifIndex": 97,
+              "direction": "ingress",
+              "enforcementAvailable": false
+            },
+            "attached": {
+              "level": "info",
+              "ts": "2026-10-24T23:13:45Z",
+              "logger": "datapath-observer",
+              "msg": "observer attached",
+              "stage": "attach",
+              "attempt": 1,
+              "elapsed": 0.006337894,
+              "enforcementAvailable": false
+            },
+            "detached": {
+              "level": "info",
+              "ts": "2026-10-24T23:13:52Z",
+              "logger": "datapath-observer",
+              "msg": "observer detached",
+              "stage": "detach",
+              "enforcementAvailable": false
+            },
+            "events": [
+              {
+                "level": "info",
+                "ts": "2026-10-24T23:13:45Z",
+                "logger": "datapath-observer",
+                "msg": "starting observe-only datapath",
+                "cluster": "cmtc-a",
+                "node": "cmtc-a-worker",
+                "podUID": "c3bc27f9-f39e-4a7f-acba-b6b2ca6d660c",
+                "ifIndex": 97,
+                "direction": "ingress",
+                "enforcementAvailable": false
+              },
+              {
+                "level": "info",
+                "ts": "2026-10-24T23:13:45Z",
+                "logger": "datapath-observer",
+                "msg": "observer attached",
+                "stage": "attach",
+                "attempt": 1,
+                "elapsed": 0.006337894,
+                "enforcementAvailable": false
+              },
+              {
+                "level": "info",
+                "ts": "2026-10-24T23:13:52Z",
+                "logger": "datapath-observer",
+                "msg": "observer detached",
+                "stage": "detach",
+                "enforcementAvailable": false
+              }
+            ],
+            "captureErrors": [],
+            "kubectlExit": 0,
+            "stopReason": "graceful-uninstall"
+          },
+          {
+            "phase": "install",
+            "podName": "cmtc-bpf-observer-4gwk2",
+            "podUID": "9fd6b629-e3c3-436c-bc8d-2e93d0a4ec12",
+            "containerID": "containerd://8093601b09ccc0abe7f9a480f5c4d5a5544384a9fad07878dd4f2dfda8fef937",
+            "restartCount": 0,
+            "argv": [
+              "kubectl",
+              "--context",
+              "kind-cmtc-a",
+              "-n",
+              "cmtc-system",
+              "logs",
+              "-f",
+              "cmtc-bpf-observer-4gwk2",
+              "-c",
+              "observer",
+              "--tail=-1",
+              "--pod-running-timeout=10s"
+            ],
+            "stdout": "cmtc-a-observer-03-install.jsonl",
+            "stderr": "cmtc-a-observer-03-install.kubectl-stderr.log",
+            "status": "closed",
+            "startup": {
+              "level": "info",
+              "ts": "2026-10-24T23:14:02Z",
+              "logger": "datapath-observer",
+              "msg": "starting observe-only datapath",
+              "cluster": "cmtc-a",
+              "node": "cmtc-a-worker",
+              "podUID": "c3bc27f9-f39e-4a7f-acba-b6b2ca6d660c",
+              "ifIndex": 97,
+              "direction": "ingress",
+              "enforcementAvailable": false
+            },
+            "attached": {
+              "level": "info",
+              "ts": "2026-10-24T23:14:03Z",
+              "logger": "datapath-observer",
+              "msg": "observer attached",
+              "stage": "attach",
+              "attempt": 1,
+              "elapsed": 0.007998482,
+              "enforcementAvailable": false
+            },
+            "staleConfigFailure": {
+              "level": "error",
+              "ts": "2026-10-24T23:14:35Z",
+              "msg": "observe-only datapath stopped",
+              "error": "observer lifecycle verification failed: Link not found",
+              "stacktrace": "main.main\n\tgithub.com/ephico2real2/clustermesh-trust-controller/cmd/cmtc-bpf-observer/main.go:97\nruntime.main\n\truntime/proc.go:302"
+            },
+            "detached": {
+              "level": "info",
+              "ts": "2026-10-24T23:14:35Z",
+              "logger": "datapath-observer",
+              "msg": "observer detached",
+              "stage": "detach",
+              "enforcementAvailable": false
+            },
+            "events": [
+              {
+                "level": "info",
+                "ts": "2026-10-24T23:14:02Z",
+                "logger": "datapath-observer",
+                "msg": "starting observe-only datapath",
+                "cluster": "cmtc-a",
+                "node": "cmtc-a-worker",
+                "podUID": "c3bc27f9-f39e-4a7f-acba-b6b2ca6d660c",
+                "ifIndex": 97,
+                "direction": "ingress",
+                "enforcementAvailable": false
+              },
+              {
+                "level": "info",
+                "ts": "2026-10-24T23:14:03Z",
+                "logger": "datapath-observer",
+                "msg": "observer attached",
+                "stage": "attach",
+                "attempt": 1,
+                "elapsed": 0.007998482,
+                "enforcementAvailable": false
+              },
+              {
+                "level": "info",
+                "ts": "2026-10-24T23:14:35Z",
+                "logger": "datapath-observer",
+                "msg": "observer detached",
+                "stage": "detach",
+                "enforcementAvailable": false
+              },
+              {
+                "level": "error",
+                "ts": "2026-10-24T23:14:35Z",
+                "msg": "observe-only datapath stopped",
+                "error": "observer lifecycle verification failed: Link not found",
+                "stacktrace": "main.main\n\tgithub.com/ephico2real2/clustermesh-trust-controller/cmd/cmtc-bpf-observer/main.go:97\nruntime.main\n\truntime/proc.go:302"
+              }
+            ],
+            "captureErrors": [],
+            "kubectlExit": 0,
+            "stopReason": "old-config-lifecycle-failure"
+          }
+        ]
+      },
+      "cmtc-b": {
+        "config": {
+          "cluster": "cmtc-b",
+          "node": "cmtc-b-worker",
+          "podUID": "a0333181-1475-47e7-9654-a20611e4816c",
+          "netNSInode": 4026532769,
+          "ifIndex": 87,
+          "ifName": "lxc205d5c09926f",
+          "mac": "be:c0:fc:11:16:59",
+          "peerIfIndex": 86,
+          "direction": "ingress",
+          "ciliumLinkID": 744,
+          "ciliumProgramID": 14878
+        },
+        "baselineChain": [
+          {
+            "program": 14878,
+            "link": 744,
+            "name": "cil_from_container"
+          }
+        ],
+        "backend": {
+          "cluster": "cmtc-b",
+          "name": "rebel-base-7cbb476f7-rf9bf",
+          "ip": "10.20.0.48",
+          "uid": "15ee1962-2ded-4dca-a797-b314d98e5633"
+        },
+        "loadMetricSamples": {
+          "before": {
+            "cmtc_datapath_observer_packets_total": 0.0,
+            "cmtc_datapath_observer_bytes_total": 0.0,
+            "cmtc_datapath_observer_ready": 1.0
+          },
+          "after": {
+            "cmtc_datapath_observer_packets_total": 33.0,
+            "cmtc_datapath_observer_bytes_total": 2552.0,
+            "cmtc_datapath_observer_ready": 1.0
+          }
+        },
+        "sigkillRecovery": {
+          "containerID": "7577043bfa51bf2cdd3b8a1d62c901bb34631be21502abef6f6b2c9c97d91140",
+          "pid": 29598,
+          "starttime": "1441519",
+          "termination": {
+            "containerID": "containerd://7577043bfa51bf2cdd3b8a1d62c901bb34631be21502abef6f6b2c9c97d91140",
+            "exitCode": 137,
+            "finishedAt": "2026-10-24T23:15:05Z",
+            "reason": "Error",
+            "startedAt": "2026-10-24T23:14:56Z"
+          },
+          "newStatus": {
+            "allocatedResources": {
+              "cpu": "10m",
+              "memory": "32Mi"
+            },
+            "containerID": "containerd://566d7d32b6c8af954f9e80208bfb7f3479b26895308835b8d27fa8cedab012bb",
+            "image": "localhost/cmtc-bpf-observer:observe-b193510f20",
+            "imageID": "docker.io/library/import-2026-10-24@sha256:d3f002918d69a8dbdb74165c4c37f35b17ad64efe43dc4e5852f19f0632ee120",
+            "lastState": {
+              "terminated": {
+                "containerID": "containerd://7577043bfa51bf2cdd3b8a1d62c901bb34631be21502abef6f6b2c9c97d91140",
+                "exitCode": 137,
+                "finishedAt": "2026-10-24T23:15:05Z",
+                "reason": "Error",
+                "startedAt": "2026-10-24T23:14:56Z"
+              }
+            },
+            "name": "observer",
+            "ready": true,
+            "resources": {
+              "limits": {
+                "cpu": "200m",
+                "memory": "128Mi"
+              },
+              "requests": {
+                "cpu": "10m",
+                "memory": "32Mi"
+              }
+            },
+            "restartCount": 1,
+            "started": true,
+            "state": {
+              "running": {
+                "startedAt": "2026-10-24T23:15:05Z"
+              }
+            },
+            "user": {
+              "linux": {
+                "gid": 0,
+                "supplementalGroups": [
+                  0
+                ],
+                "uid": 0
+              }
+            },
+            "volumeMounts": [
+              {
+                "mountPath": "/config",
+                "name": "config",
+                "readOnly": true,
+                "recursiveReadOnly": "Disabled"
+              }
+            ]
+          },
+          "chain": [
+            {
+              "program": 14939,
+              "link": 746,
+              "name": "cmtc_observe"
+            },
+            {
+              "program": 14878,
+              "link": 744,
+              "name": "cil_from_container"
+            }
+          ]
+        },
+        "postRestartCounterDelta": 32.0,
+        "oldConfigRejectedAfterPodReplacement": {
+          "newPodUID": "cde6e605-2604-4663-af4d-0af3db900aa2",
+          "observerStatus": {
+            "allocatedResources": {
+              "cpu": "10m",
+              "memory": "32Mi"
+            },
+            "conditions": [
+              {
+                "lastProbeTime": null,
+                "lastTransitionTime": "2026-10-24T23:15:23Z",
+                "observedGeneration": 1,
+                "status": "True",
+                "type": "PodReadyToStartContainers"
+              },
+              {
+                "lastProbeTime": null,
+                "lastTransitionTime": "2026-10-24T23:15:23Z",
+                "observedGeneration": 1,
+                "status": "True",
+                "type": "Initialized"
+              },
+              {
+                "lastProbeTime": null,
+                "lastTransitionTime": "2026-10-24T23:15:55Z",
+                "message": "containers with unready status: [observer]",
+                "observedGeneration": 1,
+                "reason": "ContainersNotReady",
+                "status": "False",
+                "type": "Ready"
+              },
+              {
+                "lastProbeTime": null,
+                "lastTransitionTime": "2026-10-24T23:15:55Z",
+                "message": "containers with unready status: [observer]",
+                "observedGeneration": 1,
+                "reason": "ContainersNotReady",
+                "status": "False",
+                "type": "ContainersReady"
+              },
+              {
+                "lastProbeTime": null,
+                "lastTransitionTime": "2026-10-24T23:15:23Z",
+                "observedGeneration": 1,
+                "status": "True",
+                "type": "PodScheduled"
+              }
+            ],
+            "containerStatuses": [
+              {
+                "allocatedResources": {
+                  "cpu": "10m",
+                  "memory": "32Mi"
+                },
+                "containerID": "containerd://1298e685d3fe2a38cb7b654ff3bd93b8dffce9219337ac62abacfdbb1322af0b",
+                "image": "localhost/cmtc-bpf-observer:observe-b193510f20",
+                "imageID": "docker.io/library/import-2026-10-24@sha256:d3f002918d69a8dbdb74165c4c37f35b17ad64efe43dc4e5852f19f0632ee120",
+                "lastState": {
+                  "terminated": {
+                    "containerID": "containerd://03e20afa1eeaa2e12fff45fcf58306ec309a8a04f992544440e01eebcd0f5643",
+                    "exitCode": 1,
+                    "finishedAt": "2026-10-24T23:15:55Z",
+                    "reason": "Error",
+                    "startedAt": "2026-10-24T23:15:23Z"
+                  }
+                },
+                "name": "observer",
+                "ready": false,
+                "resources": {
+                  "limits": {
+                    "cpu": "200m",
+                    "memory": "128Mi"
+                  },
+                  "requests": {
+                    "cpu": "10m",
+                    "memory": "32Mi"
+                  }
+                },
+                "restartCount": 1,
+                "started": false,
+                "state": {
+                  "terminated": {
+                    "containerID": "containerd://1298e685d3fe2a38cb7b654ff3bd93b8dffce9219337ac62abacfdbb1322af0b",
+                    "exitCode": 1,
+                    "finishedAt": "2026-10-24T23:15:55Z",
+                    "reason": "Error",
+                    "startedAt": "2026-10-24T23:15:55Z"
+                  }
+                },
+                "user": {
+                  "linux": {
+                    "gid": 0,
+                    "supplementalGroups": [
+                      0
+                    ],
+                    "uid": 0
+                  }
+                },
+                "volumeMounts": [
+                  {
+                    "mountPath": "/config",
+                    "name": "config",
+                    "readOnly": true,
+                    "recursiveReadOnly": "Disabled"
+                  }
+                ]
+              }
+            ],
+            "hostIP": "172.18.0.5",
+            "hostIPs": [
+              {
+                "ip": "172.18.0.5"
+              }
+            ],
+            "observedGeneration": 1,
+            "phase": "Running",
+            "podIP": "172.18.0.5",
+            "podIPs": [
+              {
+                "ip": "172.18.0.5"
+              }
+            ],
+            "qosClass": "Burstable",
+            "resources": {
+              "limits": {
+                "cpu": "200m",
+                "memory": "128Mi"
+              },
+              "requests": {
+                "memory": "32Mi"
+              }
+            },
+            "startTime": "2026-10-24T23:15:23Z"
+          }
+        },
+        "foreignProgramUpdates": [
+          [
+            {
+              "before": {
+                "devname": "eth0",
+                "ifindex": 2,
+                "kind": "tcx/ingress",
+                "name": "cil_from_netdev",
+                "prog_id": 14706,
+                "prog_flags": [],
+                "link_id": 526,
+                "link_flags": []
+              },
+              "after": {
+                "devname": "eth0",
+                "ifindex": 2,
+                "kind": "tcx/ingress",
+                "name": "cil_from_netdev",
+                "prog_id": 14919,
+                "prog_flags": [],
+                "link_id": 526,
+                "link_flags": []
+              }
+            },
+            {
+              "before": {
+                "devname": "eth0",
+                "ifindex": 2,
+                "kind": "tcx/egress",
+                "name": "cil_to_netdev",
+                "prog_id": 14703,
+                "prog_flags": [],
+                "link_id": 529,
+                "link_flags": []
+              },
+              "after": {
+                "devname": "eth0",
+                "ifindex": 2,
+                "kind": "tcx/egress",
+                "name": "cil_to_netdev",
+                "prog_id": 14916,
+                "prog_flags": [],
+                "link_id": 529,
+                "link_flags": []
+              }
+            },
+            {
+              "before": {
+                "devname": "cilium_net",
+                "ifindex": 3,
+                "kind": "tcx/ingress",
+                "name": "cil_to_host",
+                "prog_id": 14694,
+                "prog_flags": [],
+                "link_id": 523,
+                "link_flags": []
+              },
+              "after": {
+                "devname": "cilium_net",
+                "ifindex": 3,
+                "kind": "tcx/ingress",
+                "name": "cil_to_host",
+                "prog_id": 14910,
+                "prog_flags": [],
+                "link_id": 523,
+                "link_flags": []
+              }
+            },
+            {
+              "before": {
+                "devname": "cilium_host",
+                "ifindex": 4,
+                "kind": "tcx/ingress",
+                "name": "cil_to_host",
+                "prog_id": 14681,
+                "prog_flags": [],
+                "link_id": 521,
+                "link_flags": []
+              },
+              "after": {
+                "devname": "cilium_host",
+                "ifindex": 4,
+                "kind": "tcx/ingress",
+                "name": "cil_to_host",
+                "prog_id": 14895,
+                "prog_flags": [],
+                "link_id": 521,
+                "link_flags": []
+              }
+            },
+            {
+              "before": {
+                "devname": "cilium_host",
+                "ifindex": 4,
+                "kind": "tcx/egress",
+                "name": "cil_from_host",
+                "prog_id": 14684,
+                "prog_flags": [],
+                "link_id": 522,
+                "link_flags": []
+              },
+              "after": {
+                "devname": "cilium_host",
+                "ifindex": 4,
+                "kind": "tcx/egress",
+                "name": "cil_from_host",
+                "prog_id": 14899,
+                "prog_flags": [],
+                "link_id": 522,
+                "link_flags": []
+              }
+            }
+          ],
+          [
+            {
+              "before": {
+                "devname": "eth0",
+                "ifindex": 2,
+                "kind": "tcx/ingress",
+                "name": "cil_from_netdev",
+                "prog_id": 14706,
+                "prog_flags": [],
+                "link_id": 526,
+                "link_flags": []
+              },
+              "after": {
+                "devname": "eth0",
+                "ifindex": 2,
+                "kind": "tcx/ingress",
+                "name": "cil_from_netdev",
+                "prog_id": 14919,
+                "prog_flags": [],
+                "link_id": 526,
+                "link_flags": []
+              }
+            },
+            {
+              "before": {
+                "devname": "eth0",
+                "ifindex": 2,
+                "kind": "tcx/egress",
+                "name": "cil_to_netdev",
+                "prog_id": 14703,
+                "prog_flags": [],
+                "link_id": 529,
+                "link_flags": []
+              },
+              "after": {
+                "devname": "eth0",
+                "ifindex": 2,
+                "kind": "tcx/egress",
+                "name": "cil_to_netdev",
+                "prog_id": 14916,
+                "prog_flags": [],
+                "link_id": 529,
+                "link_flags": []
+              }
+            },
+            {
+              "before": {
+                "devname": "cilium_net",
+                "ifindex": 3,
+                "kind": "tcx/ingress",
+                "name": "cil_to_host",
+                "prog_id": 14694,
+                "prog_flags": [],
+                "link_id": 523,
+                "link_flags": []
+              },
+              "after": {
+                "devname": "cilium_net",
+                "ifindex": 3,
+                "kind": "tcx/ingress",
+                "name": "cil_to_host",
+                "prog_id": 15054,
+                "prog_flags": [],
+                "link_id": 523,
+                "link_flags": []
+              }
+            },
+            {
+              "before": {
+                "devname": "cilium_host",
+                "ifindex": 4,
+                "kind": "tcx/ingress",
+                "name": "cil_to_host",
+                "prog_id": 14681,
+                "prog_flags": [],
+                "link_id": 521,
+                "link_flags": []
+              },
+              "after": {
+                "devname": "cilium_host",
+                "ifindex": 4,
+                "kind": "tcx/ingress",
+                "name": "cil_to_host",
+                "prog_id": 15037,
+                "prog_flags": [],
+                "link_id": 521,
+                "link_flags": []
+              }
+            },
+            {
+              "before": {
+                "devname": "cilium_host",
+                "ifindex": 4,
+                "kind": "tcx/egress",
+                "name": "cil_from_host",
+                "prog_id": 14684,
+                "prog_flags": [],
+                "link_id": 522,
+                "link_flags": []
+              },
+              "after": {
+                "devname": "cilium_host",
+                "ifindex": 4,
+                "kind": "tcx/egress",
+                "name": "cil_from_host",
+                "prog_id": 15039,
+                "prog_flags": [],
+                "link_id": 522,
+                "link_flags": []
+              }
+            }
+          ]
+        ],
+        "attempts": 42,
+        "allowed": 28,
+        "denied": 14,
+        "phases": {
+          "before-observer": 12,
+          "during-observer": 6,
+          "post-sigkill": 6,
+          "after-observer": 12,
+          "after-old-config-rejection": 6
+        },
+        "cases": [
+          {
+            "phase": "before-observer",
+            "destination": "cmtc-a",
+            "port": 80,
+            "allowed": true,
+            "exit": 0
+          },
+          {
+            "phase": "before-observer",
+            "destination": "cmtc-a",
+            "port": 8080,
+            "allowed": true,
+            "exit": 0
+          },
+          {
+            "phase": "before-observer",
+            "destination": "cmtc-a",
+            "port": 31337,
+            "allowed": false,
+            "exit": 28
+          },
+          {
+            "phase": "before-observer",
+            "destination": "cmtc-b",
+            "port": 80,
+            "allowed": true,
+            "exit": 0
+          },
+          {
+            "phase": "before-observer",
+            "destination": "cmtc-b",
+            "port": 8080,
+            "allowed": true,
+            "exit": 0
+          },
+          {
+            "phase": "before-observer",
+            "destination": "cmtc-b",
+            "port": 31337,
+            "allowed": false,
+            "exit": 28
+          },
+          {
+            "phase": "before-observer",
+            "destination": "cmtc-a",
+            "port": 80,
+            "allowed": true,
+            "exit": 0
+          },
+          {
+            "phase": "before-observer",
+            "destination": "cmtc-a",
+            "port": 8080,
+            "allowed": true,
+            "exit": 0
+          },
+          {
+            "phase": "before-observer",
+            "destination": "cmtc-a",
+            "port": 31337,
+            "allowed": false,
+            "exit": 28
+          },
+          {
+            "phase": "before-observer",
+            "destination": "cmtc-b",
+            "port": 80,
+            "allowed": true,
+            "exit": 0
+          },
+          {
+            "phase": "before-observer",
+            "destination": "cmtc-b",
+            "port": 8080,
+            "allowed": true,
+            "exit": 0
+          },
+          {
+            "phase": "before-observer",
+            "destination": "cmtc-b",
+            "port": 31337,
+            "allowed": false,
+            "exit": 28
+          },
+          {
+            "phase": "during-observer",
+            "destination": "cmtc-a",
+            "port": 80,
+            "allowed": true,
+            "exit": 0
+          },
+          {
+            "phase": "during-observer",
+            "destination": "cmtc-a",
+            "port": 8080,
+            "allowed": true,
+            "exit": 0
+          },
+          {
+            "phase": "during-observer",
+            "destination": "cmtc-a",
+            "port": 31337,
+            "allowed": false,
+            "exit": 28
+          },
+          {
+            "phase": "during-observer",
+            "destination": "cmtc-b",
+            "port": 80,
+            "allowed": true,
+            "exit": 0
+          },
+          {
+            "phase": "during-observer",
+            "destination": "cmtc-b",
+            "port": 8080,
+            "allowed": true,
+            "exit": 0
+          },
+          {
+            "phase": "during-observer",
+            "destination": "cmtc-b",
+            "port": 31337,
+            "allowed": false,
+            "exit": 28
+          },
+          {
+            "phase": "post-sigkill",
+            "destination": "cmtc-a",
+            "port": 80,
+            "allowed": true,
+            "exit": 0
+          },
+          {
+            "phase": "post-sigkill",
+            "destination": "cmtc-a",
+            "port": 8080,
+            "allowed": true,
+            "exit": 0
+          },
+          {
+            "phase": "post-sigkill",
+            "destination": "cmtc-a",
+            "port": 31337,
+            "allowed": false,
+            "exit": 28
+          },
+          {
+            "phase": "post-sigkill",
+            "destination": "cmtc-b",
+            "port": 80,
+            "allowed": true,
+            "exit": 0
+          },
+          {
+            "phase": "post-sigkill",
+            "destination": "cmtc-b",
+            "port": 8080,
+            "allowed": true,
+            "exit": 0
+          },
+          {
+            "phase": "post-sigkill",
+            "destination": "cmtc-b",
+            "port": 31337,
+            "allowed": false,
+            "exit": 28
+          },
+          {
+            "phase": "after-observer",
+            "destination": "cmtc-a",
+            "port": 80,
+            "allowed": true,
+            "exit": 0
+          },
+          {
+            "phase": "after-observer",
+            "destination": "cmtc-a",
+            "port": 8080,
+            "allowed": true,
+            "exit": 0
+          },
+          {
+            "phase": "after-observer",
+            "destination": "cmtc-a",
+            "port": 31337,
+            "allowed": false,
+            "exit": 28
+          },
+          {
+            "phase": "after-observer",
+            "destination": "cmtc-b",
+            "port": 80,
+            "allowed": true,
+            "exit": 0
+          },
+          {
+            "phase": "after-observer",
+            "destination": "cmtc-b",
+            "port": 8080,
+            "allowed": true,
+            "exit": 0
+          },
+          {
+            "phase": "after-observer",
+            "destination": "cmtc-b",
+            "port": 31337,
+            "allowed": false,
+            "exit": 28
+          },
+          {
+            "phase": "after-observer",
+            "destination": "cmtc-a",
+            "port": 80,
+            "allowed": true,
+            "exit": 0
+          },
+          {
+            "phase": "after-observer",
+            "destination": "cmtc-a",
+            "port": 8080,
+            "allowed": true,
+            "exit": 0
+          },
+          {
+            "phase": "after-observer",
+            "destination": "cmtc-a",
+            "port": 31337,
+            "allowed": false,
+            "exit": 28
+          },
+          {
+            "phase": "after-observer",
+            "destination": "cmtc-b",
+            "port": 80,
+            "allowed": true,
+            "exit": 0
+          },
+          {
+            "phase": "after-observer",
+            "destination": "cmtc-b",
+            "port": 8080,
+            "allowed": true,
+            "exit": 0
+          },
+          {
+            "phase": "after-observer",
+            "destination": "cmtc-b",
+            "port": 31337,
+            "allowed": false,
+            "exit": 28
+          },
+          {
+            "phase": "after-old-config-rejection",
+            "destination": "cmtc-a",
+            "port": 80,
+            "allowed": true,
+            "exit": 0
+          },
+          {
+            "phase": "after-old-config-rejection",
+            "destination": "cmtc-a",
+            "port": 8080,
+            "allowed": true,
+            "exit": 0
+          },
+          {
+            "phase": "after-old-config-rejection",
+            "destination": "cmtc-a",
+            "port": 31337,
+            "allowed": false,
+            "exit": 28
+          },
+          {
+            "phase": "after-old-config-rejection",
+            "destination": "cmtc-b",
+            "port": 80,
+            "allowed": true,
+            "exit": 0
+          },
+          {
+            "phase": "after-old-config-rejection",
+            "destination": "cmtc-b",
+            "port": 8080,
+            "allowed": true,
+            "exit": 0
+          },
+          {
+            "phase": "after-old-config-rejection",
+            "destination": "cmtc-b",
+            "port": 31337,
+            "allowed": false,
+            "exit": 28
+          }
+        ],
+        "nativeDropPhases": [
+          "before-observer",
+          "during-observer",
+          "post-sigkill",
+          "after-observer",
+          "after-old-config-rejection"
+        ],
+        "nodeOptinReleased": true,
+        "foreignInventoryAfterFinalCleanup": [
+          {
+            "devname": "eth0",
+            "ifindex": 2,
+            "kind": "tcx/ingress",
+            "name": "cil_from_netdev",
+            "prog_id": 14919,
+            "prog_flags": [],
+            "link_id": 526,
+            "link_flags": []
+          },
+          {
+            "devname": "eth0",
+            "ifindex": 2,
+            "kind": "tcx/egress",
+            "name": "cil_to_netdev",
+            "prog_id": 14916,
+            "prog_flags": [],
+            "link_id": 529,
+            "link_flags": []
+          },
+          {
+            "devname": "cilium_net",
+            "ifindex": 3,
+            "kind": "tcx/ingress",
+            "name": "cil_to_host",
+            "prog_id": 15054,
+            "prog_flags": [],
+            "link_id": 523,
+            "link_flags": []
+          },
+          {
+            "devname": "cilium_host",
+            "ifindex": 4,
+            "kind": "tcx/ingress",
+            "name": "cil_to_host",
+            "prog_id": 15037,
+            "prog_flags": [],
+            "link_id": 521,
+            "link_flags": []
+          },
+          {
+            "devname": "cilium_host",
+            "ifindex": 4,
+            "kind": "tcx/egress",
+            "name": "cil_from_host",
+            "prog_id": 15039,
+            "prog_flags": [],
+            "link_id": 522,
+            "link_flags": []
+          },
+          {
+            "devname": "cilium_vxlan",
+            "ifindex": 5,
+            "kind": "tcx/ingress",
+            "name": "cil_from_overlay",
+            "prog_id": 12555,
+            "prog_flags": [],
+            "link_id": 505,
+            "link_flags": []
+          },
+          {
+            "devname": "cilium_vxlan",
+            "ifindex": 5,
+            "kind": "tcx/egress",
+            "name": "cil_to_overlay",
+            "prog_id": 12561,
+            "prog_flags": [],
+            "link_id": 506,
+            "link_flags": []
+          },
+          {
+            "devname": "lxce520d3c4520a",
+            "ifindex": 9,
+            "kind": "tcx/ingress",
+            "name": "cil_from_container",
+            "prog_id": 12861,
+            "prog_flags": [],
+            "link_id": 532,
+            "link_flags": []
+          },
+          {
+            "devname": "lxc94e5b3e00273",
+            "ifindex": 11,
+            "kind": "tcx/ingress",
+            "name": "cil_from_container",
+            "prog_id": 12908,
+            "prog_flags": [],
+            "link_id": 533,
+            "link_flags": []
+          },
+          {
+            "devname": "lxceb7ac4e4d2b6",
+            "ifindex": 13,
+            "kind": "tcx/ingress",
+            "name": "cil_from_container",
+            "prog_id": 12874,
+            "prog_flags": [],
+            "link_id": 534,
+            "link_flags": []
+          },
+          {
+            "devname": "lxc373e14764106",
+            "ifindex": 19,
+            "kind": "tcx/ingress",
+            "name": "cil_from_container",
+            "prog_id": 13007,
+            "prog_flags": [],
+            "link_id": 546,
+            "link_flags": []
+          },
+          {
+            "devname": "lxc0a2bb8d32d07",
+            "ifindex": 27,
+            "kind": "tcx/ingress",
+            "name": "cil_from_container",
+            "prog_id": 13001,
+            "prog_flags": [],
+            "link_id": 556,
+            "link_flags": []
+          },
+          {
+            "devname": "lxcc66d281d9113",
+            "ifindex": 29,
+            "kind": "tcx/ingress",
+            "name": "cil_from_container",
+            "prog_id": 12951,
+            "prog_flags": [],
+            "link_id": 560,
+            "link_flags": []
+          },
+          {
+            "devname": "lxc2b42197cf20d",
+            "ifindex": 31,
+            "kind": "tcx/ingress",
+            "name": "cil_from_container",
+            "prog_id": 12892,
+            "prog_flags": [],
+            "link_id": 561,
+            "link_flags": []
+          },
+          {
+            "devname": "lxc56bbe9fc351e",
+            "ifindex": 33,
+            "kind": "tcx/ingress",
+            "name": "cil_from_container",
+            "prog_id": 13972,
+            "prog_flags": [],
+            "link_id": 562,
+            "link_flags": []
+          },
+          {
+            "devname": "lxc82a813946fd6",
+            "ifindex": 59,
+            "kind": "tcx/ingress",
+            "name": "cil_from_container",
+            "prog_id": 13218,
+            "prog_flags": [],
+            "link_id": 600,
+            "link_flags": []
+          },
+          {
+            "devname": "lxc_health",
+            "ifindex": 63,
+            "kind": "tcx/ingress",
+            "name": "cil_from_container",
+            "prog_id": 12903,
+            "prog_flags": [],
+            "link_id": 610,
+            "link_flags": []
+          },
+          {
+            "devname": "lxc282d1167f9a1",
+            "ifindex": 77,
+            "kind": "tcx/ingress",
+            "name": "cil_from_container",
+            "prog_id": 13803,
+            "prog_flags": [],
+            "link_id": 713,
+            "link_flags": []
+          },
+          {
+            "devname": "lxcd398ae7dd473",
+            "ifindex": 79,
+            "kind": "tcx/ingress",
+            "name": "cil_from_container",
+            "prog_id": 13849,
+            "prog_flags": [],
+            "link_id": 715,
+            "link_flags": []
+          },
+          {
+            "devname": "lxca2dfe27668cd",
+            "ifindex": 81,
+            "kind": "tcx/ingress",
+            "name": "cil_from_container",
+            "prog_id": 14007,
+            "prog_flags": [],
+            "link_id": 717,
+            "link_flags": []
+          }
+        ],
+        "observerLogEvidence": [
+          {
+            "phase": "install",
+            "podName": "cmtc-bpf-observer-hb658",
+            "podUID": "33229f71-2837-4d11-9ece-364aab078d9c",
+            "containerID": "containerd://7577043bfa51bf2cdd3b8a1d62c901bb34631be21502abef6f6b2c9c97d91140",
+            "restartCount": 0,
+            "argv": [
+              "kubectl",
+              "--context",
+              "kind-cmtc-b",
+              "-n",
+              "cmtc-system",
+              "logs",
+              "-f",
+              "cmtc-bpf-observer-hb658",
+              "-c",
+              "observer",
+              "--tail=-1",
+              "--pod-running-timeout=10s"
+            ],
+            "stdout": "cmtc-b-observer-04-install.jsonl",
+            "stderr": "cmtc-b-observer-04-install.kubectl-stderr.log",
+            "status": "closed",
+            "startup": {
+              "level": "info",
+              "ts": "2026-10-24T23:14:56Z",
+              "logger": "datapath-observer",
+              "msg": "starting observe-only datapath",
+              "cluster": "cmtc-b",
+              "node": "cmtc-b-worker",
+              "podUID": "a0333181-1475-47e7-9654-a20611e4816c",
+              "ifIndex": 87,
+              "direction": "ingress",
+              "enforcementAvailable": false
+            },
+            "attached": {
+              "level": "info",
+              "ts": "2026-10-24T23:14:56Z",
+              "logger": "datapath-observer",
+              "msg": "observer attached",
+              "stage": "attach",
+              "attempt": 1,
+              "elapsed": 0.007569732,
+              "enforcementAvailable": false
+            },
+            "events": [
+              {
+                "level": "info",
+                "ts": "2026-10-24T23:14:56Z",
+                "logger": "datapath-observer",
+                "msg": "starting observe-only datapath",
+                "cluster": "cmtc-b",
+                "node": "cmtc-b-worker",
+                "podUID": "a0333181-1475-47e7-9654-a20611e4816c",
+                "ifIndex": 87,
+                "direction": "ingress",
+                "enforcementAvailable": false
+              },
+              {
+                "level": "info",
+                "ts": "2026-10-24T23:14:56Z",
+                "logger": "datapath-observer",
+                "msg": "observer attached",
+                "stage": "attach",
+                "attempt": 1,
+                "elapsed": 0.007569732,
+                "enforcementAvailable": false
+              }
+            ],
+            "captureErrors": [],
+            "kubectlExit": 0,
+            "stopReason": "deliberate-SIGKILL"
+          },
+          {
+            "phase": "post-sigkill",
+            "podName": "cmtc-bpf-observer-hb658",
+            "podUID": "33229f71-2837-4d11-9ece-364aab078d9c",
+            "containerID": "containerd://566d7d32b6c8af954f9e80208bfb7f3479b26895308835b8d27fa8cedab012bb",
+            "restartCount": 1,
+            "argv": [
+              "kubectl",
+              "--context",
+              "kind-cmtc-b",
+              "-n",
+              "cmtc-system",
+              "logs",
+              "-f",
+              "cmtc-bpf-observer-hb658",
+              "-c",
+              "observer",
+              "--tail=-1",
+              "--pod-running-timeout=10s"
+            ],
+            "stdout": "cmtc-b-observer-05-post-sigkill.jsonl",
+            "stderr": "cmtc-b-observer-05-post-sigkill.kubectl-stderr.log",
+            "status": "closed",
+            "startup": {
+              "level": "info",
+              "ts": "2026-10-24T23:15:05Z",
+              "logger": "datapath-observer",
+              "msg": "starting observe-only datapath",
+              "cluster": "cmtc-b",
+              "node": "cmtc-b-worker",
+              "podUID": "a0333181-1475-47e7-9654-a20611e4816c",
+              "ifIndex": 87,
+              "direction": "ingress",
+              "enforcementAvailable": false
+            },
+            "attached": {
+              "level": "info",
+              "ts": "2026-10-24T23:15:05Z",
+              "logger": "datapath-observer",
+              "msg": "observer attached",
+              "stage": "attach",
+              "attempt": 1,
+              "elapsed": 0.033098976,
+              "enforcementAvailable": false
+            },
+            "detached": {
+              "level": "info",
+              "ts": "2026-10-24T23:15:13Z",
+              "logger": "datapath-observer",
+              "msg": "observer detached",
+              "stage": "detach",
+              "enforcementAvailable": false
+            },
+            "events": [
+              {
+                "level": "info",
+                "ts": "2026-10-24T23:15:05Z",
+                "logger": "datapath-observer",
+                "msg": "starting observe-only datapath",
+                "cluster": "cmtc-b",
+                "node": "cmtc-b-worker",
+                "podUID": "a0333181-1475-47e7-9654-a20611e4816c",
+                "ifIndex": 87,
+                "direction": "ingress",
+                "enforcementAvailable": false
+              },
+              {
+                "level": "info",
+                "ts": "2026-10-24T23:15:05Z",
+                "logger": "datapath-observer",
+                "msg": "observer attached",
+                "stage": "attach",
+                "attempt": 1,
+                "elapsed": 0.033098976,
+                "enforcementAvailable": false
+              },
+              {
+                "level": "info",
+                "ts": "2026-10-24T23:15:13Z",
+                "logger": "datapath-observer",
+                "msg": "observer detached",
+                "stage": "detach",
+                "enforcementAvailable": false
+              }
+            ],
+            "captureErrors": [],
+            "kubectlExit": 0,
+            "stopReason": "graceful-uninstall"
+          },
+          {
+            "phase": "install",
+            "podName": "cmtc-bpf-observer-mnfsz",
+            "podUID": "604685c1-3120-41e4-98d5-a6a53ba97463",
+            "containerID": "containerd://03e20afa1eeaa2e12fff45fcf58306ec309a8a04f992544440e01eebcd0f5643",
+            "restartCount": 0,
+            "argv": [
+              "kubectl",
+              "--context",
+              "kind-cmtc-b",
+              "-n",
+              "cmtc-system",
+              "logs",
+              "-f",
+              "cmtc-bpf-observer-mnfsz",
+              "-c",
+              "observer",
+              "--tail=-1",
+              "--pod-running-timeout=10s"
+            ],
+            "stdout": "cmtc-b-observer-06-install.jsonl",
+            "stderr": "cmtc-b-observer-06-install.kubectl-stderr.log",
+            "status": "closed",
+            "startup": {
+              "level": "info",
+              "ts": "2026-10-24T23:15:23Z",
+              "logger": "datapath-observer",
+              "msg": "starting observe-only datapath",
+              "cluster": "cmtc-b",
+              "node": "cmtc-b-worker",
+              "podUID": "a0333181-1475-47e7-9654-a20611e4816c",
+              "ifIndex": 87,
+              "direction": "ingress",
+              "enforcementAvailable": false
+            },
+            "attached": {
+              "level": "info",
+              "ts": "2026-10-24T23:15:23Z",
+              "logger": "datapath-observer",
+              "msg": "observer attached",
+              "stage": "attach",
+              "attempt": 1,
+              "elapsed": 0.005347891,
+              "enforcementAvailable": false
+            },
+            "staleConfigFailure": {
+              "level": "error",
+              "ts": "2026-10-24T23:15:55Z",
+              "msg": "observe-only datapath stopped",
+              "error": "observer lifecycle verification failed: Link not found",
+              "stacktrace": "main.main\n\tgithub.com/ephico2real2/clustermesh-trust-controller/cmd/cmtc-bpf-observer/main.go:97\nruntime.main\n\truntime/proc.go:302"
+            },
+            "detached": {
+              "level": "info",
+              "ts": "2026-10-24T23:15:55Z",
+              "logger": "datapath-observer",
+              "msg": "observer detached",
+              "stage": "detach",
+              "enforcementAvailable": false
+            },
+            "events": [
+              {
+                "level": "info",
+                "ts": "2026-10-24T23:15:23Z",
+                "logger": "datapath-observer",
+                "msg": "starting observe-only datapath",
+                "cluster": "cmtc-b",
+                "node": "cmtc-b-worker",
+                "podUID": "a0333181-1475-47e7-9654-a20611e4816c",
+                "ifIndex": 87,
+                "direction": "ingress",
+                "enforcementAvailable": false
+              },
+              {
+                "level": "info",
+                "ts": "2026-10-24T23:15:23Z",
+                "logger": "datapath-observer",
+                "msg": "observer attached",
+                "stage": "attach",
+                "attempt": 1,
+                "elapsed": 0.005347891,
+                "enforcementAvailable": false
+              },
+              {
+                "level": "info",
+                "ts": "2026-10-24T23:15:55Z",
+                "logger": "datapath-observer",
+                "msg": "observer detached",
+                "stage": "detach",
+                "enforcementAvailable": false
+              },
+              {
+                "level": "error",
+                "ts": "2026-10-24T23:15:55Z",
+                "msg": "observe-only datapath stopped",
+                "error": "observer lifecycle verification failed: Link not found",
+                "stacktrace": "main.main\n\tgithub.com/ephico2real2/clustermesh-trust-controller/cmd/cmtc-bpf-observer/main.go:97\nruntime.main\n\truntime/proc.go:302"
+              }
+            ],
+            "captureErrors": [],
+            "kubectlExit": 0,
+            "stopReason": "old-config-lifecycle-failure"
+          }
+        ]
+      }
+    }
+  },
+  "rawReportSHA256": {
+    "fullRun": "b56c52bb9837046bf26382cfe5ad9b3ccb33de7938e51ed32b0343ac9e6e01b8",
+    "loggingRun": "bc35170dd5cabc3426f876e7439a1882f13ccc4353937d8869c9ce606825e97e"
+  }
+}

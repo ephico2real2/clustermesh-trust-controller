@@ -6,6 +6,11 @@ CMTC proposes a Go operator for namespace enrollment, shared public trust and ce
 
 ## Start here
 
+The [local Go and eBPF observer guide](LOCAL_DATAPATH_OBSERVER.md) records the
+custom TCX module, Podman builds, exact deployed images, both-cluster packet and
+native policy tests, structured lifecycle logs and cleanup evidence. It counts
+packets without changing verdicts; persistent fail-closed fencing remains open.
+
 The root-level [workload mTLS guide](MTLS_GUIDE.md) explains the native
 authenticated-only trial, its real load and restart results, retry/ACK logs,
 Grafana counter meanings and both-theme screenshots. It links the complete

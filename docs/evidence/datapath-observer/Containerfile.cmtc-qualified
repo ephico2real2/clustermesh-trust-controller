@@ -1,0 +1,17 @@
+FROM --platform=$BUILDPLATFORM f0093acd3f0ab3a1966ebe348eaa3c78ac706f94839f52209ae7120508cf2529 AS build
+ARG TARGETOS TARGETARCH
+WORKDIR /src
+COPY go.mod go.sum ./
+RUN go mod download
+COPY api api
+COPY internal internal
+COPY cmd cmd
+RUN CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH go build -trimpath -ldflags='-s -w' -o /cmtc ./cmd/cmtc
+RUN CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH go build -trimpath -ldflags='-s -w' -o /lab-ca-init ./cmd/lab-ca-init
+RUN CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH go build -trimpath -ldflags='-s -w' -o /lab-identity-init ./cmd/lab-identity-init
+FROM gcr.io/distroless/static-debian13@sha256:ed4ec1de07c43dc8d073221ee9e545cf54e12f7a4d451a4ee7d7bb3ce6165d52
+COPY --from=build /cmtc /cmtc
+COPY --from=build /lab-ca-init /lab-ca-init
+COPY --from=build /lab-identity-init /lab-identity-init
+USER 65532:65532
+ENTRYPOINT ["/cmtc"]
