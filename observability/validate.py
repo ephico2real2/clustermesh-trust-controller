@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Check consolidated dashboard semantics and optionally retain real query evidence."""
 import argparse
+import hashlib
 import datetime
 import importlib.util
 import json
@@ -18,8 +19,15 @@ PALETTE={build.BLUE,build.RED,build.YELLOW,build.PURPLE,build.GREEN,build.ORANGE
 
 def static_check(path):
     d=json.loads(path.read_text());assert d==build.build(),'Generated dashboard differs from its source'
-    assert len(list((ROOT/'dashboards').glob('*.json')))==1,'Duplicate active operations dashboards'
-    panels=[p for p in d['panels'] if p['type']!='row'];assert len(panels)==18
+    assert len(list((ROOT/'dashboards').glob('*.json')))==11,'Keep nine originals and two consolidated sources'
+    panels=[p for p in d['panels'] if p['type']!='row'];assert len([p for p in panels if p['id']<100])==18
+    security=json.loads((ROOT/'dashboards/workload-security.json').read_text());assert security==build.security()
+    native=json.loads((ROOT.parent/'examples/observability/ztunnel-spike/authenticated-only.json').read_text())
+    for p in native['panels']:
+        actual=next(x for x in security['panels'] if x['id']==p['id'])
+        assert actual.get('targets')==p.get('targets') and actual['title']==p['title'],'Native mTLS semantics changed'
+    security_planned=[p for p in security['panels'] if p['id']>=100 and p['type']!='row']
+    panels+=security_planned
     assert all(p.get('description') for p in panels)
     assert len(set(p['id'] for p in d['panels']))==len(d['panels'])
     contract=json.loads((ROOT/'metrics.json').read_text())['metrics']
@@ -31,9 +39,10 @@ def static_check(path):
                 if kind=='gauge':assert not re.search(r'(?:rate|increase)\(\s*'+re.escape(name),t['expr']), 'Gauge used as a counter: '+name
                 if kind=='counter':assert 'rate(' in t['expr'] or 'increase(' in t['expr'], 'Raw counter shown without a window: '+name
                 if kind=='histogram':assert 'histogram_quantile(' in t['expr'] and 'le)' in t['expr'], 'Latency percentile needs actual buckets'
-    actual=set(re.findall(r'\bcmtc_[a-zA-Z0-9_]+',' '.join(t['expr'] for p in panels for t in p.get('targets',[]))))
+    actual={n.removesuffix('_bucket') for n in re.findall(r'\bcmtc_[a-zA-Z0-9_]+',' '.join(t['expr'] for p in panels for t in p.get('targets',[])))}
     available={'cmtc_enforcement_available','cmtc_namespace_decisions','cmtc_namespaces_selected','cmtc_namespaces_enrolled','cmtc_namespaces_eligible','cmtc_node_agent_ready','cmtc_pods_observed','cmtc_policy_evaluations_total'}
-    assert actual<=available,actual-available
+    planned={n for n,c in contract.items() if c['status']!='implemented'}
+    assert actual<=available|planned,actual-available-planned
     for p in panels:
         assert set(re.findall('#[a-fA-F0-9]{6}',json.dumps(p.get('fieldConfig',{}))))<=PALETTE
         for target in p.get('targets',[]):
@@ -47,11 +56,17 @@ def static_check(path):
     domains=json.loads((ROOT/'capabilities.json').read_text())['domains'];assert len(domains)==9
     contract=json.loads((ROOT/'metrics.json').read_text())['metrics']
     for domain in domains:
-        proposal=json.loads((ROOT/domain['original_definition']).read_text())
+        source=ROOT/domain['original_definition']
+        assert hashlib.sha256(source.read_bytes()).hexdigest()==domain['original_sha256'],'Original dashboard changed: '+str(source)
+        proposal=json.loads(source.read_text())
         metrics=set(re.findall(r'\bcmtc_[a-zA-Z0-9_]+',' '.join(t['expr'] for p in proposal['panels'] for t in p.get('targets',[]))))
         assert metrics==set(domain['planned_metrics']),domain['domain']
         assert metrics<=set(contract),domain['domain']
         assert domain['stories'] and domain['dashboard'] in ['operations','workload-mtls']
+    required=set(n for domain in domains for n in domain['planned_metrics'])
+    assert required<=actual|set(build.REPLACEMENTS),'Original metrics lost: '+str(required-actual-set(build.REPLACEMENTS))
+    for p in panels:
+        if p['id']>=100:assert '· planned' in p['title'] and 'missing data' in p['description'].lower()
     return d
 
 def live_check(d,base):
@@ -71,8 +86,9 @@ def live_check(d,base):
         for p in d['panels']:
             for t in p.get('targets',[]):
                 expr=t['expr'].replace('$cluster',cluster).replace('$__rate_interval','60s')
-                body,elapsed=query(expr);values=[float(r['value'][1]) for r in body['data']['result']]
+                body,elapsed=query(expr,allow_empty=p['id']>=100);values=[float(r['value'][1]) for r in body['data']['result']]
                 records.append({'panel':p['title'],'panelId':p['id'],'target':t['refId'],'query':expr,'elapsedSeconds':elapsed,'response':body})
+                if p['id']>=100:assert not values,'A planned metric is now exported; qualify and update its contract: '+p['title']
                 if p['id'] in [3,4,6,14]:assert values==[{3:controllers,4:agents,6:0,14:targets}[p['id']]],(p['title'],values)
                 if p['id'] in [16,17]:assert any(v>0 for v in values),(p['title'],values)
                 if p['id']==10:
@@ -83,13 +99,21 @@ def live_check(d,base):
         for part in pie:part['percent']=100*part['namespaces']/total
         assert math.isclose(sum(p['percent'] for p in pie),100,abs_tol=1e-9)
         reports.append({'clusterSelection':cluster,'queries':records,'namespacePie':{'total':total,'categories':pie,'percentSum':100},'querySeconds':sum(r['elapsedSeconds'] for r in records)})
+    planned_security=[]
+    for p in build.security()['panels']:
+        if p['id']<100:continue
+        for t in p.get('targets',[]):
+            expr=t['expr'].replace('$cluster','cmtc-a|cmtc-b').replace('$__rate_interval','60s')
+            body,elapsed=query(expr,allow_empty=True);assert not body['data']['result'],'Qualify newly exported planned metric: '+p['title']
+            planned_security.append({'panel':p['title'],'query':expr,'response':body,'elapsedSeconds':elapsed})
+    reports.append({'plannedSecurityPanels':planned_security,'missingDataMeans':'Instrumentation not implemented; no protection claim'})
     unknown=d['panels'][2]['targets'][0]['expr'].replace('$cluster','cmtc-does-not-exist')
     empty,_=query(unknown,allow_empty=True);assert empty['data']['result']==[],'Missing target became false zero'
     return {'observedAt':datetime.datetime.now(datetime.timezone.utc).isoformat(),'queryTimeSeconds':end,'rateInterval':'60s','selections':reports,'missingTelemetryRemainsUnavailable':True}
 
 def main():
     parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('--dashboard',type=Path,default=ROOT/'dashboards/operations.json');parser.add_argument('--prometheus');parser.add_argument('--out',type=Path);args=parser.parse_args()
-    d=static_check(args.dashboard);print('PASS one operations page, Tableau palette, descriptions, scoped queries and all nine planned domains preserved')
+    d=static_check(args.dashboard);print('PASS two consolidated pages, all nine unchanged originals, full metric coverage and typed planned panels')
     if args.prometheus:
         assert args.out;report=live_check(d,args.prometheus);args.out.parent.mkdir(parents=True,exist_ok=True);args.out.write_text(json.dumps(report,indent=2)+'\n')
         print('PASS actual queries for both clusters and each cluster separately; namespace pie totals 100%; missing telemetry remains unavailable')

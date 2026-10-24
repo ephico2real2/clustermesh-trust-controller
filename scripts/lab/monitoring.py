@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Small disposable monitoring fixture with one consolidated operations dashboard."""
+"""Small disposable monitoring fixture with two consolidated dashboards preserving all nine domains."""
 import json
 from pathlib import Path
 import sys
@@ -37,9 +37,9 @@ deploy('prometheus','prom/prometheus:v3.7.0',['--config.file=/etc/prometheus/pro
 add('v1','Service','prometheus',{'spec':{'type':'NodePort','selector':{'app':'prometheus'},'ports':[{'port':9090,'targetPort':9090,'nodePort':30900}]}})
 if cluster=='cmtc-a':
     dashboards={}
-    for p in Path('observability/dashboards').glob('*.json'):
+    for name in ['operations.json','workload-security.json']:
+        p=Path('observability/dashboards')/name
         d=json.loads(p.read_text())
-        d['description']='Live CMTC intent, inventory and controller telemetry. Security qualifications remain explicitly separate.'
         dashboards[p.name]=json.dumps(d)
     add('v1','ConfigMap','cmtc-dashboards',{'data':dashboards})
     add('v1','ConfigMap','grafana-datasources',{'data':{'datasources.yaml':json.dumps({'apiVersion':1,'datasources':[{'name':'CMTC Prometheus','uid':'cmtc-prom','type':'prometheus','access':'proxy','url':'http://prometheus:9090','isDefault':True}]})}})

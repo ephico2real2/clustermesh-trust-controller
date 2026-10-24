@@ -25,17 +25,19 @@ for(let i=0;i<60;i++){
   }catch(e){metricsError=e;await new Promise(r=>setTimeout(r,2000));}
 }
 const found=await api('/api/search?type=dash-db');
-const dashboards=found.filter(d=>d.uid==='cmtc-observe-lab');
-if(dashboards.length!==1)throw Error('Expected one consolidated CMTC operations dashboard');
-if(found.some(d=>/^0[1-9]-/.test(d.uid)))throw Error('Retired prototype dashboards remain provisioned');
-const spec={viewport:{width:1920,height:2800},pages:[]};
+const dashboards=found.filter(d=>['cmtc-observe-lab','cmtc-authenticated-only'].includes(d.uid));
+if(dashboards.length!==2)throw Error('Expected Operations and Workload Security with all nine original domains consolidated');
+const spec={viewport:{width:1920,height:5600},pages:[]};
 const index=[];
 for(const d of dashboards){
   const detail=await api(`/api/dashboards/uid/${encodeURIComponent(d.uid)}`);
   const panels=detail.dashboard.panels.filter(p=>p.type!=='row');
   for(const theme of ['dark','light']){
-    const name=`cmtc-operations-${theme}`;
-    spec.pages.push({name,url:base+d.url+`?kiosk&theme=${theme}&from=now-15m&to=now`,evidence:'panels',fullPage:true,before:2500,expect:{panelsMin:panels.length,noDataAllowed:[]}});
+    const name=`${d.uid==='cmtc-observe-lab'?'cmtc-operations':'cmtc-workload-security'}-${theme}`;
+    // Planned panels must remain visible. Their missing signals are explicit
+    // blockers, not failed browser rendering or invented successful zeros.
+    const allowed=panels.filter(p=>p.title.endsWith('· planned') || (d.uid==='cmtc-authenticated-only' && p.targets?.length)).map(p=>p.title);
+    spec.pages.push({name,url:base+d.url+`?kiosk&theme=${theme}&from=now-15m&to=now`,evidence:'panels',fullPage:true,before:2500,blockedSignalsOnNoData:true,expect:{panelsMin:panels.length,noDataAllowed:allowed}});
     index.push({title:`${d.title} (${theme})`,file:`${name}.png`,uid:d.uid});
   }
 }
