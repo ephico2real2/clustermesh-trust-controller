@@ -1,0 +1,901 @@
+go version go1.27.1 linux/arm64
+?   	github.com/cilium/cilium/pkg/ztunnel	[no test files]
+=== RUN   TestDisabledAdmissionHasNoDependenciesOrSideEffects
+--- PASS: TestDisabledAdmissionHasNoDependenciesOrSideEffects (0.00s)
+=== RUN   TestAdmissionUsesFreshPrivateMetadataAndRequiresEnrollment
+    logger.go:264: time=2026-10-24T21:16:43.163Z level=INFO source=/src/pkg/ztunnel/admission/cell.go:120 msg="Endpoint startup admission completed" stage=cni-startup-admission attempt=1 elapsedDuration=488.085µs deadline=2026-10-24T21:16:43.412Z endpointID=71 k8sUID=pod-generation pod=server k8sNamespace=apps namespaceUID=namespace-generation enrollmentRequired=true
+--- PASS: TestAdmissionUsesFreshPrivateMetadataAndRequiresEnrollment (0.00s)
+=== RUN   TestAdmissionDoesNotAckMissingOrStaleManagedIdentity
+=== RUN   TestAdmissionDoesNotAckMissingOrStaleManagedIdentity/stale-managed
+    logger.go:264: time=2026-10-24T21:16:43.163Z level=WARN source=/src/pkg/ztunnel/admission/cell.go:161 msg="Endpoint startup admission retry" stage=cni-startup-admission attempt=1 elapsedDuration=39.917µs backOff=1ms deadline=2026-10-24T21:16:43.193Z endpointID=71 k8sUID=pod-generation pod=server k8sNamespace=apps error="managed endpoint metadata is not synchronized to immutable CNI identity"
+    logger.go:264: time=2026-10-24T21:16:43.165Z level=WARN source=/src/pkg/ztunnel/admission/cell.go:161 msg="Endpoint startup admission retry" stage=cni-startup-admission attempt=2 elapsedDuration=1.237128ms backOff=2ms deadline=2026-10-24T21:16:43.193Z endpointID=71 k8sUID=pod-generation pod=server k8sNamespace=apps error="managed endpoint metadata is not synchronized to immutable CNI identity"
+    logger.go:264: time=2026-10-24T21:16:43.167Z level=WARN source=/src/pkg/ztunnel/admission/cell.go:161 msg="Endpoint startup admission retry" stage=cni-startup-admission attempt=3 elapsedDuration=3.854674ms backOff=4ms deadline=2026-10-24T21:16:43.193Z endpointID=71 k8sUID=pod-generation pod=server k8sNamespace=apps error="managed endpoint metadata is not synchronized to immutable CNI identity"
+    logger.go:264: time=2026-10-24T21:16:43.172Z level=WARN source=/src/pkg/ztunnel/admission/cell.go:161 msg="Endpoint startup admission retry" stage=cni-startup-admission attempt=4 elapsedDuration=8.2801ms backOff=8ms deadline=2026-10-24T21:16:43.193Z endpointID=71 k8sUID=pod-generation pod=server k8sNamespace=apps error="managed endpoint metadata is not synchronized to immutable CNI identity"
+    logger.go:264: time=2026-10-24T21:16:43.180Z level=WARN source=/src/pkg/ztunnel/admission/cell.go:161 msg="Endpoint startup admission retry" stage=cni-startup-admission attempt=5 elapsedDuration=16.70945ms backOff=16ms deadline=2026-10-24T21:16:43.193Z endpointID=71 k8sUID=pod-generation pod=server k8sNamespace=apps error="managed endpoint metadata is not synchronized to immutable CNI identity"
+    logger.go:264: time=2026-10-24T21:16:43.194Z level=ERROR source=/src/pkg/ztunnel/admission/cell.go:118 msg="Endpoint startup admission failed" stage=cni-startup-admission attempt=5 elapsedDuration=30.910394ms deadline=2026-10-24T21:16:43.193Z endpointID=71 k8sUID=pod-generation pod=server k8sNamespace=apps namespaceUID=namespace-generation enrollmentRequired=true error="context deadline exceeded\nmanaged endpoint metadata is not synchronized to immutable CNI identity"
+=== RUN   TestAdmissionDoesNotAckMissingOrStaleManagedIdentity/missing-managed
+    logger.go:264: time=2026-10-24T21:16:43.195Z level=WARN source=/src/pkg/ztunnel/admission/cell.go:161 msg="Endpoint startup admission retry" stage=cni-startup-admission attempt=1 elapsedDuration=48.458µs backOff=1ms deadline=2026-10-24T21:16:43.224Z endpointID=71 k8sUID=pod-generation pod=server k8sNamespace=apps error="managed endpoint metadata is not synchronized to immutable CNI identity"
+    logger.go:264: time=2026-10-24T21:16:43.196Z level=WARN source=/src/pkg/ztunnel/admission/cell.go:161 msg="Endpoint startup admission retry" stage=cni-startup-admission attempt=2 elapsedDuration=1.273419ms backOff=2ms deadline=2026-10-24T21:16:43.224Z endpointID=71 k8sUID=pod-generation pod=server k8sNamespace=apps error="managed endpoint metadata is not synchronized to immutable CNI identity"
+    logger.go:264: time=2026-10-24T21:16:43.198Z level=WARN source=/src/pkg/ztunnel/admission/cell.go:161 msg="Endpoint startup admission retry" stage=cni-startup-admission attempt=3 elapsedDuration=3.664132ms backOff=4ms deadline=2026-10-24T21:16:43.224Z endpointID=71 k8sUID=pod-generation pod=server k8sNamespace=apps error="managed endpoint metadata is not synchronized to immutable CNI identity"
+    logger.go:264: time=2026-10-24T21:16:43.202Z level=WARN source=/src/pkg/ztunnel/admission/cell.go:161 msg="Endpoint startup admission retry" stage=cni-startup-admission attempt=4 elapsedDuration=7.950682ms backOff=8ms deadline=2026-10-24T21:16:43.224Z endpointID=71 k8sUID=pod-generation pod=server k8sNamespace=apps error="managed endpoint metadata is not synchronized to immutable CNI identity"
+    logger.go:264: time=2026-10-24T21:16:43.211Z level=WARN source=/src/pkg/ztunnel/admission/cell.go:161 msg="Endpoint startup admission retry" stage=cni-startup-admission attempt=5 elapsedDuration=16.311865ms backOff=16ms deadline=2026-10-24T21:16:43.224Z endpointID=71 k8sUID=pod-generation pod=server k8sNamespace=apps error="managed endpoint metadata is not synchronized to immutable CNI identity"
+    logger.go:264: time=2026-10-24T21:16:43.225Z level=ERROR source=/src/pkg/ztunnel/admission/cell.go:118 msg="Endpoint startup admission failed" stage=cni-startup-admission attempt=5 elapsedDuration=30.736477ms deadline=2026-10-24T21:16:43.224Z endpointID=71 k8sUID=pod-generation pod=server k8sNamespace=apps namespaceUID=namespace-generation enrollmentRequired=true error="context deadline exceeded\nmanaged endpoint metadata is not synchronized to immutable CNI identity"
+--- PASS: TestAdmissionDoesNotAckMissingOrStaleManagedIdentity (0.06s)
+    --- PASS: TestAdmissionDoesNotAckMissingOrStaleManagedIdentity/stale-managed (0.03s)
+    --- PASS: TestAdmissionDoesNotAckMissingOrStaleManagedIdentity/missing-managed (0.03s)
+=== RUN   TestAdmissionRecoversWhenManagedMetadataSynchronizes
+    logger.go:264: time=2026-10-24T21:16:43.226Z level=WARN source=/src/pkg/ztunnel/admission/cell.go:161 msg="Endpoint startup admission retry" stage=cni-startup-admission attempt=1 elapsedDuration=40.208µs backOff=1ms deadline=2026-10-24T21:16:43.476Z endpointID=71 k8sUID=pod-generation pod=server k8sNamespace=apps error="managed endpoint metadata is not synchronized to immutable CNI identity"
+    logger.go:264: time=2026-10-24T21:16:43.227Z level=INFO source=/src/pkg/ztunnel/admission/cell.go:120 msg="Endpoint startup admission completed" stage=cni-startup-admission attempt=2 elapsedDuration=1.248878ms deadline=2026-10-24T21:16:43.476Z endpointID=71 k8sUID=pod-generation pod=server k8sNamespace=apps namespaceUID=namespace-generation enrollmentRequired=true
+--- PASS: TestAdmissionRecoversWhenManagedMetadataSynchronizes (0.00s)
+=== RUN   TestAdmissionRejectsInvalidIdentityAndNamespaceInputs
+=== RUN   TestAdmissionRejectsInvalidIdentityAndNamespaceInputs/missing-cni-uid
+    logger.go:264: time=2026-10-24T21:16:43.227Z level=ERROR source=/src/pkg/ztunnel/admission/cell.go:118 msg="Endpoint startup admission failed" stage=cni-startup-admission attempt=0 elapsedDuration=750ns deadline=2026-10-24T21:16:43.477Z endpointID=71 k8sUID="" pod=server k8sNamespace=apps namespaceUID="" enrollmentRequired=false error="Kubernetes CNI endpoint has incomplete immutable identity"
+=== RUN   TestAdmissionRejectsInvalidIdentityAndNamespaceInputs/missing-names-with-cni-uid
+    logger.go:264: time=2026-10-24T21:16:43.227Z level=ERROR source=/src/pkg/ztunnel/admission/cell.go:118 msg="Endpoint startup admission failed" stage=cni-startup-admission attempt=0 elapsedDuration=583ns deadline=2026-10-24T21:16:43.477Z endpointID=71 k8sUID=pod-generation pod="" k8sNamespace="" namespaceUID="" enrollmentRequired=false error="Kubernetes CNI endpoint has incomplete immutable identity"
+=== RUN   TestAdmissionRejectsInvalidIdentityAndNamespaceInputs/missing-namespace
+    logger.go:264: time=2026-10-24T21:16:43.227Z level=ERROR source=/src/pkg/ztunnel/admission/cell.go:118 msg="Endpoint startup admission failed" stage=cni-startup-admission attempt=0 elapsedDuration=500ns deadline=2026-10-24T21:16:43.477Z endpointID=71 k8sUID=pod-generation pod=server k8sNamespace="" namespaceUID="" enrollmentRequired=false error="Kubernetes CNI endpoint has incomplete immutable identity"
+=== RUN   TestAdmissionRejectsInvalidIdentityAndNamespaceInputs/missing-pod-name
+    logger.go:264: time=2026-10-24T21:16:43.227Z level=ERROR source=/src/pkg/ztunnel/admission/cell.go:118 msg="Endpoint startup admission failed" stage=cni-startup-admission attempt=0 elapsedDuration=459ns deadline=2026-10-24T21:16:43.477Z endpointID=71 k8sUID=pod-generation pod="" k8sNamespace=apps namespaceUID="" enrollmentRequired=false error="Kubernetes CNI endpoint has incomplete immutable identity"
+=== RUN   TestAdmissionRejectsInvalidIdentityAndNamespaceInputs/stale-live-uid
+    logger.go:264: time=2026-10-24T21:16:43.228Z level=ERROR source=/src/pkg/ztunnel/admission/cell.go:118 msg="Endpoint startup admission failed" stage=cni-startup-admission attempt=1 elapsedDuration=23.791µs deadline=2026-10-24T21:16:43.478Z endpointID=71 k8sUID=pod-generation pod=server k8sNamespace=apps namespaceUID=namespace-generation enrollmentRequired=true error="live Pod does not match immutable CNI identity"
+=== RUN   TestAdmissionRejectsInvalidIdentityAndNamespaceInputs/missing-live-pod
+    logger.go:264: time=2026-10-24T21:16:43.228Z level=WARN source=/src/pkg/ztunnel/admission/cell.go:161 msg="Endpoint startup admission retry" stage=cni-startup-admission attempt=1 elapsedDuration=26.209µs backOff=1ms deadline=2026-10-24T21:16:43.258Z endpointID=71 k8sUID=pod-generation pod=server k8sNamespace=apps error="reading live Pod identity: pods \"server\" not found"
+    logger.go:264: time=2026-10-24T21:16:43.229Z level=WARN source=/src/pkg/ztunnel/admission/cell.go:161 msg="Endpoint startup admission retry" stage=cni-startup-admission attempt=2 elapsedDuration=1.235044ms backOff=2ms deadline=2026-10-24T21:16:43.258Z endpointID=71 k8sUID=pod-generation pod=server k8sNamespace=apps error="reading live Pod identity: pods \"server\" not found"
+    logger.go:264: time=2026-10-24T21:16:43.231Z level=WARN source=/src/pkg/ztunnel/admission/cell.go:161 msg="Endpoint startup admission retry" stage=cni-startup-admission attempt=3 elapsedDuration=3.489507ms backOff=4ms deadline=2026-10-24T21:16:43.258Z endpointID=71 k8sUID=pod-generation pod=server k8sNamespace=apps error="reading live Pod identity: pods \"server\" not found"
+    logger.go:264: time=2026-10-24T21:16:43.235Z level=WARN source=/src/pkg/ztunnel/admission/cell.go:161 msg="Endpoint startup admission retry" stage=cni-startup-admission attempt=4 elapsedDuration=7.813057ms backOff=8ms deadline=2026-10-24T21:16:43.258Z endpointID=71 k8sUID=pod-generation pod=server k8sNamespace=apps error="reading live Pod identity: pods \"server\" not found"
+    logger.go:264: time=2026-10-24T21:16:43.244Z level=WARN source=/src/pkg/ztunnel/admission/cell.go:161 msg="Endpoint startup admission retry" stage=cni-startup-admission attempt=5 elapsedDuration=16.350032ms backOff=16ms deadline=2026-10-24T21:16:43.258Z endpointID=71 k8sUID=pod-generation pod=server k8sNamespace=apps error="reading live Pod identity: pods \"server\" not found"
+    logger.go:264: time=2026-10-24T21:16:43.258Z level=ERROR source=/src/pkg/ztunnel/admission/cell.go:118 msg="Endpoint startup admission failed" stage=cni-startup-admission attempt=5 elapsedDuration=30.646061ms deadline=2026-10-24T21:16:43.258Z endpointID=71 k8sUID=pod-generation pod=server k8sNamespace=apps namespaceUID=namespace-generation enrollmentRequired=true error="context deadline exceeded\nreading live Pod identity: pods \"server\" not found"
+=== RUN   TestAdmissionRejectsInvalidIdentityAndNamespaceInputs/empty-serviceaccount
+    logger.go:264: time=2026-10-24T21:16:43.259Z level=ERROR source=/src/pkg/ztunnel/admission/cell.go:118 msg="Endpoint startup admission failed" stage=cni-startup-admission attempt=1 elapsedDuration=37.667µs deadline=2026-10-24T21:16:43.509Z endpointID=71 k8sUID=pod-generation pod=server k8sNamespace=apps namespaceUID=namespace-generation enrollmentRequired=true error="live Pod service account or node binding is invalid"
+=== RUN   TestAdmissionRejectsInvalidIdentityAndNamespaceInputs/foreign-node
+    logger.go:264: time=2026-10-24T21:16:43.259Z level=ERROR source=/src/pkg/ztunnel/admission/cell.go:118 msg="Endpoint startup admission failed" stage=cni-startup-admission attempt=1 elapsedDuration=30.708µs deadline=2026-10-24T21:16:43.509Z endpointID=71 k8sUID=pod-generation pod=server k8sNamespace=apps namespaceUID=namespace-generation enrollmentRequired=true error="live Pod service account or node binding is invalid"
+=== RUN   TestAdmissionRejectsInvalidIdentityAndNamespaceInputs/terminating
+    logger.go:264: time=2026-10-24T21:16:43.259Z level=ERROR source=/src/pkg/ztunnel/admission/cell.go:118 msg="Endpoint startup admission failed" stage=cni-startup-admission attempt=1 elapsedDuration=21.291µs deadline=2026-10-24T21:16:43.509Z endpointID=71 k8sUID=pod-generation pod=server k8sNamespace=apps namespaceUID=namespace-generation enrollmentRequired=true error="live Pod does not match immutable CNI identity"
+=== RUN   TestAdmissionRejectsInvalidIdentityAndNamespaceInputs/missing-netns
+    logger.go:264: time=2026-10-24T21:16:43.259Z level=ERROR source=/src/pkg/ztunnel/admission/cell.go:118 msg="Endpoint startup admission failed" stage=cni-startup-admission attempt=1 elapsedDuration=22.291µs deadline=2026-10-24T21:16:43.509Z endpointID=71 k8sUID=pod-generation pod=server k8sNamespace=apps namespaceUID=namespace-generation enrollmentRequired=true error="enrolled CNI endpoint has no network namespace"
+=== RUN   TestAdmissionRejectsInvalidIdentityAndNamespaceInputs/host-network
+    logger.go:264: time=2026-10-24T21:16:43.259Z level=ERROR source=/src/pkg/ztunnel/admission/cell.go:118 msg="Endpoint startup admission failed" stage=cni-startup-admission attempt=1 elapsedDuration=21.792µs deadline=2026-10-24T21:16:43.509Z endpointID=71 k8sUID=pod-generation pod=server k8sNamespace=apps namespaceUID=namespace-generation enrollmentRequired=true error="enrolled host-network or agent-namespace Pods are outside initial admission qualification"
+=== RUN   TestAdmissionRejectsInvalidIdentityAndNamespaceInputs/agent-namespace
+    logger.go:264: time=2026-10-24T21:16:43.259Z level=ERROR source=/src/pkg/ztunnel/admission/cell.go:118 msg="Endpoint startup admission failed" stage=cni-startup-admission attempt=1 elapsedDuration=19.708µs deadline=2026-10-24T21:16:43.509Z endpointID=71 k8sUID=pod-generation pod=server k8sNamespace=apps namespaceUID=namespace-generation enrollmentRequired=true error="enrolled host-network or agent-namespace Pods are outside initial admission qualification"
+--- PASS: TestAdmissionRejectsInvalidIdentityAndNamespaceInputs (0.03s)
+    --- PASS: TestAdmissionRejectsInvalidIdentityAndNamespaceInputs/missing-cni-uid (0.00s)
+    --- PASS: TestAdmissionRejectsInvalidIdentityAndNamespaceInputs/missing-names-with-cni-uid (0.00s)
+    --- PASS: TestAdmissionRejectsInvalidIdentityAndNamespaceInputs/missing-namespace (0.00s)
+    --- PASS: TestAdmissionRejectsInvalidIdentityAndNamespaceInputs/missing-pod-name (0.00s)
+    --- PASS: TestAdmissionRejectsInvalidIdentityAndNamespaceInputs/stale-live-uid (0.00s)
+    --- PASS: TestAdmissionRejectsInvalidIdentityAndNamespaceInputs/missing-live-pod (0.03s)
+    --- PASS: TestAdmissionRejectsInvalidIdentityAndNamespaceInputs/empty-serviceaccount (0.00s)
+    --- PASS: TestAdmissionRejectsInvalidIdentityAndNamespaceInputs/foreign-node (0.00s)
+    --- PASS: TestAdmissionRejectsInvalidIdentityAndNamespaceInputs/terminating (0.00s)
+    --- PASS: TestAdmissionRejectsInvalidIdentityAndNamespaceInputs/missing-netns (0.00s)
+    --- PASS: TestAdmissionRejectsInvalidIdentityAndNamespaceInputs/host-network (0.00s)
+    --- PASS: TestAdmissionRejectsInvalidIdentityAndNamespaceInputs/agent-namespace (0.00s)
+=== RUN   TestAdmissionRejectsNamespaceTypeFailureBeforeEnrollment
+    logger.go:264: time=2026-10-24T21:16:43.260Z level=WARN source=/src/pkg/ztunnel/admission/cell.go:161 msg="Endpoint startup admission retry" stage=cni-startup-admission attempt=1 elapsedDuration=31.792µs backOff=1ms deadline=2026-10-24T21:16:43.290Z endpointID=71 k8sUID=pod-generation pod=server k8sNamespace=apps error="validating CNI network namespace: injected non-network namespace"
+    logger.go:264: time=2026-10-24T21:16:43.261Z level=WARN source=/src/pkg/ztunnel/admission/cell.go:161 msg="Endpoint startup admission retry" stage=cni-startup-admission attempt=2 elapsedDuration=1.252127ms backOff=2ms deadline=2026-10-24T21:16:43.290Z endpointID=71 k8sUID=pod-generation pod=server k8sNamespace=apps error="validating CNI network namespace: injected non-network namespace"
+    logger.go:264: time=2026-10-24T21:16:43.263Z level=WARN source=/src/pkg/ztunnel/admission/cell.go:161 msg="Endpoint startup admission retry" stage=cni-startup-admission attempt=3 elapsedDuration=3.724924ms backOff=4ms deadline=2026-10-24T21:16:43.290Z endpointID=71 k8sUID=pod-generation pod=server k8sNamespace=apps error="validating CNI network namespace: injected non-network namespace"
+    logger.go:264: time=2026-10-24T21:16:43.268Z level=WARN source=/src/pkg/ztunnel/admission/cell.go:161 msg="Endpoint startup admission retry" stage=cni-startup-admission attempt=4 elapsedDuration=8.230849ms backOff=8ms deadline=2026-10-24T21:16:43.290Z endpointID=71 k8sUID=pod-generation pod=server k8sNamespace=apps error="validating CNI network namespace: injected non-network namespace"
+    logger.go:264: time=2026-10-24T21:16:43.276Z level=WARN source=/src/pkg/ztunnel/admission/cell.go:161 msg="Endpoint startup admission retry" stage=cni-startup-admission attempt=5 elapsedDuration=16.562616ms backOff=16ms deadline=2026-10-24T21:16:43.290Z endpointID=71 k8sUID=pod-generation pod=server k8sNamespace=apps error="validating CNI network namespace: injected non-network namespace"
+    logger.go:264: time=2026-10-24T21:16:43.290Z level=ERROR source=/src/pkg/ztunnel/admission/cell.go:118 msg="Endpoint startup admission failed" stage=cni-startup-admission attempt=5 elapsedDuration=30.728644ms deadline=2026-10-24T21:16:43.290Z endpointID=71 k8sUID=pod-generation pod=server k8sNamespace=apps namespaceUID=namespace-generation enrollmentRequired=true error="context deadline exceeded\nvalidating CNI network namespace: injected non-network namespace"
+--- PASS: TestAdmissionRejectsNamespaceTypeFailureBeforeEnrollment (0.03s)
+=== RUN   TestAdmissionCanRecoverFromDisconnectedProxyAndNack
+=== RUN   TestAdmissionCanRecoverFromDisconnectedProxyAndNack/disconnected
+    logger.go:264: time=2026-10-24T21:16:43.321Z level=WARN source=/src/pkg/ztunnel/admission/cell.go:161 msg="Endpoint startup admission retry" stage=cni-startup-admission attempt=1 elapsedDuration=30.365185ms backOff=1ms deadline=2026-10-24T21:16:43.541Z endpointID=71 k8sUID=pod-generation pod=server k8sNamespace=apps error="capture/proxy enrollment: context deadline exceeded"
+    logger.go:264: time=2026-10-24T21:16:43.322Z level=INFO source=/src/pkg/ztunnel/admission/cell.go:120 msg="Endpoint startup admission completed" stage=cni-startup-admission attempt=2 elapsedDuration=31.82598ms deadline=2026-10-24T21:16:43.541Z endpointID=71 k8sUID=pod-generation pod=server k8sNamespace=apps namespaceUID=namespace-generation enrollmentRequired=true
+=== RUN   TestAdmissionCanRecoverFromDisconnectedProxyAndNack/nack
+    logger.go:264: time=2026-10-24T21:16:43.323Z level=WARN source=/src/pkg/ztunnel/admission/cell.go:161 msg="Endpoint startup admission retry" stage=cni-startup-admission attempt=1 elapsedDuration=42.5µs backOff=1ms deadline=2026-10-24T21:16:43.573Z endpointID=71 k8sUID=pod-generation pod=server k8sNamespace=apps error="capture/proxy enrollment: injected proxy NACK"
+    logger.go:264: time=2026-10-24T21:16:43.324Z level=INFO source=/src/pkg/ztunnel/admission/cell.go:120 msg="Endpoint startup admission completed" stage=cni-startup-admission attempt=2 elapsedDuration=1.258086ms deadline=2026-10-24T21:16:43.573Z endpointID=71 k8sUID=pod-generation pod=server k8sNamespace=apps namespaceUID=namespace-generation enrollmentRequired=true
+--- PASS: TestAdmissionCanRecoverFromDisconnectedProxyAndNack (0.03s)
+    --- PASS: TestAdmissionCanRecoverFromDisconnectedProxyAndNack/disconnected (0.03s)
+    --- PASS: TestAdmissionCanRecoverFromDisconnectedProxyAndNack/nack (0.00s)
+=== RUN   TestAdmissionCancellationNeverReportsSuccess
+    logger.go:264: time=2026-10-24T21:16:43.324Z level=ERROR source=/src/pkg/ztunnel/admission/cell.go:118 msg="Endpoint startup admission failed" stage=cni-startup-admission attempt=1 elapsedDuration=57.792µs deadline=2026-10-24T21:16:43.574Z endpointID=71 k8sUID=pod-generation pod=server k8sNamespace=apps namespaceUID=namespace-generation enrollmentRequired=true error="context canceled\ncapture/proxy enrollment: context canceled"
+--- PASS: TestAdmissionCancellationNeverReportsSuccess (0.00s)
+=== RUN   TestAdmissionChecksCancellationEvenIfEnrollerReturnsNil
+    logger.go:264: time=2026-10-24T21:16:43.324Z level=ERROR source=/src/pkg/ztunnel/admission/cell.go:118 msg="Endpoint startup admission failed" stage=cni-startup-admission attempt=1 elapsedDuration=44.417µs deadline=2026-10-24T21:16:43.574Z endpointID=71 k8sUID=pod-generation pod=server k8sNamespace=apps namespaceUID=namespace-generation enrollmentRequired=true error="context canceled\ncontext canceled"
+--- PASS: TestAdmissionChecksCancellationEvenIfEnrollerReturnsNil (0.00s)
+=== RUN   TestAdmissionDoesNotFailOpenOnApiForbidden
+    logger.go:264: time=2026-10-24T21:16:43.324Z level=ERROR source=/src/pkg/ztunnel/admission/cell.go:118 msg="Endpoint startup admission failed" stage=cni-startup-admission attempt=1 elapsedDuration=19.166µs deadline=2026-10-24T21:16:43.574Z endpointID=71 k8sUID=pod-generation pod=server k8sNamespace=apps namespaceUID="" enrollmentRequired=false error="reading live namespace intent: namespaces \"apps\" is forbidden: injected authorization refusal"
+--- PASS: TestAdmissionDoesNotFailOpenOnApiForbidden (0.00s)
+=== RUN   TestAdmissionPinsNamespaceUidAcrossRetries
+    logger.go:264: time=2026-10-24T21:16:43.325Z level=WARN source=/src/pkg/ztunnel/admission/cell.go:161 msg="Endpoint startup admission retry" stage=cni-startup-admission attempt=1 elapsedDuration=51.375µs backOff=1ms deadline=2026-10-24T21:16:43.575Z endpointID=71 k8sUID=pod-generation pod=server k8sNamespace=apps error="capture/proxy enrollment: injected disconnected operation before retry"
+    logger.go:264: time=2026-10-24T21:16:43.326Z level=ERROR source=/src/pkg/ztunnel/admission/cell.go:118 msg="Endpoint startup admission failed" stage=cni-startup-admission attempt=2 elapsedDuration=1.43992ms deadline=2026-10-24T21:16:43.575Z endpointID=71 k8sUID=pod-generation pod=server k8sNamespace=apps namespaceUID=namespace-generation enrollmentRequired=true error="namespace was recreated during CNI admission"
+--- PASS: TestAdmissionPinsNamespaceUidAcrossRetries (0.00s)
+=== RUN   TestAdmissionCannotDowngradeRequiredIntentAfterAck
+    logger.go:264: time=2026-10-24T21:16:43.326Z level=WARN source=/src/pkg/ztunnel/admission/cell.go:161 msg="Endpoint startup admission retry" stage=cni-startup-admission attempt=1 elapsedDuration=76.084µs backOff=1ms deadline=2026-10-24T21:16:43.576Z endpointID=71 k8sUID=pod-generation pod=server k8sNamespace=apps error="namespace intent changed during CNI admission"
+    logger.go:264: time=2026-10-24T21:16:43.327Z level=ERROR source=/src/pkg/ztunnel/admission/cell.go:118 msg="Endpoint startup admission failed" stage=cni-startup-admission attempt=2 elapsedDuration=1.299919ms deadline=2026-10-24T21:16:43.576Z endpointID=71 k8sUID=pod-generation pod=server k8sNamespace=apps namespaceUID=namespace-generation enrollmentRequired=true error="enrollment intent changed during required CNI admission"
+--- PASS: TestAdmissionCannotDowngradeRequiredIntentAfterAck (0.00s)
+=== RUN   TestAdmissionRetriesChangedNamespaceRvWithFreshAck
+    logger.go:264: time=2026-10-24T21:16:43.328Z level=WARN source=/src/pkg/ztunnel/admission/cell.go:161 msg="Endpoint startup admission retry" stage=cni-startup-admission attempt=1 elapsedDuration=58.792µs backOff=1ms deadline=2026-10-24T21:16:43.578Z endpointID=71 k8sUID=pod-generation pod=server k8sNamespace=apps error="namespace intent changed during CNI admission"
+    logger.go:264: time=2026-10-24T21:16:43.329Z level=INFO source=/src/pkg/ztunnel/admission/cell.go:120 msg="Endpoint startup admission completed" stage=cni-startup-admission attempt=2 elapsedDuration=1.287044ms deadline=2026-10-24T21:16:43.578Z endpointID=71 k8sUID=pod-generation pod=server k8sNamespace=apps namespaceUID=namespace-generation enrollmentRequired=true
+--- PASS: TestAdmissionRetriesChangedNamespaceRvWithFreshAck (0.00s)
+=== RUN   TestAdmissionPrivateMetadataIsStableDuringManagedMetadataUpdates
+    logger.go:264: time=2026-10-24T21:16:43.329Z level=INFO source=/src/pkg/ztunnel/admission/cell.go:120 msg="Endpoint startup admission completed" stage=cni-startup-admission attempt=1 elapsedDuration=51.542µs deadline=2026-10-24T21:16:43.579Z endpointID=71 k8sUID=pod-generation pod=server k8sNamespace=apps namespaceUID=namespace-generation enrollmentRequired=true
+--- PASS: TestAdmissionPrivateMetadataIsStableDuringManagedMetadataUpdates (0.00s)
+=== RUN   TestAdmissionRejectsPodUidChangeAfterAck
+    logger.go:264: time=2026-10-24T21:16:43.329Z level=ERROR source=/src/pkg/ztunnel/admission/cell.go:118 msg="Endpoint startup admission failed" stage=cni-startup-admission attempt=1 elapsedDuration=60.167µs deadline=2026-10-24T21:16:43.579Z endpointID=71 k8sUID=pod-generation pod=server k8sNamespace=apps namespaceUID=namespace-generation enrollmentRequired=true error="Pod identity changed during CNI admission"
+--- PASS: TestAdmissionRejectsPodUidChangeAfterAck (0.00s)
+=== RUN   TestAdmissionRejectsNamespaceTypeFailureAfterAck
+    logger.go:264: time=2026-10-24T21:16:43.330Z level=ERROR source=/src/pkg/ztunnel/admission/cell.go:118 msg="Endpoint startup admission failed" stage=cni-startup-admission attempt=1 elapsedDuration=28.208µs deadline=2026-10-24T21:16:43.580Z endpointID=71 k8sUID=pod-generation pod=server k8sNamespace=apps namespaceUID=namespace-generation enrollmentRequired=true error="CNI network namespace is invalid after enrollment: namespace path stopped being a network namespace"
+--- PASS: TestAdmissionRejectsNamespaceTypeFailureAfterAck (0.00s)
+=== RUN   TestAdmissionUnenrolledIntentDoesNotEnroll
+    logger.go:264: time=2026-10-24T21:16:43.330Z level=INFO source=/src/pkg/ztunnel/admission/cell.go:120 msg="Endpoint startup admission completed" stage=cni-startup-admission attempt=1 elapsedDuration=30.792µs deadline=2026-10-24T21:16:43.580Z endpointID=71 k8sUID=pod-generation pod=server k8sNamespace=apps namespaceUID=namespace-generation enrollmentRequired=false
+--- PASS: TestAdmissionUnenrolledIntentDoesNotEnroll (0.00s)
+=== RUN   TestAdmissionRejectsNamespaceWithoutResourceVersion
+    logger.go:264: time=2026-10-24T21:16:43.330Z level=ERROR source=/src/pkg/ztunnel/admission/cell.go:118 msg="Endpoint startup admission failed" stage=cni-startup-admission attempt=1 elapsedDuration=19.792µs deadline=2026-10-24T21:16:43.580Z endpointID=71 k8sUID=pod-generation pod=server k8sNamespace=apps namespaceUID="" enrollmentRequired=false error="namespace identity is empty or terminating"
+--- PASS: TestAdmissionRejectsNamespaceWithoutResourceVersion (0.00s)
+=== RUN   TestAdmissionHiveUsesRealZdsProviderAndTypedGroup
+=== RUN   TestAdmissionHiveUsesRealZdsProviderAndTypedGroup/compatible
+=== RUN   TestAdmissionHiveUsesRealZdsProviderAndTypedGroup/strict
+--- PASS: TestAdmissionHiveUsesRealZdsProviderAndTypedGroup (0.01s)
+    --- PASS: TestAdmissionHiveUsesRealZdsProviderAndTypedGroup/compatible (0.00s)
+    --- PASS: TestAdmissionHiveUsesRealZdsProviderAndTypedGroup/strict (0.00s)
+=== RUN   TestAdmissionRejectsManagedDeletionBeforeAndAfterACK
+=== RUN   TestAdmissionRejectsManagedDeletionBeforeAndAfterACK/before-attempt
+    logger.go:264: time=2026-10-24T21:16:43.340Z level=ERROR source=/src/pkg/ztunnel/admission/cell.go:118 msg="Endpoint startup admission failed" stage=cni-startup-admission attempt=1 elapsedDuration=1.959µs deadline=2026-10-24T21:16:43.590Z endpointID=71 k8sUID=pod-generation pod=server k8sNamespace=apps namespaceUID="" enrollmentRequired=false error="managed endpoint disconnected during CNI admission"
+=== RUN   TestAdmissionRejectsManagedDeletionBeforeAndAfterACK/during-ack
+    logger.go:264: time=2026-10-24T21:16:43.340Z level=ERROR source=/src/pkg/ztunnel/admission/cell.go:118 msg="Endpoint startup admission failed" stage=cni-startup-admission attempt=1 elapsedDuration=76.417µs deadline=2026-10-24T21:16:43.590Z endpointID=71 k8sUID=pod-generation pod=server k8sNamespace=apps namespaceUID=namespace-generation enrollmentRequired=true error="managed endpoint disconnected during CNI admission"
+=== RUN   TestAdmissionRejectsManagedDeletionBeforeAndAfterACK/after-api-recheck
+    logger.go:264: time=2026-10-24T21:16:43.340Z level=ERROR source=/src/pkg/ztunnel/admission/cell.go:118 msg="Endpoint startup admission failed" stage=cni-startup-admission attempt=1 elapsedDuration=57.042µs deadline=2026-10-24T21:16:43.590Z endpointID=71 k8sUID=pod-generation pod=server k8sNamespace=apps namespaceUID=namespace-generation enrollmentRequired=true error="managed endpoint disconnected during CNI admission"
+--- PASS: TestAdmissionRejectsManagedDeletionBeforeAndAfterACK (0.00s)
+    --- PASS: TestAdmissionRejectsManagedDeletionBeforeAndAfterACK/before-attempt (0.00s)
+    --- PASS: TestAdmissionRejectsManagedDeletionBeforeAndAfterACK/during-ack (0.00s)
+    --- PASS: TestAdmissionRejectsManagedDeletionBeforeAndAfterACK/after-api-recheck (0.00s)
+=== RUN   TestAdmissionCancellationDuringBackoffLogsTerminalOutcome
+--- PASS: TestAdmissionCancellationDuringBackoffLogsTerminalOutcome (0.00s)
+=== RUN   TestAdmissionDoesNotExemptCopiedProxyAppLabel
+    logger.go:264: time=2026-10-24T21:16:43.341Z level=INFO source=/src/pkg/ztunnel/admission/cell.go:120 msg="Endpoint startup admission completed" stage=cni-startup-admission attempt=1 elapsedDuration=106.542µs deadline=2026-10-24T21:16:43.591Z endpointID=71 k8sUID=pod-generation pod=server k8sNamespace=apps namespaceUID=namespace-generation enrollmentRequired=true
+--- PASS: TestAdmissionDoesNotExemptCopiedProxyAppLabel (0.00s)
+=== RUN   TestValidateNetworkNamespaceRejectsRegularFile
+--- PASS: TestValidateNetworkNamespaceRejectsRegularFile (0.00s)
+=== RUN   TestValidateNetworkNamespaceAcceptsCurrentNetworkNamespace
+--- PASS: TestValidateNetworkNamespaceAcceptsCurrentNetworkNamespace (0.00s)
+PASS
+ok  	github.com/cilium/cilium/pkg/ztunnel/admission	1.267s
+=== RUN   TestCreateCertificate
+--- PASS: TestCreateCertificate (0.04s)
+PASS
+ok  	github.com/cilium/cilium/pkg/ztunnel/ca	1.117s
+=== RUN   TestCABackendConfiguration
+=== RUN   TestCABackendConfiguration/internal
+=== RUN   TestCABackendConfiguration/spire
+--- PASS: TestCABackendConfiguration (0.00s)
+    --- PASS: TestCABackendConfiguration/internal (0.00s)
+    --- PASS: TestCABackendConfiguration/spire (0.00s)
+=== RUN   TestRejectInvalidWorkloadTrustDomain
+=== RUN   TestRejectInvalidWorkloadTrustDomain/#00
+=== RUN   TestRejectInvalidWorkloadTrustDomain/https://example.test
+=== RUN   TestRejectInvalidWorkloadTrustDomain/spiffe://example.test
+=== RUN   TestRejectInvalidWorkloadTrustDomain/example.test/path
+--- PASS: TestRejectInvalidWorkloadTrustDomain (0.00s)
+    --- PASS: TestRejectInvalidWorkloadTrustDomain/#00 (0.00s)
+    --- PASS: TestRejectInvalidWorkloadTrustDomain/https://example.test (0.00s)
+    --- PASS: TestRejectInvalidWorkloadTrustDomain/spiffe://example.test (0.00s)
+    --- PASS: TestRejectInvalidWorkloadTrustDomain/example.test/path (0.00s)
+=== RUN   TestRequireMTLSConfiguration
+--- PASS: TestRequireMTLSConfiguration (0.00s)
+PASS
+ok  	github.com/cilium/cilium/pkg/ztunnel/config	1.006s
+=== RUN   TestPrivilegedCreateInPodRules
+--- PASS: TestPrivilegedCreateInPodRules (0.04s)
+=== RUN   TestPrivilegedCreateInPodRulesIdempotency
+--- PASS: TestPrivilegedCreateInPodRulesIdempotency (0.06s)
+=== RUN   TestPrivilegedAddExistingChains
+--- PASS: TestPrivilegedAddExistingChains (0.02s)
+=== RUN   TestPrivilegedAddExistingRoutes
+--- PASS: TestPrivilegedAddExistingRoutes (0.00s)
+=== RUN   TestPrivilegedAddExistingMarkRules
+--- PASS: TestPrivilegedAddExistingMarkRules (0.00s)
+=== RUN   TestPrivilegedAddExistingIPTablesRules
+--- PASS: TestPrivilegedAddExistingIPTablesRules (0.05s)
+=== RUN   TestPrivilegedDeleteInPodRules
+--- PASS: TestPrivilegedDeleteInPodRules (0.24s)
+=== RUN   TestPrivilegedDeleteInPodRulesIdempotency
+--- PASS: TestPrivilegedDeleteInPodRulesIdempotency (0.37s)
+=== RUN   TestPrivilegedDeleteInPodMarkRule
+--- PASS: TestPrivilegedDeleteInPodMarkRule (0.00s)
+=== RUN   TestPrivilegedDeleteLoopbackRoute
+--- PASS: TestPrivilegedDeleteLoopbackRoute (0.00s)
+=== RUN   TestPrivilegedDeleteInPodChains
+--- PASS: TestPrivilegedDeleteInPodChains (0.24s)
+PASS
+ok  	github.com/cilium/cilium/pkg/ztunnel/iptables	2.026s
+=== RUN   TestActiveRequiresCaptureZDSAddressAndPolicyEvidence
+--- PASS: TestActiveRequiresCaptureZDSAddressAndPolicyEvidence (0.00s)
+=== RUN   TestNewAddressInvalidatesPolicyEvidence
+--- PASS: TestNewAddressInvalidatesPolicyEvidence (0.00s)
+=== RUN   TestNewZDSGenerationInvalidatesDownstreamEvidence
+--- PASS: TestNewZDSGenerationInvalidatesDownstreamEvidence (0.00s)
+=== RUN   TestADSReconnectFencesOldACKsAndRequiresFreshResources
+--- PASS: TestADSReconnectFencesOldACKsAndRequiresFreshResources (0.00s)
+=== RUN   TestEndpointReplacementAndDrainFenceOldIncarnation
+--- PASS: TestEndpointReplacementAndDrainFenceOldIncarnation (0.00s)
+=== RUN   TestNamespaceUIDChangeAndRegistryClusterIdentity
+--- PASS: TestNamespaceUIDChangeAndRegistryClusterIdentity (0.00s)
+=== RUN   TestCaptureInvalidationRevokesAllDownstreamEvidence
+--- PASS: TestCaptureInvalidationRevokesAllDownstreamEvidence (0.00s)
+=== RUN   TestDelayedCaptureCompletionCannotAdvanceNewZDSEpoch
+--- PASS: TestDelayedCaptureCompletionCannotAdvanceNewZDSEpoch (0.00s)
+=== RUN   TestPolicyEvidenceMustMatchAddressAndFailClosedWorkload
+=== RUN   TestPolicyEvidenceMustMatchAddressAndFailClosedWorkload/wrong_workload_UID
+=== RUN   TestPolicyEvidenceMustMatchAddressAndFailClosedWorkload/stale_address_version
+=== RUN   TestPolicyEvidenceMustMatchAddressAndFailClosedWorkload/missing_policy_revision
+=== RUN   TestPolicyEvidenceMustMatchAddressAndFailClosedWorkload/not_workload_bound
+=== RUN   TestPolicyEvidenceMustMatchAddressAndFailClosedWorkload/does_not_require_authenticated_peer
+=== RUN   TestPolicyEvidenceMustMatchAddressAndFailClosedWorkload/does_not_deny_by_default
+--- PASS: TestPolicyEvidenceMustMatchAddressAndFailClosedWorkload (0.00s)
+    --- PASS: TestPolicyEvidenceMustMatchAddressAndFailClosedWorkload/wrong_workload_UID (0.00s)
+    --- PASS: TestPolicyEvidenceMustMatchAddressAndFailClosedWorkload/stale_address_version (0.00s)
+    --- PASS: TestPolicyEvidenceMustMatchAddressAndFailClosedWorkload/missing_policy_revision (0.00s)
+    --- PASS: TestPolicyEvidenceMustMatchAddressAndFailClosedWorkload/not_workload_bound (0.00s)
+    --- PASS: TestPolicyEvidenceMustMatchAddressAndFailClosedWorkload/does_not_require_authenticated_peer (0.00s)
+    --- PASS: TestPolicyEvidenceMustMatchAddressAndFailClosedWorkload/does_not_deny_by_default (0.00s)
+=== RUN   TestRequireRejectsIncompleteIdentityAndIsIdempotent
+--- PASS: TestRequireRejectsIncompleteIdentityAndIsIdempotent (0.00s)
+PASS
+ok  	github.com/cilium/cilium/pkg/ztunnel/membership	1.007s
+?   	github.com/cilium/cilium/pkg/ztunnel/pb	[no test files]
+=== RUN   TestSchemaMatchesPinnedProxySource
+--- PASS: TestSchemaMatchesPinnedProxySource (0.00s)
+=== RUN   TestAuthorizationDescriptorShape
+--- PASS: TestAuthorizationDescriptorShape (0.00s)
+=== RUN   TestIndependentAllowPolicyFixture
+--- PASS: TestIndependentAllowPolicyFixture (0.00s)
+=== RUN   TestDenyPresenceAndJSONRoundTrip
+--- PASS: TestDenyPresenceAndJSONRoundTrip (0.00s)
+=== RUN   TestWorkloadAndSecurityAddressesRemainDistinct
+--- PASS: TestWorkloadAndSecurityAddressesRemainDistinct (0.00s)
+PASS
+ok  	github.com/cilium/cilium/pkg/ztunnel/pb/security	1.011s
+=== RUN   TestEnrollmentReconciler_Update
+=== RUN   TestEnrollmentReconciler_Update/enroll_endpoints_in_namespace
+    logger.go:264: time=2026-10-24T21:16:51.914Z level=INFO source=/src/pkg/ztunnel/reconciler/reconciler.go:235 msg="EnrolledNamespace table initialized"
+    logger.go:264: time=2026-10-24T21:16:51.914Z level=INFO source=/src/pkg/ztunnel/reconciler/reconciler.go:270 msg="Enrollment reconciler initialized"
+    logger.go:264: time=2026-10-24T21:16:51.914Z level=INFO source=/src/pkg/ztunnel/reconciler/reconciler.go:165 msg="Enrolled all endpoints in namespace" k8sNamespace=test-ns
+    logger.go:264: time=2026-10-24T21:16:51.914Z level=INFO source=/src/pkg/ztunnel/reconciler/reconciler.go:276 msg="Stopping reconciler"
+=== RUN   TestEnrollmentReconciler_Update/skip_endpoints_without_netns_path
+    logger.go:264: time=2026-10-24T21:16:51.914Z level=INFO source=/src/pkg/ztunnel/reconciler/reconciler.go:235 msg="EnrolledNamespace table initialized"
+    logger.go:264: time=2026-10-24T21:16:51.914Z level=INFO source=/src/pkg/ztunnel/reconciler/reconciler.go:270 msg="Enrollment reconciler initialized"
+    logger.go:264: time=2026-10-24T21:16:51.914Z level=INFO source=/src/pkg/ztunnel/reconciler/reconciler.go:165 msg="Enrolled all endpoints in namespace" k8sNamespace=test-ns
+    logger.go:264: time=2026-10-24T21:16:51.914Z level=INFO source=/src/pkg/ztunnel/reconciler/reconciler.go:276 msg="Stopping reconciler"
+=== RUN   TestEnrollmentReconciler_Update/skip_ztunnel_endpoints
+    logger.go:264: time=2026-10-24T21:16:51.915Z level=INFO source=/src/pkg/ztunnel/reconciler/reconciler.go:235 msg="EnrolledNamespace table initialized"
+    logger.go:264: time=2026-10-24T21:16:51.915Z level=INFO source=/src/pkg/ztunnel/reconciler/reconciler.go:270 msg="Enrollment reconciler initialized"
+    logger.go:264: time=2026-10-24T21:16:51.915Z level=INFO source=/src/pkg/ztunnel/reconciler/reconciler.go:165 msg="Enrolled all endpoints in namespace" k8sNamespace=test-ns
+    logger.go:264: time=2026-10-24T21:16:51.915Z level=INFO source=/src/pkg/ztunnel/reconciler/reconciler.go:276 msg="Stopping reconciler"
+=== RUN   TestEnrollmentReconciler_Update/enrollment_error
+    logger.go:264: time=2026-10-24T21:16:51.915Z level=INFO source=/src/pkg/ztunnel/reconciler/reconciler.go:235 msg="EnrolledNamespace table initialized"
+    logger.go:264: time=2026-10-24T21:16:51.915Z level=INFO source=/src/pkg/ztunnel/reconciler/reconciler.go:270 msg="Enrollment reconciler initialized"
+    logger.go:264: time=2026-10-24T21:16:51.915Z level=ERROR source=/src/pkg/ztunnel/reconciler/reconciler.go:157 msg="Failed to enroll endpoint to ztunnel" k8sNamespace=test-ns pod=pod-1 error="enrollment failed"
+    logger.go:264: time=2026-10-24T21:16:51.915Z level=INFO source=/src/pkg/ztunnel/reconciler/reconciler.go:276 msg="Stopping reconciler"
+=== RUN   TestEnrollmentReconciler_Update/no_endpoints_in_namespace
+    logger.go:264: time=2026-10-24T21:16:51.915Z level=INFO source=/src/pkg/ztunnel/reconciler/reconciler.go:235 msg="EnrolledNamespace table initialized"
+    logger.go:264: time=2026-10-24T21:16:51.915Z level=INFO source=/src/pkg/ztunnel/reconciler/reconciler.go:270 msg="Enrollment reconciler initialized"
+    logger.go:264: time=2026-10-24T21:16:51.915Z level=INFO source=/src/pkg/ztunnel/reconciler/reconciler.go:165 msg="Enrolled all endpoints in namespace" k8sNamespace=empty-ns
+    logger.go:264: time=2026-10-24T21:16:51.915Z level=INFO source=/src/pkg/ztunnel/reconciler/reconciler.go:276 msg="Stopping reconciler"
+=== RUN   TestEnrollmentReconciler_Update/enroll_with_CiliumEndpoint_resources
+    logger.go:264: time=2026-10-24T21:16:51.915Z level=INFO source=/src/pkg/ztunnel/reconciler/reconciler.go:235 msg="EnrolledNamespace table initialized"
+    logger.go:264: time=2026-10-24T21:16:51.915Z level=INFO source=/src/pkg/ztunnel/reconciler/reconciler.go:270 msg="Enrollment reconciler initialized"
+    logger.go:264: time=2026-10-24T21:16:51.915Z level=INFO source=/src/pkg/ztunnel/reconciler/reconciler.go:165 msg="Enrolled all endpoints in namespace" k8sNamespace=test-ns
+    logger.go:264: time=2026-10-24T21:16:51.915Z level=INFO source=/src/pkg/ztunnel/reconciler/reconciler.go:276 msg="Stopping reconciler"
+=== RUN   TestEnrollmentReconciler_Update/enroll_with_CiliumEndpointSlice_resources
+    logger.go:264: time=2026-10-24T21:16:51.915Z level=INFO source=/src/pkg/ztunnel/reconciler/reconciler.go:235 msg="EnrolledNamespace table initialized"
+    logger.go:264: time=2026-10-24T21:16:51.915Z level=INFO source=/src/pkg/ztunnel/reconciler/reconciler.go:270 msg="Enrollment reconciler initialized"
+    logger.go:264: time=2026-10-24T21:16:51.916Z level=INFO source=/src/pkg/ztunnel/reconciler/reconciler.go:165 msg="Enrolled all endpoints in namespace" k8sNamespace=test-ns
+    logger.go:264: time=2026-10-24T21:16:51.916Z level=INFO source=/src/pkg/ztunnel/reconciler/reconciler.go:276 msg="Stopping reconciler"
+--- PASS: TestEnrollmentReconciler_Update (0.00s)
+    --- PASS: TestEnrollmentReconciler_Update/enroll_endpoints_in_namespace (0.00s)
+    --- PASS: TestEnrollmentReconciler_Update/skip_endpoints_without_netns_path (0.00s)
+    --- PASS: TestEnrollmentReconciler_Update/skip_ztunnel_endpoints (0.00s)
+    --- PASS: TestEnrollmentReconciler_Update/enrollment_error (0.00s)
+    --- PASS: TestEnrollmentReconciler_Update/no_endpoints_in_namespace (0.00s)
+    --- PASS: TestEnrollmentReconciler_Update/enroll_with_CiliumEndpoint_resources (0.00s)
+    --- PASS: TestEnrollmentReconciler_Update/enroll_with_CiliumEndpointSlice_resources (0.00s)
+=== RUN   TestEnrollmentReconciler_Delete
+=== RUN   TestEnrollmentReconciler_Delete/disenroll_endpoints_in_namespace
+    logger.go:264: time=2026-10-24T21:16:51.916Z level=INFO source=/src/pkg/ztunnel/reconciler/reconciler.go:235 msg="EnrolledNamespace table initialized"
+    logger.go:264: time=2026-10-24T21:16:51.916Z level=INFO source=/src/pkg/ztunnel/reconciler/reconciler.go:270 msg="Enrollment reconciler initialized"
+    logger.go:264: time=2026-10-24T21:16:51.916Z level=INFO source=/src/pkg/ztunnel/reconciler/reconciler.go:204 msg="Disenrolled all endpoints in namespace" k8sNamespace=test-ns
+    logger.go:264: time=2026-10-24T21:16:51.916Z level=INFO source=/src/pkg/ztunnel/reconciler/reconciler.go:276 msg="Stopping reconciler"
+=== RUN   TestEnrollmentReconciler_Delete/skip_endpoints_without_netns_path
+    logger.go:264: time=2026-10-24T21:16:51.916Z level=INFO source=/src/pkg/ztunnel/reconciler/reconciler.go:235 msg="EnrolledNamespace table initialized"
+    logger.go:264: time=2026-10-24T21:16:51.916Z level=INFO source=/src/pkg/ztunnel/reconciler/reconciler.go:270 msg="Enrollment reconciler initialized"
+    logger.go:264: time=2026-10-24T21:16:51.916Z level=INFO source=/src/pkg/ztunnel/reconciler/reconciler.go:204 msg="Disenrolled all endpoints in namespace" k8sNamespace=test-ns
+    logger.go:264: time=2026-10-24T21:16:51.916Z level=INFO source=/src/pkg/ztunnel/reconciler/reconciler.go:276 msg="Stopping reconciler"
+=== RUN   TestEnrollmentReconciler_Delete/skip_ztunnel_endpoints
+    logger.go:264: time=2026-10-24T21:16:51.916Z level=INFO source=/src/pkg/ztunnel/reconciler/reconciler.go:235 msg="EnrolledNamespace table initialized"
+    logger.go:264: time=2026-10-24T21:16:51.916Z level=INFO source=/src/pkg/ztunnel/reconciler/reconciler.go:270 msg="Enrollment reconciler initialized"
+    logger.go:264: time=2026-10-24T21:16:51.916Z level=INFO source=/src/pkg/ztunnel/reconciler/reconciler.go:204 msg="Disenrolled all endpoints in namespace" k8sNamespace=test-ns
+    logger.go:264: time=2026-10-24T21:16:51.916Z level=INFO source=/src/pkg/ztunnel/reconciler/reconciler.go:276 msg="Stopping reconciler"
+=== RUN   TestEnrollmentReconciler_Delete/disenrollment_error
+    logger.go:264: time=2026-10-24T21:16:51.916Z level=INFO source=/src/pkg/ztunnel/reconciler/reconciler.go:235 msg="EnrolledNamespace table initialized"
+    logger.go:264: time=2026-10-24T21:16:51.916Z level=INFO source=/src/pkg/ztunnel/reconciler/reconciler.go:270 msg="Enrollment reconciler initialized"
+    logger.go:264: time=2026-10-24T21:16:51.916Z level=ERROR source=/src/pkg/ztunnel/reconciler/reconciler.go:191 msg="Failed to disenroll endpoint from ztunnel" k8sNamespace=test-ns pod=pod-1 error="disenrollment failed"
+    logger.go:264: time=2026-10-24T21:16:51.916Z level=INFO source=/src/pkg/ztunnel/reconciler/reconciler.go:276 msg="Stopping reconciler"
+=== RUN   TestEnrollmentReconciler_Delete/disenroll_with_CiliumEndpoint_resources
+    logger.go:264: time=2026-10-24T21:16:51.917Z level=INFO source=/src/pkg/ztunnel/reconciler/reconciler.go:235 msg="EnrolledNamespace table initialized"
+    logger.go:264: time=2026-10-24T21:16:51.917Z level=INFO source=/src/pkg/ztunnel/reconciler/reconciler.go:270 msg="Enrollment reconciler initialized"
+    logger.go:264: time=2026-10-24T21:16:51.917Z level=INFO source=/src/pkg/ztunnel/reconciler/reconciler.go:204 msg="Disenrolled all endpoints in namespace" k8sNamespace=test-ns
+    logger.go:264: time=2026-10-24T21:16:51.917Z level=INFO source=/src/pkg/ztunnel/reconciler/reconciler.go:276 msg="Stopping reconciler"
+=== RUN   TestEnrollmentReconciler_Delete/disenroll_with_CiliumEndpointSlice_resources
+    logger.go:264: time=2026-10-24T21:16:51.917Z level=INFO source=/src/pkg/ztunnel/reconciler/reconciler.go:235 msg="EnrolledNamespace table initialized"
+    logger.go:264: time=2026-10-24T21:16:51.917Z level=INFO source=/src/pkg/ztunnel/reconciler/reconciler.go:270 msg="Enrollment reconciler initialized"
+    logger.go:264: time=2026-10-24T21:16:51.917Z level=INFO source=/src/pkg/ztunnel/reconciler/reconciler.go:204 msg="Disenrolled all endpoints in namespace" k8sNamespace=test-ns
+    logger.go:264: time=2026-10-24T21:16:51.917Z level=INFO source=/src/pkg/ztunnel/reconciler/reconciler.go:276 msg="Stopping reconciler"
+--- PASS: TestEnrollmentReconciler_Delete (0.00s)
+    --- PASS: TestEnrollmentReconciler_Delete/disenroll_endpoints_in_namespace (0.00s)
+    --- PASS: TestEnrollmentReconciler_Delete/skip_endpoints_without_netns_path (0.00s)
+    --- PASS: TestEnrollmentReconciler_Delete/skip_ztunnel_endpoints (0.00s)
+    --- PASS: TestEnrollmentReconciler_Delete/disenrollment_error (0.00s)
+    --- PASS: TestEnrollmentReconciler_Delete/disenroll_with_CiliumEndpoint_resources (0.00s)
+    --- PASS: TestEnrollmentReconciler_Delete/disenroll_with_CiliumEndpointSlice_resources (0.00s)
+=== RUN   TestEnrollmentReconciler_EndpointCreated
+=== RUN   TestEnrollmentReconciler_EndpointCreated/enroll_endpoint_in_enrolled_namespace
+    logger.go:264: time=2026-10-24T21:16:51.917Z level=INFO source=/src/pkg/ztunnel/reconciler/reconciler.go:235 msg="EnrolledNamespace table initialized"
+    logger.go:264: time=2026-10-24T21:16:51.917Z level=INFO source=/src/pkg/ztunnel/reconciler/reconciler.go:270 msg="Enrollment reconciler initialized"
+    logger.go:264: time=2026-10-24T21:16:51.967Z level=INFO source=/src/pkg/ztunnel/reconciler/reconciler.go:276 msg="Stopping reconciler"
+=== RUN   TestEnrollmentReconciler_EndpointCreated/strict_creation_is_owned_by_the_synchronous_API_gate
+    logger.go:264: time=2026-10-24T21:16:51.968Z level=INFO source=/src/pkg/ztunnel/reconciler/reconciler.go:235 msg="EnrolledNamespace table initialized"
+    logger.go:264: time=2026-10-24T21:16:51.968Z level=INFO source=/src/pkg/ztunnel/reconciler/reconciler.go:270 msg="Enrollment reconciler initialized"
+    logger.go:264: time=2026-10-24T21:16:52.018Z level=INFO source=/src/pkg/ztunnel/reconciler/reconciler.go:276 msg="Stopping reconciler"
+=== RUN   TestEnrollmentReconciler_EndpointCreated/skip_endpoint_in_unenrolled_namespace
+    logger.go:264: time=2026-10-24T21:16:52.018Z level=INFO source=/src/pkg/ztunnel/reconciler/reconciler.go:235 msg="EnrolledNamespace table initialized"
+    logger.go:264: time=2026-10-24T21:16:52.018Z level=INFO source=/src/pkg/ztunnel/reconciler/reconciler.go:270 msg="Enrollment reconciler initialized"
+    logger.go:264: time=2026-10-24T21:16:52.070Z level=INFO source=/src/pkg/ztunnel/reconciler/reconciler.go:276 msg="Stopping reconciler"
+=== RUN   TestEnrollmentReconciler_EndpointCreated/skip_endpoint_without_netns_path
+    logger.go:264: time=2026-10-24T21:16:52.070Z level=INFO source=/src/pkg/ztunnel/reconciler/reconciler.go:235 msg="EnrolledNamespace table initialized"
+    logger.go:264: time=2026-10-24T21:16:52.070Z level=INFO source=/src/pkg/ztunnel/reconciler/reconciler.go:270 msg="Enrollment reconciler initialized"
+    logger.go:264: time=2026-10-24T21:16:52.121Z level=INFO source=/src/pkg/ztunnel/reconciler/reconciler.go:276 msg="Stopping reconciler"
+=== RUN   TestEnrollmentReconciler_EndpointCreated/skip_ztunnel_endpoint
+    logger.go:264: time=2026-10-24T21:16:52.121Z level=INFO source=/src/pkg/ztunnel/reconciler/reconciler.go:235 msg="EnrolledNamespace table initialized"
+    logger.go:264: time=2026-10-24T21:16:52.121Z level=INFO source=/src/pkg/ztunnel/reconciler/reconciler.go:270 msg="Enrollment reconciler initialized"
+    logger.go:264: time=2026-10-24T21:16:52.171Z level=INFO source=/src/pkg/ztunnel/reconciler/reconciler.go:276 msg="Stopping reconciler"
+=== RUN   TestEnrollmentReconciler_EndpointCreated/skip_endpoint_without_namespace
+    logger.go:264: time=2026-10-24T21:16:52.172Z level=INFO source=/src/pkg/ztunnel/reconciler/reconciler.go:235 msg="EnrolledNamespace table initialized"
+    logger.go:264: time=2026-10-24T21:16:52.172Z level=INFO source=/src/pkg/ztunnel/reconciler/reconciler.go:270 msg="Enrollment reconciler initialized"
+    logger.go:264: time=2026-10-24T21:16:52.222Z level=INFO source=/src/pkg/ztunnel/reconciler/reconciler.go:276 msg="Stopping reconciler"
+--- PASS: TestEnrollmentReconciler_EndpointCreated (0.31s)
+    --- PASS: TestEnrollmentReconciler_EndpointCreated/enroll_endpoint_in_enrolled_namespace (0.05s)
+    --- PASS: TestEnrollmentReconciler_EndpointCreated/strict_creation_is_owned_by_the_synchronous_API_gate (0.05s)
+    --- PASS: TestEnrollmentReconciler_EndpointCreated/skip_endpoint_in_unenrolled_namespace (0.05s)
+    --- PASS: TestEnrollmentReconciler_EndpointCreated/skip_endpoint_without_netns_path (0.05s)
+    --- PASS: TestEnrollmentReconciler_EndpointCreated/skip_ztunnel_endpoint (0.05s)
+    --- PASS: TestEnrollmentReconciler_EndpointCreated/skip_endpoint_without_namespace (0.05s)
+=== RUN   TestEnrollmentReconciler_EndpointDeleted
+=== RUN   TestEnrollmentReconciler_EndpointDeleted/disenroll_endpoint_in_enrolled_namespace
+    logger.go:264: time=2026-10-24T21:16:52.222Z level=INFO source=/src/pkg/ztunnel/reconciler/reconciler.go:235 msg="EnrolledNamespace table initialized"
+    logger.go:264: time=2026-10-24T21:16:52.222Z level=INFO source=/src/pkg/ztunnel/reconciler/reconciler.go:270 msg="Enrollment reconciler initialized"
+    logger.go:264: time=2026-10-24T21:16:52.273Z level=INFO source=/src/pkg/ztunnel/reconciler/reconciler.go:276 msg="Stopping reconciler"
+=== RUN   TestEnrollmentReconciler_EndpointDeleted/skip_endpoint_in_unenrolled_namespace
+    logger.go:264: time=2026-10-24T21:16:52.273Z level=INFO source=/src/pkg/ztunnel/reconciler/reconciler.go:235 msg="EnrolledNamespace table initialized"
+    logger.go:264: time=2026-10-24T21:16:52.273Z level=INFO source=/src/pkg/ztunnel/reconciler/reconciler.go:270 msg="Enrollment reconciler initialized"
+    logger.go:264: time=2026-10-24T21:16:52.323Z level=INFO source=/src/pkg/ztunnel/reconciler/reconciler.go:276 msg="Stopping reconciler"
+=== RUN   TestEnrollmentReconciler_EndpointDeleted/skip_endpoint_without_netns_path
+    logger.go:264: time=2026-10-24T21:16:52.324Z level=INFO source=/src/pkg/ztunnel/reconciler/reconciler.go:235 msg="EnrolledNamespace table initialized"
+    logger.go:264: time=2026-10-24T21:16:52.324Z level=INFO source=/src/pkg/ztunnel/reconciler/reconciler.go:270 msg="Enrollment reconciler initialized"
+    logger.go:264: time=2026-10-24T21:16:52.374Z level=INFO source=/src/pkg/ztunnel/reconciler/reconciler.go:276 msg="Stopping reconciler"
+=== RUN   TestEnrollmentReconciler_EndpointDeleted/skip_ztunnel_endpoint
+    logger.go:264: time=2026-10-24T21:16:52.374Z level=INFO source=/src/pkg/ztunnel/reconciler/reconciler.go:235 msg="EnrolledNamespace table initialized"
+    logger.go:264: time=2026-10-24T21:16:52.374Z level=INFO source=/src/pkg/ztunnel/reconciler/reconciler.go:270 msg="Enrollment reconciler initialized"
+    logger.go:264: time=2026-10-24T21:16:52.425Z level=INFO source=/src/pkg/ztunnel/reconciler/reconciler.go:276 msg="Stopping reconciler"
+--- PASS: TestEnrollmentReconciler_EndpointDeleted (0.20s)
+    --- PASS: TestEnrollmentReconciler_EndpointDeleted/disenroll_endpoint_in_enrolled_namespace (0.05s)
+    --- PASS: TestEnrollmentReconciler_EndpointDeleted/skip_endpoint_in_unenrolled_namespace (0.05s)
+    --- PASS: TestEnrollmentReconciler_EndpointDeleted/skip_endpoint_without_netns_path (0.05s)
+    --- PASS: TestEnrollmentReconciler_EndpointDeleted/skip_ztunnel_endpoint (0.05s)
+=== RUN   TestStrictEnrollmentRequiresDeletionCleaner
+--- PASS: TestStrictEnrollmentRequiresDeletionCleaner (0.00s)
+=== RUN   TestStrictDeletionUsesCleanerWithoutNamespaceOrProxyLabelExemption
+    logger.go:264: time=2026-10-24T21:16:52.425Z level=INFO source=/src/pkg/ztunnel/reconciler/reconciler.go:235 msg="EnrolledNamespace table initialized"
+    logger.go:264: time=2026-10-24T21:16:52.425Z level=INFO source=/src/pkg/ztunnel/reconciler/reconciler.go:270 msg="Enrollment reconciler initialized"
+    logger.go:264: time=2026-10-24T21:16:52.425Z level=INFO source=/src/pkg/ztunnel/reconciler/reconciler.go:276 msg="Stopping reconciler"
+--- PASS: TestStrictDeletionUsesCleanerWithoutNamespaceOrProxyLabelExemption (0.00s)
+=== RUN   TestStrictNamespaceDeleteDefersLiveEndpointsWithoutDELOrXDSRemoval
+    logger.go:264: time=2026-10-24T21:16:52.425Z level=INFO source=/src/pkg/ztunnel/reconciler/reconciler.go:235 msg="EnrolledNamespace table initialized"
+    logger.go:264: time=2026-10-24T21:16:52.425Z level=INFO source=/src/pkg/ztunnel/reconciler/reconciler.go:270 msg="Enrollment reconciler initialized"
+    logger.go:264: time=2026-10-24T21:16:52.425Z level=WARN source=/src/pkg/ztunnel/reconciler/reconciler.go:173 msg="Strict namespace unenrollment deferred until endpoints are recreated" stage=namespace-intent-transition k8sNamespace=apps desiredRevision=1 lenEndpoints=1
+    logger.go:264: time=2026-10-24T21:16:52.425Z level=INFO source=/src/pkg/ztunnel/reconciler/reconciler.go:276 msg="Stopping reconciler"
+--- PASS: TestStrictNamespaceDeleteDefersLiveEndpointsWithoutDELOrXDSRemoval (0.00s)
+=== RUN   TestStrictNamespaceDeleteWithNoEndpointsCompletesWithoutNamespaceRemovalEvent
+    logger.go:264: time=2026-10-24T21:16:52.425Z level=INFO source=/src/pkg/ztunnel/reconciler/reconciler.go:235 msg="EnrolledNamespace table initialized"
+    logger.go:264: time=2026-10-24T21:16:52.425Z level=INFO source=/src/pkg/ztunnel/reconciler/reconciler.go:270 msg="Enrollment reconciler initialized"
+    logger.go:264: time=2026-10-24T21:16:52.425Z level=INFO source=/src/pkg/ztunnel/reconciler/reconciler.go:276 msg="Stopping reconciler"
+--- PASS: TestStrictNamespaceDeleteWithNoEndpointsCompletesWithoutNamespaceRemovalEvent (0.00s)
+PASS
+ok  	github.com/cilium/cilium/pkg/ztunnel/reconciler	1.611s
+?   	github.com/cilium/cilium/pkg/ztunnel/table	[no test files]
+=== RUN   TestAuthenticatedOnlyPolicyWireContract
+--- PASS: TestAuthenticatedOnlyPolicyWireContract (0.00s)
+=== RUN   TestRequireMTLSPolicyDeliveredOverADS
+--- PASS: TestRequireMTLSPolicyDeliveredOverADS (0.10s)
+=== RUN   TestRequireMTLSDisabledPublishesNoAuthenticationPolicy
+--- PASS: TestRequireMTLSDisabledPublishesNoAuthenticationPolicy (0.00s)
+=== RUN   TestAuthorizationApplyAtomicAndImmutable
+--- PASS: TestAuthorizationApplyAtomicAndImmutable (0.00s)
+=== RUN   TestAuthorizationDeltaLifecycle
+--- PASS: TestAuthorizationDeltaLifecycle (0.10s)
+=== RUN   TestAuthorizationNamedSubscriptions
+--- PASS: TestAuthorizationNamedSubscriptions (0.10s)
+=== RUN   TestAuthorizationNACKAndStaleACK
+--- PASS: TestAuthorizationNACKAndStaleACK (0.30s)
+=== RUN   TestAuthorizationReconnectRemovesStaleResources
+--- PASS: TestAuthorizationReconnectRemovesStaleResources (0.00s)
+=== RUN   TestAuthorizationStreamsHaveIndependentACKState
+--- PASS: TestAuthorizationStreamsHaveIndependentACKState (0.10s)
+=== RUN   TestAuthorizationRejectsInvalidAcknowledgments
+=== RUN   TestAuthorizationRejectsInvalidAcknowledgments/Address_cannot_ACK_Authorization
+=== RUN   TestAuthorizationRejectsInvalidAcknowledgments/invalid_nonce
+=== RUN   TestAuthorizationRejectsInvalidAcknowledgments/error_without_nonce
+=== RUN   TestAuthorizationRejectsInvalidAcknowledgments/changed_node
+--- PASS: TestAuthorizationRejectsInvalidAcknowledgments (0.01s)
+    --- PASS: TestAuthorizationRejectsInvalidAcknowledgments/Address_cannot_ACK_Authorization (0.00s)
+    --- PASS: TestAuthorizationRejectsInvalidAcknowledgments/invalid_nonce (0.00s)
+    --- PASS: TestAuthorizationRejectsInvalidAcknowledgments/error_without_nonce (0.00s)
+    --- PASS: TestAuthorizationRejectsInvalidAcknowledgments/changed_node (0.00s)
+=== RUN   TestAuthorizationAndAddressShareADS
+--- PASS: TestAuthorizationAndAddressShareADS (0.10s)
+=== RUN   TestAuthorizationCannotACKAddress
+--- PASS: TestAuthorizationCannotACKAddress (0.00s)
+=== RUN   TestAuthorizationSendFailureTerminatesStream
+--- PASS: TestAuthorizationSendFailureTerminatesStream (0.00s)
+=== RUN   TestSpireDiscoveryBindsIssuerTrustDomain
+--- PASS: TestSpireDiscoveryBindsIssuerTrustDomain (0.00s)
+=== RUN   TestSpireADSHasNoWorkloadSigner
+--- PASS: TestSpireADSHasNoWorkloadSigner (0.00s)
+=== RUN   TestInternalADSKeepsWorkloadSigner
+--- PASS: TestInternalADSKeepsWorkloadSigner (0.00s)
+=== RUN   TestInternalADSRejectsUnavailableSigner
+--- PASS: TestInternalADSRejectsUnavailableSigner (0.00s)
+=== RUN   TestADSRejectsUnknownCABackend
+--- PASS: TestADSRejectsUnknownCABackend (0.00s)
+=== RUN   TestEndpointEventToXDSAddress
+=== RUN   TestEndpointEventToXDSAddress/CREATE_Event
+=== RUN   TestEndpointEventToXDSAddress/REMOVE_Event
+--- PASS: TestEndpointEventToXDSAddress (0.00s)
+    --- PASS: TestEndpointEventToXDSAddress/CREATE_Event (0.00s)
+    --- PASS: TestEndpointEventToXDSAddress/REMOVE_Event (0.00s)
+=== RUN   TestEndpointEventCollectionToDeltaDiscoveryResponse
+=== RUN   TestEndpointEventCollectionToDeltaDiscoveryResponse/CREATE-REMOVE-CREATE_Collection
+--- PASS: TestEndpointEventCollectionToDeltaDiscoveryResponse (0.00s)
+    --- PASS: TestEndpointEventCollectionToDeltaDiscoveryResponse/CREATE-REMOVE-CREATE_Collection (0.00s)
+=== RUN   TestEndpointEventCollectionToValidatedDeltaDiscoveryResponse
+=== RUN   TestEndpointEventCollectionToValidatedDeltaDiscoveryResponse/valid_batch_binds_trust_domain_and_removes_exact_UID
+=== RUN   TestEndpointEventCollectionToValidatedDeltaDiscoveryResponse/empty_synchronized_snapshot_is_valid
+=== RUN   TestEndpointEventCollectionToValidatedDeltaDiscoveryResponse/missing_cluster_ID_fails_closed
+=== RUN   TestEndpointEventCollectionToValidatedDeltaDiscoveryResponse/different_Pod_UIDs_cannot_claim_the_same_address
+=== RUN   TestEndpointEventCollectionToValidatedDeltaDiscoveryResponse/address_reuse_after_old_UID_removal_is_valid
+=== RUN   TestEndpointEventCollectionToValidatedDeltaDiscoveryResponse/missing_trust_domain
+=== RUN   TestEndpointEventCollectionToValidatedDeltaDiscoveryResponse/nil_event
+=== RUN   TestEndpointEventCollectionToValidatedDeltaDiscoveryResponse/missing_CiliumEndpoint
+=== RUN   TestEndpointEventCollectionToValidatedDeltaDiscoveryResponse/missing_pod_UID
+=== RUN   TestEndpointEventCollectionToValidatedDeltaDiscoveryResponse/missing_networking
+=== RUN   TestEndpointEventCollectionToValidatedDeltaDiscoveryResponse/no_pod_address
+=== RUN   TestEndpointEventCollectionToValidatedDeltaDiscoveryResponse/invalid_pod_address
+=== RUN   TestEndpointEventCollectionToValidatedDeltaDiscoveryResponse/loopback_pod_address
+=== RUN   TestEndpointEventCollectionToValidatedDeltaDiscoveryResponse/link_local_pod_address
+=== RUN   TestEndpointEventCollectionToValidatedDeltaDiscoveryResponse/invalid_node_address
+=== RUN   TestEndpointEventCollectionToValidatedDeltaDiscoveryResponse/duplicate_pod_address
+=== RUN   TestEndpointEventCollectionToValidatedDeltaDiscoveryResponse/mapped_IPv4_in_IPv6_field
+=== RUN   TestEndpointEventCollectionToValidatedDeltaDiscoveryResponse/duplicate_pod_UID_in_batch
+=== RUN   TestEndpointEventCollectionToValidatedDeltaDiscoveryResponse/unknown_event_kind
+--- PASS: TestEndpointEventCollectionToValidatedDeltaDiscoveryResponse (0.00s)
+    --- PASS: TestEndpointEventCollectionToValidatedDeltaDiscoveryResponse/valid_batch_binds_trust_domain_and_removes_exact_UID (0.00s)
+    --- PASS: TestEndpointEventCollectionToValidatedDeltaDiscoveryResponse/empty_synchronized_snapshot_is_valid (0.00s)
+    --- PASS: TestEndpointEventCollectionToValidatedDeltaDiscoveryResponse/missing_cluster_ID_fails_closed (0.00s)
+    --- PASS: TestEndpointEventCollectionToValidatedDeltaDiscoveryResponse/different_Pod_UIDs_cannot_claim_the_same_address (0.00s)
+    --- PASS: TestEndpointEventCollectionToValidatedDeltaDiscoveryResponse/address_reuse_after_old_UID_removal_is_valid (0.00s)
+    --- PASS: TestEndpointEventCollectionToValidatedDeltaDiscoveryResponse/missing_trust_domain (0.00s)
+    --- PASS: TestEndpointEventCollectionToValidatedDeltaDiscoveryResponse/nil_event (0.00s)
+    --- PASS: TestEndpointEventCollectionToValidatedDeltaDiscoveryResponse/missing_CiliumEndpoint (0.00s)
+    --- PASS: TestEndpointEventCollectionToValidatedDeltaDiscoveryResponse/missing_pod_UID (0.00s)
+    --- PASS: TestEndpointEventCollectionToValidatedDeltaDiscoveryResponse/missing_networking (0.00s)
+    --- PASS: TestEndpointEventCollectionToValidatedDeltaDiscoveryResponse/no_pod_address (0.00s)
+    --- PASS: TestEndpointEventCollectionToValidatedDeltaDiscoveryResponse/invalid_pod_address (0.00s)
+    --- PASS: TestEndpointEventCollectionToValidatedDeltaDiscoveryResponse/loopback_pod_address (0.00s)
+    --- PASS: TestEndpointEventCollectionToValidatedDeltaDiscoveryResponse/link_local_pod_address (0.00s)
+    --- PASS: TestEndpointEventCollectionToValidatedDeltaDiscoveryResponse/invalid_node_address (0.00s)
+    --- PASS: TestEndpointEventCollectionToValidatedDeltaDiscoveryResponse/duplicate_pod_address (0.00s)
+    --- PASS: TestEndpointEventCollectionToValidatedDeltaDiscoveryResponse/mapped_IPv4_in_IPv6_field (0.00s)
+    --- PASS: TestEndpointEventCollectionToValidatedDeltaDiscoveryResponse/duplicate_pod_UID_in_batch (0.00s)
+    --- PASS: TestEndpointEventCollectionToValidatedDeltaDiscoveryResponse/unknown_event_kind (0.00s)
+=== RUN   TestStreamProcessorAddressResponseCarriesClusterID
+--- PASS: TestStreamProcessorAddressResponseCarriesClusterID (0.00s)
+=== RUN   TestEndpointEventCollectionCoalesceStrictEndpointEvents
+=== RUN   TestEndpointEventCollectionCoalesceStrictEndpointEvents/last_create_wins
+=== RUN   TestEndpointEventCollectionCoalesceStrictEndpointEvents/last_remove_wins
+=== RUN   TestEndpointEventCollectionCoalesceStrictEndpointEvents/last_create_restores_after_remove
+--- PASS: TestEndpointEventCollectionCoalesceStrictEndpointEvents (0.00s)
+    --- PASS: TestEndpointEventCollectionCoalesceStrictEndpointEvents/last_create_wins (0.00s)
+    --- PASS: TestEndpointEventCollectionCoalesceStrictEndpointEvents/last_remove_wins (0.00s)
+    --- PASS: TestEndpointEventCollectionCoalesceStrictEndpointEvents/last_create_restores_after_remove (0.00s)
+=== RUN   TestMetricsDisabledByDefault
+--- PASS: TestMetricsDisabledByDefault (0.00s)
+=== RUN   TestMetricsEnabled
+--- PASS: TestMetricsEnabled (0.00s)
+=== RUN   TestEnrollmentFailuresActuallyEmit
+--- PASS: TestEnrollmentFailuresActuallyEmit (0.00s)
+=== RUN   TestStreamProcessorStart
+=== RUN   TestStreamProcessorStart/No_start_on_stream_ctx_canceled
+--- PASS: TestStreamProcessorStart (0.00s)
+    --- PASS: TestStreamProcessorStart/No_start_on_stream_ctx_canceled (0.00s)
+=== RUN   TestStreamProcessorEndpointEvents
+=== RUN   TestStreamProcessorEndpointEvents/Multi_Event
+--- PASS: TestStreamProcessorEndpointEvents (0.00s)
+    --- PASS: TestStreamProcessorEndpointEvents/Multi_Event (0.00s)
+=== RUN   TestStrictAddressSnapshotRejectsIncompleteWorkload
+--- PASS: TestStrictAddressSnapshotRejectsIncompleteWorkload (0.00s)
+=== RUN   TestStrictAddressInitialSubscriptionRequiresSync
+--- PASS: TestStrictAddressInitialSubscriptionRequiresSync (0.00s)
+=== RUN   TestStrictAddressExplicitEmptySnapshotIsValid
+--- PASS: TestStrictAddressExplicitEmptySnapshotIsValid (0.00s)
+=== RUN   TestStrictAddressInitialSnapshotRemovesStaleClientResources
+--- PASS: TestStrictAddressInitialSnapshotRemovesStaleClientResources (0.00s)
+=== RUN   TestStrictAddressSendFailureDoesNotTrackNonce
+=== RUN   TestStrictAddressSendFailureDoesNotTrackNonce/initial_snapshot
+=== RUN   TestStrictAddressSendFailureDoesNotTrackNonce/incremental_event
+--- PASS: TestStrictAddressSendFailureDoesNotTrackNonce (0.00s)
+    --- PASS: TestStrictAddressSendFailureDoesNotTrackNonce/initial_snapshot (0.00s)
+    --- PASS: TestStrictAddressSendFailureDoesNotTrackNonce/incremental_event (0.00s)
+=== RUN   TestDrainEndpointEventsRejectsInvalidOrUnboundedInput
+=== RUN   TestDrainEndpointEventsRejectsInvalidOrUnboundedInput/closed_channel
+=== RUN   TestDrainEndpointEventsRejectsInvalidOrUnboundedInput/nil_queued_event
+=== RUN   TestDrainEndpointEventsRejectsInvalidOrUnboundedInput/batch_is_bounded_under_queued_churn
+=== RUN   TestDrainEndpointEventsRejectsInvalidOrUnboundedInput/cancellation_interrupts_draining
+--- PASS: TestDrainEndpointEventsRejectsInvalidOrUnboundedInput (0.00s)
+    --- PASS: TestDrainEndpointEventsRejectsInvalidOrUnboundedInput/closed_channel (0.00s)
+    --- PASS: TestDrainEndpointEventsRejectsInvalidOrUnboundedInput/nil_queued_event (0.00s)
+    --- PASS: TestDrainEndpointEventsRejectsInvalidOrUnboundedInput/batch_is_bounded_under_queued_churn (0.00s)
+    --- PASS: TestDrainEndpointEventsRejectsInvalidOrUnboundedInput/cancellation_interrupts_draining (0.00s)
+=== RUN   TestStrictStreamProcessorCoalescesQueuedEndpointChurn
+=== RUN   TestStrictStreamProcessorCoalescesQueuedEndpointChurn/create_then_remove_leaves_no_resource
+=== RUN   TestStrictStreamProcessorCoalescesQueuedEndpointChurn/remove_then_create_restores_the_latest_resource
+=== RUN   TestStrictStreamProcessorCoalescesQueuedEndpointChurn/repeated_creates_publish_the_latest_address
+=== RUN   TestStrictStreamProcessorCoalescesQueuedEndpointChurn/malformed_superseded_create_does_not_poison_final_state
+--- PASS: TestStrictStreamProcessorCoalescesQueuedEndpointChurn (0.00s)
+    --- PASS: TestStrictStreamProcessorCoalescesQueuedEndpointChurn/create_then_remove_leaves_no_resource (0.00s)
+    --- PASS: TestStrictStreamProcessorCoalescesQueuedEndpointChurn/remove_then_create_restores_the_latest_resource (0.00s)
+    --- PASS: TestStrictStreamProcessorCoalescesQueuedEndpointChurn/repeated_creates_publish_the_latest_address (0.00s)
+    --- PASS: TestStrictStreamProcessorCoalescesQueuedEndpointChurn/malformed_superseded_create_does_not_poison_final_state (0.00s)
+=== RUN   TestStrictIncrementalInvalidWorkloadIsNotSent
+--- PASS: TestStrictIncrementalInvalidWorkloadIsNotSent (0.00s)
+=== RUN   TestStreamProcessorDeltaDiscoveryRequest
+=== RUN   TestStreamProcessorDeltaDiscoveryRequest/Ack
+=== RUN   TestStreamProcessorDeltaDiscoveryRequest/Unexpected_Nonce
+=== RUN   TestStreamProcessorDeltaDiscoveryRequest/Nack_logs_error_but_does_not_return_error
+=== RUN   TestStreamProcessorDeltaDiscoveryRequest/Strict_Nack_terminates_the_stream_for_full_snapshot_recovery
+=== RUN   TestStreamProcessorDeltaDiscoveryRequest/Unexpected_TypeURL_returns_error
+--- PASS: TestStreamProcessorDeltaDiscoveryRequest (0.00s)
+    --- PASS: TestStreamProcessorDeltaDiscoveryRequest/Ack (0.00s)
+    --- PASS: TestStreamProcessorDeltaDiscoveryRequest/Unexpected_Nonce (0.00s)
+    --- PASS: TestStreamProcessorDeltaDiscoveryRequest/Nack_logs_error_but_does_not_return_error (0.00s)
+    --- PASS: TestStreamProcessorDeltaDiscoveryRequest/Strict_Nack_terminates_the_stream_for_full_snapshot_recovery (0.00s)
+    --- PASS: TestStreamProcessorDeltaDiscoveryRequest/Unexpected_TypeURL_returns_error (0.00s)
+=== RUN   TestHandleAddressTypeURL
+=== RUN   TestHandleAddressTypeURL/returns_error_when_both_subscribe_and_unsubscribe_are_non-empty
+=== RUN   TestHandleAddressTypeURL/sends_initial_empty_response_and_subscribes_to_events
+--- PASS: TestHandleAddressTypeURL (0.00s)
+    --- PASS: TestHandleAddressTypeURL/returns_error_when_both_subscribe_and_unsubscribe_are_non-empty (0.00s)
+    --- PASS: TestHandleAddressTypeURL/sends_initial_empty_response_and_subscribes_to_events (0.00s)
+=== RUN   TestComputeEndpointDiff
+=== RUN   TestComputeEndpointDiff/detect_new_endpoints
+=== RUN   TestComputeEndpointDiff/detect_removed_endpoints
+=== RUN   TestComputeEndpointDiff/detect_updated_endpoints
+=== RUN   TestComputeEndpointDiff/detect_mixed_changes
+--- PASS: TestComputeEndpointDiff (0.00s)
+    --- PASS: TestComputeEndpointDiff/detect_new_endpoints (0.00s)
+    --- PASS: TestComputeEndpointDiff/detect_removed_endpoints (0.00s)
+    --- PASS: TestComputeEndpointDiff/detect_updated_endpoints (0.00s)
+    --- PASS: TestComputeEndpointDiff/detect_mixed_changes (0.00s)
+=== RUN   TestHandleCESUpsert
+=== RUN   TestHandleCESUpsert/new_CES_with_endpoints
+=== RUN   TestHandleCESUpsert/update_existing_CES_-_add_and_remove_endpoints
+=== RUN   TestHandleCESUpsert/update_existing_CES_-_modify_endpoint_emits_CREATE
+--- PASS: TestHandleCESUpsert (0.00s)
+    --- PASS: TestHandleCESUpsert/new_CES_with_endpoints (0.00s)
+    --- PASS: TestHandleCESUpsert/update_existing_CES_-_add_and_remove_endpoints (0.00s)
+    --- PASS: TestHandleCESUpsert/update_existing_CES_-_modify_endpoint_emits_CREATE (0.00s)
+=== RUN   TestHandleCESDelete
+=== RUN   TestHandleCESDelete/delete_CES_in_enrolled_namespace
+--- PASS: TestHandleCESDelete (0.00s)
+    --- PASS: TestHandleCESDelete/delete_CES_in_enrolled_namespace (0.00s)
+=== RUN   TestSubscribeToEndpointEvents_CEP
+=== RUN   TestSubscribeToEndpointEvents_CEP/processes_Sync_event_with_empty_batch
+=== RUN   TestSubscribeToEndpointEvents_CEP/buffers_pre-Sync_Upsert_and_Delete_events_into_initial_batch
+=== RUN   TestSubscribeToEndpointEvents_CEP/forwards_post-Sync_events_to_endpointRecv
+=== RUN   TestSubscribeToEndpointEvents_CEP/skips_events_for_unenrolled_namespace
+=== RUN   TestSubscribeToEndpointEvents_CEP/handles_nil_object
+--- PASS: TestSubscribeToEndpointEvents_CEP (0.00s)
+    --- PASS: TestSubscribeToEndpointEvents_CEP/processes_Sync_event_with_empty_batch (0.00s)
+    --- PASS: TestSubscribeToEndpointEvents_CEP/buffers_pre-Sync_Upsert_and_Delete_events_into_initial_batch (0.00s)
+    --- PASS: TestSubscribeToEndpointEvents_CEP/forwards_post-Sync_events_to_endpointRecv (0.00s)
+    --- PASS: TestSubscribeToEndpointEvents_CEP/skips_events_for_unenrolled_namespace (0.00s)
+    --- PASS: TestSubscribeToEndpointEvents_CEP/handles_nil_object (0.00s)
+=== RUN   TestSubscribeToEndpointEvents_CES
+=== RUN   TestSubscribeToEndpointEvents_CES/processes_CES_Sync_event_with_empty_batch
+=== RUN   TestSubscribeToEndpointEvents_CES/buffers_pre-Sync_CES_Upsert_events_into_initial_batch
+=== RUN   TestSubscribeToEndpointEvents_CES/buffers_pre-Sync_CES_Upsert_and_Delete_events_into_initial_batch
+=== RUN   TestSubscribeToEndpointEvents_CES/consecutive_CES_upserts_use_cache_for_diffing_in_initial_batch
+=== RUN   TestSubscribeToEndpointEvents_CES/forwards_post-Sync_CES_events_to_endpointRecv
+=== RUN   TestSubscribeToEndpointEvents_CES/handles_CES_nil_object
+=== RUN   TestSubscribeToEndpointEvents_CES/skips_CES_events_for_unenrolled_namespace
+--- PASS: TestSubscribeToEndpointEvents_CES (0.00s)
+    --- PASS: TestSubscribeToEndpointEvents_CES/processes_CES_Sync_event_with_empty_batch (0.00s)
+    --- PASS: TestSubscribeToEndpointEvents_CES/buffers_pre-Sync_CES_Upsert_events_into_initial_batch (0.00s)
+    --- PASS: TestSubscribeToEndpointEvents_CES/buffers_pre-Sync_CES_Upsert_and_Delete_events_into_initial_batch (0.00s)
+    --- PASS: TestSubscribeToEndpointEvents_CES/consecutive_CES_upserts_use_cache_for_diffing_in_initial_batch (0.00s)
+    --- PASS: TestSubscribeToEndpointEvents_CES/forwards_post-Sync_CES_events_to_endpointRecv (0.00s)
+    --- PASS: TestSubscribeToEndpointEvents_CES/handles_CES_nil_object (0.00s)
+    --- PASS: TestSubscribeToEndpointEvents_CES/skips_CES_events_for_unenrolled_namespace (0.00s)
+=== RUN   TestStrictPreSyncCEPReplayBuildsFinalSnapshot
+=== RUN   TestStrictPreSyncCEPReplayBuildsFinalSnapshot/repeated_upsert_and_same-name_recreation_retain_only_latest_UID
+=== RUN   TestStrictPreSyncCEPReplayBuildsFinalSnapshot/create_then_delete_leaves_empty_snapshot
+=== RUN   TestStrictPreSyncCEPReplayBuildsFinalSnapshot/delete_then_recreate_keeps_new_UID
+=== RUN   TestStrictPreSyncCEPReplayBuildsFinalSnapshot/distinct_CEP_source_objects_cannot_claim_one_Pod_UID
+--- PASS: TestStrictPreSyncCEPReplayBuildsFinalSnapshot (0.00s)
+    --- PASS: TestStrictPreSyncCEPReplayBuildsFinalSnapshot/repeated_upsert_and_same-name_recreation_retain_only_latest_UID (0.00s)
+    --- PASS: TestStrictPreSyncCEPReplayBuildsFinalSnapshot/create_then_delete_leaves_empty_snapshot (0.00s)
+    --- PASS: TestStrictPreSyncCEPReplayBuildsFinalSnapshot/delete_then_recreate_keeps_new_UID (0.00s)
+    --- PASS: TestStrictPreSyncCEPReplayBuildsFinalSnapshot/distinct_CEP_source_objects_cannot_claim_one_Pod_UID (0.00s)
+=== RUN   TestStrictPreSyncCESReplayBuildsFinalSnapshot
+=== RUN   TestStrictPreSyncCESReplayBuildsFinalSnapshot/latest_slice_upsert_is_the_snapshot
+=== RUN   TestStrictPreSyncCESReplayBuildsFinalSnapshot/create_then_delete_leaves_empty_snapshot
+--- PASS: TestStrictPreSyncCESReplayBuildsFinalSnapshot (0.00s)
+    --- PASS: TestStrictPreSyncCESReplayBuildsFinalSnapshot/latest_slice_upsert_is_the_snapshot (0.00s)
+    --- PASS: TestStrictPreSyncCESReplayBuildsFinalSnapshot/create_then_delete_leaves_empty_snapshot (0.00s)
+=== RUN   TestStrictPostSyncCEPRecreationRemovesOldUID
+--- PASS: TestStrictPostSyncCEPRecreationRemovesOldUID (0.00s)
+=== RUN   TestStrictPostSyncCESRecreationRemovesOldUID
+--- PASS: TestStrictPostSyncCESRecreationRemovesOldUID (0.00s)
+=== RUN   TestStrictCESDuplicateEndpointNamesFailClosed
+=== RUN   TestStrictCESDuplicateEndpointNamesFailClosed/duplicate_name_with_different_Pod_UIDs
+=== RUN   TestStrictCESDuplicateEndpointNamesFailClosed/duplicate_name_with_same_Pod_UID
+=== RUN   TestStrictCESDuplicateEndpointNamesFailClosed/empty_endpoint_name
+--- PASS: TestStrictCESDuplicateEndpointNamesFailClosed (0.00s)
+    --- PASS: TestStrictCESDuplicateEndpointNamesFailClosed/duplicate_name_with_different_Pod_UIDs (0.00s)
+    --- PASS: TestStrictCESDuplicateEndpointNamesFailClosed/duplicate_name_with_same_Pod_UID (0.00s)
+    --- PASS: TestStrictCESDuplicateEndpointNamesFailClosed/empty_endpoint_name (0.00s)
+=== RUN   TestStrictCESReplayRecoveryAfterInvalidSliceDeleted
+--- PASS: TestStrictCESReplayRecoveryAfterInvalidSliceDeleted (0.00s)
+=== RUN   TestStrictCESReplayRecoveryAfterDuplicateEndpointFix
+=== RUN   TestStrictCESReplayRecoveryAfterDuplicateEndpointFix/valid_replacement_before_Sync_clears_source_error
+=== RUN   TestStrictCESReplayRecoveryAfterDuplicateEndpointFix/invalid_current_slice_remains_an_error
+--- PASS: TestStrictCESReplayRecoveryAfterDuplicateEndpointFix (0.00s)
+    --- PASS: TestStrictCESReplayRecoveryAfterDuplicateEndpointFix/valid_replacement_before_Sync_clears_source_error (0.00s)
+    --- PASS: TestStrictCESReplayRecoveryAfterDuplicateEndpointFix/invalid_current_slice_remains_an_error (0.00s)
+=== RUN   TestStrictPostSyncCESRejectsDuplicateNamesAndReconnectRecovers
+--- PASS: TestStrictPostSyncCESRejectsDuplicateNamesAndReconnectRecovers (0.00s)
+PASS
+ok  	github.com/cilium/cilium/pkg/ztunnel/xds	1.932s
+=== RUN   TestZDSRequiresExplicitAck
+=== RUN   TestZDSRequiresExplicitAck/success
+=== RUN   TestZDSRequiresExplicitAck/missing-ack
+=== RUN   TestZDSRequiresExplicitAck/malformed
+=== RUN   TestZDSRequiresExplicitAck/nack
+--- PASS: TestZDSRequiresExplicitAck (0.00s)
+    --- PASS: TestZDSRequiresExplicitAck/success (0.00s)
+    --- PASS: TestZDSRequiresExplicitAck/missing-ack (0.00s)
+    --- PASS: TestZDSRequiresExplicitAck/malformed (0.00s)
+    --- PASS: TestZDSRequiresExplicitAck/nack (0.00s)
+=== RUN   TestZDSAckTimeoutAndRecovery
+--- PASS: TestZDSAckTimeoutAndRecovery (0.02s)
+=== RUN   TestZDSUpdateWaitIsBounded
+=== RUN   TestZDSUpdateWaitIsBounded/queue-full
+=== RUN   TestZDSUpdateWaitIsBounded/missing-ack
+=== RUN   TestZDSUpdateWaitIsBounded/closed-without-result
+=== RUN   TestZDSUpdateWaitIsBounded/ack
+=== RUN   TestZDSUpdateWaitIsBounded/nack
+--- PASS: TestZDSUpdateWaitIsBounded (0.04s)
+    --- PASS: TestZDSUpdateWaitIsBounded/queue-full (0.02s)
+    --- PASS: TestZDSUpdateWaitIsBounded/missing-ack (0.02s)
+    --- PASS: TestZDSUpdateWaitIsBounded/closed-without-result (0.00s)
+    --- PASS: TestZDSUpdateWaitIsBounded/ack (0.00s)
+    --- PASS: TestZDSUpdateWaitIsBounded/nack (0.00s)
+=== RUN   TestZDSExpiredUpdateIsNotTransmitted
+--- PASS: TestZDSExpiredUpdateIsNotTransmitted (0.02s)
+=== RUN   TestZDSCancellationRetiresInFlightConnection
+--- PASS: TestZDSCancellationRetiresInFlightConnection (0.00s)
+=== RUN   TestZDSCompletedCallerCannotCancelNextUpdate
+--- PASS: TestZDSCompletedCallerCannotCancelNextUpdate (0.00s)
+=== RUN   TestZDSReplacementInterruptsStalledAck
+    logger.go:264: time=2026-10-24T21:16:55.932Z level=INFO source=/src/pkg/ztunnel/zds/server.go:630 msg="seeding initial snapshot"
+    logger.go:264: time=2026-10-24T21:16:55.932Z level=INFO source=/src/pkg/ztunnel/zds/server.go:662 msg="initial snapshot seeded"
+    logger.go:264: time=2026-10-24T21:16:55.932Z level=INFO source=/src/pkg/ztunnel/zds/server.go:335 msg="new ztunnel connection"
+    logger.go:264: time=2026-10-24T21:16:55.932Z level=INFO source=/src/pkg/ztunnel/zds/server.go:350 msg="received hello from ztunnel" version=V1
+    logger.go:264: time=2026-10-24T21:16:55.932Z level=INFO source=/src/pkg/ztunnel/zds/server.go:353 msg="waiting for initial snapshot to be seeded"
+    logger.go:264: time=2026-10-24T21:16:55.932Z level=INFO source=/src/pkg/ztunnel/zds/server.go:359 msg="initial snapshot seeded, sending to ztunnel"
+    logger.go:264: time=2026-10-24T21:16:55.932Z level=INFO source=/src/pkg/ztunnel/zds/server.go:365 msg="initial snapshot sent, processing updates"
+    logger.go:264: time=2026-10-24T21:16:55.932Z level=INFO source=/src/pkg/ztunnel/zds/server.go:305 msg="canceling previous ztunnel connection for new connection"
+    logger.go:264: time=2026-10-24T21:16:55.933Z level=ERROR source=/src/pkg/ztunnel/zds/server.go:322 msg="failed to handle connection" error="failed to send update: read unixpacket /tmp/TestZDSReplacementInterruptsStalledAck126392616/001/zds.sock->@: use of closed network connection"
+    logger.go:264: time=2026-10-24T21:16:55.933Z level=INFO source=/src/pkg/ztunnel/zds/server.go:335 msg="new ztunnel connection"
+    logger.go:264: time=2026-10-24T21:16:55.933Z level=INFO source=/src/pkg/ztunnel/zds/server.go:350 msg="received hello from ztunnel" version=V1
+    logger.go:264: time=2026-10-24T21:16:55.933Z level=INFO source=/src/pkg/ztunnel/zds/server.go:353 msg="waiting for initial snapshot to be seeded"
+    logger.go:264: time=2026-10-24T21:16:55.933Z level=INFO source=/src/pkg/ztunnel/zds/server.go:359 msg="initial snapshot seeded, sending to ztunnel"
+    logger.go:264: time=2026-10-24T21:16:55.933Z level=INFO source=/src/pkg/ztunnel/zds/server.go:365 msg="initial snapshot sent, processing updates"
+    logger.go:264: time=2026-10-24T21:16:55.933Z level=INFO source=/src/pkg/ztunnel/zds/server.go:375 msg="context cancelled, closing ztunnel connection"
+--- PASS: TestZDSReplacementInterruptsStalledAck (0.00s)
+=== RUN   TestZDSShutdownInterruptsStartupWaits
+=== RUN   TestZDSShutdownInterruptsStartupWaits/hello
+    logger.go:264: time=2026-10-24T21:16:55.933Z level=INFO source=/src/pkg/ztunnel/zds/server.go:335 msg="new ztunnel connection"
+    logger.go:264: time=2026-10-24T21:16:55.934Z level=ERROR source=/src/pkg/ztunnel/zds/server.go:322 msg="failed to handle connection" error="failed to read hello from ztunnel: read unixpacket /tmp/TestZDSShutdownInterruptsStartupWaitshello1886615898/001/zds.sock->@: use of closed network connection"
+=== RUN   TestZDSShutdownInterruptsStartupWaits/snapshot-seed
+    logger.go:264: time=2026-10-24T21:16:55.934Z level=INFO source=/src/pkg/ztunnel/zds/server.go:335 msg="new ztunnel connection"
+    logger.go:264: time=2026-10-24T21:16:55.934Z level=INFO source=/src/pkg/ztunnel/zds/server.go:350 msg="received hello from ztunnel" version=V1
+    logger.go:264: time=2026-10-24T21:16:55.934Z level=INFO source=/src/pkg/ztunnel/zds/server.go:353 msg="waiting for initial snapshot to be seeded"
+    logger.go:264: time=2026-10-24T21:16:55.934Z level=ERROR source=/src/pkg/ztunnel/zds/server.go:322 msg="failed to handle connection" error="context canceled"
+=== RUN   TestZDSShutdownInterruptsStartupWaits/snapshot-ack
+    logger.go:264: time=2026-10-24T21:16:55.934Z level=INFO source=/src/pkg/ztunnel/zds/server.go:630 msg="seeding initial snapshot"
+    logger.go:264: time=2026-10-24T21:16:55.934Z level=INFO source=/src/pkg/ztunnel/zds/server.go:662 msg="initial snapshot seeded"
+    logger.go:264: time=2026-10-24T21:16:55.934Z level=INFO source=/src/pkg/ztunnel/zds/server.go:335 msg="new ztunnel connection"
+    logger.go:264: time=2026-10-24T21:16:55.934Z level=INFO source=/src/pkg/ztunnel/zds/server.go:350 msg="received hello from ztunnel" version=V1
+    logger.go:264: time=2026-10-24T21:16:55.935Z level=INFO source=/src/pkg/ztunnel/zds/server.go:353 msg="waiting for initial snapshot to be seeded"
+    logger.go:264: time=2026-10-24T21:16:55.935Z level=INFO source=/src/pkg/ztunnel/zds/server.go:359 msg="initial snapshot seeded, sending to ztunnel"
+    logger.go:264: time=2026-10-24T21:16:55.935Z level=ERROR source=/src/pkg/ztunnel/zds/server.go:322 msg="failed to handle connection" error="failed to send initial snapshot: failed to send snapshot message: read unixpacket /tmp/TestZDSShutdownInterruptsStartupWaitssnapshot-ack39688165/001/zds.sock->@: use of closed network connection"
+--- PASS: TestZDSShutdownInterruptsStartupWaits (0.00s)
+    --- PASS: TestZDSShutdownInterruptsStartupWaits/hello (0.00s)
+    --- PASS: TestZDSShutdownInterruptsStartupWaits/snapshot-seed (0.00s)
+    --- PASS: TestZDSShutdownInterruptsStartupWaits/snapshot-ack (0.00s)
+=== RUN   TestZDSEnrollmentHonorsCancellationBeforeFilesystem
+--- PASS: TestZDSEnrollmentHonorsCancellationBeforeFilesystem (0.00s)
+=== RUN   TestStrictDeletedCleanupImmutableUIDAndNoNetnsDependency
+=== RUN   TestStrictDeletedCleanupImmutableUIDAndNoNetnsDependency/ack
+    logger.go:264: time=2026-10-24T21:16:55.936Z level=INFO source=/src/pkg/ztunnel/zds/deleted_endpoint.go:151 msg="Deleted endpoint cleanup completed; capture retained" stage=zds-deleted-endpoint-cleanup endpointID=9 k8sUID=immutable-uid attempt=1 elapsedDuration=182.292µs deadline=2026-10-24T21:16:56.935Z
+=== RUN   TestStrictDeletedCleanupImmutableUIDAndNoNetnsDependency/nack
+    logger.go:264: time=2026-10-24T21:16:55.936Z level=ERROR source=/src/pkg/ztunnel/zds/deleted_endpoint.go:149 msg="Deleted endpoint cleanup incomplete; capture retained" stage=zds-deleted-endpoint-cleanup endpointID=9 k8sUID=immutable-uid attempt=1 elapsedDuration=320.251µs deadline=2026-10-24T21:16:56.936Z error="cache retired; proxy DEL not acknowledged: ztunnel responded with an ack error: denied"
+=== RUN   TestStrictDeletedCleanupImmutableUIDAndNoNetnsDependency/missing-ack
+    logger.go:264: time=2026-10-24T21:16:55.937Z level=ERROR source=/src/pkg/ztunnel/zds/deleted_endpoint.go:149 msg="Deleted endpoint cleanup incomplete; capture retained" stage=zds-deleted-endpoint-cleanup endpointID=9 k8sUID=immutable-uid attempt=1 elapsedDuration=130.959µs deadline=2026-10-24T21:16:56.937Z error="cache retired; proxy DEL not acknowledged: ztunnel response did not contain an acknowledgment"
+--- PASS: TestStrictDeletedCleanupImmutableUIDAndNoNetnsDependency (0.00s)
+    --- PASS: TestStrictDeletedCleanupImmutableUIDAndNoNetnsDependency/ack (0.00s)
+    --- PASS: TestStrictDeletedCleanupImmutableUIDAndNoNetnsDependency/nack (0.00s)
+    --- PASS: TestStrictDeletedCleanupImmutableUIDAndNoNetnsDependency/missing-ack (0.00s)
+=== RUN   TestStrictDeletedCleanupRetiresBeforeBlockedOperationDeadline
+    logger.go:264: time=2026-10-24T21:16:55.958Z level=ERROR source=/src/pkg/ztunnel/zds/deleted_endpoint.go:149 msg="Deleted endpoint cleanup incomplete; capture retained" stage=zds-deleted-endpoint-cleanup endpointID=10 k8sUID=old-uid attempt=1 elapsedDuration=20.305166ms deadline=2026-10-24T21:16:55.957Z error="cache retired; waiting for endpoint operation: context deadline exceeded"
+--- PASS: TestStrictDeletedCleanupRetiresBeforeBlockedOperationDeadline (0.02s)
+=== RUN   TestStrictDeletedCleanupRechecksNewSameUIDOwnerAfterSemaphoreWait
+    logger.go:264: time=2026-10-24T21:16:55.959Z level=INFO source=/src/pkg/ztunnel/zds/deleted_endpoint.go:186 msg="Skipping stale deleted-endpoint DEL after sandbox replacement" stage=zds-deleted-endpoint-cleanup endpointID=11 k8sUID=same-pod-uid
+    logger.go:264: time=2026-10-24T21:16:55.959Z level=INFO source=/src/pkg/ztunnel/zds/deleted_endpoint.go:151 msg="Deleted endpoint cleanup completed; capture retained" stage=zds-deleted-endpoint-cleanup endpointID=11 k8sUID=same-pod-uid attempt=1 elapsedDuration=1.169461ms deadline=2026-10-24T21:16:56.958Z
+--- PASS: TestStrictDeletedCleanupRechecksNewSameUIDOwnerAfterSemaphoreWait (0.00s)
+=== RUN   TestStrictDeletedCleanupDoesNotEraseReusedEndpointID
+    logger.go:264: time=2026-10-24T21:16:55.960Z level=INFO source=/src/pkg/ztunnel/zds/deleted_endpoint.go:151 msg="Deleted endpoint cleanup completed; capture retained" stage=zds-deleted-endpoint-cleanup endpointID=13 k8sUID=old-pod attempt=1 elapsedDuration=206.876µs deadline=2026-10-24T21:16:56.960Z
+--- PASS: TestStrictDeletedCleanupDoesNotEraseReusedEndpointID (0.00s)
+=== RUN   TestStrictDeletedCleanupRejectsLiveViewAndMissingUID
+--- PASS: TestStrictDeletedCleanupRejectsLiveViewAndMissingUID (0.00s)
+=== RUN   TestStrictInitialSeedCannotResurrectRetiredManagedEndpoint
+    logger.go:264: time=2026-10-24T21:16:55.960Z level=ERROR source=/src/pkg/ztunnel/zds/deleted_endpoint.go:149 msg="Deleted endpoint cleanup incomplete; capture retained" stage=zds-deleted-endpoint-cleanup endpointID=51 k8sUID=retired-before-seed attempt=1 elapsedDuration=6.667µs deadline=0001-01-01T00:00:00.000Z error="cache retired; waiting for endpoint operation: context canceled"
+    logger.go:264: time=2026-10-24T21:16:55.960Z level=INFO source=/src/pkg/ztunnel/zds/server.go:630 msg="seeding initial snapshot"
+    logger.go:264: time=2026-10-24T21:16:55.960Z level=INFO source=/src/pkg/ztunnel/zds/server.go:662 msg="initial snapshot seeded"
+--- PASS: TestStrictInitialSeedCannotResurrectRetiredManagedEndpoint (0.00s)
+=== RUN   TestStrictInitialSeedCannotOverwriteAcknowledgedNewSandbox
+    logger.go:264: time=2026-10-24T21:16:55.960Z level=INFO source=/src/pkg/ztunnel/zds/server.go:630 msg="seeding initial snapshot"
+    logger.go:264: time=2026-10-24T21:16:55.960Z level=INFO source=/src/pkg/ztunnel/zds/server.go:662 msg="initial snapshot seeded"
+--- PASS: TestStrictInitialSeedCannotOverwriteAcknowledgedNewSandbox (0.00s)
+=== RUN   TestStrictDeletedCleanupCancellationRetiresStreamAndRecovers
+    logger.go:264: time=2026-10-24T21:16:55.961Z level=ERROR source=/src/pkg/ztunnel/zds/deleted_endpoint.go:149 msg="Deleted endpoint cleanup incomplete; capture retained" stage=zds-deleted-endpoint-cleanup endpointID=16 k8sUID=canceled-delete attempt=1 elapsedDuration=172.125µs deadline=0001-01-01T00:00:00.000Z error="cache retired; proxy DEL not acknowledged: context canceled"
+--- PASS: TestStrictDeletedCleanupCancellationRetiresStreamAndRecovers (0.00s)
+=== RUN   TestPrivilegedStrictDeletedCleanupRetainsCaptureAndFreshSandboxRecovers
+    logger.go:264: time=2026-10-24T21:16:55.962Z level=INFO source=/src/pkg/ztunnel/zds/server.go:464 msg="enrolling endpoint to ztunnel" endpointID=31
+    logger.go:264: time=2026-10-24T21:16:55.998Z level=INFO source=/src/pkg/ztunnel/zds/server.go:545 msg="Endpoint enrollment acknowledged" endpointID=31 k8sUID=cleanup-same-pod k8sNamespace=test-namespace pod=test-pod-cleanup-same-pod duration=35.911571ms stage=zds-enrollment
+    logger.go:264: time=2026-10-24T21:16:56.000Z level=ERROR source=/src/pkg/ztunnel/zds/deleted_endpoint.go:149 msg="Deleted endpoint cleanup incomplete; capture retained" stage=zds-deleted-endpoint-cleanup endpointID=31 k8sUID=cleanup-same-pod attempt=1 elapsedDuration=196.084µs deadline=2026-10-24T21:17:00.962Z error="cache retired; proxy DEL not acknowledged: ztunnel responded with an ack error: denied"
+    logger.go:264: time=2026-10-24T21:16:56.003Z level=INFO source=/src/pkg/ztunnel/zds/server.go:464 msg="enrolling endpoint to ztunnel" endpointID=32
+    logger.go:264: time=2026-10-24T21:16:56.029Z level=INFO source=/src/pkg/ztunnel/zds/server.go:545 msg="Endpoint enrollment acknowledged" endpointID=32 k8sUID=cleanup-same-pod k8sNamespace=test-namespace pod=test-pod-cleanup-same-pod duration=26.606678ms stage=zds-enrollment
+    logger.go:264: time=2026-10-24T21:16:56.031Z level=INFO source=/src/pkg/ztunnel/zds/deleted_endpoint.go:186 msg="Skipping stale deleted-endpoint DEL after sandbox replacement" stage=zds-deleted-endpoint-cleanup endpointID=31 k8sUID=cleanup-same-pod
+    logger.go:264: time=2026-10-24T21:16:56.031Z level=INFO source=/src/pkg/ztunnel/zds/deleted_endpoint.go:151 msg="Deleted endpoint cleanup completed; capture retained" stage=zds-deleted-endpoint-cleanup endpointID=31 k8sUID=cleanup-same-pod attempt=1 elapsedDuration=92.75µs deadline=2026-10-24T21:17:00.962Z
+--- PASS: TestPrivilegedStrictDeletedCleanupRetainsCaptureAndFreshSandboxRecovers (0.07s)
+=== RUN   TestPrivilegedStrictDeletedNetnsCannotBlockHealthySnapshotAndQueuedDEL
+    logger.go:264: time=2026-10-24T21:16:56.034Z level=INFO source=/src/pkg/ztunnel/zds/server.go:630 msg="seeding initial snapshot"
+    logger.go:264: time=2026-10-24T21:16:56.034Z level=INFO source=/src/pkg/ztunnel/zds/server.go:662 msg="initial snapshot seeded"
+    logger.go:264: time=2026-10-24T21:16:56.035Z level=INFO source=/src/pkg/ztunnel/zds/server.go:335 msg="new ztunnel connection"
+    logger.go:264: time=2026-10-24T21:16:56.035Z level=INFO source=/src/pkg/ztunnel/zds/server.go:350 msg="received hello from ztunnel" version=V1
+    logger.go:264: time=2026-10-24T21:16:56.035Z level=INFO source=/src/pkg/ztunnel/zds/server.go:353 msg="waiting for initial snapshot to be seeded"
+    logger.go:264: time=2026-10-24T21:16:56.035Z level=INFO source=/src/pkg/ztunnel/zds/server.go:359 msg="initial snapshot seeded, sending to ztunnel"
+    logger.go:264: time=2026-10-24T21:16:56.063Z level=INFO source=/src/pkg/ztunnel/zds/server.go:365 msg="initial snapshot sent, processing updates"
+    logger.go:264: time=2026-10-24T21:16:56.063Z level=INFO source=/src/pkg/ztunnel/zds/deleted_endpoint.go:151 msg="Deleted endpoint cleanup completed; capture retained" stage=zds-deleted-endpoint-cleanup endpointID=41 k8sUID=snapshot-retired attempt=1 elapsedDuration=29.077683ms deadline=2026-10-24T21:17:01.034Z
+    logger.go:264: time=2026-10-24T21:16:56.063Z level=INFO source=/src/pkg/ztunnel/zds/server.go:375 msg="context cancelled, closing ztunnel connection"
+--- PASS: TestPrivilegedStrictDeletedNetnsCannotBlockHealthySnapshotAndQueuedDEL (0.03s)
+=== RUN   TestPrivilegedStrictDeletedCleanupWaitsForNewACKAndSkipsOldDEL
+    logger.go:264: time=2026-10-24T21:16:56.064Z level=INFO source=/src/pkg/ztunnel/zds/server.go:464 msg="enrolling endpoint to ztunnel" endpointID=52
+    logger.go:264: time=2026-10-24T21:16:56.094Z level=INFO source=/src/pkg/ztunnel/zds/server.go:545 msg="Endpoint enrollment acknowledged" endpointID=52 k8sUID=one-pod-two-sandboxes k8sNamespace=test-namespace pod=test-pod-one-pod-two-sandboxes duration=30.324853ms stage=zds-enrollment
+    logger.go:264: time=2026-10-24T21:16:56.095Z level=INFO source=/src/pkg/ztunnel/zds/deleted_endpoint.go:186 msg="Skipping stale deleted-endpoint DEL after sandbox replacement" stage=zds-deleted-endpoint-cleanup endpointID=51 k8sUID=one-pod-two-sandboxes
+    logger.go:264: time=2026-10-24T21:16:56.095Z level=INFO source=/src/pkg/ztunnel/zds/deleted_endpoint.go:151 msg="Deleted endpoint cleanup completed; capture retained" stage=zds-deleted-endpoint-cleanup endpointID=51 k8sUID=one-pod-two-sandboxes attempt=1 elapsedDuration=1.389877ms deadline=2026-10-24T21:17:01.064Z
+--- PASS: TestPrivilegedStrictDeletedCleanupWaitsForNewACKAndSkipsOldDEL (0.03s)
+=== RUN   TestPrivilegedStrictOwnedADDCannotReinsertDeletedOwnerWhileCleanupWaits
+    logger.go:264: time=2026-10-24T21:16:56.099Z level=INFO source=/src/pkg/ztunnel/zds/server.go:464 msg="enrolling endpoint to ztunnel" endpointID=71
+    logger.go:264: time=2026-10-24T21:16:56.125Z level=INFO source=/src/pkg/ztunnel/zds/deleted_endpoint.go:151 msg="Deleted endpoint cleanup completed; capture retained" stage=zds-deleted-endpoint-cleanup endpointID=71 k8sUID=owned-delete-race attempt=1 elapsedDuration=338.501µs deadline=2026-10-24T21:17:01.099Z
+--- PASS: TestPrivilegedStrictOwnedADDCannotReinsertDeletedOwnerWhileCleanupWaits (0.03s)
+=== RUN   TestStrictDeletedCleanupRetiresExactIncarnationAgainAfterSemaphoreWait
+    logger.go:264: time=2026-10-24T21:16:56.127Z level=INFO source=/src/pkg/ztunnel/zds/deleted_endpoint.go:151 msg="Deleted endpoint cleanup completed; capture retained" stage=zds-deleted-endpoint-cleanup endpointID=72 k8sUID=same-incarnation attempt=1 elapsedDuration=151.083µs deadline=2026-10-24T21:16:57.127Z
+--- PASS: TestStrictDeletedCleanupRetiresExactIncarnationAgainAfterSemaphoreWait (0.00s)
+=== RUN   TestStrictOwnedEnrollmentRejectsMismatchedOwnerBeforeWire
+--- PASS: TestStrictOwnedEnrollmentRejectsMismatchedOwnerBeforeWire (0.00s)
+=== RUN   TestPrivilegedStrictManagedMissingUIDRetainsCaptureWithoutADD
+    logger.go:264: time=2026-10-24T21:16:56.127Z level=INFO source=/src/pkg/ztunnel/zds/server.go:464 msg="enrolling endpoint to ztunnel" endpointID=75
+--- PASS: TestPrivilegedStrictManagedMissingUIDRetainsCaptureWithoutADD (0.03s)
+=== RUN   TestStrictLiveUnenrollmentNeverTouchesMissingNetnsOrQueue
+--- PASS: TestStrictLiveUnenrollmentNeverTouchesMissingNetnsOrQueue (0.00s)
+=== RUN   TestPrivilegedStrictLiveUnenrollmentRetainsCaptureAndCanRefreshEnrollment
+    logger.go:264: time=2026-10-24T21:16:56.160Z level=INFO source=/src/pkg/ztunnel/zds/server.go:464 msg="enrolling endpoint to ztunnel" endpointID=82
+    logger.go:264: time=2026-10-24T21:16:56.189Z level=INFO source=/src/pkg/ztunnel/zds/server.go:545 msg="Endpoint enrollment acknowledged" endpointID=82 k8sUID=strict-unenroll-retained k8sNamespace=test-namespace pod=test-pod-strict-unenroll-retained duration=28.915349ms stage=zds-enrollment
+    logger.go:264: time=2026-10-24T21:16:56.191Z level=INFO source=/src/pkg/ztunnel/zds/server.go:464 msg="enrolling endpoint to ztunnel" endpointID=82
+    logger.go:264: time=2026-10-24T21:16:56.208Z level=INFO source=/src/pkg/ztunnel/zds/server.go:545 msg="Endpoint enrollment acknowledged" endpointID=82 k8sUID=strict-unenroll-retained k8sNamespace=test-namespace pod=test-pod-strict-unenroll-retained duration=17.627535ms stage=zds-enrollment
+--- PASS: TestPrivilegedStrictLiveUnenrollmentRetainsCaptureAndCanRefreshEnrollment (0.05s)
+=== RUN   TestMetricsDisabledByDefault
+--- PASS: TestMetricsDisabledByDefault (0.00s)
+=== RUN   TestMetricsEnabled
+--- PASS: TestMetricsEnabled (0.00s)
+=== RUN   TestEnrollmentFailuresActuallyEmit
+--- PASS: TestEnrollmentFailuresActuallyEmit (0.00s)
+=== RUN   TestConnectionActiveActuallyEmit
+--- PASS: TestConnectionActiveActuallyEmit (0.00s)
+=== RUN   TestAllMetricsEmitTogether
+--- PASS: TestAllMetricsEmitTogether (0.00s)
+=== RUN   TestPrivilegedZDSReenrollmentRepairsCaptureAfterDelNack
+    logger.go:264: time=2026-10-24T21:16:56.211Z level=INFO source=/src/pkg/ztunnel/zds/server.go:630 msg="seeding initial snapshot"
+    logger.go:264: time=2026-10-24T21:16:56.211Z level=INFO source=/src/pkg/ztunnel/zds/server.go:662 msg="initial snapshot seeded"
+    logger.go:264: time=2026-10-24T21:16:56.212Z level=INFO source=/src/pkg/ztunnel/zds/server.go:335 msg="new ztunnel connection"
+    logger.go:264: time=2026-10-24T21:16:56.212Z level=INFO source=/src/pkg/ztunnel/zds/server.go:350 msg="received hello from ztunnel" version=V1
+    logger.go:264: time=2026-10-24T21:16:56.212Z level=INFO source=/src/pkg/ztunnel/zds/server.go:353 msg="waiting for initial snapshot to be seeded"
+    logger.go:264: time=2026-10-24T21:16:56.212Z level=INFO source=/src/pkg/ztunnel/zds/server.go:359 msg="initial snapshot seeded, sending to ztunnel"
+    logger.go:264: time=2026-10-24T21:16:56.212Z level=INFO source=/src/pkg/ztunnel/zds/server.go:365 msg="initial snapshot sent, processing updates"
+    logger.go:264: time=2026-10-24T21:16:56.213Z level=INFO source=/src/pkg/ztunnel/zds/server.go:464 msg="enrolling endpoint to ztunnel" endpointID=37
+    logger.go:264: time=2026-10-24T21:16:56.239Z level=INFO source=/src/pkg/ztunnel/zds/server.go:545 msg="Endpoint enrollment acknowledged" endpointID=37 k8sUID=reenroll-after-nack k8sNamespace=test-namespace pod=test-pod-reenroll-after-nack duration=26.397845ms stage=zds-enrollment
+    logger.go:264: time=2026-10-24T21:16:56.241Z level=INFO source=/src/pkg/ztunnel/zds/server.go:593 msg="disenrolling endpoint from ztunnel" endpointID=37
+    logger.go:264: time=2026-10-24T21:16:56.455Z level=ERROR source=/src/pkg/ztunnel/zds/server.go:322 msg="failed to handle connection" error="failed to send update: ztunnel responded with an ack error: injected deletion refusal"
+    logger.go:264: time=2026-10-24T21:16:56.456Z level=INFO source=/src/pkg/ztunnel/zds/server.go:464 msg="enrolling endpoint to ztunnel" endpointID=37
+    logger.go:264: time=2026-10-24T21:16:56.484Z level=INFO source=/src/pkg/ztunnel/zds/server.go:545 msg="Endpoint enrollment acknowledged" endpointID=37 k8sUID=reenroll-after-nack k8sNamespace=test-namespace pod=test-pod-reenroll-after-nack duration=28.188265ms stage=zds-enrollment
+--- PASS: TestPrivilegedZDSReenrollmentRepairsCaptureAfterDelNack (0.27s)
+=== RUN   TestPrivilegedZDSConnHandler
+    logger.go:264: time=2026-10-24T21:16:56.485Z level=INFO source=/src/pkg/ztunnel/zds/server.go:630 msg="seeding initial snapshot"
+    logger.go:264: time=2026-10-24T21:16:56.485Z level=INFO source=/src/pkg/ztunnel/zds/server.go:662 msg="initial snapshot seeded"
+    logger.go:264: time=2026-10-24T21:16:56.485Z level=INFO source=/src/pkg/ztunnel/zds/server.go:335 msg="new ztunnel connection"
+    logger.go:264: time=2026-10-24T21:16:56.485Z level=INFO source=/src/pkg/ztunnel/zds/server.go:350 msg="received hello from ztunnel" version=V1
+    logger.go:264: time=2026-10-24T21:16:56.485Z level=INFO source=/src/pkg/ztunnel/zds/server.go:353 msg="waiting for initial snapshot to be seeded"
+    logger.go:264: time=2026-10-24T21:16:56.485Z level=INFO source=/src/pkg/ztunnel/zds/server.go:359 msg="initial snapshot seeded, sending to ztunnel"
+    logger.go:264: time=2026-10-24T21:16:56.485Z level=INFO source=/src/pkg/ztunnel/zds/server.go:365 msg="initial snapshot sent, processing updates"
+    logger.go:264: time=2026-10-24T21:16:56.485Z level=INFO source=/src/pkg/ztunnel/zds/server.go:375 msg="context cancelled, closing ztunnel connection"
+--- PASS: TestPrivilegedZDSConnHandler (0.00s)
+=== RUN   TestPrivilegedZDSConnHandlerAckError
+    logger.go:264: time=2026-10-24T21:16:56.486Z level=INFO source=/src/pkg/ztunnel/zds/server.go:630 msg="seeding initial snapshot"
+    logger.go:264: time=2026-10-24T21:16:56.486Z level=INFO source=/src/pkg/ztunnel/zds/server.go:662 msg="initial snapshot seeded"
+    logger.go:264: time=2026-10-24T21:16:56.486Z level=INFO source=/src/pkg/ztunnel/zds/server.go:335 msg="new ztunnel connection"
+    logger.go:264: time=2026-10-24T21:16:56.486Z level=INFO source=/src/pkg/ztunnel/zds/server.go:350 msg="received hello from ztunnel" version=V1
+    logger.go:264: time=2026-10-24T21:16:56.486Z level=INFO source=/src/pkg/ztunnel/zds/server.go:353 msg="waiting for initial snapshot to be seeded"
+    logger.go:264: time=2026-10-24T21:16:56.486Z level=INFO source=/src/pkg/ztunnel/zds/server.go:359 msg="initial snapshot seeded, sending to ztunnel"
+    logger.go:264: time=2026-10-24T21:16:56.486Z level=ERROR source=/src/pkg/ztunnel/zds/server.go:322 msg="failed to handle connection" error="failed to send initial snapshot: failed to send snapshot message: ztunnel responded with an ack error: client-side error"
+--- PASS: TestPrivilegedZDSConnHandlerAckError (0.00s)
+=== RUN   TestPrivilegedZDSConnHandlerEndpointUpdate
+    logger.go:264: time=2026-10-24T21:16:56.486Z level=INFO source=/src/pkg/ztunnel/zds/server.go:630 msg="seeding initial snapshot"
+    logger.go:264: time=2026-10-24T21:16:56.486Z level=INFO source=/src/pkg/ztunnel/zds/server.go:662 msg="initial snapshot seeded"
+    logger.go:264: time=2026-10-24T21:16:56.486Z level=INFO source=/src/pkg/ztunnel/zds/server.go:335 msg="new ztunnel connection"
+    logger.go:264: time=2026-10-24T21:16:56.486Z level=INFO source=/src/pkg/ztunnel/zds/server.go:350 msg="received hello from ztunnel" version=V1
+    logger.go:264: time=2026-10-24T21:16:56.486Z level=INFO source=/src/pkg/ztunnel/zds/server.go:353 msg="waiting for initial snapshot to be seeded"
+    logger.go:264: time=2026-10-24T21:16:56.486Z level=INFO source=/src/pkg/ztunnel/zds/server.go:359 msg="initial snapshot seeded, sending to ztunnel"
+    logger.go:264: time=2026-10-24T21:16:56.487Z level=INFO source=/src/pkg/ztunnel/zds/server.go:365 msg="initial snapshot sent, processing updates"
+    logger.go:264: time=2026-10-24T21:16:56.487Z level=INFO source=/src/pkg/ztunnel/zds/server.go:464 msg="enrolling endpoint to ztunnel" endpointID=1
+    logger.go:264: time=2026-10-24T21:16:56.516Z level=INFO source=/src/pkg/ztunnel/zds/server.go:545 msg="Endpoint enrollment acknowledged" endpointID=1 k8sUID=test-uid k8sNamespace=test-namespace pod=test-pod-test-uid duration=28.656266ms stage=zds-enrollment
+    logger.go:264: time=2026-10-24T21:16:56.516Z level=INFO source=/src/pkg/ztunnel/zds/server.go:593 msg="disenrolling endpoint from ztunnel" endpointID=1
+    logger.go:264: time=2026-10-24T21:16:56.727Z level=INFO source=/src/pkg/ztunnel/zds/server.go:375 msg="context cancelled, closing ztunnel connection"
+--- PASS: TestPrivilegedZDSConnHandlerEndpointUpdate (0.24s)
+=== RUN   TestPrivilegedZDSRollingUpdate
+    logger.go:264: time=2026-10-24T21:16:56.728Z level=INFO source=/src/pkg/ztunnel/zds/server.go:630 msg="seeding initial snapshot"
+    logger.go:264: time=2026-10-24T21:16:56.728Z level=INFO source=/src/pkg/ztunnel/zds/server.go:662 msg="initial snapshot seeded"
+    logger.go:264: time=2026-10-24T21:16:56.728Z level=INFO source=/src/pkg/ztunnel/zds/server.go:335 msg="new ztunnel connection"
+    logger.go:264: time=2026-10-24T21:16:56.728Z level=INFO source=/src/pkg/ztunnel/zds/server.go:350 msg="received hello from ztunnel" version=V1
+    logger.go:264: time=2026-10-24T21:16:56.728Z level=INFO source=/src/pkg/ztunnel/zds/server.go:353 msg="waiting for initial snapshot to be seeded"
+    logger.go:264: time=2026-10-24T21:16:56.728Z level=INFO source=/src/pkg/ztunnel/zds/server.go:359 msg="initial snapshot seeded, sending to ztunnel"
+    logger.go:264: time=2026-10-24T21:16:56.728Z level=INFO source=/src/pkg/ztunnel/zds/server.go:365 msg="initial snapshot sent, processing updates"
+    logger.go:264: time=2026-10-24T21:16:56.728Z level=INFO source=/src/pkg/ztunnel/zds/server.go:464 msg="enrolling endpoint to ztunnel" endpointID=1
+    logger.go:264: time=2026-10-24T21:16:56.760Z level=INFO source=/src/pkg/ztunnel/zds/server.go:545 msg="Endpoint enrollment acknowledged" endpointID=1 k8sUID=workload-1 k8sNamespace=test-namespace pod=test-pod-workload-1 duration=31.583938ms stage=zds-enrollment
+    logger.go:264: time=2026-10-24T21:16:56.761Z level=INFO source=/src/pkg/ztunnel/zds/server.go:464 msg="enrolling endpoint to ztunnel" endpointID=2
+    logger.go:264: time=2026-10-24T21:16:56.791Z level=INFO source=/src/pkg/ztunnel/zds/server.go:545 msg="Endpoint enrollment acknowledged" endpointID=2 k8sUID=workload-2 k8sNamespace=test-namespace pod=test-pod-workload-2 duration=29.784893ms stage=zds-enrollment
+    logger.go:264: time=2026-10-24T21:16:56.791Z level=INFO source=/src/pkg/ztunnel/zds/server.go:305 msg="canceling previous ztunnel connection for new connection"
+    logger.go:264: time=2026-10-24T21:16:56.791Z level=INFO source=/src/pkg/ztunnel/zds/server.go:375 msg="context cancelled, closing ztunnel connection"
+    logger.go:264: time=2026-10-24T21:16:56.791Z level=INFO source=/src/pkg/ztunnel/zds/server.go:335 msg="new ztunnel connection"
+    logger.go:264: time=2026-10-24T21:16:56.791Z level=INFO source=/src/pkg/ztunnel/zds/server.go:350 msg="received hello from ztunnel" version=V1
+    logger.go:264: time=2026-10-24T21:16:56.791Z level=INFO source=/src/pkg/ztunnel/zds/server.go:353 msg="waiting for initial snapshot to be seeded"
+    logger.go:264: time=2026-10-24T21:16:56.791Z level=INFO source=/src/pkg/ztunnel/zds/server.go:359 msg="initial snapshot seeded, sending to ztunnel"
+    logger.go:264: time=2026-10-24T21:16:56.824Z level=INFO source=/src/pkg/ztunnel/zds/server.go:365 msg="initial snapshot sent, processing updates"
+    logger.go:264: time=2026-10-24T21:16:56.824Z level=INFO source=/src/pkg/ztunnel/zds/server.go:464 msg="enrolling endpoint to ztunnel" endpointID=3
+    logger.go:264: time=2026-10-24T21:16:56.855Z level=INFO source=/src/pkg/ztunnel/zds/server.go:545 msg="Endpoint enrollment acknowledged" endpointID=3 k8sUID=workload-3 k8sNamespace=test-namespace pod=test-pod-workload-3 duration=30.469978ms stage=zds-enrollment
+    logger.go:264: time=2026-10-24T21:16:56.855Z level=INFO source=/src/pkg/ztunnel/zds/server.go:375 msg="context cancelled, closing ztunnel connection"
+--- PASS: TestPrivilegedZDSRollingUpdate (0.13s)
+PASS
+ok  	github.com/cilium/cilium/pkg/ztunnel/zds	2.116s

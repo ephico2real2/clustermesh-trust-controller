@@ -3,6 +3,7 @@
 Start with `docs/handover/CODEX_MASTER_PROMPT.md` and the current handover/agile backlog.
 
 - Use **Podman from the MacBook host for image builds** and containerized local checks. Set the Linux target architecture explicitly and verify the resulting image/source pin.
+- Fork upstream-derived components into `ephico2real2` before implementation. Use the personal fork as `origin` and the canonical repository as `upstream`; discover and fetch the real default branch, then create the feature branch directly from its current tip. Before publishing, verify the feature branch itself is zero commits behind upstream; a current fork default branch is insufficient. Redo old work on a fresh current-base branch when requested, preserve the original branch, and rerun meaningful local tests on the new source before pushing.
 - Finish affected local tests, required lint/vet, the image build and applicable integration/load/packet/screenshots before pushing changes that trigger CI, dispatching workflows or publishing images. Reproduce failures locally before another CI run.
 - Preserve existing kind labs and their runtime provider. Transfer Podman-built images by archive into the owned cluster; verify the deployed image ID. Inspect shared-machine resources and preserve unrelated running applications.
 - The reusable personal skill is `$cmtc-podman-local-validation`; apply it for CMTC/Cilium image and local qualification work.

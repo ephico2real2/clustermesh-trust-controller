@@ -235,3 +235,12 @@ checks. Raw evidence remains under
 bundle is under `/private/tmp/cmtc-mac-captures/2026-10-24-cni-startup-validation/`.
 These are bounded local qualifications, not completion of CMTC-403 or the full
 CMTC security mandate.
+
+## Current two-cluster image update
+
+The [local image update report](../../LOCAL_IMAGE_UPDATE.md) records the current
+Cilium/CMTC deployment and the staged ztunnel image, exact executed build/import
+commands, worktree Git-metadata handling, all node image IDs, startup checks,
+28,800 measured HTTP responses, and live dashboard queries. The proxy remains
+inactive until the native ClusterMesh security gates pass. Do not use the
+retired isolated fixture scripts to activate it on the retained clusters.

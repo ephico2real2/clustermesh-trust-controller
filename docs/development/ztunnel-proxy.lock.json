@@ -1,28 +1,51 @@
 {
-  "status": "local-development-qualification",
+  "status": "local-observe-rollout-proxy-staged",
   "platform": "linux/arm64",
   "proxy": {
     "upstream": "https://github.com/cilium/ztunnel",
-    "base": "5bb9cf256b10a209ae9bc0624ddfbf27dbc439de",
-    "localCommit": "d79d3dfaef3d7afeb3552ea53cf90213141e95d3",
+    "base": "9a17cb0ff35c20977100de3582c1e4435360f618",
+    "localCommit": "8106c026621a6bbf51fbd9190585e6d3549aa527",
     "patch": "patches/ztunnel-persistent-inbound-mtls.patch",
     "rust": "1.90.0",
     "profile": "debug",
-    "image": "localhost/cmtc-ztunnel:strict-d79d3df-v2",
-    "imageId": "9339a8f37174055c9b303748fc3bfcba14586997c0d82a49e70cbb9b8bb58946",
-    "runtimeBase": "quay.io/cilium/ztunnel@sha256:884de5adde400e39f58e36c7a729f7690466ca4a8eb4c2a8daa9c1c025115b24",
-    "testHelperFollowup": "a1c3e9cd8f4b23128d70c434c4d01295fb252f9b"
+    "image": "localhost/cmtc-ztunnel:strict-8106c02662",
+    "imageId": "7b9b30306d3d72c56ce885c9d955bca52a66a59ddf9c40e73c2afe71cbbe7529",
+    "runtimeBase": "gcr.io/distroless/cc-debian13@sha256:91e80685018de611a20450bed6b011c3d3242b3d9cc4452208121f342703ada0",
+    "testHelperFollowup": "a1c3e9cd8f4b23128d70c434c4d01295fb252f9b",
+    "fork": "https://github.com/ephico2real2/ztunnel",
+    "branch": "feat/persistent-inbound-mtls-upstream",
+    "patchStatus": "historical old-base patch; build current fork commit instead",
+    "deployment": "imported and version-tested on all four nodes; no active ztunnel DaemonSet"
   },
   "cilium": {
-    "deployedAgentSource": "40d20762d1cb88d9e25ead718d60c0470413fe08",
+    "deployedAgentSource": "a23b8479cae4052eff591484e58e3d9b7adc44f8",
     "strictChartCommit": "66cfc59f3e94dd11264f189fc62c0eaf3e9f7bff",
-    "image": "localhost/cilium:cni-admission-40d20762d1",
-    "imageId": "065c004da4fb10818dbb3d04baf1df927cf044cfb0d08bd530e8fa4472e1ae8a",
+    "image": "localhost/cilium:xds-a23b8479ca",
+    "imageId": "94aa1f4624f42a5bb368b5852bfc11c63e1f138d52a319cbf4870f417e49d49e",
     "goToolchain": "1.27.1",
     "reenrollmentPatch": "patches/cilium-zds-reenrollment.patch",
     "startupAdmissionCommit": "87b29fb8afbd0056a13ae4d4bf4cf98df8cb657b",
-    "startupAdmissionPatch": "patches/cilium-cni-startup-admission.patch"
+    "startupAdmissionPatch": "patches/cilium-cni-startup-admission.patch",
+    "lastCNIStartupQualificationSource": "40d20762d1cb88d9e25ead718d60c0470413fe08",
+    "liveCaptureRetentionPatch": "patches/cilium-live-capture-retention.patch",
+    "buildKind": "agent overlay on existing fork runtime; BPF/CNI/operator unchanged",
+    "runtimeBase": "ghcr.io/ephico2real2/cilium-dev@sha256:15cc5402e93416e8ff71f24b79b0fc1e6b3837f0c4c216b0eb377b8d47b92d68"
   },
   "ci": "deferred",
-  "fullFailClosedProtection": false
+  "fullFailClosedProtection": false,
+  "localLab": {
+    "clusters": [
+      "cmtc-a",
+      "cmtc-b"
+    ],
+    "runtime": "colima cmtc-cilium",
+    "encryptionEnabled": false,
+    "evidence": "../../LOCAL_IMAGE_UPDATE.md",
+    "cmtc": {
+      "tag": "localhost/cmtc:observe-85d0cd8acc",
+      "configId": "sha256:b3d955bf17745c693fbfea1cd69bb183ddcde035a1e16e9c26b6753fc1617d82",
+      "architecture": "arm64",
+      "revision": "85d0cd8acc27c957c592011c7b5940ad1d2f8447"
+    }
+  }
 }
