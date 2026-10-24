@@ -210,3 +210,10 @@ evidence, structured logs, and negative/recovery output. A unit test, published
 bundle, readiness probe, or ACK alone is not workload mTLS evidence.
 
 The implementation work is tracked by [issue #19](https://github.com/ephico2real2/clustermesh-trust-controller/issues/19), linked to the federation boundary in [issue #13](https://github.com/ephico2real2/clustermesh-trust-controller/issues/13). Rotation and telemetry remain governed by CMTC-103/104 and [issue #15](https://github.com/ephico2real2/clustermesh-trust-controller/issues/15).
+
+The follow-on API-backed sample and local Kind acceptance loop are tracked by
+[issue #20](https://github.com/ephico2real2/clustermesh-trust-controller/issues/20)
+and documented in
+[CLUSTERMESHTRUST_SAMPLE_VALIDATION.md](CLUSTERMESHTRUST_SAMPLE_VALIDATION.md).
+That work depends on the API and controller contract defined here; the current
+sample remains proposal-only.
