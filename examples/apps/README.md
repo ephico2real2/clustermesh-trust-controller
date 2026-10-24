@@ -23,3 +23,38 @@ kubectl --context kind-cmtc-b -n mesh-example apply -f examples/apps/clustermesh
 ```
 
 These examples exercise Cilium ClusterMesh routing and policy and provide real application screenshots. The current CMTC Observe profile evaluates their namespace metadata and inventories pods; it does not enable ztunnel or establish workload mTLS. See [the ClusterMesh example contract](clustermesh/README.md), `scripts/lab/test.sh` for failing assertions and the [lab runbook](../../docs/development/OBSERVE_LAB.md) for the complete evidence workflow. No production credentials or signing keys are included.
+
+## Current local demonstration
+
+Both retained clusters run `rebel-base` (two replicas, one on each node),
+`mesh-client`, and the shop/POS/stranger example. Backend responses identify the
+cluster in JSON and the serving Pod in `X-CMTC-Pod`. Required anti-affinity plus
+an explicit lab control-plane toleration makes cross-node testing repeatable;
+`maxSurge: 0`/`maxUnavailable: 1` avoids a rolling-update scheduling deadlock on
+the two-node fixture.
+
+Local loopback forwards for the current session:
+
+| Sample | cmtc-a | cmtc-b |
+| --- | --- | --- |
+| Cluster-identifying backend API | <http://127.0.0.1:18080> | <http://127.0.0.1:18081> |
+| Shop HTTP server | <http://127.0.0.1:18082> | <http://127.0.0.1:18083> |
+
+To recreate the forwards, use separate terminals:
+
+```sh
+export KUBECONFIG=/private/tmp/cmtc-a-b-20261024.kubeconfig
+kubectl --context kind-cmtc-a -n mesh-example port-forward --address=127.0.0.1 svc/rebel-base-cmtc-a 18080:80
+kubectl --context kind-cmtc-b -n mesh-example port-forward --address=127.0.0.1 svc/rebel-base-cmtc-b 18081:80
+kubectl --context kind-cmtc-a -n cf2cnp-lab port-forward --address=127.0.0.1 svc/shop 18082:80
+kubectl --context kind-cmtc-b -n cf2cnp-lab port-forward --address=127.0.0.1 svc/shop 18083:80
+```
+
+A port-forward is a browsing convenience and does not prove ClusterMesh or mTLS.
+`scripts/lab/test.sh` performs the real in-cluster tests: 12 Service assertions
+and 24 direct Pod-IP assertions across every local/remote backend and port
+80/8080/31337. It first verifies two ready backend Pods on distinct nodes in
+each cluster, and checks the intended Pod's response header for direct requests.
+The existing Observe/API, exclusion, conflict, namespace recreation, RBAC and
+shop allow/deny assertions still run. The latest topology update passed all
+36 paths; workload encryption remains an unfinished security gate.

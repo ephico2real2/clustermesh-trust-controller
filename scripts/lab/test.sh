@@ -97,21 +97,37 @@ for cluster in cmtc-a cmtc-b; do
   kubectl --context "kind-$cluster" -n mesh-example wait pod/mesh-client --for=condition=Ready --timeout=3m
 done
 assert_backend() {
-  local case_name=$1 context=$2 target=$3 expected=$4 response
+  local case_name=$1 context=$2 target=$3 expected=$4 expected_pod=${5:-} response
   response=$(kubectl --context "$context" -n mesh-example exec mesh-client -- \
-    curl -fsS --max-time 5 "http://$target/")
+    curl -fsS --max-time 5 --dump-header /dev/stderr "http://$target/" \
+    2> "artifacts/clustermesh-$case_name.headers")
   printf '%s\n' "$response" > "artifacts/clustermesh-$case_name.json"
   printf '%s' "$response" | grep -Fq "\"cluster\": \"$expected\"" || {
     echo "FAIL: $case_name served an unexpected backend: $response" >&2; exit 1;
   }
-  echo "PASS $case_name: $target returned the $expected backend"
+  if [ -n "$expected_pod" ] && ! grep -iFq "X-CMTC-Pod: $expected_pod" "artifacts/clustermesh-$case_name.headers"; then
+    echo "FAIL: $case_name did not identify the intended Pod $expected_pod" >&2; exit 1
+  fi
+  echo "PASS $case_name: $target returned the $expected backend${expected_pod:+ / $expected_pod}"
 }
 
-pod_a=$(kubectl --context kind-cmtc-a -n mesh-example get pods \
-  -l 'name=rebel-base,mesh.cmtc.io/cluster=cmtc-a' -o jsonpath='{.items[0].status.podIP}')
-pod_b=$(kubectl --context kind-cmtc-b -n mesh-example get pods \
-  -l 'name=rebel-base,mesh.cmtc.io/cluster=cmtc-b' -o jsonpath='{.items[0].status.podIP}')
-[ -n "$pod_a" ] && [ -n "$pod_b" ] || { echo 'FAIL: backend Pod IP missing' >&2; exit 1; }
+# Require one ready backend per node, rather than silently testing two
+# replicas placed on the same worker. Keep the exact Pod/Node/IP inventory.
+: > artifacts/clustermesh-backends.tsv
+for cluster in cmtc-a cmtc-b; do
+  kubectl --context "kind-$cluster" -n mesh-example get pods -l "name=rebel-base,mesh.cmtc.io/cluster=$cluster" -o json > "artifacts/$cluster-backends.json"
+  python3 - "$cluster" "artifacts/$cluster-backends.json" >> artifacts/clustermesh-backends.tsv <<'PY_TOPOLOGY'
+import json,sys
+cluster=sys.argv[1]
+pods=[p for p in json.load(open(sys.argv[2]))['items'] if not p['metadata'].get('deletionTimestamp')]
+assert len(pods)==2, (cluster,'expected two backends',len(pods))
+assert len({p['spec']['nodeName'] for p in pods})==2, (cluster,'backend replicas must occupy both nodes')
+for index,p in enumerate(sorted(pods,key=lambda p:p['spec']['nodeName'])):
+    assert p['status']['phase']=='Running' and all(c['ready'] for c in p['status']['containerStatuses']), p['metadata']['name']
+    ip=p['status']['podIP'];assert ip
+    print(cluster,p['spec']['nodeName'],p['metadata']['name'],ip,int(index==0),sep='\t')
+PY_TOPOLOGY
+ done
 
 for port in 80 8080 31337; do
   for direction in a-to-a a-to-b b-to-b b-to-a; do
@@ -124,13 +140,25 @@ for port in 80 8080 31337; do
     assert_backend "$direction-service-$port" "$context" "$service:$port" "$expected"
   done
 done
-for port in 80 8080 31337; do
-  assert_backend "a-to-b-podip-$port" kind-cmtc-a "$pod_b:$port" cmtc-b
-  assert_backend "b-to-a-podip-$port" kind-cmtc-b "$pod_a:$port" cmtc-a
-done
+# Both clients contact every local and remote backend on every app port.
+# This covers local same/different-node paths and both remote destination nodes.
+while IFS=$'\t' read -r target_cluster node pod ip first; do
+  for source_cluster in cmtc-a cmtc-b; do
+    direction="${source_cluster#cmtc-}-to-${target_cluster#cmtc-}"
+    for port in 80 8080 31337; do
+      case_name="$direction-podip-$node-$port"
+      assert_backend "$case_name" "kind-$source_cluster" "$ip:$port" "$target_cluster" "$pod"
+      if [ "$source_cluster" != "$target_cluster" ] && [ "$first" = 1 ]; then
+        # Preserve the previous artifact names as aliases of this run's first
+        # remote Pod checks; no stale earlier-run response is reused.
+        cp "artifacts/clustermesh-$case_name.json" "artifacts/clustermesh-$direction-podip-$port.json"
+      fi
+    done
+  done
+done < artifacts/clustermesh-backends.tsv
 python3 - <<'PY'
 import json,pathlib
-result={'policyReconciliation':'passed','exclusionAndPlatformPrecedence':'passed','uidRecreation':'passed','policyConflicts':'passed','strictModeRejected':'passed','readOnlyNamespaceRBAC':'passed','reusedShopAllowedAndDenied':'passed','applicationPorts':[80,8080,31337],'bidirectionalGlobalService':['cmtc-a-to-cmtc-a','cmtc-a-to-cmtc-b','cmtc-b-to-cmtc-b','cmtc-b-to-cmtc-a'],'bidirectionalPodIP':['cmtc-a-to-cmtc-b','cmtc-b-to-cmtc-a'],'workloadMTLS':'blocked: the Observe profile does not enable ztunnel/SPIRE','layeredEncryption':'blocked: composition pending'}
+result={'policyReconciliation':'passed','exclusionAndPlatformPrecedence':'passed','uidRecreation':'passed','policyConflicts':'passed','strictModeRejected':'passed','readOnlyNamespaceRBAC':'passed','reusedShopAllowedAndDenied':'passed','applicationPorts':[80,8080,31337],'pathChecks':36,'backendTopology':'one replica on each node in each cluster','bidirectionalGlobalService':['cmtc-a-to-cmtc-a','cmtc-a-to-cmtc-b','cmtc-b-to-cmtc-b','cmtc-b-to-cmtc-a'],'bidirectionalPodIP':['cmtc-a-to-cmtc-b','cmtc-b-to-cmtc-a'],'workloadMTLS':'blocked: the Observe profile does not enable ztunnel/SPIRE','layeredEncryption':'blocked: composition pending'}
 pathlib.Path('artifacts/results.json').write_text(json.dumps(result,indent=2)+'\n')
 PY
 echo 'PASS: deployed CMTC observation API, controller, node agents and baseline ClusterMesh assertions'

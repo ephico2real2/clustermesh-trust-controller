@@ -24,6 +24,8 @@ data:
       listen 8080;
       listen 31337;
       default_type application/json;
+      add_header X-CMTC-Cluster "cmtc-a" always;
+      add_header X-CMTC-Pod $hostname always;
       location / { root /usr/share/nginx/html; }
     }
 ---
@@ -33,6 +35,9 @@ metadata:
   name: rebel-base
 spec:
   replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate: {maxSurge: 0, maxUnavailable: 1}
   selector:
     matchLabels: {name: rebel-base}
   template:
@@ -40,6 +45,19 @@ spec:
       labels: {name: rebel-base, mesh.cmtc.io/cluster: cmtc-a}
     spec:
       serviceAccountName: rebel-base
+      # The owned kind fixture has one control-plane and one worker per cluster.
+      # Explicitly spread ordinary demo Pods; this does not enroll hostNetwork
+      # or Kubernetes control-plane workloads into CMTC protection.
+      tolerations:
+        - key: node-role.kubernetes.io/control-plane
+          operator: Exists
+          effect: NoSchedule
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchLabels: {name: rebel-base}
+              topologyKey: kubernetes.io/hostname
       containers:
         - name: nginx
           image: nginx:1.27-alpine

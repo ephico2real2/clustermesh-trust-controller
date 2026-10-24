@@ -1,0 +1,129 @@
+Warning: resource namespaces/payments-alpha is missing the kubectl.kubernetes.io/last-applied-configuration annotation which is required by kubectl apply. kubectl apply should only be used on resources created declaratively by either kubectl create --save-config or kubectl apply. The missing annotation will be patched automatically.
+namespace/payments-alpha configured
+namespace/orders-delta unchanged
+namespace/legacy-payments unchanged
+namespace/cmtc-platform-fixture unchanged
+namespace/cf2cnp-lab unlabeled
+namespace/mesh-example unlabeled
+namespace/payments-alpha not labeled
+namespace/legacy-payments not labeled
+namespace/cmtc-platform-fixture not labeled
+namespace/orders-delta not labeled
+NEGATIVE TEST cmtc-a: the API must reject unsupported Strict mode; this rejection is expected
+PASS cmtc-a: API rejected unsupported Strict mode as expected (full response: artifacts/cmtc-a-strict-rejection.txt)
+namespace/payments-alpha labeled
+namespace "payments-alpha" deleted
+namespace/payments-alpha created
+namespace/payments-alpha labeled
+namespacemtlspolicy.security.cmtc.io/conflicting-policy created
+namespacemtlspolicy.security.cmtc.io "conflicting-policy" deleted
+Warning: resource 'namespaces' is not namespace scoped
+
+no
+no
+Warning: resource namespaces/payments-alpha is missing the kubectl.kubernetes.io/last-applied-configuration annotation which is required by kubectl apply. kubectl apply should only be used on resources created declaratively by either kubectl create --save-config or kubectl apply. The missing annotation will be patched automatically.
+namespace/payments-alpha configured
+namespace/orders-delta unchanged
+namespace/legacy-payments unchanged
+namespace/cmtc-platform-fixture unchanged
+namespace/cf2cnp-lab unlabeled
+namespace/mesh-example unlabeled
+namespace/payments-alpha not labeled
+namespace/legacy-payments not labeled
+namespace/cmtc-platform-fixture not labeled
+namespace/orders-delta not labeled
+NEGATIVE TEST cmtc-b: the API must reject unsupported Strict mode; this rejection is expected
+PASS cmtc-b: API rejected unsupported Strict mode as expected (full response: artifacts/cmtc-b-strict-rejection.txt)
+namespace/payments-alpha labeled
+namespace "payments-alpha" deleted
+namespace/payments-alpha created
+namespace/payments-alpha labeled
+namespacemtlspolicy.security.cmtc.io/conflicting-policy created
+namespacemtlspolicy.security.cmtc.io "conflicting-policy" deleted
+Warning: resource 'namespaces' is not namespace scoped
+
+no
+no
+namespace/cf2cnp-lab unchanged
+deployment.apps/shop unchanged
+service/shop unchanged
+pod/pos unchanged
+pod/stranger unchanged
+ciliumnetworkpolicy.cilium.io/shop-allow-pos unchanged
+deployment "shop" successfully rolled out
+pod/pos condition met
+pod/stranger condition met
+namespace/mesh-example unchanged
+service/rebel-base-cmtc-a unchanged
+service/rebel-base-cmtc-b unchanged
+namespace/cf2cnp-lab labeled
+namespace/mesh-example labeled
+namespace/cf2cnp-lab unchanged
+deployment.apps/shop unchanged
+service/shop unchanged
+pod/pos unchanged
+pod/stranger unchanged
+ciliumnetworkpolicy.cilium.io/shop-allow-pos unchanged
+deployment "shop" successfully rolled out
+pod/pos condition met
+pod/stranger condition met
+namespace/mesh-example unchanged
+service/rebel-base-cmtc-a unchanged
+service/rebel-base-cmtc-b unchanged
+namespace/cf2cnp-lab labeled
+namespace/mesh-example labeled
+serviceaccount/rebel-base unchanged
+configmap/rebel-base-response unchanged
+configmap/rebel-base-nginx unchanged
+deployment.apps/rebel-base unchanged
+serviceaccount/rebel-base unchanged
+configmap/rebel-base-response unchanged
+configmap/rebel-base-nginx unchanged
+deployment.apps/rebel-base unchanged
+deployment "rebel-base" successfully rolled out
+deployment "rebel-base" successfully rolled out
+pod "mesh-client" deleted from mesh-example namespace
+serviceaccount/mesh-client unchanged
+pod/mesh-client created
+pod/mesh-client condition met
+pod "mesh-client" deleted from mesh-example namespace
+serviceaccount/mesh-client unchanged
+pod/mesh-client created
+pod/mesh-client condition met
+PASS a-to-a-service-80: rebel-base-cmtc-a:80 returned the cmtc-a backend
+PASS a-to-b-service-80: rebel-base-cmtc-b:80 returned the cmtc-b backend
+PASS b-to-b-service-80: rebel-base-cmtc-b:80 returned the cmtc-b backend
+PASS b-to-a-service-80: rebel-base-cmtc-a:80 returned the cmtc-a backend
+PASS a-to-a-service-8080: rebel-base-cmtc-a:8080 returned the cmtc-a backend
+PASS a-to-b-service-8080: rebel-base-cmtc-b:8080 returned the cmtc-b backend
+PASS b-to-b-service-8080: rebel-base-cmtc-b:8080 returned the cmtc-b backend
+PASS b-to-a-service-8080: rebel-base-cmtc-a:8080 returned the cmtc-a backend
+PASS a-to-a-service-31337: rebel-base-cmtc-a:31337 returned the cmtc-a backend
+PASS a-to-b-service-31337: rebel-base-cmtc-b:31337 returned the cmtc-b backend
+PASS b-to-b-service-31337: rebel-base-cmtc-b:31337 returned the cmtc-b backend
+PASS b-to-a-service-31337: rebel-base-cmtc-a:31337 returned the cmtc-a backend
+PASS a-to-a-podip-cmtc-a-control-plane-80: 10.10.0.50:80 returned the cmtc-a backend / rebel-base-688ff9949b-7cbrt
+PASS a-to-a-podip-cmtc-a-control-plane-8080: 10.10.0.50:8080 returned the cmtc-a backend / rebel-base-688ff9949b-7cbrt
+PASS a-to-a-podip-cmtc-a-control-plane-31337: 10.10.0.50:31337 returned the cmtc-a backend / rebel-base-688ff9949b-7cbrt
+PASS b-to-a-podip-cmtc-a-control-plane-80: 10.10.0.50:80 returned the cmtc-a backend / rebel-base-688ff9949b-7cbrt
+PASS b-to-a-podip-cmtc-a-control-plane-8080: 10.10.0.50:8080 returned the cmtc-a backend / rebel-base-688ff9949b-7cbrt
+PASS b-to-a-podip-cmtc-a-control-plane-31337: 10.10.0.50:31337 returned the cmtc-a backend / rebel-base-688ff9949b-7cbrt
+PASS a-to-a-podip-cmtc-a-worker-80: 10.10.1.33:80 returned the cmtc-a backend / rebel-base-688ff9949b-hq6g9
+PASS a-to-a-podip-cmtc-a-worker-8080: 10.10.1.33:8080 returned the cmtc-a backend / rebel-base-688ff9949b-hq6g9
+PASS a-to-a-podip-cmtc-a-worker-31337: 10.10.1.33:31337 returned the cmtc-a backend / rebel-base-688ff9949b-hq6g9
+PASS b-to-a-podip-cmtc-a-worker-80: 10.10.1.33:80 returned the cmtc-a backend / rebel-base-688ff9949b-hq6g9
+PASS b-to-a-podip-cmtc-a-worker-8080: 10.10.1.33:8080 returned the cmtc-a backend / rebel-base-688ff9949b-hq6g9
+PASS b-to-a-podip-cmtc-a-worker-31337: 10.10.1.33:31337 returned the cmtc-a backend / rebel-base-688ff9949b-hq6g9
+PASS a-to-b-podip-cmtc-b-control-plane-80: 10.20.0.48:80 returned the cmtc-b backend / rebel-base-7cbb476f7-rf9bf
+PASS a-to-b-podip-cmtc-b-control-plane-8080: 10.20.0.48:8080 returned the cmtc-b backend / rebel-base-7cbb476f7-rf9bf
+PASS a-to-b-podip-cmtc-b-control-plane-31337: 10.20.0.48:31337 returned the cmtc-b backend / rebel-base-7cbb476f7-rf9bf
+PASS b-to-b-podip-cmtc-b-control-plane-80: 10.20.0.48:80 returned the cmtc-b backend / rebel-base-7cbb476f7-rf9bf
+PASS b-to-b-podip-cmtc-b-control-plane-8080: 10.20.0.48:8080 returned the cmtc-b backend / rebel-base-7cbb476f7-rf9bf
+PASS b-to-b-podip-cmtc-b-control-plane-31337: 10.20.0.48:31337 returned the cmtc-b backend / rebel-base-7cbb476f7-rf9bf
+PASS a-to-b-podip-cmtc-b-worker-80: 10.20.1.211:80 returned the cmtc-b backend / rebel-base-7cbb476f7-5wkhd
+PASS a-to-b-podip-cmtc-b-worker-8080: 10.20.1.211:8080 returned the cmtc-b backend / rebel-base-7cbb476f7-5wkhd
+PASS a-to-b-podip-cmtc-b-worker-31337: 10.20.1.211:31337 returned the cmtc-b backend / rebel-base-7cbb476f7-5wkhd
+PASS b-to-b-podip-cmtc-b-worker-80: 10.20.1.211:80 returned the cmtc-b backend / rebel-base-7cbb476f7-5wkhd
+PASS b-to-b-podip-cmtc-b-worker-8080: 10.20.1.211:8080 returned the cmtc-b backend / rebel-base-7cbb476f7-5wkhd
+PASS b-to-b-podip-cmtc-b-worker-31337: 10.20.1.211:31337 returned the cmtc-b backend / rebel-base-7cbb476f7-5wkhd
+PASS: deployed CMTC observation API, controller, node agents and baseline ClusterMesh assertions
