@@ -52,3 +52,20 @@ CMTC has no separate KVStoreMesh deployment or direct storage dependency on it. 
 The Hubble dashboard workflow accepts the same published lock through `image_lock_url` with its matching `source_sha`; it tests real external Gateway, pod Gateway and direct-pod load before before/after PNGs. This is a separate observability qualification from the CMTC two-cluster Observe baseline.
 
 The Fortio Jobs write their JSON to an emptyDir from a non-root init container. A separate results container prints only the JSON after the load finishes; init-container console logs are retained separately. This avoids Kubernetes merging console output into the result document.
+
+## Run the meshing scripts on this MacBook
+
+Run the Linux lab scripts inside the dedicated Colima VM, where kind node addresses and Docker host networking are reachable. The existing profile is `cmtc-cilium` (8 CPUs, 16 GiB RAM); `/private/tmp` is mounted at the same path on both sides. Its local lab checkout is `/private/tmp/cmtc-mac-qualification`. The running `cmtc-a` and `cmtc-b` clusters use the lock in this repository; the [local qualification](https://github.com/ephico2real2/clustermesh-trust-controller/tree/18d063335fb130770003c915cb1bed1ee87528fc/2026-10-24T0033Z_cmtc_local-macos-arm64) records the actual agent source and all component digests.
+
+```sh
+colima -p cmtc-cilium ssh
+cd /private/tmp/cmtc-mac-qualification
+export PATH="$PWD/.tmp/bin:$PATH"
+kubectl --context kind-cmtc-a get nodes
+cilium clustermesh status --context kind-cmtc-a
+cilium clustermesh status --context kind-cmtc-b
+```
+
+The VM needs `fs.inotify.max_user_instances=8192` for the multi-node lab. Its initial value of 128 caused a Cilium worker to fail with `couldn't initialize inotify: too many open files`; the tested setting is persisted in `/etc/sysctl.d/99-cmtc-kind.conf` inside this dedicated VM. `fs.inotify.max_user_watches` is 1048576. These are Linux VM settings.
+
+For a fresh run, use `scripts/lab/ci-bootstrap.sh`, `make image`, `make capture-image`, `make lab-up`, `make lab-test`, `bash scripts/lab/load.sh start`, `make lab-capture`, `bash scripts/lab/load.sh collect` and `make lab-evidence` inside the VM. Set `GITHUB_PATH` to a temporary file for the bootstrap's tool-path output, then add `.tmp/bin` to `PATH`. `make lab-up` refuses to replace existing cluster names; `make lab-down` removes only the clusters recorded by that checkout. Keep generated files and signing material outside published evidence.

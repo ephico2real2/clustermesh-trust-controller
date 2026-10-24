@@ -2,6 +2,33 @@
 
 ## Current evidence
 
+2026-10-23: [CMTC PR #4](https://github.com/ephico2real2/clustermesh-trust-controller/pull/4) merged the public GHCR bundle and separate Fortio JSON collection. [Feature-head CI 40043884931](https://github.com/ephico2real2/clustermesh-trust-controller/actions/runs/40043884931) passed at `dbb56598e5f7c64228c7a818e03188140f9e7b4c`; [merged-main CI 40046157600](https://github.com/ephico2real2/clustermesh-trust-controller/actions/runs/40046157600) passed at `90f6bc647a88a1c6b1b00fd0203a4b49f7537b83`.
+
+Both clusters used our agent, generic operator and ClusterMesh API server digest pins with the chart/CRDs from image source `93041b3f7ec55ff12c83ecd266f14fb392ea5c93`. Runtime image IDs and agent source versions were asserted. The [final publisher run](https://github.com/ephico2real2/cilium/actions/runs/40041922977) passed, and anonymous registry reads confirmed AMD64/ARM64 in all three image indices.
+
+The same scripts passed locally on this MacBook in the dedicated Colima Ubuntu 24.04.4 ARM64 VM (8 CPUs, 16 GiB, kernel 6.8.0-117-generic). Each cluster had two Ready nodes and reported 2/2 node connections plus 1/1 KVStoreMesh connections to its peer. Policy selection/exclusion, namespace recreation, conflict recovery, read-only RBAC, allowed/denied shop requests and the remote-only Global Service all passed. The default inotify instance limit of 128 caused a worker agent startup failure; raising it to 8192 resolved the failure and was persisted inside this lab VM.
+
+| Six-minute local Fortio stream | Requests | HTTP 200 | Actual req/s |
+|---|---:|---:|---:|
+| Cluster A shop | 7,200 | 7,200 | 19.997 |
+| Cluster B shop | 7,200 | 7,200 | 19.997 |
+| Cluster A to remote-only B backend | 3,600 | 3,600 | 9.997 |
+| Total | 18,000 | 18,000 | |
+
+The feature-head AMD64 CI independently produced the same request counts and 100% HTTP 200 responses. All eleven browser pages rendered during active load; the Observe dashboard had data in all six panels, with four selected namespaces and two inventory agents per cluster and enforcement availability zero. The nine future security dashboards explicitly retained blocked feature-evidence verdicts. [Local screenshots, load JSON, mesh status and image proof](https://github.com/ephico2real2/clustermesh-trust-controller/tree/18d063335fb130770003c915cb1bed1ee87528fc/2026-10-24T0033Z_cmtc_local-macos-arm64) and [feature-head CI screenshots](https://github.com/ephico2real2/clustermesh-trust-controller/tree/e3c1584c12dc1445a63332084aaf4964914affa0/2026-10-24T0026Z_cmtc_run40043884931-1_deployed-lab) are immutable. The local Observe PNG was visually inspected.
+
+This validates the GHCR-backed Observe/ClusterMesh baseline. ClusterMesh API TLS does not establish workload mTLS, authorization enforcement or WireGuard/IPsec composition.
+
+## Imported PoC dashboard by app
+
+The [example](../../examples/observability/hubble-l7-by-app/README.md) includes the exact demo 37 generator from PoC commit `22fb6e14c0cca8c78af1f072d1e89ebaea6a916b` and its output against the chart pinned by the GHCR lock. A checksum and regeneration check runs in the CMTC deployed-lab workflow. The separate Cilium Hubble qualification provisions this app dashboard beside the workload dashboard and uses different app/workload names to distinguish the two label families.
+
+Gateway client series can retain source namespace/workload with an empty source app. The app dashboard therefore checks namespace selection with app All, and explicit source app selection with direct-pod traffic. Its original generator omits workload CPU panels, leaving nine HTTP panels. The historical remote-workload limitation in the generator comment predates upstream #48563; the current fork already contains that upstream fix.
+
+The [local ARM64 qualification](https://github.com/ephico2real2/cilium/tree/b13bda7f2e4e30484b8caee2a7f02a180799c157/2026-10-24T0123Z_hubble_l7_by_app_local-macos-arm64) passed at helper head `c6b47722c1c4a1bd7ed8bdf62de553c4307943d7`, using the public source-matched GHCR agent/operator digests. Three fresh six-minute Fortio streams returned 151,200/151,200 HTTP 200 responses (72,000 external Gateway, 72,000 pod Gateway, 7,200 direct). All eleven browser cases passed, including all nine app panels and eleven workload panels without No data results. App All measured 399.960 requests/s, direct source app 19.980 and source namespace with app All 199.980. The copied generator hash, native agent version, deployed image references, actual Grafana 13.2.1 health response, raw load JSON and visually inspected PNGs are retained with the immutable evidence. [Focused AMD64 CI 40050031206](https://github.com/ephico2real2/cilium/actions/runs/40050031206) is the corresponding fresh-cluster qualification; check its final result before treating it as passed.
+
+## Earlier released-image Observe evidence
+
 2026-10-23: [CI run 40020608206](https://github.com/ephico2real2/clustermesh-trust-controller/actions/runs/40020608206) passed both jobs at implementation commit `f81b955948d33ad187ed6891aca7c348ec27197e`.
 
 - Both clusters passed policy/inventory, application allow/deny and remote Global Service assertions. The expected unsupported-Strict rejection is now explicitly reported as a passing negative test; the complete API response is retained per cluster.

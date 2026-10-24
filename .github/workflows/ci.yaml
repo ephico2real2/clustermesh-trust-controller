@@ -67,6 +67,11 @@ jobs:
           set -o pipefail
           mkdir -p artifacts
           bash scripts/lab/up.sh 2>&1 | tee artifacts/bring-up.log
+      - name: Reproduce the imported PoC Hubble app dashboard from the pinned chart
+        run: |
+          chart=$(cat .tmp/cilium-chart-path)
+          python3 examples/observability/hubble-l7-by-app/check.py \
+            "$chart/files/hubble/dashboards/hubble-l7-http-metrics-by-workload.json"
       - name: Reconcile policies, exercise imported apps and assert failures
         run: |
           set -o pipefail
