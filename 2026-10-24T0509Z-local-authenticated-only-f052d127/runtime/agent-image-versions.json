@@ -1,0 +1,194 @@
+[
+  {
+    "pod": "cilium-hw8bz",
+    "node": "cmtc-mtls-worker",
+    "version": "cilium-agent 1.21.0-dev f052d1276b 2026-10-23T23:35:58-05:00 go version go1.27.1 linux/arm64",
+    "images": [
+      {
+        "containerID": "containerd://28136652cea8b3ca753a1959041a80fc8c5ac1b5d2760b69e1534e2447e0f596",
+        "image": "localhost/cilium:require-mtls",
+        "imageID": "docker.io/library/import-2026-10-24@sha256:a58a2be98d868acea211d96ff5038a9acde6f80c6a4f0d50dbc081a47cfd2cc9",
+        "lastState": {},
+        "name": "cilium-agent",
+        "ready": true,
+        "resources": {},
+        "restartCount": 0,
+        "started": true,
+        "state": {
+          "running": {
+            "startedAt": "2026-10-24T04:42:32Z"
+          }
+        },
+        "user": {
+          "linux": {
+            "gid": 0,
+            "supplementalGroups": [
+              0
+            ],
+            "uid": 0
+          }
+        },
+        "volumeMounts": [
+          {
+            "mountPath": "/run/spire/sockets",
+            "name": "spire-agent-socket"
+          },
+          {
+            "mountPath": "/var/run/cilium/envoy/sockets",
+            "name": "envoy-sockets"
+          },
+          {
+            "mountPath": "/host/proc/sys/net",
+            "name": "host-proc-sys-net"
+          },
+          {
+            "mountPath": "/host/proc/sys/kernel",
+            "name": "host-proc-sys-kernel"
+          },
+          {
+            "mountPath": "/sys/fs/bpf",
+            "name": "bpf-maps"
+          },
+          {
+            "mountPath": "/var/run/cilium",
+            "name": "cilium-run"
+          },
+          {
+            "mountPath": "/var/run/cilium/netns",
+            "name": "cilium-netns"
+          },
+          {
+            "mountPath": "/host/etc/cni/net.d",
+            "name": "etc-cni-netd"
+          },
+          {
+            "mountPath": "/var/lib/cilium/clustermesh",
+            "name": "clustermesh-secrets",
+            "readOnly": true,
+            "recursiveReadOnly": "Disabled"
+          },
+          {
+            "mountPath": "/lib/modules",
+            "name": "lib-modules",
+            "readOnly": true,
+            "recursiveReadOnly": "Disabled"
+          },
+          {
+            "mountPath": "/run/xtables.lock",
+            "name": "xtables-lock"
+          },
+          {
+            "mountPath": "/etc/ztunnel",
+            "name": "cilium-ztunnel-secrets"
+          },
+          {
+            "mountPath": "/tmp",
+            "name": "tmp"
+          },
+          {
+            "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount",
+            "name": "kube-api-access-7qdzm",
+            "readOnly": true,
+            "recursiveReadOnly": "Disabled"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "pod": "cilium-wdjz7",
+    "node": "cmtc-mtls-control-plane",
+    "version": "cilium-agent 1.21.0-dev f052d1276b 2026-10-23T23:35:58-05:00 go version go1.27.1 linux/arm64",
+    "images": [
+      {
+        "containerID": "containerd://d9cf4004cfff3d2f2d76edfa4a79a3a4f7845b4123bf4f609904b48764f68cf1",
+        "image": "localhost/cilium:require-mtls",
+        "imageID": "docker.io/library/import-2026-10-24@sha256:a58a2be98d868acea211d96ff5038a9acde6f80c6a4f0d50dbc081a47cfd2cc9",
+        "lastState": {},
+        "name": "cilium-agent",
+        "ready": true,
+        "resources": {},
+        "restartCount": 0,
+        "started": true,
+        "state": {
+          "running": {
+            "startedAt": "2026-10-24T04:42:32Z"
+          }
+        },
+        "user": {
+          "linux": {
+            "gid": 0,
+            "supplementalGroups": [
+              0
+            ],
+            "uid": 0
+          }
+        },
+        "volumeMounts": [
+          {
+            "mountPath": "/run/spire/sockets",
+            "name": "spire-agent-socket"
+          },
+          {
+            "mountPath": "/var/run/cilium/envoy/sockets",
+            "name": "envoy-sockets"
+          },
+          {
+            "mountPath": "/host/proc/sys/net",
+            "name": "host-proc-sys-net"
+          },
+          {
+            "mountPath": "/host/proc/sys/kernel",
+            "name": "host-proc-sys-kernel"
+          },
+          {
+            "mountPath": "/sys/fs/bpf",
+            "name": "bpf-maps"
+          },
+          {
+            "mountPath": "/var/run/cilium",
+            "name": "cilium-run"
+          },
+          {
+            "mountPath": "/var/run/cilium/netns",
+            "name": "cilium-netns"
+          },
+          {
+            "mountPath": "/host/etc/cni/net.d",
+            "name": "etc-cni-netd"
+          },
+          {
+            "mountPath": "/var/lib/cilium/clustermesh",
+            "name": "clustermesh-secrets",
+            "readOnly": true,
+            "recursiveReadOnly": "Disabled"
+          },
+          {
+            "mountPath": "/lib/modules",
+            "name": "lib-modules",
+            "readOnly": true,
+            "recursiveReadOnly": "Disabled"
+          },
+          {
+            "mountPath": "/run/xtables.lock",
+            "name": "xtables-lock"
+          },
+          {
+            "mountPath": "/etc/ztunnel",
+            "name": "cilium-ztunnel-secrets"
+          },
+          {
+            "mountPath": "/tmp",
+            "name": "tmp"
+          },
+          {
+            "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount",
+            "name": "kube-api-access-sc2l4",
+            "readOnly": true,
+            "recursiveReadOnly": "Disabled"
+          }
+        ]
+      }
+    ]
+  }
+]

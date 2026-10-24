@@ -1,0 +1,19 @@
+CGO_ENABLED=0 GOARCH=arm64 go build -mod=vendor -ldflags '-X "github.com/cilium/cilium/pkg/version.ciliumVersion=1.21.0-dev f052d1276b 2026-10-23T23:35:58-05:00" -s -w -X "github.com/cilium/cilium/pkg/envoy.requiredEnvoyVersionSHA=8cc5db890b41fe2417751ce28c23babe4b28e8b3" ' -tags=osusergo -buildvcs=false -o cilium-agent
+STEP 1/3: FROM ghcr.io/ephico2real2/cilium-dev@sha256:15cc5402e93416e8ff71f24b79b0fc1e6b3837f0c4c216b0eb377b8d47b92d68
+Trying to pull ghcr.io/ephico2real2/cilium-dev@sha256:15cc5402e93416e8ff71f24b79b0fc1e6b3837f0c4c216b0eb377b8d47b92d68...
+Getting image source signatures
+Copying blob sha256:8511455bc868528f8643053d7f98dda2846ebf767bd3a05f58fb4c865bc76729
+Copying blob sha256:08a49360f6a8858a3ffcebcc1c695a78a7fb35751e3973966f347e721e605011
+Copying blob sha256:bd3f13f2c7df97f483bf6a763babe4e73a14caf5feec5e58c58779454a14bde1
+Copying blob sha256:b13da56005e7f070c3cc7838c5de18548d39b64b934feb707c04d58a3c6cc683
+Copying blob sha256:33e2968501dc2defdc31ccd86a7ec1485a9393ea1b7a1fe636aef1d93754dce8
+Copying config sha256:7c0f68ceefd8e5c615fc32e3f80e661bf97fab23415c86971d4d33c59b5cde7f
+Writing manifest to image destination
+STEP 2/3: COPY cilium-agent /usr/bin/cilium-agent
+--> 3b9e8466ed4f
+STEP 3/3: LABEL "org.opencontainers.image.revision"="f052d1276b0fb1619809db0059fbbb7898c9cfae" "org.opencontainers.image.source"="https://github.com/ephico2real2/cilium"
+COMMIT localhost/cilium:require-mtls
+--> 0f3a6f60cbb6
+Successfully tagged localhost/cilium:require-mtls
+0f3a6f60cbb61700e0760536bf7fe0cbe5678a26c2f0e968505ec962a519d8dc
+cilium-agent 1.21.0-dev f052d1276b 2026-10-23T23:35:58-05:00 go version go1.27.1 linux/arm64

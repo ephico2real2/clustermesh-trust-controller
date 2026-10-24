@@ -1,0 +1,14 @@
+{
+  "apiVersion": "v1",
+  "kind": "ConfigMap",
+  "data": {
+    "nginx.conf": "events {}\nhttp { server { listen 80; listen 8080; listen 9443; location / { return 200 \"CMTC-authenticated-only\\n\"; } } }\n"
+  },
+  "metadata": {
+    "name": "auth-only-nginx",
+    "namespace": "mtls-spike",
+    "annotations": {
+      "security.cmtc.io/fixture-id": "24d6aece-e148-480b-8afb-2943d0a54356"
+    }
+  }
+}

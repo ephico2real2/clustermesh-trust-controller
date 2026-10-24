@@ -1,0 +1,1529 @@
+diff --git a/Documentation/cmdref/cilium-agent.md b/Documentation/cmdref/cilium-agent.md
+index a0f8c16508..b503d6dae3 100644
+--- a/Documentation/cmdref/cilium-agent.md
++++ b/Documentation/cmdref/cilium-agent.md
+@@ -356,6 +356,7 @@ cilium-agent [flags]
+       --log-system-load                                           Enable periodic logging of system load
+       --lrp-address-matcher-cidrs strings                         Limit address matches to specific CIDRs
+       --max-connected-clusters uint32                             Maximum number of clusters to be connected in a clustermesh. Increasing this value will reduce the maximum number of identities available. Valid configurations are [255, 511]. (default 255)
++      --mesh-auth-spiffe-trust-domain string                      SPIFFE trust domain for ztunnel workloads (default "cluster.local")
+       --metrics strings                                           Metrics that should be enabled or disabled from the default metric list. (+metric_foo to enable metric_foo, -metric_bar to disable metric_bar)
+       --metrics-sampling-interval duration                        Set the internal metrics sampling interval (default 5m0s)
+       --monitor-aggregation string                                Level of monitor aggregation for traces from the datapath (default "None")
+@@ -450,6 +451,7 @@ cilium-agent [flags]
+       --vtep-sync-interval duration                               Interval for VTEP sync (default 1m0s)
+       --wireguard-persistent-keepalive duration                   The Wireguard keepalive interval as a Go duration string
+       --write-cni-conf-when-ready string                          Write the CNI configuration to the specified path when agent is ready
++      --ztunnel-ca-type string                                    Workload CA backend: internal or spire (default "internal")
+ ```
+ 
+ ### SEE ALSO
+diff --git a/Documentation/cmdref/cilium-agent_hive.md b/Documentation/cmdref/cilium-agent_hive.md
+index ef0948382b..9b24a579bf 100644
+--- a/Documentation/cmdref/cilium-agent_hive.md
++++ b/Documentation/cmdref/cilium-agent_hive.md
+@@ -223,6 +223,7 @@ cilium-agent hive [flags]
+       --lb-state-file string                                      Synchronize load-balancing state from the specified file
+       --lrp-address-matcher-cidrs strings                         Limit address matches to specific CIDRs
+       --max-connected-clusters uint32                             Maximum number of clusters to be connected in a clustermesh. Increasing this value will reduce the maximum number of identities available. Valid configurations are [255, 511]. (default 255)
++      --mesh-auth-spiffe-trust-domain string                      SPIFFE trust domain for ztunnel workloads (default "cluster.local")
+       --metrics strings                                           Metrics that should be enabled or disabled from the default metric list. (+metric_foo to enable metric_foo, -metric_bar to disable metric_bar)
+       --metrics-sampling-interval duration                        Set the internal metrics sampling interval (default 5m0s)
+       --monitor-queue-size int                                    Size of the event queue when reading monitor events
+@@ -288,6 +289,7 @@ cilium-agent hive [flags]
+       --vtep-sync-interval duration                               Interval for VTEP sync (default 1m0s)
+       --wireguard-persistent-keepalive duration                   The Wireguard keepalive interval as a Go duration string
+       --write-cni-conf-when-ready string                          Write the CNI configuration to the specified path when agent is ready
++      --ztunnel-ca-type string                                    Workload CA backend: internal or spire (default "internal")
+ ```
+ 
+ ### SEE ALSO
+diff --git a/Documentation/cmdref/cilium-agent_hive_dot-graph.md b/Documentation/cmdref/cilium-agent_hive_dot-graph.md
+index 715eb031d1..5acf856619 100644
+--- a/Documentation/cmdref/cilium-agent_hive_dot-graph.md
++++ b/Documentation/cmdref/cilium-agent_hive_dot-graph.md
+@@ -228,6 +228,7 @@ cilium-agent hive dot-graph [flags]
+       --lb-state-file string                                      Synchronize load-balancing state from the specified file
+       --lrp-address-matcher-cidrs strings                         Limit address matches to specific CIDRs
+       --max-connected-clusters uint32                             Maximum number of clusters to be connected in a clustermesh. Increasing this value will reduce the maximum number of identities available. Valid configurations are [255, 511]. (default 255)
++      --mesh-auth-spiffe-trust-domain string                      SPIFFE trust domain for ztunnel workloads (default "cluster.local")
+       --metrics strings                                           Metrics that should be enabled or disabled from the default metric list. (+metric_foo to enable metric_foo, -metric_bar to disable metric_bar)
+       --metrics-sampling-interval duration                        Set the internal metrics sampling interval (default 5m0s)
+       --monitor-queue-size int                                    Size of the event queue when reading monitor events
+@@ -293,6 +294,7 @@ cilium-agent hive dot-graph [flags]
+       --vtep-sync-interval duration                               Interval for VTEP sync (default 1m0s)
+       --wireguard-persistent-keepalive duration                   The Wireguard keepalive interval as a Go duration string
+       --write-cni-conf-when-ready string                          Write the CNI configuration to the specified path when agent is ready
++      --ztunnel-ca-type string                                    Workload CA backend: internal or spire (default "internal")
+ ```
+ 
+ ### SEE ALSO
+diff --git a/install/kubernetes/cilium/README.md b/install/kubernetes/cilium/README.md
+index 7102657fb0..d85437c8a8 100644
+--- a/install/kubernetes/cilium/README.md
++++ b/install/kubernetes/cilium/README.md
+@@ -398,7 +398,7 @@ contributors across the globe, there is almost always someone available to help.
+ | encryption.strictMode.ingress.enabled | bool | `false` | Enable strict ingress encryption. When enabled, all unencrypted pod-to-pod ingress traffic will be dropped. This option requires WireGuard encryption. |
+ | encryption.type | string | `"ipsec"` | Encryption method. Can be one of ipsec, wireguard or ztunnel. |
+ | encryption.wireguard.persistentKeepalive | string | `"0s"` | Controls WireGuard PersistentKeepalive option. Set 0s to disable. |
+-| encryption.ztunnel | object | `{"affinity":{},"annotations":{},"ca":{"type":"internal"},"caAddress":"https://localhost:15012","extraEnv":[],"extraVolumeMounts":[],"extraVolumes":[],"healthPort":15021,"image":{"digest":"sha256:884de5adde400e39f58e36c7a729f7690466ca4a8eb4c2a8daa9c1c025115b24","override":null,"pullPolicy":"Always","repository":"quay.io/cilium/ztunnel","tag":"v1.0.0","useDigest":true},"minReadySeconds":0,"nodeSelector":{"kubernetes.io/os":"linux"},"podAnnotations":{},"podLabels":{},"priorityClassName":null,"readinessProbe":{"failureThreshold":3,"initialDelaySeconds":0,"periodSeconds":10},"resources":{"requests":{"cpu":"200m","memory":"512Mi"}},"secrets":{"bootstrapRootCert":null},"terminationGracePeriodSeconds":30,"tolerations":[{"effect":"NoSchedule","operator":"Exists"},{"key":"CriticalAddonsOnly","operator":"Exists"},{"effect":"NoExecute","operator":"Exists"}],"updateStrategy":{"rollingUpdate":{"maxSurge":1,"maxUnavailable":0},"type":"RollingUpdate"}}` | ztunnel encryption configuration. ztunnel is Istio's purpose-built, per-node proxy for handling L4 traffic in ambient mesh mode. These settings only apply when encryption.type is set to "ztunnel". |
++| encryption.ztunnel | object | `{"affinity":{},"annotations":{},"ca":{"type":"internal"},"caAddress":"https://localhost:15012","extraEnv":[],"extraVolumeMounts":[],"extraVolumes":[],"healthPort":15021,"image":{"digest":"sha256:884de5adde400e39f58e36c7a729f7690466ca4a8eb4c2a8daa9c1c025115b24","override":null,"pullPolicy":"Always","repository":"quay.io/cilium/ztunnel","tag":"v1.0.0","useDigest":true},"minReadySeconds":0,"nodeSelector":{"kubernetes.io/os":"linux"},"podAnnotations":{},"podLabels":{},"priorityClassName":null,"readinessProbe":{"failureThreshold":3,"initialDelaySeconds":0,"periodSeconds":10},"requireMtls":false,"resources":{"requests":{"cpu":"200m","memory":"512Mi"}},"secrets":{"bootstrapRootCert":null},"spire":{"containerRuntimeSocketPath":"/run/containerd/containerd.sock"},"terminationGracePeriodSeconds":30,"tolerations":[{"effect":"NoSchedule","operator":"Exists"},{"key":"CriticalAddonsOnly","operator":"Exists"},{"effect":"NoExecute","operator":"Exists"}],"updateStrategy":{"rollingUpdate":{"maxSurge":1,"maxUnavailable":0},"type":"RollingUpdate"}}` | ztunnel encryption configuration. ztunnel is Istio's purpose-built, per-node proxy for handling L4 traffic in ambient mesh mode. These settings only apply when encryption.type is set to "ztunnel". |
+ | encryption.ztunnel.affinity | object | `{}` | Affinity for ztunnel pods. |
+ | encryption.ztunnel.annotations | object | `{}` | Annotations to be added to all ztunnel resources. |
+ | encryption.ztunnel.ca | object | `{"type":"internal"}` | CA backend used by ztunnel to issue workload identities. |
+@@ -415,9 +415,11 @@ contributors across the globe, there is almost always someone available to help.
+ | encryption.ztunnel.podLabels | object | `{}` | Labels to be added to ztunnel pods. |
+ | encryption.ztunnel.priorityClassName | string | `nil` | The priority class to use for ztunnel pods. |
+ | encryption.ztunnel.readinessProbe | object | `{"failureThreshold":3,"initialDelaySeconds":0,"periodSeconds":10}` | Readiness probe configuration. |
++| encryption.ztunnel.requireMtls | bool | `false` | Experimental authenticated-only inbound TCP policy for enrolled workloads. This does not establish fail-closed startup or platform probe compatibility. |
+ | encryption.ztunnel.resources | object | `{"requests":{"cpu":"200m","memory":"512Mi"}}` | ztunnel resource limits & requests. |
+ | encryption.ztunnel.secrets | object | `{"bootstrapRootCert":null}` | ztunnel secrets configuration. |
+ | encryption.ztunnel.secrets.bootstrapRootCert | string | `nil` | Base64-encoded bootstrap root certificate content. If not provided, the secret must be created manually before deploying. @schema type: [null, string] @schema |
++| encryption.ztunnel.spire.containerRuntimeSocketPath | string | `"/run/containerd/containerd.sock"` | Node CRI socket used to bind delegated SPIRE attestation to the workload PID. |
+ | encryption.ztunnel.terminationGracePeriodSeconds | int | `30` | Configure termination grace period for ztunnel DaemonSet. |
+ | encryption.ztunnel.tolerations | list | `[{"effect":"NoSchedule","operator":"Exists"},{"key":"CriticalAddonsOnly","operator":"Exists"},{"effect":"NoExecute","operator":"Exists"}]` | Node tolerations for ztunnel scheduling. |
+ | encryption.ztunnel.updateStrategy | object | `{"rollingUpdate":{"maxSurge":1,"maxUnavailable":0},"type":"RollingUpdate"}` | ztunnel update strategy. |
+diff --git a/install/kubernetes/cilium/files/spire/init.bash b/install/kubernetes/cilium/files/spire/init.bash
+index 4edb682c3a..ee59e3c021 100644
+--- a/install/kubernetes/cilium/files/spire/init.bash
++++ b/install/kubernetes/cilium/files/spire/init.bash
+@@ -43,6 +43,19 @@ do
+     spire_server entry create ${SOCKET_FLAG} -spiffeID $CILIUM_OPERATOR_SPIFFE_ID -parentID $AGENT_SPIFFE_ID $CILIUM_OPERATOR_SELECTORS
+   fi
+ 
++  {{- if and .Values.encryption.enabled (eq .Values.encryption.type "ztunnel") (eq .Values.encryption.ztunnel.ca.type "spire") }}
++  # The operator parents workload entries under this attested node alias.
++  ZTUNNEL_NODE_ID="spiffe://{{ .Values.authentication.mutual.spire.trustDomain }}/ztunnel"
++  if spire_server entry show ${SOCKET_FLAG} -spiffeID $ZTUNNEL_NODE_ID $AGENT_SELECTORS | grep -q "Found 0 entries" &> /dev/null; then
++    spire_server entry create ${SOCKET_FLAG} -spiffeID $ZTUNNEL_NODE_ID $AGENT_SELECTORS -node
++  fi
++  ZTUNNEL_PROXY_ID="spiffe://{{ .Values.authentication.mutual.spire.trustDomain }}/ztunnel-proxy"
++  ZTUNNEL_PROXY_SELECTORS="-selector k8s:ns:{{ include "cilium.namespace" . }} -selector k8s:sa:{{ .Values.serviceAccounts.ztunnel.name }}"
++  if spire_server entry show ${SOCKET_FLAG} -spiffeID $ZTUNNEL_PROXY_ID $ZTUNNEL_PROXY_SELECTORS | grep -q "Found 0 entries" &> /dev/null; then
++    spire_server entry create ${SOCKET_FLAG} -spiffeID $ZTUNNEL_PROXY_ID -parentID $ZTUNNEL_NODE_ID $ZTUNNEL_PROXY_SELECTORS
++  fi
++  {{- end }}
++
+   echo "Cilium Spire entries are initialized successfully or already in-sync"
+   sleep 30;
+ done
+diff --git a/install/kubernetes/cilium/templates/cilium-agent/daemonset.yaml b/install/kubernetes/cilium/templates/cilium-agent/daemonset.yaml
+index c520662c8c..62f4fe51e8 100644
+--- a/install/kubernetes/cilium/templates/cilium-agent/daemonset.yaml
++++ b/install/kubernetes/cilium/templates/cilium-agent/daemonset.yaml
+@@ -1053,6 +1053,17 @@ spec:
+       - name: cilium-ztunnel-secrets
+         secret:
+           secretName: cilium-ztunnel-secrets
++          items:
++            - key: bootstrap-private.key
++              path: bootstrap-private.key
++            - key: bootstrap-root.crt
++              path: bootstrap-root.crt
++            {{- if eq .Values.encryption.ztunnel.ca.type "internal" }}
++            - key: ca-private.key
++              path: ca-private.key
++            - key: ca-root.crt
++              path: ca-root.crt
++            {{- end }}
+       {{- end }}
+       {{- if .Values.cni.configMap }}
+       - name: cni-configuration
+diff --git a/install/kubernetes/cilium/templates/cilium-configmap.yaml b/install/kubernetes/cilium/templates/cilium-configmap.yaml
+index 98536ffe48..8a3dbf6407 100644
+--- a/install/kubernetes/cilium/templates/cilium-configmap.yaml
++++ b/install/kubernetes/cilium/templates/cilium-configmap.yaml
+@@ -786,6 +786,7 @@ data:
+   {{- else if eq .Values.encryption.type "ztunnel" }}
+   enable-ztunnel: {{ .Values.encryption.enabled | quote }}
+   ztunnel-ca-type: {{ .Values.encryption.ztunnel.ca.type | quote }}
++  ztunnel-require-mtls: {{ .Values.encryption.ztunnel.requireMtls | quote }}
+   {{- end }}
+   {{- if .Values.encryption.nodeEncryption }}
+   encrypt-node: {{ .Values.encryption.nodeEncryption | quote }}
+diff --git a/install/kubernetes/cilium/templates/spire/agent/configmap.yaml b/install/kubernetes/cilium/templates/spire/agent/configmap.yaml
+index 2bd63bf872..0f864f5bfa 100644
+--- a/install/kubernetes/cilium/templates/spire/agent/configmap.yaml
++++ b/install/kubernetes/cilium/templates/spire/agent/configmap.yaml
+@@ -26,6 +26,9 @@ data:
+       trust_domain = {{ .Values.authentication.mutual.spire.trustDomain | quote }}
+       authorized_delegates = [
+         "spiffe://{{ .Values.authentication.mutual.spire.trustDomain }}/cilium-agent",
++        {{- if and .Values.encryption.enabled (eq .Values.encryption.type "ztunnel") (eq .Values.encryption.ztunnel.ca.type "spire") }}
++        "spiffe://{{ .Values.authentication.mutual.spire.trustDomain }}/ztunnel-proxy",
++        {{- end }}
+       ]
+     }
+ 
+diff --git a/install/kubernetes/cilium/templates/validate.yaml b/install/kubernetes/cilium/templates/validate.yaml
+index 2946cbb74c..3789aa598f 100644
+--- a/install/kubernetes/cilium/templates/validate.yaml
++++ b/install/kubernetes/cilium/templates/validate.yaml
+@@ -263,3 +263,12 @@
+ {{- if and (.Values.networkDriver.enabled) (semverCompare "<1.34.0" (printf "%d.%d.0" (semver .Capabilities.KubeVersion.Version).Major (semver .Capabilities.KubeVersion.Version).Minor)) }}
+   {{ fail ".Values.networkDriver.enabled requires kubernetes version 1.34 or greater" }}
+ {{- end }}
++
++{{/* SPIRE credential delivery requires the agent/operator SPIRE integration. */}}
++{{- if and .Values.encryption.enabled (eq .Values.encryption.type "ztunnel") (eq .Values.encryption.ztunnel.ca.type "spire") (not .Values.authentication.mutual.spire.enabled) }}
++  {{- fail "encryption.ztunnel.ca.type=spire requires authentication.mutual.spire.enabled=true" }}
++{{- end }}
++
++{{- if and .Values.encryption.ztunnel.requireMtls (or (not .Values.encryption.enabled) (ne .Values.encryption.type "ztunnel")) }}
++  {{- fail "encryption.ztunnel.requireMtls requires encryption.enabled=true and encryption.type=ztunnel" }}
++{{- end }}
+diff --git a/install/kubernetes/cilium/templates/ztunnel/daemonset.yaml b/install/kubernetes/cilium/templates/ztunnel/daemonset.yaml
+index cff646def8..ca161c69aa 100644
+--- a/install/kubernetes/cilium/templates/ztunnel/daemonset.yaml
++++ b/install/kubernetes/cilium/templates/ztunnel/daemonset.yaml
+@@ -70,6 +70,19 @@ spec:
+               value: "/etc/ztunnel/bootstrap-root.crt"
+             - name: CA_ADDRESS
+               value: {{ .Values.encryption.ztunnel.caAddress | quote }}
++            {{- if eq .Values.encryption.ztunnel.ca.type "spire" }}
++            - name: SPIRE_ENABLED
++              value: "true"
++            - name: SPIRE_ADMIN_ENDPOINT_SOCKET
++              value: {{ printf "unix://%s" .Values.authentication.mutual.spire.adminSocketPath | quote }}
++            - name: CONTAINER_RUNTIME_SOCK_PATH
++              value: {{ .Values.encryption.ztunnel.spire.containerRuntimeSocketPath | quote }}
++            - name: TRUST_DOMAIN
++              value: {{ .Values.authentication.mutual.spire.trustDomain | quote }}
++            # The pinned SPIRE client selects its bundle using cluster_domain.
++            - name: CLUSTER_DOMAIN
++              value: {{ .Values.authentication.mutual.spire.trustDomain | quote }}
++            {{- end }}
+             - name: ISTIO_META_DNS_CAPTURE
+               value: "false"
+             - name: INPOD_UDS
+@@ -127,6 +140,14 @@ spec:
+             - mountPath: /etc/ztunnel
+               name: cilium-ztunnel-secrets
+               readOnly: true
++            {{- if eq .Values.encryption.ztunnel.ca.type "spire" }}
++            - name: spire-agent-socket
++              mountPath: {{ dir .Values.authentication.mutual.spire.adminSocketPath }}
++              readOnly: true
++            - name: container-runtime-socket
++              mountPath: {{ .Values.encryption.ztunnel.spire.containerRuntimeSocketPath | quote }}
++              readOnly: true
++            {{- end }}
+             {{- with .Values.encryption.ztunnel.extraVolumeMounts }}
+             {{- toYaml . | nindent 12 }}
+             {{- end }}
+@@ -164,6 +185,16 @@ spec:
+               - key: bootstrap-root.crt
+                 path: bootstrap-root.crt
+                 mode: 420
++        {{- if eq .Values.encryption.ztunnel.ca.type "spire" }}
++        - name: spire-agent-socket
++          hostPath:
++            path: {{ dir .Values.authentication.mutual.spire.adminSocketPath }}
++            type: DirectoryOrCreate
++        - name: container-runtime-socket
++          hostPath:
++            path: {{ .Values.encryption.ztunnel.spire.containerRuntimeSocketPath | quote }}
++            type: Socket
++        {{- end }}
+         {{- with .Values.encryption.ztunnel.extraVolumes }}
+         {{- toYaml . | nindent 8 }}
+         {{- end }}
+diff --git a/install/kubernetes/cilium/values.schema.json b/install/kubernetes/cilium/values.schema.json
+index 184e9a268f..01682088b8 100644
+--- a/install/kubernetes/cilium/values.schema.json
++++ b/install/kubernetes/cilium/values.schema.json
+@@ -2090,6 +2090,9 @@
+               },
+               "type": "object"
+             },
++            "requireMtls": {
++              "type": "boolean"
++            },
+             "resources": {
+               "properties": {
+                 "requests": {
+@@ -2117,6 +2120,14 @@
+               },
+               "type": "object"
+             },
++            "spire": {
++              "properties": {
++                "containerRuntimeSocketPath": {
++                  "type": "string"
++                }
++              },
++              "type": "object"
++            },
+             "terminationGracePeriodSeconds": {
+               "type": "integer"
+             },
+diff --git a/install/kubernetes/cilium/values.yaml b/install/kubernetes/cilium/values.yaml
+index d711e12fb6..2c46cadb07 100644
+--- a/install/kubernetes/cilium/values.yaml
++++ b/install/kubernetes/cilium/values.yaml
+@@ -1207,6 +1207,12 @@ encryption:
+       # then manages SPIRE entries for enrolled namespaces). "internal" uses
+       # Cilium's built-in CA and skips the SPIRE enrollment reconciler.
+       type: internal
++    # -- Experimental authenticated-only inbound TCP policy for enrolled workloads.
++    # This does not establish fail-closed startup or platform probe compatibility.
++    requireMtls: false
++    spire:
++      # -- Node CRI socket used to bind delegated SPIRE attestation to the workload PID.
++      containerRuntimeSocketPath: /run/containerd/containerd.sock
+     # -- ztunnel container image.
+     image:
+       # @schema
+diff --git a/install/kubernetes/cilium/values.yaml.tmpl b/install/kubernetes/cilium/values.yaml.tmpl
+index ddf10cce18..300c248897 100644
+--- a/install/kubernetes/cilium/values.yaml.tmpl
++++ b/install/kubernetes/cilium/values.yaml.tmpl
+@@ -1219,6 +1219,12 @@ encryption:
+       # then manages SPIRE entries for enrolled namespaces). "internal" uses
+       # Cilium's built-in CA and skips the SPIRE enrollment reconciler.
+       type: internal
++    # -- Experimental authenticated-only inbound TCP policy for enrolled workloads.
++    # This does not establish fail-closed startup or platform probe compatibility.
++    requireMtls: false
++    spire:
++      # -- Node CRI socket used to bind delegated SPIRE attestation to the workload PID.
++      containerRuntimeSocketPath: /run/containerd/containerd.sock
+     # -- ztunnel container image.
+     image:
+       # @schema
+diff --git a/operator/pkg/ztunnel/spire/client.go b/operator/pkg/ztunnel/spire/client.go
+index 49bfb81f98..197529d96c 100644
+--- a/operator/pkg/ztunnel/spire/client.go
++++ b/operator/pkg/ztunnel/spire/client.go
+@@ -12,6 +12,7 @@ import (
+ 	"time"
+ 
+ 	"github.com/cilium/hive/cell"
++	"github.com/cilium/hive/job"
+ 	"github.com/spf13/pflag"
+ 	"github.com/spiffe/go-spiffe/v2/spiffeid"
+ 	"github.com/spiffe/go-spiffe/v2/spiffetls/tlsconfig"
+@@ -21,10 +22,10 @@ import (
+ 	"google.golang.org/grpc"
+ 	"google.golang.org/grpc/codes"
+ 	"google.golang.org/grpc/credentials"
++	"google.golang.org/grpc/status"
+ 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+ 
+ 	ztunnel "github.com/cilium/cilium/operator/pkg/ztunnel/config"
+-	"github.com/cilium/cilium/pkg/backoff"
+ 	k8sClient "github.com/cilium/cilium/pkg/k8s/client"
+ 	"github.com/cilium/cilium/pkg/lock"
+ 	"github.com/cilium/cilium/pkg/logging/logfields"
+@@ -89,7 +90,7 @@ type params struct {
+ 
+ 	Logger        *slog.Logger
+ 	K8sClient     k8sClient.Clientset
+-	Lifecycle     cell.Lifecycle
++	JobGroup      job.Group
+ 	ClientConfig  ClientConfig
+ 	EntryConfig   SpireEntryConfig
+ 	ZtunnelConfig ztunnel.Config
+@@ -126,10 +127,7 @@ func NewClient(params params) *Client {
+ 		initialized: make(chan struct{}),
+ 	}
+ 
+-	params.Lifecycle.Append(cell.Hook{
+-		OnStart: client.onStart,
+-		OnStop:  func(_ cell.HookContext) error { return nil },
+-	})
++	params.JobGroup.Add(job.OneShot("initialize-spire", client.run))
+ 	return client
+ }
+ 
+@@ -138,37 +136,18 @@ func (c *Client) Initialized() <-chan struct{} {
+ 	return c.initialized
+ }
+ 
+-func (c *Client) onStart(ctx cell.HookContext) error {
+-	go func() {
+-		c.log.InfoContext(ctx, "Initializing SPIRE client")
+-		attempts := 0
+-		backoffTime := backoff.Exponential{Logger: c.log, Min: 100 * time.Millisecond, Max: 10 * time.Second}
+-		for {
+-			attempts++
+-			conn, err := c.connect(context.Background())
+-			if err == nil {
+-				c.entryMutex.Lock()
+-				c.entry = entryv1.NewEntryClient(conn)
+-				c.entryMutex.Unlock()
+-				close(c.initialized)
+-				break
+-			}
+-			c.log.WarnContext(ctx,
+-				"Unable to connect to SPIRE server",
+-				logfields.Attempt, attempts+1,
+-				logfields.Error, err)
+-			time.Sleep(backoffTime.Duration(attempts))
+-		}
+-		c.log.InfoContext(ctx, "Initialized SPIRE client")
+-	}()
+-	return nil
+-}
+-
+-func (c *Client) connect(ctx context.Context) (*grpc.ClientConn, error) {
++func (c *Client) connect(ctx context.Context) (*spireConnection, error) {
++	trustedDomain, err := spiffeid.TrustDomainFromString(c.cfg.SpiffeTrustDomain)
++	if err != nil || trustedDomain.String() != c.cfg.SpiffeTrustDomain {
++		return nil, status.Error(codes.InvalidArgument, "invalid SPIFFE trust domain")
++	}
++	if c.cfg.SpireServerConnectionTimeout <= 0 {
++		return nil, status.Error(codes.InvalidArgument, "SPIRE connection timeout must be positive")
++	}
+ 	timeoutCtx, cancelFunc := context.WithTimeout(ctx, c.cfg.SpireServerConnectionTimeout)
+ 	defer cancelFunc()
+ 
+-	resolvedTarget, err := resolvedK8sService(ctx, c.k8sClient, c.cfg.SpireServerAddress)
++	resolvedTarget, err := resolvedK8sService(timeoutCtx, c.k8sClient, c.cfg.SpireServerAddress)
+ 	if err != nil {
+ 		c.log.WarnContext(ctx,
+ 			"Unable to resolve SPIRE server address, using original value",
+@@ -187,28 +166,35 @@ func (c *Client) connect(ctx context.Context) (*grpc.ClientConn, error) {
+ 	if err != nil {
+ 		return nil, fmt.Errorf("failed to create X509 source: %w", err)
+ 	}
+-
+-	trustedDomain, err := spiffeid.TrustDomainFromString(c.cfg.SpiffeTrustDomain)
+-	if err != nil {
+-		return nil, fmt.Errorf("failed to parse trust domain: %w", err)
+-	}
++	keepSource := false
++	defer func() {
++		if !keepSource {
++			source.Close()
++		}
++	}()
+ 
+ 	tlsConfig := tlsconfig.MTLSClientConfig(source, source, tlsconfig.AuthorizeMemberOf(trustedDomain))
+ 
+-	c.log.InfoContext(ctx,
++	c.log.DebugContext(ctx,
+ 		"Trying to connect to SPIRE server",
+ 		logfields.Address, c.cfg.SpireServerAddress,
+-		logfields.IPAddr, resolvedTarget)
++		logfields.IPAddr, *resolvedTarget)
+ 	conn, err := grpc.NewClient(*resolvedTarget, grpc.WithTransportCredentials(credentials.NewTLS(tlsConfig)))
+ 	if err != nil {
+ 		return nil, fmt.Errorf("failed to create connection to SPIRE server: %w", err)
+ 	}
+ 
+-	c.log.InfoContext(ctx,
+-		"Connected to SPIRE server",
+-		logfields.Address, c.cfg.SpireServerAddress,
+-		logfields.IPAddr, resolvedTarget)
+-	return conn, nil
++	// NewClient is lazy. Require an authenticated API reply before publishing
++	// the entry client or closing Initialized; socket creation is not an ACK.
++	if err := acknowledgeServer(timeoutCtx, entryv1.NewEntryClient(conn)); err != nil {
++		conn.Close()
++		return nil, fmt.Errorf("SPIRE server acknowledgment: %w", err)
++	}
++	keepSource = true
++	return &spireConnection{entry: entryv1.NewEntryClient(conn), close: func() {
++		conn.Close()
++		source.Close()
++	}}, nil
+ }
+ 
+ // Upsert creates or updates the SPIFFE ID for the given ID.
+diff --git a/operator/pkg/ztunnel/spire/startup.go b/operator/pkg/ztunnel/spire/startup.go
+new file mode 100644
+index 0000000000..ee8f619572
+--- /dev/null
++++ b/operator/pkg/ztunnel/spire/startup.go
+@@ -0,0 +1,128 @@
++// SPDX-License-Identifier: Apache-2.0
++// Copyright Authors of Cilium
++
++package spire
++
++import (
++	"context"
++	"fmt"
++	"time"
++
++	"github.com/cilium/hive/cell"
++	entryv1 "github.com/spiffe/spire-api-sdk/proto/spire/api/server/entry/v1"
++	"google.golang.org/grpc/codes"
++	"google.golang.org/grpc/status"
++
++	"github.com/cilium/cilium/pkg/backoff"
++	"github.com/cilium/cilium/pkg/logging/logfields"
++)
++
++// Bound startup independently of the individual connection/RPC timeout.
++const (
++	spireStartupTimeout = 3 * time.Minute
++	logStage            = "stage"
++	logDeadline         = "deadline"
++)
++
++type spireConnection struct {
++	entry entryv1.EntryClient
++	close func()
++}
++
++func acknowledgeServer(ctx context.Context, entry entryv1.EntryClient) error {
++	_, err := entry.CountEntries(ctx, &entryv1.CountEntriesRequest{})
++	return err
++}
++
++func (c *Client) run(ctx context.Context, health cell.Health) error {
++	delay := backoff.Exponential{Logger: c.log, Min: 100 * time.Millisecond, Max: 10 * time.Second, Jitter: true}
++	return c.runWithConnector(ctx, health, c.connect, delay.Duration)
++}
++
++func (c *Client) runWithConnector(ctx context.Context, health cell.Health,
++	connect func(context.Context) (*spireConnection, error), delay func(int) time.Duration,
++) error {
++	startupCtx, cancel := context.WithTimeout(ctx, spireStartupTimeout)
++	defer cancel()
++	deadline, _ := startupCtx.Deadline()
++	c.log.InfoContext(ctx, "Starting SPIRE initialization",
++		logStage, "server-ack",
++		logfields.Event, "startup",
++		logDeadline, deadline,
++		logfields.Address, c.cfg.SpireServerAddress,
++		logfields.Timeout, spireStartupTimeout)
++	conn, err := c.initialize(startupCtx, health, connect, delay)
++	if err != nil {
++		if ctx.Err() != nil {
++			return nil
++		}
++		c.log.ErrorContext(ctx, "SPIRE initialization failed",
++			logStage, "server-ack",
++			logfields.Event, "startup-failed",
++			logfields.Error, err)
++		return err
++	}
++	defer conn.close()
++	c.entryMutex.Lock()
++	c.entry = conn.entry
++	c.entryMutex.Unlock()
++	close(c.initialized)
++	health.OK("Authenticated SPIRE server acknowledgment received")
++	<-ctx.Done()
++	c.entryMutex.Lock()
++	c.entry = nil
++	c.entryMutex.Unlock()
++	return nil
++}
++
++func (c *Client) initialize(ctx context.Context, health cell.Health,
++	connect func(context.Context) (*spireConnection, error), delay func(int) time.Duration,
++) (*spireConnection, error) {
++	start := time.Now()
++	for attempt := 1; ; attempt++ {
++		if err := ctx.Err(); err != nil {
++			return nil, fmt.Errorf("SPIRE startup: %w", err)
++		}
++		conn, err := connect(ctx)
++		if err == nil {
++			c.log.InfoContext(ctx, "SPIRE server acknowledged authenticated API request",
++				logStage, "server-ack",
++				logfields.Event, "ack",
++				logfields.Attempt, attempt,
++				logfields.ElapsedDuration, time.Since(start),
++				logfields.Address, c.cfg.SpireServerAddress)
++			return conn, nil
++		}
++		// These indicate invalid credentials, permissions or configuration,
++		// not a dependency that simply has not finished starting.
++		switch status.Code(err) {
++		case codes.PermissionDenied, codes.Unauthenticated, codes.InvalidArgument, codes.FailedPrecondition:
++			return nil, fmt.Errorf("SPIRE startup rejected: %w", err)
++		}
++		if ctx.Err() != nil {
++			return nil, fmt.Errorf("SPIRE startup after %d attempts: %w", attempt, ctx.Err())
++		}
++		next := delay(attempt)
++		deadline, hasDeadline := ctx.Deadline()
++		if hasDeadline {
++			next = min(next, max(time.Until(deadline), 0))
++		}
++		health.Degraded("Waiting for authenticated SPIRE server acknowledgment", err)
++		c.log.WarnContext(ctx, "Retrying SPIRE initialization",
++			logStage, "server-ack",
++			logfields.Event, "retry",
++			logfields.Attempt, attempt,
++			logfields.ElapsedDuration, time.Since(start),
++			logfields.Backoff, next,
++			logDeadline, deadline,
++			logfields.Address, c.cfg.SpireServerAddress,
++			logfields.Error, err)
++		timer := time.NewTimer(next)
++		select {
++		case <-ctx.Done():
++			timer.Stop()
++			return nil, fmt.Errorf("SPIRE startup after %d attempts: %w", attempt, ctx.Err())
++		case <-timer.C:
++		}
++	}
++}
+diff --git a/operator/pkg/ztunnel/spire/startup_test.go b/operator/pkg/ztunnel/spire/startup_test.go
+new file mode 100644
+index 0000000000..68945b89d0
+--- /dev/null
++++ b/operator/pkg/ztunnel/spire/startup_test.go
+@@ -0,0 +1,171 @@
++// SPDX-License-Identifier: Apache-2.0
++// Copyright Authors of Cilium
++
++package spire
++
++import (
++	"bytes"
++	"context"
++	"encoding/json"
++	"log/slog"
++	"net"
++	"sync/atomic"
++	"testing"
++	"time"
++
++	"github.com/cilium/hive/cell"
++	"github.com/cilium/hive/hivetest"
++	entryv1 "github.com/spiffe/spire-api-sdk/proto/spire/api/server/entry/v1"
++	"github.com/stretchr/testify/require"
++	"google.golang.org/grpc"
++	"google.golang.org/grpc/codes"
++	"google.golang.org/grpc/credentials/insecure"
++	"google.golang.org/grpc/status"
++	"google.golang.org/grpc/test/bufconn"
++
++	"github.com/cilium/cilium/pkg/logging/logfields"
++)
++
++func TestSpireStartupRetryLogsAndAcknowledgment(t *testing.T) {
++	var logs bytes.Buffer
++	c := &Client{log: slog.New(slog.NewJSONHandler(&logs, nil)).With(logfields.LogSubsys, "spire-client")}
++	health, _ := cell.NewSimpleHealth()
++	attempts := 0
++	expected := &spireConnection{}
++	actual, err := c.initialize(t.Context(), health, func(context.Context) (*spireConnection, error) {
++		attempts++
++		if attempts < 3 {
++			return nil, status.Error(codes.Unavailable, "SPIRE restarting")
++		}
++		return expected, nil
++	}, func(int) time.Duration { return time.Millisecond })
++	require.NoError(t, err)
++	require.Same(t, expected, actual)
++	require.Equal(t, 3, attempts)
++	decoder := json.NewDecoder(&logs)
++	for i := 1; i <= 3; i++ {
++		var record map[string]any
++		require.NoError(t, decoder.Decode(&record))
++		require.Equal(t, "spire-client", record[logfields.LogSubsys])
++		require.Equal(t, "server-ack", record["stage"])
++		require.Equal(t, float64(i), record[logfields.Attempt])
++		require.Contains(t, record, logfields.ElapsedDuration)
++		if i < 3 {
++			require.Equal(t, "retry", record["event"])
++			require.Contains(t, record, logfields.Backoff)
++			require.Contains(t, record, logfields.Error)
++		} else {
++			require.Equal(t, "ack", record["event"])
++		}
++	}
++}
++
++func TestSpireStartupRejectsPermanentFailures(t *testing.T) {
++	for _, code := range []codes.Code{codes.PermissionDenied, codes.Unauthenticated, codes.InvalidArgument, codes.FailedPrecondition} {
++		t.Run(code.String(), func(t *testing.T) {
++			c := &Client{log: hivetest.Logger(t)}
++			health, _ := cell.NewSimpleHealth()
++			attempts := 0
++			conn, err := c.initialize(t.Context(), health, func(context.Context) (*spireConnection, error) {
++				attempts++
++				return nil, status.Error(code, "rejected")
++			}, func(int) time.Duration { t.Fatal("permanent errors must not retry"); return 0 })
++			require.Nil(t, conn)
++			require.ErrorContains(t, err, "startup rejected")
++			require.Equal(t, 1, attempts)
++		})
++	}
++}
++
++func TestSpireStartupDeadlineAndCancellation(t *testing.T) {
++	for _, canceled := range []bool{false, true} {
++		t.Run(map[bool]string{false: "deadline", true: "canceled"}[canceled], func(t *testing.T) {
++			ctx, cancel := context.WithTimeout(t.Context(), 20*time.Millisecond)
++			defer cancel()
++			if canceled {
++				cancel()
++			}
++			c := &Client{log: hivetest.Logger(t)}
++			health, _ := cell.NewSimpleHealth()
++			attempts := 0
++			conn, err := c.initialize(ctx, health, func(context.Context) (*spireConnection, error) {
++				attempts++
++				return nil, status.Error(codes.Unavailable, "offline")
++			}, func(int) time.Duration { return time.Hour })
++			require.Nil(t, conn)
++			require.ErrorIs(t, err, ctx.Err())
++			if canceled {
++				require.Zero(t, attempts)
++			}
++		})
++	}
++}
++
++func TestSpireStartupPublishesOnlyAfterACKAndClosesOnStop(t *testing.T) {
++	ctx, cancel := context.WithCancel(t.Context())
++	defer cancel()
++	c := &Client{log: hivetest.Logger(t), initialized: make(chan struct{})}
++	health, _ := cell.NewSimpleHealth()
++	request := make(chan struct{})
++	reply := make(chan struct{})
++	var closed atomic.Bool
++	done := make(chan error, 1)
++	go func() {
++		done <- c.runWithConnector(ctx, health, func(context.Context) (*spireConnection, error) {
++			close(request)
++			<-reply
++			return &spireConnection{entry: mockEntryClient{}, close: func() { closed.Store(true) }}, nil
++		}, func(int) time.Duration { return time.Millisecond })
++	}()
++	<-request
++	select {
++	case <-c.Initialized():
++		t.Fatal("initialized before authenticated response")
++	default:
++	}
++	close(reply)
++	select {
++	case <-c.Initialized():
++	case <-time.After(5 * time.Second):
++		t.Fatal("acknowledgment not published")
++	}
++	cancel()
++	require.NoError(t, <-done)
++	require.True(t, closed.Load())
++	require.Nil(t, c.entry)
++}
++
++type acknowledgmentServer struct {
++	entryv1.UnimplementedEntryServer
++	code codes.Code
++}
++
++func (s acknowledgmentServer) CountEntries(context.Context, *entryv1.CountEntriesRequest) (*entryv1.CountEntriesResponse, error) {
++	if s.code != codes.OK {
++		return nil, status.Error(s.code, "server did not acknowledge")
++	}
++	return &entryv1.CountEntriesResponse{}, nil
++}
++
++func TestSpireServerAcknowledgmentRequiresRPCResponse(t *testing.T) {
++	for _, code := range []codes.Code{codes.OK, codes.PermissionDenied, codes.Unavailable} {
++		t.Run(code.String(), func(t *testing.T) {
++			listener := bufconn.Listen(1024 * 1024)
++			server := grpc.NewServer()
++			entryv1.RegisterEntryServer(server, acknowledgmentServer{code: code})
++			go func() { _ = server.Serve(listener) }()
++			t.Cleanup(func() { server.Stop(); _ = listener.Close() })
++			var dials atomic.Int32
++			conn, err := grpc.NewClient("passthrough:///spire-ack-test", grpc.WithTransportCredentials(insecure.NewCredentials()),
++				grpc.WithContextDialer(func(context.Context, string) (net.Conn, error) { dials.Add(1); return listener.Dial() }))
++			require.NoError(t, err)
++			t.Cleanup(func() { _ = conn.Close() })
++			require.Zero(t, dials.Load(), "NewClient must not be mistaken for a handshake")
++			ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
++			defer cancel()
++			err = acknowledgeServer(ctx, entryv1.NewEntryClient(conn))
++			require.Equal(t, code, status.Code(err))
++			require.Positive(t, dials.Load())
++		})
++	}
++}
+diff --git a/pkg/ztunnel/SPIRE.md b/pkg/ztunnel/SPIRE.md
+new file mode 100644
+index 0000000000..0bac8ecb4d
+--- /dev/null
++++ b/pkg/ztunnel/SPIRE.md
+@@ -0,0 +1,78 @@
++# SPIRE workload credentials
++
++This slice implements the credential-delivery prerequisite for CMTC-101. It does
++not enable ClusterMesh compatibility, authorization production, persistent
++packet admission, or a Protected status.
++
++With `encryption.ztunnel.ca.type=spire`, enable
++`authentication.mutual.spire.enabled`. The agent serves ADS using only its
++bootstrap TLS server key/certificate chain and does not load or register the
++internal workload CA. Missing ADS TLS credentials fail startup. Internal mode
++retains its existing signer and requires all four Secret keys.
++
++The proxy receives the SPIRE admin socket and node CRI socket for delegated
++PID attestation. The bundled SPIRE installer registers an attested node alias
++`/ztunnel` for operator-created workload entries, and a separate workload
++identity `/ztunnel-proxy` for the proxy service account. Only that identity is
++added to the existing delegated-identity allowlist. These are distinct from
++application namespace/service-account identities.
++
++The configured SPIFFE trust domain is carried in both initial and incremental
++Address resources. Cilium ztunnel v1.0.0, commit
++`5bb9cf256b10a209ae9bc0624ddfbf27dbc439de`, uses `SPIRE_ENABLED` to select its
++SPIRE client exclusively. Its locked spire-api 0.3.9 client reads
++`SPIRE_ADMIN_ENDPOINT_SOCKET`; the proxy selects its trust bundle using
++`Config.cluster_domain`, so SPIRE mode sets `CLUSTER_DOMAIN` as well as
++`TRUST_DOMAIN`. The chart keeps proxy DNS capture disabled. These settings do
++not alter Kubernetes DNS configuration. Verify any future proxy pin against
++these source contracts before changing them.
++
++The CA choice does not configure a cert-manager issuer for SPIRE automatically.
++CMTC-101's isolated runtime fixture supplies the cert-manager UpstreamAuthority
++and namespace-scoped CertificateRequest RBAC. The organizational root key stays
++outside the cluster, cluster issuer keys remain in cert-manager, and SPIRE holds
++its own intermediate key. Agent nodes receive only the ADS TLS server key and
++public chain. CA depth must allow root -> cluster issuer -> SPIRE intermediate
++-> workload SVID. Issuer and peer restrictions for foreign-cluster identities
++remain CMTC-105 acceptance work.
++
++Local tests cover absence of the signing RPC/key loader in SPIRE mode, existing
++internal signer behavior, unavailable-signer startup failure, invalid backend
++and domain rejection, and issuer-domain propagation over actual initial and
++incremental ADS streams. The CMTC fixture must additionally prove real SVID
++issuance, peer identity, encrypted packets and negative cases before any runtime
++mTLS acceptance is reported.
++
++The operator's SPIRE initialization is a lifecycle-managed Hive job. It uses
++Cilium's injected slog logger and standard logfields for attempt, elapsed time,
++backoff, deadline, server address and underlying errors. Transient startup
++failures use jittered exponential backoff capped at ten seconds within a
++three-minute startup deadline; each connection attempt retains the configured
++connection timeout. Shutdown cancels both an RPC and a pending retry. Explicit
++authentication, permission and configuration rejections fail the job and its
++Hive health report. Failed attempts release their X509 source and gRPC client;
++successful resources remain alive until job shutdown.
++
++Initialization is acknowledged only after an authenticated CountEntries RPC
++responds. A lazy grpc.NewClient is not a connection acknowledgment. This ACK
++does not establish application SVID delivery, policy installation or packet
++protection. The broader dependency/registration/proxy recovery work is tracked
++in [CMTC issue #7](https://github.com/ephico2real2/clustermesh-trust-controller/issues/7).
++
++## Experimental authenticated-only inbound policy
++
++`encryption.ztunnel.requireMtls=true` (`ztunnel-require-mtls`) publishes a native
++ztunnel GLOBAL DENY rule matching the absence of an authenticated TLS principal.
++It has no application-port predicates. The receiving plaintext listener passes
++no peer identity to RBAC; HBONE uses the verified TLS peer. Cilium currently
++supplies workload records only for enrolled namespaces, so this policy applies
++to the workloads handled by the ztunnel, not arbitrary platform pods.
++
++This option defaults to false while admission and platform compatibility are
++being qualified. The desired policy is installed before ADS accepts connections,
++but the pinned proxy can permit traffic while policy is absent. This is not a
++persistent fail-closed gate, a complete Cilium authorization compiler, or a
++`Protected` status. Startup/restart, policy loss, mandatory capture and legitimate
++platform health probes must be checked independently. Incompatible Helm/agent
++profiles reject the option instead of silently ignoring it. Do not substitute
++port-80 (or enumerated-port) network-policy denies for workload authentication.
+diff --git a/pkg/ztunnel/config/config.go b/pkg/ztunnel/config/config.go
+index 7acdbff0f2..6f4b37ff91 100644
+--- a/pkg/ztunnel/config/config.go
++++ b/pkg/ztunnel/config/config.go
+@@ -7,10 +7,18 @@ import (
+ 	"fmt"
+ 
+ 	"github.com/spf13/pflag"
++	"github.com/spiffe/go-spiffe/v2/spiffeid"
++)
++
++const (
++	CATypeInternal = "internal"
++	CATypeSpire    = "spire"
+ )
+ 
+ var DefaultConfig = Config{
+ 	EnableZTunnel:                  false,
++	CAType:                         CATypeInternal,
++	SpiffeTrustDomain:              "cluster.local",
+ 	EndpointEventChannelBufferSize: 1,
+ }
+ 
+@@ -19,16 +27,34 @@ var DefaultConfig = Config{
+ // while the agent uses this Config struct for dependency injection.
+ type Config struct {
+ 	EnableZTunnel                  bool
+-	EndpointEventChannelBufferSize int `mapstructure:"ztunnel-endpoint-event-channel-buffer-size"`
++	RequireMTLS                    bool   `mapstructure:"ztunnel-require-mtls"`
++	CAType                         string `mapstructure:"ztunnel-ca-type"`
++	SpiffeTrustDomain              string `mapstructure:"mesh-auth-spiffe-trust-domain"`
++	EndpointEventChannelBufferSize int    `mapstructure:"ztunnel-endpoint-event-channel-buffer-size"`
+ }
+ 
+ func (c Config) Flags(flags *pflag.FlagSet) {
+ 	flags.Bool("enable-ztunnel", false, "Use zTunnel as Cilium's encryption infrastructure")
++	flags.Bool("ztunnel-require-mtls", false, "Experimental: require an authenticated peer for inbound ztunnel workload TCP connections")
++	flags.String("mesh-auth-spiffe-trust-domain", "cluster.local", "SPIFFE trust domain for ztunnel workloads")
++	flags.String("ztunnel-ca-type", CATypeInternal, "Workload CA backend: internal or spire")
+ 	flags.Int("ztunnel-endpoint-event-channel-buffer-size", 1, "Buffer size for the ztunnel endpoint event channel")
+ 	flags.MarkHidden("ztunnel-endpoint-event-channel-buffer-size")
+ }
+ 
+ func (c Config) Validate() error {
++	if c.RequireMTLS && !c.EnableZTunnel {
++		return fmt.Errorf("ztunnel-require-mtls requires enable-ztunnel")
++	}
++	if c.EnableZTunnel && c.CAType != CATypeInternal && c.CAType != CATypeSpire {
++		return fmt.Errorf("unsupported ztunnel-ca-type %q: expected internal or spire", c.CAType)
++	}
++	if c.EnableZTunnel {
++		td, err := spiffeid.TrustDomainFromString(c.SpiffeTrustDomain)
++		if err != nil || td.String() != c.SpiffeTrustDomain {
++			return fmt.Errorf("invalid mesh-auth-spiffe-trust-domain %q", c.SpiffeTrustDomain)
++		}
++	}
+ 	if c.EndpointEventChannelBufferSize < 0 {
+ 		return fmt.Errorf("ztunnel-endpoint-event-channel-buffer-size must be non-negative, got %d", c.EndpointEventChannelBufferSize)
+ 	}
+diff --git a/pkg/ztunnel/config/config_test.go b/pkg/ztunnel/config/config_test.go
+new file mode 100644
+index 0000000000..09ca2758c1
+--- /dev/null
++++ b/pkg/ztunnel/config/config_test.go
+@@ -0,0 +1,63 @@
++// SPDX-License-Identifier: Apache-2.0
++// Copyright Authors of Cilium
++
++package config
++
++import (
++	"testing"
++
++	"github.com/spf13/pflag"
++	"github.com/stretchr/testify/require"
++)
++
++func TestCABackendConfiguration(t *testing.T) {
++	for _, backend := range []string{CATypeInternal, CATypeSpire} {
++		t.Run(backend, func(t *testing.T) {
++			cfg := DefaultConfig
++			cfg.EnableZTunnel = true
++			cfg.CAType = backend
++			require.NoError(t, cfg.Validate())
++		})
++	}
++	cfg := DefaultConfig
++	cfg.EnableZTunnel = true
++	cfg.CAType = "unrecognized"
++	require.ErrorContains(t, cfg.Validate(), "unsupported ztunnel-ca-type")
++	cfg.CAType = CATypeSpire
++	cfg.EndpointEventChannelBufferSize = -1
++	require.ErrorContains(t, cfg.Validate(), "must be non-negative")
++
++	flags := pflag.NewFlagSet("ztunnel", pflag.ContinueOnError)
++	DefaultConfig.Flags(flags)
++	require.NoError(t, flags.Parse([]string{"--enable-ztunnel", "--ztunnel-ca-type=spire"}))
++	backend, err := flags.GetString("ztunnel-ca-type")
++	require.NoError(t, err)
++	require.Equal(t, CATypeSpire, backend)
++}
++
++func TestRejectInvalidWorkloadTrustDomain(t *testing.T) {
++	for _, domain := range []string{"", "https://example.test", "spiffe://example.test", "example.test/path"} {
++		t.Run(domain, func(t *testing.T) {
++			cfg := DefaultConfig
++			cfg.EnableZTunnel = true
++			cfg.SpiffeTrustDomain = domain
++			require.ErrorContains(t, cfg.Validate(), "invalid mesh-auth-spiffe-trust-domain")
++		})
++	}
++}
++
++func TestRequireMTLSConfiguration(t *testing.T) {
++	cfg := DefaultConfig
++	require.False(t, cfg.RequireMTLS)
++	cfg.RequireMTLS = true
++	require.ErrorContains(t, cfg.Validate(), "requires enable-ztunnel")
++	cfg.EnableZTunnel = true
++	require.NoError(t, cfg.Validate())
++
++	flags := pflag.NewFlagSet("ztunnel", pflag.ContinueOnError)
++	DefaultConfig.Flags(flags)
++	require.NoError(t, flags.Parse([]string{"--ztunnel-require-mtls"}))
++	enabled, err := flags.GetBool("ztunnel-require-mtls")
++	require.NoError(t, err)
++	require.True(t, enabled)
++}
+diff --git a/pkg/ztunnel/xds/authentication.go b/pkg/ztunnel/xds/authentication.go
+new file mode 100644
+index 0000000000..947e695b67
+--- /dev/null
++++ b/pkg/ztunnel/xds/authentication.go
+@@ -0,0 +1,52 @@
++// SPDX-License-Identifier: Apache-2.0
++// Copyright Authors of Cilium
++
++package xds
++
++import (
++	"fmt"
++
++	"google.golang.org/protobuf/types/known/emptypb"
++
++	"github.com/cilium/cilium/pkg/logging/logfields"
++	"github.com/cilium/cilium/pkg/ztunnel/pb/security"
++)
++
++// The empty namespace indexes a GLOBAL policy in the pinned proxy. The reserved
++// name cannot collide with a Kubernetes policy name because it contains '_'.
++const requireMTLSPolicyName = "cilium_require_mtls"
++
++// authenticatedOnlyPolicy denies connections without an authenticated peer.
++// The plaintext listener supplies no identity; HBONE supplies the TLS peer's
++// verified identity. The rule intentionally has no application-port predicate.
++// Authentication does not grant permission to bypass other authorization rules.
++func authenticatedOnlyPolicy() *security.Authorization {
++	return &security.Authorization{
++		Name:   requireMTLSPolicyName,
++		Scope:  security.Scope_GLOBAL,
++		Action: security.Action_DENY,
++		Rules: []*security.Rule{{Clauses: []*security.Clause{{Matches: []*security.Match{{
++			NotPrincipals: []*security.StringMatch{{MatchType: &security.StringMatch_Presence{Presence: &emptypb.Empty{}}}},
++		}}}}}},
++	}
++}
++
++// Publish before accepting an ADS connection. This establishes desired state,
++// not packet admission: the pinned proxy can still allow traffic if this policy
++// is absent during startup. Persistent fail-closed capture remains a separate
++// requirement before this experimental option can establish protection.
++func (x *Server) configureAuthenticationPolicy() error {
++	if !x.requireMTLS {
++		return nil
++	}
++	policy := authenticatedOnlyPolicy()
++	name := policy.Namespace + "/" + policy.Name
++	if _, _, err := x.authorizations.Apply(map[string]*security.Authorization{name: policy}, nil); err != nil {
++		return fmt.Errorf("publish ztunnel authenticated-only policy: %w", err)
++	}
++	x.log.Info("Published authenticated-only ztunnel policy",
++		logfields.Event, "mtls-policy-published",
++		logfields.Resource, name,
++	)
++	return nil
++}
+diff --git a/pkg/ztunnel/xds/authentication_test.go b/pkg/ztunnel/xds/authentication_test.go
+new file mode 100644
+index 0000000000..b00d3931ff
+--- /dev/null
++++ b/pkg/ztunnel/xds/authentication_test.go
+@@ -0,0 +1,67 @@
++// SPDX-License-Identifier: Apache-2.0
++// Copyright Authors of Cilium
++
++package xds
++
++import (
++	"testing"
++
++	"github.com/stretchr/testify/require"
++	"google.golang.org/protobuf/proto"
++
++	"github.com/cilium/cilium/pkg/ztunnel/pb/security"
++)
++
++func TestAuthenticatedOnlyPolicyWireContract(t *testing.T) {
++	policy := authenticatedOnlyPolicy()
++	encoded, err := proto.Marshal(policy)
++	require.NoError(t, err)
++	var decoded security.Authorization
++	require.NoError(t, proto.Unmarshal(encoded, &decoded))
++	require.Equal(t, security.Scope_GLOBAL, decoded.Scope)
++	require.Empty(t, decoded.Namespace)
++	require.Equal(t, security.Action_DENY, decoded.Action)
++	require.False(t, decoded.DryRun)
++	require.Len(t, decoded.Rules, 1)
++	require.Len(t, decoded.Rules[0].Clauses, 1)
++	require.Len(t, decoded.Rules[0].Clauses[0].Matches, 1)
++	match := decoded.Rules[0].Clauses[0].Matches[0]
++	require.Len(t, match.NotPrincipals, 1)
++	require.IsType(t, &security.StringMatch_Presence{}, match.NotPrincipals[0].MatchType)
++	require.NotNil(t, match.NotPrincipals[0].GetPresence())
++	require.Empty(t, match.Principals)
++	require.Empty(t, match.DestinationPorts)
++	require.Empty(t, match.NotDestinationPorts)
++}
++
++func TestRequireMTLSPolicyDeliveredOverADS(t *testing.T) {
++	s, conn := testAuthorizationServer(t)
++	s.requireMTLS = true
++	require.NoError(t, s.configureAuthenticationPolicy())
++
++	peer := newAuthorizationPeer(t, conn)
++	peer.send(t, subscribeAuthorization())
++	resp := peer.receive(t)
++	require.Equal(t, xdsTypeURLAuthorization, resp.TypeUrl)
++	require.Len(t, resp.Resources, 1)
++	resource := resp.Resources[0]
++	require.Equal(t, "/"+requireMTLSPolicyName, resource.Name)
++	require.NotEmpty(t, resource.Version)
++	var policy security.Authorization
++	require.NoError(t, resource.Resource.UnmarshalTo(&policy))
++	require.True(t, proto.Equal(authenticatedOnlyPolicy(), &policy))
++	peer.ack(t, resp)
++
++	// Reconfiguration of identical intent must not produce a new policy version.
++	require.NoError(t, s.configureAuthenticationPolicy())
++	peer.noResponse(t)
++}
++
++func TestRequireMTLSDisabledPublishesNoAuthenticationPolicy(t *testing.T) {
++	s, conn := testAuthorizationServer(t)
++	require.NoError(t, s.configureAuthenticationPolicy())
++	peer := newAuthorizationPeer(t, conn)
++	peer.send(t, subscribeAuthorization())
++	resp := peer.receive(t)
++	require.Empty(t, resp.Resources)
++}
+diff --git a/pkg/ztunnel/xds/authorization_test.go b/pkg/ztunnel/xds/authorization_test.go
+index 6dae949048..73e2e44e16 100644
+--- a/pkg/ztunnel/xds/authorization_test.go
++++ b/pkg/ztunnel/xds/authorization_test.go
+@@ -24,6 +24,7 @@ import (
+ 	k8stypes "k8s.io/apimachinery/pkg/types"
+ 
+ 	slimmetav1 "github.com/cilium/cilium/pkg/k8s/slim/k8s/apis/meta/v1"
++	"github.com/cilium/cilium/pkg/ztunnel/pb"
+ 	"github.com/cilium/cilium/pkg/ztunnel/pb/security"
+ )
+ 
+@@ -131,7 +132,7 @@ func testAuthorizationServer(t *testing.T) (*Server, *grpc.ClientConn) {
+ 	return testAuthorizationServerMode(t, false)
+ }
+ 
+-func testAuthorizationServerMode(t *testing.T, addresses bool) (*Server, *grpc.ClientConn) {
++func testAuthorizationServerMode(t *testing.T, addresses bool, initial ...EndpointEventCollection) (*Server, *grpc.ClientConn) {
+ 	t.Helper()
+ 	log := slog.New(slog.DiscardHandler)
+ 	metrics := NewMetrics()
+@@ -141,7 +142,11 @@ func testAuthorizationServerMode(t *testing.T, addresses bool) (*Server, *grpc.C
+ 	grpcServer := grpc.NewServer()
+ 	var handler v3.AggregatedDiscoveryServiceServer = server
+ 	if addresses {
+-		handler = &multiplexAuthorizationTestServer{Server: server}
++		replay := EndpointEventCollection{}
++		if len(initial) > 0 {
++			replay = initial[0]
++		}
++		handler = &multiplexAuthorizationTestServer{Server: server, initial: replay}
+ 	}
+ 	v3.RegisterAggregatedDiscoveryServiceServer(grpcServer, handler)
+ 	go func() { _ = grpcServer.Serve(listener) }()
+@@ -345,15 +350,18 @@ func TestAuthorizationRejectsInvalidAcknowledgments(t *testing.T) {
+ 
+ // Replace only the CEP source for the mixed-type test; the stream processor,
+ // authorization store, shared delta server and gRPC transport remain real.
+-type multiplexAuthorizationTestServer struct{ *Server }
++type multiplexAuthorizationTestServer struct {
++	*Server
++	initial EndpointEventCollection
++}
+ 
+ func (s *multiplexAuthorizationTestServer) DeltaAggregatedResources(stream v3.AggregatedDiscoveryService_DeltaAggregatedResourcesServer) error {
+ 	sp := NewStreamProcessor(&StreamProcessorParams{
+ 		Stream: stream, StreamRecv: make(chan *v3.DeltaDiscoveryRequest, 1),
+ 		EndpointEventRecv: s.endpointEventChan, Log: s.log, Metrics: s.metrics,
+-		Authorizations: s.authorizations,
++		Authorizations: s.authorizations, TrustDomain: s.trustDomain,
+ 	})
+-	sp.endpointSource = &MockEndpointEventSource{}
++	sp.endpointSource = &MockEndpointEventSource{initial: s.initial}
+ 	return sp.Start()
+ }
+ 
+@@ -431,3 +439,25 @@ func TestAuthorizationSendFailureTerminatesStream(t *testing.T) {
+ 	}
+ 	require.Equal(t, float64(1), testutil.ToFloat64(metrics.AuthorizationEvents.WithLabelValues("send_failed")))
+ }
++
++func TestSpireDiscoveryBindsIssuerTrustDomain(t *testing.T) {
++	cep := makeCEP("shop", "orders", "10.0.0.5")
++	cep.OwnerReferences = []slimmetav1.OwnerReference{{Kind: "Pod", UID: k8stypes.UID("shop-pod-uid")}}
++	event := &EndpointEvent{Type: CREATE, CiliumEndpoint: cep}
++	s, conn := testAuthorizationServerMode(t, true, EndpointEventCollection{event})
++	s.trustDomain = "cmtc-a.example"
++	peer := newAuthorizationPeer(t, conn)
++	peer.send(t, &v3.DeltaDiscoveryRequest{TypeUrl: xdsTypeURLAddress, Node: &corev3.Node{Id: authorizationTestNode}})
++	initial := peer.receive(t)
++	require.Len(t, initial.Resources, 1)
++	var address pb.Address
++	require.NoError(t, initial.Resources[0].Resource.UnmarshalTo(&address))
++	require.Equal(t, "cmtc-a.example", address.GetWorkload().TrustDomain)
++	peer.ack(t, initial)
++	// Both the initial snapshot and post-sync updates must use the issuer domain.
++	s.endpointEventChan <- event
++	updated := peer.receive(t)
++	require.Len(t, updated.Resources, 1)
++	require.NoError(t, updated.Resources[0].Resource.UnmarshalTo(&address))
++	require.Equal(t, "cmtc-a.example", address.GetWorkload().TrustDomain)
++}
+diff --git a/pkg/ztunnel/xds/ca_mode_test.go b/pkg/ztunnel/xds/ca_mode_test.go
+new file mode 100644
+index 0000000000..7b441b2b6c
+--- /dev/null
++++ b/pkg/ztunnel/xds/ca_mode_test.go
+@@ -0,0 +1,78 @@
++// SPDX-License-Identifier: Apache-2.0
++// Copyright Authors of Cilium
++
++package xds
++
++import (
++	"context"
++	"errors"
++	"net"
++	"testing"
++	"time"
++
++	"github.com/stretchr/testify/require"
++	"google.golang.org/grpc"
++	"google.golang.org/grpc/codes"
++	"google.golang.org/grpc/credentials/insecure"
++	"google.golang.org/grpc/status"
++	"google.golang.org/grpc/test/bufconn"
++
++	"github.com/cilium/cilium/pkg/ztunnel/config"
++	"github.com/cilium/cilium/pkg/ztunnel/pb"
++)
++
++func TestSpireADSHasNoWorkloadSigner(t *testing.T) {
++	x := &Server{caType: config.CATypeSpire}
++	loadedSigningKey := false
++	server, err := x.newGRPCServer(insecure.NewCredentials(), func() (pb.IstioCertificateServiceServer, error) {
++		loadedSigningKey = true
++		return nil, errors.New("workload signing keys must not be loaded in SPIRE mode")
++	})
++	require.NoError(t, err)
++	require.False(t, loadedSigningKey)
++	require.Contains(t, server.GetServiceInfo(), "envoy.service.discovery.v3.AggregatedDiscoveryService")
++	require.NotContains(t, server.GetServiceInfo(), "istio.v1.auth.IstioCertificateService")
++
++	listener := bufconn.Listen(1024 * 1024)
++	t.Cleanup(func() { server.Stop(); _ = listener.Close() })
++	go func() { _ = server.Serve(listener) }()
++	conn, err := grpc.NewClient("passthrough:///spire-ads-test", grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithContextDialer(func(context.Context, string) (net.Conn, error) { return listener.Dial() }))
++	require.NoError(t, err)
++	t.Cleanup(func() { _ = conn.Close() })
++	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
++	defer cancel()
++	_, err = pb.NewIstioCertificateServiceClient(conn).CreateCertificate(ctx, &pb.IstioCertificateRequest{Csr: "must never be signed"})
++	require.Equal(t, codes.Unimplemented, status.Code(err))
++}
++
++func TestInternalADSKeepsWorkloadSigner(t *testing.T) {
++	x := &Server{caType: config.CATypeInternal}
++	loads := 0
++	server, err := x.newGRPCServer(insecure.NewCredentials(), func() (pb.IstioCertificateServiceServer, error) {
++		loads++
++		return &pb.UnimplementedIstioCertificateServiceServer{}, nil
++	})
++	require.NoError(t, err)
++	t.Cleanup(server.Stop)
++	require.Equal(t, 1, loads)
++	require.Contains(t, server.GetServiceInfo(), "istio.v1.auth.IstioCertificateService")
++}
++
++func TestInternalADSRejectsUnavailableSigner(t *testing.T) {
++	x := &Server{caType: config.CATypeInternal}
++	missingKey := errors.New("signing key unavailable")
++	server, err := x.newGRPCServer(insecure.NewCredentials(), func() (pb.IstioCertificateServiceServer, error) { return nil, missingKey })
++	require.ErrorIs(t, err, missingKey)
++	require.Nil(t, server)
++}
++
++func TestADSRejectsUnknownCABackend(t *testing.T) {
++	x := &Server{caType: "unrecognized"}
++	server, err := x.newGRPCServer(insecure.NewCredentials(), func() (pb.IstioCertificateServiceServer, error) {
++		t.Fatal("unknown CA backend must not initialize a signer")
++		return nil, nil
++	})
++	require.ErrorContains(t, err, "unsupported ztunnel-ca-type")
++	require.Nil(t, server)
++	x.GracefulStop()
++}
+diff --git a/pkg/ztunnel/xds/cell.go b/pkg/ztunnel/xds/cell.go
+index 3618a0a052..2ac08d77ef 100644
+--- a/pkg/ztunnel/xds/cell.go
++++ b/pkg/ztunnel/xds/cell.go
+@@ -11,7 +11,6 @@ import (
+ 
+ 	"github.com/cilium/cilium/pkg/endpointmanager"
+ 	"github.com/cilium/cilium/pkg/k8s/watchers"
+-	"github.com/cilium/cilium/pkg/logging/logfields"
+ 	"github.com/cilium/cilium/pkg/metrics"
+ 	"github.com/cilium/cilium/pkg/ztunnel/config"
+ 	"github.com/cilium/cilium/pkg/ztunnel/table"
+@@ -65,12 +64,13 @@ func NewServer(params xdsServerParams) *Server {
+ 		params.Metrics,
+ 	)
+ 
++	server.caType = params.Config.CAType
++	server.trustDomain = params.Config.SpiffeTrustDomain
++	server.requireMTLS = params.Config.RequireMTLS
++
+ 	params.Lifecycle.Append(cell.Hook{
+ 		OnStart: func(_ cell.HookContext) error {
+-			if err := server.Serve(); err != nil {
+-				params.Logger.Error("failed to start ztunnel gRPC server", logfields.Error, err)
+-			}
+-			return nil
++			return server.Serve()
+ 		},
+ 		OnStop: func(_ cell.HookContext) error {
+ 			server.GracefulStop()
+diff --git a/pkg/ztunnel/xds/endpoint_event.go b/pkg/ztunnel/xds/endpoint_event.go
+index eb497fba63..4df7adf57f 100644
+--- a/pkg/ztunnel/xds/endpoint_event.go
++++ b/pkg/ztunnel/xds/endpoint_event.go
+@@ -57,6 +57,11 @@ func (c EndpointEventCollection) EmitTo(ctx context.Context, ch chan<- *Endpoint
+ // The returned DeltaDiscoveryResponse can be sent directly on a DeltaAggregatedResources
+ // stream.
+ func (c EndpointEventCollection) ToDeltaDiscoveryResponse() *v3.DeltaDiscoveryResponse {
++	return c.toDeltaDiscoveryResponse("")
++}
++
++// toDeltaDiscoveryResponse binds discovery identities to the configured issuer domain.
++func (c EndpointEventCollection) toDeltaDiscoveryResponse(trustDomain string) *v3.DeltaDiscoveryResponse {
+ 	createResources := make([]*v3.Resource, 0)
+ 	removedNames := make([]string, 0)
+ 	for _, event := range c {
+@@ -67,6 +72,8 @@ func (c EndpointEventCollection) ToDeltaDiscoveryResponse() *v3.DeltaDiscoveryRe
+ 				continue
+ 			}
+ 
++			address.GetWorkload().TrustDomain = trustDomain
++
+ 			anyPBAddr, err := anypb.New(address)
+ 			if err != nil {
+ 				continue
+diff --git a/pkg/ztunnel/xds/stream_processor.go b/pkg/ztunnel/xds/stream_processor.go
+index 8bc0670432..a157b8cf4a 100644
+--- a/pkg/ztunnel/xds/stream_processor.go
++++ b/pkg/ztunnel/xds/stream_processor.go
+@@ -43,6 +43,7 @@ type StreamProcessorParams struct {
+ 	Log                       *slog.Logger
+ 	Metrics                   *Metrics
+ 	Authorizations            *AuthorizationPolicies
++	TrustDomain               string
+ }
+ 
+ // StreamProcessor implements the logic for handling xDS streams to zTunnel.
+@@ -60,6 +61,7 @@ type StreamProcessor struct {
+ 	enrolledNamespaceTable statedb.RWTable[*table.EnrolledNamespace]
+ 	metrics                *Metrics
+ 	authorizations         *AuthorizationPolicies
++	trustDomain            string
+ }
+ 
+ // CiliumEndpointsWatcher defines the interface for watching CiliumEndpoints and CiliumEndpointSlices.
+@@ -120,6 +122,7 @@ func NewStreamProcessor(params *StreamProcessorParams) *StreamProcessor {
+ 		enrolledNamespaceTable: params.EnrolledNamespaceTable,
+ 		metrics:                metrics,
+ 		authorizations:         authorizations,
++		trustDomain:            params.TrustDomain,
+ 	}
+ 	sp.endpointSource = NewEndpointSource(params.K8sCiliumEndpointsWatcher, sp)
+ 	return sp
+@@ -342,7 +345,7 @@ func (sp *StreamProcessor) handleAddressTypeURL(req *v3.DeltaDiscoveryRequest) e
+ 		return ctx.Err()
+ 	}
+ 
+-	resp := collection.ToDeltaDiscoveryResponse()
++	resp := collection.toDeltaDiscoveryResponse(sp.trustDomain)
+ 	sp.expectedNonce[resp.Nonce] = struct{}{}
+ 
+ 	if err := sp.stream.SendMsg(resp); err != nil {
+@@ -401,7 +404,7 @@ drained:
+ 		}
+ 	}
+ 
+-	resp := collection.ToDeltaDiscoveryResponse()
++	resp := collection.toDeltaDiscoveryResponse(sp.trustDomain)
+ 
+ 	// record the generated Nonce so we can link up any Ack or Nack in our main
+ 	// event loop.
+diff --git a/pkg/ztunnel/xds/stream_processor_test.go b/pkg/ztunnel/xds/stream_processor_test.go
+index c82fba26cb..ed437ca738 100644
+--- a/pkg/ztunnel/xds/stream_processor_test.go
++++ b/pkg/ztunnel/xds/stream_processor_test.go
+@@ -86,6 +86,7 @@ func (s *MockStream) Recv() (*v3.DeltaDiscoveryRequest, error) {
+ }
+ 
+ type MockEndpointEventSource struct {
++	initial         EndpointEventCollection
+ 	subscribeCalled bool
+ }
+ 
+@@ -93,7 +94,7 @@ type MockEndpointEventSource struct {
+ func (m *MockEndpointEventSource) SubscribeToEndpointEvents(ctx context.Context, syncCh chan<- EndpointEventCollection) {
+ 	defer close(syncCh)
+ 	m.subscribeCalled = true
+-	syncCh <- EndpointEventCollection{}
++	syncCh <- m.initial
+ }
+ 
+ func (m *MockEndpointEventSource) GetSubscriptionStatus() bool {
+diff --git a/pkg/ztunnel/xds/xds_server.go b/pkg/ztunnel/xds/xds_server.go
+index ae84602161..a459ad52b1 100644
+--- a/pkg/ztunnel/xds/xds_server.go
++++ b/pkg/ztunnel/xds/xds_server.go
+@@ -10,11 +10,13 @@ import (
+ 	"net"
+ 
+ 	"google.golang.org/grpc"
++	"google.golang.org/grpc/credentials"
+ 	"google.golang.org/grpc/keepalive"
+ 
+ 	"github.com/cilium/statedb"
+ 
+ 	"github.com/cilium/cilium/pkg/ztunnel/ca"
++	"github.com/cilium/cilium/pkg/ztunnel/config"
+ 	"github.com/cilium/cilium/pkg/ztunnel/pb"
+ 	"github.com/cilium/cilium/pkg/ztunnel/table"
+ 
+@@ -40,8 +42,8 @@ var _ v3.AggregatedDiscoveryServiceServer = (*Server)(nil)
+ // Server is the xDS control plane for the stand-alone ztunnel proxy.
+ //
+ // It sends workload and service discovery events to ztunnel. The
+-// certificate-signing handler lives in pkg/ztunnel/ca; Server registers it on
+-// the same gRPC server alongside the ADS handler.
++// certificate-signing handler lives in pkg/ztunnel/ca and is registered only
++// for the internal CA backend. SPIRE mode serves ADS without a workload signer.
+ type Server struct {
+ 	l                         net.Listener
+ 	g                         *grpc.Server
+@@ -55,6 +57,9 @@ type Server struct {
+ 	endpointEventChan chan *EndpointEvent
+ 	metrics           *Metrics
+ 	authorizations    *AuthorizationPolicies
++	caType            string
++	trustDomain       string
++	requireMTLS       bool
+ 	v3.UnimplementedAggregatedDiscoveryServiceServer
+ }
+ 
+@@ -76,6 +81,7 @@ func newServer(
+ 		enrolledNamespaceTable:    enrolledNamespaceTable,
+ 		metrics:                   metrics,
+ 		authorizations:            NewAuthorizationPolicies(log, metrics),
++		caType:                    config.CATypeInternal,
+ 	}
+ }
+ 
+@@ -87,19 +93,50 @@ func newServer(
+ //
+ // Server.GracefulStop() can be used to kill the running gRPC server.
+ func (x *Server) Serve() error {
+-	var err error
++	creds, err := ca.LoadServerTLSCredentials()
++	if err != nil {
++		return fmt.Errorf("failed to create gRPC TLS credentials: %w", err)
++	}
+ 
+-	// Note: this initialization could technically be done during
+-	// construction, but due to hive/cell needing construction to happen
+-	// without side effects, do it right before serving.
+-	caSrv, err := ca.NewServer(x.log, x.epManager)
++	x.g, err = x.newGRPCServer(creds, func() (pb.IstioCertificateServiceServer, error) {
++		return ca.NewServer(x.log, x.epManager)
++	})
+ 	if err != nil {
+-		return fmt.Errorf("failed to initialize CA: %w", err)
++		return err
+ 	}
+ 
+-	creds, err := ca.LoadServerTLSCredentials()
++	x.l, err = net.Listen("tcp", "127.0.0.1:15012")
+ 	if err != nil {
+-		return fmt.Errorf("failed to create gRPC TLS credentials: %w", err)
++		return err
++	}
++
++	x.log.Info("zTunnel xDS server started")
++	go func() {
++		if err := x.g.Serve(x.l); err != nil {
++			x.log.Error("gRPC server error", logfields.Error, err)
++		}
++	}()
++	return nil
++}
++
++// newGRPCServer only initializes a workload signer for the internal backend.
++// The factory is never called for SPIRE: agent nodes need the ADS TLS server
++// identity, not the organizational or SPIRE workload signing keys.
++func (x *Server) newGRPCServer(creds credentials.TransportCredentials, newCA func() (pb.IstioCertificateServiceServer, error)) (*grpc.Server, error) {
++	var signer pb.IstioCertificateServiceServer
++	switch x.caType {
++	case config.CATypeInternal:
++		var err error
++		signer, err = newCA()
++		if err != nil {
++			return nil, fmt.Errorf("failed to initialize CA: %w", err)
++		}
++	case config.CATypeSpire:
++	default:
++		return nil, fmt.Errorf("unsupported ztunnel-ca-type %q", x.caType)
++	}
++	if err := x.configureAuthenticationPolicy(); err != nil {
++		return nil, err
+ 	}
+ 
+ 	// keepalive options match config values from:
+@@ -118,23 +155,12 @@ func (x *Server) Serve() error {
+ 		}),
+ 	}
+ 
+-	x.g = grpc.NewServer(grpcOptions...)
+-
+-	pb.RegisterIstioCertificateServiceServer(x.g, caSrv)
+-	v3.RegisterAggregatedDiscoveryServiceServer(x.g, x)
+-
+-	x.l, err = net.Listen("tcp", "127.0.0.1:15012")
+-	if err != nil {
+-		return err
++	server := grpc.NewServer(grpcOptions...)
++	if signer != nil {
++		pb.RegisterIstioCertificateServiceServer(server, signer)
+ 	}
+-
+-	x.log.Info("zTunnel xDS server started")
+-	go func() {
+-		if err = x.g.Serve(x.l); err != nil {
+-			x.log.Error("gRPC server error", logfields.Error, err)
+-		}
+-	}()
+-	return nil
++	v3.RegisterAggregatedDiscoveryServiceServer(server, x)
++	return server, nil
+ }
+ 
+ // GracefulStop halts the server gracefully, returning a nil error from the
+@@ -143,7 +169,9 @@ func (x *Server) Serve() error {
+ // This is useful to kill the server without producing a conflated error that
+ // would occur when net.Listen() returns an error.
+ func (x *Server) GracefulStop() {
+-	x.g.GracefulStop()
++	if x.g != nil {
++		x.g.GracefulStop()
++	}
+ }
+ 
+ func (x *Server) StreamAggregatedResources(stream v3.AggregatedDiscoveryService_StreamAggregatedResourcesServer) error {
+@@ -182,6 +210,7 @@ func (x *Server) DeltaAggregatedResources(stream v3.AggregatedDiscoveryService_D
+ 		EnrolledNamespaceTable:    x.enrolledNamespaceTable,
+ 		Metrics:                   x.metrics,
+ 		Authorizations:            x.authorizations,
++		TrustDomain:               x.trustDomain,
+ 	}
+ 
+ 	x.log.Debug("begin processing DeltaAggregatedResources stream")

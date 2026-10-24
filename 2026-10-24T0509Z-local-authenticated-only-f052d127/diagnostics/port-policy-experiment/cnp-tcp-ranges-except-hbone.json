@@ -1,0 +1,56 @@
+{
+  "apiVersion": "cilium.io/v2",
+  "kind": "CiliumNetworkPolicy",
+  "metadata": {
+    "name": "multiport-hbone-only",
+    "namespace": "mtls-spike"
+  },
+  "spec": {
+    "endpointSelector": {
+      "matchLabels": {
+        "app": "cmtc-multiport-server"
+      }
+    },
+    "ingress": [
+      {
+        "fromEndpoints": [
+          {
+            "matchLabels": {
+              "k8s:io.kubernetes.pod.namespace": "mtls-spike"
+            }
+          }
+        ],
+        "toPorts": [
+          {
+            "ports": [
+              {
+                "port": "15008",
+                "protocol": "TCP"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "ingressDeny": [
+      {
+        "toPorts": [
+          {
+            "ports": [
+              {
+                "port": "1",
+                "endPort": 15007,
+                "protocol": "TCP"
+              },
+              {
+                "port": "15009",
+                "endPort": 65535,
+                "protocol": "TCP"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

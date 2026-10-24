@@ -1,0 +1,918 @@
+{
+  "observedAt": "2026-10-24T04:27:14.093065+00:00",
+  "sourceAgent": "0d787e82f2a54b0f51eec97a39c24556dd3596d5",
+  "ports": [
+    80,
+    8080,
+    9443
+  ],
+  "stages": [
+    {
+      "stage": "baseline",
+      "samples": [
+        {
+          "case": "enrolled-pod-ip",
+          "port": 80,
+          "url": "http://10.30.0.251:80/",
+          "commandExit": 0,
+          "http200": true,
+          "httpStatusLines": [
+            "HTTP/1.1 200 OK"
+          ]
+        },
+        {
+          "case": "enrolled-service",
+          "port": 80,
+          "url": "http://multiport-server.mtls-spike:80/",
+          "commandExit": 0,
+          "http200": true,
+          "httpStatusLines": [
+            "HTTP/1.1 200 OK"
+          ]
+        },
+        {
+          "case": "unenrolled-cross-node",
+          "port": 80,
+          "url": "http://10.30.0.251:80/",
+          "commandExit": 0,
+          "http200": true,
+          "httpStatusLines": [
+            "HTTP/1.1 200 OK"
+          ]
+        },
+        {
+          "case": "unenrolled-same-node",
+          "port": 80,
+          "url": "http://10.30.0.251:80/",
+          "commandExit": 0,
+          "http200": true,
+          "httpStatusLines": [
+            "HTTP/1.1 200 OK"
+          ]
+        },
+        {
+          "case": "host-cmtc-mtls-control-plane",
+          "port": 80,
+          "url": "http://10.30.0.251:80/",
+          "commandExit": 0,
+          "http200": true,
+          "httpStatusLines": []
+        },
+        {
+          "case": "host-cmtc-mtls-worker",
+          "port": 80,
+          "url": "http://10.30.0.251:80/",
+          "commandExit": 0,
+          "http200": true,
+          "httpStatusLines": []
+        },
+        {
+          "case": "enrolled-pod-ip",
+          "port": 8080,
+          "url": "http://10.30.0.251:8080/",
+          "commandExit": 0,
+          "http200": true,
+          "httpStatusLines": [
+            "HTTP/1.1 200 OK"
+          ]
+        },
+        {
+          "case": "enrolled-service",
+          "port": 8080,
+          "url": "http://multiport-server.mtls-spike:8080/",
+          "commandExit": 0,
+          "http200": true,
+          "httpStatusLines": [
+            "HTTP/1.1 200 OK"
+          ]
+        },
+        {
+          "case": "unenrolled-cross-node",
+          "port": 8080,
+          "url": "http://10.30.0.251:8080/",
+          "commandExit": 0,
+          "http200": true,
+          "httpStatusLines": [
+            "HTTP/1.1 200 OK"
+          ]
+        },
+        {
+          "case": "unenrolled-same-node",
+          "port": 8080,
+          "url": "http://10.30.0.251:8080/",
+          "commandExit": 0,
+          "http200": true,
+          "httpStatusLines": [
+            "HTTP/1.1 200 OK"
+          ]
+        },
+        {
+          "case": "host-cmtc-mtls-control-plane",
+          "port": 8080,
+          "url": "http://10.30.0.251:8080/",
+          "commandExit": 0,
+          "http200": true,
+          "httpStatusLines": []
+        },
+        {
+          "case": "host-cmtc-mtls-worker",
+          "port": 8080,
+          "url": "http://10.30.0.251:8080/",
+          "commandExit": 0,
+          "http200": true,
+          "httpStatusLines": []
+        },
+        {
+          "case": "enrolled-pod-ip",
+          "port": 9443,
+          "url": "http://10.30.0.251:9443/",
+          "commandExit": 0,
+          "http200": true,
+          "httpStatusLines": [
+            "HTTP/1.1 200 OK"
+          ]
+        },
+        {
+          "case": "enrolled-service",
+          "port": 9443,
+          "url": "http://multiport-server.mtls-spike:9443/",
+          "commandExit": 0,
+          "http200": true,
+          "httpStatusLines": [
+            "HTTP/1.1 200 OK"
+          ]
+        },
+        {
+          "case": "unenrolled-cross-node",
+          "port": 9443,
+          "url": "http://10.30.0.251:9443/",
+          "commandExit": 0,
+          "http200": true,
+          "httpStatusLines": [
+            "HTTP/1.1 200 OK"
+          ]
+        },
+        {
+          "case": "unenrolled-same-node",
+          "port": 9443,
+          "url": "http://10.30.0.251:9443/",
+          "commandExit": 0,
+          "http200": true,
+          "httpStatusLines": [
+            "HTTP/1.1 200 OK"
+          ]
+        },
+        {
+          "case": "host-cmtc-mtls-control-plane",
+          "port": 9443,
+          "url": "http://10.30.0.251:9443/",
+          "commandExit": 0,
+          "http200": true,
+          "httpStatusLines": []
+        },
+        {
+          "case": "host-cmtc-mtls-worker",
+          "port": 9443,
+          "url": "http://10.30.0.251:9443/",
+          "commandExit": 0,
+          "http200": true,
+          "httpStatusLines": []
+        },
+        {
+          "case": "enrolled-service-mapped-18080-to-8080",
+          "port": 18080,
+          "url": "http://multiport-server.mtls-spike:18080/",
+          "commandExit": 0,
+          "http200": true,
+          "httpStatusLines": [
+            "HTTP/1.1 200 OK"
+          ]
+        }
+      ]
+    },
+    {
+      "stage": "cnp-hbone-default-deny",
+      "samples": [
+        {
+          "case": "enrolled-pod-ip",
+          "port": 80,
+          "url": "http://10.30.0.251:80/",
+          "commandExit": 0,
+          "http200": true,
+          "httpStatusLines": [
+            "HTTP/1.1 200 OK"
+          ]
+        },
+        {
+          "case": "enrolled-service",
+          "port": 80,
+          "url": "http://multiport-server.mtls-spike:80/",
+          "commandExit": 0,
+          "http200": true,
+          "httpStatusLines": [
+            "HTTP/1.1 200 OK"
+          ]
+        },
+        {
+          "case": "unenrolled-cross-node",
+          "port": 80,
+          "url": "http://10.30.0.251:80/",
+          "commandExit": 1,
+          "http200": false,
+          "httpStatusLines": []
+        },
+        {
+          "case": "unenrolled-same-node",
+          "port": 80,
+          "url": "http://10.30.0.251:80/",
+          "commandExit": 1,
+          "http200": false,
+          "httpStatusLines": []
+        },
+        {
+          "case": "host-cmtc-mtls-control-plane",
+          "port": 80,
+          "url": "http://10.30.0.251:80/",
+          "commandExit": 0,
+          "http200": true,
+          "httpStatusLines": []
+        },
+        {
+          "case": "host-cmtc-mtls-worker",
+          "port": 80,
+          "url": "http://10.30.0.251:80/",
+          "commandExit": 28,
+          "http200": false,
+          "httpStatusLines": []
+        },
+        {
+          "case": "enrolled-pod-ip",
+          "port": 8080,
+          "url": "http://10.30.0.251:8080/",
+          "commandExit": 0,
+          "http200": true,
+          "httpStatusLines": [
+            "HTTP/1.1 200 OK"
+          ]
+        },
+        {
+          "case": "enrolled-service",
+          "port": 8080,
+          "url": "http://multiport-server.mtls-spike:8080/",
+          "commandExit": 0,
+          "http200": true,
+          "httpStatusLines": [
+            "HTTP/1.1 200 OK"
+          ]
+        },
+        {
+          "case": "unenrolled-cross-node",
+          "port": 8080,
+          "url": "http://10.30.0.251:8080/",
+          "commandExit": 1,
+          "http200": false,
+          "httpStatusLines": []
+        },
+        {
+          "case": "unenrolled-same-node",
+          "port": 8080,
+          "url": "http://10.30.0.251:8080/",
+          "commandExit": 1,
+          "http200": false,
+          "httpStatusLines": []
+        },
+        {
+          "case": "host-cmtc-mtls-control-plane",
+          "port": 8080,
+          "url": "http://10.30.0.251:8080/",
+          "commandExit": 0,
+          "http200": true,
+          "httpStatusLines": []
+        },
+        {
+          "case": "host-cmtc-mtls-worker",
+          "port": 8080,
+          "url": "http://10.30.0.251:8080/",
+          "commandExit": 28,
+          "http200": false,
+          "httpStatusLines": []
+        },
+        {
+          "case": "enrolled-pod-ip",
+          "port": 9443,
+          "url": "http://10.30.0.251:9443/",
+          "commandExit": 0,
+          "http200": true,
+          "httpStatusLines": [
+            "HTTP/1.1 200 OK"
+          ]
+        },
+        {
+          "case": "enrolled-service",
+          "port": 9443,
+          "url": "http://multiport-server.mtls-spike:9443/",
+          "commandExit": 0,
+          "http200": true,
+          "httpStatusLines": [
+            "HTTP/1.1 200 OK"
+          ]
+        },
+        {
+          "case": "unenrolled-cross-node",
+          "port": 9443,
+          "url": "http://10.30.0.251:9443/",
+          "commandExit": 1,
+          "http200": false,
+          "httpStatusLines": []
+        },
+        {
+          "case": "unenrolled-same-node",
+          "port": 9443,
+          "url": "http://10.30.0.251:9443/",
+          "commandExit": 1,
+          "http200": false,
+          "httpStatusLines": []
+        },
+        {
+          "case": "host-cmtc-mtls-control-plane",
+          "port": 9443,
+          "url": "http://10.30.0.251:9443/",
+          "commandExit": 0,
+          "http200": true,
+          "httpStatusLines": []
+        },
+        {
+          "case": "host-cmtc-mtls-worker",
+          "port": 9443,
+          "url": "http://10.30.0.251:9443/",
+          "commandExit": 28,
+          "http200": false,
+          "httpStatusLines": []
+        },
+        {
+          "case": "enrolled-service-mapped-18080-to-8080",
+          "port": 18080,
+          "url": "http://multiport-server.mtls-spike:18080/",
+          "commandExit": 0,
+          "http200": true,
+          "httpStatusLines": [
+            "HTTP/1.1 200 OK"
+          ]
+        }
+      ]
+    },
+    {
+      "stage": "cnp-deny80-with-broad-allow",
+      "samples": [
+        {
+          "case": "enrolled-pod-ip",
+          "port": 80,
+          "url": "http://10.30.0.251:80/",
+          "commandExit": 0,
+          "http200": true,
+          "httpStatusLines": [
+            "HTTP/1.1 200 OK"
+          ]
+        },
+        {
+          "case": "enrolled-service",
+          "port": 80,
+          "url": "http://multiport-server.mtls-spike:80/",
+          "commandExit": 0,
+          "http200": true,
+          "httpStatusLines": [
+            "HTTP/1.1 200 OK"
+          ]
+        },
+        {
+          "case": "unenrolled-cross-node",
+          "port": 80,
+          "url": "http://10.30.0.251:80/",
+          "commandExit": 1,
+          "http200": false,
+          "httpStatusLines": []
+        },
+        {
+          "case": "unenrolled-same-node",
+          "port": 80,
+          "url": "http://10.30.0.251:80/",
+          "commandExit": 1,
+          "http200": false,
+          "httpStatusLines": []
+        },
+        {
+          "case": "host-cmtc-mtls-control-plane",
+          "port": 80,
+          "url": "http://10.30.0.251:80/",
+          "commandExit": 28,
+          "http200": false,
+          "httpStatusLines": []
+        },
+        {
+          "case": "host-cmtc-mtls-worker",
+          "port": 80,
+          "url": "http://10.30.0.251:80/",
+          "commandExit": 28,
+          "http200": false,
+          "httpStatusLines": []
+        },
+        {
+          "case": "enrolled-pod-ip",
+          "port": 8080,
+          "url": "http://10.30.0.251:8080/",
+          "commandExit": 0,
+          "http200": true,
+          "httpStatusLines": [
+            "HTTP/1.1 200 OK"
+          ]
+        },
+        {
+          "case": "enrolled-service",
+          "port": 8080,
+          "url": "http://multiport-server.mtls-spike:8080/",
+          "commandExit": 0,
+          "http200": true,
+          "httpStatusLines": [
+            "HTTP/1.1 200 OK"
+          ]
+        },
+        {
+          "case": "unenrolled-cross-node",
+          "port": 8080,
+          "url": "http://10.30.0.251:8080/",
+          "commandExit": 0,
+          "http200": true,
+          "httpStatusLines": [
+            "HTTP/1.1 200 OK"
+          ]
+        },
+        {
+          "case": "unenrolled-same-node",
+          "port": 8080,
+          "url": "http://10.30.0.251:8080/",
+          "commandExit": 0,
+          "http200": true,
+          "httpStatusLines": [
+            "HTTP/1.1 200 OK"
+          ]
+        },
+        {
+          "case": "host-cmtc-mtls-control-plane",
+          "port": 8080,
+          "url": "http://10.30.0.251:8080/",
+          "commandExit": 0,
+          "http200": true,
+          "httpStatusLines": []
+        },
+        {
+          "case": "host-cmtc-mtls-worker",
+          "port": 8080,
+          "url": "http://10.30.0.251:8080/",
+          "commandExit": 0,
+          "http200": true,
+          "httpStatusLines": []
+        },
+        {
+          "case": "enrolled-pod-ip",
+          "port": 9443,
+          "url": "http://10.30.0.251:9443/",
+          "commandExit": 0,
+          "http200": true,
+          "httpStatusLines": [
+            "HTTP/1.1 200 OK"
+          ]
+        },
+        {
+          "case": "enrolled-service",
+          "port": 9443,
+          "url": "http://multiport-server.mtls-spike:9443/",
+          "commandExit": 0,
+          "http200": true,
+          "httpStatusLines": [
+            "HTTP/1.1 200 OK"
+          ]
+        },
+        {
+          "case": "unenrolled-cross-node",
+          "port": 9443,
+          "url": "http://10.30.0.251:9443/",
+          "commandExit": 0,
+          "http200": true,
+          "httpStatusLines": [
+            "HTTP/1.1 200 OK"
+          ]
+        },
+        {
+          "case": "unenrolled-same-node",
+          "port": 9443,
+          "url": "http://10.30.0.251:9443/",
+          "commandExit": 0,
+          "http200": true,
+          "httpStatusLines": [
+            "HTTP/1.1 200 OK"
+          ]
+        },
+        {
+          "case": "host-cmtc-mtls-control-plane",
+          "port": 9443,
+          "url": "http://10.30.0.251:9443/",
+          "commandExit": 0,
+          "http200": true,
+          "httpStatusLines": []
+        },
+        {
+          "case": "host-cmtc-mtls-worker",
+          "port": 9443,
+          "url": "http://10.30.0.251:9443/",
+          "commandExit": 0,
+          "http200": true,
+          "httpStatusLines": []
+        },
+        {
+          "case": "enrolled-service-mapped-18080-to-8080",
+          "port": 18080,
+          "url": "http://multiport-server.mtls-spike:18080/",
+          "commandExit": 0,
+          "http200": true,
+          "httpStatusLines": [
+            "HTTP/1.1 200 OK"
+          ]
+        }
+      ]
+    },
+    {
+      "stage": "cnp-tcp-ranges-with-broad-allow",
+      "samples": [
+        {
+          "case": "enrolled-pod-ip",
+          "port": 80,
+          "url": "http://10.30.0.251:80/",
+          "commandExit": 0,
+          "http200": true,
+          "httpStatusLines": [
+            "HTTP/1.1 200 OK"
+          ]
+        },
+        {
+          "case": "enrolled-service",
+          "port": 80,
+          "url": "http://multiport-server.mtls-spike:80/",
+          "commandExit": 0,
+          "http200": true,
+          "httpStatusLines": [
+            "HTTP/1.1 200 OK"
+          ]
+        },
+        {
+          "case": "unenrolled-cross-node",
+          "port": 80,
+          "url": "http://10.30.0.251:80/",
+          "commandExit": 1,
+          "http200": false,
+          "httpStatusLines": []
+        },
+        {
+          "case": "unenrolled-same-node",
+          "port": 80,
+          "url": "http://10.30.0.251:80/",
+          "commandExit": 1,
+          "http200": false,
+          "httpStatusLines": []
+        },
+        {
+          "case": "host-cmtc-mtls-control-plane",
+          "port": 80,
+          "url": "http://10.30.0.251:80/",
+          "commandExit": 28,
+          "http200": false,
+          "httpStatusLines": []
+        },
+        {
+          "case": "host-cmtc-mtls-worker",
+          "port": 80,
+          "url": "http://10.30.0.251:80/",
+          "commandExit": 28,
+          "http200": false,
+          "httpStatusLines": []
+        },
+        {
+          "case": "enrolled-pod-ip",
+          "port": 8080,
+          "url": "http://10.30.0.251:8080/",
+          "commandExit": 0,
+          "http200": true,
+          "httpStatusLines": [
+            "HTTP/1.1 200 OK"
+          ]
+        },
+        {
+          "case": "enrolled-service",
+          "port": 8080,
+          "url": "http://multiport-server.mtls-spike:8080/",
+          "commandExit": 1,
+          "http200": false,
+          "httpStatusLines": []
+        },
+        {
+          "case": "unenrolled-cross-node",
+          "port": 8080,
+          "url": "http://10.30.0.251:8080/",
+          "commandExit": 1,
+          "http200": false,
+          "httpStatusLines": []
+        },
+        {
+          "case": "unenrolled-same-node",
+          "port": 8080,
+          "url": "http://10.30.0.251:8080/",
+          "commandExit": 1,
+          "http200": false,
+          "httpStatusLines": []
+        },
+        {
+          "case": "host-cmtc-mtls-control-plane",
+          "port": 8080,
+          "url": "http://10.30.0.251:8080/",
+          "commandExit": 28,
+          "http200": false,
+          "httpStatusLines": []
+        },
+        {
+          "case": "host-cmtc-mtls-worker",
+          "port": 8080,
+          "url": "http://10.30.0.251:8080/",
+          "commandExit": 28,
+          "http200": false,
+          "httpStatusLines": []
+        },
+        {
+          "case": "enrolled-pod-ip",
+          "port": 9443,
+          "url": "http://10.30.0.251:9443/",
+          "commandExit": 0,
+          "http200": true,
+          "httpStatusLines": [
+            "HTTP/1.1 200 OK"
+          ]
+        },
+        {
+          "case": "enrolled-service",
+          "port": 9443,
+          "url": "http://multiport-server.mtls-spike:9443/",
+          "commandExit": 1,
+          "http200": false,
+          "httpStatusLines": []
+        },
+        {
+          "case": "unenrolled-cross-node",
+          "port": 9443,
+          "url": "http://10.30.0.251:9443/",
+          "commandExit": 1,
+          "http200": false,
+          "httpStatusLines": []
+        },
+        {
+          "case": "unenrolled-same-node",
+          "port": 9443,
+          "url": "http://10.30.0.251:9443/",
+          "commandExit": 1,
+          "http200": false,
+          "httpStatusLines": []
+        },
+        {
+          "case": "host-cmtc-mtls-control-plane",
+          "port": 9443,
+          "url": "http://10.30.0.251:9443/",
+          "commandExit": 28,
+          "http200": false,
+          "httpStatusLines": []
+        },
+        {
+          "case": "host-cmtc-mtls-worker",
+          "port": 9443,
+          "url": "http://10.30.0.251:9443/",
+          "commandExit": 28,
+          "http200": false,
+          "httpStatusLines": []
+        },
+        {
+          "case": "enrolled-service-mapped-18080-to-8080",
+          "port": 18080,
+          "url": "http://multiport-server.mtls-spike:18080/",
+          "commandExit": 1,
+          "http200": false,
+          "httpStatusLines": []
+        }
+      ]
+    },
+    {
+      "stage": "ccnp-tcp-ranges-with-broad-allow",
+      "samples": [
+        {
+          "case": "enrolled-pod-ip",
+          "port": 80,
+          "url": "http://10.30.0.251:80/",
+          "commandExit": 0,
+          "http200": true,
+          "httpStatusLines": [
+            "HTTP/1.1 200 OK"
+          ]
+        },
+        {
+          "case": "enrolled-service",
+          "port": 80,
+          "url": "http://multiport-server.mtls-spike:80/",
+          "commandExit": 1,
+          "http200": false,
+          "httpStatusLines": []
+        },
+        {
+          "case": "unenrolled-cross-node",
+          "port": 80,
+          "url": "http://10.30.0.251:80/",
+          "commandExit": 1,
+          "http200": false,
+          "httpStatusLines": []
+        },
+        {
+          "case": "unenrolled-same-node",
+          "port": 80,
+          "url": "http://10.30.0.251:80/",
+          "commandExit": 1,
+          "http200": false,
+          "httpStatusLines": []
+        },
+        {
+          "case": "host-cmtc-mtls-control-plane",
+          "port": 80,
+          "url": "http://10.30.0.251:80/",
+          "commandExit": 28,
+          "http200": false,
+          "httpStatusLines": []
+        },
+        {
+          "case": "host-cmtc-mtls-worker",
+          "port": 80,
+          "url": "http://10.30.0.251:80/",
+          "commandExit": 28,
+          "http200": false,
+          "httpStatusLines": []
+        },
+        {
+          "case": "enrolled-pod-ip",
+          "port": 8080,
+          "url": "http://10.30.0.251:8080/",
+          "commandExit": 0,
+          "http200": true,
+          "httpStatusLines": [
+            "HTTP/1.1 200 OK"
+          ]
+        },
+        {
+          "case": "enrolled-service",
+          "port": 8080,
+          "url": "http://multiport-server.mtls-spike:8080/",
+          "commandExit": 1,
+          "http200": false,
+          "httpStatusLines": []
+        },
+        {
+          "case": "unenrolled-cross-node",
+          "port": 8080,
+          "url": "http://10.30.0.251:8080/",
+          "commandExit": 1,
+          "http200": false,
+          "httpStatusLines": []
+        },
+        {
+          "case": "unenrolled-same-node",
+          "port": 8080,
+          "url": "http://10.30.0.251:8080/",
+          "commandExit": 1,
+          "http200": false,
+          "httpStatusLines": []
+        },
+        {
+          "case": "host-cmtc-mtls-control-plane",
+          "port": 8080,
+          "url": "http://10.30.0.251:8080/",
+          "commandExit": 28,
+          "http200": false,
+          "httpStatusLines": []
+        },
+        {
+          "case": "host-cmtc-mtls-worker",
+          "port": 8080,
+          "url": "http://10.30.0.251:8080/",
+          "commandExit": 28,
+          "http200": false,
+          "httpStatusLines": []
+        },
+        {
+          "case": "enrolled-pod-ip",
+          "port": 9443,
+          "url": "http://10.30.0.251:9443/",
+          "commandExit": 0,
+          "http200": true,
+          "httpStatusLines": [
+            "HTTP/1.1 200 OK"
+          ]
+        },
+        {
+          "case": "enrolled-service",
+          "port": 9443,
+          "url": "http://multiport-server.mtls-spike:9443/",
+          "commandExit": 1,
+          "http200": false,
+          "httpStatusLines": []
+        },
+        {
+          "case": "unenrolled-cross-node",
+          "port": 9443,
+          "url": "http://10.30.0.251:9443/",
+          "commandExit": 1,
+          "http200": false,
+          "httpStatusLines": []
+        },
+        {
+          "case": "unenrolled-same-node",
+          "port": 9443,
+          "url": "http://10.30.0.251:9443/",
+          "commandExit": 1,
+          "http200": false,
+          "httpStatusLines": []
+        },
+        {
+          "case": "host-cmtc-mtls-control-plane",
+          "port": 9443,
+          "url": "http://10.30.0.251:9443/",
+          "commandExit": 28,
+          "http200": false,
+          "httpStatusLines": []
+        },
+        {
+          "case": "host-cmtc-mtls-worker",
+          "port": 9443,
+          "url": "http://10.30.0.251:9443/",
+          "commandExit": 28,
+          "http200": false,
+          "httpStatusLines": []
+        },
+        {
+          "case": "enrolled-service-mapped-18080-to-8080",
+          "port": 18080,
+          "url": "http://multiport-server.mtls-spike:18080/",
+          "commandExit": 1,
+          "http200": false,
+          "httpStatusLines": []
+        }
+      ]
+    }
+  ],
+  "serverPodIP": "10.30.0.251",
+  "cleanup": [
+    {
+      "kind": "ccnp",
+      "name": "multiport-hbone-only",
+      "namespace": null,
+      "deleteExit": 0
+    },
+    {
+      "kind": "networkpolicy",
+      "name": "multiport-broad-allow",
+      "namespace": "mtls-spike",
+      "deleteExit": 0
+    },
+    {
+      "kind": "pod",
+      "name": "multiport-control-server-node",
+      "namespace": "mtls-plaintext-control",
+      "deleteExit": 0
+    },
+    {
+      "kind": "pod",
+      "name": "multiport-control-worker",
+      "namespace": "mtls-plaintext-control",
+      "deleteExit": 0
+    },
+    {
+      "kind": "svc",
+      "name": "multiport-server",
+      "namespace": "mtls-spike",
+      "deleteExit": 0
+    },
+    {
+      "kind": "pod",
+      "name": "multiport-server",
+      "namespace": "mtls-spike",
+      "deleteExit": 0
+    },
+    {
+      "kind": "cm",
+      "name": "multiport-nginx",
+      "namespace": "mtls-spike",
+      "deleteExit": 0
+    }
+  ],
+  "fullFailClosedProtection": false
+}

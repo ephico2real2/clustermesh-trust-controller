@@ -1,0 +1,67 @@
+PASS preflight: context=kind-cmtc-mtls, exact agent source=f052d1276b0fb1619809db0059fbbb7898c9cfae, authenticated-only=true, no CNP/CCNP/KNP
+PASS steady: ALLOW mTLS enrolled-pod-ip port=80 HTTP=200 exit=0
+PASS steady: ALLOW mTLS enrolled-service port=80 HTTP=200 exit=0
+PASS steady: DENY unauthenticated unenrolled-cross-node port=80 HTTP=none exit=1
+PASS steady: DENY unauthenticated unenrolled-same-node port=80 HTTP=none exit=1
+PASS steady: DENY unauthenticated host-cmtc-mtls-control-plane port=80 HTTP=none exit=56
+PASS steady: DENY unauthenticated host-cmtc-mtls-worker port=80 HTTP=none exit=56
+PASS steady: ALLOW mTLS enrolled-pod-ip port=8080 HTTP=200 exit=0
+PASS steady: ALLOW mTLS enrolled-service port=8080 HTTP=200 exit=0
+PASS steady: DENY unauthenticated unenrolled-cross-node port=8080 HTTP=none exit=1
+PASS steady: DENY unauthenticated unenrolled-same-node port=8080 HTTP=none exit=1
+PASS steady: DENY unauthenticated host-cmtc-mtls-control-plane port=8080 HTTP=none exit=56
+PASS steady: DENY unauthenticated host-cmtc-mtls-worker port=8080 HTTP=none exit=56
+PASS steady: ALLOW mTLS enrolled-pod-ip port=9443 HTTP=200 exit=0
+PASS steady: ALLOW mTLS enrolled-service port=9443 HTTP=200 exit=0
+PASS steady: DENY unauthenticated unenrolled-cross-node port=9443 HTTP=none exit=1
+PASS steady: DENY unauthenticated unenrolled-same-node port=9443 HTTP=none exit=1
+PASS steady: DENY unauthenticated host-cmtc-mtls-control-plane port=9443 HTTP=none exit=56
+PASS steady: DENY unauthenticated host-cmtc-mtls-worker port=9443 HTTP=none exit=56
+PASS steady: ALLOW mTLS enrolled-service-mapped port=18080 HTTP=200 exit=0
+PASS restart ztunnel-cilium: 384 unauthenticated probes; unexpected HTTP=0; probe errors=0
+PASS after-ztunnel-cilium-restart: ALLOW mTLS enrolled-pod-ip port=80 HTTP=200 exit=0
+PASS after-ztunnel-cilium-restart: ALLOW mTLS enrolled-service port=80 HTTP=200 exit=0
+PASS after-ztunnel-cilium-restart: DENY unauthenticated unenrolled-cross-node port=80 HTTP=none exit=1
+PASS after-ztunnel-cilium-restart: DENY unauthenticated unenrolled-same-node port=80 HTTP=none exit=1
+PASS after-ztunnel-cilium-restart: DENY unauthenticated host-cmtc-mtls-control-plane port=80 HTTP=none exit=56
+PASS after-ztunnel-cilium-restart: DENY unauthenticated host-cmtc-mtls-worker port=80 HTTP=none exit=56
+PASS after-ztunnel-cilium-restart: ALLOW mTLS enrolled-pod-ip port=8080 HTTP=200 exit=0
+PASS after-ztunnel-cilium-restart: ALLOW mTLS enrolled-service port=8080 HTTP=200 exit=0
+PASS after-ztunnel-cilium-restart: DENY unauthenticated unenrolled-cross-node port=8080 HTTP=none exit=1
+PASS after-ztunnel-cilium-restart: DENY unauthenticated unenrolled-same-node port=8080 HTTP=none exit=1
+PASS after-ztunnel-cilium-restart: DENY unauthenticated host-cmtc-mtls-control-plane port=8080 HTTP=none exit=56
+PASS after-ztunnel-cilium-restart: DENY unauthenticated host-cmtc-mtls-worker port=8080 HTTP=none exit=56
+PASS after-ztunnel-cilium-restart: ALLOW mTLS enrolled-pod-ip port=9443 HTTP=200 exit=0
+PASS after-ztunnel-cilium-restart: ALLOW mTLS enrolled-service port=9443 HTTP=200 exit=0
+PASS after-ztunnel-cilium-restart: DENY unauthenticated unenrolled-cross-node port=9443 HTTP=none exit=1
+PASS after-ztunnel-cilium-restart: DENY unauthenticated unenrolled-same-node port=9443 HTTP=none exit=1
+PASS after-ztunnel-cilium-restart: DENY unauthenticated host-cmtc-mtls-control-plane port=9443 HTTP=none exit=56
+PASS after-ztunnel-cilium-restart: DENY unauthenticated host-cmtc-mtls-worker port=9443 HTTP=none exit=52
+PASS after-ztunnel-cilium-restart: ALLOW mTLS enrolled-service-mapped port=18080 HTTP=200 exit=0
+PASS restart cilium: 1014 unauthenticated probes; unexpected HTTP=0; probe errors=0
+PASS after-cilium-restart: ALLOW mTLS enrolled-pod-ip port=80 HTTP=200 exit=0
+PASS after-cilium-restart: ALLOW mTLS enrolled-service port=80 HTTP=200 exit=0
+PASS after-cilium-restart: DENY unauthenticated unenrolled-cross-node port=80 HTTP=none exit=1
+PASS after-cilium-restart: DENY unauthenticated unenrolled-same-node port=80 HTTP=none exit=1
+PASS after-cilium-restart: DENY unauthenticated host-cmtc-mtls-control-plane port=80 HTTP=none exit=56
+PASS after-cilium-restart: DENY unauthenticated host-cmtc-mtls-worker port=80 HTTP=none exit=56
+PASS after-cilium-restart: ALLOW mTLS enrolled-pod-ip port=8080 HTTP=200 exit=0
+PASS after-cilium-restart: ALLOW mTLS enrolled-service port=8080 HTTP=200 exit=0
+PASS after-cilium-restart: DENY unauthenticated unenrolled-cross-node port=8080 HTTP=none exit=1
+PASS after-cilium-restart: DENY unauthenticated unenrolled-same-node port=8080 HTTP=none exit=1
+PASS after-cilium-restart: DENY unauthenticated host-cmtc-mtls-control-plane port=8080 HTTP=none exit=56
+PASS after-cilium-restart: DENY unauthenticated host-cmtc-mtls-worker port=8080 HTTP=none exit=56
+PASS after-cilium-restart: ALLOW mTLS enrolled-pod-ip port=9443 HTTP=200 exit=0
+PASS after-cilium-restart: ALLOW mTLS enrolled-service port=9443 HTTP=200 exit=0
+PASS after-cilium-restart: DENY unauthenticated unenrolled-cross-node port=9443 HTTP=none exit=1
+PASS after-cilium-restart: DENY unauthenticated unenrolled-same-node port=9443 HTTP=none exit=1
+PASS after-cilium-restart: DENY unauthenticated host-cmtc-mtls-control-plane port=9443 HTTP=none exit=52
+PASS after-cilium-restart: DENY unauthenticated host-cmtc-mtls-worker port=9443 HTTP=none exit=56
+PASS after-cilium-restart: ALLOW mTLS enrolled-service-mapped port=18080 HTTP=200 exit=0
+Evidence retained in artifacts/mtls-spike/authenticated-only-f052d127
+
+PASS authenticated HTTP load: Service 3000/3000 + Pod IP 3000/3000 HTTP 200
+PASS negative load: 900/900 attempts without any HTTP response
+PASS SPIRE retry/logger: 6 structured retries; no false ACK; ACK after recovery
+PASS packet canary: 0 packets; TLS application-data records present
+OPEN complete fail-closed admission: missing-policy, first-packet, platform and cross-cluster/transport gates

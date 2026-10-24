@@ -1,0 +1,877 @@
+{
+  "uid": "cmtc-authenticated-only",
+  "title": "CMTC | Authenticated-only node mTLS",
+  "schemaVersion": 41,
+  "version": 4,
+  "editable": false,
+  "tags": [
+    "cmtc",
+    "experimental",
+    "ztunnel",
+    "mtls"
+  ],
+  "timezone": "utc",
+  "time": {
+    "from": "now-10m",
+    "to": "now"
+  },
+  "refresh": "5s",
+  "panels": [
+    {
+      "id": 1,
+      "title": "Native authenticated-only trial — no application-port list",
+      "type": "text",
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 24,
+        "h": 5
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "mode": "markdown",
+        "content": "**Two nodes · no application sidecars · no CNP / CCNP / KNP.** Native policy rejects an absent verified TLS principal, without an application-port list.\n\n**Passed:** mTLS on 80 / 8080 / 9443 and Service 18080 → 8080; unenrolled and host clients received no HTTP response. Restart probes: 384 during ztunnel restart + 1,014 during Cilium restart, zero unexpected HTTP responses.\n\n**Open gates:** missing-policy and first-packet admission, platform exceptions, cross-cluster and transport composition. **Complete Protected status is not claimed.**"
+      },
+      "description": "Experimental scope, demonstrated paths and explicit remaining security gates."
+    },
+    {
+      "id": 3,
+      "title": "mTLS TCP connections started",
+      "type": "stat",
+      "gridPos": {
+        "x": 0,
+        "y": 5,
+        "w": 8,
+        "h": 4
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "#59a14f"
+          },
+          "decimals": 0,
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "none",
+        "text": {
+          "valueSize": 48
+        }
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "cmtc-prom"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "(sum(increase(istio_tcp_connections_opened_total{job=\"cmtc-spire-ztunnel\",cluster=\"cmtc-mtls\",reporter=\"destination\",destination_workload_namespace=\"mtls-spike\",connection_security_policy=\"mutual_tls\"}[${__range_ms}ms] @ end())) or on() (0 * sum(increase(istio_tcp_connections_opened_total{job=\"cmtc-spire-ztunnel\",cluster=\"cmtc-mtls\",reporter=\"destination\",destination_workload_namespace=\"mtls-spike\"}[${__range_ms}ms] @ end())))) and on() (sum(up{job=\"cmtc-spire-ztunnel\",cluster=\"cmtc-mtls\"} @ end()) == 2)",
+          "legendFormat": "",
+          "range": false,
+          "instant": true
+        }
+      ],
+      "description": "Destination-reported TCP opens after peer TLS authentication, with connection_security_policy=mutual_tls. Counter increase over the selected time range, handling resets and extrapolated by Prometheus. Not HTTP requests, successful application responses, or TLS handshakes; authenticated connections can still be denied by authorization policy."
+    },
+    {
+      "id": 4,
+      "title": "TCP attempts without verified mTLS",
+      "type": "stat",
+      "gridPos": {
+        "x": 8,
+        "y": 5,
+        "w": 8,
+        "h": 4
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "#f28e2b"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "orange",
+                "value": null
+              }
+            ]
+          },
+          "decimals": 0,
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "none",
+        "text": {
+          "valueSize": 48
+        }
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "cmtc-prom"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "(sum(increase(istio_tcp_connections_opened_total{job=\"cmtc-spire-ztunnel\",cluster=\"cmtc-mtls\",reporter=\"destination\",destination_workload_namespace=\"mtls-spike\",connection_security_policy!=\"mutual_tls\"}[${__range_ms}ms] @ end())) or on() (0 * sum(increase(istio_tcp_connections_opened_total{job=\"cmtc-spire-ztunnel\",cluster=\"cmtc-mtls\",reporter=\"destination\",destination_workload_namespace=\"mtls-spike\"}[${__range_ms}ms] @ end())))) and on() (sum(up{job=\"cmtc-spire-ztunnel\",cluster=\"cmtc-mtls\"} @ end()) == 2)",
+          "legendFormat": "",
+          "range": false,
+          "instant": true
+        }
+      ],
+      "description": "Destination-reported TCP opens without a verified mTLS peer. Incremented before authorization, including attempts later rejected. Counter increase over the selected time range, handling resets and extrapolated by Prometheus. Does not establish accepted plaintext or count HTTP requests."
+    },
+    {
+      "id": 10,
+      "title": "Connections rejected by policy — DENY",
+      "type": "stat",
+      "gridPos": {
+        "x": 16,
+        "y": 5,
+        "w": 8,
+        "h": 4
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "#f28e2b"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "orange",
+                "value": null
+              }
+            ]
+          },
+          "decimals": 0,
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "none",
+        "text": {
+          "valueSize": 48
+        }
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "cmtc-prom"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "(sum(increase(istio_tcp_connections_failed_total{job=\"cmtc-spire-ztunnel\",cluster=\"cmtc-mtls\",reporter=\"destination\",destination_workload_namespace=\"mtls-spike\",response_flags=\"DENY\"}[${__range_ms}ms] @ end())) or on() (0 * sum(increase(istio_tcp_connections_opened_total{job=\"cmtc-spire-ztunnel\",cluster=\"cmtc-mtls\",reporter=\"destination\",destination_workload_namespace=\"mtls-spike\"}[${__range_ms}ms] @ end())))) and on() (sum(up{job=\"cmtc-spire-ztunnel\",cluster=\"cmtc-mtls\"} @ end()) == 2)",
+          "legendFormat": "",
+          "range": false,
+          "instant": true
+        }
+      ],
+      "description": "Actual destination-reported native failed TCP counter with response_flags=DENY, regardless of authentication state. These rejections overlap the attempted connection counters; never add this stat to TCP attempts to form a total. Counter increase over the selected time range, handling resets and extrapolated by Prometheus."
+    },
+    {
+      "id": 2,
+      "title": "ztunnel metrics targets UP · expected 2",
+      "type": "stat",
+      "gridPos": {
+        "x": 0,
+        "y": 9,
+        "w": 6,
+        "h": 4
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "thresholds"
+          },
+          "decimals": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#e15759",
+                "value": null
+              },
+              {
+                "color": "#f28e2b",
+                "value": 1
+              },
+              {
+                "color": "#59a14f",
+                "value": 2
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "none",
+        "text": {
+          "valueSize": 48
+        }
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "cmtc-prom"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(up{job=\"cmtc-spire-ztunnel\",cluster=\"cmtc-mtls\"})",
+          "legendFormat": "",
+          "range": false,
+          "instant": true
+        }
+      ],
+      "description": "Last scrape UP count at the selected range end; expected 2. This measures metrics reachability, not verified workload protection. Missing data is unavailable."
+    },
+    {
+      "id": 5,
+      "title": "mTLS application bytes sent/s · source",
+      "type": "stat",
+      "gridPos": {
+        "x": 6,
+        "y": 9,
+        "w": 6,
+        "h": 4
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "Bps",
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "#4e79a7"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "none",
+        "text": {
+          "valueSize": 48
+        }
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "cmtc-prom"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(rate(istio_tcp_sent_bytes_total{job=\"cmtc-spire-ztunnel\",cluster=\"cmtc-mtls\",connection_security_policy=\"mutual_tls\",destination_workload_namespace=\"mtls-spike\",reporter=\"source\"}[$__rate_interval]))",
+          "legendFormat": "",
+          "range": false,
+          "instant": true
+        }
+      ],
+      "description": "Source-reported mTLS application bytes sent per second at the range end; $__rate_interval adapts to the scrape interval and zoom. Positive load produces a positive rate; zero means no measured payload, missing data is unavailable. Does not count HTTP requests or TLS wire overhead."
+    },
+    {
+      "id": 11,
+      "title": "Completed TCP attempts · share by outcome",
+      "type": "piechart",
+      "gridPos": {
+        "x": 12,
+        "y": 9,
+        "w": 12,
+        "h": 14
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 1,
+          "min": 0,
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "mTLS · no failure flag"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#59a14f"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Unauthenticated blocked"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#f28e2b"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Authenticated denied"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#edc948"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Unverified · no failure flag"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#e15759"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Other failures"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#b07aa1"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "pieType": "pie",
+        "displayLabels": [
+          "percent"
+        ],
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "values": [
+            "value",
+            "percent"
+          ]
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "desc"
+        }
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "cmtc-prom"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "(sum(increase(istio_tcp_connections_closed_total{job=\"cmtc-spire-ztunnel\",cluster=\"cmtc-mtls\",reporter=\"destination\",destination_workload_namespace=\"mtls-spike\",connection_security_policy=\"mutual_tls\",response_flags=\"-\"}[${__range_ms}ms] @ end())) or on() (0 * sum(increase(istio_tcp_connections_closed_total{job=\"cmtc-spire-ztunnel\",cluster=\"cmtc-mtls\",reporter=\"destination\",destination_workload_namespace=\"mtls-spike\"}[${__range_ms}ms] @ end())))) and on() (sum(up{job=\"cmtc-spire-ztunnel\",cluster=\"cmtc-mtls\"} @ end()) == 2)",
+          "legendFormat": "mTLS · no failure flag",
+          "range": false,
+          "instant": true
+        },
+        {
+          "refId": "B",
+          "expr": "(sum(increase(istio_tcp_connections_closed_total{job=\"cmtc-spire-ztunnel\",cluster=\"cmtc-mtls\",reporter=\"destination\",destination_workload_namespace=\"mtls-spike\",connection_security_policy!=\"mutual_tls\",response_flags=\"DENY\"}[${__range_ms}ms] @ end())) or on() (0 * sum(increase(istio_tcp_connections_closed_total{job=\"cmtc-spire-ztunnel\",cluster=\"cmtc-mtls\",reporter=\"destination\",destination_workload_namespace=\"mtls-spike\"}[${__range_ms}ms] @ end())))) and on() (sum(up{job=\"cmtc-spire-ztunnel\",cluster=\"cmtc-mtls\"} @ end()) == 2)",
+          "legendFormat": "Unauthenticated blocked",
+          "range": false,
+          "instant": true
+        },
+        {
+          "refId": "C",
+          "expr": "(sum(increase(istio_tcp_connections_closed_total{job=\"cmtc-spire-ztunnel\",cluster=\"cmtc-mtls\",reporter=\"destination\",destination_workload_namespace=\"mtls-spike\",connection_security_policy=\"mutual_tls\",response_flags=\"DENY\"}[${__range_ms}ms] @ end())) or on() (0 * sum(increase(istio_tcp_connections_closed_total{job=\"cmtc-spire-ztunnel\",cluster=\"cmtc-mtls\",reporter=\"destination\",destination_workload_namespace=\"mtls-spike\"}[${__range_ms}ms] @ end())))) and on() (sum(up{job=\"cmtc-spire-ztunnel\",cluster=\"cmtc-mtls\"} @ end()) == 2)",
+          "legendFormat": "Authenticated denied",
+          "range": false,
+          "instant": true
+        },
+        {
+          "refId": "D",
+          "expr": "(sum(increase(istio_tcp_connections_closed_total{job=\"cmtc-spire-ztunnel\",cluster=\"cmtc-mtls\",reporter=\"destination\",destination_workload_namespace=\"mtls-spike\",connection_security_policy!=\"mutual_tls\",response_flags=\"-\"}[${__range_ms}ms] @ end())) or on() (0 * sum(increase(istio_tcp_connections_closed_total{job=\"cmtc-spire-ztunnel\",cluster=\"cmtc-mtls\",reporter=\"destination\",destination_workload_namespace=\"mtls-spike\"}[${__range_ms}ms] @ end())))) and on() (sum(up{job=\"cmtc-spire-ztunnel\",cluster=\"cmtc-mtls\"} @ end()) == 2)",
+          "legendFormat": "Unverified · no failure flag",
+          "range": false,
+          "instant": true
+        },
+        {
+          "refId": "E",
+          "expr": "(sum(increase(istio_tcp_connections_closed_total{job=\"cmtc-spire-ztunnel\",cluster=\"cmtc-mtls\",reporter=\"destination\",destination_workload_namespace=\"mtls-spike\",response_flags!=\"-\",response_flags!=\"DENY\"}[${__range_ms}ms] @ end())) or on() (0 * sum(increase(istio_tcp_connections_closed_total{job=\"cmtc-spire-ztunnel\",cluster=\"cmtc-mtls\",reporter=\"destination\",destination_workload_namespace=\"mtls-spike\"}[${__range_ms}ms] @ end())))) and on() (sum(up{job=\"cmtc-spire-ztunnel\",cluster=\"cmtc-mtls\"} @ end()) == 2)",
+          "legendFormat": "Other failures",
+          "range": false,
+          "instant": true
+        }
+      ],
+      "description": "Percent of destination-reported completed TCP attempts in the selected time range, using increase(istio_tcp_connections_closed_total). Each connection belongs to exactly one category; source reports are excluded to prevent double counting. No failure flag does not prove HTTP success. Excludes in-flight connections and early failures without a completed TCP record. These are TCP connections, not HTTP requests or TLS handshakes. Counter increases handle resets and are extrapolated estimates. Zero categories require observed closed-counter telemetry and both node scrapes UP; missing telemetry remains unavailable. Headline totals use this selected range but count TCP opens or failures; the pie counts completed records. They can differ for in-flight connections."
+    },
+    {
+      "id": 9,
+      "title": "Scope and independent evidence",
+      "type": "text",
+      "gridPos": {
+        "x": 0,
+        "y": 13,
+        "w": 12,
+        "h": 10
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "mode": "markdown",
+        "content": "**Measured on 2026-10-24:** 6,000/6,000 HTTP 200 under mTLS load; 900/900 unenrolled attempts rejected. SPIRE outage: six structured retries, no false ACK, authenticated ACK after recovery.\n\n**Pins:** agent `f052d1276b`, operator `d8124529b5`, host Podman / Linux ARM64; deployed image verified on both nodes. Public SVIDs, packet/TLS/canary checks, full commands and raw queries accompany the screenshot.\n\n**Native table:** lifetime counters, not selected-range totals. `unknown` = no verified mesh principal; `DENY` = policy rejection; `-` = no failure flag. [Remaining acceptance: issue #8](https://github.com/ephico2real2/clustermesh-trust-controller/issues/8)."
+      },
+      "description": "Independent HTTP, identity, packet and retry checks supplement TCP metrics; links retain the remaining acceptance gates."
+    },
+    {
+      "id": 12,
+      "type": "text",
+      "title": "How to read the connection totals and percentages",
+      "description": "Visible counter and percentage definitions; exact source and remaining security gates are below.",
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "options": {
+        "mode": "markdown",
+        "content": "**Selected range:** the three totals are counter increases, estimated across resets. Attempts without verified mTLS **include later DENY rejections**; never add DENY to attempts.\n\n**Pie:** one destination record per **completed TCP attempt** in this range; five exclusive outcomes total 100%. In-flight connections and early unrecorded failures are excluded. No failure flag does not prove HTTP success. **TCP connections ≠ HTTP requests ≠ TLS handshakes.**"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 23,
+        "w": 24,
+        "h": 4
+      }
+    },
+    {
+      "id": 6,
+      "title": "mTLS TCP opens/s · both nodes (not TLS handshakes)",
+      "type": "timeseries",
+      "gridPos": {
+        "x": 0,
+        "y": 27,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "cps",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "min": 0,
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "drawStyle": "line",
+            "showPoints": "never",
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            }
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "cmtc-mtls-control-plane · destination"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#4e79a7"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "cmtc-mtls-worker · source"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#e15759"
+                }
+              },
+              {
+                "id": "custom.lineStyle",
+                "value": {
+                  "fill": "dash",
+                  "dash": [
+                    6,
+                    4
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "cmtc-prom"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by(node,reporter) (rate(istio_tcp_connections_opened_total{job=\"cmtc-spire-ztunnel\",cluster=\"cmtc-mtls\",connection_security_policy=\"mutual_tls\",destination_workload_namespace=\"mtls-spike\"}[$__rate_interval]))",
+          "legendFormat": "{{node}} · {{reporter}}",
+          "range": true,
+          "instant": false
+        }
+      ],
+      "description": "TCP opens per second, rate over $__rate_interval, separately reported by the source and destination node. The two reports describe the same connections; do not add them. Solid blue is the receiving node, dashed red is the source. Missing data is unavailable; these are not TLS handshake counts."
+    },
+    {
+      "id": 7,
+      "title": "mTLS traffic · source-reported bytes/s",
+      "type": "timeseries",
+      "gridPos": {
+        "x": 12,
+        "y": 27,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "Bps",
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "#e15759"
+          },
+          "min": 0,
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "drawStyle": "line",
+            "showPoints": "never",
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "cmtc-prom"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by(node) (rate(istio_tcp_sent_bytes_total{job=\"cmtc-spire-ztunnel\",cluster=\"cmtc-mtls\",connection_security_policy=\"mutual_tls\",destination_workload_namespace=\"mtls-spike\",reporter=\"source\"}[$__rate_interval]) + rate(istio_tcp_received_bytes_total{job=\"cmtc-spire-ztunnel\",cluster=\"cmtc-mtls\",connection_security_policy=\"mutual_tls\",destination_workload_namespace=\"mtls-spike\",reporter=\"source\"}[$__rate_interval]))",
+          "legendFormat": "{{node}}",
+          "range": true,
+          "instant": false
+        }
+      ],
+      "description": "Source-reported mTLS bytes sent plus received per second, rate over $__rate_interval. Red identifies cmtc-mtls-worker consistently with the TCP plot. Positive load produces a positive rate; zero means no measured payload, missing data is unavailable."
+    },
+    {
+      "id": 8,
+      "title": "Native TCP close verdicts and verified peer identities",
+      "type": "table",
+      "gridPos": {
+        "x": 0,
+        "y": 35,
+        "w": 24,
+        "h": 7
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "node"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 195
+              },
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "cmtc-mtls-control-plane": {
+                        "text": "cmtc-mtls-control-plane",
+                        "color": "#4e79a7"
+                      },
+                      "cmtc-mtls-worker": {
+                        "text": "cmtc-mtls-worker",
+                        "color": "#e15759"
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "reporter"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 95
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "source_principal"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 420
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "destination_principal"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 420
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Security"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 135
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Verdict"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 85
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Connections"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 110
+              }
+            ]
+          }
+        ]
+      },
+      "options": {},
+      "datasource": {
+        "type": "prometheus",
+        "uid": "cmtc-prom"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by(node,reporter,source_principal,destination_principal,connection_security_policy,response_flags) (istio_tcp_connections_closed_total{job=\"cmtc-spire-ztunnel\",cluster=\"cmtc-mtls\",destination_workload_namespace=\"mtls-spike\"})",
+          "legendFormat": "",
+          "range": false,
+          "instant": true,
+          "format": "table"
+        }
+      ],
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true
+            },
+            "indexByName": {
+              "node": 0,
+              "reporter": 1,
+              "source_principal": 2,
+              "destination_principal": 3,
+              "connection_security_policy": 4,
+              "Value": 6,
+              "response_flags": 5
+            },
+            "renameByName": {
+              "Value": "Connections",
+              "connection_security_policy": "Security",
+              "response_flags": "Verdict"
+            }
+          }
+        }
+      ],
+      "description": "Last native TCP counter readings at the selected range end, split by node, reporter, verified principals and security. These are lifetime counters and can reset. Source and destination rows overlap; do not sum them. DENY means policy rejection, and a dash means no failure flag, not proven HTTP success."
+    }
+  ],
+  "templating": {
+    "list": []
+  },
+  "annotations": {
+    "list": []
+  }
+}
