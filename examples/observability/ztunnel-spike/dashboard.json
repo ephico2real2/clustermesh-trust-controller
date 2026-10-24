@@ -1,0 +1,485 @@
+{
+  "uid": "cmtc-spire-mtls-spike",
+  "title": "CMTC | Cross-node mTLS spike",
+  "schemaVersion": 41,
+  "version": 1,
+  "editable": false,
+  "tags": [
+    "cmtc",
+    "experimental",
+    "ztunnel",
+    "mtls"
+  ],
+  "timezone": "utc",
+  "time": {
+    "from": "now-10m",
+    "to": "now"
+  },
+  "refresh": "5s",
+  "panels": [
+    {
+      "id": 1,
+      "title": "Experimental cross-node workload mTLS \u2014 security gate remains open",
+      "type": "text",
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 24,
+        "h": 4
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "mode": "markdown",
+        "content": "## Two nodes \u00b7 no application sidecars \u00b7 node-level ztunnel\n**Positive path:** client on `cmtc-mtls-worker` \u2192 server on `cmtc-mtls-control-plane`, via Service and Pod IP.\n\n**FAILED SECURITY GATE:** an unenrolled client reached port 80 over plaintext ([issue #8](https://github.com/ephico2real2/clustermesh-trust-controller/issues/8)). This view demonstrates the encrypted positive path, not complete fail-closed protection or cross-cluster readiness."
+      }
+    },
+    {
+      "id": 2,
+      "title": "Node metrics targets UP",
+      "type": "stat",
+      "gridPos": {
+        "x": 0,
+        "y": 4,
+        "w": 6,
+        "h": 4
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "none"
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "cmtc-prom"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(up{job=\"cmtc-spire-ztunnel\",cluster=\"cmtc-mtls\"})",
+          "legendFormat": "",
+          "range": false,
+          "instant": true
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Native mTLS TCP connections opened \u00b7 source",
+      "type": "stat",
+      "gridPos": {
+        "x": 6,
+        "y": 4,
+        "w": 6,
+        "h": 4
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "none"
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "cmtc-prom"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(istio_tcp_connections_opened_total{job=\"cmtc-spire-ztunnel\",cluster=\"cmtc-mtls\",connection_security_policy=\"mutual_tls\",destination_workload_namespace=\"mtls-spike\",reporter=\"source\"})",
+          "legendFormat": "",
+          "range": false,
+          "instant": true
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "title": "Non-mTLS inbound TCP \u00b7 native classification",
+      "type": "stat",
+      "gridPos": {
+        "x": 12,
+        "y": 4,
+        "w": 6,
+        "h": 4
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "none"
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "cmtc-prom"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(istio_tcp_connections_opened_total{job=\"cmtc-spire-ztunnel\",cluster=\"cmtc-mtls\",reporter=\"destination\",connection_security_policy!=\"mutual_tls\",destination_workload_namespace=\"mtls-spike\"})",
+          "legendFormat": "",
+          "range": false,
+          "instant": true
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "title": "mTLS outbound payload rate \u00b7 source",
+      "type": "stat",
+      "gridPos": {
+        "x": 18,
+        "y": 4,
+        "w": 6,
+        "h": 4
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "Bps",
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "none"
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "cmtc-prom"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(rate(istio_tcp_sent_bytes_total{job=\"cmtc-spire-ztunnel\",cluster=\"cmtc-mtls\",connection_security_policy=\"mutual_tls\",destination_workload_namespace=\"mtls-spike\",reporter=\"source\"}[1m]))",
+          "legendFormat": "",
+          "range": false,
+          "instant": true
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "title": "mTLS TCP opens/s \u00b7 both nodes (not TLS handshakes)",
+      "type": "timeseries",
+      "gridPos": {
+        "x": 0,
+        "y": 8,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "cps",
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "cmtc-prom"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by(node,reporter) (rate(istio_tcp_connections_opened_total{job=\"cmtc-spire-ztunnel\",cluster=\"cmtc-mtls\",connection_security_policy=\"mutual_tls\",destination_workload_namespace=\"mtls-spike\"}[1m]))",
+          "legendFormat": "{{node}} \u00b7 {{reporter}}",
+          "range": true,
+          "instant": false
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "title": "mTLS traffic \u00b7 source-reported bytes/s",
+      "type": "timeseries",
+      "gridPos": {
+        "x": 12,
+        "y": 8,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "Bps",
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "cmtc-prom"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by(node) (rate(istio_tcp_sent_bytes_total{job=\"cmtc-spire-ztunnel\",cluster=\"cmtc-mtls\",connection_security_policy=\"mutual_tls\",destination_workload_namespace=\"mtls-spike\",reporter=\"source\"}[1m]) + rate(istio_tcp_received_bytes_total{job=\"cmtc-spire-ztunnel\",cluster=\"cmtc-mtls\",connection_security_policy=\"mutual_tls\",destination_workload_namespace=\"mtls-spike\",reporter=\"source\"}[1m]))",
+          "legendFormat": "{{node}}",
+          "range": true,
+          "instant": false
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "title": "Observed peer identities and security policy \u00b7 native ztunnel counters",
+      "type": "table",
+      "gridPos": {
+        "x": 0,
+        "y": 16,
+        "w": 24,
+        "h": 7
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "node"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 220
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "reporter"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 105
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "source_principal"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 450
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "destination_principal"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 450
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "connection_security_policy"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 190
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "TCP connections opened"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 170
+              }
+            ]
+          }
+        ]
+      },
+      "options": {},
+      "datasource": {
+        "type": "prometheus",
+        "uid": "cmtc-prom"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by(node,reporter,source_principal,destination_principal,connection_security_policy) (istio_tcp_connections_opened_total{job=\"cmtc-spire-ztunnel\",cluster=\"cmtc-mtls\",destination_workload_namespace=\"mtls-spike\"})",
+          "legendFormat": "",
+          "range": false,
+          "instant": true,
+          "format": "table"
+        }
+      ],
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true
+            },
+            "indexByName": {
+              "node": 0,
+              "reporter": 1,
+              "source_principal": 2,
+              "destination_principal": 3,
+              "connection_security_policy": 4,
+              "Value": 5
+            },
+            "renameByName": {
+              "Value": "TCP connections opened"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "title": "Scope and independent evidence",
+      "type": "text",
+      "gridPos": {
+        "x": 0,
+        "y": 23,
+        "w": 24,
+        "h": 5
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "mode": "markdown",
+        "content": "**Identity:** `spiffe://cmtc-mtls.test/ns/mtls-spike/sa/client` \u2192 `\u2026/sa/server`. The applications have one container each; ztunnel is deployed per node.\n\n**Independent local checks:** public SVID chains and URI SANs verified; enrolled capture contained TLS application records and no HTTP canary. Control capture exposed the canary. Prior bounded load: **1,200/1,200 HTTP 200 via Service + 1,200/1,200 via Pod IP**.\n\nPanels above query native ztunnel TCP counters under fresh load. TCP opens are not HTTP requests or TLS handshakes. This isolated single-cluster spike does not qualify ClusterMesh or WireGuard/IPsec composition."
+      }
+    }
+  ],
+  "templating": {
+    "list": []
+  },
+  "annotations": {
+    "list": []
+  }
+}

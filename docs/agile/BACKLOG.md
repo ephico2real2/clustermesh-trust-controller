@@ -1,6 +1,6 @@
 # Agile delivery backlog
 
-**9 features, 9 epics, 46 stories.** See `stories.csv` for importable rows, subtasks, acceptance and DoD.
+**9 features, 9 delivery epics, 46 delivery stories, plus investigative epic spike EP10.** See `stories.csv` for importable rows, subtasks, acceptance and DoD.
 
 The [pinned source audit](../research/SOURCE_AUDIT.md) supplies initial static evidence for CMTC-001/002; neither is runtime complete and CMTC-003 is unapproved. Follow the [incremental PR plan](../architecture/IMPLEMENTATION_PLAN.md) for dependencies and explicit acceptance gates. This file and `stories.csv` define canonical IDs; the older architecture and observability package numbering is superseded.
 
@@ -60,8 +60,18 @@ The [pinned source audit](../research/SOURCE_AUDIT.md) supplies initial static e
 
 - **CMTC-401 — Remote workload discovery to ztunnel** (P0/P1 per CSV). Subtasks: Trace ClusterMesh identities; remote xDS/ZDS mapping. Acceptance: automated success, failure and security scenarios with documented metrics.
 - **CMTC-402 — Cross-cluster HBONE connection PoC** (P0/P1 per CSV). Subtasks: Authenticated TCP across two clusters; identity checks. Acceptance: automated success, failure and security scenarios with documented metrics.
-- **CMTC-403 — Policy enforcement and fail-closed** (P0/P1 per CSV). Subtasks: Pin proxy authorization protocol; preserve L4 authorization; block bypass and unknown identities. Acceptance: automated success, failure and security scenarios with documented metrics. Status: In progress; [Cilium fork PR #1](https://github.com/ephico2real2/cilium/pull/1) supplies protocol bindings/wire tests only. [Cilium PR #6](https://github.com/ephico2real2/cilium/pull/6) adds the real Go Authorization delta transport and typed desired-state cache, tested on Linux ARM64/AMD64 (150 race-enabled tests/subtests each). Effective Cilium policy production/workload references, authenticated remote discovery and persistent admission remain open. The SPIRE fixture reproduced the admission gap: an unenrolled source received HTTP 200 from an enrolled destination over plaintext; this is a failed security gate, despite the successful mTLS positive control.
+- **CMTC-403 — Policy enforcement and fail-closed** (P0/P1 per CSV). Subtasks: Pin proxy authorization protocol; preserve L4 authorization; block bypass and unknown identities. Acceptance: automated success, failure and security scenarios with documented metrics. Status: In progress; [Cilium fork PR #1](https://github.com/ephico2real2/cilium/pull/1) supplies protocol bindings/wire tests only. [Cilium PR #6](https://github.com/ephico2real2/cilium/pull/6) adds the real Go Authorization delta transport and typed desired-state cache, tested on Linux ARM64/AMD64 (150 race-enabled tests/subtests each). Effective Cilium policy production/workload references, authenticated remote discovery and persistent admission remain open. The SPIRE fixture reproduced the admission gap: an unenrolled source received HTTP 200 from an enrolled destination over plaintext; [issue #8](https://github.com/ephico2real2/clustermesh-trust-controller/issues/8) remains open. The [local CNP/CCNP experiment](../research/PLAINTEXT_ENFORCEMENT.md) blocked direct port-80 plaintext while preserving mTLS, including tested host paths; additive allows reopened default-deny without an explicit deny. Arbitrary-port coverage, effective destination authorization and persistent admission are not complete.
 - **CMTC-404 — Service translation and endpoint race tests** (P0/P1 per CSV). Subtasks: ClusterIP/global services; node failover; identity cache races. Acceptance: automated success, failure and security scenarios with documented metrics.
+
+### EP10 — Investigative spike under F05: per-node Envoy with CMTC and ztunnel
+
+[GitHub epic spike #9](https://github.com/ephico2real2/clustermesh-trust-controller/issues/9)
+tracks the user's alternative per-node Envoy proposal. Investigate dynamic SDS/xDS,
+TLS termination/passthrough, verified workload identity preservation, mandatory
+capture, fail-closed lifecycle, health probes, Cilium policy and transport cost.
+Acceptance requires source-backed comparison and a tested recommendation/ADR;
+port lists and a shared proxy identity cannot replace workload authentication.
+This does not select Envoy or interrupt CMTC-403's native destination rule work.
 
 ### F06 — Network Encryption Compatibility
 **EP06: WireGuard/IPsec/none**

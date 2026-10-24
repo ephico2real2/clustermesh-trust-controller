@@ -52,7 +52,7 @@ if cluster=='cmtc-a':
     dashboards['00-observe-lab.json']=json.dumps({'uid':'cmtc-observe-lab','title':'CMTC | Deployed Observe Lab','schemaVersion':39,'version':1,'description':'Real controllers and inventory in two clusters. Workload mTLS / required transport verification is unavailable.','time':{'from':'now-15m','to':'now'},'refresh':'5s','panels':panels})
     add('v1','ConfigMap','cmtc-dashboards',{'data':dashboards})
     add('v1','ConfigMap','grafana-datasources',{'data':{'datasources.yaml':json.dumps({'apiVersion':1,'datasources':[{'name':'CMTC Prometheus','uid':'cmtc-prom','type':'prometheus','access':'proxy','url':'http://prometheus:9090','isDefault':True}]})}})
-    add('v1','ConfigMap','grafana-providers',{'data':{'providers.yaml':json.dumps({'apiVersion':1,'providers':[{'name':'cmtc','folder':'CMTC','type':'file','options':{'path':'/var/lib/grafana/dashboards'}}]})}})
+    add('v1','ConfigMap','grafana-providers',{'data':{'providers.yaml':json.dumps({'apiVersion':1,'providers':[{'name':'cmtc','folder':'CMTC','type':'file','updateIntervalSeconds':30,'options':{'path':'/var/lib/grafana/dashboards'}}]})}})
     deploy('grafana','grafana/grafana:12.2.0',[],[3000],
         [{'name':'datasources','mountPath':'/etc/grafana/provisioning/datasources'},{'name':'providers','mountPath':'/etc/grafana/provisioning/dashboards'},{'name':'dashboards','mountPath':'/var/lib/grafana/dashboards'},{'name':'data','mountPath':'/var/lib/grafana'}],
         [{'name':'datasources','configMap':{'name':'grafana-datasources'}},{'name':'providers','configMap':{'name':'grafana-providers'}},{'name':'dashboards','configMap':{'name':'cmtc-dashboards'}},{'name':'data','emptyDir':{}}],

@@ -61,3 +61,44 @@ The development lab selects a fork image bundle through [CILIUM_IMAGES.md](../de
 - TLS handshake success alone does not prove WireGuard/IPsec encryption; separate node-layer evidence is needed.
 - OpenShift's default CNI is typically OVN-Kubernetes; Cilium support profile must be verified.
 - Control-plane interoperability must preserve native API TLS and DNS UDP without blanket security bypass.
+
+
+### Latest local screenshot and enforcement research
+
+The user confirmed no application sidecars, retaining CMTC's DaemonSet and the
+node-level ztunnel. The live experimental dashboard is
+<http://127.0.0.1:13000/d/cmtc-spire-mtls-spike>. Its capture passed nine populated
+panels under fresh five-minute load: 3,000/3,000 HTTP 200 through Service and
+3,000/3,000 through Pod IP. Metrics are native TCP counters, not handshake or
+protection gauges. The d8124529 Podman operator's actual SPIRE fault test produced
+seven retries, no false ACK and an authenticated ACK after recovery. SPIRE was
+restored healthy. [SPIRE_SPIKE.md](../development/SPIRE_SPIKE.md) records the pins.
+
+[Issue #8](https://github.com/ephico2real2/clustermesh-trust-controller/issues/8)
+and [PLAINTEXT_ENFORCEMENT.md](../research/PLAINTEXT_ENFORCEMENT.md) record the
+plaintext bypass, Linkerd/Istio research and 30 local policy-path observations.
+An explicit CNP/CCNP deny blocked direct port-80 HTTP while keeping mTLS working;
+default-deny alone was reopened by a broad allow and admitted a local host path.
+All temporary experiment policies/probes were removed. This is not complete
+strict admission, general authorization or ClusterMesh qualification. The normal
+Observe monitoring remains intact; Grafana's file provider now polls every 30s
+so projected ConfigMap changes can appear without replacing its emptyDir data.
+
+Local SPIRE/capture evidence is published on `ci-captures` at
+[`ec770d2`](https://github.com/ephico2real2/clustermesh-trust-controller/blob/ec770d287ea3bd2b81f7f9140f46f401f9e48e47/2026-10-24T0423Z-local-spire-mtls-d8124529/README.md); this did not run or qualify GitHub Actions.
+
+
+Authenticated-only implementation: Cilium local commit
+`f052d1276b0fb1619809db0059fbbb7898c9cfae`, native GLOBAL DENY for absent verified
+principals, no application-port predicate. Config/ADS race tests, vet, pinned lint
+and chart checks pass. Its host-Podman ARM64 image config ID is
+`0f3a6f60cbb61700e0760536bf7fe0cbe5678a26c2f0e968505ec962a519d8dc`.
+The isolated cmtc-mtls Helm revision 5 runs that exact agent on both nodes, with
+`ztunnel-require-mtls=true` and `mtls-policy-published` logs. Live multiport,
+startup/restart and new load/Grafana screenshot qualification are pending.
+`scripts/lab/mtls/qualify.py` retains every command/exit/output and rejects any
+confounding CNP/CCNP/KNP. Do not infer complete protection from desired policy.
+
+The user's Envoy alternative is filed as [EP10 epic spike #9](https://github.com/ephico2real2/clustermesh-trust-controller/issues/9).
+The user requires real load plus Grafana PNGs and full output, following the PoC's
+report/check/artifact/captures pattern; publish failed evidence as well as passes.

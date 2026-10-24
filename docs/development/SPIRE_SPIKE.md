@@ -10,10 +10,11 @@ its pinned image bundle remain the regression baseline.
 The two-node `cmtc-mtls` kind fixture runs the Cilium agent from source
 `0d787e82f2a54b0f51eec97a39c24556dd3596d5`, Cilium ztunnel v1.0.0 from
 `5bb9cf256b10a209ae9bc0624ddfbf27dbc439de`, SPIRE 1.15.5 and cert-manager 1.21.1.
-The initial operator is the existing qualified fork image from `42f89f83`.
-The new operator retry/ACK/logging slice is source
-`d8124529b590bfb24adbd3d2916a4a984b666f9e`; its image/runtime qualification is a
-separate step and must not be attributed to the earlier traffic trial.
+The first traffic trial used the qualified operator image from `42f89f83`.
+Subsequent local tests deployed the Podman-built operator from
+`d8124529b590bfb24adbd3d2916a4a984b666f9e` (image config
+`aea8a5f923d8ed119b4fc9226a0f3d33452e43f655ca2bed0e498a1973eece24`).
+Its authenticated startup ACK and recovery were checked separately from pod readiness.
 
 | Check | Observed result |
 | --- | --- |
@@ -70,3 +71,31 @@ traffic evidence are distinct assertions. Keep successful and failed raw results
 source/image pins and public certificates; exclude kubeconfig credentials and
 private keys. [Issue #7](https://github.com/ephico2real2/clustermesh-trust-controller/issues/7)
 tracks dependency retries, authenticated acknowledgments and structured logging.
+
+
+## Subsequent local qualification and screenshot
+
+- The SPIRE outage test recorded seven structured retries while the server was
+  absent, no false authenticated ACK, and a successful ACK after restoring it.
+  Existing Service/Pod-IP load completed 1,200/1,200 HTTP 200 on each path during
+  this test. This qualifies the initial operator retry slice, not all of issue #7.
+- A fresh five-minute capture run completed **3,000/3,000 HTTP 200 per path**
+  (6,000 total), with no application sidecars. Native ztunnel metrics from both
+  nodes and positive traffic rates were verified before accepting the PNG.
+- The [experimental Grafana view](../../examples/observability/ztunnel-spike/README.md)
+  shows actual principals, native TCP opens/bytes and the non-mTLS classification.
+  Its Playwright walk passed all nine panels with no `No data`; it visibly keeps
+  the failed plaintext gate open. Local URL:
+  <http://127.0.0.1:13000/d/cmtc-spire-mtls-spike>.
+- The [CNP/CCNP experiment](../research/PLAINTEXT_ENFORCEMENT.md) preserved enrolled
+  mTLS and blocked direct HTTP on port 80 using an explicit deny, including both
+  tested host sources. Default-deny alone was reopened by an additive allow.
+  Temporary rules were removed; general strict admission is still incomplete.
+
+The user confirmed the deployment shape: **CMTC DaemonSet plus node-level
+ztunnel; no per-pod sidecars**. CMTC manages and verifies configuration; ztunnel
+performs workload TLS. This single-cluster test uses local Kubernetes workload
+discovery and does not need ClusterMesh. Remote discovery remains a separate gate.
+
+[Immutable local evidence and screenshot](https://github.com/ephico2real2/clustermesh-trust-controller/blob/ec770d287ea3bd2b81f7f9140f46f401f9e48e47/2026-10-24T0423Z-local-spire-mtls-d8124529/README.md) includes raw load,
+query vectors, public certificates, packet captures and all 30 policy observations.
