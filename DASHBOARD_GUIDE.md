@@ -49,7 +49,7 @@ Workload Security, dark theme:
 
 ![Native mTLS outcomes under fresh cross-node load](docs/images/cmtc-workload-security.dark.png)
 
-Both themes: [Operations dark](docs/images/cmtc-operations.dark.png), [Operations light](docs/images/cmtc-operations.light.png), [Security dark](docs/images/cmtc-workload-security.dark.png), [Security light](docs/images/cmtc-workload-security.light.png). Full-page captures also show the retained planned sections; see the evidence linked from [deployed validation](docs/development/VALIDATION.md).
+Both themes: [Operations dark](docs/images/cmtc-operations.dark.png), [Operations light](docs/images/cmtc-operations.light.png), [Security dark](docs/images/cmtc-workload-security.dark.png), [Security light](docs/images/cmtc-workload-security.light.png). [The immutable evidence gallery](https://github.com/ephico2real2/clustermesh-trust-controller/blob/87fb20341d62904d2536efc840b975a49458be23/2026-10-24T0558Z-cmtc-consolidated-dashboards/README.md) includes full pages, retained planned sections, raw Fortio output, exact query responses, layout checks and original-file preservation proof. Fresh baseline traffic passed 18,000/18,000 HTTP requests; the separate cross-node mTLS load passed 6,000/6,000 authenticated requests and rejected 900/900 unenrolled attempts.
 
 ## Reproduce locally before CI
 
