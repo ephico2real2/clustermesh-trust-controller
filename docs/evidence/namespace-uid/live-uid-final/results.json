@@ -1,0 +1,260 @@
+{
+  "cleanupErrors": [],
+  "clusters": {
+    "cmtc-a": {
+      "agents": [
+        {
+          "agentVersion": "cilium-agent 1.21.0-dev 4459d58ed3 2026-10-24T18:27:30-05:00 go version go1.27.1 linux/arm64",
+          "architecture": "arm64",
+          "binarySHA256": "d4c1bf12a40caa4ac0231d0cdb79cda22cd6398d0e265ccfc7920782212cbae0",
+          "containerID": "containerd://6d310fc7a0153c94c0d1f8e75b4a606ee5d7ae478ed76a8f9567a86522ee5b7e",
+          "image": "localhost/cilium:namespace-uid-4459d58ed3",
+          "imageConfigID": "78b0b8894d47f5ea49ac783421846303f4a8061aaefb6108bcc1b1ea919d2674",
+          "imageID": "docker.io/library/import-2026-10-24@sha256:15d4b910a6216caecb649151d854ff12e9a9ac3e93234de477aee22eb3e0a862",
+          "node": "cmtc-a-control-plane",
+          "pod": "cilium-qnqnj",
+          "podUID": "3da819fa-5fd4-4164-8314-95940110d00a"
+        },
+        {
+          "agentVersion": "cilium-agent 1.21.0-dev 4459d58ed3 2026-10-24T18:27:30-05:00 go version go1.27.1 linux/arm64",
+          "architecture": "arm64",
+          "binarySHA256": "d4c1bf12a40caa4ac0231d0cdb79cda22cd6398d0e265ccfc7920782212cbae0",
+          "containerID": "containerd://380b2c6b184fffff3ebba2dabd4924553d0a5404f9cf53d2dbf6bcb4ce624ae8",
+          "image": "localhost/cilium:namespace-uid-4459d58ed3",
+          "imageConfigID": "78b0b8894d47f5ea49ac783421846303f4a8061aaefb6108bcc1b1ea919d2674",
+          "imageID": "docker.io/library/import-2026-10-24@sha256:15d4b910a6216caecb649151d854ff12e9a9ac3e93234de477aee22eb3e0a862",
+          "node": "cmtc-a-worker",
+          "pod": "cilium-z4l2c",
+          "podUID": "eae95f0b-fb53-4c36-b47f-3e1549733bc5"
+        }
+      ],
+      "namespaceUIDChecks": [
+        {
+          "agentCount": 2,
+          "allAgentUIDMapsMatchKubernetes": true,
+          "evidence": "/private/tmp/cmtc-namespace-uid-20261024/live-uid-final/namespace-checks/cmtc-a-baseline.json",
+          "namespaceCount": 15,
+          "stage": "baseline"
+        },
+        {
+          "agentCount": 2,
+          "allAgentUIDMapsMatchKubernetes": true,
+          "evidence": "/private/tmp/cmtc-namespace-uid-20261024/live-uid-final/namespace-checks/cmtc-a-created-A.json",
+          "namespaceCount": 16,
+          "stage": "created-A"
+        },
+        {
+          "agentCount": 2,
+          "allAgentUIDMapsMatchKubernetes": true,
+          "evidence": "/private/tmp/cmtc-namespace-uid-20261024/live-uid-final/namespace-checks/cmtc-a-deleted-A.json",
+          "namespaceCount": 15,
+          "stage": "deleted-A"
+        },
+        {
+          "agentCount": 2,
+          "allAgentUIDMapsMatchKubernetes": true,
+          "evidence": "/private/tmp/cmtc-namespace-uid-20261024/live-uid-final/namespace-checks/cmtc-a-recreated-B.json",
+          "namespaceCount": 16,
+          "stage": "recreated-B"
+        },
+        {
+          "agentCount": 2,
+          "allAgentUIDMapsMatchKubernetes": true,
+          "evidence": "/private/tmp/cmtc-namespace-uid-20261024/live-uid-final/namespace-checks/cmtc-a-cleaned-B.json",
+          "namespaceCount": 15,
+          "stage": "cleaned-B"
+        }
+      ],
+      "passed": true,
+      "podAbsenceChecks": [
+        {
+          "count": 0,
+          "observedAt": "2026-10-24T23:39:47.365382+00:00",
+          "stage": "created-A"
+        },
+        {
+          "count": 0,
+          "observedAt": "2026-10-24T23:39:47.695466+00:00",
+          "stage": "created-A-converged"
+        },
+        {
+          "count": 0,
+          "observedAt": "2026-10-24T23:39:47.993486+00:00",
+          "stage": "A-before-delete"
+        },
+        {
+          "count": 0,
+          "observedAt": "2026-10-24T23:39:59.122641+00:00",
+          "stage": "created-B"
+        },
+        {
+          "count": 0,
+          "observedAt": "2026-10-24T23:39:59.435298+00:00",
+          "stage": "recreated-B-converged"
+        },
+        {
+          "count": 0,
+          "observedAt": "2026-10-24T23:39:59.731612+00:00",
+          "stage": "B-cleanup-before-delete"
+        }
+      ],
+      "uidTransition": {
+        "createdAtA": "2026-10-24T23:39:47.334598+00:00",
+        "createdAtB": "2026-10-24T23:39:59.091415+00:00",
+        "deleteResourceVersionA": "41887",
+        "deleteResourceVersionB-cleanup": "41930",
+        "deletedUIDA": "bc5fc97a-13b4-4f45-b91e-b29ac4d180c8",
+        "deletedUIDB-cleanup": "5838ab59-5adb-4776-9c78-3e57ed004d65",
+        "resourceVersionAAtCreate": "41887",
+        "resourceVersionBAtCreate": "41930",
+        "uidA": "bc5fc97a-13b4-4f45-b91e-b29ac4d180c8",
+        "uidB": "5838ab59-5adb-4776-9c78-3e57ed004d65"
+      }
+    },
+    "cmtc-b": {
+      "agents": [
+        {
+          "agentVersion": "cilium-agent 1.21.0-dev 4459d58ed3 2026-10-24T18:27:30-05:00 go version go1.27.1 linux/arm64",
+          "architecture": "arm64",
+          "binarySHA256": "d4c1bf12a40caa4ac0231d0cdb79cda22cd6398d0e265ccfc7920782212cbae0",
+          "containerID": "containerd://0482f3f7c4693cf6a2a33e910040252c52f4f57981ef71c23aa843c7da292550",
+          "image": "localhost/cilium:namespace-uid-4459d58ed3",
+          "imageConfigID": "78b0b8894d47f5ea49ac783421846303f4a8061aaefb6108bcc1b1ea919d2674",
+          "imageID": "docker.io/library/import-2026-10-24@sha256:15d4b910a6216caecb649151d854ff12e9a9ac3e93234de477aee22eb3e0a862",
+          "node": "cmtc-b-control-plane",
+          "pod": "cilium-4t4nj",
+          "podUID": "413ac23d-23ab-43c5-967c-b0ebe361bc72"
+        },
+        {
+          "agentVersion": "cilium-agent 1.21.0-dev 4459d58ed3 2026-10-24T18:27:30-05:00 go version go1.27.1 linux/arm64",
+          "architecture": "arm64",
+          "binarySHA256": "d4c1bf12a40caa4ac0231d0cdb79cda22cd6398d0e265ccfc7920782212cbae0",
+          "containerID": "containerd://b8f9824cd5a7ba326a8f152d62fbb1ebc07ee57fbb1e44c4cda426f43354c5c6",
+          "image": "localhost/cilium:namespace-uid-4459d58ed3",
+          "imageConfigID": "78b0b8894d47f5ea49ac783421846303f4a8061aaefb6108bcc1b1ea919d2674",
+          "imageID": "docker.io/library/import-2026-10-24@sha256:15d4b910a6216caecb649151d854ff12e9a9ac3e93234de477aee22eb3e0a862",
+          "node": "cmtc-b-worker",
+          "pod": "cilium-l9bcc",
+          "podUID": "54a40e05-9214-4770-9d0c-b1298f5446e2"
+        }
+      ],
+      "namespaceUIDChecks": [
+        {
+          "agentCount": 2,
+          "allAgentUIDMapsMatchKubernetes": true,
+          "evidence": "/private/tmp/cmtc-namespace-uid-20261024/live-uid-final/namespace-checks/cmtc-b-baseline.json",
+          "namespaceCount": 15,
+          "stage": "baseline"
+        },
+        {
+          "agentCount": 2,
+          "allAgentUIDMapsMatchKubernetes": true,
+          "evidence": "/private/tmp/cmtc-namespace-uid-20261024/live-uid-final/namespace-checks/cmtc-b-created-A.json",
+          "namespaceCount": 16,
+          "stage": "created-A"
+        },
+        {
+          "agentCount": 2,
+          "allAgentUIDMapsMatchKubernetes": true,
+          "evidence": "/private/tmp/cmtc-namespace-uid-20261024/live-uid-final/namespace-checks/cmtc-b-deleted-A.json",
+          "namespaceCount": 15,
+          "stage": "deleted-A"
+        },
+        {
+          "agentCount": 2,
+          "allAgentUIDMapsMatchKubernetes": true,
+          "evidence": "/private/tmp/cmtc-namespace-uid-20261024/live-uid-final/namespace-checks/cmtc-b-recreated-B.json",
+          "namespaceCount": 16,
+          "stage": "recreated-B"
+        },
+        {
+          "agentCount": 2,
+          "allAgentUIDMapsMatchKubernetes": true,
+          "evidence": "/private/tmp/cmtc-namespace-uid-20261024/live-uid-final/namespace-checks/cmtc-b-cleaned-B.json",
+          "namespaceCount": 15,
+          "stage": "cleaned-B"
+        }
+      ],
+      "passed": true,
+      "podAbsenceChecks": [
+        {
+          "count": 0,
+          "observedAt": "2026-10-24T23:39:47.447063+00:00",
+          "stage": "created-A"
+        },
+        {
+          "count": 0,
+          "observedAt": "2026-10-24T23:39:47.931258+00:00",
+          "stage": "created-A-converged"
+        },
+        {
+          "count": 0,
+          "observedAt": "2026-10-24T23:39:53.334789+00:00",
+          "stage": "A-before-delete"
+        },
+        {
+          "count": 0,
+          "observedAt": "2026-10-24T23:39:59.199160+00:00",
+          "stage": "created-B"
+        },
+        {
+          "count": 0,
+          "observedAt": "2026-10-24T23:39:59.669584+00:00",
+          "stage": "recreated-B-converged"
+        },
+        {
+          "count": 0,
+          "observedAt": "2026-10-24T23:40:05.074142+00:00",
+          "stage": "B-cleanup-before-delete"
+        }
+      ],
+      "uidTransition": {
+        "createdAtA": "2026-10-24T23:39:47.409881+00:00",
+        "createdAtB": "2026-10-24T23:39:59.167013+00:00",
+        "deleteResourceVersionA": "41525",
+        "deleteResourceVersionB-cleanup": "41568",
+        "deletedUIDA": "42f98ad6-d78a-4b00-85ec-463aac4f9301",
+        "deletedUIDB-cleanup": "c023cd30-efee-40e4-a2fd-97c18bd67167",
+        "resourceVersionAAtCreate": "41525",
+        "resourceVersionBAtCreate": "41568",
+        "uidA": "42f98ad6-d78a-4b00-85ec-463aac4f9301",
+        "uidB": "c023cd30-efee-40e4-a2fd-97c18bd67167"
+      }
+    }
+  },
+  "completedAt": "2026-10-24T23:40:10.770421+00:00",
+  "expectedLocalImage": {
+    "architecture": "arm64",
+    "configID": "78b0b8894d47f5ea49ac783421846303f4a8061aaefb6108bcc1b1ea919d2674",
+    "daemonCiliumAgentSHA256": "d4c1bf12a40caa4ac0231d0cdb79cda22cd6398d0e265ccfc7920782212cbae0",
+    "image": "localhost/cilium:namespace-uid-4459d58ed3",
+    "imageMetadataPath": "/private/tmp/cmtc-namespace-uid-20261024/cilium-image.json",
+    "sourceRevision": "4459d58ed3d98805f15c74298076025fc97dd540"
+  },
+  "finishedAt": "2026-10-24T23:40:10.832313+00:00",
+  "image": "localhost/cilium:namespace-uid-4459d58ed3",
+  "namespace": "cmtc-namespace-uid-check",
+  "podsCreated": 0,
+  "qualification": {
+    "allFourCiliumAgentsExactImageAndBinary": true,
+    "allNamespaceUIDsComparedWithKubernetesAPI": true,
+    "compatibilityGuardChanged": false,
+    "deleteRecreateChangesUIDOnBothAgentsInBothClusters": true,
+    "namespaceTableJSONContainsUID": true,
+    "podsCreated": 0,
+    "ztunnelEnabled": false
+  },
+  "referenceSnapshot": {
+    "containsUIDs": true,
+    "namespaceCount": 15,
+    "note": "format sanity reference only; live API and each agent StateDB are the runtime sources of truth",
+    "path": "/private/tmp/cmtc-namespace-uid-20261024/namespaces-a.json",
+    "sha256": "a9f31119c2620f299472d8f9c90312517a8b67b853ae094ec77e1dc02f90eb33"
+  },
+  "runID": "193b20aa-fae6-4bce-bec8-7bab46c1b44f",
+  "schemaVersion": 1,
+  "scope": "live-kubernetes-namespace-uid-projection",
+  "source": "4459d58ed3d98805f15c74298076025fc97dd540",
+  "startedAt": "2026-10-24T23:39:43.371701+00:00",
+  "status": "passed"
+}

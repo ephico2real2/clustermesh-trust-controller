@@ -1,0 +1,21 @@
+# Pass the qualified Linux ARM64 Go/clang builder by its immutable image ID.
+# Deny-only committed-pin prototype. It does not enforce workload mTLS.
+ARG BUILD_IMAGE
+FROM ${BUILD_IMAGE} AS build
+ARG SOURCE_SHA
+WORKDIR /workspace
+COPY go.mod go.sum ./
+RUN test "${#SOURCE_SHA}" -eq 40 && go mod download
+COPY cmd/cmtc-bpf-fence ./cmd/cmtc-bpf-fence
+COPY internal/datapath ./internal/datapath
+RUN clang -target bpfel -O2 -g -Wall -Werror -c internal/datapath/bpf/fence.c -o /tmp/fence_bpfel.o
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -trimpath -ldflags="-X main.sourceRevision=${SOURCE_SHA}" -o /tmp/cmtc-bpf-fence ./cmd/cmtc-bpf-fence
+
+FROM scratch
+ARG SOURCE_SHA
+LABEL org.opencontainers.image.revision=$SOURCE_SHA
+LABEL org.opencontainers.image.source="https://github.com/ephico2real2/clustermesh-trust-controller"
+COPY --from=build /tmp/cmtc-bpf-fence /cmtc-bpf-fence
+COPY --from=build /tmp/fence_bpfel.o /usr/share/cmtc/fence_bpfel.o
+USER 0
+ENTRYPOINT ["/cmtc-bpf-fence"]

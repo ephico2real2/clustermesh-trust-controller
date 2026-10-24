@@ -1,0 +1,23 @@
+PASS lab exclusivity: scripts/lab/test.sh is not running
+PASS local source/image preflight: revision=4459d58ed3d98805f15c74298076025fc97dd540, image-config=78b0b8894d47f5ea49ac783421846303f4a8061aaefb6108bcc1b1ea919d2674, arch=arm64, daemon/cilium-agent-sha256=d4c1bf12a40caa4ac0231d0cdb79cda22cd6398d0e265ccfc7920782212cbae0
+PASS cmtc-a: two agents match configID=78b0b8894d47f5ea49ac783421846303f4a8061aaefb6108bcc1b1ea919d2674, arch=arm64, revision=4459d58ed3d98805f15c74298076025fc97dd540, binary SHA-256=d4c1bf12a40caa4ac0231d0cdb79cda22cd6398d0e265ccfc7920782212cbae0
+PASS cmtc-b: two agents match configID=78b0b8894d47f5ea49ac783421846303f4a8061aaefb6108bcc1b1ea919d2674, arch=arm64, revision=4459d58ed3d98805f15c74298076025fc97dd540, binary SHA-256=d4c1bf12a40caa4ac0231d0cdb79cda22cd6398d0e265ccfc7920782212cbae0
+PASS cmtc-a/baseline: all 2 Cilium agents match 15 live Kubernetes namespace UIDs
+PASS cmtc-b/baseline: all 2 Cilium agents match 15 live Kubernetes namespace UIDs
+PASS preflight: cmtc-namespace-uid-check is absent from both existing mesh clusters; no Pods or namespaces were changed
+PASS cmtc-a/created-A: all 2 Cilium agents match 16 live Kubernetes namespace UIDs
+PASS cmtc-b/created-A: all 2 Cilium agents match 16 live Kubernetes namespace UIDs
+PASS cmtc-a/A: deleted owned namespace UID=bc5fc97a-13b4-4f45-b91e-b29ac4d180c8 with UID+resourceVersion preconditions
+PASS cmtc-b/A: deleted owned namespace UID=42f98ad6-d78a-4b00-85ec-463aac4f9301 with UID+resourceVersion preconditions
+PASS cmtc-a/deleted-A: all 2 Cilium agents match 15 live Kubernetes namespace UIDs
+PASS cmtc-b/deleted-A: all 2 Cilium agents match 15 live Kubernetes namespace UIDs
+PASS cmtc-a/recreated-B: all 2 Cilium agents match 16 live Kubernetes namespace UIDs
+PASS cmtc-a: same name transitioned UID A=bc5fc97a-13b4-4f45-b91e-b29ac4d180c8 -> UID B=5838ab59-5adb-4776-9c78-3e57ed004d65 on both agents; Pods=0
+PASS cmtc-b/recreated-B: all 2 Cilium agents match 16 live Kubernetes namespace UIDs
+PASS cmtc-b: same name transitioned UID A=42f98ad6-d78a-4b00-85ec-463aac4f9301 -> UID B=c023cd30-efee-40e4-a2fd-97c18bd67167 on both agents; Pods=0
+PASS cmtc-a/B-cleanup: deleted owned namespace UID=5838ab59-5adb-4776-9c78-3e57ed004d65 with UID+resourceVersion preconditions
+PASS cmtc-b/B-cleanup: deleted owned namespace UID=c023cd30-efee-40e4-a2fd-97c18bd67167 with UID+resourceVersion preconditions
+PASS cmtc-a/cleaned-B: all 2 Cilium agents match 15 live Kubernetes namespace UIDs
+PASS cmtc-b/cleaned-B: all 2 Cilium agents match 15 live Kubernetes namespace UIDs
+PASS qualification: namespace UID propagation/recreation verified across all four Cilium agents; no Pods created
+Evidence: /private/tmp/cmtc-namespace-uid-20261024/live-uid-final

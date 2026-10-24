@@ -51,3 +51,5 @@ shows how to prove which exact image and source are running before load tests or
 Grafana screenshots.
 
 The imported [PoC Hubble dashboard by app](examples/observability/hubble-l7-by-app/README.md) includes the exact demo 37 generator, generated JSON and source hashes. The fork's Hubble-enabled load test exercises it with distinct app/workload names and real Gateway and direct-pod requests.
+
+[Persistent deny-fence experiment](LOCAL_DATAPATH_FENCE.md).
