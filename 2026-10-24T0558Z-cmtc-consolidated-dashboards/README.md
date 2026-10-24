@@ -19,6 +19,20 @@ The 18,000-request baseline experiment tests application paths in the Observe Cl
 
 The final captures all use absolute UTC **2026-10-24 05:48:03.361 through 05:53:03.361**, ending five seconds before the authenticated jobs completed. The raw job results cover the complete runs. Counter increases are extrapolated estimates, not exact generator request counts. The completed destination TCP pie has estimated total **6,890.743**, split **86.665% mTLS without a failure flag** and **13.335% unauthenticated blocked**, with the remaining three exclusive outcomes zero. Percentages total 100%; no failure flag alone is not an HTTP success claim. TCP starts, HTTP requests and TLS handshakes remain separate.
 
+## Screenshot gallery
+
+Operations: [dark full page](screenshots/cmtc-operations-dark.png) · [light full page](screenshots/cmtc-operations-light.png).
+
+![Operations dark](screenshots/operations-summary.dark.png)
+![Operations light](screenshots/operations-summary.light.png)
+
+Workload Security: [dark full page](screenshots/cmtc-workload-security-dark.png) · [light full page](screenshots/cmtc-workload-security-light.png).
+
+![Workload Security dark](screenshots/workload-security-summary.dark.png)
+![Workload Security light](screenshots/workload-security-summary.light.png)
+
+Retained planned sections: [Operations dark](screenshots/operations-planned.dark.png), [Operations light](screenshots/operations-planned.light.png), [Security dark](screenshots/workload-security-planned.dark.png), [Security light](screenshots/workload-security-planned.light.png). Their missing data is explicitly unimplemented, not an observed zero.
+
 ## Browser rendering and feature status
 
 All five browser cases pass: Operations dark/light, Workload Security dark/light and the remote demo app. Every native security panel must have data (`requireNative=true`). Operations has 28 panels with ten named missing planned signals; Security has 29 panels with sixteen named missing planned signals. These are retained instrumentation requirements and their feature evidence is **BLOCKED**. No empty metric becomes a successful zero.
