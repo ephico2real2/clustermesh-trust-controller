@@ -1,0 +1,26 @@
+{
+  "policyReconciliation": "passed",
+  "exclusionAndPlatformPrecedence": "passed",
+  "uidRecreation": "passed",
+  "policyConflicts": "passed",
+  "strictModeRejected": "passed",
+  "readOnlyNamespaceRBAC": "passed",
+  "reusedShopAllowedAndDenied": "passed",
+  "applicationPorts": [
+    80,
+    8080,
+    31337
+  ],
+  "bidirectionalGlobalService": [
+    "cmtc-a-to-cmtc-a",
+    "cmtc-a-to-cmtc-b",
+    "cmtc-b-to-cmtc-b",
+    "cmtc-b-to-cmtc-a"
+  ],
+  "bidirectionalPodIP": [
+    "cmtc-a-to-cmtc-b",
+    "cmtc-b-to-cmtc-a"
+  ],
+  "workloadMTLS": "blocked: the Observe profile does not enable ztunnel/SPIRE",
+  "layeredEncryption": "blocked: composition pending"
+}
