@@ -20,6 +20,34 @@ Given an enrolled namespace with a new pod and missing SPIRE/ztunnel readiness, 
 
 Given old Root A, when Root B is introduced, then all clusters acknowledge actual trust consumption before issuance switches; all SVIDs rotate and probes pass before Root A retires. Partitioned clusters block unsafe retirement; emergency compromise uses a separate response procedure.
 
+## CMTC-105 — Cluster identity issuance boundaries
+
+**As a** security owner, **I want** workload identities bound to their issuing cluster and attested workload, **so that** another cluster cannot impersonate a same-name workload.
+
+`mesh.example.com` in the [proposed ClusterMeshTrust sample](../../config/samples/clustermesh-trust.yaml) is an example **SPIFFE trust domain**: it names the security realm that issues workload identities. Applications can use any DNS name or application port; the trust domain does not select their DNS suffix or port. Application authorization still determines which connections are allowed.
+
+For example, an `orders` workload could have this certificate identity:
+
+```text
+spiffe://mesh.example.com/ns/orders/sa/api
+         └ trust domain     └ namespace / service account
+```
+
+It is an identity namespace for a trusted group. Actual trust comes from verified certificates and trusted CA bundles; matching that string alone does not establish trust. See [SPIFFE concepts](https://spiffe.io/docs/latest/spiffe-about/spiffe-concepts/).
+
+If two clusters share that domain and both have namespace `orders` and service account `api`, this format gives them the **same identity**. The namespace/service-account path alone has no cluster component. CMTC therefore needs either cluster-specific trust domains with explicit trust between them, or another cryptographically verified cluster binding. A display-only cluster label or common root with unconstrained intermediates does not establish that boundary. The [Cilium/ztunnel identity contract](../architecture/CILIUM_ZTUNNEL_CONTRACT.md) records the candidate designs; this clarification does not approve a final scheme.
+
+Acceptance scenarios to implement and qualify locally before CI:
+
+1. **Legitimate peer:** Given an explicitly trusted peer cluster and its attested `orders/api` workload, when its SVID and issuer chain are verified and policy allows the connection, then cross-cluster mTLS succeeds with the expected cluster-qualified peer identity. Exercise application DNS names unrelated to the trust domain and multiple application ports.
+2. **Same-name collision:** Given clusters A and B both contain `orders/api`, when B authenticates, then it cannot satisfy a policy that permits only A's workload. Reproduce the identical-URI ambiguity of a shared-domain namespace/service-account-only baseline; the selected design must reject impersonation rather than infer cluster origin from that URI or discovery metadata.
+3. **Issuer boundary:** Given a certificate whose URI claims B's identity but whose signer is authorized only for A, when presented to the verifier, then it is rejected even if both chains reach a shared trusted root. Also reject a matching URI signed by an untrusted issuer, an untrusted domain and a certificate without a valid chain.
+4. **Issuance boundary:** Given an attested workload in A, when it requests B's identity or another workload's namespace/service account, then issuance is denied. Reusing a namespace or Pod name after deletion cannot reuse stale attestation or UID provenance.
+5. **Failure and recovery:** Given missing, stale or removed peer trust/issuer constraints, when a new connection is attempted, then it fails closed. After verified trust is restored, legitimate traffic recovers without accepting the impersonation cases.
+6. **Evidence:** Retain source/image pins, public certificate chains, expected and observed identities, request outcomes and bounded rejection/status telemetry. Correlate records with authenticated cluster/workload provenance; exclude private keys and tokens. Metrics, labels and successful configuration acknowledgments alone cannot establish identity isolation or Protected status.
+
+**Status: Planned.** These are acceptance requirements, not claims of implemented cluster isolation. The ClusterMesh compatibility guard remains until the supported cross-cluster profile passes its identity, capture and authorization gates.
+
 ## CMTC-301..305 / 401..404 — Native encryption and authorization
 **As a** Cilium maintainer, **I want** remote SPIFFE identity, HBONE and L4 policy to work across ClusterMesh, **so that** workloads remain authenticated and authorized with optional WireGuard/IPsec.
 
