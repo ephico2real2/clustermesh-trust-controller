@@ -8,6 +8,8 @@ The public package is `ghcr.io/ephico2real2/cilium-dev`. Each component uses a d
 
 ## Develop, build and select a version
 
+Complete the local qualification before pushing a change that starts CI or dispatching a workflow. Use the MacBook's dedicated Ubuntu Colima VM with the source mounted into Linux containers. Run the affected tests and lint, build the intended image locally, then verify the two-cluster policy/connectivity tests, sustained load and browser evidence against that image. For Hubble changes, run the local Gateway and dashboard qualification as well. When target architectures differ, build the required Linux platform locally with Docker before publication; record the platform and source revision. CI repeats a successful local qualification. A CI failure is reproduced and fixed locally before rerunning it.
+
 1. Work in a full checkout of `git@github.com:ephico2real2/cilium.git`. Keep upstream changes integrated through a reviewed fork PR; preserve existing feature branches. Commit the intended source under the configured human identity with a DCO signoff. The image helper refuses tracked source modifications.
 2. Select a working Docker engine, log in locally and build from the committed checkout. The fork's `contrib/cmtc-images/build.sh` uses the native Cilium Dockerfiles and publishes all three components. On this Mac the isolated `colima-cmtc-cilium` context is available; it does not replace the existing Docker context or MongoDB environment.
 
