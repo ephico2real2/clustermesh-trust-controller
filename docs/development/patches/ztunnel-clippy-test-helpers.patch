@@ -1,0 +1,77 @@
+From a1c3e9cd8f4b23128d70c434c4d01295fb252f9b Mon Sep 17 00:00:00 2001
+From: ephico2real2 <ephico2real@gmail.com>
+Date: Sat, 24 Oct 2026 07:29:46 -0500
+Subject: [PATCH] test: remove Clippy warnings from CRI and SPIRE helpers
+
+Use direct optional equality, is_none_or and tail expressions in existing test helpers. No lint suppressions are required. Local Rust 1.90 ARM64 format and strict Clippy for benches, tests and bins pass, as do affected container runtime and SPIRE client tests. Tracks CMTC issue11; CI remains deferred.
+
+Signed-off-by: ephico2real2 <ephico2real@gmail.com>
+---
+ src/container_runtime.rs    | 9 +++------
+ src/identity/spireclient.rs | 8 +++-----
+ 2 files changed, 6 insertions(+), 11 deletions(-)
+
+diff --git a/src/container_runtime.rs b/src/container_runtime.rs
+index 3c6f3b9..ba6a22f 100644
+--- a/src/container_runtime.rs
++++ b/src/container_runtime.rs
+@@ -304,16 +304,13 @@ mod tests {
+                         // Filter by label selector
+                         let labels_match =
+                             filter.label_selector.iter().all(|(key, expected_value)| {
+-                                sandbox
+-                                    .labels
+-                                    .get(key)
+-                                    .map_or(false, |actual_value| actual_value == expected_value)
++                                sandbox.labels.get(key) == Some(expected_value)
+                             });
+                         // Filter by state if specified
+                         let state_match = filter
+                             .state
+                             .as_ref()
+-                            .map_or(true, |state_filter| sandbox.state == state_filter.state);
++                            .is_none_or(|state_filter| sandbox.state == state_filter.state);
+                         labels_match && state_match
+                     })
+                     .collect()
+@@ -347,7 +344,7 @@ mod tests {
+                         let state_match = filter
+                             .state
+                             .as_ref()
+-                            .map_or(true, |state_filter| container.state == state_filter.state);
++                            .is_none_or(|state_filter| container.state == state_filter.state);
+                         sandbox_match && state_match
+                     })
+                     .collect()
+diff --git a/src/identity/spireclient.rs b/src/identity/spireclient.rs
+index c17da54..349e83f 100644
+--- a/src/identity/spireclient.rs
++++ b/src/identity/spireclient.rs
+@@ -829,7 +829,7 @@ pub mod spire_tests {
+         let mut set = spiffe::X509BundleSet::new();
+         set.add_bundle(bundle);
+ 
+-        return set;
++        set
+     }
+ 
+     fn mock_stream_svid_success_response(
+@@ -982,13 +982,11 @@ pub mod spire_tests {
+         let mut cert_chain = leaf_cert_der.clone();
+         cert_chain.extend_from_slice(&ca_cert_der);
+ 
+-        let svid = X509Svid::parse_from_der(&cert_chain, &leaf_key_der)
++        X509Svid::parse_from_der(&cert_chain, &leaf_key_der)
+             .map_err(|e| {
+                 tracing::error!("Failed to parse SVID: {}", e);
+                 e
+             })
+-            .unwrap();
+-
+-        svid
++            .unwrap()
+     }
+ }
+-- 
+2.55.0
+

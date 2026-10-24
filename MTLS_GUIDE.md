@@ -9,6 +9,11 @@ test result, source/image pin and screenshot.
 authenticated-only TCP paths. Complete fail-closed protection and cross-cluster
 workload mTLS remain unqualified. The public CMTC API remains Observe-only.
 
+The [latest local security validation](LOCAL_SECURITY_VALIDATION.md) records the
+persistent proxy authentication floor, empty-policy-cache tests, ZDS ACK and
+restart qualification, fresh load/screenshots and exact local image pins. CI and
+publication are currently deferred.
+
 ## What runs in the fixture
 
 The applications have one container each. Node-level ztunnel performs workload

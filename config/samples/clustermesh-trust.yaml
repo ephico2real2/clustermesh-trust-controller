@@ -4,6 +4,9 @@ kind: ClusterMeshTrust
 metadata:
   name: production-mesh
 spec:
+  # Example SPIFFE identity realm, not an application DNS suffix or cluster ID.
+  # Matching this string does not establish trust; verified SVIDs and bundles do.
+  # Per-cluster identity/issuer binding remains a CMTC-105 design gate.
   trustDomain: mesh.example.com
   identity:
     provider: spire

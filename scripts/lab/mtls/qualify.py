@@ -15,11 +15,18 @@ import uuid
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument('--kubeconfig', required=True)
 parser.add_argument('--source', required=True, help='Exact deployed Cilium agent source SHA')
+parser.add_argument('--proxy-source', help='Exact strict-profile proxy SHA; verify both nodes through their admin API')
+parser.add_argument('--expect-dynamic-mtls', choices=['present', 'absent'], default='present',
+                    help='Require the native dynamic rule, or prove the proxy works with an empty policy cache')
 parser.add_argument('--out', default='artifacts/mtls-spike/authenticated-only')
 parser.add_argument('--restart-tests', action='store_true')
 args = parser.parse_args()
 if not re.fullmatch('[0-9a-f]{40}', args.source):
     parser.error('--source must be an exact commit SHA')
+if args.proxy_source and not re.fullmatch('[0-9a-f]{40}', args.proxy_source):
+    parser.error('--proxy-source must be an exact commit SHA')
+if args.expect_dynamic_mtls == 'absent' and not args.proxy_source:
+    parser.error('An absent-policy trial requires --proxy-source and its immutable authentication floor')
 out = Path(args.out)
 out.mkdir(parents=True, exist_ok=True)
 if (out / 'commands.ndjson').exists():
@@ -27,7 +34,7 @@ if (out / 'commands.ndjson').exists():
 kube = ['kubectl', '--kubeconfig', args.kubeconfig]
 lock = threading.Lock()
 owned = []
-summary = {'source': args.source, 'observedAt': datetime.datetime.now(datetime.timezone.utc).isoformat(), 'stages': [], 'restartTrials': [], 'fullFailClosedProtection': False}
+summary = {'source': args.source, 'proxySource': args.proxy_source, 'expectedDynamicMtls': args.expect_dynamic_mtls, 'observedAt': datetime.datetime.now(datetime.timezone.utc).isoformat(), 'stages': [], 'restartTrials': [], 'fullFailClosedProtection': False}
 fixture_id = str(uuid.uuid4())
 fixture_verified = False
 
@@ -76,6 +83,29 @@ def create(kind, name, namespace, spec):
 
 ports = [80, 8080, 9443]
 
+def check_proxy_state(stage):
+    if not args.proxy_source:
+        return
+    observed = []
+    for node in ['cmtc-mtls-control-plane', 'cmtc-mtls-worker']:
+        dump = json.loads(command(['docker', 'exec', node, 'curl', '--fail', '--silent', '--show-error',
+                                  '--max-time', '5', 'http://127.0.0.1:15000/config_dump']).stdout)
+        if dump['version']['gitRevision'] != args.proxy_source or dump['version']['buildStatus'] != 'Clean':
+            raise RuntimeError(f'{node}: unexpected proxy source/build status')
+        if dump['config'].get('requireInboundMtls') is not True:
+            raise RuntimeError(f'{node}: immutable inbound authentication is not enabled')
+        policies = dump['policies']
+        if args.expect_dynamic_mtls == 'absent':
+            if policies or dump['staticConfig']['policies']:
+                raise RuntimeError(f'{node}: policy cache is not empty during absent-policy trial')
+        elif not any(p['name'] == 'cilium_require_mtls' and p['action'] == 'Deny' for p in policies):
+            raise RuntimeError(f'{node}: expected dynamic authentication rule is missing')
+        observed.append({'node': node, 'version': dump['version'], 'requireInboundMtls': True,
+                         'policies': policies, 'staticPolicies': dump['staticConfig']['policies'],
+                         'workloadState': dump['workloadState']})
+    (out / f'proxy-state-{stage}.json').write_text(json.dumps(observed, indent=2) + '\n')
+    emit(f'PASS {stage}: exact strict proxy source on both nodes; dynamic policy={args.expect_dynamic_mtls}')
+
 def run_probe(case):
     if 'node' in case:
         result = command(['docker', 'exec', case['node'], 'curl', '--include', '--silent', '--show-error', '--max-time', '2', case['url']], check=False, timeout=8)
@@ -88,6 +118,7 @@ def run_probe(case):
     return {**case, 'exitCode': result.returncode, 'httpStatus': status, 'success': success, 'rejected': rejected, 'observedAt': datetime.datetime.now(datetime.timezone.utc).isoformat()}
 
 def check_stage(name, cases):
+    check_proxy_state(name + '-before')
     with concurrent.futures.ThreadPoolExecutor(max_workers=4) as pool:
         observations = list(pool.map(run_probe, cases))
     failed = []
@@ -100,6 +131,7 @@ def check_stage(name, cases):
     save_summary()
     if failed:
         raise RuntimeError(f'{name}: {len(failed)} unexpected traffic results')
+    check_proxy_state(name + '-after')
 
 try:
     current = kubectl('config', 'current-context').stdout.strip()
@@ -107,8 +139,9 @@ try:
         raise RuntimeError(f'Refusing non-fixture context {current}')
     fixture_verified = True
     config = get_json('-n', 'kube-system', 'get', 'cm', 'cilium-config')['data']
-    if config.get('ztunnel-require-mtls') != 'true':
-        raise RuntimeError('Authenticated-only flag is not enabled')
+    expected_flag = 'true' if args.expect_dynamic_mtls == 'present' else 'false'
+    if config.get('ztunnel-require-mtls') != expected_flag:
+        raise RuntimeError(f'Expected agent ztunnel-require-mtls={expected_flag}')
     if get_json('get', 'ns', 'mtls-spike')['metadata'].get('labels', {}).get('io.cilium/mtls-enabled') != 'true':
         raise RuntimeError('The isolated fixture namespace is not enrolled')
     for namespace in ['mtls-spike', 'mtls-plaintext-control']:
@@ -125,7 +158,8 @@ try:
             raise RuntimeError(f"Unexpected agent version: {pod['metadata']['name']}: {version}")
         images.append({'pod': pod['metadata']['name'], 'node': pod['spec']['nodeName'], 'version': version, 'images': pod['status'].get('containerStatuses', [])})
     (out / 'agent-image-versions.json').write_text(json.dumps(images, indent=2) + '\n')
-    emit(f'PASS preflight: context={current}, exact agent source={args.source}, authenticated-only=true, no CNP/CCNP/KNP')
+    check_proxy_state('preflight')
+    emit(f'PASS preflight: context={current}, exact agent source={args.source}, dynamic authenticated-only={expected_flag}, no CNP/CCNP/KNP')
     create('cm', 'auth-only-nginx', 'mtls-spike', {'apiVersion': 'v1', 'kind': 'ConfigMap', 'data': {'nginx.conf': 'events {}\nhttp { server { listen 80; listen 8080; listen 9443; location / { return 200 "CMTC-authenticated-only\\n"; } } }\n'}})
     tolerations = [{'key': 'node-role.kubernetes.io/control-plane', 'operator': 'Exists', 'effect': 'NoSchedule'}]
     create('pod', 'auth-only-server', 'mtls-spike', {'apiVersion': 'v1', 'kind': 'Pod', 'metadata': {'labels': {'app': 'cmtc-auth-only-server'}}, 'spec': {'nodeSelector': {'kubernetes.io/hostname': 'cmtc-mtls-control-plane'}, 'tolerations': tolerations, 'serviceAccountName': 'server', 'automountServiceAccountToken': False, 'restartPolicy': 'Never', 'volumes': [{'name': 'config', 'configMap': {'name': 'auth-only-nginx'}}], 'containers': [{'name': 'nginx', 'image': 'nginx:1.27-alpine', 'volumeMounts': [{'name': 'config', 'mountPath': '/etc/nginx/nginx.conf', 'subPath': 'nginx.conf', 'readOnly': True}], 'resources': {'requests': {'cpu': '10m', 'memory': '16Mi'}, 'limits': {'memory': '64Mi'}}}]}})

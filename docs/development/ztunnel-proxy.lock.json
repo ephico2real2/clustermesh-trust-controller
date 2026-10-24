@@ -1,0 +1,25 @@
+{
+  "status": "local-development-qualification",
+  "platform": "linux/arm64",
+  "proxy": {
+    "upstream": "https://github.com/cilium/ztunnel",
+    "base": "5bb9cf256b10a209ae9bc0624ddfbf27dbc439de",
+    "localCommit": "d79d3dfaef3d7afeb3552ea53cf90213141e95d3",
+    "patch": "patches/ztunnel-persistent-inbound-mtls.patch",
+    "rust": "1.90.0",
+    "profile": "debug",
+    "image": "localhost/cmtc-ztunnel:strict-d79d3df-v2",
+    "imageId": "9339a8f37174055c9b303748fc3bfcba14586997c0d82a49e70cbb9b8bb58946",
+    "runtimeBase": "quay.io/cilium/ztunnel@sha256:884de5adde400e39f58e36c7a729f7690466ca4a8eb4c2a8daa9c1c025115b24",
+    "testHelperFollowup": "a1c3e9cd8f4b23128d70c434c4d01295fb252f9b"
+  },
+  "cilium": {
+    "deployedAgentSource": "63ce8231092cb97ac2ae2b66ed0bfe2d7cec11fd",
+    "strictChartCommit": "66cfc59f3e94dd11264f189fc62c0eaf3e9f7bff",
+    "image": "localhost/cilium:zds-ack-local",
+    "imageId": "05993214714e44ad4a6a6f29474aa8fbc158c545e920b7313511596ba311a282",
+    "goToolchain": "1.27.1"
+  },
+  "ci": "deferred",
+  "fullFailClosedProtection": false
+}
