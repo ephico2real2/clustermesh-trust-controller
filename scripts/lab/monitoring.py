@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Small disposable monitoring fixture; serves both actual telemetry and clearly marked proposal dashboards."""
+"""Small disposable monitoring fixture with two consolidated dashboards preserving all nine domains."""
 import json
 from pathlib import Path
 import sys
@@ -19,6 +19,9 @@ add('rbac.authorization.k8s.io/v1','ClusterRoleBinding','cmtc-lab-prometheus',{'
 prom={'global':{'scrape_interval':'5s','external_labels':{'cluster':cluster}},'scrape_configs':[{'job_name':'cmtc','kubernetes_sd_configs':[{'role':'pod'}],'relabel_configs':[
     {'source_labels':['__meta_kubernetes_pod_label_security_cmtc_io_metrics'],'action':'keep','regex':'true'},
     {'source_labels':['__meta_kubernetes_pod_container_port_name'],'action':'keep','regex':'metrics'},
+    {'target_label':'cluster','replacement':cluster},
+    {'source_labels':['__meta_kubernetes_pod_label_app_kubernetes_io_name'],'target_label':'component'},
+    {'source_labels':['__meta_kubernetes_pod_node_name'],'target_label':'node'},
 ]}]}
 if cluster=='cmtc-b':prom['remote_write']=[{'url':f'http://{hub}:30900/api/v1/write'}]
 add('v1','ConfigMap','prometheus',{'data':{'prometheus.yml':json.dumps(prom)}})
@@ -34,25 +37,13 @@ deploy('prometheus','prom/prometheus:v3.7.0',['--config.file=/etc/prometheus/pro
 add('v1','Service','prometheus',{'spec':{'type':'NodePort','selector':{'app':'prometheus'},'ports':[{'port':9090,'targetPort':9090,'nodePort':30900}]}})
 if cluster=='cmtc-a':
     dashboards={}
-    for p in Path('observability/dashboards').glob('*.json'):
+    for name in ['operations.json','workload-security.json']:
+        p=Path('observability/dashboards')/name
         d=json.loads(p.read_text())
-        d['description']='Experimental Observe lab. Selection/inventory metrics are real. Workload mTLS, trust lifecycle and transport composition are unimplemented; their missing data is unknown.'
         dashboards[p.name]=json.dumps(d)
-    panels=[]
-    for title,expr in [
-        ('Selected namespaces — intent only','sum by (cluster) (cmtc_namespaces_selected)'),
-        ('Node agents reporting inventory','sum by (cluster) (cmtc_node_agent_ready)'),
-        ('Workload enforcement available — 0 means unavailable','max by (cluster) (cmtc_enforcement_available)'),
-        ('Namespace decisions','sum by (cluster, decision) (cmtc_namespace_decisions)'),
-        ('Pod inventory — not protection','sum by (cluster, network) (cmtc_pods_observed)'),
-        ('Observed enrollment labels — not protection','sum by (cluster) (cmtc_namespaces_enrolled)'),
-    ]:
-        n=len(panels)
-        panels.append({'id':n+1,'title':title,'type':'timeseries','datasource':{'type':'prometheus','uid':'cmtc-prom'},'gridPos':{'x':(n%2)*12,'y':(n//2)*8,'w':12,'h':8},'targets':[{'refId':'A','expr':expr,'legendFormat':'{{cluster}} {{decision}} {{network}}'}]})
-    dashboards['00-observe-lab.json']=json.dumps({'uid':'cmtc-observe-lab','title':'CMTC | Deployed Observe Lab','schemaVersion':39,'version':1,'description':'Real controllers and inventory in two clusters. Workload mTLS / required transport verification is unavailable.','time':{'from':'now-15m','to':'now'},'refresh':'5s','panels':panels})
     add('v1','ConfigMap','cmtc-dashboards',{'data':dashboards})
     add('v1','ConfigMap','grafana-datasources',{'data':{'datasources.yaml':json.dumps({'apiVersion':1,'datasources':[{'name':'CMTC Prometheus','uid':'cmtc-prom','type':'prometheus','access':'proxy','url':'http://prometheus:9090','isDefault':True}]})}})
-    add('v1','ConfigMap','grafana-providers',{'data':{'providers.yaml':json.dumps({'apiVersion':1,'providers':[{'name':'cmtc','folder':'CMTC','type':'file','options':{'path':'/var/lib/grafana/dashboards'}}]})}})
+    add('v1','ConfigMap','grafana-providers',{'data':{'providers.yaml':json.dumps({'apiVersion':1,'providers':[{'name':'cmtc','folder':'CMTC','type':'file','updateIntervalSeconds':30,'options':{'path':'/var/lib/grafana/dashboards'}}]})}})
     deploy('grafana','grafana/grafana:12.2.0',[],[3000],
         [{'name':'datasources','mountPath':'/etc/grafana/provisioning/datasources'},{'name':'providers','mountPath':'/etc/grafana/provisioning/dashboards'},{'name':'dashboards','mountPath':'/var/lib/grafana/dashboards'},{'name':'data','mountPath':'/var/lib/grafana'}],
         [{'name':'datasources','configMap':{'name':'grafana-datasources'}},{'name':'providers','configMap':{'name':'grafana-providers'}},{'name':'dashboards','configMap':{'name':'cmtc-dashboards'}},{'name':'data','emptyDir':{}}],

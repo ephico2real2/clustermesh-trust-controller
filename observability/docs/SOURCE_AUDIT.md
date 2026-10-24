@@ -1,5 +1,7 @@
 # Observability scaffold audit — 2026-10-23
 
+Historical review of the nine original definitions, which remain unchanged in `observability/dashboards/`. Current live provisioning combines their coverage into two pages; see the [dashboard guide](../../DASHBOARD_GUIDE.md), [metric contracts](../METRICS.md) and [original-to-consolidated mapping](../capabilities.json). The findings below retain their original review baseline.
+
 Static review only. All nine JSON files parsed; each contains five panels (45 panels total). No Grafana import, Prometheus query evaluation or real scrape was performed. No `cmtc_*` collector exists in this repository. Preserve the nine dashboard domains; implementation is CMTC-701..706 under F08 / EP08.
 
 ## Findings

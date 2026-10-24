@@ -53,3 +53,8 @@ Istio's compiler also handles unsupported HTTP predicates conservatively and sur
 ## Concrete next implementation
 
 The [Cilium integration contract](../architecture/CILIUM_ZTUNNEL_CONTRACT.md) turns these findings into component boundaries, rollout order and required negative tests. The existing copied POS/stranger and Global Service apps provide the application fixtures. Current CI validates their baseline Cilium behavior only; workload mTLS and required transport layering remain blocked until the corresponding adapters and datapath tests exist.
+
+
+The reproduced plaintext gap, current primary-source review and local CNP/CCNP
+experiment are documented in [PLAINTEXT_ENFORCEMENT.md](PLAINTEXT_ENFORCEMENT.md).
+The user confirmed node-level ztunnel with CMTC and no application sidecars.

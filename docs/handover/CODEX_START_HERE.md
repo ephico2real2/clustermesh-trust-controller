@@ -1,8 +1,14 @@
 # Codex continuation / session handover
 
+## Dashboard consolidation — 2026-10-24
+
+The user's latest requirement is to preserve all nine existing dashboard domains and original JSON files while combining their coverage into one or two meaningful pages. Commit `923fed1` restores the nine originals unchanged to `observability/dashboards/` and includes all original metric meanings in two provisioned pages: Operations and Workload Security. Future signals stay visible with `planned` titles and BLOCKED evidence; do not remove their panels or substitute successful zero values. The twelve native mTLS panels remain semantically unchanged inside Workload Security. See the root [dashboard guide](../../DASHBOARD_GUIDE.md), [metric contracts](../../observability/METRICS.md) and `capabilities.json`. The generator selects chart types from metric meanings and uses the user's Tableau/table style; validators verify original hashes, coverage and actual scoped queries. Default browser capture now has five cases (two pages in two themes plus remote app). Prior eleven-page CI results below are historical and remain valid for their recorded source. [Local dashboard evidence](https://github.com/ephico2real2/clustermesh-trust-controller/blob/87fb20341d62904d2536efc840b975a49458be23/2026-10-24T0558Z-cmtc-consolidated-dashboards/README.md) records source `5d1ddc1`, 18,000 baseline HTTP successes, 6,000 cross-node mTLS HTTP successes, 900 rejected unenrolled attempts, both themes, typed queries and preserved originals. That artifact does not itself qualify an AMD64 CI run.
+
 ## Latest continuation — 2026-10-23
 
-User workflow requirement: finish the affected local tests, lint, image build and applicable load/screenshots before pushing changes that trigger CI or dispatching it. Use mounted source in Ubuntu Docker/Colima on this MacBook; build differing target architectures locally when needed. Reproduce CI failures locally before rerunning.
+User workflow requirement: finish the affected local tests, lint, image build and applicable load/screenshots before pushing changes that trigger CI or dispatching it. Use Podman from the MacBook host for subsequent image builds, with native Linux ARM64 or explicit target architecture as needed. The existing kind fixtures run in the dedicated Ubuntu Colima profile. Reproduce CI failures locally before rerunning.
+
+The active SPIRE workload credential spike is local-only on `feat/spire-workload-mtls-spike` (CMTC) and `feat/ztunnel-spire-credentials` (Cilium). An isolated `cmtc-mtls` two-node cluster now has cert-manager-issued issuer/ADS chains, an external-root bootstrap whose root key is removed, healthy SPIRE and healthy ztunnel. SPIRE 1.15.5's UID 1000 could not write the inherited root-owned server socket hostPath; the fixture now uses a pod-local writable socket and consistent non-root server/sidecar identity. The [first cross-node positive trial](../development/SPIRE_SPIKE.md) passed 10/10 requests with verified workload SVID chains, actual TLS records and an absent HTTP canary. The unenrolled-source plaintext negative case returned HTTP 200, so CMTC-403 remains a failed security gate. Do not infer authorization or full end-to-end protection from this positive trial. [Issue #7](https://github.com/ephico2real2/clustermesh-trust-controller/issues/7) records the user's bounded retry, verified acknowledgment and structured logging requirements. The initial Cilium operator slice uses injected slog, Hive jobs/health, cancellable jittered backoff and an authenticated RPC response before initialization; its Podman race tests pass locally. Registration/proxy recovery gates, broader workload/negative tests and the issue's full acceptance remain open. Do not trigger CI for this slice before the local qualification passes.
 
 [Cilium PR #6](https://github.com/ephico2real2/cilium/pull/6) implements Authorization resource transport at `42f89f83aa5a03ea80f7a2b8cece56b27f87385a`: a typed Hive cache, atomic immutable batches, the existing Cilium delta engine, separate Address/Authorization ACK state, serialized gRPC writes and stream error cleanup. Local Ubuntu ARM64 and [AMD64 CI 40052995200](https://github.com/ephico2real2/cilium/actions/runs/40052995200) each passed 150 tests/subtests with the race detector, plus vet; CI also passed exact protobuf regeneration. [Immutable local wire evidence](https://github.com/ephico2real2/cilium/tree/4ba5fc1df930c6a062875628cfe3e090218cf96a/2026-10-24T0205Z_ztunnel_authorization_local-arm64) records the exact source/toolchain. This tests the real Go ADS handler over in-memory gRPC with fake policies. No effective-policy producer, remote discovery or persistent admission gate is enabled. ACK metrics cannot mark workloads Protected. The guard and Observe-only schema remain.
 
@@ -34,13 +40,13 @@ The development lab selects a fork image bundle through [CILIUM_IMAGES.md](../de
 - `NamespaceMTLSPolicy` reconciles native namespace label `io.cilium/mtls-enabled: "true"`. Support `AllEligible` and `MatchSelectors` modes, OR across selectors, AND within selector; examples `company.net/lob=alpha` OR `company.net/mnemonic=delta`.
 - Explicit namespace exclusions override inclusions; protected Kubernetes/OpenShift system/control-plane/infrastructure namespaces never auto-enroll. Avoid breaking API, DNS, webhooks, kubelet, etc. Namespace exclusion is not permission to bypass protected destination security.
 - Target HBONE mTLS with WireGuard, IPsec or no L3 encryption; also preserve normal ClusterMesh operation when mTLS off. No silent plaintext fallback. Cilium currently has incompatibilities to solve.
-- Nine Grafana dashboards; Prometheus recording/alerting rules; metrics for enrollment, pods, trust, handshake latency, transport, platform safety, DaemonSet and controller health.
+- All nine original Grafana domains and JSON definitions, consolidated into two live pages; Prometheus recording/alerting rules; metrics for enrollment, pods, trust, handshake latency, transport, platform safety, DaemonSet and controller health.
 - Agile structure: initiative -> features -> epics -> stories -> subtasks; ADRs, DoR, DoD, security gates and architecture diagrams.
 
 ## Current status
 - Use the user's configured SSH Git access and human identity. Cilium signoff validation requires their real email from existing Cilium history; do not use a noreply signoff there.
 - `NamespaceMTLSPolicy` is a deployed Observe-only API. Its Strict rejection is intentional and tested, not a missing CRD prerequisite. Other proposed CRDs remain design-only.
-- Eleven browser pages are captured in CI. The live Observe page uses real telemetry; missing future domain signals are explicitly BLOCKED, not security test successes.
+- The current browser configuration captures five cases across two consolidated pages and the app. Operations uses real Observe telemetry; missing future domain signals are explicitly BLOCKED, not security test successes. Historical eleven-page runs below refer to the earlier layout.
 - The Cilium fork has a protocol foundation; it does not yet enforce cross-cluster workload mTLS. No namespace may be marked Protected from its label or an xDS ACK alone.
 
 ## Next implementation tasks
@@ -59,3 +65,64 @@ The development lab selects a fork image bundle through [CILIUM_IMAGES.md](../de
 - TLS handshake success alone does not prove WireGuard/IPsec encryption; separate node-layer evidence is needed.
 - OpenShift's default CNI is typically OVN-Kubernetes; Cilium support profile must be verified.
 - Control-plane interoperability must preserve native API TLS and DNS UDP without blanket security bypass.
+
+
+### Historical baseline screenshot and enforcement research
+
+The user confirmed no application sidecars, retaining CMTC's DaemonSet and the
+node-level ztunnel. The live experimental dashboard is
+<http://127.0.0.1:13000/d/cmtc-spire-mtls-spike>. Its capture passed nine populated
+panels under fresh five-minute load: 3,000/3,000 HTTP 200 through Service and
+3,000/3,000 through Pod IP. Metrics are native TCP counters, not handshake or
+protection gauges. The d8124529 Podman operator's actual SPIRE fault test produced
+seven retries, no false ACK and an authenticated ACK after recovery. SPIRE was
+restored healthy. [SPIRE_SPIKE.md](../development/SPIRE_SPIKE.md) records the pins.
+
+[Issue #8](https://github.com/ephico2real2/clustermesh-trust-controller/issues/8)
+and [PLAINTEXT_ENFORCEMENT.md](../research/PLAINTEXT_ENFORCEMENT.md) record the
+plaintext bypass, Linkerd/Istio research and 30 local policy-path observations.
+An explicit CNP/CCNP deny blocked direct port-80 HTTP while keeping mTLS working;
+default-deny alone was reopened by a broad allow and admitted a local host path.
+All temporary experiment policies/probes were removed. This is not complete
+strict admission, general authorization or ClusterMesh qualification. The normal
+Observe monitoring remains intact; Grafana's file provider now polls every 30s
+so projected ConfigMap changes can appear without replacing its emptyDir data.
+
+Local SPIRE/capture evidence is published on `ci-captures` at
+[`ec770d2`](https://github.com/ephico2real2/clustermesh-trust-controller/blob/ec770d287ea3bd2b81f7f9140f46f401f9e48e47/2026-10-24T0423Z-local-spire-mtls-d8124529/README.md); this did not run or qualify GitHub Actions.
+
+
+Authenticated-only implementation: Cilium local commit
+`f052d1276b0fb1619809db0059fbbb7898c9cfae`, native GLOBAL DENY for absent verified
+principals, no application-port predicate. Config/ADS race tests, vet, pinned lint
+and chart checks pass. Its host-Podman ARM64 image config ID is
+`0f3a6f60cbb61700e0760536bf7fe0cbe5678a26c2f0e968505ec962a519d8dc`.
+The isolated cmtc-mtls Helm revision 5 runs that exact agent on both nodes, with
+`ztunnel-require-mtls=true` and `mtls-policy-published` logs. Local qualification now passes 57 steady/post-restart path checks, 1,398 continuous restart probes with no unexpected HTTP, 6,000/6,000 authenticated HTTP 200 responses and 900/900 unauthenticated load attempts rejected.
+`scripts/lab/mtls/qualify.py` retains every command/exit/output and rejects any
+confounding CNP/CCNP/KNP. Do not infer complete protection from desired policy.
+
+The user's Envoy alternative is filed as [EP10 epic spike #9](https://github.com/ephico2real2/clustermesh-trust-controller/issues/9).
+The user requires real load plus Grafana PNGs and full output, following the PoC's
+report/check/artifact/captures pattern; publish failed evidence as well as passes.
+
+
+Latest authenticated-only evidence is [immutable at 1c192a5](https://github.com/ephico2real2/clustermesh-trust-controller/blob/1c192a5ee84fb5218cb1385fdd9c5bf45ca69e1a/2026-10-24T0509Z-local-authenticated-only-f052d127/README.md).
+Grafana 12.2.0 has twelve populated panels in both themes, using the user's pinned
+[diagram-kit dashboard skill](https://github.com/ephico2real2/diagram-kit/blob/26b7c19791159929c76a264ea3d5274bef72e9f6/skill/dashboard/SKILL.md).
+Headline totals use selected-range counter increases; DENY overlaps attempt
+counters. A five-category pie partitions completed destination TCP records,
+without summing source and destination reports. Actual query partitions total
+100%, missing telemetry remains unavailable, all five labels/captions fit, and
+live provisioned panels equal source. The full metric inventory, validator and
+both-theme walk specs are under `examples/observability/ztunnel-spike/`.
+The existing CI unit job runs the offline validator; no duplicate workflow added.
+The captured historical load window is 1792817142251–1792817452353 ms; do not
+represent it as continuously running traffic.
+
+The combined f052 agent/d812 operator run reproduced six structured SPIRE retry
+logs, no false authenticated ACK while unavailable, and ACK after restoration.
+Both components recovered. Keep historical seven-retry evidence separate from
+this run. Persistent missing-policy/first-packet admission, general destination
+authorization, platform exceptions and ClusterMesh/transport composition remain
+open. Do not enable Strict/Protected or close #7/#8 on these bounded passes.
