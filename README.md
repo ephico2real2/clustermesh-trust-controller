@@ -31,3 +31,5 @@ Nine domain dashboards remain partly proposed; CI provisions them alongside a se
 Repository: [ephico2real2/clustermesh-trust-controller](https://github.com/ephico2real2/clustermesh-trust-controller).
 
 The kind lab uses [versioned Cilium fork images](docs/development/CILIUM_IMAGES.md) from GHCR, pinned with their matching chart in `config/cilium-images.lock.json`.
+
+The imported [PoC Hubble dashboard by app](examples/observability/hubble-l7-by-app/README.md) includes the exact demo 37 generator, generated JSON and source hashes. The fork's Hubble-enabled load test exercises it with distinct app/workload names and real Gateway and direct-pod requests.
