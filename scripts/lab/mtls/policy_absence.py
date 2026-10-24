@@ -71,16 +71,34 @@ def main():
     def verify_proxy(stage, dynamic):
         observations = []
         for node in ['cmtc-mtls-control-plane', 'cmtc-mtls-worker']:
-            dump = json.loads(run(['docker', 'exec', node, 'curl', '-fsS', '--max-time', '5',
-                                   'http://127.0.0.1:15000/config_dump']).stdout)
-            assert dump['version']['gitRevision'] == args.proxy_source, 'Wrong proxy source'
-            assert dump['config'].get('requireInboundMtls') is True, 'Proxy authentication floor disabled'
-            if dynamic:
-                assert any(p['name'] == 'cilium_require_mtls' for p in dump['policies']), 'Dynamic rule not restored'
-            else:
-                assert dump['policies'] == [] and dump['staticConfig']['policies'] == [], 'Policy cache is not empty'
+            # DaemonSet readiness can precede the admin listener and policy
+            # convergence. Bound this separate observation, logging each attempt.
+            started = time.monotonic()
+            deadline = started + 30
+            attempts = 0
+            while True:
+                attempts += 1
+                response = run(['docker', 'exec', node, 'curl', '-fsS', '--max-time', '2',
+                                'http://127.0.0.1:15000/config_dump'], check=False, timeout=5)
+                reason = f'Admin API unavailable: curl exit {response.returncode}'
+                if response.returncode == 0:
+                    dump = json.loads(response.stdout)
+                    # A wrong binary or disabled floor is a hard failure, not a
+                    # transient readiness condition to conceal with retries.
+                    assert dump['version']['gitRevision'] == args.proxy_source, 'Wrong proxy source'
+                    assert dump['config'].get('requireInboundMtls') is True, 'Proxy authentication floor disabled'
+                    converged = (any(p['name'] == 'cilium_require_mtls' for p in dump['policies'])
+                                 if dynamic else dump['policies'] == [] and dump['staticConfig']['policies'] == [])
+                    if converged:
+                        break
+                    reason = 'Dynamic rule not restored' if dynamic else 'Policy cache is not empty'
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    raise RuntimeError(f'{node}: {reason} after {attempts} attempts')
+                time.sleep(min(0.5, remaining))
             observations.append({'node': node, 'version': dump['version'],
-                                 'requireInboundMtls': True, 'policies': dump['policies']})
+                                 'requireInboundMtls': True, 'policies': dump['policies'],
+                                 'attempts': attempts, 'elapsedSeconds': time.monotonic() - started})
         (out / f'proxy-{stage}.json').write_text(json.dumps(observations, indent=2) + '\n')
 
     try:
