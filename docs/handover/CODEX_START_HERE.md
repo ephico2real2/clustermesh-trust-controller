@@ -63,7 +63,7 @@ The development lab selects a fork image bundle through [CILIUM_IMAGES.md](../de
 - Control-plane interoperability must preserve native API TLS and DNS UDP without blanket security bypass.
 
 
-### Latest local screenshot and enforcement research
+### Historical baseline screenshot and enforcement research
 
 The user confirmed no application sidecars, retaining CMTC's DaemonSet and the
 node-level ztunnel. The live experimental dashboard is
@@ -94,11 +94,31 @@ principals, no application-port predicate. Config/ADS race tests, vet, pinned li
 and chart checks pass. Its host-Podman ARM64 image config ID is
 `0f3a6f60cbb61700e0760536bf7fe0cbe5678a26c2f0e968505ec962a519d8dc`.
 The isolated cmtc-mtls Helm revision 5 runs that exact agent on both nodes, with
-`ztunnel-require-mtls=true` and `mtls-policy-published` logs. Live multiport,
-startup/restart and new load/Grafana screenshot qualification are pending.
+`ztunnel-require-mtls=true` and `mtls-policy-published` logs. Local qualification now passes 57 steady/post-restart path checks, 1,398 continuous restart probes with no unexpected HTTP, 6,000/6,000 authenticated HTTP 200 responses and 900/900 unauthenticated load attempts rejected.
 `scripts/lab/mtls/qualify.py` retains every command/exit/output and rejects any
 confounding CNP/CCNP/KNP. Do not infer complete protection from desired policy.
 
 The user's Envoy alternative is filed as [EP10 epic spike #9](https://github.com/ephico2real2/clustermesh-trust-controller/issues/9).
 The user requires real load plus Grafana PNGs and full output, following the PoC's
 report/check/artifact/captures pattern; publish failed evidence as well as passes.
+
+
+Latest authenticated-only evidence is [immutable at 1c192a5](https://github.com/ephico2real2/clustermesh-trust-controller/blob/1c192a5ee84fb5218cb1385fdd9c5bf45ca69e1a/2026-10-24T0509Z-local-authenticated-only-f052d127/README.md).
+Grafana 12.2.0 has twelve populated panels in both themes, using the user's pinned
+[diagram-kit dashboard skill](https://github.com/ephico2real2/diagram-kit/blob/26b7c19791159929c76a264ea3d5274bef72e9f6/skill/dashboard/SKILL.md).
+Headline totals use selected-range counter increases; DENY overlaps attempt
+counters. A five-category pie partitions completed destination TCP records,
+without summing source and destination reports. Actual query partitions total
+100%, missing telemetry remains unavailable, all five labels/captions fit, and
+live provisioned panels equal source. The full metric inventory, validator and
+both-theme walk specs are under `examples/observability/ztunnel-spike/`.
+The existing CI unit job runs the offline validator; no duplicate workflow added.
+The captured historical load window is 1792817142251–1792817452353 ms; do not
+represent it as continuously running traffic.
+
+The combined f052 agent/d812 operator run reproduced six structured SPIRE retry
+logs, no false authenticated ACK while unavailable, and ACK after restoration.
+Both components recovered. Keep historical seven-retry evidence separate from
+this run. Persistent missing-policy/first-packet admission, general destination
+authorization, platform exceptions and ClusterMesh/transport composition remain
+open. Do not enable Strict/Protected or close #7/#8 on these bounded passes.

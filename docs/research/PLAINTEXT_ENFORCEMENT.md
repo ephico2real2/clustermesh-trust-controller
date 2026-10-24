@@ -24,7 +24,7 @@ Technical conclusions below use project documentation/source as authority.
 | --- | --- | --- | --- |
 | Linkerd | Meshed proxies authenticate workload identities | Default inbound policy is `all-unauthenticated`. `all-authenticated`, or a Server with AuthorizationPolicy requiring MeshTLSAuthentication, restricts input to mesh identities; exact identities further restrict callers. | Receiving workload proxy |
 | Istio ambient | Node ztunnels establish HBONE mTLS | PeerAuthentication `STRICT` rejects plaintext. AuthorizationPolicy separately constrains principals and original destination ports. No selected authorization policy is not a deny-all. | Receiving node ztunnel |
-| Current CMTC spike | Two local-node ztunnels use SPIRE SVIDs | **Not enforced completely:** an unenrolled source received HTTP 200 from the enrolled server. | Cilium/proxy integration still needs effective policy and persistent admission |
+| Current CMTC spike | Two local-node ztunnels use SPIRE SVIDs | Native authenticated-only policy rejects tested unenrolled/host paths on 80/8080/9443, including bounded restart trials. Missing-policy and first-packet admission remain unqualified. | Receiving node ztunnel, with Cilium policy publication; persistent admission still needed |
 
 Sources: [Linkerd inbound policy reference](https://linkerd.io/docs/reference/authorization-policy/),
 [automatic mTLS](https://linkerd.io/docs/features/automatic-mtls/),
@@ -134,8 +134,7 @@ experiment resources were removed.
 The active Cilium implementation publishes a native GLOBAL DENY for an absent
 verified principal, with no destination-port predicate. Source
 `f052d1276b0fb1619809db0059fbbb7898c9cfae` is local-only; configuration/ADS race
-tests, vet, pinned lint and chart checks pass. The host Podman image is built and deployed in the isolated fixture; live
-traffic and startup/restart qualification are still pending. Native plaintext RBAC receives
+tests, vet, pinned lint and chart checks pass. The host Podman image is built and deployed in the isolated fixture. All 57 steady/post-restart path checks passed, with 1,398 continuous restart probes returning no HTTP response, 6,000/6,000 authenticated HTTP 200 responses and 900/900 unauthenticated load attempts rejected. Native plaintext RBAC receives
 no authenticated identity, so source IP metadata cannot manufacture one.
 [The pinned plaintext handler](https://github.com/cilium/ztunnel/blob/5bb9cf256b10a209ae9bc0624ddfbf27dbc439de/src/proxy/inbound_passthrough.rs)
 performs this check before forwarding. The known default-allow behavior while
@@ -148,3 +147,5 @@ termination/re-origination have different identity boundaries; preserve verified
 workload identity and capture rather than substituting a node/proxy principal.
 [Envoy SDS](https://www.envoyproxy.io/docs/envoy/latest/configuration/security/secret),
 [client-certificate enforcement](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/transport_sockets/tls/v3/tls.proto).
+
+[Native-policy runtime evidence and both-theme Grafana captures](https://github.com/ephico2real2/clustermesh-trust-controller/blob/1c192a5ee84fb5218cb1385fdd9c5bf45ca69e1a/2026-10-24T0509Z-local-authenticated-only-f052d127/README.md) retain all 57 checks, continuous probes, load and native verdict output. Missing-policy and first-packet guarantees remain unqualified.

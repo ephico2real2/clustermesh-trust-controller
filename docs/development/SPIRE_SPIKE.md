@@ -99,3 +99,49 @@ discovery and does not need ClusterMesh. Remote discovery remains a separate gat
 
 [Immutable local evidence and screenshot](https://github.com/ephico2real2/clustermesh-trust-controller/blob/ec770d287ea3bd2b81f7f9140f46f401f9e48e47/2026-10-24T0423Z-local-spire-mtls-d8124529/README.md) includes raw load,
 query vectors, public certificates, packet captures and all 30 policy observations.
+
+
+## Native authenticated-only qualification — 2026-10-24
+
+Cilium source `f052d1276b0fb1619809db0059fbbb7898c9cfae` publishes a native
+GLOBAL DENY for absent verified TLS principals, without application-port
+predicates. It is experimental and defaults off. The isolated Helm revision 5
+runs the host-Podman-built ARM64 agent (image config
+`0f3a6f60cbb61700e0760536bf7fe0cbe5678a26c2f0e968505ec962a519d8dc`)
+on both nodes; actual deployed content, binary version and native policies match.
+The unchanged qualified fork runtime/BPF base is reused beneath the new Go agent.
+
+| Check | Observed result |
+| --- | --- |
+| Steady and post-ztunnel/Cilium restart matrix | 57/57 passed: mTLS via Service/Pod IP on 80/8080/9443 and mapped Service 18080→8080; unenrolled same/cross-node pods and both hosts received no HTTP response |
+| Continuous restart probes | 384 during ztunnel restart + 1,014 during Cilium restart; zero unexpected HTTP responses |
+| Fresh authenticated load | Service 3,000/3,000 + Pod IP 3,000/3,000 HTTP 200 |
+| Fresh unauthenticated load | 900/900 attempts rejected; zero HTTP responses |
+| SPIRE outage with operator d8124529 | Six structured retries while unavailable; no false authenticated ACK; ACK after recovery |
+| Logger field validation | Retry stage/attempt/elapsed/backoff/deadline/error and ACK fields present |
+| Public SVIDs and packet evidence | Expected client/server identities and chains verified; no HTTP canary in capture; TLS application-data records present |
+| Grafana 12.2.0 | 12 populated panels in both themes; every query validated; all five pie categories and the full caption fit |
+
+[Immutable raw output, source patch and both-theme screenshots](https://github.com/ephico2real2/clustermesh-trust-controller/blob/1c192a5ee84fb5218cb1385fdd9c5bf45ca69e1a/2026-10-24T0509Z-local-authenticated-only-f052d127/README.md)
+retain commands/exit status, load results, retries, native DENY records,
+source/image pins, public certificates, PCAP and query vectors. No private keys or
+kubeconfig credentials are published. This is local Linux ARM64 qualification;
+no new CI or AMD64 success is claimed.
+
+The [authenticated-only Grafana view](http://127.0.0.1:13000/d/cmtc-authenticated-only?from=1792817142251&to=1792817452353)
+replays the recorded load window. The user-requested titles distinguish attempts,
+actual policy DENY and authenticated TCP starts. Headline counts are reset-aware
+selected-range increases; the pie partitions completed destination TCP attempts,
+not HTTP requests or TLS handshakes. The independent whole-run HTTP totals above
+can differ from the selected-range estimates. The native identity table retains
+lifetime counter readings at range end, with overlapping source/destination rows.
+Presentation follows the pinned diagram-kit dashboard skill; the complete metric
+inventory and validator live beside the JSON.
+
+**CMTC-403 remains open.** These bounded trials close the reproduced tested
+plaintext paths with the native rule; they do not establish fresh first-packet
+admission, safety while policy is missing, authenticated destination permissions,
+platform/probe exceptions, remote identity isolation, ClusterMesh or layered
+WireGuard/IPsec qualification. `fullFailClosedProtection` stays false, the API
+stays Observe-only and the compatibility guard remains. Issue #7's broader
+registration/proxy/recovery and issuer-fault acceptance is also incomplete.
