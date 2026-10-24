@@ -2,11 +2,12 @@
 set -euo pipefail
 cd "$(dirname "$0")/../.."
 image=${CMTC_IMAGE:-cmtc:dev}
-cilium_version=${CILIUM_VERSION:-1.20.4}
 node_image=kindest/node:v1.36.4@sha256:099e049362a1526b2db71494e1947aae99bd16290d7c895f2b7ea312e3cbfaed
 mkdir -p .tmp artifacts
 for tool in docker kind kubectl helm openssl python3; do command -v "$tool" >/dev/null; done
 docker info >/dev/null
+bash scripts/cilium/prepare.sh
+cilium_chart=$(cat .tmp/cilium-chart-path)
 for cluster in cmtc-a cmtc-b; do
   if kind get clusters | grep -qx "$cluster"; then echo "Refusing to replace existing $cluster" >&2; exit 1; fi
 done
@@ -31,12 +32,11 @@ EOF
   echo "$cluster" >> .tmp/created-clusters
   kind create cluster --config ".tmp/$cluster.yaml" --wait 0
 done
-helm repo add cilium https://helm.cilium.io/ --force-update
 helm repo add jetstack https://charts.jetstack.io --force-update
 helm repo update
 for cluster in cmtc-a cmtc-b; do
   id=1; [ "$cluster" = cmtc-b ] && id=2
-  helm install cilium cilium/cilium --version "$cilium_version" -n kube-system --kube-context "kind-$cluster" \
+  helm install cilium "$cilium_chart" -f .tmp/cilium-image-values.json -n kube-system --kube-context "kind-$cluster" \
     --set "cluster.name=$cluster" --set "cluster.id=$id" --set ipam.mode=kubernetes \
     --set kubeProxyReplacement=true --set "k8sServiceHost=$cluster-control-plane" --set k8sServicePort=6443 \
     --set operator.replicas=1 --set hubble.enabled=false --set encryption.enabled=false \
@@ -122,7 +122,7 @@ values={'tls':{'caBundle':{'enabled':True,'name':'cmtc-public-root','key':'ca.cr
 pathlib.Path('.tmp/mesh-values.json').write_text(json.dumps(values))
 PY
 for cluster in cmtc-a cmtc-b; do
-  helm upgrade cilium cilium/cilium --version "$cilium_version" -n kube-system --kube-context "kind-$cluster" --reuse-values \
+  helm upgrade cilium "$cilium_chart" -f .tmp/cilium-image-values.json -n kube-system --kube-context "kind-$cluster" --reuse-values \
     -f .tmp/mesh-values.json --wait --timeout 10m
   kubectl --context "kind-$cluster" -n kube-system wait certificates --all --for=condition=Ready --timeout=3m
 done
@@ -134,4 +134,5 @@ for cluster in cmtc-a cmtc-b; do
   kubectl --context "kind-$cluster" -n cmtc-system rollout status ds/cmtc-node-agent --timeout=3m
   kubectl --context "kind-$cluster" apply -f config/samples/namespace-mtls-policy.yaml
 done
+python3 scripts/cilium/verify.py
 bash scripts/lab/monitoring.sh "$ip_a"

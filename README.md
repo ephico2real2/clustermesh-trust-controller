@@ -29,3 +29,5 @@ Namespace labels and enrollment acknowledgments cannot establish `Protected`. Th
 Nine domain dashboards remain partly proposed; CI provisions them alongside a separate live evaluation dashboard, validates actual selection/inventory metrics and captures the pages. SPIRE workload issuance, trust rotation, live enrollment and the Cilium cross-cluster/dual-encryption changes remain pending. No private CA keys belong in this repository or in bundle distribution.
 
 Repository: [ephico2real2/clustermesh-trust-controller](https://github.com/ephico2real2/clustermesh-trust-controller).
+
+The kind lab uses [versioned Cilium fork images](docs/development/CILIUM_IMAGES.md) from GHCR, pinned with their matching chart in `config/cilium-images.lock.json`.
