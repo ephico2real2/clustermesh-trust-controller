@@ -49,7 +49,7 @@ The [pinned source audit](../research/SOURCE_AUDIT.md) supplies initial static e
 ### F04 — Trust, SPIRE & Rotation
 **EP04: Root/intermediate and trust synchronization**
 
-- **CMTC-101 — SPIRE cert-manager UpstreamAuthority spike** (P0/P1 per CSV). Subtasks: Validate certificate chain, issuer and SVID issuance. Acceptance: automated success, failure and security scenarios with documented metrics.
+- **CMTC-101 — SPIRE cert-manager UpstreamAuthority spike** (P0/P1 per CSV). Subtasks: Validate certificate chain, issuer and SVID issuance. Acceptance: automated success, failure and security scenarios with documented metrics. Status: In progress. Local SPIRE credential work separates the agent ADS TLS identity from workload signing keys, wires delegated proxy attestation, and prepares cluster-local issuer/ADS keys with public CSRs only. The upcoming isolated runtime test must prove real SVID delivery and encrypted traffic; no mTLS acceptance has passed yet.
 - **CMTC-102 — Public trust bundle distribution** (P0/P1 per CSV). Subtasks: trust-manager Bundle reconciliation and namespace scoping. Acceptance: automated success, failure and security scenarios with documented metrics.
 - **CMTC-103 — Cluster trust sync protocol** (P0/P1 per CSV). Subtasks: Versioned digests; acknowledgment and trust reload verification. Acceptance: automated success, failure and security scenarios with documented metrics.
 - **CMTC-104 — CA rotation state machine** (P0/P1 per CSV). Subtasks: Dual-root overlap; issuance switch; drain; emergency revocation. Acceptance: automated success, failure and security scenarios with documented metrics.
@@ -96,7 +96,7 @@ The [pinned source audit](../research/SOURCE_AUDIT.md) supplies initial static e
 **EP09: CI/CD, docs, E2E and release**
 
 - **CMTC-801 — Go project scaffold and CI** (P0/P1 per CSV). Subtasks: Lint, unit/envtest, dependency security checks. Acceptance: automated success, failure and security scenarios with documented metrics.
-- **CMTC-802 — Two-cluster KIND integration suite** (P0/P1 per CSV). Subtasks: Positive/negative mTLS and CA rotation. Acceptance: automated success, failure and security scenarios with documented metrics.
+- **CMTC-802 — Two-cluster KIND integration suite** (P0/P1 per CSV). Subtasks: Positive/negative mTLS and CA rotation. Acceptance: automated success, failure and security scenarios with documented metrics. Supporting harness follow-up: Hubble run 40055777499 stopped on an initial Gateway HTTP 503 immediately after Programmed/rollout; no load was started. The local image-matched Hubble run passed 151,200/151,200 requests. Reproduce and fix the service-readiness race locally before rerunning that CI qualification. This is separate from the current CMTC-101 trust/mTLS priority.
 - **CMTC-803 — Resilience and performance testing** (P0/P1 per CSV). Subtasks: Chaos, partitions, latency, CPU, throughput, MTU. Acceptance: automated success, failure and security scenarios with documented metrics.
 - **CMTC-804 — Helm/GitOps packaging and runbooks** (P0/P1 per CSV). Subtasks: Charts, RBAC, SCC, upgrade and rollback docs. Acceptance: automated success, failure and security scenarios with documented metrics.
 - **CMTC-805 — Upstream design proposal and PR plan** (P0/P1 per CSV). Subtasks: Cilium CFP/issue, maintainers, focused patches. Acceptance: automated success, failure and security scenarios with documented metrics.
