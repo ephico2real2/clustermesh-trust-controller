@@ -17,14 +17,14 @@ fork image is transferred as a Docker archive and imported into kind's existing
 container runtime. `podman load` on the build VM alone does not put an image into
 the kind nodes.
 
-The isolated two-node enforcement fixture is `cmtc-mtls`. Preserve the two
-existing Observe/ClusterMesh clusters (`cmtc-a` and `cmtc-b`) and unrelated
-containers. The CNI-admission and namespace-transition trials deliberately
-restart a node agent or ztunnel and change test namespace intent; run them only
-against the owned `cmtc-mtls` fixture. The user now requires CI coverage for
-CMTC, the enhanced Cilium fork and ztunnel. Complete affected local qualification
-first, then add and run focused CI coverage against the exact source/image pins.
-Do not conflate CI coverage with publishing an image to a registry.
+The persistent local lab is the two-cluster mesh `cmtc-a` and `cmtc-b`; use
+those clusters for CMTC, the Cilium fork, ztunnel and cross-cluster application
+qualification. Do not create or rely on a separate `cmtc-mtls` cluster. Create
+a temporary cluster only when a feature specifically needs a non-mesh topology,
+and delete it after that test. Preserve unrelated Colima profiles and
+containers. Finish affected local qualification before CI; CI remains deferred
+by the active delivery instruction. Do not conflate CI coverage with publishing
+an image to a registry.
 
 ## 1. Preflight the existing machines
 
@@ -48,14 +48,21 @@ do not switch kind providers or recreate retained clusters as a workaround.
 
 On 2026-10-24, the restricted shell first returned `operation not permitted`
 for the Podman socket and showed a false `Broken` status for Colima. A direct,
-read-only host check then confirmed the `cmtc-ubuntu-build` builder is Linux
-ARM64 with 8 CPUs and 16 GiB memory, and `cmtc-cilium` is Running with its
-existing Docker runtime. The builder had no running containers. The Colima
-runtime already held kind nodes for `cmtc-a`, `cmtc-b`, and `cmtc-mtls`, plus
-the existing BuildKit container; all six kind node containers were left
-untouched. The `cmtc-mtls` context was `kind-cmtc-mtls` and both nodes were
-Ready. If the default sandbox again returns a socket permission error, verify
-through the authorized host command path before calling the VM broken.
+read-only host check confirmed the `cmtc-ubuntu-build` builder is Linux ARM64
+with 8 CPUs and 16 GiB memory, and `cmtc-cilium` is Running with its existing
+Docker runtime on Ubuntu 24.04.4 LTS (Colima 0.10.3). The persistent lab
+consists of the four kind nodes in `cmtc-a` and `cmtc-b`, plus the existing
+BuildKit container. If the default sandbox again returns a socket permission
+error, verify through the authorized host command path before calling the VM
+broken.
+
+Kind's configuration supports pod/service subnets and API-server settings, but
+does not assign a static Docker-network IP to each node. The lab discovers all
+node addresses on Docker's `kind` network and configures them as ClusterMesh
+NodePort peers. After Colima restarts, run
+`scripts/lab/reconcile-clustermesh-endpoints.sh` before relying on cross-cluster
+traffic; it refreshes both Helm releases only if those addresses changed. See
+[Kind ClusterMesh recovery](KIND_CLUSTERMESH_RECOVERY.md).
 
 ## 2. Build a Cilium agent image with Podman
 
@@ -134,66 +141,47 @@ The fork's `contrib/cmtc-images/build.sh` is a separate publisher helper: it
 uses Docker Buildx and `--push` to GHCR. It is not the local-only procedure and
 must not be used to publish during this mandate.
 
-## 3. Import the archive into the existing kind fixture
+## 3. Import the archive into the persistent two-cluster mesh
 
-The host and Colima guest share `/private/tmp`. Confirm the archive exists in
-both places. Then enter the existing guest, use its already configured
-`kind-cmtc-mtls` context, and let kind import the archive into every node:
+The host and Colima guest share `/private/tmp`. Select the existing Colima
+Docker runtime and import the exact archive into both retained clusters:
 
 ```bash
-# On macOS, first verify the archive path:
-test -s "/private/tmp/cmtc-ztunnel-build-tools/agent-${SHORT_SHA}-linux-arm64.tar"
-
-# Enter the existing Linux kind runtime; do not create a replacement cluster.
-colima -p cmtc-cilium ssh
-
-# Inside that guest:
-cd /private/tmp/cmtc-mac-qualification
-export PATH="$PWD/.tmp/bin:$PATH"
+export DOCKER_HOST="unix://$HOME/.colima/cmtc-cilium/docker.sock"
+export KUBECONFIG=/private/tmp/cmtc-a-b-20261024.kubeconfig
 export ARTIFACT_ROOT=/private/tmp/cmtc-ztunnel-build-tools
-export CILIUM_SOURCE_DIR=/private/tmp/cilium-ztunnel-authorization-runtime
-export SOURCE_SHA="$(git -C "$CILIUM_SOURCE_DIR" rev-parse HEAD)"
+export SOURCE_SHA="$(git -C /private/tmp/cilium-ztunnel-authorization-runtime rev-parse HEAD)"
 export SHORT_SHA="${SOURCE_SHA:0:10}"
-export PROXY_SOURCE_SHA=d79d3dfaef3d7afeb3552ea53cf90213141e95d3
-export KUBECONFIG=/home/olasumbo.guest/.kube/cmtc-mtls-spike
-export CILIUM_MTLS_AGENT_IMAGE="localhost/cilium:cni-admission-${SHORT_SHA}"
-export CILIUM_MTLS_AGENT_ARCHIVE="/private/tmp/cmtc-ztunnel-build-tools/agent-${SHORT_SHA}-linux-arm64.tar"
+ARCHIVE="$ARTIFACT_ROOT/agent-${SHORT_SHA}-linux-arm64.tar"
 
-test "$(kubectl config current-context)" = kind-cmtc-mtls
-kind get clusters | grep -qx cmtc-mtls
-test -s "$CILIUM_MTLS_AGENT_ARCHIVE"
+test -s "$ARCHIVE"
 rg -F "$SHORT_SHA" "$ARTIFACT_ROOT/agent-version-${SHORT_SHA}.txt"
-kind get clusters
-kubectl get nodes -o wide
-bash scripts/lab/mtls/enable.sh
+for cluster in cmtc-a cmtc-b; do
+  kind get clusters | grep -qx "$cluster"
+  kind load image-archive "$ARCHIVE" --name "$cluster"
+done
 ```
 
-`enable.sh` loads the archive with `kind load image-archive`, applies the exact
-local image override through the Cilium chart from `CILIUM_SOURCE_DIR`, and
-waits for the Cilium, SPIRE and ztunnel workloads. It is an update to the
-existing isolated fixture, not a cluster bootstrap. `bootstrap.sh` refuses to
-replace an existing cluster and should be used only for a deliberately fresh,
-isolated fixture.
-
-After rollout, save and inspect the Kubernetes image spec and runtime IDs, then
-check the running binary version on every node:
+Loading only makes an image available to the kind nodes; it does not deploy
+that image. Apply the exact local image override through the pinned Cilium
+chart for the feature under test. Then verify the requested image and runtime
+image IDs on every Cilium agent in both clusters. Refresh peer addresses and
+wait for both ClusterMesh links:
 
 ```bash
-mkdir -p "$ARTIFACT_ROOT/deployed-${SHORT_SHA}"
-kubectl -n kube-system rollout status ds/cilium --timeout=5m
-kubectl -n kube-system get pods -l k8s-app=cilium -o json \
-  > "$ARTIFACT_ROOT/deployed-${SHORT_SHA}/cilium-pods.json"
-kubectl -n kube-system exec ds/cilium -- cilium-dbg version \
-  | tee "$ARTIFACT_ROOT/deployed-${SHORT_SHA}/cilium-dbg-version.txt"
+bash scripts/lab/reconcile-clustermesh-endpoints.sh
+for cluster in cmtc-a cmtc-b; do
+  kubectl --context "kind-$cluster" get nodes -o wide
+  kubectl --context "kind-$cluster" -n kube-system rollout status ds/cilium --timeout=5m
+  kubectl --context "kind-$cluster" -n kube-system get pods -l k8s-app=cilium -o wide
+  cilium clustermesh status --context "kind-$cluster" --wait --wait-duration 10m
+done
 ```
 
-For each ready Cilium Pod, verify the `cilium-agent` spec uses the exact local
-tag, its status has a nonempty runtime `imageID`, and `cilium-dbg version`
-contains the expected source SHA. Keep the Pod JSON, `podman image inspect`,
-version output, and archive checksum together. A kind/containerd `imageID` may
-use a runtime-generated import name; retain it as the deployed runtime identity
-alongside the Podman image config ID rather than assuming the two IDs have the
-same representation.
+Keep the Pod JSON, `podman image inspect`, version output and archive checksum
+together. A kind/containerd `imageID` may use a runtime-generated import name;
+record it alongside the Podman image config ID instead of assuming both IDs
+have the same representation.
 
 ## 4. Run local tests, traffic, and evidence checks
 
@@ -203,43 +191,20 @@ the targeted tests actually executed and report selected/passed/skipped counts;
 zero selected tests or skipped privileged cases are not a pass. Keep raw logs
 and exit statuses in a fresh task-owned output directory.
 
-For the current strict capture-retention trial, use the exact Cilium and proxy
-source pins and a new output path:
+Run the current two-cluster baseline against both mesh contexts:
 
 ```bash
-python3 scripts/lab/mtls/namespace_transition.py \
-  --kubeconfig "$KUBECONFIG" \
-  --source "$SOURCE_SHA" \
-  --proxy-source "$PROXY_SOURCE_SHA" \
-  --out "/private/tmp/cmtc-ztunnel-build-tools/namespace-transition-${SHORT_SHA}-$(date -u +%Y%m%dT%H%M%SZ)"
+bash scripts/lab/reconcile-clustermesh-endpoints.sh
+bash scripts/lab/test.sh
 ```
 
-This driver generates real same-node, cross-node, Service and Pod-IP traffic;
-tests unenrolled plaintext attempts while namespace intent is removed; restarts
-the Cilium agent and ztunnel; and restores the original intent. It writes
-`commands.ndjson`, per-path results, probe samples and component logs. The
-current acceptance is **no unexpected HTTP and successful positive recovery**;
-it does not prove retained-membership availability while enrollment is off.
-
-For first-Pod CNI admission, which pauses the worker ztunnel process to create a
-real startup failure, run only on `kind-cmtc-mtls`:
-
-```bash
-export CMTC_CNI_AGENT_SOURCE="$SOURCE_SHA"
-export CMTC_CNI_OUTPUT_ROOT="/private/tmp/cmtc-ztunnel-build-tools/cni-admission-${SHORT_SHA}-$(date -u +%Y%m%dT%H%M%SZ)"
-mkdir -p "$CMTC_CNI_OUTPUT_ROOT"
-bash scripts/lab/mtls/cni_admission.sh
-CNI_FIXTURE_DIR="$(find "$CMTC_CNI_OUTPUT_ROOT" -maxdepth 1 -type d -name 'cni-fixture-*' -print -quit)"
-test -n "$CNI_FIXTURE_DIR"
-python3 scripts/lab/mtls/cni_postdelete.py --fixture "$CNI_FIXTURE_DIR"
-```
-
-The CNI test requires a real `FailedCreatePodSandBox` event, no application
-container/start marker before a fresh capture ACK, and successful recovery after
-the proxy resumes. It has an independent resume safeguard. The post-delete test
-checks the retired UID, proxy reconnect, positive authenticated requests and
-rejected plaintext. Read [the local security report](../../LOCAL_SECURITY_VALIDATION.md)
-for exact source pins, measured counts, retained failures and the active gaps.
+The security-transition and first-Pod admission drivers under
+`scripts/lab/mtls/` still contain assumptions from the retired isolated
+`cmtc-mtls` fixture. Do not run them against the persistent mesh until each
+driver explicitly selects and validates both `kind-cmtc-a` and `kind-cmtc-b`.
+The local security report records prior bounded qualifications and open gates;
+those results do not substitute for testing the current deployed images on the
+two-cluster mesh.
 
 For Grafana evidence, start real load first, validate live Prometheus responses
 for the selected time window, and run the repository browser walk in light and
@@ -251,23 +216,12 @@ documented in [LOCAL_SECURITY_VALIDATION.md](../../LOCAL_SECURITY_VALIDATION.md)
 
 ## CMTC operator image
 
-The CMTC image helper follows the same host-Podman/archive-import boundary:
-
-```bash
-CMTC_PODMAN_CONNECTION=cmtc-ubuntu-build \
-CMTC_BUILD_PLATFORM=linux/arm64 \
-CMTC_MTLS_FIXTURE_IMAGE=localhost/cmtc:local-test \
-CMTC_MTLS_BUILD_OUTPUT=.tmp/mtls-spike/local-test \
-bash scripts/lab/mtls/build.sh
-```
-
-It records `podman image inspect`, runs `/cmtc --help` in a network-isolated
-container, and writes `.tmp/mtls-spike/local-test/cmtc-podman-image.tar`. The
-fresh-fixture bootstrap imports that archive with `kind load image-archive` and
-refuses to replace the existing `cmtc-mtls` cluster. For an already retained
-cluster, use its owning deployment/update procedure and verify the operator and
-node-agent image specs, runtime IDs, readiness, and actual behavior; loading an
-archive alone does not prove that a workload is running it.
+The legacy image helper under `scripts/lab/mtls/build.sh` was written for the
+retired isolated fixture. Do not use its `CMTC_MTLS_*` settings for the
+persistent mesh. Build the CMTC image with the host Podman workflow, load its
+archive into both clusters, then apply the repository manifests with the exact
+image reference and verify both controller and node-agent rollouts in each
+cluster. Loading an archive alone does not prove that a workload is running it.
 
 ## Evidence already qualified
 

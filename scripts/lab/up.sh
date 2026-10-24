@@ -114,11 +114,12 @@ EOF
   kubectl --context "kind-$cluster" wait clusterissuer/cmtc-lab-intermediate --for=condition=Ready --timeout=2m
 done
 rm "$pki/root.key"
-ip_a=$(docker inspect cmtc-a-control-plane --format '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}')
-ip_b=$(docker inspect cmtc-b-control-plane --format '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}')
-python3 - "$pki/root.crt" "$ip_a" "$ip_b" <<'PY'
+ips_a=$(python3 scripts/lab/kind-node-ips.py cmtc-a)
+ips_b=$(python3 scripts/lab/kind-node-ips.py cmtc-b)
+ip_a=$(python3 -c 'import json,sys; print(json.loads(sys.argv[1])[0])' "$ips_a")
+python3 - "$pki/root.crt" "$ips_a" "$ips_b" <<'PY'
 import json,pathlib,sys
-values={'tls':{'caBundle':{'enabled':True,'name':'cmtc-public-root','key':'ca.crt','useSecret':False,'content':pathlib.Path(sys.argv[1]).read_text()}},'clustermesh':{'useAPIServer':True,'apiserver':{'service':{'type':'NodePort'},'tls':{'auto':{'enabled':True,'method':'certmanager','certValidityDuration':1,'certManagerIssuerRef':{'group':'cert-manager.io','kind':'ClusterIssuer','name':'cmtc-lab-intermediate'}}}},'config':{'enabled':True,'clusters':[{'name':'cmtc-a','ips':[sys.argv[2]],'port':32379},{'name':'cmtc-b','ips':[sys.argv[3]],'port':32379}]}}}
+values={'tls':{'caBundle':{'enabled':True,'name':'cmtc-public-root','key':'ca.crt','useSecret':False,'content':pathlib.Path(sys.argv[1]).read_text()}},'clustermesh':{'useAPIServer':True,'apiserver':{'service':{'type':'NodePort'},'tls':{'auto':{'enabled':True,'method':'certmanager','certValidityDuration':1,'certManagerIssuerRef':{'group':'cert-manager.io','kind':'ClusterIssuer','name':'cmtc-lab-intermediate'}}}},'config':{'enabled':True,'clusters':[{'name':'cmtc-a','ips':json.loads(sys.argv[2]),'port':32379},{'name':'cmtc-b','ips':json.loads(sys.argv[3]),'port':32379}]}}}
 pathlib.Path('.tmp/mesh-values.json').write_text(json.dumps(values))
 PY
 for cluster in cmtc-a cmtc-b; do
