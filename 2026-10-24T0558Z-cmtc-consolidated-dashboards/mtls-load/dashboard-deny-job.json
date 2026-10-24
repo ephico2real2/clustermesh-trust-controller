@@ -1,0 +1,53 @@
+{
+  "apiVersion": "batch/v1",
+  "kind": "Job",
+  "metadata": {
+    "name": "dashboard-deny",
+    "namespace": "mtls-plaintext-control",
+    "annotations": {
+      "cmtc.io/evidence-run": "dashboard-consolidation"
+    }
+  },
+  "spec": {
+    "activeDeadlineSeconds": 390,
+    "backoffLimit": 0,
+    "template": {
+      "metadata": {
+        "labels": {
+          "app": "cmtc-auth-deny-load"
+        }
+      },
+      "spec": {
+        "automountServiceAccountToken": false,
+        "containers": [
+          {
+            "command": [
+              "sh",
+              "-c",
+              "set -u\nfor i in $(seq 1 900); do\n wget -T 1 -S -O - http://10.30.0.65/ > /tmp/probe-output 2>&1\n result=$?\n if [ \"$result\" -eq 0 ] || grep -q 'HTTP/' /tmp/probe-output; then\n  echo \"FAIL unexpected application HTTP attempt=$i exit=$result\"\n  cat /tmp/probe-output\n  exit 1\n fi\n echo \"DENY attempt=$i HTTP=none exit=$result\"\n sleep 0.3\ndone\necho 'PASS: 900 unauthenticated requests rejected without HTTP response'\n"
+            ],
+            "image": "alpine:3.20",
+            "name": "probe",
+            "resources": {
+              "limits": {
+                "memory": "32Mi"
+              },
+              "requests": {
+                "cpu": "10m",
+                "memory": "16Mi"
+              }
+            }
+          }
+        ],
+        "nodeSelector": {
+          "kubernetes.io/hostname": "cmtc-mtls-worker"
+        },
+        "restartPolicy": "Never",
+        "securityContext": {
+          "runAsNonRoot": true,
+          "runAsUser": 65532
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,2280 @@
+{
+  "uid": "cmtc-observe-lab",
+  "title": "CMTC | Operations",
+  "schemaVersion": 41,
+  "version": 1,
+  "editable": false,
+  "tags": [
+    "cmtc",
+    "observe"
+  ],
+  "timezone": "utc",
+  "refresh": "5s",
+  "time": {
+    "from": "now-15m",
+    "to": "now"
+  },
+  "templating": {
+    "list": [
+      {
+        "name": "DS_PROMETHEUS",
+        "type": "datasource",
+        "query": "prometheus",
+        "current": {
+          "text": "CMTC Prometheus",
+          "value": "cmtc-prom"
+        }
+      },
+      {
+        "name": "cluster",
+        "label": "Cluster",
+        "type": "query",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${DS_PROMETHEUS}"
+        },
+        "query": {
+          "query": "label_values(cmtc_enforcement_available{job=\"cmtc\",component=\"cmtc-controller\"},cluster)",
+          "refId": "ClusterVariable"
+        },
+        "refresh": 1,
+        "multi": true,
+        "includeAll": true,
+        "allValue": ".*",
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        }
+      }
+    ]
+  },
+  "annotations": {
+    "list": []
+  },
+  "panels": [
+    {
+      "id": 1,
+      "title": "CMTC operations · observed intent and inventory",
+      "type": "text",
+      "description": "Visible context and scope; documented status is not a live health metric.",
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 24,
+        "h": 4
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "mode": "markdown",
+        "content": "**Observe mode:** namespace selection, existing enrollment labels, node inventory and controller activity are live. **Enforcement verification is unavailable.** These readings do not establish workload protection.\n\nUse the cluster selector for one cluster or both. Blue identifies cmtc-a; red identifies cmtc-b in charts and table cells. [Workload mTLS evidence](https://github.com/ephico2real2/clustermesh-trust-controller/blob/1c192a5ee84fb5218cb1385fdd9c5bf45ca69e1a/2026-10-24T0509Z-local-authenticated-only-f052d127/README.md) is a separate isolated trial."
+      }
+    },
+    {
+      "id": 2,
+      "title": "Is CMTC reporting?",
+      "type": "row",
+      "collapsed": false,
+      "panels": [],
+      "gridPos": {
+        "x": 0,
+        "y": 4,
+        "w": 24,
+        "h": 1
+      }
+    },
+    {
+      "id": 3,
+      "title": "Controllers reporting",
+      "type": "stat",
+      "description": "Latest controller metric series at range end, one per reporting controller. Not application or datapath readiness.",
+      "gridPos": {
+        "x": 0,
+        "y": 5,
+        "w": 6,
+        "h": 4
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "min": 0,
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "#4e79a7"
+          },
+          "decimals": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "value",
+        "text": {
+          "valueSize": 40
+        }
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "count(cmtc_enforcement_available{job=\"cmtc\",cluster=~\"$cluster\",component=\"cmtc-controller\"} @ end())",
+          "legendFormat": "",
+          "instant": true,
+          "range": false
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "title": "Node inventories ready",
+      "type": "stat",
+      "description": "Latest successful local inventory observations at range end. Not encrypted or protected node counts.",
+      "gridPos": {
+        "x": 6,
+        "y": 5,
+        "w": 6,
+        "h": 4
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "min": 0,
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "#4e79a7"
+          },
+          "decimals": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "value",
+        "text": {
+          "valueSize": 40
+        }
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(cmtc_node_agent_ready{job=\"cmtc\",cluster=~\"$cluster\",component=\"cmtc-node-agent\"} @ end())",
+          "legendFormat": "",
+          "instant": true,
+          "range": false
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "title": "Namespaces selected · intent",
+      "type": "stat",
+      "description": "Latest namespace selection intent at range end. The Observe controller does not change labels or enforce traffic.",
+      "gridPos": {
+        "x": 12,
+        "y": 5,
+        "w": 6,
+        "h": 4
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "min": 0,
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "#4e79a7"
+          },
+          "decimals": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "value",
+        "text": {
+          "valueSize": 40
+        }
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(cmtc_namespaces_selected{job=\"cmtc\",cluster=~\"$cluster\",component=\"cmtc-controller\"} @ end())",
+          "legendFormat": "",
+          "instant": true,
+          "range": false
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "title": "Enforcement verification",
+      "type": "stat",
+      "description": "Native CMTC capability gauge at range end. Zero means verification is unavailable in Observe mode; missing telemetry remains unavailable.",
+      "gridPos": {
+        "x": 18,
+        "y": 5,
+        "w": 6,
+        "h": 4
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "min": 0,
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "#f28e2b"
+          },
+          "decimals": 0,
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": {
+                  "text": "Unavailable",
+                  "color": "#f28e2b"
+                }
+              }
+            }
+          ]
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "value",
+        "text": {
+          "valueSize": 40
+        }
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "max(cmtc_enforcement_available{job=\"cmtc\",cluster=~\"$cluster\",component=\"cmtc-controller\"} @ end())",
+          "legendFormat": "",
+          "instant": true,
+          "range": false
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "title": "Which namespaces are selected?",
+      "type": "row",
+      "collapsed": false,
+      "panels": [],
+      "gridPos": {
+        "x": 0,
+        "y": 9,
+        "w": 24,
+        "h": 1
+      }
+    },
+    {
+      "id": 8,
+      "title": "Enrollment labels observed",
+      "type": "stat",
+      "description": "Latest namespaces carrying the Cilium enrollment label from any actor. Label presence is intent, not protection.",
+      "gridPos": {
+        "x": 0,
+        "y": 10,
+        "w": 12,
+        "h": 4
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "min": 0,
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "#4e79a7"
+          },
+          "decimals": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "value",
+        "text": {
+          "valueSize": 40
+        }
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(cmtc_namespaces_enrolled{job=\"cmtc\",cluster=~\"$cluster\",component=\"cmtc-controller\"} @ end())",
+          "legendFormat": "",
+          "instant": true,
+          "range": false
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "title": "Non-platform namespaces observed",
+      "type": "stat",
+      "description": "Latest non-platform namespace inventory, including explicitly excluded namespaces; not a count of safe-to-enroll namespaces.",
+      "gridPos": {
+        "x": 12,
+        "y": 10,
+        "w": 12,
+        "h": 4
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "min": 0,
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "#4e79a7"
+          },
+          "decimals": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "value",
+        "text": {
+          "valueSize": 40
+        }
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(cmtc_namespaces_eligible{job=\"cmtc\",cluster=~\"$cluster\",component=\"cmtc-controller\"} @ end())",
+          "legendFormat": "",
+          "instant": true,
+          "range": false
+        }
+      ]
+    },
+    {
+      "id": 10,
+      "title": "Namespace decisions · latest share",
+      "type": "piechart",
+      "description": "Latest namespace decisions at the selected range end. Selected, excluded, platform and unselected are disjoint and sum to all observed namespaces in the selected clusters. This is inventory/intent, not mTLS coverage. Missing telemetry stays unavailable.",
+      "gridPos": {
+        "x": 0,
+        "y": 14,
+        "w": 12,
+        "h": 14
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "min": 0,
+          "decimals": 1
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Selected"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#4e79a7"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Excluded"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#e15759"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Platform"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#edc948"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Unselected"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#b07aa1"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "pieType": "pie",
+        "displayLabels": [
+          "percent"
+        ],
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "values": [
+            "value",
+            "percent"
+          ]
+        },
+        "tooltip": {
+          "mode": "single"
+        }
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(cmtc_namespace_decisions{job=\"cmtc\",cluster=~\"$cluster\",component=\"cmtc-controller\",decision=\"selected\"} @ end())",
+          "legendFormat": "Selected",
+          "instant": true,
+          "range": false
+        },
+        {
+          "refId": "B",
+          "expr": "sum(cmtc_namespace_decisions{job=\"cmtc\",cluster=~\"$cluster\",component=\"cmtc-controller\",decision=\"excluded\"} @ end())",
+          "legendFormat": "Excluded",
+          "instant": true,
+          "range": false
+        },
+        {
+          "refId": "C",
+          "expr": "sum(cmtc_namespace_decisions{job=\"cmtc\",cluster=~\"$cluster\",component=\"cmtc-controller\",decision=\"platform\"} @ end())",
+          "legendFormat": "Platform",
+          "instant": true,
+          "range": false
+        },
+        {
+          "refId": "D",
+          "expr": "sum(cmtc_namespace_decisions{job=\"cmtc\",cluster=~\"$cluster\",component=\"cmtc-controller\",decision=\"unselected\"} @ end())",
+          "legendFormat": "Unselected",
+          "instant": true,
+          "range": false
+        }
+      ]
+    },
+    {
+      "id": 11,
+      "title": "Namespace decisions by cluster",
+      "type": "table",
+      "description": "Latest namespace decision gauges at range end, one row per cluster and decision. Zero is an observed empty category; a missing controller is not zero.",
+      "gridPos": {
+        "x": 12,
+        "y": 14,
+        "w": 12,
+        "h": 10
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "min": 0,
+          "decimals": 0
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Cluster"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 115
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-background",
+                  "mode": "basic"
+                }
+              },
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "cmtc-a": {
+                        "text": "cmtc-a",
+                        "color": "#4e79a7"
+                      },
+                      "cmtc-b": {
+                        "text": "cmtc-b",
+                        "color": "#e15759"
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Decision"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-background",
+                  "mode": "basic"
+                }
+              },
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "selected": {
+                        "text": "Selected",
+                        "color": "#4e79a7"
+                      },
+                      "excluded": {
+                        "text": "Excluded",
+                        "color": "#e15759"
+                      },
+                      "platform": {
+                        "text": "Platform",
+                        "color": "#edc948"
+                      },
+                      "unselected": {
+                        "text": "Unselected",
+                        "color": "#b07aa1"
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false
+        }
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by(cluster,decision) (cmtc_namespace_decisions{job=\"cmtc\",cluster=~\"$cluster\",component=\"cmtc-controller\"} @ end())",
+          "legendFormat": "",
+          "instant": true,
+          "range": false,
+          "format": "table"
+        }
+      ],
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true
+            },
+            "indexByName": {
+              "cluster": 0,
+              "decision": 1,
+              "Value": 2
+            },
+            "renameByName": {
+              "cluster": "Cluster",
+              "decision": "Decision",
+              "Value": "Namespaces"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": 12,
+      "title": "Read the namespace categories",
+      "type": "text",
+      "description": "Visible context and scope; documented status is not a live health metric.",
+      "gridPos": {
+        "x": 12,
+        "y": 24,
+        "w": 12,
+        "h": 4
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "mode": "markdown",
+        "content": "**Selected** = policy intent. **Excluded** = explicit exclusion. **Platform** = protected infrastructure. **Unselected** = remaining namespaces.\n\nThe pie includes platform namespaces in its denominator. Non-platform inventory includes excluded namespaces. Enrollment labels are observed from any actor. None of these counts proves mTLS or Protected status."
+      }
+    },
+    {
+      "id": 13,
+      "title": "Do controllers and node agents keep up?",
+      "type": "row",
+      "collapsed": false,
+      "panels": [],
+      "gridPos": {
+        "x": 0,
+        "y": 28,
+        "w": 24,
+        "h": 1
+      }
+    },
+    {
+      "id": 14,
+      "title": "Metrics targets reachable",
+      "type": "stat",
+      "description": "Latest successful scrapes at range end. The two-cluster lab expects six: two controllers plus four node agents. Filtered views have fewer targets. Read the target table for individual failures; this count is not an all-healthy verdict.",
+      "gridPos": {
+        "x": 0,
+        "y": 29,
+        "w": 12,
+        "h": 4
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "min": 0,
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "#4e79a7"
+          },
+          "decimals": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "value",
+        "text": {
+          "valueSize": 40
+        }
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(up{job=\"cmtc\",cluster=~\"$cluster\",component=~\"cmtc-controller|cmtc-node-agent\"} @ end())",
+          "legendFormat": "",
+          "instant": true,
+          "range": false
+        }
+      ]
+    },
+    {
+      "id": 15,
+      "title": "Controller reconcile errors/s",
+      "type": "stat",
+      "description": "Controller-runtime reconcile errors per second over the adaptive rate interval. An observed zero means no recorded errors; missing data is unavailable.",
+      "gridPos": {
+        "x": 12,
+        "y": 29,
+        "w": 12,
+        "h": 4
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops",
+          "min": 0,
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "#f28e2b"
+          },
+          "decimals": 3
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "value",
+        "text": {
+          "valueSize": 40
+        }
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(rate(controller_runtime_reconcile_errors_total{job=\"cmtc\",cluster=~\"$cluster\",component=\"cmtc-controller\"}[$__rate_interval]))",
+          "legendFormat": "",
+          "instant": true,
+          "range": false
+        }
+      ]
+    },
+    {
+      "id": 16,
+      "title": "Policy evaluations/s · by cluster",
+      "type": "timeseries",
+      "description": "Successful CMTC policy evaluations per second over $__rate_interval. A fall to zero can mean idle work; it is not protection readiness. Missing metrics remain unavailable.",
+      "gridPos": {
+        "x": 0,
+        "y": 33,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops",
+          "min": 0,
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "drawStyle": "line",
+            "showPoints": "never"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "cmtc-a"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#4e79a7"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "cmtc-b"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#e15759"
+                }
+              },
+              {
+                "id": "custom.lineStyle",
+                "value": {
+                  "fill": "dash",
+                  "dash": [
+                    8,
+                    6
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by(cluster) (rate(cmtc_policy_evaluations_total{job=\"cmtc\",cluster=~\"$cluster\",component=\"cmtc-controller\"}[$__rate_interval]))",
+          "legendFormat": "{{cluster}}",
+          "instant": false,
+          "range": true
+        }
+      ]
+    },
+    {
+      "id": 17,
+      "title": "Controller reconcile p95 · seconds",
+      "type": "timeseries",
+      "description": "95th-percentile controller-runtime reconcile duration from real histogram buckets, over $__rate_interval. It measures controller work, not network or TLS latency. No observations mean the percentile is unavailable.",
+      "gridPos": {
+        "x": 12,
+        "y": 33,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "min": 0,
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "drawStyle": "line",
+            "showPoints": "never"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "cmtc-a"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#4e79a7"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "cmtc-b"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#e15759"
+                }
+              },
+              {
+                "id": "custom.lineStyle",
+                "value": {
+                  "fill": "dash",
+                  "dash": [
+                    8,
+                    6
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "histogram_quantile(0.95, sum by(cluster,le) (rate(controller_runtime_reconcile_time_seconds_bucket{job=\"cmtc\",cluster=~\"$cluster\",component=\"cmtc-controller\"}[$__rate_interval])))",
+          "legendFormat": "{{cluster}}",
+          "instant": false,
+          "range": true
+        }
+      ]
+    },
+    {
+      "id": 18,
+      "title": "Pod inventory by node",
+      "type": "table",
+      "description": "Latest node-local pod inventory at range end. pod and host classify network mode. Counts are not protected pods or successful platform probes.",
+      "gridPos": {
+        "x": 0,
+        "y": 41,
+        "w": 12,
+        "h": 10
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "min": 0,
+          "decimals": 0
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Cluster"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 115
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-background",
+                  "mode": "basic"
+                }
+              },
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "cmtc-a": {
+                        "text": "cmtc-a",
+                        "color": "#4e79a7"
+                      },
+                      "cmtc-b": {
+                        "text": "cmtc-b",
+                        "color": "#e15759"
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false
+        }
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by(cluster,node,network) (cmtc_pods_observed{job=\"cmtc\",cluster=~\"$cluster\",component=\"cmtc-node-agent\"} @ end())",
+          "legendFormat": "",
+          "instant": true,
+          "range": false,
+          "format": "table"
+        }
+      ],
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true
+            },
+            "indexByName": {
+              "cluster": 0,
+              "node": 1,
+              "network": 2,
+              "Value": 3
+            },
+            "renameByName": {
+              "cluster": "Cluster",
+              "node": "Node",
+              "network": "Network",
+              "Value": "Pods"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": 19,
+      "title": "Metrics targets · current state",
+      "type": "table",
+      "description": "Latest Prometheus target reachability at range end, with authoritative scrape cluster/component/node labels. UP does not establish workload or certificate readiness.",
+      "gridPos": {
+        "x": 12,
+        "y": 41,
+        "w": 12,
+        "h": 10
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "min": 0,
+          "decimals": 0
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Cluster"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 115
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-background",
+                  "mode": "basic"
+                }
+              },
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "cmtc-a": {
+                        "text": "cmtc-a",
+                        "color": "#4e79a7"
+                      },
+                      "cmtc-b": {
+                        "text": "cmtc-b",
+                        "color": "#e15759"
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Scrape"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
+                }
+              },
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "0": {
+                        "text": "DOWN",
+                        "color": "#e15759"
+                      },
+                      "1": {
+                        "text": "UP",
+                        "color": "#59a14f"
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false
+        }
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "max by(cluster,component,node) (up{job=\"cmtc\",cluster=~\"$cluster\",component=~\"cmtc-controller|cmtc-node-agent\"} @ end())",
+          "legendFormat": "",
+          "instant": true,
+          "range": false,
+          "format": "table"
+        }
+      ],
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true
+            },
+            "indexByName": {
+              "cluster": 0,
+              "component": 1,
+              "node": 2,
+              "Value": 3
+            },
+            "renameByName": {
+              "cluster": "Cluster",
+              "component": "Component",
+              "node": "Node",
+              "Value": "Scrape"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": 20,
+      "title": "Inventory and controller telemetry boundaries",
+      "type": "text",
+      "description": "Visible context and scope; documented status is not a live health metric.",
+      "gridPos": {
+        "x": 0,
+        "y": 51,
+        "w": 24,
+        "h": 3
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "mode": "markdown",
+        "content": "Rates use the adaptive scrape/zoom interval; lines start at zero, with solid blue cmtc-a and dashed red cmtc-b. Tables show the latest observations at range end. **hostNetwork inventory is not platform safety.** API, DNS, probe health, certificate rotation and layered encryption still require their own verified instrumentation."
+      }
+    },
+    {
+      "id": 21,
+      "title": "What is still awaiting security qualification?",
+      "type": "row",
+      "collapsed": false,
+      "panels": [],
+      "gridPos": {
+        "x": 0,
+        "y": 54,
+        "w": 24,
+        "h": 1
+      }
+    },
+    {
+      "id": 22,
+      "title": "Implementation status · documented scope, not live health",
+      "type": "text",
+      "description": "Visible context and scope; documented status is not a live health metric.",
+      "gridPos": {
+        "x": 0,
+        "y": 55,
+        "w": 24,
+        "h": 10
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "mode": "markdown",
+        "content": "| Capability | Current evidence boundary |\n| --- | --- |\n| Namespace intent / node inventory | Live CMTC telemetry above; Observe remains read-only |\n| Workload mTLS / native DENY | Tested in the isolated two-node SPIRE fixture; see the separate mTLS evidence |\n| Persistent strict admission / authorization | Missing-policy, first-packet, finer caller permissions and restart/revocation gates remain open |\n| CA trust / rotation / remote identity | Public SVID validation demonstrated locally; rotation, issuer faults and cluster identity isolation remain open |\n| ClusterMesh / WireGuard / IPsec | Observe ClusterMesh baseline tested; cross-cluster workload mTLS and transport composition remain unqualified |\n| Kubernetes / OpenShift platform safety | Platform namespace exclusion implemented; required traffic/probe checks remain separate gates |\n\n**Missing security metrics are unknown.** No invented handshake, protected-pod, trust-ready or transport-success numbers are substituted. Planned panels below retain every original domain; their metrics will be implemented as the agile stories progress."
+      }
+    },
+    {
+      "id": 100,
+      "title": "Can workloads be verified as protected? · planned",
+      "type": "row",
+      "collapsed": false,
+      "panels": [],
+      "gridPos": {
+        "x": 0,
+        "y": 65,
+        "w": 24,
+        "h": 1
+      }
+    },
+    {
+      "id": 101,
+      "title": "Verified cluster gates · planned",
+      "type": "stat",
+      "description": "Planned instrumentation; missing data means not implemented, never success. All required verified cluster gates satisfied for the current generation and freshness window. Mapped status/table; no sum that hides one failed or missing required gate. Proposed labels/source must be qualified in the delivering story. Metric contract: cmtc_cluster_ready",
+      "gridPos": {
+        "x": 0,
+        "y": 66,
+        "w": 12,
+        "h": 7
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "min": 0,
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "#4e79a7"
+          },
+          "decimals": 0,
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": {
+                  "text": "Not ready",
+                  "color": "#f28e2b"
+                },
+                "1": {
+                  "text": "Verified",
+                  "color": "#59a14f"
+                }
+              }
+            }
+          ]
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "cmtc-a"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#4e79a7"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "cmtc-b"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#e15759"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "value_and_name",
+        "text": {
+          "valueSize": 40
+        }
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "min by(cluster) (cmtc_cluster_ready{job=\"cmtc\",cluster=~\"$cluster\",component=~\"cmtc-controller|cmtc-node-agent\"} @ end())",
+          "legendFormat": "{{cluster}}",
+          "instant": true,
+          "range": false
+        }
+      ]
+    },
+    {
+      "id": 102,
+      "title": "Pods protected · planned",
+      "type": "stat",
+      "description": "Planned instrumentation; missing data means not implemented, never success. Eligible current pods with fresh verified mandatory capture, identity and destination enforcement. Latest state count/table; no inference from enrollment or ACK. Proposed labels/source must be qualified in the delivering story. Metric contract: cmtc_pods_protected",
+      "gridPos": {
+        "x": 12,
+        "y": 66,
+        "w": 12,
+        "h": 7
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "min": 0,
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "#4e79a7"
+          },
+          "decimals": 0
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "cmtc-a"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#4e79a7"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "cmtc-b"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#e15759"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "value_and_name",
+        "text": {
+          "valueSize": 40
+        }
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by(cluster) (cmtc_pods_protected{job=\"cmtc\",cluster=~\"$cluster\",component=~\"cmtc-controller|cmtc-node-agent\"} @ end())",
+          "legendFormat": "{{cluster}}",
+          "instant": true,
+          "range": false
+        }
+      ]
+    },
+    {
+      "id": 103,
+      "title": "Pods awaiting enforcement · planned",
+      "type": "stat",
+      "description": "Planned instrumentation; missing data means not implemented, never success. Eligible current pods awaiting one or more required enforcement gates. Latest state count/table; exclusive with protected/failed states. Proposed labels/source must be qualified in the delivering story. Metric contract: cmtc_pods_pending",
+      "gridPos": {
+        "x": 0,
+        "y": 73,
+        "w": 12,
+        "h": 7
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "min": 0,
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "#4e79a7"
+          },
+          "decimals": 0
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "cmtc-a"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#4e79a7"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "cmtc-b"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#e15759"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "value_and_name",
+        "text": {
+          "valueSize": 40
+        }
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by(cluster) (cmtc_pods_pending{job=\"cmtc\",cluster=~\"$cluster\",component=~\"cmtc-controller|cmtc-node-agent\"} @ end())",
+          "legendFormat": "{{cluster}}",
+          "instant": true,
+          "range": false
+        }
+      ]
+    },
+    {
+      "id": 104,
+      "title": "Pods enforcement failed · planned",
+      "type": "stat",
+      "description": "Planned instrumentation; missing data means not implemented, never success. Current eligible pods in a failed enforcement state, not cumulative failure events. Latest state count/table; never rate() this gauge. Proposed labels/source must be qualified in the delivering story. Metric contract: cmtc_pods_enforcement_failed",
+      "gridPos": {
+        "x": 12,
+        "y": 73,
+        "w": 12,
+        "h": 7
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "min": 0,
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "#4e79a7"
+          },
+          "decimals": 0
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "cmtc-a"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#4e79a7"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "cmtc-b"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#e15759"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "value_and_name",
+        "text": {
+          "valueSize": 40
+        }
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by(cluster) (cmtc_pods_enforcement_failed{job=\"cmtc\",cluster=~\"$cluster\",component=~\"cmtc-controller|cmtc-node-agent\"} @ end())",
+          "legendFormat": "{{cluster}}",
+          "instant": true,
+          "range": false
+        }
+      ]
+    },
+    {
+      "id": 105,
+      "title": "Are platform dependencies safe? · planned",
+      "type": "row",
+      "collapsed": false,
+      "panels": [],
+      "gridPos": {
+        "x": 0,
+        "y": 80,
+        "w": 24,
+        "h": 1
+      }
+    },
+    {
+      "id": 106,
+      "title": "Platform dependency health · planned",
+      "type": "stat",
+      "description": "Planned instrumentation; missing data means not implemented, never success. Latest fresh platform dependency check, with a bounded dependency label. Mapped table/status history per required dependency; missing dependency cannot pass aggregate readiness. Proposed labels/source must be qualified in the delivering story. Metric contract: cmtc_platform_dependency_healthy",
+      "gridPos": {
+        "x": 0,
+        "y": 81,
+        "w": 12,
+        "h": 7
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "min": 0,
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "#4e79a7"
+          },
+          "decimals": 0,
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": {
+                  "text": "Not ready",
+                  "color": "#f28e2b"
+                },
+                "1": {
+                  "text": "Verified",
+                  "color": "#59a14f"
+                }
+              }
+            }
+          ]
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "cmtc-a"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#4e79a7"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "cmtc-b"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#e15759"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "value_and_name",
+        "text": {
+          "valueSize": 40
+        }
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "cmtc_platform_dependency_healthy{job=\"cmtc\",cluster=~\"$cluster\",component=~\"cmtc-controller|cmtc-node-agent\"} @ end()",
+          "legendFormat": "{{cluster}} · {{dependency}}",
+          "instant": true,
+          "range": false
+        }
+      ]
+    },
+    {
+      "id": 107,
+      "title": "API probe result · planned",
+      "type": "stat",
+      "description": "Planned instrumentation; missing data means not implemented, never success. Latest fresh safe API connectivity/TLS probe result. Mapped latest state/history; not application mTLS or cluster-wide health. Proposed labels/source must be qualified in the delivering story. Metric contract: cmtc_apiserver_probe_success",
+      "gridPos": {
+        "x": 12,
+        "y": 81,
+        "w": 12,
+        "h": 7
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "min": 0,
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "#4e79a7"
+          },
+          "decimals": 0,
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": {
+                  "text": "Not ready",
+                  "color": "#f28e2b"
+                },
+                "1": {
+                  "text": "Verified",
+                  "color": "#59a14f"
+                }
+              }
+            }
+          ]
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "cmtc-a"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#4e79a7"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "cmtc-b"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#e15759"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "value_and_name",
+        "text": {
+          "valueSize": 40
+        }
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "min by(cluster) (cmtc_apiserver_probe_success{job=\"cmtc\",cluster=~\"$cluster\",component=~\"cmtc-controller|cmtc-node-agent\"} @ end())",
+          "legendFormat": "{{cluster}}",
+          "instant": true,
+          "range": false
+        }
+      ]
+    },
+    {
+      "id": 108,
+      "title": "Rollouts aborted/s · planned",
+      "type": "timeseries",
+      "description": "Planned instrumentation; missing data means not implemented, never success. Aborted rollout events with bounded reason/profile labels. Aborts/s or selected-range increase; distinguish current rollout state. Proposed labels/source must be qualified in the delivering story. Metric contract: cmtc_rollout_aborted_total",
+      "gridPos": {
+        "x": 0,
+        "y": 88,
+        "w": 12,
+        "h": 7
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops",
+          "min": 0,
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "drawStyle": "line",
+            "showPoints": "never"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "cmtc-a"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#4e79a7"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "cmtc-b"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#e15759"
+                }
+              },
+              {
+                "id": "custom.lineStyle",
+                "value": {
+                  "fill": "dash",
+                  "dash": [
+                    8,
+                    6
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by(cluster) (rate(cmtc_rollout_aborted_total{job=\"cmtc\",cluster=~\"$cluster\",component=~\"cmtc-controller|cmtc-node-agent\"}[$__rate_interval]))",
+          "legendFormat": "{{cluster}}",
+          "instant": false,
+          "range": true
+        }
+      ]
+    },
+    {
+      "id": 109,
+      "title": "Are enrollment and node configurations drifting? · planned",
+      "type": "row",
+      "collapsed": false,
+      "panels": [],
+      "gridPos": {
+        "x": 0,
+        "y": 95,
+        "w": 24,
+        "h": 1
+      }
+    },
+    {
+      "id": 110,
+      "title": "Enrollment label drift/s · planned",
+      "type": "timeseries",
+      "description": "Planned instrumentation; missing data means not implemented, never success. Detected enrollment-label drift episodes under a defined deduplication boundary. Event rate/range increase; not the number of namespaces currently drifting. Proposed labels/source must be qualified in the delivering story. Metric contract: cmtc_namespace_label_drift_total",
+      "gridPos": {
+        "x": 0,
+        "y": 96,
+        "w": 12,
+        "h": 7
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops",
+          "min": 0,
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "drawStyle": "line",
+            "showPoints": "never"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "cmtc-a"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#4e79a7"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "cmtc-b"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#e15759"
+                }
+              },
+              {
+                "id": "custom.lineStyle",
+                "value": {
+                  "fill": "dash",
+                  "dash": [
+                    8,
+                    6
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by(cluster) (rate(cmtc_namespace_label_drift_total{job=\"cmtc\",cluster=~\"$cluster\",component=~\"cmtc-controller|cmtc-node-agent\"}[$__rate_interval]))",
+          "legendFormat": "{{cluster}}",
+          "instant": false,
+          "range": true
+        }
+      ]
+    },
+    {
+      "id": 111,
+      "title": "Node configuration drift/s · planned",
+      "type": "timeseries",
+      "description": "Planned instrumentation; missing data means not implemented, never success. Detected node desired/applied configuration drift episodes. Event rate/range increase; current drift is a distinct status. Proposed labels/source must be qualified in the delivering story. Metric contract: cmtc_node_config_drift_total",
+      "gridPos": {
+        "x": 12,
+        "y": 96,
+        "w": 12,
+        "h": 7
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops",
+          "min": 0,
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "drawStyle": "line",
+            "showPoints": "never"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "cmtc-a"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#4e79a7"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "cmtc-b"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#e15759"
+                }
+              },
+              {
+                "id": "custom.lineStyle",
+                "value": {
+                  "fill": "dash",
+                  "dash": [
+                    8,
+                    6
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by(cluster) (rate(cmtc_node_config_drift_total{job=\"cmtc\",cluster=~\"$cluster\",component=~\"cmtc-controller|cmtc-node-agent\"}[$__rate_interval]))",
+          "legendFormat": "{{cluster}}",
+          "instant": false,
+          "range": true
+        }
+      ]
+    },
+    {
+      "id": 112,
+      "title": "Proxy configuration ready · planned",
+      "type": "stat",
+      "description": "Planned instrumentation; missing data means not implemented, never success. Fresh proxy-process/configuration readiness at a stated boundary. Mapped table/status history; proxy readiness alone does not establish Protected. Proposed labels/source must be qualified in the delivering story. Metric contract: cmtc_ztunnel_ready",
+      "gridPos": {
+        "x": 0,
+        "y": 103,
+        "w": 12,
+        "h": 7
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "min": 0,
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "#4e79a7"
+          },
+          "decimals": 0,
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": {
+                  "text": "Not ready",
+                  "color": "#f28e2b"
+                },
+                "1": {
+                  "text": "Verified",
+                  "color": "#59a14f"
+                }
+              }
+            }
+          ]
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "cmtc-a"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#4e79a7"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "cmtc-b"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#e15759"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "value_and_name",
+        "text": {
+          "valueSize": 40
+        }
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "min by(cluster) (cmtc_ztunnel_ready{job=\"cmtc\",cluster=~\"$cluster\",component=~\"cmtc-controller|cmtc-node-agent\"} @ end())",
+          "legendFormat": "{{cluster}}",
+          "instant": true,
+          "range": false
+        }
+      ]
+    }
+  ]
+}

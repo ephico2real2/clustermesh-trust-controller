@@ -1,0 +1,103 @@
+{
+  "apiVersion": "batch/v1",
+  "kind": "Job",
+  "metadata": {
+    "name": "dashboard-mtls-service",
+    "namespace": "mtls-spike",
+    "annotations": {
+      "cmtc.io/evidence-run": "dashboard-consolidation"
+    }
+  },
+  "spec": {
+    "activeDeadlineSeconds": 400,
+    "backoffLimit": 0,
+    "template": {
+      "metadata": {
+        "labels": {
+          "app": "mtls-load"
+        }
+      },
+      "spec": {
+        "automountServiceAccountToken": false,
+        "containers": [
+          {
+            "command": [
+              "cat",
+              "/results/fortio.json"
+            ],
+            "image": "alpine:3.20",
+            "name": "results",
+            "resources": {
+              "limits": {
+                "memory": "32Mi"
+              },
+              "requests": {
+                "cpu": "10m",
+                "memory": "16Mi"
+              }
+            },
+            "volumeMounts": [
+              {
+                "mountPath": "/results",
+                "name": "results",
+                "readOnly": true
+              }
+            ]
+          }
+        ],
+        "initContainers": [
+          {
+            "args": [
+              "load",
+              "-qps",
+              "10",
+              "-c",
+              "2",
+              "-t",
+              "300s",
+              "-keepalive=false",
+              "-nocatchup",
+              "-uniform",
+              "-json",
+              "/results/fortio.json",
+              "http://server.mtls-spike/"
+            ],
+            "image": "fortio/fortio:1.75.3",
+            "name": "fortio",
+            "resources": {
+              "limits": {
+                "memory": "128Mi"
+              },
+              "requests": {
+                "cpu": "25m",
+                "memory": "32Mi"
+              }
+            },
+            "volumeMounts": [
+              {
+                "mountPath": "/results",
+                "name": "results"
+              }
+            ]
+          }
+        ],
+        "nodeSelector": {
+          "kubernetes.io/hostname": "cmtc-mtls-worker"
+        },
+        "restartPolicy": "Never",
+        "securityContext": {
+          "fsGroup": 65532,
+          "runAsNonRoot": true,
+          "runAsUser": 65532
+        },
+        "serviceAccountName": "client",
+        "volumes": [
+          {
+            "emptyDir": {},
+            "name": "results"
+          }
+        ]
+      }
+    }
+  }
+}

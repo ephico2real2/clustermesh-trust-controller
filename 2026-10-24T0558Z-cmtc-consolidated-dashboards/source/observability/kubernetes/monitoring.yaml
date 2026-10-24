@@ -1,0 +1,16 @@
+# Starter resources: selectors/ports require deployment-specific validation.
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata: {name: cmtc-controller, namespace: cmtc-system}
+spec:
+  namespaceSelector: {matchNames: [cmtc-system]}
+  selector: {matchLabels: {app.kubernetes.io/name: cmtc-controller}}
+  endpoints: [{port: metrics, path: /metrics, interval: 30s}]
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata: {name: cmtc-node-agent, namespace: cmtc-system}
+spec:
+  namespaceSelector: {matchNames: [cmtc-system]}
+  selector: {matchLabels: {app.kubernetes.io/name: cmtc-node-agent}}
+  podMetricsEndpoints: [{port: metrics, path: /metrics, interval: 30s}]

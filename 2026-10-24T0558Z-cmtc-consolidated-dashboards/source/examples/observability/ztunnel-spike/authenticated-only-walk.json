@@ -1,0 +1,68 @@
+{
+  "viewport": {
+    "width": 1920,
+    "height": 4800
+  },
+  "pages": [
+    {
+      "name": "authenticated-only-live-dark",
+      "url": "http://127.0.0.1:13000/d/cmtc-authenticated-only?orgId=1&from=now-10m&to=now&theme=dark",
+      "settleSeconds": 45,
+      "before": 7000,
+      "evidence": "panels",
+      "expect": {
+        "panelsMin": 29,
+        "noDataAllowed": [
+          "TLS handshakes/s · planned",
+          "Active mTLS connections · planned",
+          "Peer identity validation failures/s · planned",
+          "Remote identity cache misses/s · planned",
+          "TLS handshake p95 · planned",
+          "Trust bundle consumed · planned",
+          "SPIRE API acknowledged · planned",
+          "Issuer chain verified · planned",
+          "Certificate rotation failures/s · planned",
+          "Transport profile verified · planned",
+          "Dual encryption probe result · planned",
+          "Transport encryption failures/s · planned",
+          "MTU validation failures/s · planned",
+          "Authorization denials/s · planned",
+          "Plaintext bypass incidents/s · planned",
+          "Namespace policy conflicts/s · planned"
+        ]
+      },
+      "fullPage": true,
+      "blockedSignalsOnNoData": true
+    },
+    {
+      "name": "authenticated-only-live-light",
+      "url": "http://127.0.0.1:13000/d/cmtc-authenticated-only?orgId=1&from=now-10m&to=now&theme=light",
+      "settleSeconds": 45,
+      "before": 7000,
+      "evidence": "panels",
+      "expect": {
+        "panelsMin": 29,
+        "noDataAllowed": [
+          "TLS handshakes/s · planned",
+          "Active mTLS connections · planned",
+          "Peer identity validation failures/s · planned",
+          "Remote identity cache misses/s · planned",
+          "TLS handshake p95 · planned",
+          "Trust bundle consumed · planned",
+          "SPIRE API acknowledged · planned",
+          "Issuer chain verified · planned",
+          "Certificate rotation failures/s · planned",
+          "Transport profile verified · planned",
+          "Dual encryption probe result · planned",
+          "Transport encryption failures/s · planned",
+          "MTU validation failures/s · planned",
+          "Authorization denials/s · planned",
+          "Plaintext bypass incidents/s · planned",
+          "Namespace policy conflicts/s · planned"
+        ]
+      },
+      "fullPage": true,
+      "blockedSignalsOnNoData": true
+    }
+  ]
+}

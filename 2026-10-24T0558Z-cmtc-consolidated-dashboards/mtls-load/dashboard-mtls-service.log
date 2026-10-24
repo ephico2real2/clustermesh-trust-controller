@@ -1,0 +1,43 @@
+{"ts":1792820888.600455,"level":"info","r":1,"file":"scli.go","line":124,"msg":"Starting","command":"Φορτίο","version":"1.75.3 h1:2et+WGrx6FHBEyQb2kYz07q+/AXzHIio7amwuDDn6vM= go1.25.14 arm64 linux","go-max-procs":8}
+Fortio 1.75.3 running at 10 queries per second, 8->8 procs, for 5m0s: http://server.mtls-spike/
+{"ts":1792820888.600895,"level":"info","r":1,"file":"httprunner.go","line":121,"msg":"Starting http test","run":0,"url":"http://server.mtls-spike/","threads":2,"qps":"10.0","warmup":"parallel","conn-reuse":""}
+Starting at 10 qps with 2 thread(s) [gomax 8] for 5m0s : 1500 calls each (total 3000)
+{"ts":1792821187.447872,"level":"info","r":11,"file":"periodic.go","line":882,"msg":"T000 ended after 5m0.001930448s : 1500 calls. qps=4.9999678260737"}
+{"ts":1792821187.547544,"level":"info","r":12,"file":"periodic.go","line":882,"msg":"T001 ended after 5m0.001594708s : 1500 calls. qps=4.999973421674615"}
+Ended after 5m0.101646038s : 3000 calls. qps=9.9966
+{"ts":1792821187.547599,"level":"info","r":1,"file":"periodic.go","line":598,"msg":"Run ended","run":0,"elapsed":300101646038,"calls":3000,"qps":9.996612946335285}
+Sleep times : count 2998 avg 0.19823376 +/- 0.0004599 min 0.191977544 max 0.199146817 sum 594.304825
+Aggregated Function Time : count 3000 avg 0.0013053569 +/- 0.0003073 min 0.000942057 max 0.006435521 sum 3.91607071
+# range, mid point, percentile, count
+>= 0.000942057 <= 0.001 , 0.000971029 , 0.73, 22
+> 0.001 <= 0.002 , 0.0015 , 96.33, 2868
+> 0.002 <= 0.003 , 0.0025 , 99.57, 97
+> 0.003 <= 0.004 , 0.0035 , 99.93, 11
+> 0.004 <= 0.005 , 0.0045 , 99.97, 1
+> 0.006 <= 0.00643552 , 0.00621776 , 100.00, 1
+# target 50% 0.00151534
+# target 75% 0.00177685
+# target 90% 0.00193375
+# target 99% 0.00282474
+# target 99.9% 0.00390909
+Error cases : no data
+# Socket and IP used for each connection:
+[0] 1501 socket used, resolved to 10.31.20.190:80, connection timing : count 1501 avg 8.0666171e-05 +/- 4.152e-05 min 2.9981e-05 max 0.000837743 sum 0.121079923
+[1] 1501 socket used, resolved to 10.31.20.190:80, connection timing : count 1501 avg 7.9809421e-05 +/- 2.926e-05 min 4.0752e-05 max 0.000617852 sum 0.119793941
+Connection time histogram (s) : count 3002 avg 8.0237796e-05 +/- 3.592e-05 min 2.9981e-05 max 0.000837743 sum 0.240873864
+# range, mid point, percentile, count
+>= 2.9981e-05 <= 0.000837743 , 0.000433862 , 100.00, 3002
+# target 50% 0.000433727
+# target 75% 0.000635735
+# target 90% 0.00075694
+# target 99% 0.000829663
+# target 99.9% 0.000836935
+Sockets used: 3002 (for perfect keepalive, would be 2)
+Uniform: true, Jitter: false, Catchup allowed: false
+IP addresses distribution:
+10.31.20.190:80: 3002
+Code 200 : 3000 (100.0 %)
+Response Header Sizes : count 3000 avg 233 +/- 0 min 233 max 233 sum 699000
+Response Body/Total Sizes : count 3000 avg 848 +/- 0 min 848 max 848 sum 2544000
+All done 3000 calls (plus 2 warmup) 1.305 ms avg, 10.0 qps
+Successfully wrote 4088 bytes of Json data to /results/fortio.json

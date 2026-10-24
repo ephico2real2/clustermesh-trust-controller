@@ -1,0 +1,383 @@
+[
+  {
+    "dashboard": "authenticated-only.json",
+    "observedAt": "2026-10-24T05:54:37.644096+00:00",
+    "fromMilliseconds": 1792820883361,
+    "toMilliseconds": 1792821183361,
+    "queryTimeSeconds": 1792821183.361,
+    "rateInterval": "60s",
+    "totalQuerySeconds": 0.05554545694030821,
+    "panels": [
+      {
+        "panelId": 3,
+        "panel": "mTLS TCP connections started",
+        "target": "A",
+        "query": "(sum(increase(istio_tcp_connections_opened_total{job=\"cmtc-spire-ztunnel\",cluster=\"cmtc-mtls\",reporter=\"destination\",destination_workload_namespace=\"mtls-spike\",connection_security_policy=\"mutual_tls\"}[300000ms] @ end())) or on() (0 * sum(increase(istio_tcp_connections_opened_total{job=\"cmtc-spire-ztunnel\",cluster=\"cmtc-mtls\",reporter=\"destination\",destination_workload_namespace=\"mtls-spike\"}[300000ms] @ end())))) and on() (sum(up{job=\"cmtc-spire-ztunnel\",cluster=\"cmtc-mtls\"} @ end()) == 2)",
+        "elapsedSeconds": 0.014138333033770323,
+        "response": {
+          "status": "success",
+          "data": {
+            "resultType": "vector",
+            "result": [
+              {
+                "metric": {},
+                "value": [
+                  1792821183.361,
+                  "5971.840764526306"
+                ]
+              }
+            ]
+          }
+        }
+      },
+      {
+        "panelId": 4,
+        "panel": "TCP attempts without verified mTLS",
+        "target": "A",
+        "query": "(sum(increase(istio_tcp_connections_opened_total{job=\"cmtc-spire-ztunnel\",cluster=\"cmtc-mtls\",reporter=\"destination\",destination_workload_namespace=\"mtls-spike\",connection_security_policy!=\"mutual_tls\"}[300000ms] @ end())) or on() (0 * sum(increase(istio_tcp_connections_opened_total{job=\"cmtc-spire-ztunnel\",cluster=\"cmtc-mtls\",reporter=\"destination\",destination_workload_namespace=\"mtls-spike\"}[300000ms] @ end())))) and on() (sum(up{job=\"cmtc-spire-ztunnel\",cluster=\"cmtc-mtls\"} @ end()) == 2)",
+        "elapsedSeconds": 0.0041484590619802475,
+        "response": {
+          "status": "success",
+          "data": {
+            "resultType": "vector",
+            "result": [
+              {
+                "metric": {},
+                "value": [
+                  1792821183.361,
+                  "918.9018102365661"
+                ]
+              }
+            ]
+          }
+        }
+      },
+      {
+        "panelId": 10,
+        "panel": "Connections rejected by policy \u2014 DENY",
+        "target": "A",
+        "query": "(sum(increase(istio_tcp_connections_failed_total{job=\"cmtc-spire-ztunnel\",cluster=\"cmtc-mtls\",reporter=\"destination\",destination_workload_namespace=\"mtls-spike\",response_flags=\"DENY\"}[300000ms] @ end())) or on() (0 * sum(increase(istio_tcp_connections_opened_total{job=\"cmtc-spire-ztunnel\",cluster=\"cmtc-mtls\",reporter=\"destination\",destination_workload_namespace=\"mtls-spike\"}[300000ms] @ end())))) and on() (sum(up{job=\"cmtc-spire-ztunnel\",cluster=\"cmtc-mtls\"} @ end()) == 2)",
+        "elapsedSeconds": 0.00356316682882607,
+        "response": {
+          "status": "success",
+          "data": {
+            "resultType": "vector",
+            "result": [
+              {
+                "metric": {},
+                "value": [
+                  1792821183.361,
+                  "918.9018102365661"
+                ]
+              }
+            ]
+          }
+        }
+      },
+      {
+        "panelId": 2,
+        "panel": "ztunnel metrics targets UP \u00b7 expected 2",
+        "target": "A",
+        "query": "sum(up{job=\"cmtc-spire-ztunnel\",cluster=\"cmtc-mtls\"})",
+        "elapsedSeconds": 0.0037951660342514515,
+        "response": {
+          "status": "success",
+          "data": {
+            "resultType": "vector",
+            "result": [
+              {
+                "metric": {},
+                "value": [
+                  1792821183.361,
+                  "2"
+                ]
+              }
+            ]
+          }
+        }
+      },
+      {
+        "panelId": 5,
+        "panel": "mTLS application bytes sent/s \u00b7 source",
+        "target": "A",
+        "query": "sum(rate(istio_tcp_sent_bytes_total{job=\"cmtc-spire-ztunnel\",cluster=\"cmtc-mtls\",connection_security_policy=\"mutual_tls\",destination_workload_namespace=\"mtls-spike\",reporter=\"source\"}[60s]))",
+        "elapsedSeconds": 0.0032812501303851604,
+        "response": {
+          "status": "success",
+          "data": {
+            "resultType": "vector",
+            "result": [
+              {
+                "metric": {},
+                "value": [
+                  1792821183.361,
+                  "17027.179964587554"
+                ]
+              }
+            ]
+          }
+        }
+      },
+      {
+        "panelId": 11,
+        "panel": "Completed TCP attempts \u00b7 share by outcome",
+        "target": "A",
+        "query": "(sum(increase(istio_tcp_connections_closed_total{job=\"cmtc-spire-ztunnel\",cluster=\"cmtc-mtls\",reporter=\"destination\",destination_workload_namespace=\"mtls-spike\",connection_security_policy=\"mutual_tls\",response_flags=\"-\"}[300000ms] @ end())) or on() (0 * sum(increase(istio_tcp_connections_closed_total{job=\"cmtc-spire-ztunnel\",cluster=\"cmtc-mtls\",reporter=\"destination\",destination_workload_namespace=\"mtls-spike\"}[300000ms] @ end())))) and on() (sum(up{job=\"cmtc-spire-ztunnel\",cluster=\"cmtc-mtls\"} @ end()) == 2)",
+        "elapsedSeconds": 0.0035942918621003628,
+        "response": {
+          "status": "success",
+          "data": {
+            "resultType": "vector",
+            "result": [
+              {
+                "metric": {},
+                "value": [
+                  1792821183.361,
+                  "5971.840764526306"
+                ]
+              }
+            ]
+          }
+        }
+      },
+      {
+        "panelId": 11,
+        "panel": "Completed TCP attempts \u00b7 share by outcome",
+        "target": "B",
+        "query": "(sum(increase(istio_tcp_connections_closed_total{job=\"cmtc-spire-ztunnel\",cluster=\"cmtc-mtls\",reporter=\"destination\",destination_workload_namespace=\"mtls-spike\",connection_security_policy!=\"mutual_tls\",response_flags=\"DENY\"}[300000ms] @ end())) or on() (0 * sum(increase(istio_tcp_connections_closed_total{job=\"cmtc-spire-ztunnel\",cluster=\"cmtc-mtls\",reporter=\"destination\",destination_workload_namespace=\"mtls-spike\"}[300000ms] @ end())))) and on() (sum(up{job=\"cmtc-spire-ztunnel\",cluster=\"cmtc-mtls\"} @ end()) == 2)",
+        "elapsedSeconds": 0.003492916002869606,
+        "response": {
+          "status": "success",
+          "data": {
+            "resultType": "vector",
+            "result": [
+              {
+                "metric": {},
+                "value": [
+                  1792821183.361,
+                  "918.9018102365661"
+                ]
+              }
+            ]
+          }
+        }
+      },
+      {
+        "panelId": 11,
+        "panel": "Completed TCP attempts \u00b7 share by outcome",
+        "target": "C",
+        "query": "(sum(increase(istio_tcp_connections_closed_total{job=\"cmtc-spire-ztunnel\",cluster=\"cmtc-mtls\",reporter=\"destination\",destination_workload_namespace=\"mtls-spike\",connection_security_policy=\"mutual_tls\",response_flags=\"DENY\"}[300000ms] @ end())) or on() (0 * sum(increase(istio_tcp_connections_closed_total{job=\"cmtc-spire-ztunnel\",cluster=\"cmtc-mtls\",reporter=\"destination\",destination_workload_namespace=\"mtls-spike\"}[300000ms] @ end())))) and on() (sum(up{job=\"cmtc-spire-ztunnel\",cluster=\"cmtc-mtls\"} @ end()) == 2)",
+        "elapsedSeconds": 0.003374916035681963,
+        "response": {
+          "status": "success",
+          "data": {
+            "resultType": "vector",
+            "result": [
+              {
+                "metric": {},
+                "value": [
+                  1792821183.361,
+                  "0"
+                ]
+              }
+            ]
+          }
+        }
+      },
+      {
+        "panelId": 11,
+        "panel": "Completed TCP attempts \u00b7 share by outcome",
+        "target": "D",
+        "query": "(sum(increase(istio_tcp_connections_closed_total{job=\"cmtc-spire-ztunnel\",cluster=\"cmtc-mtls\",reporter=\"destination\",destination_workload_namespace=\"mtls-spike\",connection_security_policy!=\"mutual_tls\",response_flags=\"-\"}[300000ms] @ end())) or on() (0 * sum(increase(istio_tcp_connections_closed_total{job=\"cmtc-spire-ztunnel\",cluster=\"cmtc-mtls\",reporter=\"destination\",destination_workload_namespace=\"mtls-spike\"}[300000ms] @ end())))) and on() (sum(up{job=\"cmtc-spire-ztunnel\",cluster=\"cmtc-mtls\"} @ end()) == 2)",
+        "elapsedSeconds": 0.003396540880203247,
+        "response": {
+          "status": "success",
+          "data": {
+            "resultType": "vector",
+            "result": [
+              {
+                "metric": {},
+                "value": [
+                  1792821183.361,
+                  "0"
+                ]
+              }
+            ]
+          }
+        }
+      },
+      {
+        "panelId": 11,
+        "panel": "Completed TCP attempts \u00b7 share by outcome",
+        "target": "E",
+        "query": "(sum(increase(istio_tcp_connections_closed_total{job=\"cmtc-spire-ztunnel\",cluster=\"cmtc-mtls\",reporter=\"destination\",destination_workload_namespace=\"mtls-spike\",response_flags!=\"-\",response_flags!=\"DENY\"}[300000ms] @ end())) or on() (0 * sum(increase(istio_tcp_connections_closed_total{job=\"cmtc-spire-ztunnel\",cluster=\"cmtc-mtls\",reporter=\"destination\",destination_workload_namespace=\"mtls-spike\"}[300000ms] @ end())))) and on() (sum(up{job=\"cmtc-spire-ztunnel\",cluster=\"cmtc-mtls\"} @ end()) == 2)",
+        "elapsedSeconds": 0.00310550001449883,
+        "response": {
+          "status": "success",
+          "data": {
+            "resultType": "vector",
+            "result": [
+              {
+                "metric": {},
+                "value": [
+                  1792821183.361,
+                  "0"
+                ]
+              }
+            ]
+          }
+        }
+      },
+      {
+        "panelId": 6,
+        "panel": "mTLS TCP opens/s \u00b7 both nodes (not TLS handshakes)",
+        "target": "A",
+        "query": "sum by(node,reporter) (rate(istio_tcp_connections_opened_total{job=\"cmtc-spire-ztunnel\",cluster=\"cmtc-mtls\",connection_security_policy=\"mutual_tls\",destination_workload_namespace=\"mtls-spike\"}[60s]))",
+        "elapsedSeconds": 0.003299583913758397,
+        "response": {
+          "status": "success",
+          "data": {
+            "resultType": "vector",
+            "result": [
+              {
+                "metric": {
+                  "node": "cmtc-mtls-worker",
+                  "reporter": "source"
+                },
+                "value": [
+                  1792821183.361,
+                  "20.079221656353248"
+                ]
+              },
+              {
+                "metric": {
+                  "node": "cmtc-mtls-control-plane",
+                  "reporter": "destination"
+                },
+                "value": [
+                  1792821183.361,
+                  "20.042713980614426"
+                ]
+              }
+            ]
+          }
+        }
+      },
+      {
+        "panelId": 7,
+        "panel": "mTLS traffic \u00b7 source-reported bytes/s",
+        "target": "A",
+        "query": "sum by(node) (rate(istio_tcp_sent_bytes_total{job=\"cmtc-spire-ztunnel\",cluster=\"cmtc-mtls\",connection_security_policy=\"mutual_tls\",destination_workload_namespace=\"mtls-spike\",reporter=\"source\"}[60s]) + rate(istio_tcp_received_bytes_total{job=\"cmtc-spire-ztunnel\",cluster=\"cmtc-mtls\",connection_security_policy=\"mutual_tls\",destination_workload_namespace=\"mtls-spike\",reporter=\"source\"}[60s]))",
+        "elapsedSeconds": 0.0033505409955978394,
+        "response": {
+          "status": "success",
+          "data": {
+            "resultType": "vector",
+            "result": [
+              {
+                "metric": {
+                  "node": "cmtc-mtls-worker"
+                },
+                "value": [
+                  1792821183.361,
+                  "18964.824854425642"
+                ]
+              }
+            ]
+          }
+        }
+      },
+      {
+        "panelId": 8,
+        "panel": "Native TCP close verdicts and verified peer identities",
+        "target": "A",
+        "query": "sum by(node,reporter,source_principal,destination_principal,connection_security_policy,response_flags) (istio_tcp_connections_closed_total{job=\"cmtc-spire-ztunnel\",cluster=\"cmtc-mtls\",destination_workload_namespace=\"mtls-spike\"})",
+        "elapsedSeconds": 0.003004792146384716,
+        "response": {
+          "status": "success",
+          "data": {
+            "resultType": "vector",
+            "result": [
+              {
+                "metric": {
+                  "connection_security_policy": "mutual_tls",
+                  "destination_principal": "spiffe://cmtc-mtls.test/ns/mtls-spike/sa/server",
+                  "node": "cmtc-mtls-worker",
+                  "reporter": "source",
+                  "response_flags": "-",
+                  "source_principal": "spiffe://cmtc-mtls.test/ns/mtls-spike/sa/client"
+                },
+                "value": [
+                  1792821183.361,
+                  "18002"
+                ]
+              },
+              {
+                "metric": {
+                  "connection_security_policy": "mutual_tls",
+                  "destination_principal": "spiffe://cmtc-mtls.test/ns/mtls-spike/sa/server",
+                  "node": "cmtc-mtls-control-plane",
+                  "reporter": "destination",
+                  "response_flags": "-",
+                  "source_principal": "spiffe://cmtc-mtls.test/ns/mtls-spike/sa/client"
+                },
+                "value": [
+                  1792821183.361,
+                  "11879"
+                ]
+              },
+              {
+                "metric": {
+                  "connection_security_policy": "unknown",
+                  "destination_principal": "spiffe://cmtc-mtls.test/ns/mtls-spike/sa/server",
+                  "node": "cmtc-mtls-control-plane",
+                  "reporter": "destination",
+                  "response_flags": "DENY",
+                  "source_principal": "unknown"
+                },
+                "value": [
+                  1792821183.361,
+                  "3076"
+                ]
+              }
+            ]
+          }
+        }
+      }
+    ],
+    "pie": {
+      "query": "sum(increase(istio_tcp_connections_closed_total{job=\"cmtc-spire-ztunnel\",cluster=\"cmtc-mtls\",reporter=\"destination\",destination_workload_namespace=\"mtls-spike\"}[300000ms] @ end()))",
+      "estimatedTotal": 6890.742574762872,
+      "categories": [
+        {
+          "category": "mTLS \u00b7 no failure flag",
+          "estimatedConnections": 5971.840764526306,
+          "percent": 86.664691065343
+        },
+        {
+          "category": "Unauthenticated blocked",
+          "estimatedConnections": 918.9018102365661,
+          "percent": 13.335308934656986
+        },
+        {
+          "category": "Authenticated denied",
+          "estimatedConnections": 0.0,
+          "percent": 0.0
+        },
+        {
+          "category": "Unverified \u00b7 no failure flag",
+          "estimatedConnections": 0.0,
+          "percent": 0.0
+        },
+        {
+          "category": "Other failures",
+          "estimatedConnections": 0.0,
+          "percent": 0.0
+        }
+      ],
+      "partitionEqualsDenominator": true,
+      "percentSum": 100,
+      "missingTelemetryRemainsUnavailable": true
+    }
+  }
+]
