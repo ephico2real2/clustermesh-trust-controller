@@ -7,7 +7,7 @@ This is an in-progress CMTC-101/403 qualification on the MacBook's isolated two-
 | Component | Qualified local source | Runtime |
 | --- | --- | --- |
 | Node ztunnel | `d79d3dfaef3d7afeb3552ea53cf90213141e95d3`, based on Cilium ztunnel `5bb9cf256b10a209ae9bc0624ddfbf27dbc439de` | `localhost/cmtc-ztunnel:strict-d79d3df-v2`; image config `9339a8f37174055c9b303748fc3bfcba14586997c0d82a49e70cbb9b8bb58946`; Rust 1.90, Linux ARM64 development build |
-| Cilium agent | `5e3a2a46feccedd7220959903d2927321e11c7e2` | `localhost/cilium:reenroll-5e3a2a46fe`; image config `a408a8eda53d020ce98364153a5772a43b16a7a77225830df8003fcdae97f056`; Go 1.27.1, Linux ARM64 |
+| Cilium agent | `40d20762d1cb88d9e25ead718d60c0470413fe08` | `localhost/cilium:cni-admission-40d20762d1`; image config `065c004da4fb10818dbb3d04baf1df927cf044cfb0d08bd530e8fa4472e1ae8a`; Go 1.27.1, Linux ARM64 |
 | Chart strict command | `66cfc59f3e94dd11264f189fc62c0eaf3e9f7bff`, included in the agent branch | `proxy-mtls` when `encryption.ztunnel.requireMtls=true`; an explicit compatible proxy image is required |
 | Proxy test-helper cleanup | `a1c3e9cd8f4b23128d70c434c4d01295fb252f9b` | Source/test-only follow-up; this commit is not the deployed proxy binary |
 
@@ -30,7 +30,9 @@ The proxy's strict process setting requires a verified inbound TLS identity befo
 | Strict proxy with earlier agent `f052d127` | 57 path checks with the native rule and 57 with both nodes' dynamic/static policy caches empty; 2,666 continuous unauthenticated restart probes, zero HTTP responses; original rule restored |
 | Earlier agent `63ce823` with strict proxy | 57 present-policy and 57 empty-cache path checks; 2,581 continuous restart probes, zero unexpected HTTP responses; original policy restored |
 | Reenrollment agent `5e3a2a46` with strict proxy | 57 present-policy and 57 empty-cache path checks; 2,684 continuous restart probes, zero unexpected HTTP responses; original policy restored |
+| CNI admission agent `40d20762d1` with strict proxy | 57 multiport path checks; 1,360 continuous unauthenticated restart probes, zero unexpected HTTP; actual CNI startup and deleted-netns reconnect checks below |
 | Fresh cross-node application load on agent `5e3a2a46` | 3,000/3,000 HTTP 200 through Service plus 3,000/3,000 through Pod IP, each over 150.05 seconds; 600 unenrolled attempts rejected without HTTP response |
+| Fresh cross-node load on agent `40d20762d1` | 3,000/3,000 HTTP 200 through Service and 3,000/3,000 through Pod IP; 600 unenrolled attempts rejected |
 | Grafana | Native queries and the exclusive percentage denominator pass; both themes render; unimplemented planned signals remain explicitly unavailable |
 
 Path checks cover application ports 80, 8080 and 9443, Service port 18080 translated to 8080, same-node and cross-node unenrolled sources, and both node hosts. No CNP, CCNP or Kubernetes NetworkPolicy is used to create these authentication results. The proxy unit cases additionally cover ports 1 and 65535. This is sampled port-independent logic, not an exhaustive network-path proof.
@@ -38,6 +40,29 @@ Path checks cover application ports 80, 8080 and 9443, Service port 18080 transl
 The CLI matrix only establishes parsing and effective configuration. It runs without workload credentials or a reachable CA/xDS dependency; its report explicitly has `deploymentReady=false`. Actual deployment and traffic acceptance come from the separate kind trials.
 
 The original load attempt is retained as a diagnostic: Fortio's `-nocatchup` option skipped eight scheduled Pod-IP requests. All 2,992 issued requests returned HTTP 200, but the exact 3,000-request assertion correctly failed. Removing that option produced the qualified 6,000/6,000 result. An initial SPIRE test filter selected zero tests; it is also retained as invalid verification, followed by the actual eleven-test execution and a guard against recurrence.
+
+## Actual CNI startup admission
+
+The endpoint API now waits for a typed startup gate before returning CNI success. The strict gate reads fresh Namespace and Pod identity, binds the immutable CNI UID to the current node/service account, validates the network namespace, installs capture and requires a fresh proxy ADD ACK. It rechecks identity/intent and the managed endpoint lifetime before admitting startup. A copied proxy application label does not exempt a Pod.
+
+Local qualification of commits `87b29fb8af` and `40d20762d1` passes 139 affected unit/race cases plus 49 actual ZDS socket/network-namespace/iptables cases, with zero failures/skips, Go vet and configured lint. Both kind nodes report the exact image config ID and binary source above. The first test invocation omitted the privileged opt-in and skipped eight cases; it is retained as invalid privileged evidence. Corrected invocations executed every case.
+
+The production CNI trial pauses only the worker ztunnel process for 75 seconds with an independent resume safeguard. The enrolled test Pod uses the adversarial `app=ztunnel-cilium` label. All 61 samples show no application container in Kubernetes or CRI and no startup marker, while a real `FailedCreatePodSandBox` event reports admission failure. After resume, the same Pod UID recovers. Recorded nanosecond timestamps establish:
+
+| Boundary | Epoch nanoseconds |
+| --- | --- |
+| Fresh enrollment ACK log | 1792849941551272481 |
+| Admission completion log | 1792849941554375702 |
+| CRI application container creation | 1792849941601738817 |
+| CRI application start | 1792849941637512258 |
+
+The first runtime trial passed the startup/recovery behavior but failed evidence parsing because this CRI returns RFC3339 timestamps. Its output remains retained. The corrected complete repeat passes the ordering assertions. This test proves the sampled startup failure/recovery path, not all first-packet paths or platform support.
+
+Strict deleted-endpoint cleanup retires the exact ID/UID/netns cache entry before bounded waiting, retains capture, and checks ownership again after any in-flight ADD. A late ACK uses the real managed owner, so an immutable private metadata view cannot resurrect a deleted sandbox. A newer same-UID sandbox prevents an old DEL from removing its proxy. Tests include actual delayed ACKs, cache ID reuse, NACK/cancellation, removed namespaces and healthy reconnect snapshots.
+
+Actual deletion/reconnect also passes: the deleted UID is absent before and after restarting only the worker proxy; the healthy client snapshot returns, 20 cross-node mTLS requests succeed and 10 plaintext host attempts are rejected. The broader matrix also passes all 57 path checks and 1,360 continuous unauthenticated restart probes (332 during proxy restart, 1,028 during agent restart), with zero unexpected HTTP and no probe errors. Fresh 6,000/6,000 HTTP 200 and 600 rejected attempts also pass. Both Grafana themes render after live query checks; all 16 planned signals remain explicitly unavailable. A duplicate legacy provisioning file had restored stale captions; its removal and the refreshed surviving file correct that drift without restarting monitoring. The original captures and transient provisioning 404 are retained.
+
+Reproduce on the owned fixture using [CNI admission](scripts/lab/mtls/cni_admission.sh) with exact `CMTC_CNI_AGENT_SOURCE` and an absolute `CMTC_CNI_OUTPUT_ROOT`, followed by [deleted workload reconnect](scripts/lab/mtls/cni_postdelete.py). Current raw trial: `/private/tmp/cmtc-ztunnel-build-tools/cni-fixture-20261024135105-983222/`. The source patches are committed locally; publication remains deferred.
 
 ## ZDS acknowledgment and lifecycle increment
 
@@ -55,7 +80,9 @@ Research and complete proposed code are tracked in [issue #11](https://github.co
 
 Ten canary-bearing application requests succeeded during the earlier VXLAN capture on agent `f052d127` with the same strict proxy `d79d3dfa`. It contains 19,038 packet observations, including 14,538 inner-TCP-port-15008 observations. A TLS-record-header check identified 9,724 application-data, four handshake-record and two change-cipher-spec packet observations. The canary was absent from individual packet bytes. These are packet observations, including duplicates, not TLS handshake totals. The filter does not cover every possible route, and per-packet searching does not replace TCP stream reassembly or a plaintext detection control. This capture is historical; it was not repeated for the reenrollment agent.
 
-The screenshots show the fresh 6,000-request/600-rejection window on agent `5e3a2a46`, from `1792846988092` to `1792847158200` epoch milliseconds. Dashboard captions now explicitly identify the separately published `f052d127` trial as historical, so its older request/restart totals cannot be confused with the selected range. The five native TCP outcome estimates total 100%: 90.95% mTLS with no failure flag, 9.05% unauthenticated blocked, and zero in the remaining three categories. Native counter increases are estimates and include scrape/window effects; they are not exact HTTP request totals. Planned panels intentionally retain their unavailable state.
+The screenshots show the fresh 6,000-request/600-rejection window on agent `40d20762d1`, from `1792850044501` to `1792850227189` epoch milliseconds. Captions explicitly identify the separately published `f052d127` trial as historical. Live query validation estimates 6,056.67 completed mTLS attempts with no failure flag (90.86%) and 608.96 unauthenticated blocked attempts (9.14%); the other three exclusive categories are zero and the partition totals 100%. These counter increases include scrape/window effects and are not exact HTTP totals. Both expected targets are UP; missing telemetry still stays unavailable. Planned panels retain their unavailable state.
+
+The first new capture exposed two provisioned files with the same UID. The legacy `authenticated-only.json` entry could overwrite the corrected `workload-security.json` captions. The owned ConfigMap now has one Workload Security source alongside Operations; the surviving file was refreshed after Grafana briefly removed the duplicated UID. No monitoring restart or telemetry reset was used. Both final themes were visually inspected. The nine original dashboard definitions remain unchanged in the repository.
 
 ![Workload Security after local load, dark theme](docs/images/persistent-authenticated-only-dark.png)
 
@@ -67,7 +94,7 @@ A hashed copy of the selected evidence is committed locally on `ci-captures` at 
 
 ## Remaining acceptance
 
-Reenrollment after a failed DEL now requires installed capture and a fresh ACK. Concurrent capture removal and intent transitions still require a generation-aware state machine. Endpoint creation must propagate enrollment failure before application startup, and running-pod enrollment needs a separate capture transition gate. The agent's typed CNI admission proposal identifies the existing endpoint API error/cleanup path and fresh namespace/Pod UID checks; it remains a proposal until implemented, built and qualified with actual sandbox-start failure/recovery evidence.
+Reenrollment after a failed DEL now requires installed capture and a fresh ACK. Concurrent capture removal and intent transitions still require a generation-aware state machine. The typed new-Pod gate now propagates enrollment failure before application startup in the qualified pause/recovery fixture. Running-pod enrollment, restore, namespace intent generations and pinned namespace ownership still need separate transition gates.
 
 Both runtime tests of a copied proxy app label were denied after enrollment. Source review explains why: the current helper looks up `k8s:app`, while canonical label maps use `app`. Do not activate a label-spoofable exclusion by merely correcting that key. Remove the unnecessary host-network-proxy exemption after qualification, or use authoritative identity if one is required.
 

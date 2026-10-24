@@ -1,0 +1,2824 @@
+From 87b29fb8afbd0056a13ae4d4bf4cf98df8cb657b Mon Sep 17 00:00:00 2001
+From: ephico2real2 <ephico2real@gmail.com>
+Date: Sat, 24 Oct 2026 08:31:36 -0500
+Subject: [PATCH 1/2] ztunnel: gate CNI creation on acknowledged capture
+
+Require fresh Kubernetes namespace and Pod identity plus capture and a fresh ZDS ACK before strict-profile endpoint API creation succeeds. Propagate errors through the existing CNI failure/cleanup path and emit bounded retry and terminal structured logs. Compatibility mode retains its existing behavior.
+
+Local Linux ARM64 qualification: 64 top-level tests and 69 subtests with the race detector, no skips; vet and pinned configured lint pass. This remains experimental: sandbox failure/recovery, UID-aware cleanup, restore and dynamic intent transitions require separate qualification.
+
+Signed-off-by: ephico2real2 <ephico2real@gmail.com>
+---
+ pkg/endpoint/api/admission_test.go        | 152 ++++++++
+ pkg/endpoint/api/cell.go                  |   2 +
+ pkg/endpoint/api/endpoint_api_manager.go  |  17 +
+ pkg/endpointmanager/creation_gate.go      |  18 +
+ pkg/ztunnel/admission/cell.go             | 260 +++++++++++++
+ pkg/ztunnel/admission/cell_test.go        | 436 ++++++++++++++++++++++
+ pkg/ztunnel/admission/logging_test.go     |  95 +++++
+ pkg/ztunnel/admission/netns_linux.go      |  28 ++
+ pkg/ztunnel/admission/netns_linux_test.go |  22 ++
+ pkg/ztunnel/admission/netns_other.go      |  12 +
+ pkg/ztunnel/cell.go                       |   2 +
+ pkg/ztunnel/reconciler/reconciler.go      |   7 +
+ pkg/ztunnel/reconciler/reconciler_test.go |   9 +
+ 13 files changed, 1060 insertions(+)
+ create mode 100644 pkg/endpoint/api/admission_test.go
+ create mode 100644 pkg/endpointmanager/creation_gate.go
+ create mode 100644 pkg/ztunnel/admission/cell.go
+ create mode 100644 pkg/ztunnel/admission/cell_test.go
+ create mode 100644 pkg/ztunnel/admission/logging_test.go
+ create mode 100644 pkg/ztunnel/admission/netns_linux.go
+ create mode 100644 pkg/ztunnel/admission/netns_linux_test.go
+ create mode 100644 pkg/ztunnel/admission/netns_other.go
+
+diff --git a/pkg/endpoint/api/admission_test.go b/pkg/endpoint/api/admission_test.go
+new file mode 100644
+index 0000000000..affd57c675
+--- /dev/null
++++ b/pkg/endpoint/api/admission_test.go
+@@ -0,0 +1,152 @@
++// SPDX-License-Identifier: Apache-2.0
++// Copyright Authors of Cilium
++
++package api
++
++import (
++	"context"
++	"errors"
++	"net/http"
++	"net/http/httptest"
++	"testing"
++
++	"github.com/cilium/hive/hivetest"
++	"github.com/go-openapi/runtime"
++	"github.com/stretchr/testify/require"
++
++	"github.com/cilium/cilium/api/v1/models"
++	endpointapi "github.com/cilium/cilium/api/v1/server/restapi/endpoint"
++	"github.com/cilium/cilium/pkg/endpoint"
++	"github.com/cilium/cilium/pkg/endpointmanager"
++	"github.com/cilium/cilium/pkg/rate"
++	testendpointmanager "github.com/cilium/cilium/pkg/testutils/endpointmanager"
++)
++
++type cniAdmissionGateFunc func(context.Context, *endpoint.Endpoint) error
++
++func (f cniAdmissionGateFunc) WaitForEndpoint(ctx context.Context, ep *endpoint.Endpoint) error {
++	return f(ctx, ep)
++}
++
++type cniAdmissionRemovalSpy struct {
++	*testendpointmanager.MockEndpointManager
++	removed []*endpoint.Endpoint
++	configs []endpoint.DeleteConfig
++}
++
++func (s *cniAdmissionRemovalSpy) RemoveEndpoint(ep *endpoint.Endpoint, cfg endpoint.DeleteConfig) []error {
++	s.removed = append(s.removed, ep)
++	s.configs = append(s.configs, cfg)
++	return nil
++}
++
++func TestEndpointCreationGateGroupPassesOrHasNoProviders(t *testing.T) {
++	for _, withGate := range []bool{false, true} {
++		t.Run(map[bool]string{false: "empty-group", true: "successful-gate"}[withGate], func(t *testing.T) {
++			spy := &cniAdmissionRemovalSpy{MockEndpointManager: testendpointmanager.NewMockEndpointManager()}
++			manager := &endpointAPIManager{endpointManager: spy}
++			ep := &endpoint.Endpoint{ID: 61}
++			calls := 0
++			if withGate {
++				manager.endpointCreationGates = []endpointmanager.EndpointCreationGate{
++					cniAdmissionGateFunc(func(_ context.Context, got *endpoint.Endpoint) error {
++						require.Same(t, ep, got)
++						calls++
++						return nil
++					}),
++				}
++			}
++			require.NoError(t, manager.waitForEndpointCreationGates(t.Context(), ep))
++			require.Empty(t, spy.removed)
++			if withGate {
++				require.Equal(t, 1, calls)
++			} else {
++				require.Zero(t, calls)
++			}
++		})
++	}
++}
++
++func TestEndpointCreationGateFailureStopsBeforeLaterGates(t *testing.T) {
++	expected := errors.New("proxy did not acknowledge enrollment")
++	spy := &cniAdmissionRemovalSpy{MockEndpointManager: testendpointmanager.NewMockEndpointManager()}
++	laterCalled := false
++	manager := &endpointAPIManager{endpointManager: spy,
++		endpointCreationGates: []endpointmanager.EndpointCreationGate{
++			cniAdmissionGateFunc(func(context.Context, *endpoint.Endpoint) error { return expected }),
++			cniAdmissionGateFunc(func(context.Context, *endpoint.Endpoint) error { laterCalled = true; return nil }),
++		},
++	}
++	err := manager.waitForEndpointCreationGates(t.Context(), &endpoint.Endpoint{ID: 62})
++	require.ErrorIs(t, err, expected)
++	require.False(t, laterCalled)
++	require.Empty(t, spy.removed, "Error-only helper must leave cleanup ownership with CreateEndpoint")
++}
++
++func TestEndpointAdmissionFailureUsesExistingCleanupCodeAndRetainsIpOwnership(t *testing.T) {
++	expected := errors.New("injected capture failure")
++	spy := &cniAdmissionRemovalSpy{MockEndpointManager: testendpointmanager.NewMockEndpointManager()}
++	manager := &endpointAPIManager{endpointManager: spy,
++		endpointCreationGates: []endpointmanager.EndpointCreationGate{
++			cniAdmissionGateFunc(func(context.Context, *endpoint.Endpoint) error { return expected }),
++		},
++	}
++	ep := &endpoint.Endpoint{ID: 63}
++	failure := manager.waitForEndpointCreationGates(t.Context(), ep)
++	require.ErrorIs(t, failure, expected)
++	// This explicitly tests errorDuringCreation itself. Production source
++	// must call it in the gate failure branch; full CNI integration verifies
++	// that branch rather than this test duplicating CreateEndpoint internals.
++	got, code, err := manager.errorDuringCreation(ep, failure)
++	require.Nil(t, got)
++	require.Equal(t, endpointapi.PutEndpointIDFailedCode, code)
++	require.ErrorIs(t, err, expected)
++	require.Len(t, spy.removed, 1)
++	require.Same(t, ep, spy.removed[0])
++	require.Len(t, spy.configs, 1)
++	require.True(t, spy.configs[0].NoIPRelease, "CNI/runtime still owns release of the provided IP")
++}
++
++func TestEndpointCreationGatePreservesCallerCancellation(t *testing.T) {
++	ctx, cancel := context.WithCancel(t.Context())
++	cancel()
++	manager := &endpointAPIManager{endpointCreationGates: []endpointmanager.EndpointCreationGate{
++		cniAdmissionGateFunc(func(ctx context.Context, _ *endpoint.Endpoint) error { return ctx.Err() }),
++	}}
++	require.ErrorIs(t, manager.waitForEndpointCreationGates(ctx, &endpoint.Endpoint{ID: 64}), context.Canceled)
++}
++
++// Embedding the real interface lets this stub override only CreateEndpoint;
++// all other methods would panic if this handler unexpectedly used them.
++type cniFailedCreateAPI struct {
++	EndpointAPIManager
++	failure error
++	called  bool
++}
++
++func (m *cniFailedCreateAPI) CreateEndpoint(context.Context, *models.EndpointChangeRequest) (*endpoint.Endpoint, int, error) {
++	m.called = true
++	return nil, endpointapi.PutEndpointIDFailedCode, m.failure
++}
++
++func TestEndpointPutHandlerReturnsAdmissionFailureToCni(t *testing.T) {
++	logger := hivetest.Logger(t)
++	limiter, err := rate.NewAPILimiterSet(logger, nil, nil, nil)
++	require.NoError(t, err) // absent named limiter uses the real no-op request path
++	expected := errors.New("endpoint startup admission failed: proxy did not acknowledge")
++	manager := &cniFailedCreateAPI{failure: expected}
++	handler := &EndpointPutEndpointIDHandler{
++		logger: logger, apiLimiterSet: limiter, endpointAPIManager: manager,
++		waitReadyFn: func(context.Context) error { return nil },
++	}
++	response := handler.Handle(endpointapi.PutEndpointIDParams{
++		HTTPRequest: httptest.NewRequest(http.MethodPut, "http://localhost/v1/endpoint/0", nil),
++		Endpoint:    &models.EndpointChangeRequest{K8sNamespace: "apps", K8sPodName: "server", K8sUID: "pod-generation"},
++	})
++	writer := httptest.NewRecorder()
++	response.WriteResponse(writer, runtime.JSONProducer())
++	require.True(t, manager.called)
++	require.Equal(t, endpointapi.PutEndpointIDFailedCode, writer.Code)
++	require.NotEqual(t, http.StatusCreated, writer.Code)
++	require.Contains(t, writer.Body.String(), expected.Error())
++}
+diff --git a/pkg/endpoint/api/cell.go b/pkg/endpoint/api/cell.go
+index fb2ba34887..030eabc850 100644
+--- a/pkg/endpoint/api/cell.go
++++ b/pkg/endpoint/api/cell.go
+@@ -63,6 +63,7 @@ type endpointAPIManagerParams struct {
+ 	EndpointCreations     EndpointCreationManager
+ 	EndpointMetadata      endpointmetadata.EndpointMetadataFetcher
+ 	EndpointRoutingWaiter endpointmanager.EndpointRoutingWaiter
++	EndpointCreationGates []endpointmanager.EndpointCreationGate `group:"endpoint-creation-gates"`
+ 
+ 	BandwidthManager bandwidth.Manager
+ 	Clientset        k8sClient.Clientset
+@@ -78,6 +79,7 @@ func newEndpointAPIManager(params endpointAPIManagerParams) EndpointAPIManager {
+ 		endpointCreations:     params.EndpointCreations,
+ 		endpointMetadata:      params.EndpointMetadata,
+ 		endpointRoutingWaiter: params.EndpointRoutingWaiter,
++		endpointCreationGates: params.EndpointCreationGates,
+ 		bandwidthManager:      params.BandwidthManager,
+ 		clientset:             params.Clientset,
+ 		cniConfigManager:      params.CNIConfigManager,
+diff --git a/pkg/endpoint/api/endpoint_api_manager.go b/pkg/endpoint/api/endpoint_api_manager.go
+index cf8f54b51b..90553938b9 100644
+--- a/pkg/endpoint/api/endpoint_api_manager.go
++++ b/pkg/endpoint/api/endpoint_api_manager.go
+@@ -57,6 +57,7 @@ type endpointAPIManager struct {
+ 	endpointCreations     EndpointCreationManager
+ 	endpointMetadata      endpointmetadata.EndpointMetadataFetcher
+ 	endpointRoutingWaiter endpointmanager.EndpointRoutingWaiter
++	endpointCreationGates []endpointmanager.EndpointCreationGate
+ 
+ 	bandwidthManager bandwidth.Manager
+ 	clientset        k8sClient.Clientset
+@@ -84,6 +85,18 @@ func (m *endpointAPIManager) errorDuringCreation(ep *endpoint.Endpoint, err erro
+ 	return nil, PutEndpointIDFailedCode, err
+ }
+ 
++func (m *endpointAPIManager) waitForEndpointCreationGates(ctx context.Context, ep *endpoint.Endpoint) error {
++	for _, gate := range m.endpointCreationGates {
++		if err := ctx.Err(); err != nil {
++			return err
++		}
++		if err := gate.WaitForEndpoint(ctx, ep); err != nil {
++			return fmt.Errorf("endpoint startup admission failed: %w", err)
++		}
++	}
++	return ctx.Err()
++}
++
+ // createEndpoint attempts to create the endpoint corresponding to the change
+ // request that was specified.
+ func (m *endpointAPIManager) CreateEndpoint(ctx context.Context, epTemplate *models.EndpointChangeRequest) (*endpoint.Endpoint, int, error) {
+@@ -343,6 +356,10 @@ func (m *endpointAPIManager) CreateEndpoint(ctx context.Context, epTemplate *mod
+ 		return m.errorDuringCreation(ep, fmt.Errorf("unable to reconcile endpoint routing: %w", err))
+ 	}
+ 
++	if err := m.waitForEndpointCreationGates(ctx, ep); err != nil {
++		return m.errorDuringCreation(ep, err)
++	}
++
+ 	// The endpoint has been successfully created, stop the expiration
+ 	// timers of all attached IPs
+ 	if addressing := epTemplate.Addressing; addressing != nil {
+diff --git a/pkg/endpointmanager/creation_gate.go b/pkg/endpointmanager/creation_gate.go
+new file mode 100644
+index 0000000000..f5263494b5
+--- /dev/null
++++ b/pkg/endpointmanager/creation_gate.go
+@@ -0,0 +1,18 @@
++// SPDX-License-Identifier: Apache-2.0
++// Copyright Authors of Cilium
++
++package endpointmanager
++
++import (
++	"context"
++
++	"github.com/cilium/cilium/pkg/endpoint"
++)
++
++// EndpointCreationGate is a prerequisite for returning endpoint creation success
++// to the CNI caller. Implementations must honor caller cancellation and return
++// an error when a required prerequisite cannot be verified. Passing a gate alone
++// does not establish that the endpoint is protected.
++type EndpointCreationGate interface {
++	WaitForEndpoint(context.Context, *endpoint.Endpoint) error
++}
+diff --git a/pkg/ztunnel/admission/cell.go b/pkg/ztunnel/admission/cell.go
+new file mode 100644
+index 0000000000..2fe6538fcc
+--- /dev/null
++++ b/pkg/ztunnel/admission/cell.go
+@@ -0,0 +1,260 @@
++// SPDX-License-Identifier: Apache-2.0
++// Copyright Authors of Cilium
++
++package admission
++
++import (
++	"context"
++	"errors"
++	"fmt"
++	"log/slog"
++
++	"github.com/cilium/hive/cell"
++	apierrors "k8s.io/apimachinery/pkg/api/errors"
++	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
++	"k8s.io/apimachinery/pkg/types"
++
++	"github.com/cilium/cilium/pkg/endpoint"
++	"github.com/cilium/cilium/pkg/endpointmanager"
++	k8sclient "github.com/cilium/cilium/pkg/k8s/client"
++	slimcore "github.com/cilium/cilium/pkg/k8s/slim/k8s/client/clientset/versioned/typed/core/v1"
++	"github.com/cilium/cilium/pkg/logging/logfields"
++	nodetypes "github.com/cilium/cilium/pkg/node/types"
++	"github.com/cilium/cilium/pkg/option"
++	"github.com/cilium/cilium/pkg/time"
++	"github.com/cilium/cilium/pkg/ztunnel/config"
++	"github.com/cilium/cilium/pkg/ztunnel/zds"
++)
++
++const (
++	logStage              = "stage"
++	logDeadline           = "deadline"
++	logNamespaceUID       = "namespaceUID"
++	logEnrollmentRequired = "enrollmentRequired"
++)
++
++var Cell = cell.Module("ztunnel-admission", "ztunnel new-pod startup admission", cell.Provide(newGate))
++
++type params struct {
++	cell.In
++	Config      config.Config
++	Clientset   k8sclient.Clientset
++	Server      *zds.Server
++	AgentConfig *option.DaemonConfig
++	Logger      *slog.Logger
++}
++
++type out struct {
++	cell.Out
++	Gate endpointmanager.EndpointCreationGate `group:"endpoint-creation-gates"`
++}
++
++type gate struct {
++	enabled        bool
++	core           slimcore.CoreV1Interface
++	enroll         func(context.Context, *endpoint.Endpoint) error
++	validateNetns  func(string) error
++	nodeName       func() string
++	agentNamespace string
++	logger         *slog.Logger
++	budget         time.Duration
++	attemptTimeout time.Duration
++	initialBackoff time.Duration
++}
++
++type permanentError struct{ err error }
++
++func (e *permanentError) Error() string { return e.err.Error() }
++func (e *permanentError) Unwrap() error { return e.err }
++func permanent(format string, args ...any) error {
++	return &permanentError{err: fmt.Errorf(format, args...)}
++}
++
++func newGate(p params) (out, error) {
++	enabled := p.Config.EnableZTunnel && p.Config.RequireMTLS
++	g := &gate{enabled: enabled, logger: p.Logger, nodeName: nodetypes.GetName,
++		budget: 30 * time.Second, attemptTimeout: 5 * time.Second, initialBackoff: 100 * time.Millisecond,
++		validateNetns: validateNetworkNamespace,
++	}
++	if p.AgentConfig != nil {
++		g.agentNamespace = p.AgentConfig.K8sNamespace
++	}
++	if enabled {
++		if p.Clientset == nil || !p.Clientset.IsEnabled() || p.Server == nil || g.agentNamespace == "" {
++			return out{}, fmt.Errorf("strict ztunnel admission requires Kubernetes, ZDS and configured agent namespace")
++		}
++		g.core = p.Clientset.Slim().CoreV1()
++		g.enroll = p.Server.EnrollEndpointContext
++	}
++	return out{Gate: g}, nil
++}
++
++func (g *gate) WaitForEndpoint(parent context.Context, ep *endpoint.Endpoint) (resultErr error) {
++	if !g.enabled {
++		return nil
++	}
++	ctx, cancel := context.WithTimeout(parent, g.budget)
++	defer cancel()
++	started := time.Now()
++	deadline, _ := ctx.Deadline()
++	var namespaceUID types.UID
++	var attempt int
++	required := false // Never downgrade an observed enrolled request on retry.
++	namespace, name, uid := "", "", ""
++	var endpointID uint16
++	if ep != nil {
++		namespace, name, uid = ep.GetK8sNamespace(), ep.GetK8sPodName(), ep.K8sUID
++		endpointID = ep.GetID16()
++	}
++	// Every exit, including cancellation before an attempt or during backoff,
++	// records one terminal outcome. An admission ACK is not Protected status.
++	defer func() {
++		attrs := []any{logStage, "cni-startup-admission", logfields.Attempt, attempt,
++			logfields.ElapsedDuration, time.Since(started), logDeadline, deadline,
++			logfields.EndpointID, endpointID, logfields.K8sUID, uid,
++			logfields.Pod, name, logfields.K8sNamespace, namespace,
++			logNamespaceUID, namespaceUID, logEnrollmentRequired, required}
++		if resultErr != nil {
++			g.logger.Error("Endpoint startup admission failed", append(attrs, logfields.Error, resultErr)...)
++		} else {
++			g.logger.Info("Endpoint startup admission completed", attrs...)
++		}
++	}()
++	if ep == nil {
++		return permanent("endpoint startup admission requires an endpoint")
++	}
++	if namespace == "" && name == "" && uid == "" {
++		return nil // Internal/non-Kubernetes endpoint; no protection claim.
++	}
++	if namespace == "" || name == "" || uid == "" {
++		return permanent("Kubernetes CNI endpoint has incomplete immutable identity")
++	}
++	backoff := g.initialBackoff
++	var lastErr error
++	for attempt = 1; ; attempt++ {
++		if err := ctx.Err(); err != nil {
++			return errors.Join(err, lastErr)
++		}
++		attemptCtx, cancelAttempt := context.WithTimeout(ctx, g.attemptTimeout)
++		err := g.once(attemptCtx, ep, &namespaceUID, &required)
++		if err == nil {
++			err = attemptCtx.Err()
++		}
++		if err == nil {
++			err = ctx.Err()
++		}
++		lastErr = err
++		cancelAttempt() // ZDS joins its cancellation callback before publishing success.
++		if err == nil {
++			return nil
++		}
++		var terminal *permanentError
++		if errors.As(err, &terminal) || apierrors.IsForbidden(err) || apierrors.IsUnauthorized(err) || ctx.Err() != nil {
++			return errors.Join(ctx.Err(), err)
++		}
++		g.logger.Warn("Endpoint startup admission retry",
++			logStage, "cni-startup-admission",
++			logfields.Attempt, attempt,
++			logfields.ElapsedDuration, time.Since(started),
++			logfields.Backoff, backoff,
++			logDeadline, deadline,
++			logfields.EndpointID, endpointID,
++			logfields.K8sUID, uid,
++			logfields.Pod, name,
++			logfields.K8sNamespace, namespace,
++			logfields.Error, err)
++		timer := time.NewTimer(backoff)
++		select {
++		case <-ctx.Done():
++			timer.Stop()
++			return errors.Join(ctx.Err(), err)
++		case <-timer.C:
++		}
++		backoff = min(2*time.Second, 2*backoff)
++	}
++}
++
++func (g *gate) once(ctx context.Context, ep *endpoint.Endpoint, pinnedUID *types.UID, required *bool) error {
++	namespace, name := ep.GetK8sNamespace(), ep.GetK8sPodName()
++	before, err := g.core.Namespaces().Get(ctx, namespace, metav1.GetOptions{})
++	if err != nil {
++		return fmt.Errorf("reading live namespace intent: %w", err)
++	}
++	if before.UID == "" || before.ResourceVersion == "" || before.DeletionTimestamp != nil {
++		return permanent("namespace identity is empty or terminating")
++	}
++	if *pinnedUID == "" {
++		*pinnedUID = before.UID
++	}
++	if before.UID != *pinnedUID {
++		return permanent("namespace was recreated during CNI admission")
++	}
++	enrolled := before.Labels["io.cilium/mtls-enabled"] == "true"
++	if *required && !enrolled {
++		return permanent("enrollment intent changed during required CNI admission")
++	}
++	*required = *required || enrolled
++
++	pod, err := g.core.Pods(namespace).Get(ctx, name, metav1.GetOptions{})
++	if err != nil {
++		return fmt.Errorf("reading live Pod identity: %w", err)
++	}
++	if string(pod.UID) != ep.K8sUID || pod.DeletionTimestamp != nil || pod.Name != name || pod.Namespace != namespace {
++		return permanent("live Pod does not match immutable CNI identity")
++	}
++	if pod.Spec.ServiceAccountName == "" || pod.Spec.NodeName == "" || pod.Spec.NodeName != g.nodeName() {
++		return permanent("live Pod service account or node binding is invalid")
++	}
++	// Current deletion still reads the managed endpoint's Pod pointer.
++	// Do not create an ACK/cache state that this existing path cannot name.
++	if enrolled {
++		managedPod := ep.GetPod()
++		if managedPod == nil || string(managedPod.UID) != ep.K8sUID ||
++			managedPod.Name != name || managedPod.Namespace != namespace {
++			return fmt.Errorf("managed endpoint metadata is not synchronized to immutable CNI identity")
++		}
++	}
++	if enrolled && (pod.Spec.HostNetwork || namespace == g.agentNamespace) {
++		return permanent("enrolled host-network or agent-namespace Pods are outside initial admission qualification")
++	}
++	if enrolled {
++		path := ep.GetContainerNetnsPath()
++		if path == "" {
++			return permanent("enrolled CNI endpoint has no network namespace")
++		}
++		if err := g.validateNetns(path); err != nil {
++			return fmt.Errorf("validating CNI network namespace: %w", err)
++		}
++		// This view is private to this attempt: background metadata updates
++		// cannot alter the Pod UID/SA that the legacy converter sends.
++		view := &endpoint.Endpoint{ID: ep.GetID16(), K8sUID: ep.K8sUID,
++			K8sNamespace: namespace, K8sPodName: name}
++		view.SetContainerNetnsPath(path)
++		view.SetPod(pod.DeepCopy())
++		if err := g.enroll(ctx, view); err != nil {
++			return fmt.Errorf("capture/proxy enrollment: %w", err)
++		}
++		if err := g.validateNetns(path); err != nil {
++			return permanent("CNI network namespace is invalid after enrollment: %w", err)
++		}
++	}
++	currentPod, err := g.core.Pods(namespace).Get(ctx, name, metav1.GetOptions{})
++	if err != nil {
++		return fmt.Errorf("rechecking live Pod: %w", err)
++	}
++	if string(currentPod.UID) != ep.K8sUID || currentPod.DeletionTimestamp != nil ||
++		currentPod.Spec.ServiceAccountName != pod.Spec.ServiceAccountName || currentPod.Spec.NodeName != pod.Spec.NodeName {
++		return permanent("Pod identity changed during CNI admission")
++	}
++	after, err := g.core.Namespaces().Get(ctx, namespace, metav1.GetOptions{})
++	if err != nil {
++		return fmt.Errorf("rechecking live namespace intent: %w", err)
++	}
++	if after.UID != *pinnedUID || after.DeletionTimestamp != nil {
++		return permanent("namespace changed generation during CNI admission")
++	}
++	if after.ResourceVersion != before.ResourceVersion || (after.Labels["io.cilium/mtls-enabled"] == "true") != enrolled {
++		return fmt.Errorf("namespace intent changed during CNI admission")
++	}
++	return nil
++}
+diff --git a/pkg/ztunnel/admission/cell_test.go b/pkg/ztunnel/admission/cell_test.go
+new file mode 100644
+index 0000000000..2217023f21
+--- /dev/null
++++ b/pkg/ztunnel/admission/cell_test.go
+@@ -0,0 +1,436 @@
++// SPDX-License-Identifier: Apache-2.0
++// Copyright Authors of Cilium
++
++package admission
++
++import (
++	"context"
++	"errors"
++	goruntime "runtime"
++	"sync/atomic"
++	"testing"
++
++	"github.com/cilium/hive/cell"
++	"github.com/cilium/hive/hivetest"
++	"github.com/stretchr/testify/require"
++	apierrors "k8s.io/apimachinery/pkg/api/errors"
++	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
++	"k8s.io/apimachinery/pkg/runtime"
++	"k8s.io/apimachinery/pkg/runtime/schema"
++	ktesting "k8s.io/client-go/testing"
++
++	"github.com/cilium/cilium/pkg/endpoint"
++	"github.com/cilium/cilium/pkg/endpointmanager"
++	"github.com/cilium/cilium/pkg/hive"
++	k8sclient "github.com/cilium/cilium/pkg/k8s/client"
++	k8stestutils "github.com/cilium/cilium/pkg/k8s/client/testutils"
++	slimv1 "github.com/cilium/cilium/pkg/k8s/slim/k8s/api/core/v1"
++	slimmeta "github.com/cilium/cilium/pkg/k8s/slim/k8s/apis/meta/v1"
++	slimfake "github.com/cilium/cilium/pkg/k8s/slim/k8s/client/clientset/versioned/fake"
++	"github.com/cilium/cilium/pkg/option"
++	testendpointmanager "github.com/cilium/cilium/pkg/testutils/endpointmanager"
++	"github.com/cilium/cilium/pkg/time"
++	"github.com/cilium/cilium/pkg/ztunnel/config"
++	"github.com/cilium/cilium/pkg/ztunnel/zds"
++)
++
++func cniGateFixture(t *testing.T) (*gate, *slimfake.Clientset, *endpoint.Endpoint) {
++	t.Helper()
++	ns := &slimv1.Namespace{ObjectMeta: slimmeta.ObjectMeta{
++		Name: "apps", UID: "namespace-generation", ResourceVersion: "1",
++		Labels: map[string]string{"io.cilium/mtls-enabled": "true"},
++	}}
++	pod := &slimv1.Pod{ObjectMeta: slimmeta.ObjectMeta{
++		Name: "server", Namespace: "apps", UID: "pod-generation", ResourceVersion: "1",
++	}, Spec: slimv1.PodSpec{NodeName: "node-a", ServiceAccountName: "server"}}
++	client := slimfake.NewSimpleClientset(ns, pod)
++	ep := &endpoint.Endpoint{ID: 71, K8sNamespace: "apps", K8sPodName: "server", K8sUID: "pod-generation"}
++	ep.SetContainerNetnsPath("/runtime-owned/netns/example")
++	ep.SetPod(&slimv1.Pod{ObjectMeta: slimmeta.ObjectMeta{
++		UID: "pod-generation", Name: "server", Namespace: "apps",
++	}, Spec: slimv1.PodSpec{NodeName: "node-a", ServiceAccountName: "stale-cache-service-account"}})
++	g := &gate{
++		enabled: true, core: client.CoreV1(), logger: hivetest.Logger(t),
++		agentNamespace: "agent-system", nodeName: func() string { return "node-a" },
++		budget: 250 * time.Millisecond, attemptTimeout: 30 * time.Millisecond,
++		initialBackoff: time.Millisecond,
++		validateNetns:  func(string) error { return nil },
++		enroll:         func(context.Context, *endpoint.Endpoint) error { return nil },
++	}
++	return g, client, ep
++}
++
++func TestDisabledAdmissionHasNoDependenciesOrSideEffects(t *testing.T) {
++	g := &gate{} // nil clients/enroller/logger are intentionally safe when disabled
++	require.NoError(t, g.WaitForEndpoint(t.Context(), &endpoint.Endpoint{}))
++}
++
++func TestAdmissionUsesFreshPrivateMetadataAndRequiresEnrollment(t *testing.T) {
++	g, client, managed := cniGateFixture(t)
++	var enrolled atomic.Int32
++	var validated atomic.Int32
++	g.validateNetns = func(path string) error {
++		require.Equal(t, managed.GetContainerNetnsPath(), path)
++		validated.Add(1)
++		return nil
++	}
++	g.enroll = func(ctx context.Context, view *endpoint.Endpoint) error {
++		require.NotSame(t, managed, view)
++		require.Equal(t, managed.GetID16(), view.GetID16())
++		require.Equal(t, managed.K8sUID, view.K8sUID)
++		require.Equal(t, managed.GetContainerNetnsPath(), view.GetContainerNetnsPath())
++		require.Equal(t, "pod-generation", string(view.GetPod().UID))
++		require.Equal(t, "server", view.GetPod().Spec.ServiceAccountName)
++		require.Equal(t, "node-a", view.GetPod().Spec.NodeName)
++		require.NoError(t, ctx.Err())
++		enrolled.Add(1)
++		return nil
++	}
++	require.NoError(t, g.WaitForEndpoint(t.Context(), managed))
++	require.EqualValues(t, 1, enrolled.Load())
++	require.EqualValues(t, 2, validated.Load())
++	require.Len(t, client.Actions(), 4, "Namespace and Pod must each be read before and after enrollment")
++	require.Equal(t, "stale-cache-service-account", managed.GetPod().Spec.ServiceAccountName, "Admission must not mutate shared endpoint metadata")
++}
++
++func TestAdmissionDoesNotAckMissingOrStaleManagedIdentity(t *testing.T) {
++	for _, missing := range []bool{false, true} {
++		t.Run(map[bool]string{false: "stale-managed", true: "missing-managed"}[missing], func(t *testing.T) {
++			g, _, ep := cniGateFixture(t)
++			g.budget = 30 * time.Millisecond
++			if missing {
++				ep.SetPod(nil)
++			} else {
++				ep.SetPod(&slimv1.Pod{ObjectMeta: slimmeta.ObjectMeta{UID: "stale-generation", Name: "server", Namespace: "apps"}})
++			}
++			var enrolled atomic.Int32
++			g.enroll = func(context.Context, *endpoint.Endpoint) error { enrolled.Add(1); return nil }
++			require.ErrorContains(t, g.WaitForEndpoint(t.Context(), ep), "managed endpoint metadata is not synchronized")
++			require.Zero(t, enrolled.Load())
++		})
++	}
++}
++
++func TestAdmissionRecoversWhenManagedMetadataSynchronizes(t *testing.T) {
++	g, client, ep := cniGateFixture(t)
++	ep.SetPod(nil)
++	var namespaceReads atomic.Int32
++	var enrolled atomic.Int32
++	// Do not issue nested fake-client operations inside a reactor: Fake
++	// holds its own mutex while invoking reactors. An atomic SetPod is safe.
++	client.PrependReactor("get", "namespaces", func(ktesting.Action) (bool, runtime.Object, error) {
++		if namespaceReads.Add(1) >= 2 {
++			ep.SetPod(&slimv1.Pod{ObjectMeta: slimmeta.ObjectMeta{
++				UID: "pod-generation", Name: "server", Namespace: "apps",
++			}, Spec: slimv1.PodSpec{NodeName: "node-a", ServiceAccountName: "server"}})
++		}
++		return false, nil, nil
++	})
++	g.enroll = func(_ context.Context, view *endpoint.Endpoint) error {
++		enrolled.Add(1)
++		require.Equal(t, "pod-generation", string(view.GetPod().UID))
++		return nil
++	}
++	require.NoError(t, g.WaitForEndpoint(t.Context(), ep))
++	require.GreaterOrEqual(t, namespaceReads.Load(), int32(3))
++	require.EqualValues(t, 1, enrolled.Load())
++}
++
++func TestAdmissionRejectsInvalidIdentityAndNamespaceInputs(t *testing.T) {
++	for _, scenario := range []string{"missing-cni-uid", "missing-names-with-cni-uid", "missing-namespace", "missing-pod-name", "stale-live-uid", "missing-live-pod", "empty-serviceaccount", "foreign-node", "terminating", "missing-netns", "host-network", "agent-namespace"} {
++		t.Run(scenario, func(t *testing.T) {
++			g, client, ep := cniGateFixture(t)
++			pod, err := client.CoreV1().Pods("apps").Get(t.Context(), "server", metav1.GetOptions{})
++			require.NoError(t, err)
++			switch scenario {
++			case "missing-cni-uid":
++				ep.K8sUID = ""
++			case "missing-names-with-cni-uid":
++				ep.K8sNamespace, ep.K8sPodName = "", ""
++			case "missing-namespace":
++				ep.K8sNamespace = ""
++			case "missing-pod-name":
++				ep.K8sPodName = ""
++			case "stale-live-uid":
++				pod.UID = "new-pod-generation"
++			case "empty-serviceaccount":
++				pod.Spec.ServiceAccountName = ""
++			case "foreign-node":
++				pod.Spec.NodeName = "node-b"
++			case "terminating":
++				now := slimmeta.NewTime(time.Now())
++				pod.DeletionTimestamp = &now
++			case "missing-netns":
++				ep.SetContainerNetnsPath("")
++			case "host-network":
++				pod.Spec.HostNetwork = true
++			case "agent-namespace":
++				g.agentNamespace = "apps"
++			}
++			if scenario == "missing-live-pod" {
++				require.NoError(t, client.CoreV1().Pods("apps").Delete(t.Context(), "server", metav1.DeleteOptions{}))
++				g.budget = 30 * time.Millisecond
++			} else {
++				_, err = client.CoreV1().Pods("apps").Update(t.Context(), pod, metav1.UpdateOptions{})
++				require.NoError(t, err)
++			}
++			var called atomic.Int32
++			g.enroll = func(context.Context, *endpoint.Endpoint) error { called.Add(1); return nil }
++			require.Error(t, g.WaitForEndpoint(t.Context(), ep))
++			require.Zero(t, called.Load(), "Invalid inputs must never result in enrollment or success")
++		})
++	}
++}
++
++func TestAdmissionRejectsNamespaceTypeFailureBeforeEnrollment(t *testing.T) {
++	g, _, ep := cniGateFixture(t)
++	g.budget = 30 * time.Millisecond
++	expected := errors.New("injected non-network namespace")
++	g.validateNetns = func(string) error { return expected }
++	var calls atomic.Int32
++	g.enroll = func(context.Context, *endpoint.Endpoint) error { calls.Add(1); return nil }
++	require.ErrorIs(t, g.WaitForEndpoint(t.Context(), ep), expected)
++	require.Zero(t, calls.Load())
++}
++
++func TestAdmissionCanRecoverFromDisconnectedProxyAndNack(t *testing.T) {
++	for _, scenario := range []string{"disconnected", "nack"} {
++		t.Run(scenario, func(t *testing.T) {
++			g, client, ep := cniGateFixture(t)
++			var calls atomic.Int32
++			g.enroll = func(ctx context.Context, _ *endpoint.Endpoint) error {
++				if calls.Add(1) == 1 {
++					if scenario == "disconnected" {
++						<-ctx.Done()
++						return ctx.Err()
++					}
++					return errors.New("injected proxy NACK")
++				}
++				return nil
++			}
++			client.ClearActions()
++			require.NoError(t, g.WaitForEndpoint(t.Context(), ep))
++			require.EqualValues(t, 2, calls.Load())
++			require.GreaterOrEqual(t, len(client.Actions()), 6, "Recovery must refresh API intent, not reuse first attempt's objects")
++		})
++	}
++}
++
++func TestAdmissionCancellationNeverReportsSuccess(t *testing.T) {
++	g, _, ep := cniGateFixture(t)
++	parent, cancel := context.WithCancel(t.Context())
++	defer cancel()
++	entered := make(chan struct{})
++	var attempts atomic.Int32
++	g.enroll = func(ctx context.Context, _ *endpoint.Endpoint) error {
++		attempts.Add(1)
++		close(entered)
++		<-ctx.Done()
++		return ctx.Err()
++	}
++	result := make(chan error, 1)
++	go func() { result <- g.WaitForEndpoint(parent, ep) }()
++	select {
++	case <-entered:
++	case <-time.After(time.Second):
++		t.Fatal("Enrollment was not entered")
++	}
++	cancel()
++	select {
++	case err := <-result:
++		require.ErrorIs(t, err, context.Canceled)
++	case <-time.After(time.Second):
++		t.Fatal("Canceled admission did not exit")
++	}
++	require.EqualValues(t, 1, attempts.Load())
++}
++
++func TestAdmissionChecksCancellationEvenIfEnrollerReturnsNil(t *testing.T) {
++	g, _, ep := cniGateFixture(t)
++	parent, cancel := context.WithCancel(t.Context())
++	defer cancel()
++	g.enroll = func(context.Context, *endpoint.Endpoint) error { cancel(); return nil }
++	require.ErrorIs(t, g.WaitForEndpoint(parent, ep), context.Canceled)
++}
++
++func TestAdmissionDoesNotFailOpenOnApiForbidden(t *testing.T) {
++	g, client, ep := cniGateFixture(t)
++	var calls atomic.Int32
++	client.PrependReactor("get", "namespaces", func(ktesting.Action) (bool, runtime.Object, error) {
++		calls.Add(1)
++		return true, nil, apierrors.NewForbidden(schema.GroupResource{Resource: "namespaces"}, "apps", errors.New("injected authorization refusal"))
++	})
++	err := g.WaitForEndpoint(t.Context(), ep)
++	require.True(t, apierrors.IsForbidden(err))
++	require.EqualValues(t, 1, calls.Load(), "Authorization errors must not be treated as enrollment absence")
++}
++
++func TestAdmissionPinsNamespaceUidAcrossRetries(t *testing.T) {
++	g, client, ep := cniGateFixture(t)
++	var calls atomic.Int32
++	g.enroll = func(ctx context.Context, _ *endpoint.Endpoint) error {
++		calls.Add(1)
++		ns, err := client.CoreV1().Namespaces().Get(ctx, "apps", metav1.GetOptions{})
++		require.NoError(t, err)
++		ns.UID = "recreated-namespace"
++		ns.ResourceVersion = "2"
++		_, err = client.CoreV1().Namespaces().Update(ctx, ns, metav1.UpdateOptions{})
++		require.NoError(t, err)
++		return errors.New("injected disconnected operation before retry")
++	}
++	err := g.WaitForEndpoint(t.Context(), ep)
++	require.ErrorContains(t, err, "namespace was recreated")
++	require.EqualValues(t, 1, calls.Load())
++}
++
++func TestAdmissionCannotDowngradeRequiredIntentAfterAck(t *testing.T) {
++	g, client, ep := cniGateFixture(t)
++	var calls atomic.Int32
++	g.enroll = func(ctx context.Context, _ *endpoint.Endpoint) error {
++		calls.Add(1)
++		ns, err := client.CoreV1().Namespaces().Get(ctx, "apps", metav1.GetOptions{})
++		require.NoError(t, err)
++		delete(ns.Labels, "io.cilium/mtls-enabled")
++		ns.ResourceVersion = "2"
++		_, err = client.CoreV1().Namespaces().Update(ctx, ns, metav1.UpdateOptions{})
++		require.NoError(t, err)
++		return nil
++	}
++	require.ErrorContains(t, g.WaitForEndpoint(t.Context(), ep), "enrollment intent changed during required")
++	require.EqualValues(t, 1, calls.Load())
++}
++
++func TestAdmissionRetriesChangedNamespaceRvWithFreshAck(t *testing.T) {
++	g, client, ep := cniGateFixture(t)
++	var calls atomic.Int32
++	g.enroll = func(ctx context.Context, _ *endpoint.Endpoint) error {
++		if calls.Add(1) == 1 {
++			ns, err := client.CoreV1().Namespaces().Get(ctx, "apps", metav1.GetOptions{})
++			require.NoError(t, err)
++			ns.ResourceVersion = "opaque-new-revision"
++			_, err = client.CoreV1().Namespaces().Update(ctx, ns, metav1.UpdateOptions{})
++			require.NoError(t, err)
++		}
++		return nil
++	}
++	require.NoError(t, g.WaitForEndpoint(t.Context(), ep))
++	require.EqualValues(t, 2, calls.Load(), "Namespace change across ACK requires a new admission attempt/ACK")
++}
++
++func TestAdmissionPrivateMetadataIsStableDuringManagedMetadataUpdates(t *testing.T) {
++	g, _, managed := cniGateFixture(t)
++	stop := make(chan struct{})
++	stopped := make(chan struct{})
++	go func() {
++		defer close(stopped)
++		for {
++			select {
++			case <-stop:
++				return
++			default:
++			}
++			managed.SetPod(&slimv1.Pod{ObjectMeta: slimmeta.ObjectMeta{
++				UID: "pod-generation", Name: "server", Namespace: "apps",
++			}, Spec: slimv1.PodSpec{NodeName: "node-a", ServiceAccountName: "concurrent-cache-service-account"}})
++			goruntime.Gosched()
++		}
++	}()
++	defer func() { close(stop); <-stopped }()
++	g.enroll = func(_ context.Context, view *endpoint.Endpoint) error {
++		require.NotSame(t, managed, view)
++		require.Equal(t, "pod-generation", string(view.GetPod().UID))
++		require.Equal(t, "server", view.GetPod().Spec.ServiceAccountName)
++		return nil
++	}
++	require.NoError(t, g.WaitForEndpoint(t.Context(), managed))
++}
++
++func TestAdmissionRejectsPodUidChangeAfterAck(t *testing.T) {
++	g, client, ep := cniGateFixture(t)
++	g.enroll = func(ctx context.Context, _ *endpoint.Endpoint) error {
++		pod, err := client.CoreV1().Pods("apps").Get(ctx, "server", metav1.GetOptions{})
++		require.NoError(t, err)
++		pod.UID = "changed-after-ack"
++		_, err = client.CoreV1().Pods("apps").Update(ctx, pod, metav1.UpdateOptions{})
++		require.NoError(t, err)
++		return nil
++	}
++	require.ErrorContains(t, g.WaitForEndpoint(t.Context(), ep), "Pod identity changed")
++}
++
++func TestAdmissionRejectsNamespaceTypeFailureAfterAck(t *testing.T) {
++	g, _, ep := cniGateFixture(t)
++	var validations atomic.Int32
++	g.validateNetns = func(string) error {
++		if validations.Add(1) > 1 {
++			return errors.New("namespace path stopped being a network namespace")
++		}
++		return nil
++	}
++	require.ErrorContains(t, g.WaitForEndpoint(t.Context(), ep), "invalid after enrollment")
++	require.EqualValues(t, 2, validations.Load())
++}
++
++func TestAdmissionUnenrolledIntentDoesNotEnroll(t *testing.T) {
++	g, client, ep := cniGateFixture(t)
++	ns, err := client.CoreV1().Namespaces().Get(t.Context(), "apps", metav1.GetOptions{})
++	require.NoError(t, err)
++	ns.Labels = nil
++	_, err = client.CoreV1().Namespaces().Update(t.Context(), ns, metav1.UpdateOptions{})
++	require.NoError(t, err)
++	client.ClearActions()
++	g.enroll = func(context.Context, *endpoint.Endpoint) error {
++		t.Fatal("Unenrolled intent must not enroll")
++		return nil
++	}
++	g.validateNetns = func(string) error { t.Fatal("Unenrolled intent must not validate capture namespace"); return nil }
++	require.NoError(t, g.WaitForEndpoint(t.Context(), ep))
++	require.Len(t, client.Actions(), 4)
++}
++
++func TestAdmissionRejectsNamespaceWithoutResourceVersion(t *testing.T) {
++	g, client, ep := cniGateFixture(t)
++	ns, err := client.CoreV1().Namespaces().Get(t.Context(), "apps", metav1.GetOptions{})
++	require.NoError(t, err)
++	ns.ResourceVersion = ""
++	_, err = client.CoreV1().Namespaces().Update(t.Context(), ns, metav1.UpdateOptions{})
++	require.NoError(t, err)
++	g.enroll = func(context.Context, *endpoint.Endpoint) error {
++		t.Fatal("Incomplete namespace identity must not enroll")
++		return nil
++	}
++	require.ErrorContains(t, g.WaitForEndpoint(t.Context(), ep), "namespace identity is empty")
++}
++
++type gateGroupInput struct {
++	cell.In
++	Gates []endpointmanager.EndpointCreationGate `group:"endpoint-creation-gates"`
++}
++
++func TestAdmissionHiveUsesRealZdsProviderAndTypedGroup(t *testing.T) {
++	for _, strict := range []bool{false, true} {
++		t.Run(map[bool]string{false: "compatible", true: "strict"}[strict], func(t *testing.T) {
++			logger := hivetest.Logger(t)
++			_, cs := k8stestutils.NewFakeClientset(logger)
++			var received []endpointmanager.EndpointCreationGate
++			h := hive.New(
++				cell.Provide(func() config.Config {
++					cfg := config.DefaultConfig
++					cfg.EnableZTunnel, cfg.RequireMTLS = strict, strict
++					return cfg
++				}),
++				cell.Provide(func() k8sclient.Clientset { return cs }),
++				cell.Provide(func() *option.DaemonConfig { return &option.DaemonConfig{K8sNamespace: "custom-agent-system"} }),
++				cell.Provide(func() endpointmanager.EndpointManager { return testendpointmanager.NewMockEndpointManager() }),
++				zds.Cell,
++				Cell,
++				cell.Invoke(func(in gateGroupInput) { received = in.Gates }),
++			)
++			// Populate-only: actual ZDS dependencies are constructed, but its
++			// lifecycle never creates the real default Unix socket.
++			require.NoError(t, h.Populate(logger))
++			require.Len(t, received, 1)
++			require.NotNil(t, received[0])
++		})
++	}
++}
+diff --git a/pkg/ztunnel/admission/logging_test.go b/pkg/ztunnel/admission/logging_test.go
+new file mode 100644
+index 0000000000..57bfd47699
+--- /dev/null
++++ b/pkg/ztunnel/admission/logging_test.go
+@@ -0,0 +1,95 @@
++// SPDX-License-Identifier: Apache-2.0
++// Copyright Authors of Cilium
++
++package admission
++
++import (
++	"bytes"
++	"context"
++	"encoding/json"
++	"errors"
++	"log/slog"
++	"testing"
++
++	"github.com/stretchr/testify/require"
++	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
++
++	"github.com/cilium/cilium/pkg/endpoint"
++	"github.com/cilium/cilium/pkg/time"
++)
++
++type admissionLogOutput struct {
++	bytes.Buffer
++	retry chan struct{}
++}
++
++func (w *admissionLogOutput) Write(b []byte) (int, error) {
++	n, err := w.Buffer.Write(b)
++	if bytes.Contains(b, []byte("Endpoint startup admission retry")) {
++		select {
++		case w.retry <- struct{}{}:
++		default:
++		}
++	}
++	return n, err
++}
++
++func TestAdmissionCancellationDuringBackoffLogsTerminalOutcome(t *testing.T) {
++	g, _, ep := cniGateFixture(t)
++	output := &admissionLogOutput{retry: make(chan struct{}, 1)}
++	g.logger = slog.New(slog.NewJSONHandler(output, nil))
++	g.initialBackoff = time.Second
++	g.budget = 2 * time.Second
++	g.enroll = func(context.Context, *endpoint.Endpoint) error {
++		return errors.New("injected missing proxy ACK")
++	}
++	ctx, cancel := context.WithCancel(t.Context())
++	defer cancel()
++	result := make(chan error, 1)
++	go func() { result <- g.WaitForEndpoint(ctx, ep) }()
++	select {
++	case <-output.retry:
++	case <-time.After(time.Second):
++		t.Fatal("Retry was not logged")
++	}
++	cancel()
++	select {
++	case err := <-result:
++		require.ErrorIs(t, err, context.Canceled)
++		require.ErrorContains(t, err, "injected missing proxy ACK")
++	case <-time.After(time.Second):
++		t.Fatal("Canceled backoff did not exit")
++	}
++	// No logger goroutine remains after result publication; reading is safe.
++	decoder := json.NewDecoder(&output.Buffer)
++	var retry, terminal map[string]any
++	require.NoError(t, decoder.Decode(&retry))
++	require.NoError(t, decoder.Decode(&terminal))
++	require.Equal(t, "WARN", retry["level"])
++	require.Equal(t, "ERROR", terminal["level"])
++	require.Equal(t, "Endpoint startup admission failed", terminal["msg"])
++	for _, key := range []string{"stage", "attempt", "elapsedDuration", "deadline", "endpointID", "k8sUID", "pod", "k8sNamespace", "error"} {
++		require.Contains(t, retry, key)
++		require.Contains(t, terminal, key)
++	}
++	require.Equal(t, "cni-startup-admission", terminal["stage"])
++	require.Equal(t, float64(1), terminal["attempt"])
++	require.Equal(t, "pod-generation", terminal["k8sUID"])
++}
++
++func TestAdmissionDoesNotExemptCopiedProxyAppLabel(t *testing.T) {
++	g, client, ep := cniGateFixture(t)
++	pod, err := client.CoreV1().Pods("apps").Get(t.Context(), "server", metav1.GetOptions{})
++	require.NoError(t, err)
++	pod.Labels = map[string]string{"app": "ztunnel-cilium"}
++	_, err = client.CoreV1().Pods("apps").Update(t.Context(), pod, metav1.UpdateOptions{})
++	require.NoError(t, err)
++	ep.SetPod(pod.DeepCopy())
++	calls := 0
++	g.enroll = func(context.Context, *endpoint.Endpoint) error {
++		calls++
++		return nil
++	}
++	require.NoError(t, g.WaitForEndpoint(t.Context(), ep))
++	require.Equal(t, 1, calls, "A copied proxy label must still require enrollment and its ACK")
++}
+diff --git a/pkg/ztunnel/admission/netns_linux.go b/pkg/ztunnel/admission/netns_linux.go
+new file mode 100644
+index 0000000000..a3edc33200
+--- /dev/null
++++ b/pkg/ztunnel/admission/netns_linux.go
+@@ -0,0 +1,28 @@
++// SPDX-License-Identifier: Apache-2.0
++// Copyright Authors of Cilium
++
++package admission
++
++import (
++	"fmt"
++
++	"golang.org/x/sys/unix"
++
++	"github.com/cilium/cilium/pkg/netns"
++)
++
++func validateNetworkNamespace(path string) error {
++	ns, err := netns.OpenPinned(path)
++	if err != nil {
++		return err
++	}
++	defer ns.Close()
++	kind, err := unix.IoctlRetInt(ns.FD(), unix.NS_GET_NSTYPE)
++	if err != nil {
++		return fmt.Errorf("checking namespace type: %w", err)
++	}
++	if kind != unix.CLONE_NEWNET {
++		return fmt.Errorf("namespace type %d is not network", kind)
++	}
++	return nil
++}
+diff --git a/pkg/ztunnel/admission/netns_linux_test.go b/pkg/ztunnel/admission/netns_linux_test.go
+new file mode 100644
+index 0000000000..42ff17af49
+--- /dev/null
++++ b/pkg/ztunnel/admission/netns_linux_test.go
+@@ -0,0 +1,22 @@
++// SPDX-License-Identifier: Apache-2.0
++// Copyright Authors of Cilium
++
++package admission
++
++import (
++	"os"
++	"path/filepath"
++	"testing"
++
++	"github.com/stretchr/testify/require"
++)
++
++func TestValidateNetworkNamespaceRejectsRegularFile(t *testing.T) {
++	path := filepath.Join(t.TempDir(), "ordinary-file")
++	require.NoError(t, os.WriteFile(path, []byte("not a namespace"), 0600))
++	require.Error(t, validateNetworkNamespace(path))
++}
++
++func TestValidateNetworkNamespaceAcceptsCurrentNetworkNamespace(t *testing.T) {
++	require.NoError(t, validateNetworkNamespace("/proc/self/ns/net"))
++}
+diff --git a/pkg/ztunnel/admission/netns_other.go b/pkg/ztunnel/admission/netns_other.go
+new file mode 100644
+index 0000000000..28673cb45a
+--- /dev/null
++++ b/pkg/ztunnel/admission/netns_other.go
+@@ -0,0 +1,12 @@
++// SPDX-License-Identifier: Apache-2.0
++// Copyright Authors of Cilium
++
++//go:build !linux
++
++package admission
++
++import "errors"
++
++func validateNetworkNamespace(string) error {
++	return errors.New("ztunnel network namespace admission requires Linux")
++}
+diff --git a/pkg/ztunnel/cell.go b/pkg/ztunnel/cell.go
+index b2025ce36b..8cf4858a2a 100644
+--- a/pkg/ztunnel/cell.go
++++ b/pkg/ztunnel/cell.go
+@@ -9,6 +9,7 @@ import (
+ 	"github.com/cilium/hive/cell"
+ 
+ 	"github.com/cilium/cilium/pkg/clustermesh"
++	"github.com/cilium/cilium/pkg/ztunnel/admission"
+ 	"github.com/cilium/cilium/pkg/ztunnel/config"
+ 	"github.com/cilium/cilium/pkg/ztunnel/reconciler"
+ 	"github.com/cilium/cilium/pkg/ztunnel/xds"
+@@ -27,6 +28,7 @@ var Cell = cell.Module(
+ 
+ 	// ZDS server for ztunnel
+ 	zds.Cell,
++	admission.Cell,
+ 	reconciler.Cell,
+ )
+ 
+diff --git a/pkg/ztunnel/reconciler/reconciler.go b/pkg/ztunnel/reconciler/reconciler.go
+index e6bffb3184..263bde38ef 100644
+--- a/pkg/ztunnel/reconciler/reconciler.go
++++ b/pkg/ztunnel/reconciler/reconciler.go
+@@ -51,6 +51,7 @@ type EnrollmentReconciler struct {
+ 	enrolledNamespaceTable      statedb.RWTable[*table.EnrolledNamespace]
+ 	endpointManager             endpointmanager.EndpointManager
+ 	endpointEnroller            zds.EndpointEnroller
++	strictCreationAdmission     bool
+ 	restorerPromise             promise.Promise[endpointstate.Restorer]
+ 	endpointEventCh             chan *xds.EndpointEvent
+ 	ciliumEndpointResource      resource.Resource[*types.CiliumEndpoint]
+@@ -68,6 +69,7 @@ func NewEnrollmentReconciler(cfg params) reconciler.Operations[*table.EnrolledNa
+ 		enrolledNamespaceTable:      cfg.EnrolledNamespaceTable,
+ 		endpointManager:             cfg.EndpointManager,
+ 		endpointEnroller:            cfg.EndpointEnroller,
++		strictCreationAdmission:     cfg.Config.RequireMTLS,
+ 		restorerPromise:             cfg.RestorerPromise,
+ 		endpointEventCh:             cfg.EndpointEventChannel,
+ 		ciliumEndpointResource:      cfg.CiliumEndpointResource,
+@@ -250,6 +252,11 @@ func (ops *EnrollmentReconciler) Stop(cell.HookContext) error {
+ }
+ 
+ func (ops *EnrollmentReconciler) EndpointCreated(ep *endpoint.Endpoint) {
++	if ops.strictCreationAdmission {
++		// The synchronous Endpoint API gate owns new-pod admission. This void
++		// callback cannot propagate errors and must not consume its time budget.
++		return
++	}
+ 	epNamespace := ep.GetK8sNamespace()
+ 	// If namespace is not enrolled or endpoint has no netns path or is ztunnel itself, skip
+ 	if epNamespace == "" || ep.GetContainerNetnsPath() == "" || isZtunnelPod(ep) {
+diff --git a/pkg/ztunnel/reconciler/reconciler_test.go b/pkg/ztunnel/reconciler/reconciler_test.go
+index 8c1783bbed..decb02ce4a 100644
+--- a/pkg/ztunnel/reconciler/reconciler_test.go
++++ b/pkg/ztunnel/reconciler/reconciler_test.go
+@@ -630,6 +630,7 @@ func TestEnrollmentReconciler_EndpointCreated(t *testing.T) {
+ 		endpoint         *endpoint.Endpoint
+ 		enrolledNs       []string
+ 		enrollErr        error
++		strictAdmission  bool
+ 		expectedEnrolled bool
+ 	}{
+ 		{
+@@ -638,6 +639,13 @@ func TestEnrollmentReconciler_EndpointCreated(t *testing.T) {
+ 			enrolledNs:       []string{"test-ns"},
+ 			expectedEnrolled: true,
+ 		},
++		{
++			name:             "strict creation is owned by the synchronous API gate",
++			endpoint:         createTestEndpoint(1, "test-ns", "pod-1", "/var/run/netns/test1"),
++			enrolledNs:       []string{"test-ns"},
++			strictAdmission:  true,
++			expectedEnrolled: false,
++		},
+ 		{
+ 			name:             "skip endpoint in unenrolled namespace",
+ 			endpoint:         createTestEndpoint(1, "other-ns", "pod-1", "/var/run/netns/test1"),
+@@ -671,6 +679,7 @@ func TestEnrollmentReconciler_EndpointCreated(t *testing.T) {
+ 			db, tbl, _, mockEnroller, ops, _ := setupTest(t)
+ 
+ 			mockEnroller.enrollErr = tt.enrollErr
++			ops.strictCreationAdmission = tt.strictAdmission
+ 
+ 			// Initialize table and add enrolled namespaces.
+ 			txn := db.WriteTxn(tbl)
+-- 
+2.55.0
+
+
+From 40d20762d1cb88d9e25ead718d60c0470413fe08 Mon Sep 17 00:00:00 2001
+From: ephico2real2 <ephico2real@gmail.com>
+Date: Sat, 24 Oct 2026 08:47:20 -0500
+Subject: [PATCH 2/2] ztunnel: retire deleted endpoint incarnations without
+ removing capture
+
+Bind fresh CNI metadata enrollment to the managed endpoint lifetime. Retire exact cache ownership before bounded cleanup waits and again after active ADD completion; skip stale DEL when a newer sandbox owns the Pod UID. Keep deleted sandbox capture installed and avoid replaying retired namespaces.
+
+Validated locally with pinned Podman Go 1.27.1 ARM64: 139 affected unit/race cases, 49 actual ZDS socket/privileged cases with zero skips, vet and configured lint. Exact-image kind CNI failure and recovery qualification remains the next gate.
+
+Signed-off-by: ephico2real2 <ephico2real@gmail.com>
+---
+ pkg/ztunnel/admission/cell.go             |  16 +-
+ pkg/ztunnel/admission/cell_test.go        |  88 +++-
+ pkg/ztunnel/admission/logging_test.go     |   4 +-
+ pkg/ztunnel/reconciler/reconciler.go      |  29 +-
+ pkg/ztunnel/reconciler/reconciler_test.go |  28 +-
+ pkg/ztunnel/zds/deleted_endpoint.go       | 202 ++++++++
+ pkg/ztunnel/zds/deleted_endpoint_test.go  | 554 ++++++++++++++++++++++
+ pkg/ztunnel/zds/server.go                 | 188 ++++++--
+ 8 files changed, 1039 insertions(+), 70 deletions(-)
+ create mode 100644 pkg/ztunnel/zds/deleted_endpoint.go
+ create mode 100644 pkg/ztunnel/zds/deleted_endpoint_test.go
+
+diff --git a/pkg/ztunnel/admission/cell.go b/pkg/ztunnel/admission/cell.go
+index 2fe6538fcc..022ef70578 100644
+--- a/pkg/ztunnel/admission/cell.go
++++ b/pkg/ztunnel/admission/cell.go
+@@ -52,7 +52,7 @@ type out struct {
+ type gate struct {
+ 	enabled        bool
+ 	core           slimcore.CoreV1Interface
+-	enroll         func(context.Context, *endpoint.Endpoint) error
++	enroll         func(context.Context, *endpoint.Endpoint, *endpoint.Endpoint) error
+ 	validateNetns  func(string) error
+ 	nodeName       func() string
+ 	agentNamespace string
+@@ -84,7 +84,7 @@ func newGate(p params) (out, error) {
+ 			return out{}, fmt.Errorf("strict ztunnel admission requires Kubernetes, ZDS and configured agent namespace")
+ 		}
+ 		g.core = p.Clientset.Slim().CoreV1()
+-		g.enroll = p.Server.EnrollEndpointContext
++		g.enroll = p.Server.EnrollEndpointForOwnerContext
+ 	}
+ 	return out{Gate: g}, nil
+ }
+@@ -135,6 +135,9 @@ func (g *gate) WaitForEndpoint(parent context.Context, ep *endpoint.Endpoint) (r
+ 		if err := ctx.Err(); err != nil {
+ 			return errors.Join(err, lastErr)
+ 		}
++		if !ep.IsAlive() {
++			return permanent("managed endpoint disconnected during CNI admission")
++		}
+ 		attemptCtx, cancelAttempt := context.WithTimeout(ctx, g.attemptTimeout)
+ 		err := g.once(attemptCtx, ep, &namespaceUID, &required)
+ 		if err == nil {
+@@ -145,6 +148,9 @@ func (g *gate) WaitForEndpoint(parent context.Context, ep *endpoint.Endpoint) (r
+ 		}
+ 		lastErr = err
+ 		cancelAttempt() // ZDS joins its cancellation callback before publishing success.
++		if err == nil && !ep.IsAlive() {
++			err = permanent("managed endpoint disconnected during CNI admission")
++		}
+ 		if err == nil {
+ 			return nil
+ 		}
+@@ -205,8 +211,8 @@ func (g *gate) once(ctx context.Context, ep *endpoint.Endpoint, pinnedUID *types
+ 	if pod.Spec.ServiceAccountName == "" || pod.Spec.NodeName == "" || pod.Spec.NodeName != g.nodeName() {
+ 		return permanent("live Pod service account or node binding is invalid")
+ 	}
+-	// Current deletion still reads the managed endpoint's Pod pointer.
+-	// Do not create an ACK/cache state that this existing path cannot name.
++	// Require the managed Pod metadata to name this immutable CNI identity
++	// before admitting startup; wire metadata below comes from the live API.
+ 	if enrolled {
+ 		managedPod := ep.GetPod()
+ 		if managedPod == nil || string(managedPod.UID) != ep.K8sUID ||
+@@ -231,7 +237,7 @@ func (g *gate) once(ctx context.Context, ep *endpoint.Endpoint, pinnedUID *types
+ 			K8sNamespace: namespace, K8sPodName: name}
+ 		view.SetContainerNetnsPath(path)
+ 		view.SetPod(pod.DeepCopy())
+-		if err := g.enroll(ctx, view); err != nil {
++		if err := g.enroll(ctx, ep, view); err != nil {
+ 			return fmt.Errorf("capture/proxy enrollment: %w", err)
+ 		}
+ 		if err := g.validateNetns(path); err != nil {
+diff --git a/pkg/ztunnel/admission/cell_test.go b/pkg/ztunnel/admission/cell_test.go
+index 2217023f21..19f3260265 100644
+--- a/pkg/ztunnel/admission/cell_test.go
++++ b/pkg/ztunnel/admission/cell_test.go
+@@ -19,6 +19,8 @@ import (
+ 	"k8s.io/apimachinery/pkg/runtime/schema"
+ 	ktesting "k8s.io/client-go/testing"
+ 
++	"github.com/cilium/cilium/api/v1/models"
++	cmtypes "github.com/cilium/cilium/pkg/clustermesh/types"
+ 	"github.com/cilium/cilium/pkg/endpoint"
+ 	"github.com/cilium/cilium/pkg/endpointmanager"
+ 	"github.com/cilium/cilium/pkg/hive"
+@@ -28,7 +30,9 @@ import (
+ 	slimmeta "github.com/cilium/cilium/pkg/k8s/slim/k8s/apis/meta/v1"
+ 	slimfake "github.com/cilium/cilium/pkg/k8s/slim/k8s/client/clientset/versioned/fake"
+ 	"github.com/cilium/cilium/pkg/option"
++	"github.com/cilium/cilium/pkg/policy"
+ 	testendpointmanager "github.com/cilium/cilium/pkg/testutils/endpointmanager"
++	testpolicy "github.com/cilium/cilium/pkg/testutils/policy"
+ 	"github.com/cilium/cilium/pkg/time"
+ 	"github.com/cilium/cilium/pkg/ztunnel/config"
+ 	"github.com/cilium/cilium/pkg/ztunnel/zds"
+@@ -55,7 +59,7 @@ func cniGateFixture(t *testing.T) (*gate, *slimfake.Clientset, *endpoint.Endpoin
+ 		budget: 250 * time.Millisecond, attemptTimeout: 30 * time.Millisecond,
+ 		initialBackoff: time.Millisecond,
+ 		validateNetns:  func(string) error { return nil },
+-		enroll:         func(context.Context, *endpoint.Endpoint) error { return nil },
++		enroll:         func(context.Context, *endpoint.Endpoint, *endpoint.Endpoint) error { return nil },
+ 	}
+ 	return g, client, ep
+ }
+@@ -74,7 +78,8 @@ func TestAdmissionUsesFreshPrivateMetadataAndRequiresEnrollment(t *testing.T) {
+ 		validated.Add(1)
+ 		return nil
+ 	}
+-	g.enroll = func(ctx context.Context, view *endpoint.Endpoint) error {
++	g.enroll = func(ctx context.Context, owner, view *endpoint.Endpoint) error {
++		require.Same(t, managed, owner)
+ 		require.NotSame(t, managed, view)
+ 		require.Equal(t, managed.GetID16(), view.GetID16())
+ 		require.Equal(t, managed.K8sUID, view.K8sUID)
+@@ -104,7 +109,7 @@ func TestAdmissionDoesNotAckMissingOrStaleManagedIdentity(t *testing.T) {
+ 				ep.SetPod(&slimv1.Pod{ObjectMeta: slimmeta.ObjectMeta{UID: "stale-generation", Name: "server", Namespace: "apps"}})
+ 			}
+ 			var enrolled atomic.Int32
+-			g.enroll = func(context.Context, *endpoint.Endpoint) error { enrolled.Add(1); return nil }
++			g.enroll = func(context.Context, *endpoint.Endpoint, *endpoint.Endpoint) error { enrolled.Add(1); return nil }
+ 			require.ErrorContains(t, g.WaitForEndpoint(t.Context(), ep), "managed endpoint metadata is not synchronized")
+ 			require.Zero(t, enrolled.Load())
+ 		})
+@@ -126,7 +131,7 @@ func TestAdmissionRecoversWhenManagedMetadataSynchronizes(t *testing.T) {
+ 		}
+ 		return false, nil, nil
+ 	})
+-	g.enroll = func(_ context.Context, view *endpoint.Endpoint) error {
++	g.enroll = func(_ context.Context, owner, view *endpoint.Endpoint) error {
+ 		enrolled.Add(1)
+ 		require.Equal(t, "pod-generation", string(view.GetPod().UID))
+ 		return nil
+@@ -175,7 +180,7 @@ func TestAdmissionRejectsInvalidIdentityAndNamespaceInputs(t *testing.T) {
+ 				require.NoError(t, err)
+ 			}
+ 			var called atomic.Int32
+-			g.enroll = func(context.Context, *endpoint.Endpoint) error { called.Add(1); return nil }
++			g.enroll = func(context.Context, *endpoint.Endpoint, *endpoint.Endpoint) error { called.Add(1); return nil }
+ 			require.Error(t, g.WaitForEndpoint(t.Context(), ep))
+ 			require.Zero(t, called.Load(), "Invalid inputs must never result in enrollment or success")
+ 		})
+@@ -188,7 +193,7 @@ func TestAdmissionRejectsNamespaceTypeFailureBeforeEnrollment(t *testing.T) {
+ 	expected := errors.New("injected non-network namespace")
+ 	g.validateNetns = func(string) error { return expected }
+ 	var calls atomic.Int32
+-	g.enroll = func(context.Context, *endpoint.Endpoint) error { calls.Add(1); return nil }
++	g.enroll = func(context.Context, *endpoint.Endpoint, *endpoint.Endpoint) error { calls.Add(1); return nil }
+ 	require.ErrorIs(t, g.WaitForEndpoint(t.Context(), ep), expected)
+ 	require.Zero(t, calls.Load())
+ }
+@@ -198,7 +203,7 @@ func TestAdmissionCanRecoverFromDisconnectedProxyAndNack(t *testing.T) {
+ 		t.Run(scenario, func(t *testing.T) {
+ 			g, client, ep := cniGateFixture(t)
+ 			var calls atomic.Int32
+-			g.enroll = func(ctx context.Context, _ *endpoint.Endpoint) error {
++			g.enroll = func(ctx context.Context, _, _ *endpoint.Endpoint) error {
+ 				if calls.Add(1) == 1 {
+ 					if scenario == "disconnected" {
+ 						<-ctx.Done()
+@@ -222,7 +227,7 @@ func TestAdmissionCancellationNeverReportsSuccess(t *testing.T) {
+ 	defer cancel()
+ 	entered := make(chan struct{})
+ 	var attempts atomic.Int32
+-	g.enroll = func(ctx context.Context, _ *endpoint.Endpoint) error {
++	g.enroll = func(ctx context.Context, _, _ *endpoint.Endpoint) error {
+ 		attempts.Add(1)
+ 		close(entered)
+ 		<-ctx.Done()
+@@ -249,7 +254,7 @@ func TestAdmissionChecksCancellationEvenIfEnrollerReturnsNil(t *testing.T) {
+ 	g, _, ep := cniGateFixture(t)
+ 	parent, cancel := context.WithCancel(t.Context())
+ 	defer cancel()
+-	g.enroll = func(context.Context, *endpoint.Endpoint) error { cancel(); return nil }
++	g.enroll = func(context.Context, *endpoint.Endpoint, *endpoint.Endpoint) error { cancel(); return nil }
+ 	require.ErrorIs(t, g.WaitForEndpoint(parent, ep), context.Canceled)
+ }
+ 
+@@ -268,7 +273,7 @@ func TestAdmissionDoesNotFailOpenOnApiForbidden(t *testing.T) {
+ func TestAdmissionPinsNamespaceUidAcrossRetries(t *testing.T) {
+ 	g, client, ep := cniGateFixture(t)
+ 	var calls atomic.Int32
+-	g.enroll = func(ctx context.Context, _ *endpoint.Endpoint) error {
++	g.enroll = func(ctx context.Context, _, _ *endpoint.Endpoint) error {
+ 		calls.Add(1)
+ 		ns, err := client.CoreV1().Namespaces().Get(ctx, "apps", metav1.GetOptions{})
+ 		require.NoError(t, err)
+@@ -286,7 +291,7 @@ func TestAdmissionPinsNamespaceUidAcrossRetries(t *testing.T) {
+ func TestAdmissionCannotDowngradeRequiredIntentAfterAck(t *testing.T) {
+ 	g, client, ep := cniGateFixture(t)
+ 	var calls atomic.Int32
+-	g.enroll = func(ctx context.Context, _ *endpoint.Endpoint) error {
++	g.enroll = func(ctx context.Context, _, _ *endpoint.Endpoint) error {
+ 		calls.Add(1)
+ 		ns, err := client.CoreV1().Namespaces().Get(ctx, "apps", metav1.GetOptions{})
+ 		require.NoError(t, err)
+@@ -303,7 +308,7 @@ func TestAdmissionCannotDowngradeRequiredIntentAfterAck(t *testing.T) {
+ func TestAdmissionRetriesChangedNamespaceRvWithFreshAck(t *testing.T) {
+ 	g, client, ep := cniGateFixture(t)
+ 	var calls atomic.Int32
+-	g.enroll = func(ctx context.Context, _ *endpoint.Endpoint) error {
++	g.enroll = func(ctx context.Context, _, _ *endpoint.Endpoint) error {
+ 		if calls.Add(1) == 1 {
+ 			ns, err := client.CoreV1().Namespaces().Get(ctx, "apps", metav1.GetOptions{})
+ 			require.NoError(t, err)
+@@ -336,7 +341,8 @@ func TestAdmissionPrivateMetadataIsStableDuringManagedMetadataUpdates(t *testing
+ 		}
+ 	}()
+ 	defer func() { close(stop); <-stopped }()
+-	g.enroll = func(_ context.Context, view *endpoint.Endpoint) error {
++	g.enroll = func(_ context.Context, owner, view *endpoint.Endpoint) error {
++		require.Same(t, managed, owner)
+ 		require.NotSame(t, managed, view)
+ 		require.Equal(t, "pod-generation", string(view.GetPod().UID))
+ 		require.Equal(t, "server", view.GetPod().Spec.ServiceAccountName)
+@@ -347,7 +353,7 @@ func TestAdmissionPrivateMetadataIsStableDuringManagedMetadataUpdates(t *testing
+ 
+ func TestAdmissionRejectsPodUidChangeAfterAck(t *testing.T) {
+ 	g, client, ep := cniGateFixture(t)
+-	g.enroll = func(ctx context.Context, _ *endpoint.Endpoint) error {
++	g.enroll = func(ctx context.Context, _, _ *endpoint.Endpoint) error {
+ 		pod, err := client.CoreV1().Pods("apps").Get(ctx, "server", metav1.GetOptions{})
+ 		require.NoError(t, err)
+ 		pod.UID = "changed-after-ack"
+@@ -379,7 +385,7 @@ func TestAdmissionUnenrolledIntentDoesNotEnroll(t *testing.T) {
+ 	_, err = client.CoreV1().Namespaces().Update(t.Context(), ns, metav1.UpdateOptions{})
+ 	require.NoError(t, err)
+ 	client.ClearActions()
+-	g.enroll = func(context.Context, *endpoint.Endpoint) error {
++	g.enroll = func(context.Context, *endpoint.Endpoint, *endpoint.Endpoint) error {
+ 		t.Fatal("Unenrolled intent must not enroll")
+ 		return nil
+ 	}
+@@ -395,7 +401,7 @@ func TestAdmissionRejectsNamespaceWithoutResourceVersion(t *testing.T) {
+ 	ns.ResourceVersion = ""
+ 	_, err = client.CoreV1().Namespaces().Update(t.Context(), ns, metav1.UpdateOptions{})
+ 	require.NoError(t, err)
+-	g.enroll = func(context.Context, *endpoint.Endpoint) error {
++	g.enroll = func(context.Context, *endpoint.Endpoint, *endpoint.Endpoint) error {
+ 		t.Fatal("Incomplete namespace identity must not enroll")
+ 		return nil
+ 	}
+@@ -434,3 +440,53 @@ func TestAdmissionHiveUsesRealZdsProviderAndTypedGroup(t *testing.T) {
+ 		})
+ 	}
+ }
++
++func TestAdmissionRejectsManagedDeletionBeforeAndAfterACK(t *testing.T) {
++	for _, when := range []string{"before-attempt", "during-ack", "after-api-recheck"} {
++		t.Run(when, func(t *testing.T) {
++			g, client, view := cniGateFixture(t)
++			logger := hivetest.Logger(t)
++			repo := policy.NewPolicyRepository(logger, cmtypes.DefaultClusterInfo, nil, nil, nil, nil, testpolicy.NewPolicyMetricsNoop())
++			ep, err := endpoint.NewEndpointFromChangeModel(endpoint.EndpointParams{Logger: logger, PolicyRepo: repo}, nil, nil,
++				&models.EndpointChangeRequest{ID: int64(view.ID), K8sUID: view.K8sUID, K8sNamespace: view.K8sNamespace,
++					K8sPodName: view.K8sPodName, ContainerNetnsPath: view.GetContainerNetnsPath()}, nil)
++			require.NoError(t, err)
++			ep.UpdateLogger(nil)
++			ep.SetPod(view.GetPod().DeepCopy())
++			require.True(t, ep.SetState(endpoint.StateWaitingForIdentity, "admission test"))
++			disconnect := func() {
++				require.True(t, ep.SetState(endpoint.StateDisconnecting, "concurrent deletion"))
++				require.True(t, ep.SetState(endpoint.StateDisconnected, "deletion complete"))
++			}
++			calls := 0
++			g.enroll = func(_ context.Context, owner, private *endpoint.Endpoint) error {
++				require.Same(t, ep, owner)
++				require.NotSame(t, owner, private)
++				calls++
++				if when == "during-ack" {
++					disconnect()
++				}
++				return nil
++			}
++			if when == "before-attempt" {
++				disconnect()
++			}
++			if when == "after-api-recheck" {
++				reads := 0
++				client.PrependReactor("get", "namespaces", func(ktesting.Action) (bool, runtime.Object, error) {
++					reads++
++					if reads == 2 {
++						disconnect()
++					}
++					return false, nil, nil
++				})
++			}
++			require.ErrorContains(t, g.WaitForEndpoint(t.Context(), ep), "managed endpoint disconnected")
++			if when == "before-attempt" {
++				require.Zero(t, calls)
++			} else {
++				require.Equal(t, 1, calls)
++			}
++		})
++	}
++}
+diff --git a/pkg/ztunnel/admission/logging_test.go b/pkg/ztunnel/admission/logging_test.go
+index 57bfd47699..97c4b6a635 100644
+--- a/pkg/ztunnel/admission/logging_test.go
++++ b/pkg/ztunnel/admission/logging_test.go
+@@ -40,7 +40,7 @@ func TestAdmissionCancellationDuringBackoffLogsTerminalOutcome(t *testing.T) {
+ 	g.logger = slog.New(slog.NewJSONHandler(output, nil))
+ 	g.initialBackoff = time.Second
+ 	g.budget = 2 * time.Second
+-	g.enroll = func(context.Context, *endpoint.Endpoint) error {
++	g.enroll = func(context.Context, *endpoint.Endpoint, *endpoint.Endpoint) error {
+ 		return errors.New("injected missing proxy ACK")
+ 	}
+ 	ctx, cancel := context.WithCancel(t.Context())
+@@ -86,7 +86,7 @@ func TestAdmissionDoesNotExemptCopiedProxyAppLabel(t *testing.T) {
+ 	require.NoError(t, err)
+ 	ep.SetPod(pod.DeepCopy())
+ 	calls := 0
+-	g.enroll = func(context.Context, *endpoint.Endpoint) error {
++	g.enroll = func(context.Context, *endpoint.Endpoint, *endpoint.Endpoint) error {
+ 		calls++
+ 		return nil
+ 	}
+diff --git a/pkg/ztunnel/reconciler/reconciler.go b/pkg/ztunnel/reconciler/reconciler.go
+index 263bde38ef..2f4f1e6338 100644
+--- a/pkg/ztunnel/reconciler/reconciler.go
++++ b/pkg/ztunnel/reconciler/reconciler.go
+@@ -19,6 +19,7 @@ import (
+ 	"github.com/cilium/cilium/pkg/logging/logfields"
+ 	"github.com/cilium/cilium/pkg/option"
+ 	"github.com/cilium/cilium/pkg/promise"
++	"github.com/cilium/cilium/pkg/time"
+ 	"github.com/cilium/cilium/pkg/ztunnel/config"
+ 	"github.com/cilium/cilium/pkg/ztunnel/table"
+ 	"github.com/cilium/cilium/pkg/ztunnel/xds"
+@@ -39,6 +40,7 @@ type params struct {
+ 	Lifecycle                   cell.Lifecycle
+ 	EndpointManager             endpointmanager.EndpointManager
+ 	EndpointEnroller            zds.EndpointEnroller
++	EndpointDeletionCleaner     zds.EndpointDeletionCleaner
+ 	RestorerPromise             promise.Promise[endpointstate.Restorer]
+ 	EndpointEventChannel        chan *xds.EndpointEvent
+ 	CiliumEndpointResource      resource.Resource[*types.CiliumEndpoint]
+@@ -51,6 +53,7 @@ type EnrollmentReconciler struct {
+ 	enrolledNamespaceTable      statedb.RWTable[*table.EnrolledNamespace]
+ 	endpointManager             endpointmanager.EndpointManager
+ 	endpointEnroller            zds.EndpointEnroller
++	endpointDeletionCleaner     zds.EndpointDeletionCleaner
+ 	strictCreationAdmission     bool
+ 	restorerPromise             promise.Promise[endpointstate.Restorer]
+ 	endpointEventCh             chan *xds.EndpointEvent
+@@ -58,9 +61,12 @@ type EnrollmentReconciler struct {
+ 	ciliumEndpointSliceResource resource.Resource[*v2alpha1.CiliumEndpointSlice]
+ }
+ 
+-func NewEnrollmentReconciler(cfg params) reconciler.Operations[*table.EnrolledNamespace] {
++func NewEnrollmentReconciler(cfg params) (reconciler.Operations[*table.EnrolledNamespace], error) {
+ 	if !cfg.Config.EnableZTunnel {
+-		return nil
++		return nil, nil
++	}
++	if cfg.Config.RequireMTLS && cfg.EndpointDeletionCleaner == nil {
++		return nil, fmt.Errorf("strict ztunnel enrollment requires deleted-endpoint cleanup")
+ 	}
+ 
+ 	ops := &EnrollmentReconciler{
+@@ -69,6 +75,7 @@ func NewEnrollmentReconciler(cfg params) reconciler.Operations[*table.EnrolledNa
+ 		enrolledNamespaceTable:      cfg.EnrolledNamespaceTable,
+ 		endpointManager:             cfg.EndpointManager,
+ 		endpointEnroller:            cfg.EndpointEnroller,
++		endpointDeletionCleaner:     cfg.EndpointDeletionCleaner,
+ 		strictCreationAdmission:     cfg.Config.RequireMTLS,
+ 		restorerPromise:             cfg.RestorerPromise,
+ 		endpointEventCh:             cfg.EndpointEventChannel,
+@@ -76,7 +83,7 @@ func NewEnrollmentReconciler(cfg params) reconciler.Operations[*table.EnrolledNa
+ 		ciliumEndpointSliceResource: cfg.CiliumEndpointSliceResource,
+ 	}
+ 	cfg.Lifecycle.Append(ops)
+-	return ops
++	return ops, nil
+ }
+ 
+ // emitEndpointEvents sends endpoint events for all CiliumEndpoints/CiliumEndpointSlices
+@@ -283,6 +290,22 @@ func (ops *EnrollmentReconciler) EndpointCreated(ep *endpoint.Endpoint) {
+ }
+ 
+ func (ops *EnrollmentReconciler) EndpointDeleted(ep *endpoint.Endpoint, _ endpoint.DeleteConfig) {
++	if ops.strictCreationAdmission {
++		if ep.K8sUID == "" && ep.GetK8sNamespace() == "" && ep.GetK8sPodName() == "" {
++			return
++		}
++		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
++		defer cancel()
++		if err := ops.endpointDeletionCleaner.CleanupDeletedEndpointContext(ctx, ep); err != nil {
++			ops.logger.Error("Strict deleted endpoint proxy cleanup incomplete",
++				logfields.EndpointID, ep.GetID16(),
++				logfields.K8sUID, ep.K8sUID,
++				logfields.K8sNamespace, ep.GetK8sNamespace(),
++				logfields.Error, err,
++			)
++		}
++		return
++	}
+ 	epNamespace := ep.GetK8sNamespace()
+ 	// If namespace is not enrolled or endpoint has no netns path or is ztunnel itself, skip
+ 	if epNamespace == "" || ep.GetContainerNetnsPath() == "" || isZtunnelPod(ep) {
+diff --git a/pkg/ztunnel/reconciler/reconciler_test.go b/pkg/ztunnel/reconciler/reconciler_test.go
+index decb02ce4a..17b7ae2a39 100644
+--- a/pkg/ztunnel/reconciler/reconciler_test.go
++++ b/pkg/ztunnel/reconciler/reconciler_test.go
+@@ -41,6 +41,7 @@ type MockEndpointEnroller struct {
+ 	disenrolledIDs    []uint16
+ 	enrollErr         error
+ 	disenrollErr      error
++	deletedEndpoints  []*endpoint.Endpoint
+ }
+ 
+ // NewMockEndpointEnroller creates a new mock endpoint enroller.
+@@ -70,6 +71,11 @@ func (m *MockEndpointEnroller) DisenrollEndpoint(ep *endpoint.Endpoint) error {
+ 	return nil
+ }
+ 
++func (m *MockEndpointEnroller) CleanupDeletedEndpointContext(_ context.Context, ep *endpoint.Endpoint) error {
++	m.deletedEndpoints = append(m.deletedEndpoints, ep)
++	return m.disenrollErr
++}
++
+ // SeedInitialSnapshot sends an initial snapshot of endpoints to ztunnel.
+ func (m *MockEndpointEnroller) SeedInitialSnapshot(endpoints ...*endpoint.Endpoint) {
+ 	for _, ep := range endpoints {
+@@ -271,7 +277,7 @@ func setupTest(t *testing.T) (*statedb.DB, statedb.RWTable[*table.EnrolledNamesp
+ 	// and queues Stop() for test cleanup.
+ 	lc := hivetest.Lifecycle(t)
+ 
+-	ops := NewEnrollmentReconciler(params{
++	ops, err := NewEnrollmentReconciler(params{
+ 		Config:                      config.Config{EnableZTunnel: true},
+ 		DB:                          db,
+ 		EnrolledNamespaceTable:      tbl,
+@@ -279,11 +285,13 @@ func setupTest(t *testing.T) (*statedb.DB, statedb.RWTable[*table.EnrolledNamesp
+ 		Lifecycle:                   lc,
+ 		EndpointManager:             mockEpMgr,
+ 		EndpointEnroller:            mockEnroller,
++		EndpointDeletionCleaner:     mockEnroller,
+ 		RestorerPromise:             restorerPromise,
+ 		EndpointEventChannel:        endpointEventCh,
+ 		CiliumEndpointResource:      mockCEPResource,
+ 		CiliumEndpointSliceResource: mockCESResource,
+ 	})
++	require.NoError(t, err)
+ 
+ 	reconcilerOps := ops.(*EnrollmentReconciler)
+ 
+@@ -781,3 +789,21 @@ func TestEnrollmentReconciler_EndpointDeleted(t *testing.T) {
+ 		})
+ 	}
+ }
++
++func TestStrictEnrollmentRequiresDeletionCleaner(t *testing.T) {
++	ops, err := NewEnrollmentReconciler(params{Config: config.Config{EnableZTunnel: true, RequireMTLS: true}})
++	require.ErrorContains(t, err, "requires deleted-endpoint cleanup")
++	require.Nil(t, ops)
++}
++
++func TestStrictDeletionUsesCleanerWithoutNamespaceOrProxyLabelExemption(t *testing.T) {
++	_, _, _, mockEnroller, ops, _ := setupTest(t)
++	ops.strictCreationAdmission = true
++	ep := createTestEndpointWithLabels(77, "namespace-no-longer-enrolled", "old-pod", "/missing-deleted-netns", labels.Labels{
++		"k8s:app": labels.NewLabel("app", "ztunnel-cilium", labels.LabelSourceK8s),
++	})
++	ep.K8sUID = "immutable-deleted-uid"
++	ops.EndpointDeleted(ep, endpoint.DeleteConfig{})
++	require.Equal(t, []*endpoint.Endpoint{ep}, mockEnroller.deletedEndpoints)
++	require.Empty(t, mockEnroller.disenrolledIDs, "Strict deletion must not remove capture through legacy unenrollment")
++}
+diff --git a/pkg/ztunnel/zds/deleted_endpoint.go b/pkg/ztunnel/zds/deleted_endpoint.go
+new file mode 100644
+index 0000000000..fc36a382f5
+--- /dev/null
++++ b/pkg/ztunnel/zds/deleted_endpoint.go
+@@ -0,0 +1,202 @@
++// SPDX-License-Identifier: Apache-2.0
++// Copyright Authors of Cilium
++
++package zds
++
++import (
++	"context"
++	"fmt"
++
++	"k8s.io/apimachinery/pkg/types"
++
++	"github.com/cilium/cilium/pkg/endpoint"
++	slimcore "github.com/cilium/cilium/pkg/k8s/slim/k8s/api/core/v1"
++	slimmeta "github.com/cilium/cilium/pkg/k8s/slim/k8s/apis/meta/v1"
++	"github.com/cilium/cilium/pkg/logging/logfields"
++	"github.com/cilium/cilium/pkg/time"
++	"github.com/cilium/cilium/pkg/ztunnel/pb"
++)
++
++const logCleanupDeadline = "deadline"
++
++// EndpointDeletionCleaner is deliberately separate from namespace
++// unenrollment. A deleted CNI endpoint must retain its fail-closed capture.
++// The managed endpoint has already passed through Endpoint.Delete.
++// Do not call this with the live private admission view.
++type EndpointDeletionCleaner interface {
++	CleanupDeletedEndpointContext(context.Context, *endpoint.Endpoint) error
++}
++
++var _ EndpointDeletionCleaner = (*Server)(nil)
++
++type endpointIncarnation struct {
++	id        uint16
++	uid       string
++	netnsPath string
++}
++
++func incarnation(ep *endpoint.Endpoint) (endpointIncarnation, error) {
++	if ep == nil || ep.K8sUID == "" || ep.GetContainerNetnsPath() == "" {
++		return endpointIncarnation{}, fmt.Errorf("endpoint cleanup requires immutable CNI UID and network namespace path")
++	}
++	return endpointIncarnation{ep.GetID16(), ep.K8sUID, ep.GetContainerNetnsPath()}, nil
++}
++
++func sameIncarnation(ep *endpoint.Endpoint, want endpointIncarnation) bool {
++	got, err := incarnation(ep)
++	return err == nil && got == want
++}
++
++// acquireEndpointOperation serializes producer-side capture/ADD and DEL work.
++// Never acquire it from processUpdate, sendInitialSnapshot, or an ACK callback:
++// the producer waits for those consumers to make progress.
++// Lazy initialization supports the actual existing test Server literals.
++func (s *Server) acquireEndpointOperation(ctx context.Context) (func(), error) {
++	s.endpointCacheMutex.Lock()
++	if s.endpointOperationGate == nil {
++		s.endpointOperationGate = make(chan struct{}, 1)
++	}
++	gate := s.endpointOperationGate
++	s.endpointCacheMutex.Unlock()
++	select {
++	case gate <- struct{}{}:
++		if err := ctx.Err(); err != nil {
++			<-gate
++			return nil, err
++		}
++		return func() { <-gate }, nil
++	case <-ctx.Done():
++		return nil, ctx.Err()
++	}
++}
++
++// freezeAcknowledgedEndpoint caches exactly the metadata sent on this ADD.
++// It does not copy Endpoint locks, atomics or mutable managed Pod metadata.
++// The admission gate remains responsible for authoritative API validation.
++func freezeAcknowledgedEndpoint(ep *endpoint.Endpoint, workload *pb.AddWorkload, netnsPath string) *endpoint.Endpoint {
++	view := &endpoint.Endpoint{
++		ID: ep.GetID16(), K8sUID: workload.Uid,
++		K8sNamespace: workload.WorkloadInfo.Namespace,
++		K8sPodName:   workload.WorkloadInfo.Name,
++	}
++	view.SetContainerNetnsPath(netnsPath)
++	view.SetPod(&slimcore.Pod{
++		ObjectMeta: slimmeta.ObjectMeta{UID: types.UID(workload.Uid), Name: view.K8sPodName, Namespace: view.K8sNamespace},
++		Spec:       slimcore.PodSpec{ServiceAccountName: workload.WorkloadInfo.ServiceAccount},
++	})
++	return view
++}
++
++// commitStrictEnrollment runs only inside the ACK callback, after processUpdate
++// has stopped/joined cancellation. It checks cancellation again under the same
++// mutex used by local deletion retirement. Managed callers also cannot commit
++// an endpoint which Endpoint.Delete has already disconnected. Admission passes
++// its actual managed owner separately from its immutable private wire view.
++func (s *Server) commitStrictEnrollment(ctx context.Context, owner, acknowledged *endpoint.Endpoint) {
++	s.endpointCacheMutex.Lock()
++	defer s.endpointCacheMutex.Unlock()
++	if ctx.Err() != nil || !owner.IsAlive() {
++		return
++	}
++	if s.endpointCache == nil {
++		s.endpointCache = make(map[uint16]*endpoint.Endpoint)
++	}
++	// Wire DEL is keyed only by Pod UID. Keep one acknowledged owner per UID
++	// so stale sandbox deletion can recognize the newer same-UID owner.
++	for id, cached := range s.endpointCache {
++		if cached.K8sUID == acknowledged.K8sUID {
++			delete(s.endpointCache, id)
++		}
++	}
++	s.endpointCache[acknowledged.GetID16()] = acknowledged
++}
++
++func (s *Server) strictSnapshotStillDesired(ep *endpoint.Endpoint) bool {
++	if !s.strictDeletedEndpointCleanup {
++		return true
++	}
++	s.endpointCacheMutex.Lock()
++	defer s.endpointCacheMutex.Unlock()
++	return s.endpointCache[ep.GetID16()] == ep
++}
++
++// CleanupDeletedEndpointContext is the strict CNI/endpoint-deletion cleanup.
++// It retires an exact immutable cache incarnation BEFORE any bounded wait.
++// It neither opens nor unpins the netns nor removes its capture rules.
++// A failed DEL is observable, but does not put the retired cache entry back.
++func (s *Server) CleanupDeletedEndpointContext(ctx context.Context, ep *endpoint.Endpoint) (resultErr error) {
++	if !s.strictDeletedEndpointCleanup {
++		return fmt.Errorf("strict deleted-endpoint cleanup is disabled")
++	}
++	key, err := incarnation(ep)
++	if err != nil {
++		return err
++	}
++	if ep.IsAlive() {
++		return fmt.Errorf("strict cleanup requires a disconnected managed endpoint, not a live admission view")
++	}
++	started := time.Now()
++	deadline, _ := ctx.Deadline()
++	defer func() {
++		attrs := []any{logStage, "zds-deleted-endpoint-cleanup", logfields.EndpointID, key.id,
++			logfields.K8sUID, key.uid, logfields.Attempt, 1, logfields.ElapsedDuration, time.Since(started), logCleanupDeadline, deadline}
++		if resultErr != nil {
++			s.logger.Error("Deleted endpoint cleanup incomplete; capture retained", append(attrs, logfields.Error, resultErr)...)
++		} else {
++			s.logger.Info("Deleted endpoint cleanup completed; capture retained", attrs...)
++		}
++	}()
++
++	// Required even when another ADD holds the operation semaphore or ctx has
++	// already expired. Thus runtime netns removal cannot poison the next replay.
++	s.endpointCacheMutex.Lock()
++	if sameIncarnation(s.endpointCache[key.id], key) {
++		delete(s.endpointCache, key.id)
++	}
++	s.endpointCacheMutex.Unlock()
++
++	release, err := s.acquireEndpointOperation(ctx)
++	if err != nil {
++		return fmt.Errorf("cache retired; waiting for endpoint operation: %w", err)
++	}
++	defer release()
++
++	// Recheck after waiting: a new sandbox may have ACKed its ADD while this
++	// cleanup was blocked. Sending an old same-UID DEL would remove that proxy.
++	s.endpointCacheMutex.Lock()
++	// An ADD already in flight at the first retirement may have committed
++	// before releasing the semaphore. Retire that exact incarnation again.
++	if sameIncarnation(s.endpointCache[key.id], key) {
++		delete(s.endpointCache, key.id)
++	}
++	superseded := false
++	for _, cached := range s.endpointCache {
++		if cached.K8sUID == key.uid && !sameIncarnation(cached, key) {
++			superseded = true
++			break
++		}
++	}
++	s.endpointCacheMutex.Unlock()
++	if superseded {
++		s.logger.Info("Skipping stale deleted-endpoint DEL after sandbox replacement",
++			logStage, "zds-deleted-endpoint-cleanup",
++			logfields.EndpointID, key.id,
++			logfields.K8sUID, key.uid,
++		)
++		return nil
++	}
++
++	update := zdsUpdate{
++		request: &pb.WorkloadRequest{Payload: &pb.WorkloadRequest_Del{Del: &pb.DelWorkload{Uid: key.uid}}},
++		errCh:   make(chan error, 1),
++		// No onAck deletion: desired cache retirement already happened, guarded
++		// by exact ID/UID/netns. No netnsPath: DEL needs no namespace FD.
++	}
++	if err := s.sendUpdateAndWaitForAck(ctx, update); err != nil {
++		return fmt.Errorf("cache retired; proxy DEL not acknowledged: %w", err)
++	}
++	if err := ctx.Err(); err != nil {
++		return err
++	}
++	return nil
++}
+diff --git a/pkg/ztunnel/zds/deleted_endpoint_test.go b/pkg/ztunnel/zds/deleted_endpoint_test.go
+new file mode 100644
+index 0000000000..51d0681434
+--- /dev/null
++++ b/pkg/ztunnel/zds/deleted_endpoint_test.go
+@@ -0,0 +1,554 @@
++// SPDX-License-Identifier: Apache-2.0
++// Copyright Authors of Cilium
++
++package zds
++
++import (
++	"context"
++	"testing"
++
++	"github.com/cilium/hive/hivetest"
++	goiptables "github.com/coreos/go-iptables/iptables"
++	"github.com/stretchr/testify/require"
++	"k8s.io/apimachinery/pkg/types"
++
++	"github.com/cilium/cilium/api/v1/models"
++	cmtypes "github.com/cilium/cilium/pkg/clustermesh/types"
++	"github.com/cilium/cilium/pkg/endpoint"
++	slimcore "github.com/cilium/cilium/pkg/k8s/slim/k8s/api/core/v1"
++	slimmeta "github.com/cilium/cilium/pkg/k8s/slim/k8s/apis/meta/v1"
++	"github.com/cilium/cilium/pkg/netns"
++	"github.com/cilium/cilium/pkg/option"
++	"github.com/cilium/cilium/pkg/policy"
++	"github.com/cilium/cilium/pkg/testutils"
++	testpolicy "github.com/cilium/cilium/pkg/testutils/policy"
++	"github.com/cilium/cilium/pkg/time"
++	inpodiptables "github.com/cilium/cilium/pkg/ztunnel/iptables"
++	"github.com/cilium/cilium/pkg/ztunnel/pb"
++)
++
++func strictCleanupServer(t *testing.T) *Server {
++	t.Helper()
++	return &Server{logger: hivetest.Logger(t), metrics: NewMetrics(),
++		strictDeletedEndpointCleanup: true, updates: make(chan zdsUpdate, 10),
++		endpointCache: make(map[uint16]*endpoint.Endpoint)}
++}
++
++func liveManagedEndpoint(t *testing.T, id uint16, uid, path string) *endpoint.Endpoint {
++	t.Helper()
++	// Use the real constructor: literal Endpoints lack status/logger required
++	// by SetState. No Start/Delete/datapath dependencies are invoked here.
++	logger := hivetest.Logger(t)
++	repo := policy.NewPolicyRepository(logger, cmtypes.DefaultClusterInfo, nil, nil, nil, nil, testpolicy.NewPolicyMetricsNoop())
++	ep, err := endpoint.NewEndpointFromChangeModel(endpoint.EndpointParams{Logger: logger, PolicyRepo: repo}, nil, nil,
++		&models.EndpointChangeRequest{ID: int64(id), K8sUID: uid,
++			K8sNamespace: "apps", K8sPodName: "server", ContainerNetnsPath: path}, nil)
++	require.NoError(t, err)
++	ep.UpdateLogger(nil)
++	require.True(t, ep.SetState(endpoint.StateWaitingForIdentity, "test fixture"))
++	return ep
++}
++
++func deletedManagedEndpoint(t *testing.T, id uint16, uid, path string) *endpoint.Endpoint {
++	t.Helper()
++	ep := liveManagedEndpoint(t, id, uid, path)
++	require.True(t, ep.SetState(endpoint.StateDisconnecting, "test deletion"))
++	require.True(t, ep.SetState(endpoint.StateDisconnected, "test deletion complete"))
++	return ep
++}
++
++func acknowledgedView(id uint16, uid, path string) *endpoint.Endpoint {
++	ep := &endpoint.Endpoint{ID: id, K8sUID: uid, K8sNamespace: "apps", K8sPodName: "server"}
++	ep.SetContainerNetnsPath(path)
++	ep.SetPod(&slimcore.Pod{ObjectMeta: slimmeta.ObjectMeta{UID: types.UID(uid), Name: "server", Namespace: "apps"},
++		Spec: slimcore.PodSpec{ServiceAccountName: "server"}})
++	return ep
++}
++
++func receiveCleanupUpdate(t *testing.T, s *Server) zdsUpdate {
++	t.Helper()
++	select {
++	case update := <-s.updates:
++		return update
++	case <-time.After(time.Second):
++		t.Fatal("cleanup failed to queue its DEL")
++		return zdsUpdate{}
++	}
++}
++
++func exchangeCleanupUpdate(t *testing.T, s *Server, update zdsUpdate, reply []byte) (*pb.WorkloadRequest, error) {
++	t.Helper()
++	connection, peer := zdsSocketPair(t)
++	require.NoError(t, peer.SetDeadline(time.Now().Add(time.Second)))
++	done := make(chan error, 1)
++	go func() { done <- s.processUpdate(context.Background(), connection, update) }()
++	request := &pb.WorkloadRequest{}
++	require.NoError(t, (&ztunnelConn{conn: peer}).readMsg(request))
++	_, err := peer.Write(reply)
++	require.NoError(t, err)
++	return request, <-done
++}
++
++func TestStrictDeletedCleanupImmutableUIDAndNoNetnsDependency(t *testing.T) {
++	for _, tc := range []struct {
++		name      string
++		reply     []byte
++		wantError string
++	}{
++		{"ack", []byte{0x0a, 0x00}, ""},
++		{"nack", []byte{0x0a, 0x08, 0x0a, 0x06, 'd', 'e', 'n', 'i', 'e', 'd'}, "ack error: denied"},
++		{"missing-ack", []byte{0x12, 0x00}, "did not contain an acknowledgment"},
++	} {
++		t.Run(tc.name, func(t *testing.T) {
++			s := strictCleanupServer(t)
++			ep := deletedManagedEndpoint(t, 9, "immutable-uid", "/definitely-missing-deleted-netns")
++			// Mutable managed metadata is deliberately incorrect. Cleanup must
++			// not derive DEL UID from it, nor require any Pod metadata at all.
++			ep.SetPod(&slimcore.Pod{ObjectMeta: slimmeta.ObjectMeta{UID: "wrong-current-pod"}})
++			s.endpointCache[9] = acknowledgedView(9, "immutable-uid", ep.GetContainerNetnsPath())
++			ctx, cancel := context.WithTimeout(t.Context(), time.Second)
++			defer cancel()
++			result := make(chan error, 1)
++			go func() { result <- s.CleanupDeletedEndpointContext(ctx, ep) }()
++			update := receiveCleanupUpdate(t, s)
++			require.Empty(t, update.netnsPath, "DEL must never open a removed sandbox")
++			s.endpointCacheMutex.Lock()
++			require.Empty(t, s.endpointCache, "local retirement precedes ACK and survives NACK")
++			s.endpointCacheMutex.Unlock()
++			request, processErr := exchangeCleanupUpdate(t, s, update, tc.reply)
++			require.Equal(t, "immutable-uid", request.GetDel().Uid)
++			if tc.wantError == "" {
++				require.NoError(t, processErr)
++				require.NoError(t, <-result)
++			} else {
++				require.ErrorContains(t, processErr, tc.wantError)
++				require.ErrorContains(t, <-result, tc.wantError)
++			}
++			s.endpointCacheMutex.Lock()
++			require.Empty(t, s.endpointCache)
++			s.endpointCacheMutex.Unlock()
++		})
++	}
++}
++
++func TestStrictDeletedCleanupRetiresBeforeBlockedOperationDeadline(t *testing.T) {
++	s := strictCleanupServer(t)
++	ep := deletedManagedEndpoint(t, 10, "old-uid", "/removed-old-netns")
++	old := acknowledgedView(10, "old-uid", ep.GetContainerNetnsPath())
++	s.endpointCache[10] = old
++	release, err := s.acquireEndpointOperation(t.Context())
++	require.NoError(t, err)
++	defer release()
++	ctx, cancel := context.WithTimeout(t.Context(), 20*time.Millisecond)
++	defer cancel()
++	started := time.Now()
++	require.ErrorIs(t, s.CleanupDeletedEndpointContext(ctx, ep), context.DeadlineExceeded)
++	require.Less(t, time.Since(started), time.Second)
++	require.Empty(t, s.endpointCache)
++	require.Empty(t, s.updates)
++	// Managed owner is disconnected; its late ACK cannot resurrect it.
++	s.commitStrictEnrollment(t.Context(), ep, old)
++	require.Empty(t, s.endpointCache)
++	// Private views never disconnect; their canceled caller is the guard.
++	canceled, stop := context.WithCancel(t.Context())
++	stop()
++	s.commitStrictEnrollment(canceled, old, old)
++	require.Empty(t, s.endpointCache)
++}
++
++func TestStrictDeletedCleanupRechecksNewSameUIDOwnerAfterSemaphoreWait(t *testing.T) {
++	s := strictCleanupServer(t)
++	old := deletedManagedEndpoint(t, 11, "same-pod-uid", "/old-sandbox")
++	oldView := acknowledgedView(11, "same-pod-uid", "/old-sandbox")
++	newView := acknowledgedView(12, "same-pod-uid", "/new-sandbox")
++	s.endpointCache[11] = oldView
++	release, err := s.acquireEndpointOperation(t.Context())
++	require.NoError(t, err)
++	ctx, cancel := context.WithTimeout(t.Context(), time.Second)
++	defer cancel()
++	result := make(chan error, 1)
++	go func() { result <- s.CleanupDeletedEndpointContext(ctx, old) }()
++	require.Eventually(t, func() bool {
++		s.endpointCacheMutex.Lock()
++		defer s.endpointCacheMutex.Unlock()
++		return s.endpointCache[11] == nil
++	}, time.Second, time.Millisecond)
++	// Represents the already-in-progress new ADD receiving its real ACK.
++	// The privileged test below exercises this via actual Enroll + socket.
++	s.commitStrictEnrollment(t.Context(), newView, newView)
++	release()
++	require.NoError(t, <-result)
++	require.Empty(t, s.updates, "stale DEL must produce zero wire requests")
++	require.Same(t, newView, s.endpointCache[12])
++	require.Len(t, s.endpointCache, 1)
++}
++
++func TestStrictDeletedCleanupDoesNotEraseReusedEndpointID(t *testing.T) {
++	s := strictCleanupServer(t)
++	old := deletedManagedEndpoint(t, 13, "old-pod", "/old-sandbox")
++	newView := acknowledgedView(13, "different-new-pod", "/new-sandbox")
++	s.endpointCache[13] = newView
++	ctx, cancel := context.WithTimeout(t.Context(), time.Second)
++	defer cancel()
++	result := make(chan error, 1)
++	go func() { result <- s.CleanupDeletedEndpointContext(ctx, old) }()
++	update := receiveCleanupUpdate(t, s)
++	request, err := exchangeCleanupUpdate(t, s, update, []byte{0x0a, 0x00})
++	require.NoError(t, err)
++	require.NoError(t, <-result)
++	require.Equal(t, "old-pod", request.GetDel().Uid)
++	require.Same(t, newView, s.endpointCache[13], "DEL ACK must not erase new ID owner")
++}
++
++func TestStrictDeletedCleanupRejectsLiveViewAndMissingUID(t *testing.T) {
++	s := strictCleanupServer(t)
++	live := acknowledgedView(14, "live-uid", "/live-sandbox")
++	s.endpointCache[14] = live
++	require.ErrorContains(t, s.CleanupDeletedEndpointContext(t.Context(), live), "disconnected managed endpoint")
++	require.Same(t, live, s.endpointCache[14])
++	ep := deletedManagedEndpoint(t, 15, "", "/old-sandbox")
++	require.ErrorContains(t, s.CleanupDeletedEndpointContext(t.Context(), ep), "immutable CNI UID")
++	require.Empty(t, s.updates)
++}
++
++func TestStrictInitialSeedCannotResurrectRetiredManagedEndpoint(t *testing.T) {
++	s := strictCleanupServer(t)
++	s.initialSnapshotSeeded = make(chan struct{})
++	old := deletedManagedEndpoint(t, 51, "retired-before-seed", "/removed-before-seed")
++	s.endpointCache[51] = acknowledgedView(51, old.K8sUID, old.GetContainerNetnsPath())
++	ctx, cancel := context.WithCancel(t.Context())
++	cancel()
++	require.ErrorIs(t, s.CleanupDeletedEndpointContext(ctx, old), context.Canceled)
++	require.Empty(t, s.endpointCache)
++	healthy := acknowledgedView(52, "healthy-seed", "/healthy-seed")
++	s.SeedInitialSnapshot(old, healthy)
++	require.Len(t, s.endpointCache, 1)
++	require.Same(t, healthy, s.endpointCache[52])
++	select {
++	case <-s.initialSnapshotSeeded:
++	default:
++		t.Fatal("Healthy initial seed must complete")
++	}
++}
++
++func TestStrictInitialSeedCannotOverwriteAcknowledgedNewSandbox(t *testing.T) {
++	s := strictCleanupServer(t)
++	s.initialSnapshotSeeded = make(chan struct{})
++	newOwner := acknowledgedView(62, "same-pod", "/new-sandbox")
++	s.endpointCache[62] = newOwner
++	oldList := acknowledgedView(61, "same-pod", "/old-sandbox")
++	reusedID := acknowledgedView(62, "different-old-pod", "/old-reused-id")
++	s.SeedInitialSnapshot(oldList, reusedID)
++	require.Len(t, s.endpointCache, 1)
++	require.Same(t, newOwner, s.endpointCache[62])
++}
++
++func TestStrictDeletedCleanupCancellationRetiresStreamAndRecovers(t *testing.T) {
++	s := strictCleanupServer(t)
++	ep := deletedManagedEndpoint(t, 16, "canceled-delete", "/gone-sandbox")
++	s.endpointCache[16] = acknowledgedView(16, ep.K8sUID, ep.GetContainerNetnsPath())
++	ctx, cancel := context.WithCancel(t.Context())
++	defer cancel()
++	result := make(chan error, 1)
++	go func() { result <- s.CleanupDeletedEndpointContext(ctx, ep) }()
++	update := receiveCleanupUpdate(t, s)
++	connection, peer := zdsSocketPair(t)
++	require.NoError(t, peer.SetDeadline(time.Now().Add(time.Second)))
++	processed := make(chan error, 1)
++	go func() { processed <- s.processUpdate(t.Context(), connection, update) }()
++	request := &pb.WorkloadRequest{}
++	require.NoError(t, (&ztunnelConn{conn: peer}).readMsg(request))
++	require.Equal(t, ep.K8sUID, request.GetDel().Uid)
++	cancel()
++	require.ErrorIs(t, <-result, context.Canceled)
++	require.ErrorIs(t, <-processed, context.Canceled)
++	require.Empty(t, s.endpointCache)
++	_, err := peer.Write([]byte{0x0a, 0x00})
++	require.Error(t, err, "late DEL ACK must not be confused with the next ADD")
++	// A fresh stream remains usable after cancellation. Real ADD recovery and
++	// retained capture are exercised below with a real network namespace.
++	fresh, other := zdsSocketPair(t)
++	ctx2, stop := context.WithTimeout(t.Context(), time.Second)
++	defer stop()
++	update2 := zdsUpdate{ctx: ctx2, errCh: make(chan error, 1), request: &pb.WorkloadRequest{
++		Payload: &pb.WorkloadRequest_SnapshotSent{SnapshotSent: &pb.SnapshotSent{}}}}
++	done := make(chan error, 1)
++	go func() { done <- s.processUpdate(t.Context(), fresh, update2) }()
++	require.NoError(t, other.SetDeadline(time.Now().Add(time.Second)))
++	require.NoError(t, (&ztunnelConn{conn: other}).readMsg(&pb.WorkloadRequest{}))
++	_, err = other.Write([]byte{0x0a, 0x00})
++	require.NoError(t, err)
++	require.NoError(t, <-done)
++	require.NoError(t, <-update2.errCh)
++}
++
++func strictCapturePresent(t *testing.T, path string) bool {
++	t.Helper()
++	ns, err := netns.OpenPinned(path)
++	require.NoError(t, err)
++	defer ns.Close()
++	present := false
++	require.NoError(t, ns.Do(func() error {
++		var ipt *goiptables.IPTables
++		var err error
++		if option.Config.EnableIPv4 {
++			ipt, err = goiptables.New()
++		} else {
++			ipt, err = goiptables.NewWithProtocol(goiptables.ProtocolIPv6)
++		}
++		if err != nil {
++			return err
++		}
++		exists, err := ipt.ChainExists("nat", inpodiptables.InpodPreroutingChain)
++		if err != nil || !exists {
++			return err
++		}
++		present, err = ipt.Exists("nat", "PREROUTING", "-j", inpodiptables.InpodPreroutingChain)
++		return err
++	}))
++	return present
++}
++
++func TestPrivilegedStrictDeletedCleanupRetainsCaptureAndFreshSandboxRecovers(t *testing.T) {
++	testutils.PrivilegedTest(t)
++	s := strictCleanupServer(t)
++	old, cleanupOld := createTestEndpoint(t, "cleanup-same-pod", 31)
++	defer cleanupOld()
++	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
++	defer cancel()
++	result := make(chan error, 1)
++	go func() { result <- s.EnrollEndpointContext(ctx, old) }()
++	add := receiveCleanupUpdate(t, s)
++	request, err := exchangeCleanupUpdate(t, s, add, []byte{0x0a, 0x00})
++	require.NoError(t, err)
++	require.NotNil(t, request.GetAdd())
++	require.NoError(t, <-result)
++	require.True(t, strictCapturePresent(t, old.GetContainerNetnsPath()))
++	managed := deletedManagedEndpoint(t, old.GetID16(), old.K8sUID, old.GetContainerNetnsPath())
++	go func() { result <- s.CleanupDeletedEndpointContext(ctx, managed) }()
++	del := receiveCleanupUpdate(t, s)
++	_, err = exchangeCleanupUpdate(t, s, del, []byte{0x0a, 0x08, 0x0a, 0x06, 'd', 'e', 'n', 'i', 'e', 'd'})
++	require.ErrorContains(t, err, "denied")
++	require.ErrorContains(t, <-result, "denied")
++	require.True(t, strictCapturePresent(t, old.GetContainerNetnsPath()), "NACK must retain capture")
++	require.Empty(t, s.endpointCache)
++	// Runtime retries the same Pod using a distinct sandbox path and ID.
++	fresh, cleanupFresh := createTestEndpoint(t, old.K8sUID, 32)
++	defer cleanupFresh()
++	go func() { result <- s.EnrollEndpointContext(ctx, fresh) }()
++	add = receiveCleanupUpdate(t, s)
++	request, err = exchangeCleanupUpdate(t, s, add, []byte{0x0a, 0x00})
++	require.NoError(t, err)
++	require.Equal(t, old.K8sUID, request.GetAdd().Uid)
++	require.NoError(t, <-result)
++	require.True(t, strictCapturePresent(t, fresh.GetContainerNetnsPath()))
++	require.Len(t, s.endpointCache, 1)
++	require.True(t, sameIncarnation(s.endpointCache[32], endpointIncarnation{32, fresh.K8sUID, fresh.GetContainerNetnsPath()}))
++	go func() { result <- s.CleanupDeletedEndpointContext(ctx, managed) }()
++	require.NoError(t, <-result, "retry of stale old deletion must skip newer same-UID sandbox")
++	require.Empty(t, s.updates)
++	require.True(t, strictCapturePresent(t, fresh.GetContainerNetnsPath()))
++}
++
++func TestPrivilegedStrictDeletedNetnsCannotBlockHealthySnapshotAndQueuedDEL(t *testing.T) {
++	testutils.PrivilegedTest(t)
++	s, _, _, address := liveZDSAckServer(t, false)
++	s.strictDeletedEndpointCleanup = true
++	s.endpointCache = make(map[uint16]*endpoint.Endpoint)
++	old, cleanupOld := createTestEndpoint(t, "snapshot-retired", 41)
++	healthy, cleanupHealthy := createTestEndpoint(t, "snapshot-healthy", 42)
++	defer cleanupHealthy()
++	s.SeedInitialSnapshot(old, healthy)
++	managed := deletedManagedEndpoint(t, old.GetID16(), old.K8sUID, old.GetContainerNetnsPath())
++	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
++	defer cancel()
++	result := make(chan error, 1)
++	go func() { result <- s.CleanupDeletedEndpointContext(ctx, managed) }()
++	require.Eventually(t, func() bool {
++		s.endpointCacheMutex.Lock()
++		defer s.endpointCacheMutex.Unlock()
++		return s.endpointCache[41] == nil
++	}, time.Second, time.Millisecond)
++	cleanupOld() // The old pinned netns is now really gone.
++	peer := dialZDSAckPeer(t, address)
++	require.NoError(t, peer.conn.SetDeadline(time.Now().Add(3*time.Second)))
++	sendHello(t, peer.conn)
++	request := &pb.WorkloadRequest{}
++	require.NoError(t, peer.readMsg(request))
++	require.Equal(t, healthy.K8sUID, request.GetAdd().Uid, "healthy ADD must progress despite absent retired namespace")
++	_, err := peer.conn.Write([]byte{0x0a, 0x00})
++	require.NoError(t, err)
++	request = &pb.WorkloadRequest{}
++	require.NoError(t, peer.readMsg(request))
++	require.NotNil(t, request.GetSnapshotSent())
++	_, err = peer.conn.Write([]byte{0x0a, 0x00})
++	require.NoError(t, err)
++	request = &pb.WorkloadRequest{}
++	require.NoError(t, peer.readMsg(request))
++	require.Equal(t, old.K8sUID, request.GetDel().Uid)
++	_, err = peer.conn.Write([]byte{0x0a, 0x00})
++	require.NoError(t, err)
++	require.NoError(t, <-result)
++}
++
++func TestPrivilegedStrictDeletedCleanupWaitsForNewACKAndSkipsOldDEL(t *testing.T) {
++	testutils.PrivilegedTest(t)
++	s := strictCleanupServer(t)
++	old := deletedManagedEndpoint(t, 51, "one-pod-two-sandboxes", "/removed-old-sandbox")
++	s.endpointCache[51] = acknowledgedView(51, old.K8sUID, old.GetContainerNetnsPath())
++	fresh, cleanup := createTestEndpoint(t, old.K8sUID, 52)
++	defer cleanup()
++	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
++	defer cancel()
++	enrolled := make(chan error, 1)
++	go func() { enrolled <- s.EnrollEndpointContext(ctx, fresh) }()
++	add := receiveCleanupUpdate(t, s) // New ADD holds the producer semaphore.
++	require.NotNil(t, add.request.GetAdd())
++	deleted := make(chan error, 1)
++	go func() { deleted <- s.CleanupDeletedEndpointContext(ctx, old) }()
++	require.Eventually(t, func() bool {
++		s.endpointCacheMutex.Lock()
++		defer s.endpointCacheMutex.Unlock()
++		return s.endpointCache[51] == nil
++	}, time.Second, time.Millisecond)
++	select {
++	case err := <-deleted:
++		t.Fatalf("cleanup must wait for the already active ADD before deciding DEL ownership: %v", err)
++	default:
++	}
++	request, err := exchangeCleanupUpdate(t, s, add, []byte{0x0a, 0x00})
++	require.NoError(t, err)
++	require.Equal(t, old.K8sUID, request.GetAdd().Uid)
++	require.NoError(t, <-enrolled)
++	require.NoError(t, <-deleted)
++	require.Empty(t, s.updates, "old sandbox cleanup must not enqueue DEL for the fresh same-UID owner")
++	require.Len(t, s.endpointCache, 1)
++	require.True(t, sameIncarnation(s.endpointCache[52], endpointIncarnation{52, fresh.K8sUID, fresh.GetContainerNetnsPath()}))
++	require.True(t, strictCapturePresent(t, fresh.GetContainerNetnsPath()))
++}
++
++func managedOwnerForMetadataView(t *testing.T, view *endpoint.Endpoint) *endpoint.Endpoint {
++	t.Helper()
++	logger := hivetest.Logger(t)
++	repo := policy.NewPolicyRepository(logger, cmtypes.DefaultClusterInfo, nil, nil, nil, nil, testpolicy.NewPolicyMetricsNoop())
++	owner, err := endpoint.NewEndpointFromChangeModel(endpoint.EndpointParams{Logger: logger, PolicyRepo: repo}, nil, nil,
++		&models.EndpointChangeRequest{ID: int64(view.GetID16()), K8sUID: view.K8sUID,
++			K8sNamespace: view.GetK8sNamespace(), K8sPodName: view.GetK8sPodName(),
++			ContainerNetnsPath: view.GetContainerNetnsPath()}, nil)
++	require.NoError(t, err)
++	owner.UpdateLogger(nil)
++	owner.SetPod(view.GetPod().DeepCopy())
++	require.True(t, owner.SetState(endpoint.StateWaitingForIdentity, "owned enrollment fixture"))
++	return owner
++}
++
++func disconnectManagedOwner(t *testing.T, owner *endpoint.Endpoint) {
++	t.Helper()
++	require.True(t, owner.SetState(endpoint.StateDisconnecting, "delete during ADD ACK wait"))
++	require.True(t, owner.SetState(endpoint.StateDisconnected, "managed delete completed"))
++}
++
++func TestPrivilegedStrictOwnedADDCannotReinsertDeletedOwnerWhileCleanupWaits(t *testing.T) {
++	testutils.PrivilegedTest(t)
++	s := strictCleanupServer(t)
++	view, cleanup := createTestEndpoint(t, "owned-delete-race", 71)
++	defer cleanup()
++	owner := managedOwnerForMetadataView(t, view)
++	workload, err := endpointToWorkload(view)
++	require.NoError(t, err)
++	// Existing acknowledged state makes the first-retirement synchronization
++	// observable without adding any production test hook.
++	s.endpointCache[view.GetID16()] = freezeAcknowledgedEndpoint(view, workload, view.GetContainerNetnsPath())
++	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
++	defer cancel()
++	enrolled := make(chan error, 1)
++	go func() { enrolled <- s.EnrollEndpointForOwnerContext(ctx, owner, view) }()
++	add := receiveCleanupUpdate(t, s) // Producer now holds the semaphore.
++	require.NotNil(t, add.request.GetAdd())
++	disconnectManagedOwner(t, owner)
++	require.NoError(t, ctx.Err(), "managed deletion must be tested with a still-live ADD caller")
++	deleted := make(chan error, 1)
++	go func() { deleted <- s.CleanupDeletedEndpointContext(ctx, owner) }()
++	require.Eventually(t, func() bool {
++		s.endpointCacheMutex.Lock()
++		defer s.endpointCacheMutex.Unlock()
++		return s.endpointCache[view.GetID16()] == nil
++	}, time.Second, time.Millisecond)
++	select {
++	case err := <-deleted:
++		t.Fatalf("cleanup must still be waiting for the active ADD producer: %v", err)
++	default:
++	}
++	// Actual seqpacket ACK after first retirement. Metadata view remains
++	// alive and ctx remains live; only the explicit managed owner is dead.
++	require.True(t, view.IsAlive())
++	_, err = exchangeCleanupUpdate(t, s, add, []byte{0x0a, 0x00})
++	require.NoError(t, err)
++	require.ErrorContains(t, <-enrolled, "disconnected during enrollment")
++	del := receiveCleanupUpdate(t, s)
++	require.Equal(t, owner.K8sUID, del.request.GetDel().Uid)
++	s.endpointCacheMutex.Lock()
++	require.Empty(t, s.endpointCache, "dead managed owner must not publish late private-view cache")
++	s.endpointCacheMutex.Unlock()
++	_, err = exchangeCleanupUpdate(t, s, del, []byte{0x0a, 0x00})
++	require.NoError(t, err)
++	require.NoError(t, <-deleted)
++	require.True(t, strictCapturePresent(t, view.GetContainerNetnsPath()))
++}
++
++func TestStrictDeletedCleanupRetiresExactIncarnationAgainAfterSemaphoreWait(t *testing.T) {
++	s := strictCleanupServer(t)
++	owner := deletedManagedEndpoint(t, 72, "same-incarnation", "/old-sandbox")
++	view := acknowledgedView(72, owner.K8sUID, owner.GetContainerNetnsPath())
++	s.endpointCache[72] = view
++	release, err := s.acquireEndpointOperation(t.Context())
++	require.NoError(t, err)
++	ctx, cancel := context.WithTimeout(t.Context(), time.Second)
++	defer cancel()
++	deleted := make(chan error, 1)
++	go func() { deleted <- s.CleanupDeletedEndpointContext(ctx, owner) }()
++	require.Eventually(t, func() bool {
++		s.endpointCacheMutex.Lock()
++		defer s.endpointCacheMutex.Unlock()
++		return s.endpointCache[72] == nil
++	}, time.Second, time.Millisecond)
++	// Models the exact historical private-view publication after phase 1.
++	// The actual owned enrollment path must reject it via the test above;
++	// the second retirement is independent defense against that cache race.
++	s.commitStrictEnrollment(t.Context(), view, view)
++	s.endpointCacheMutex.Lock()
++	require.Same(t, view, s.endpointCache[72])
++	s.endpointCacheMutex.Unlock()
++	release()
++	del := receiveCleanupUpdate(t, s)
++	s.endpointCacheMutex.Lock()
++	require.Empty(t, s.endpointCache, "second retirement must precede wire DEL and not depend on ACK")
++	s.endpointCacheMutex.Unlock()
++	request, err := exchangeCleanupUpdate(t, s, del, []byte{0x0a, 0x00})
++	require.NoError(t, err)
++	require.Equal(t, owner.K8sUID, request.GetDel().Uid)
++	require.NoError(t, <-deleted)
++	require.Empty(t, s.endpointCache)
++}
++
++func TestStrictOwnedEnrollmentRejectsMismatchedOwnerBeforeWire(t *testing.T) {
++	s := strictCleanupServer(t)
++	view := acknowledgedView(73, "view-uid", "/view-sandbox")
++	owner := managedOwnerForMetadataView(t, view)
++	wrong := acknowledgedView(74, "other-uid", "/other-sandbox")
++	require.ErrorContains(t, s.EnrollEndpointForOwnerContext(t.Context(), owner, wrong), "managed endpoint incarnation")
++	require.Empty(t, s.updates)
++	require.Empty(t, s.endpointCache)
++}
++
++func TestPrivilegedStrictManagedMissingUIDRetainsCaptureWithoutADD(t *testing.T) {
++	testutils.PrivilegedTest(t)
++	s := strictCleanupServer(t)
++	ep, cleanup := createTestEndpoint(t, "missing-cni-uid", 75)
++	defer cleanup()
++	ep.K8sUID = ""
++	require.ErrorContains(t, s.EnrollEndpointContext(t.Context(), ep), "immutable CNI UID")
++	require.True(t, strictCapturePresent(t, ep.GetContainerNetnsPath()), "managed retry must install capture before rejecting stale identity")
++	require.Empty(t, s.updates)
++	require.Empty(t, s.endpointCache)
++}
+diff --git a/pkg/ztunnel/zds/server.go b/pkg/ztunnel/zds/server.go
+index c8320f7d65..9f4ebeb6c9 100644
+--- a/pkg/ztunnel/zds/server.go
++++ b/pkg/ztunnel/zds/server.go
+@@ -169,6 +169,7 @@ type serverOut struct {
+ 	cell.Out
+ 	*Server
+ 	EndpointEnroller
++	EndpointDeletionCleaner
+ }
+ 
+ // EndpointEnroller allows enrolling and disenrolling endpoints to/from the ztunnel.
+@@ -184,8 +185,10 @@ type Server struct {
+ 	l      *net.UnixListener
+ 	logger *slog.Logger
+ 
+-	endpointCache      map[uint16]*endpoint.Endpoint
+-	endpointCacheMutex lock.Mutex
++	endpointCache                map[uint16]*endpoint.Endpoint
++	endpointCacheMutex           lock.Mutex
++	strictDeletedEndpointCleanup bool
++	endpointOperationGate        chan struct{}
+ 
+ 	updates               chan zdsUpdate // updates to send to ztunnel
+ 	initialSnapshotSeeded chan struct{}
+@@ -212,11 +215,12 @@ func newZDSServer(p serverParams) serverOut {
+ 	}
+ 	p.Metrics.Enable()
+ 	server := &Server{
+-		logger:                p.Logger,
+-		updates:               make(chan zdsUpdate, 100),
+-		endpointCache:         make(map[uint16]*endpoint.Endpoint),
+-		initialSnapshotSeeded: make(chan struct{}),
+-		metrics:               p.Metrics,
++		logger:                       p.Logger,
++		updates:                      make(chan zdsUpdate, 100),
++		endpointCache:                make(map[uint16]*endpoint.Endpoint),
++		initialSnapshotSeeded:        make(chan struct{}),
++		metrics:                      p.Metrics,
++		strictDeletedEndpointCleanup: p.Config.RequireMTLS,
+ 	}
+ 
+ 	zdsUnixAddr := defaultZDSUnixAddress
+@@ -262,8 +266,9 @@ func newZDSServer(p serverParams) serverOut {
+ 	})
+ 
+ 	out := serverOut{
+-		Server:           server,
+-		EndpointEnroller: server,
++		Server:                  server,
++		EndpointEnroller:        server,
++		EndpointDeletionCleaner: server,
+ 	}
+ 
+ 	return out
+@@ -427,10 +432,35 @@ func (s *Server) EnrollEndpoint(ep *endpoint.Endpoint) error {
+ // proxy acknowledgment. Cancellation also bounds waiting for a disconnected
+ // proxy or a full update queue; installed capture rules remain fail-closed.
+ func (s *Server) EnrollEndpointContext(ctx context.Context, ep *endpoint.Endpoint) error {
++	return s.EnrollEndpointForOwnerContext(ctx, ep, ep)
++}
++
++// EnrollEndpointForOwnerContext uses fresh private wire metadata while binding
++// the acknowledged cache entry to the managed endpoint's actual lifetime.
++func (s *Server) EnrollEndpointForOwnerContext(ctx context.Context, owner, ep *endpoint.Endpoint) error {
++	if owner == nil || ep == nil {
++		return fmt.Errorf("endpoint enrollment requires managed owner and wire metadata")
++	}
++	if s.strictDeletedEndpointCleanup && owner != ep {
++		ownerKey, err := incarnation(owner)
++		if err != nil || !sameIncarnation(ep, ownerKey) || owner.GetK8sNamespace() != ep.GetK8sNamespace() || owner.GetK8sPodName() != ep.GetK8sPodName() {
++			return fmt.Errorf("enrollment wire metadata does not match managed endpoint incarnation")
++		}
++	}
+ 	started := time.Now()
+ 	if err := ctx.Err(); err != nil {
+ 		return err
+ 	}
++	if s.strictDeletedEndpointCleanup {
++		release, err := s.acquireEndpointOperation(ctx)
++		if err != nil {
++			return err
++		}
++		defer release()
++		if !owner.IsAlive() {
++			return fmt.Errorf("cannot enroll disconnected endpoint %d", ep.GetID16())
++		}
++	}
+ 	s.logger.Info("enrolling endpoint to ztunnel", logfields.EndpointID, ep.GetID16())
+ 	s.metrics.EnrollmentTotal.Inc()
+ 
+@@ -471,6 +501,14 @@ func (s *Server) EnrollEndpointContext(ctx context.Context, ep *endpoint.Endpoin
+ 		)
+ 		return err
+ 	}
++	var acknowledged *endpoint.Endpoint
++	if s.strictDeletedEndpointCleanup {
++		if ep.K8sUID == "" || workload.Uid != ep.K8sUID {
++			s.metrics.EnrollmentFailures.WithLabelValues("uid_mismatch").Inc()
++			return fmt.Errorf("endpoint %d Pod metadata UID does not match immutable CNI UID", ep.GetID16())
++		}
++		acknowledged = freezeAcknowledgedEndpoint(ep, workload, netnsPath)
++	}
+ 
+ 	req := &pb.WorkloadRequest{
+ 		Payload: &pb.WorkloadRequest_Add{
+@@ -483,6 +521,10 @@ func (s *Server) EnrollEndpointContext(ctx context.Context, ep *endpoint.Endpoin
+ 		netnsPath: netnsPath,
+ 		errCh:     make(chan error, 1),
+ 		onAck: func() {
++			if s.strictDeletedEndpointCleanup {
++				s.commitStrictEnrollment(ctx, owner, acknowledged)
++				return
++			}
+ 			s.endpointCacheMutex.Lock()
+ 			s.endpointCache[ep.GetID16()] = ep
+ 			s.endpointCacheMutex.Unlock()
+@@ -493,6 +535,12 @@ func (s *Server) EnrollEndpointContext(ctx context.Context, ep *endpoint.Endpoin
+ 		s.metrics.EnrollmentFailures.WithLabelValues("send_failed").Inc()
+ 		return fmt.Errorf("sending update failed: %w", err)
+ 	}
++	if err := ctx.Err(); err != nil {
++		return err
++	}
++	if s.strictDeletedEndpointCleanup && !owner.IsAlive() {
++		return fmt.Errorf("endpoint %d disconnected during enrollment", ep.GetID16())
++	}
+ 
+ 	s.logger.Info("Endpoint enrollment acknowledged",
+ 		logfields.EndpointID, ep.GetID16(),
+@@ -527,58 +575,74 @@ func (s *Server) sendUpdateAndWaitForAck(ctx context.Context, update zdsUpdate)
+ }
+ 
+ func (s *Server) DisenrollEndpoint(ep *endpoint.Endpoint) error {
+-	s.logger.Info("disenrolling endpoint from ztunnel", logfields.EndpointID, ep.GetID16())
++	ctx, cancel := context.WithTimeout(context.Background(), defaultZDSAckTimeout)
++	defer cancel()
++	return s.DisenrollEndpointContext(ctx, ep)
++}
+ 
++// Live namespace unenrollment remains an unqualified lifecycle transition:
++// this preserves its existing remove-capture-before-ACK behavior. Do not use
++// this path for failed strict CNI creation or strict endpoint deletion.
++func (s *Server) DisenrollEndpointContext(ctx context.Context, ep *endpoint.Endpoint) error {
++	if err := ctx.Err(); err != nil {
++		return err
++	}
++	var key endpointIncarnation
++	if s.strictDeletedEndpointCleanup {
++		var err error
++		key, err = incarnation(ep)
++		if err != nil {
++			return err
++		}
++		release, err := s.acquireEndpointOperation(ctx)
++		if err != nil {
++			return err
++		}
++		defer release()
++	}
++	s.logger.Info("disenrolling endpoint from ztunnel", logfields.EndpointID, ep.GetID16())
+ 	ns, err := netns.OpenPinned(ep.GetContainerNetnsPath())
+ 	if err != nil {
+-		s.logger.Error("failed to open netns file",
+-			logfields.EndpointID, ep.GetID16(),
+-			logfields.Error, err,
+-		)
+-		return err
++		return fmt.Errorf("opening namespace for live unenrollment: %w", err)
+ 	}
+ 	defer ns.Close()
+-
+-	if err = ns.Do(func() error {
++	if err := ctx.Err(); err != nil {
++		return err
++	}
++	if err := ns.Do(func() error {
+ 		return iptables.DeleteInPodRules(s.logger, option.Config.EnableIPv4, option.Config.EnableIPv6)
+ 	}); err != nil {
+ 		return fmt.Errorf("unable to remove iptable rules for ztunnel inpod mode: %w", err)
+ 	}
+-
+-	pod := ep.GetPod()
+-	if pod == nil {
+-		s.logger.Error("endpoint has no pod metadata, cannot disenroll",
+-			logfields.EndpointID, ep.GetID16(),
+-		)
+-		return fmt.Errorf("endpoint %d has no pod metadata", ep.GetID16())
+-	}
+-
+-	req := &pb.WorkloadRequest{
+-		Payload: &pb.WorkloadRequest_Del{
+-			Del: &pb.DelWorkload{
+-				Uid: string(pod.GetUID()),
+-			},
+-		},
++	var uid string
++	if s.strictDeletedEndpointCleanup {
++		uid = key.uid
++	} else {
++		pod := ep.GetPod()
++		if pod == nil {
++			return fmt.Errorf("endpoint %d has no pod metadata", ep.GetID16())
++		}
++		uid = string(pod.GetUID())
+ 	}
+-
+ 	update := zdsUpdate{
+-		request:   req,
+-		netnsPath: "",
+-		errCh:     make(chan error, 1),
++		request: &pb.WorkloadRequest{Payload: &pb.WorkloadRequest_Del{Del: &pb.DelWorkload{Uid: uid}}},
++		errCh:   make(chan error, 1),
+ 		onAck: func() {
+ 			s.endpointCacheMutex.Lock()
+-			delete(s.endpointCache, ep.GetID16())
+-			s.endpointCacheMutex.Unlock()
++			defer s.endpointCacheMutex.Unlock()
++			if s.strictDeletedEndpointCleanup {
++				if ctx.Err() == nil && sameIncarnation(s.endpointCache[key.id], key) {
++					delete(s.endpointCache, key.id)
++				}
++			} else {
++				delete(s.endpointCache, ep.GetID16())
++			}
+ 		},
+ 	}
+-
+-	ctx, cancel := context.WithTimeout(context.Background(), defaultZDSAckTimeout)
+-	defer cancel()
+ 	if err := s.sendUpdateAndWaitForAck(ctx, update); err != nil {
+ 		return fmt.Errorf("sending update failed: %w", err)
+ 	}
+-
+-	return nil
++	return ctx.Err()
+ }
+ 
+ // SeedInitialSnapshot seeds the initial snapshot that will be sent to each new ztunnel connection.
+@@ -591,6 +655,28 @@ func (s *Server) SeedInitialSnapshot(eps ...*endpoint.Endpoint) {
+ 
+ 	// Add all endpoints to the cache
+ 	for _, ep := range eps {
++		if s.strictDeletedEndpointCleanup {
++			// A snapshot list can have been captured before managed deletion.
++			// Check lifetime under the retirement mutex so it cannot reinsert
++			// an endpoint whose deletion callback already retired its cache.
++			if !ep.IsAlive() {
++				continue
++			}
++			// An acknowledged owner takes precedence over a bootstrap list.
++			if s.endpointCache[ep.GetID16()] != nil {
++				continue
++			}
++			ownedUID := false
++			for _, cached := range s.endpointCache {
++				if ep.K8sUID != "" && cached.K8sUID == ep.K8sUID {
++					ownedUID = true
++					break
++				}
++			}
++			if ownedUID {
++				continue
++			}
++		}
+ 		s.endpointCache[ep.GetID16()] = ep
+ 	}
+ 
+@@ -610,14 +696,24 @@ func (s *Server) sendInitialSnapshot(zc *ztunnelConn) error {
+ 	// Network ACKs must not hold the cache mutex and prevent other callers
+ 	// from observing their own cancellation deadlines.
+ 	for _, ep := range endpoints {
++		if !s.strictSnapshotStillDesired(ep) {
++			continue
++		}
+ 		ns, err := netns.OpenPinned(ep.GetContainerNetnsPath())
+ 		if err != nil {
++			if !s.strictSnapshotStillDesired(ep) {
++				continue
++			}
+ 			s.logger.Error("failed to open netns file",
+ 				logfields.EndpointID, ep.GetID16(),
+ 				logfields.Error, err,
+ 			)
+ 			return err
+ 		}
++		if !s.strictSnapshotStillDesired(ep) {
++			ns.Close()
++			continue
++		}
+ 
+ 		if err = ns.Do(func() error {
+ 			return iptables.CreateInPodRules(s.logger, option.Config.EnableIPv4, option.Config.EnableIPv6)
+@@ -626,6 +722,9 @@ func (s *Server) sendInitialSnapshot(zc *ztunnelConn) error {
+ 			return fmt.Errorf("unable to setup iptable rules for ztunnel inpod mode: %w", err)
+ 		}
+ 		ns.Close()
++		if !s.strictSnapshotStillDesired(ep) {
++			continue
++		}
+ 
+ 		workload, err := endpointToWorkload(ep)
+ 		if err != nil {
+@@ -642,6 +741,9 @@ func (s *Server) sendInitialSnapshot(zc *ztunnelConn) error {
+ 			},
+ 		}
+ 
++		if !s.strictSnapshotStillDesired(ep) {
++			continue
++		}
+ 		if err := zc.sendAndWaitForAck(req, ep.GetContainerNetnsPath()); err != nil {
+ 			return fmt.Errorf("failed to send endpoint message: %w", err)
+ 		}
+-- 
+2.55.0
+
