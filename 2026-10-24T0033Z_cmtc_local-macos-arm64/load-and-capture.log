@@ -1,0 +1,25 @@
+2026-10-24T00:33:26Z start-real-load
+job.batch/cmtc-load created
+pod/cmtc-load-sxf5d condition met
+job.batch/cmtc-load created
+pod/cmtc-load-jjx2n condition met
+job.batch/cmtc-load created
+pod/cmtc-load-k76xf condition met
+CMTC_CAPTURE_IMAGE=cmtc-capture:dev bash scripts/lab/capture.sh
+01-security-overview: settled 6s; panels=5; "No data"=3 [Pods Protected | Cluster Ready | Mtls Handshakes Total]; first: Namespaces Enrolled | Namespaces Enrolled | Pods Protected | Cluster Ready | Mtls Handshakes Total — render passed; feature evidence BLOCKED: Pods Protected | Cluster Ready | Mtls Handshakes Total
+02-namespace-enrollment: settled 6s; panels=5; "No data"=2 [Namespaces Excluded | Namespace Label Drift Total]; first: Namespaces Eligible | Namespaces Eligible | Namespaces Enrolled | Namespaces Excluded | Namespace Label Drift Total — render passed; feature evidence BLOCKED: Namespaces Excluded | Namespace Label Drift Total
+03-pod-node-enforcement: settled 6s; panels=5; "No data"=4 [Pods Protected | Pods Protected | Pods Pending | Pods Enforcement Failed]; first: Pods Protected | Pods Protected | Pods Pending | Pods Enforcement Failed | Node Agent Ready — render passed; feature evidence BLOCKED: Pods Protected | Pods Protected | Pods Pending | Pods Enforcement Failed
+04-mtls-performance: settled 6s; panels=5; "No data"=5 [Mtls Handshakes Total | Mtls Handshakes Total | Mtls Active Connections | Mtls Identity Validation Failures Total | Remote Identity Cache Misses Total]; first: Mtls Handshakes Total | Mtls Handshakes Total | Mtls Active Connections | Mtls Identity Validation Failures Total | Remote Identity Cache Misses Total — render passed; feature evidence BLOCKED: Mtls Handshakes Total | Mtls Handshakes Total | Mtls Active Connections | Mtls Identity Validation Failures Total | Remote Identity Cache Misses Total
+05-ca-trust-rotation: settled 6s; panels=5; "No data"=5 [Trust Bundle Ready | Trust Bundle Ready | Spire Ready | Issuer Ready | Certificate Rotation Failures Total]; first: Trust Bundle Ready | Trust Bundle Ready | Spire Ready | Issuer Ready | Certificate Rotation Failures Total — render passed; feature evidence BLOCKED: Trust Bundle Ready | Trust Bundle Ready | Spire Ready | Issuer Ready | Certificate Rotation Failures Total
+06-network-encryption: settled 6s; panels=5; "No data"=5 [Transport Compatibility Ready | Transport Compatibility Ready | Dual Encryption Probe Success | Transport Encryption Failures Total | Mtu Validation Failures Total]; first: Transport Compatibility Ready | Transport Compatibility Ready | Dual Encryption Probe Success | Transport Encryption Failures Total | Mtu Validation Failures Total — render passed; feature evidence BLOCKED: Transport Compatibility Ready | Transport Compatibility Ready | Dual Encryption Probe Success | Transport Encryption Failures Total | Mtu Validation Failures Total
+07-security-violations: settled 6s; panels=5; "No data"=5 [Mtls Identity Validation Failures Total | Mtls Identity Validation Failures Total | Mtls Authorization Denials Total | Plaintext Bypass Detected Total | Namespace Policy Conflicts Total]; first: Mtls Identity Validation Failures Total | Mtls Identity Validation Failures Total | Mtls Authorization Denials Total | Plaintext Bypass Detected Total | Namespace Policy Conflicts Total — render passed; feature evidence BLOCKED: Mtls Identity Validation Failures Total | Mtls Identity Validation Failures Total | Mtls Authorization Denials Total | Plaintext Bypass Detected Total | Namespace Policy Conflicts Total
+08-control-plane-safety: settled 6s; panels=5; "No data"=5 [Platform Dependency Healthy | Platform Dependency Healthy | Apiserver Probe Success | Hostnetwork Pods Total | Rollout Aborted Total]; first: Platform Dependency Healthy | Platform Dependency Healthy | Apiserver Probe Success | Hostnetwork Pods Total | Rollout Aborted Total — render passed; feature evidence BLOCKED: Platform Dependency Healthy | Platform Dependency Healthy | Apiserver Probe Success | Hostnetwork Pods Total | Rollout Aborted Total
+09-operator-agents: settled 6s; panels=5; "No data"=3 [Ztunnel Ready | Reconcile Errors Total | Node Config Drift Total]; first: Node Agent Ready | Node Agent Ready | Ztunnel Ready | Reconcile Errors Total | Node Config Drift Total — render passed; feature evidence BLOCKED: Ztunnel Ready | Reconcile Errors Total | Node Config Drift Total
+cmtc-observe-lab: settled 6s; panels=6; "No data"=0; first: Selected namespaces — intent only | Node agents reporting inventory | Workload enforcement available — 0 means unavailable | Namespace decisions | Pod inventory — not protection — expectations met
+application-global-service: settled 0s; {"cluster": "poc2", "message": "served by the poc2 rebel base"} — expectations met
+job.batch/cmtc-load condition met
+job.batch/cmtc-load condition met
+job.batch/cmtc-load condition met
+PASS: measured successful local policy and cross-cluster traffic through published fork images
+bash scripts/lab/evidence.sh
+2026-10-24T00:39:37Z local-load-and-capture-passed

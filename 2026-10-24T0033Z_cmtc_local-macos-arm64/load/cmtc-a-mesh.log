@@ -1,0 +1,42 @@
+{"ts":1792802010.988694,"level":"info","r":1,"file":"scli.go","line":124,"msg":"Starting","command":"Φορτίο","version":"1.75.3 h1:2et+WGrx6FHBEyQb2kYz07q+/AXzHIio7amwuDDn6vM= go1.25.14 arm64 linux","go-max-procs":8}
+Fortio 1.75.3 running at 10 queries per second, 8->8 procs, for 6m0s: http://rebel-base.mesh-example/
+{"ts":1792802010.989060,"level":"info","r":1,"file":"httprunner.go","line":121,"msg":"Starting http test","run":0,"url":"http://rebel-base.mesh-example/","threads":2,"qps":"10.0","warmup":"parallel","conn-reuse":""}
+Starting at 10 qps with 2 thread(s) [gomax 8] for 6m0s : 1800 calls each (total 3600)
+{"ts":1792802210.801112,"level":"info","r":37,"file":"http_client.go","line":1119,"msg":"Closing dead socket (err at first read)","err":"EOF","thread":0,"run":0}
+{"ts":1792802210.901735,"level":"info","r":38,"file":"http_client.go","line":1119,"msg":"Closing dead socket (err at first read)","err":"EOF","thread":1,"run":0}
+{"ts":1792802370.788421,"level":"info","r":37,"file":"periodic.go","line":882,"msg":"T000 ended after 6m0.000484106s : 1800 calls. qps=4.999993276314597"}
+{"ts":1792802370.888950,"level":"info","r":38,"file":"periodic.go","line":882,"msg":"T001 ended after 6m0.001015924s : 1800 calls. qps=4.999985889984263"}
+Ended after 6m0.10105259s : 3600 calls. qps=9.9972
+{"ts":1792802370.889009,"level":"info","r":1,"file":"periodic.go","line":598,"msg":"Run ended","run":0,"elapsed":360101052590,"calls":3600,"qps":9.997193771324099}
+Sleep times : count 3598 avg 0.19921159 +/- 0.0003396 min 0.197805271 max 0.1999357 sum 716.763293
+Aggregated Function Time : count 3600 avg 0.00028769015 +/- 8.122e-05 min 0.000145421 max 0.002245986 sum 1.03568452
+# range, mid point, percentile, count
+>= 0.000145421 <= 0.001 , 0.00057271 , 99.92, 3597
+> 0.001 <= 0.002 , 0.0015 , 99.97, 2
+> 0.002 <= 0.00224599 , 0.00212299 , 100.00, 1
+# target 50% 0.000572948
+# target 75% 0.000786831
+# target 90% 0.00091516
+# target 99% 0.000992158
+# target 99.9% 0.000999857
+Error cases : no data
+# Socket and IP used for each connection:
+[0]   2 socket used, resolved to 10.11.159.176:80, connection timing : count 2 avg 0.00014144 +/- 2.132e-05 min 0.000120121 max 0.000162759 sum 0.00028288
+[1]   2 socket used, resolved to 10.11.159.176:80, connection timing : count 2 avg 0.0001173075 +/- 9.233e-06 min 0.000108075 max 0.00012654 sum 0.000234615
+Connection time histogram (s) : count 4 avg 0.00012937375 +/- 2.038e-05 min 0.000108075 max 0.000162759 sum 0.000517495
+# range, mid point, percentile, count
+>= 0.000108075 <= 0.000162759 , 0.000135417 , 100.00, 4
+# target 50% 0.000126303
+# target 75% 0.000144531
+# target 90% 0.000155468
+# target 99% 0.00016203
+# target 99.9% 0.000162686
+Sockets used: 4 (for perfect keepalive, would be 2)
+Uniform: true, Jitter: false, Catchup allowed: false
+IP addresses distribution:
+10.11.159.176:80: 4
+Code 200 : 3600 (100.0 %)
+Response Header Sizes : count 3600 avg 235.99722 +/- 0.1178 min 231 max 236 sum 849590
+Response Body/Total Sizes : count 3600 avg 299.99722 +/- 0.1178 min 295 max 300 sum 1079990
+All done 3600 calls (plus 2 warmup) 0.288 ms avg, 10.0 qps
+Successfully wrote 3709 bytes of Json data to /results/fortio.json

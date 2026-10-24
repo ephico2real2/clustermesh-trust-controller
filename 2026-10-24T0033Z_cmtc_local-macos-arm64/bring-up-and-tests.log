@@ -1,0 +1,599 @@
+2026-10-24T00:24:30Z bootstrap
+.tmp/bin/kind: OK
+.tmp/bin/kubectl: OK
+.tmp/downloads/cilium.tgz: OK
+.tmp/downloads/helm.tgz: OK
+2026-10-24T00:24:38Z build-cmtc
+docker build -t cmtc:dev .
+#0 building with "default" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile: 611B done
+#1 DONE 0.0s
+
+#2 [internal] load metadata for docker.io/library/golang:1.26.10
+#2 ...
+
+#3 [internal] load metadata for gcr.io/distroless/static-debian13:nonroot
+#3 DONE 0.5s
+
+#2 [internal] load metadata for docker.io/library/golang:1.26.10
+#2 DONE 0.8s
+
+#4 [internal] load .dockerignore
+#4 transferring context: 84B done
+#4 DONE 0.0s
+
+#5 [internal] load build context
+#5 transferring context: 47.63kB done
+#5 DONE 0.0s
+
+#6 [stage-1 1/3] FROM gcr.io/distroless/static-debian13:nonroot@sha256:18f4cc26c9ffa7f20a359298be7deadac5c607c8e03a02b8119f1a5fc2f82c99
+#6 resolve gcr.io/distroless/static-debian13:nonroot@sha256:18f4cc26c9ffa7f20a359298be7deadac5c607c8e03a02b8119f1a5fc2f82c99 0.0s done
+#6 DONE 0.1s
+
+#7 [build 1/9] FROM docker.io/library/golang:1.26.10@sha256:672c944cfd07599b5f1bb179869270cdc94c6254e41db4d431259693cb286b82
+#7 resolve docker.io/library/golang:1.26.10@sha256:672c944cfd07599b5f1bb179869270cdc94c6254e41db4d431259693cb286b82 0.0s done
+#7 sha256:6514641cbb0ea539391c0e071704847bc61015494f8052422126db6bbc4ea911 126B / 126B 0.1s done
+#7 sha256:4f4fb700ef54461cfa02571ae0db9a0dc1e0cdb5577484a6d75e68dc38e8acc1 32B / 32B 0.1s done
+#7 sha256:b2cfc367cb90bd1944554d9dcbd0ba1ae2c992ad35a1659813c2e139a81d0e48 0B / 64.25MB 0.2s
+#7 sha256:4ae129dc3d9f3064df08f0e67970f2ed21949ffcf88dffaa4bc6c46e74627140 0B / 98.59MB 0.2s
+#7 sha256:6fb30108d3afde03433416a48caa9604703eb8530a12c943ec11a1e46a4d84a9 0B / 25.04MB 0.2s
+#7 sha256:3b7d3237c24572d428cffa50bed9ee6a1844db67c96c4f566bd3a67853d3c223 0B / 67.63MB 0.2s
+#7 sha256:4ae129dc3d9f3064df08f0e67970f2ed21949ffcf88dffaa4bc6c46e74627140 6.29MB / 98.59MB 0.5s
+#7 sha256:3b7d3237c24572d428cffa50bed9ee6a1844db67c96c4f566bd3a67853d3c223 6.29MB / 67.63MB 0.5s
+#7 sha256:6fb30108d3afde03433416a48caa9604703eb8530a12c943ec11a1e46a4d84a9 2.10MB / 25.04MB 0.6s
+#7 sha256:4ae129dc3d9f3064df08f0e67970f2ed21949ffcf88dffaa4bc6c46e74627140 13.63MB / 98.59MB 0.8s
+#7 sha256:6fb30108d3afde03433416a48caa9604703eb8530a12c943ec11a1e46a4d84a9 4.19MB / 25.04MB 0.8s
+#7 sha256:3b7d3237c24572d428cffa50bed9ee6a1844db67c96c4f566bd3a67853d3c223 12.58MB / 67.63MB 0.8s
+#7 ...
+
+#6 [stage-1 1/3] FROM gcr.io/distroless/static-debian13:nonroot@sha256:18f4cc26c9ffa7f20a359298be7deadac5c607c8e03a02b8119f1a5fc2f82c99
+#6 sha256:5689407c3340e75a085703d3366e55b6105152a2574d971cb884f24228292c1d 142.00kB / 142.00kB 0.4s done
+#6 sha256:ebddc55facdc6b1f7e0f30816a5fc7cc62f38abdf76c0a8b0a0ce52085754795 311B / 311B 0.2s done
+#6 sha256:b839dfae01f66e15c6a8b63520557ed315bdfe036342fa7a0c537259f10d7a9a 351B / 351B 0.2s done
+#6 sha256:dd64bf2dd177757451a98fcdc999a339c35dee5d9872d8f4dc69c8f3c4dd0112 80B / 80B 0.2s done
+#6 sha256:52630fc75a18675c530ed9eba5f55eca09b03e91bd5bc15307918bbc1a7e7296 162B / 162B 0.1s done
+#6 sha256:3214acf345c0cc6bbdb56b698a41ccdefc624a09d6beb0d38b5de0b2303ecaf4 123B / 123B 0.1s done
+#6 sha256:7c12895b777bcaa8ccae0605b4de635b68fc32d60fa08f421dc3818bf55ee212 188B / 188B 0.2s done
+#6 sha256:2780920e5dbfbe103d03a583ed75345306e572ec5a48cb10361f046767d9f29a 67B / 67B 0.1s done
+#6 sha256:617b009a71d625ef77982b400cb9939dd5ed9809ebf50681a0520b7c08c0ca89 289.43kB / 289.43kB 0.3s done
+#6 sha256:a99dd1dd5eaf3e2099256f1a75c8e4c02a1d3a81b8e2bfd1735b1dd166b68a12 256.69kB / 256.69kB 0.4s done
+#6 sha256:d6b1b89eccacc15c2420b2776d72c1dae334a00805ed9af54bf2f71e4d536f28 32.09kB / 32.09kB 0.3s done
+#6 sha256:c172f21841dff4c8cf45cde46589c1c2616cefe7e819965e92e6d3475c428aa0 12.68kB / 12.68kB 0.1s done
+#6 sha256:401d177fd1e8a1e0d7a48139788d026e9a2e919ccb122bedd110ac7cf351f53e 124.50kB / 124.50kB 0.3s done
+#6 extracting sha256:401d177fd1e8a1e0d7a48139788d026e9a2e919ccb122bedd110ac7cf351f53e 0.0s done
+#6 extracting sha256:c172f21841dff4c8cf45cde46589c1c2616cefe7e819965e92e6d3475c428aa0 done
+#6 extracting sha256:617b009a71d625ef77982b400cb9939dd5ed9809ebf50681a0520b7c08c0ca89 0.0s done
+#6 extracting sha256:a99dd1dd5eaf3e2099256f1a75c8e4c02a1d3a81b8e2bfd1735b1dd166b68a12 0.0s done
+#6 DONE 1.0s
+
+#7 [build 1/9] FROM docker.io/library/golang:1.26.10@sha256:672c944cfd07599b5f1bb179869270cdc94c6254e41db4d431259693cb286b82
+#7 ...
+
+#6 [stage-1 1/3] FROM gcr.io/distroless/static-debian13:nonroot@sha256:18f4cc26c9ffa7f20a359298be7deadac5c607c8e03a02b8119f1a5fc2f82c99
+#6 extracting sha256:d6b1b89eccacc15c2420b2776d72c1dae334a00805ed9af54bf2f71e4d536f28 done
+#6 extracting sha256:2780920e5dbfbe103d03a583ed75345306e572ec5a48cb10361f046767d9f29a done
+#6 extracting sha256:7c12895b777bcaa8ccae0605b4de635b68fc32d60fa08f421dc3818bf55ee212 done
+#6 extracting sha256:3214acf345c0cc6bbdb56b698a41ccdefc624a09d6beb0d38b5de0b2303ecaf4 done
+#6 extracting sha256:52630fc75a18675c530ed9eba5f55eca09b03e91bd5bc15307918bbc1a7e7296 done
+#6 extracting sha256:dd64bf2dd177757451a98fcdc999a339c35dee5d9872d8f4dc69c8f3c4dd0112 done
+#6 extracting sha256:b839dfae01f66e15c6a8b63520557ed315bdfe036342fa7a0c537259f10d7a9a done
+#6 extracting sha256:ebddc55facdc6b1f7e0f30816a5fc7cc62f38abdf76c0a8b0a0ce52085754795 done
+#6 extracting sha256:5689407c3340e75a085703d3366e55b6105152a2574d971cb884f24228292c1d done
+#6 DONE 1.1s
+
+#7 [build 1/9] FROM docker.io/library/golang:1.26.10@sha256:672c944cfd07599b5f1bb179869270cdc94c6254e41db4d431259693cb286b82
+#7 sha256:b2cfc367cb90bd1944554d9dcbd0ba1ae2c992ad35a1659813c2e139a81d0e48 5.24MB / 64.25MB 1.1s
+#7 sha256:4ae129dc3d9f3064df08f0e67970f2ed21949ffcf88dffaa4bc6c46e74627140 19.92MB / 98.59MB 1.1s
+#7 sha256:6fb30108d3afde03433416a48caa9604703eb8530a12c943ec11a1e46a4d84a9 6.29MB / 25.04MB 1.1s
+#7 sha256:3b7d3237c24572d428cffa50bed9ee6a1844db67c96c4f566bd3a67853d3c223 19.92MB / 67.63MB 1.1s
+#7 sha256:4ae129dc3d9f3064df08f0e67970f2ed21949ffcf88dffaa4bc6c46e74627140 27.26MB / 98.59MB 1.4s
+#7 sha256:6fb30108d3afde03433416a48caa9604703eb8530a12c943ec11a1e46a4d84a9 9.44MB / 25.04MB 1.4s
+#7 sha256:6fb30108d3afde03433416a48caa9604703eb8530a12c943ec11a1e46a4d84a9 11.53MB / 25.04MB 1.5s
+#7 sha256:3b7d3237c24572d428cffa50bed9ee6a1844db67c96c4f566bd3a67853d3c223 26.21MB / 67.63MB 1.4s
+#7 sha256:b2cfc367cb90bd1944554d9dcbd0ba1ae2c992ad35a1659813c2e139a81d0e48 10.49MB / 64.25MB 1.7s
+#7 sha256:4ae129dc3d9f3064df08f0e67970f2ed21949ffcf88dffaa4bc6c46e74627140 33.55MB / 98.59MB 1.7s
+#7 sha256:6fb30108d3afde03433416a48caa9604703eb8530a12c943ec11a1e46a4d84a9 14.68MB / 25.04MB 1.8s
+#7 sha256:3b7d3237c24572d428cffa50bed9ee6a1844db67c96c4f566bd3a67853d3c223 31.46MB / 67.63MB 1.7s
+#7 sha256:6fb30108d3afde03433416a48caa9604703eb8530a12c943ec11a1e46a4d84a9 17.83MB / 25.04MB 2.0s
+#7 sha256:b2cfc367cb90bd1944554d9dcbd0ba1ae2c992ad35a1659813c2e139a81d0e48 15.73MB / 64.25MB 2.1s
+#7 sha256:4ae129dc3d9f3064df08f0e67970f2ed21949ffcf88dffaa4bc6c46e74627140 39.85MB / 98.59MB 2.1s
+#7 sha256:6fb30108d3afde03433416a48caa9604703eb8530a12c943ec11a1e46a4d84a9 19.92MB / 25.04MB 2.1s
+#7 sha256:3b7d3237c24572d428cffa50bed9ee6a1844db67c96c4f566bd3a67853d3c223 36.70MB / 67.63MB 2.0s
+#7 sha256:6fb30108d3afde03433416a48caa9604703eb8530a12c943ec11a1e46a4d84a9 22.02MB / 25.04MB 2.3s
+#7 sha256:b2cfc367cb90bd1944554d9dcbd0ba1ae2c992ad35a1659813c2e139a81d0e48 19.92MB / 64.25MB 2.4s
+#7 sha256:4ae129dc3d9f3064df08f0e67970f2ed21949ffcf88dffaa4bc6c46e74627140 45.09MB / 98.59MB 2.4s
+#7 sha256:6fb30108d3afde03433416a48caa9604703eb8530a12c943ec11a1e46a4d84a9 24.12MB / 25.04MB 2.4s
+#7 sha256:3b7d3237c24572d428cffa50bed9ee6a1844db67c96c4f566bd3a67853d3c223 40.89MB / 67.63MB 2.3s
+#7 sha256:6fb30108d3afde03433416a48caa9604703eb8530a12c943ec11a1e46a4d84a9 25.04MB / 25.04MB 2.4s done
+#7 sha256:229b15d702220d963eaa48bcd8eab0ee7aa8f52996309c59cf44fce7deec3869 0B / 49.76MB 0.2s
+#7 sha256:b2cfc367cb90bd1944554d9dcbd0ba1ae2c992ad35a1659813c2e139a81d0e48 25.17MB / 64.25MB 2.7s
+#7 sha256:4ae129dc3d9f3064df08f0e67970f2ed21949ffcf88dffaa4bc6c46e74627140 50.33MB / 98.59MB 2.7s
+#7 sha256:3b7d3237c24572d428cffa50bed9ee6a1844db67c96c4f566bd3a67853d3c223 46.14MB / 67.63MB 2.6s
+#7 sha256:229b15d702220d963eaa48bcd8eab0ee7aa8f52996309c59cf44fce7deec3869 4.19MB / 49.76MB 0.5s
+#7 sha256:b2cfc367cb90bd1944554d9dcbd0ba1ae2c992ad35a1659813c2e139a81d0e48 29.36MB / 64.25MB 3.0s
+#7 sha256:3b7d3237c24572d428cffa50bed9ee6a1844db67c96c4f566bd3a67853d3c223 50.33MB / 67.63MB 2.9s
+#7 sha256:229b15d702220d963eaa48bcd8eab0ee7aa8f52996309c59cf44fce7deec3869 7.34MB / 49.76MB 0.6s
+#7 sha256:4ae129dc3d9f3064df08f0e67970f2ed21949ffcf88dffaa4bc6c46e74627140 56.62MB / 98.59MB 3.2s
+#7 sha256:b2cfc367cb90bd1944554d9dcbd0ba1ae2c992ad35a1659813c2e139a81d0e48 33.55MB / 64.25MB 3.3s
+#7 sha256:3b7d3237c24572d428cffa50bed9ee6a1844db67c96c4f566bd3a67853d3c223 55.57MB / 67.63MB 3.2s
+#7 sha256:229b15d702220d963eaa48bcd8eab0ee7aa8f52996309c59cf44fce7deec3869 11.53MB / 49.76MB 0.9s
+#7 sha256:4ae129dc3d9f3064df08f0e67970f2ed21949ffcf88dffaa4bc6c46e74627140 61.87MB / 98.59MB 3.5s
+#7 sha256:b2cfc367cb90bd1944554d9dcbd0ba1ae2c992ad35a1659813c2e139a81d0e48 38.80MB / 64.25MB 3.6s
+#7 sha256:3b7d3237c24572d428cffa50bed9ee6a1844db67c96c4f566bd3a67853d3c223 59.77MB / 67.63MB 3.5s
+#7 sha256:229b15d702220d963eaa48bcd8eab0ee7aa8f52996309c59cf44fce7deec3869 15.73MB / 49.76MB 1.2s
+#7 sha256:229b15d702220d963eaa48bcd8eab0ee7aa8f52996309c59cf44fce7deec3869 18.87MB / 49.76MB 1.4s
+#7 sha256:b2cfc367cb90bd1944554d9dcbd0ba1ae2c992ad35a1659813c2e139a81d0e48 42.99MB / 64.25MB 3.9s
+#7 sha256:4ae129dc3d9f3064df08f0e67970f2ed21949ffcf88dffaa4bc6c46e74627140 68.16MB / 98.59MB 3.9s
+#7 sha256:3b7d3237c24572d428cffa50bed9ee6a1844db67c96c4f566bd3a67853d3c223 65.01MB / 67.63MB 3.8s
+#7 sha256:3b7d3237c24572d428cffa50bed9ee6a1844db67c96c4f566bd3a67853d3c223 67.63MB / 67.63MB 3.9s done
+#7 sha256:229b15d702220d963eaa48bcd8eab0ee7aa8f52996309c59cf44fce7deec3869 24.12MB / 49.76MB 1.7s
+#7 sha256:b2cfc367cb90bd1944554d9dcbd0ba1ae2c992ad35a1659813c2e139a81d0e48 48.23MB / 64.25MB 4.2s
+#7 sha256:4ae129dc3d9f3064df08f0e67970f2ed21949ffcf88dffaa4bc6c46e74627140 73.40MB / 98.59MB 4.2s
+#7 sha256:229b15d702220d963eaa48bcd8eab0ee7aa8f52996309c59cf44fce7deec3869 28.31MB / 49.76MB 2.0s
+#7 sha256:b2cfc367cb90bd1944554d9dcbd0ba1ae2c992ad35a1659813c2e139a81d0e48 53.48MB / 64.25MB 4.5s
+#7 sha256:4ae129dc3d9f3064df08f0e67970f2ed21949ffcf88dffaa4bc6c46e74627140 78.64MB / 98.59MB 4.5s
+#7 sha256:229b15d702220d963eaa48bcd8eab0ee7aa8f52996309c59cf44fce7deec3869 31.46MB / 49.76MB 2.1s
+#7 sha256:b2cfc367cb90bd1944554d9dcbd0ba1ae2c992ad35a1659813c2e139a81d0e48 58.72MB / 64.25MB 4.8s
+#7 sha256:4ae129dc3d9f3064df08f0e67970f2ed21949ffcf88dffaa4bc6c46e74627140 84.93MB / 98.59MB 4.8s
+#7 sha256:229b15d702220d963eaa48bcd8eab0ee7aa8f52996309c59cf44fce7deec3869 35.65MB / 49.76MB 2.4s
+#7 sha256:b2cfc367cb90bd1944554d9dcbd0ba1ae2c992ad35a1659813c2e139a81d0e48 64.25MB / 64.25MB 5.1s done
+#7 sha256:4ae129dc3d9f3064df08f0e67970f2ed21949ffcf88dffaa4bc6c46e74627140 90.14MB / 98.59MB 5.1s
+#7 sha256:229b15d702220d963eaa48bcd8eab0ee7aa8f52996309c59cf44fce7deec3869 40.89MB / 49.76MB 2.7s
+#7 sha256:229b15d702220d963eaa48bcd8eab0ee7aa8f52996309c59cf44fce7deec3869 44.04MB / 49.76MB 2.9s
+#7 sha256:4ae129dc3d9f3064df08f0e67970f2ed21949ffcf88dffaa4bc6c46e74627140 96.47MB / 98.59MB 5.4s
+#7 sha256:229b15d702220d963eaa48bcd8eab0ee7aa8f52996309c59cf44fce7deec3869 47.19MB / 49.76MB 3.0s
+#7 sha256:4ae129dc3d9f3064df08f0e67970f2ed21949ffcf88dffaa4bc6c46e74627140 98.59MB / 98.59MB 5.5s done
+#7 sha256:229b15d702220d963eaa48bcd8eab0ee7aa8f52996309c59cf44fce7deec3869 49.76MB / 49.76MB 3.1s done
+#7 extracting sha256:229b15d702220d963eaa48bcd8eab0ee7aa8f52996309c59cf44fce7deec3869
+#7 extracting sha256:229b15d702220d963eaa48bcd8eab0ee7aa8f52996309c59cf44fce7deec3869 0.5s done
+#7 DONE 6.1s
+
+#7 [build 1/9] FROM docker.io/library/golang:1.26.10@sha256:672c944cfd07599b5f1bb179869270cdc94c6254e41db4d431259693cb286b82
+#7 extracting sha256:6fb30108d3afde03433416a48caa9604703eb8530a12c943ec11a1e46a4d84a9
+#7 extracting sha256:6fb30108d3afde03433416a48caa9604703eb8530a12c943ec11a1e46a4d84a9 0.2s done
+#7 DONE 6.4s
+
+#7 [build 1/9] FROM docker.io/library/golang:1.26.10@sha256:672c944cfd07599b5f1bb179869270cdc94c6254e41db4d431259693cb286b82
+#7 extracting sha256:3b7d3237c24572d428cffa50bed9ee6a1844db67c96c4f566bd3a67853d3c223
+#7 extracting sha256:3b7d3237c24572d428cffa50bed9ee6a1844db67c96c4f566bd3a67853d3c223 0.7s done
+#7 DONE 7.0s
+
+#7 [build 1/9] FROM docker.io/library/golang:1.26.10@sha256:672c944cfd07599b5f1bb179869270cdc94c6254e41db4d431259693cb286b82
+#7 extracting sha256:4ae129dc3d9f3064df08f0e67970f2ed21949ffcf88dffaa4bc6c46e74627140
+#7 extracting sha256:4ae129dc3d9f3064df08f0e67970f2ed21949ffcf88dffaa4bc6c46e74627140 0.8s done
+#7 DONE 7.8s
+
+#7 [build 1/9] FROM docker.io/library/golang:1.26.10@sha256:672c944cfd07599b5f1bb179869270cdc94c6254e41db4d431259693cb286b82
+#7 extracting sha256:b2cfc367cb90bd1944554d9dcbd0ba1ae2c992ad35a1659813c2e139a81d0e48
+#7 extracting sha256:b2cfc367cb90bd1944554d9dcbd0ba1ae2c992ad35a1659813c2e139a81d0e48 1.1s done
+#7 DONE 8.9s
+
+#7 [build 1/9] FROM docker.io/library/golang:1.26.10@sha256:672c944cfd07599b5f1bb179869270cdc94c6254e41db4d431259693cb286b82
+#7 extracting sha256:6514641cbb0ea539391c0e071704847bc61015494f8052422126db6bbc4ea911 done
+#7 extracting sha256:4f4fb700ef54461cfa02571ae0db9a0dc1e0cdb5577484a6d75e68dc38e8acc1 done
+#7 DONE 8.9s
+
+#8 [build 2/9] WORKDIR /src
+#8 DONE 0.3s
+
+#9 [build 3/9] COPY go.mod go.sum ./
+#9 DONE 0.0s
+
+#10 [build 4/9] RUN go mod download
+#10 DONE 2.5s
+
+#11 [build 5/9] COPY api api
+#11 DONE 0.1s
+
+#12 [build 6/9] COPY internal internal
+#12 DONE 0.0s
+
+#13 [build 7/9] COPY cmd cmd
+#13 DONE 0.0s
+
+#14 [build 8/9] RUN CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -trimpath -ldflags='-s -w' -o /cmtc ./cmd/cmtc
+#14 DONE 13.8s
+
+#15 [build 9/9] RUN CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -trimpath -ldflags='-s -w' -o /lab-ca-init ./cmd/lab-ca-init
+#15 DONE 0.7s
+
+#16 [stage-1 2/3] COPY --from=build /cmtc /cmtc
+#16 DONE 0.0s
+
+#17 [stage-1 3/3] COPY --from=build /lab-ca-init /lab-ca-init
+#17 DONE 0.0s
+
+#18 exporting to image
+#18 exporting layers
+#18 exporting layers 0.5s done
+#18 exporting manifest sha256:99e057ac04c5c06fd912d53ef99013fb73e582a296a3b3b1e25aefb12085e4f7 done
+#18 exporting config sha256:e284138be598560ed60e88fcae02b5ba6abc0ad645de2aa501cb02a1a1ffb691 done
+#18 exporting attestation manifest sha256:4a2b1699b3154bfba4598bfdbd3d98715c6e18293adae8042f281bf2170967be done
+#18 exporting manifest list sha256:2997d9f61c1576b8473e55123e671357b3696aae6bac18fe40f287a53ef8c5d9 done
+#18 naming to docker.io/library/cmtc:dev done
+#18 unpacking to docker.io/library/cmtc:dev 0.1s done
+#18 DONE 0.6s
+2026-10-24T00:25:06Z mesh-two-kind-clusters
+CMTC_IMAGE=cmtc:dev bash scripts/lab/up.sh
+No kind clusters found.
+No kind clusters found.
+Creating cluster "cmtc-a" ...
+ • Ensuring node image (kindest/node:v1.36.4) 🖼️  ...
+ ✓ Ensuring node image (kindest/node:v1.36.4) 🖼️
+ • Preparing nodes 📦 📦   ...
+ ✓ Preparing nodes 📦 📦 
+ • Writing configuration 📜  ...
+ ✓ Writing configuration 📜
+ • Starting control-plane 🕹️  ...
+ ✓ Starting control-plane 🕹️
+ • Installing StorageClass 💾  ...
+ ✓ Installing StorageClass 💾
+ • Joining worker nodes 🚜  ...
+ ✓ Joining worker nodes 🚜
+Set kubectl context to "kind-cmtc-a"
+You can now use your cluster with:
+
+kubectl cluster-info --context kind-cmtc-a
+
+Have a nice day! 👋
+Creating cluster "cmtc-b" ...
+ • Ensuring node image (kindest/node:v1.36.4) 🖼️  ...
+ ✓ Ensuring node image (kindest/node:v1.36.4) 🖼️
+ • Preparing nodes 📦 📦   ...
+ ✓ Preparing nodes 📦 📦 
+ • Writing configuration 📜  ...
+ ✓ Writing configuration 📜
+ • Starting control-plane 🕹️  ...
+ ✓ Starting control-plane 🕹️
+ • Installing StorageClass 💾  ...
+ ✓ Installing StorageClass 💾
+ • Joining worker nodes 🚜  ...
+ ✓ Joining worker nodes 🚜
+Set kubectl context to "kind-cmtc-b"
+You can now use your cluster with:
+
+kubectl cluster-info --context kind-cmtc-b
+
+Thanks for using kind! 😊
+"jetstack" has been added to your repositories
+Hang tight while we grab the latest from your chart repositories...
+...Successfully got an update from the "jetstack" chart repository
+Update Complete. ⎈Happy Helming!⎈
+NAME: cilium
+LAST DEPLOYED: Fri Oct 23 19:25:52 2026
+NAMESPACE: kube-system
+STATUS: deployed
+REVISION: 1
+TEST SUITE: None
+NOTES:
+You have successfully installed Cilium.
+
+Your release version is 1.21.0-dev.
+
+For any further help, visit https://docs.cilium.io/en/v1.21/gettinghelp
+node/cmtc-a-control-plane condition met
+node/cmtc-a-worker condition met
+Image: "cmtc:dev" with ID "sha256:2997d9f61c1576b8473e55123e671357b3696aae6bac18fe40f287a53ef8c5d9" not yet present on node "cmtc-a-control-plane", loading...
+Image: "cmtc:dev" with ID "sha256:2997d9f61c1576b8473e55123e671357b3696aae6bac18fe40f287a53ef8c5d9" not yet present on node "cmtc-a-worker", loading...
+Release "cert-manager" does not exist. Installing it now.
+NAME: cert-manager
+LAST DEPLOYED: Fri Oct 23 19:26:36 2026
+NAMESPACE: cert-manager
+STATUS: deployed
+REVISION: 1
+TEST SUITE: None
+NOTES:
+cert-manager v1.21.1 has been deployed successfully!
+
+In order to begin issuing certificates, you will need to set up a ClusterIssuer
+or Issuer resource (for example, by creating a 'letsencrypt-staging' issuer).
+
+More information on the different types of issuers and how to configure them
+can be found in our documentation:
+
+https://cert-manager.io/docs/configuration/
+
+For information on how to configure cert-manager to automatically provision
+Certificates for Ingress resources, take a look at the `ingress-shim`
+documentation:
+
+https://cert-manager.io/docs/usage/ingress/
+
+For information on how to configure cert-manager to automatically provision
+Certificates for Gateway API resources, take a look at the `gateway resource`
+documentation:
+
+https://cert-manager.io/docs/usage/gateway/
+NAME: cilium
+LAST DEPLOYED: Fri Oct 23 19:28:34 2026
+NAMESPACE: kube-system
+STATUS: deployed
+REVISION: 1
+TEST SUITE: None
+NOTES:
+You have successfully installed Cilium.
+
+Your release version is 1.21.0-dev.
+
+For any further help, visit https://docs.cilium.io/en/v1.21/gettinghelp
+node/cmtc-b-control-plane condition met
+node/cmtc-b-worker condition met
+Image: "cmtc:dev" with ID "sha256:2997d9f61c1576b8473e55123e671357b3696aae6bac18fe40f287a53ef8c5d9" not yet present on node "cmtc-b-worker", loading...
+Image: "cmtc:dev" with ID "sha256:2997d9f61c1576b8473e55123e671357b3696aae6bac18fe40f287a53ef8c5d9" not yet present on node "cmtc-b-control-plane", loading...
+Release "cert-manager" does not exist. Installing it now.
+NAME: cert-manager
+LAST DEPLOYED: Fri Oct 23 19:29:16 2026
+NAMESPACE: cert-manager
+STATUS: deployed
+REVISION: 1
+TEST SUITE: None
+NOTES:
+cert-manager v1.21.1 has been deployed successfully!
+
+In order to begin issuing certificates, you will need to set up a ClusterIssuer
+or Issuer resource (for example, by creating a 'letsencrypt-staging' issuer).
+
+More information on the different types of issuers and how to configure them
+can be found in our documentation:
+
+https://cert-manager.io/docs/configuration/
+
+For information on how to configure cert-manager to automatically provision
+Certificates for Ingress resources, take a look at the `ingress-shim`
+documentation:
+
+https://cert-manager.io/docs/usage/ingress/
+
+For information on how to configure cert-manager to automatically provision
+Certificates for Gateway API resources, take a look at the `gateway resource`
+documentation:
+
+https://cert-manager.io/docs/usage/gateway/
+serviceaccount/lab-ca-init created
+role.rbac.authorization.k8s.io/lab-ca-init created
+rolebinding.rbac.authorization.k8s.io/lab-ca-init created
+job.batch/lab-ca-init created
+job.batch/lab-ca-init condition met
+Certificate request self-signature ok
+subject=CN = cmtc-a disposable intermediate
+secret/cluster-intermediate patched
+job.batch "lab-ca-init" deleted from cert-manager namespace
+rolebinding.rbac.authorization.k8s.io "lab-ca-init" deleted from cert-manager namespace
+role.rbac.authorization.k8s.io "lab-ca-init" deleted from cert-manager namespace
+serviceaccount "lab-ca-init" deleted from cert-manager namespace
+clusterissuer.cert-manager.io/cmtc-lab-intermediate created
+clusterissuer.cert-manager.io/cmtc-lab-intermediate condition met
+serviceaccount/lab-ca-init created
+role.rbac.authorization.k8s.io/lab-ca-init created
+rolebinding.rbac.authorization.k8s.io/lab-ca-init created
+job.batch/lab-ca-init created
+job.batch/lab-ca-init condition met
+Certificate request self-signature ok
+subject=CN = cmtc-b disposable intermediate
+secret/cluster-intermediate patched
+job.batch "lab-ca-init" deleted from cert-manager namespace
+rolebinding.rbac.authorization.k8s.io "lab-ca-init" deleted from cert-manager namespace
+role.rbac.authorization.k8s.io "lab-ca-init" deleted from cert-manager namespace
+serviceaccount "lab-ca-init" deleted from cert-manager namespace
+clusterissuer.cert-manager.io/cmtc-lab-intermediate created
+clusterissuer.cert-manager.io/cmtc-lab-intermediate condition met
+Release "cilium" has been upgraded. Happy Helming!
+NAME: cilium
+LAST DEPLOYED: Fri Oct 23 19:29:40 2026
+NAMESPACE: kube-system
+STATUS: deployed
+REVISION: 2
+TEST SUITE: None
+NOTES:
+You have successfully installed Cilium.
+
+Your release version is 1.21.0-dev.
+
+For any further help, visit https://docs.cilium.io/en/v1.21/gettinghelp
+certificate.cert-manager.io/clustermesh-apiserver-admin-cert condition met
+certificate.cert-manager.io/clustermesh-apiserver-local-cert condition met
+certificate.cert-manager.io/clustermesh-apiserver-remote-cert condition met
+certificate.cert-manager.io/clustermesh-apiserver-server-cert condition met
+Release "cilium" has been upgraded. Happy Helming!
+NAME: cilium
+LAST DEPLOYED: Fri Oct 23 19:30:21 2026
+NAMESPACE: kube-system
+STATUS: deployed
+REVISION: 2
+TEST SUITE: None
+NOTES:
+You have successfully installed Cilium.
+
+Your release version is 1.21.0-dev.
+
+For any further help, visit https://docs.cilium.io/en/v1.21/gettinghelp
+certificate.cert-manager.io/clustermesh-apiserver-admin-cert condition met
+certificate.cert-manager.io/clustermesh-apiserver-local-cert condition met
+certificate.cert-manager.io/clustermesh-apiserver-remote-cert condition met
+certificate.cert-manager.io/clustermesh-apiserver-server-cert condition met
+⚠️  Service type NodePort detected! Service may fail when nodes are removed from the cluster!
+✅ Service "clustermesh-apiserver" of type "NodePort" found
+✅ Cluster access information is available:
+  - 172.18.0.2:32379
+✅ Deployment clustermesh-apiserver is ready
+ℹ️  KVStoreMesh is enabled
+⌛ Waiting (0s) for clusters to be connected: 1 KVStoreMesh replicas are not ready
+⌛ Waiting (10s) for clusters to be connected: 1 KVStoreMesh replicas are not ready
+⌛ Waiting (21s) for clusters to be connected: 1 KVStoreMesh replicas are not ready
+⌛ Waiting (31s) for clusters to be connected: 1 KVStoreMesh replicas are not ready
+⌛ Waiting (42s) for clusters to be connected: 1 KVStoreMesh replicas are not ready
+⌛ Waiting (53s) for clusters to be connected: 1 nodes are not ready
+
+✅ All 2 nodes are connected to all clusters [min:1 / avg:1.0 / max:1]
+✅ All 1 KVStoreMesh replicas are connected to all clusters [min:1 / avg:1.0 / max:1]
+
+🔌 Cluster Connections:
+  - cmtc-b: 2/2 configured, 2/2 connected - KVStoreMesh: 1/1 configured, 1/1 connected
+
+namespace/cmtc-system created
+customresourcedefinition.apiextensions.k8s.io/namespacemtlspolicies.security.cmtc.io created
+serviceaccount/cmtc-controller created
+serviceaccount/cmtc-node-agent created
+role.rbac.authorization.k8s.io/cmtc-leader-election created
+clusterrole.rbac.authorization.k8s.io/cmtc-controller created
+clusterrole.rbac.authorization.k8s.io/cmtc-node-agent created
+rolebinding.rbac.authorization.k8s.io/cmtc-leader-election created
+clusterrolebinding.rbac.authorization.k8s.io/cmtc-controller created
+clusterrolebinding.rbac.authorization.k8s.io/cmtc-node-agent created
+service/cmtc-controller created
+deployment.apps/cmtc-controller created
+daemonset.apps/cmtc-node-agent created
+networkpolicy.networking.k8s.io/cmtc-metrics created
+customresourcedefinition.apiextensions.k8s.io/namespacemtlspolicies.security.cmtc.io condition met
+Waiting for deployment "cmtc-controller" rollout to finish: 0 of 1 updated replicas are available...
+deployment "cmtc-controller" successfully rolled out
+daemon set "cmtc-node-agent" successfully rolled out
+namespacemtlspolicy.security.cmtc.io/cluster-default created
+⚠️  Service type NodePort detected! Service may fail when nodes are removed from the cluster!
+✅ Service "clustermesh-apiserver" of type "NodePort" found
+✅ Cluster access information is available:
+  - 172.18.0.5:32379
+✅ Deployment clustermesh-apiserver is ready
+ℹ️  KVStoreMesh is enabled
+
+✅ All 2 nodes are connected to all clusters [min:1 / avg:1.0 / max:1]
+✅ All 1 KVStoreMesh replicas are connected to all clusters [min:1 / avg:1.0 / max:1]
+
+🔌 Cluster Connections:
+  - cmtc-a: 2/2 configured, 2/2 connected - KVStoreMesh: 1/1 configured, 1/1 connected
+
+namespace/cmtc-system created
+customresourcedefinition.apiextensions.k8s.io/namespacemtlspolicies.security.cmtc.io created
+serviceaccount/cmtc-controller created
+serviceaccount/cmtc-node-agent created
+role.rbac.authorization.k8s.io/cmtc-leader-election created
+clusterrole.rbac.authorization.k8s.io/cmtc-controller created
+clusterrole.rbac.authorization.k8s.io/cmtc-node-agent created
+rolebinding.rbac.authorization.k8s.io/cmtc-leader-election created
+clusterrolebinding.rbac.authorization.k8s.io/cmtc-controller created
+clusterrolebinding.rbac.authorization.k8s.io/cmtc-node-agent created
+service/cmtc-controller created
+deployment.apps/cmtc-controller created
+daemonset.apps/cmtc-node-agent created
+networkpolicy.networking.k8s.io/cmtc-metrics created
+customresourcedefinition.apiextensions.k8s.io/namespacemtlspolicies.security.cmtc.io condition met
+Waiting for deployment "cmtc-controller" rollout to finish: 0 of 1 updated replicas are available...
+deployment "cmtc-controller" successfully rolled out
+Waiting for daemon set "cmtc-node-agent" rollout to finish: 1 of 2 updated pods are available...
+daemon set "cmtc-node-agent" successfully rolled out
+namespacemtlspolicy.security.cmtc.io/cluster-default created
+daemon set "cilium" successfully rolled out
+deployment "cilium-operator" successfully rolled out
+deployment "clustermesh-apiserver" successfully rolled out
+daemon set "cilium" successfully rolled out
+deployment "cilium-operator" successfully rolled out
+deployment "clustermesh-apiserver" successfully rolled out
+PASS: both clusters run the pinned fork components and exact agent source version
+namespace/monitoring created
+serviceaccount/prometheus created
+clusterrole.rbac.authorization.k8s.io/cmtc-lab-prometheus created
+clusterrolebinding.rbac.authorization.k8s.io/cmtc-lab-prometheus created
+configmap/prometheus created
+deployment.apps/prometheus created
+service/prometheus created
+configmap/cmtc-dashboards created
+configmap/grafana-datasources created
+configmap/grafana-providers created
+deployment.apps/grafana created
+service/grafana created
+Waiting for deployment "prometheus" rollout to finish: 0 of 1 updated replicas are available...
+deployment "prometheus" successfully rolled out
+namespace/monitoring created
+serviceaccount/prometheus created
+clusterrole.rbac.authorization.k8s.io/cmtc-lab-prometheus created
+clusterrolebinding.rbac.authorization.k8s.io/cmtc-lab-prometheus created
+configmap/prometheus created
+deployment.apps/prometheus created
+service/prometheus created
+Waiting for deployment "prometheus" rollout to finish: 0 of 1 updated replicas are available...
+deployment "prometheus" successfully rolled out
+Waiting for deployment "grafana" rollout to finish: 0 of 1 updated replicas are available...
+deployment "grafana" successfully rolled out
+2026-10-24T00:32:24Z test-mesh
+bash scripts/lab/test.sh
+namespace/payments-alpha created
+namespace/orders-delta created
+namespace/legacy-payments created
+namespace/cmtc-platform-fixture created
+namespace/payments-alpha labeled
+namespace/legacy-payments labeled
+namespace/cmtc-platform-fixture labeled
+namespace/orders-delta labeled
+NEGATIVE TEST cmtc-a: the API must reject unsupported Strict mode; this rejection is expected
+PASS cmtc-a: API rejected unsupported Strict mode as expected (full response: artifacts/cmtc-a-strict-rejection.txt)
+namespace/payments-alpha labeled
+namespace "payments-alpha" deleted
+namespace/payments-alpha created
+namespace/payments-alpha labeled
+namespacemtlspolicy.security.cmtc.io/conflicting-policy created
+namespacemtlspolicy.security.cmtc.io "conflicting-policy" deleted
+Warning: resource 'namespaces' is not namespace scoped
+
+no
+no
+namespace/payments-alpha created
+namespace/orders-delta created
+namespace/legacy-payments created
+namespace/cmtc-platform-fixture created
+namespace/payments-alpha labeled
+namespace/legacy-payments labeled
+namespace/cmtc-platform-fixture labeled
+namespace/orders-delta labeled
+NEGATIVE TEST cmtc-b: the API must reject unsupported Strict mode; this rejection is expected
+PASS cmtc-b: API rejected unsupported Strict mode as expected (full response: artifacts/cmtc-b-strict-rejection.txt)
+namespace/payments-alpha labeled
+namespace "payments-alpha" deleted
+namespace/payments-alpha created
+namespace/payments-alpha labeled
+namespacemtlspolicy.security.cmtc.io/conflicting-policy created
+namespacemtlspolicy.security.cmtc.io "conflicting-policy" deleted
+Warning: resource 'namespaces' is not namespace scoped
+
+no
+no
+namespace/cf2cnp-lab created
+deployment.apps/shop created
+service/shop created
+pod/pos created
+pod/stranger created
+ciliumnetworkpolicy.cilium.io/shop-allow-pos created
+Waiting for deployment "shop" rollout to finish: 0 of 1 updated replicas are available...
+deployment "shop" successfully rolled out
+pod/pos condition met
+pod/stranger condition met
+namespace/mesh-example created
+service/rebel-base created
+namespace/cf2cnp-lab labeled
+namespace/mesh-example labeled
+namespace/cf2cnp-lab created
+deployment.apps/shop created
+service/shop created
+pod/pos created
+pod/stranger created
+ciliumnetworkpolicy.cilium.io/shop-allow-pos created
+Waiting for deployment "shop" rollout to finish: 0 of 1 updated replicas are available...
+deployment "shop" successfully rolled out
+pod/pos condition met
+pod/stranger condition met
+namespace/mesh-example created
+service/rebel-base created
+namespace/cf2cnp-lab labeled
+namespace/mesh-example labeled
+deployment.apps/rebel-base created
+configmap/rebel-base-response created
+Waiting for deployment "rebel-base" rollout to finish: 0 of 2 updated replicas are available...
+Waiting for deployment "rebel-base" rollout to finish: 1 of 2 updated replicas are available...
+deployment "rebel-base" successfully rolled out
+pod/mesh-client created
+pod/mesh-client condition met
+PASS: deployed CMTC observation API, controller, node agents and baseline ClusterMesh assertions
+2026-10-24T00:32:56Z collect-evidence
+bash scripts/lab/evidence.sh
+2026-10-24T00:32:59Z mesh-tests-passed
