@@ -45,3 +45,6 @@ The pasted example also sketches a Hive provider, a controller loop that builds 
 - [#13 — Native ClusterMesh workload discovery and federated mTLS](https://github.com/ephico2real2/clustermesh-trust-controller/issues/13)
 - [#14 — Test-only remote Workload xDS injection probe](https://github.com/ephico2real2/clustermesh-trust-controller/issues/14)
 - [#15 — Qualify remote xDS telemetry against the observability contract](https://github.com/ephico2real2/clustermesh-trust-controller/issues/15)
+- [#16 — Map verified remote workloads into native ztunnel xDS resources](https://github.com/ephico2real2/clustermesh-trust-controller/issues/16), documented in [REMOTE_WORKLOAD_XDS_MAPPING.md](REMOTE_WORKLOAD_XDS_MAPPING.md)
+- [#17 — Qualify Cilium agent metrics scraping in the local lab](https://github.com/ephico2real2/clustermesh-trust-controller/issues/17), documented in [CILIUM_AGENT_METRICS_SCRAPING.md](CILIUM_AGENT_METRICS_SCRAPING.md)
+- [#18 — Add fail-closed regression tests for remote Workload xDS mapping](https://github.com/ephico2real2/clustermesh-trust-controller/issues/18), documented in [REMOTE_WORKLOAD_XDS_TRANSFORMER_TESTS.md](REMOTE_WORKLOAD_XDS_TRANSFORMER_TESTS.md)
