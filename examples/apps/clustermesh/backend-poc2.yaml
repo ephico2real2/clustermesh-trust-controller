@@ -1,4 +1,32 @@
-# The poc2 side of the global service. Apply to poc2 ONLY.
+# The cmtc-b side of the bidirectional global-service example. Apply to cmtc-b only.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: rebel-base
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: rebel-base-response
+data:
+  # The response IS the evidence of which cluster served the request.
+  index.html: |
+    {"cluster": "cmtc-b", "message": "served by the cmtc-b rebel base"}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: rebel-base-nginx
+data:
+  nginx.conf: |
+    server {
+      listen 80;
+      listen 8080;
+      listen 31337;
+      default_type application/json;
+      location / { root /usr/share/nginx/html; }
+    }
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -9,23 +37,24 @@ spec:
     matchLabels: {name: rebel-base}
   template:
     metadata:
-      labels: {name: rebel-base}
+      labels: {name: rebel-base, mesh.cmtc.io/cluster: cmtc-b}
     spec:
+      serviceAccountName: rebel-base
       containers:
         - name: nginx
           image: nginx:1.27-alpine
+          ports:
+            - {name: http, containerPort: 80}
+            - {name: app-alt, containerPort: 8080}
+            - {name: app-high, containerPort: 31337}
           volumeMounts:
             - name: html
               mountPath: /usr/share/nginx/html
+            - name: nginx-conf
+              mountPath: /etc/nginx/conf.d/default.conf
+              subPath: nginx.conf
       volumes:
         - name: html
           configMap: {name: rebel-base-response}
----
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: rebel-base-response
-data:
-  # The response IS the evidence of which cluster served the request.
-  index.html: |
-    {"cluster": "poc2", "message": "served by the poc2 rebel base"}
+        - name: nginx-conf
+          configMap: {name: rebel-base-nginx}

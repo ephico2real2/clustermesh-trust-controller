@@ -45,8 +45,7 @@ for(const d of dashboards){
     index.push({title:`${d.title} (${theme})`,file:`${name}.png`,uid:d.uid});
   }
 }
-spec.pages.push({name:'application-global-service',url:'http://127.0.0.1:18080',evidence:'text',settle:false,before:500,expect:{text:['poc2']}});
-index.push({title:'Imported Global Service backend',file:'application-global-service.png'});
+spec.pages.push({name:'application-global-service',url:process.env.CMTC_APP_URL || 'http://127.0.0.1:28080',evidence:'text',settle:false,before:500,screenshot:false,expect:{text:['cmtc-b']}});
 const specPath=path.join(output,'walk-spec.json');
 await writeFile(specPath,JSON.stringify(spec,null,2)+'\n');
 await writeFile(path.join(output,'capture-range.json'),JSON.stringify({fromMilliseconds:from,toMilliseconds:to,requireNative},null,2)+'\n');

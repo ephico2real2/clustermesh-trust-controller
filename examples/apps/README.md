@@ -4,10 +4,10 @@ Copied from the user's [cilium-implementation-poc](https://github.com/ephico2rea
 
 | Local example | Original | Purpose |
 |---|---|---|
-| `clustermesh/global-service.yaml`, `backend-poc1.yaml`, `backend-poc2.yaml` | `demos/07-clustermesh/` | Nginx global service returns its serving cluster in JSON. |
+| `clustermesh/` | `demos/07-clustermesh/` | The same Nginx application and a client run in both clusters; two global services make each cross-cluster direction explicit. |
 | `shop/10-lab.yaml` | `demos/26-cf2cnp-policy-from-flows/10-lab.yaml` | Shop server, authorized POS and unauthorized stranger clients. |
 
-The four copied manifests retain their original contents. `shop/20-allow-pos.yaml` is a CMTC adaptation that enforces the expected TCP/80 caller. The CI test applies it in each cluster and requires POS success plus stranger denial. CI uses the cluster-2 backend only for the global service; its original payload says `poc2`, proving that the response came from the imported remote backend. The CI cluster names are `cmtc-a` and `cmtc-b`.
+The sample manifests are adapted to the CMTC cluster names and include explicit backend identities and service accounts. `shop/20-allow-pos.yaml` is a CMTC adaptation that enforces the expected TCP/80 caller. The CI test applies it in each cluster and requires POS success plus stranger denial. It verifies local and remote global-service requests in both directions; each backend returns its cluster name. The CI cluster names are `cmtc-a` and `cmtc-b`.
 
 Manual use on disposable Cilium clusters:
 
@@ -17,7 +17,9 @@ kubectl --context kind-cmtc-b apply -f examples/apps/shop
 kubectl --context kind-cmtc-a create namespace mesh-example
 kubectl --context kind-cmtc-b create namespace mesh-example
 kubectl --context kind-cmtc-a -n mesh-example apply -f examples/apps/clustermesh/global-service.yaml
-kubectl --context kind-cmtc-b -n mesh-example apply -f examples/apps/clustermesh/global-service.yaml -f examples/apps/clustermesh/backend-poc2.yaml
+kubectl --context kind-cmtc-b -n mesh-example apply -f examples/apps/clustermesh/global-service.yaml
+kubectl --context kind-cmtc-a -n mesh-example apply -f examples/apps/clustermesh/backend-poc1.yaml -f examples/apps/clustermesh/client.yaml
+kubectl --context kind-cmtc-b -n mesh-example apply -f examples/apps/clustermesh/backend-poc2.yaml -f examples/apps/clustermesh/client.yaml
 ```
 
-These examples exercise Cilium networking/policy and provide real application screenshots. The initial CMTC Observe build evaluates their namespace metadata and inventories pods; it does not enable ztunnel or establish workload mTLS. See `scripts/lab/test.sh` for failing assertions and the [lab runbook](../../docs/development/OBSERVE_LAB.md) for the complete evidence workflow. No production credentials or signing keys are included.
+These examples exercise Cilium ClusterMesh routing and policy and provide real application screenshots. The current CMTC Observe profile evaluates their namespace metadata and inventories pods; it does not enable ztunnel or establish workload mTLS. See [the ClusterMesh example contract](clustermesh/README.md), `scripts/lab/test.sh` for failing assertions and the [lab runbook](../../docs/development/OBSERVE_LAB.md) for the complete evidence workflow. No production credentials or signing keys are included.

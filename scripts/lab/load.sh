@@ -1,23 +1,56 @@
 #!/usr/bin/env bash
-# Bounded real traffic stays active while Grafana and application PNGs are captured.
+# Bounded real traffic stays active while Grafana and application screenshots are captured.
 set -euo pipefail
 cd "$(dirname "$0")/../.."
 mkdir -p artifacts/load
+
+streams=(
+  cmtc-a-shop cmtc-b-shop
+  cmtc-a-mesh-80 cmtc-a-mesh-8080 cmtc-a-mesh-31337
+  cmtc-b-mesh-80 cmtc-b-mesh-8080 cmtc-b-mesh-31337
+)
+
+run_id=${CMTC_LOAD_RUN_ID:-}
+if [[ "${1:-}" == start ]]; then
+  run_id=${run_id:-$(date -u +%y%m%d%H%M%S)}
+  [[ "$run_id" =~ ^[a-z0-9-]+$ ]] || { echo "invalid CMTC_LOAD_RUN_ID: $run_id" >&2; exit 2; }
+  run_dir="artifacts/load/$run_id"
+  mkdir -p "$run_dir"
+  printf '%s\n' "$run_id" > artifacts/load/current-run
+else
+  run_id=${run_id:-$(cat artifacts/load/current-run)}
+  [[ "$run_id" =~ ^[a-z0-9-]+$ ]] || { echo "invalid load run id: $run_id" >&2; exit 2; }
+  run_dir="artifacts/load/$run_id"
+fi
+
+job_name() { printf 'cmtc-load-%s-%s' "$run_id" "$1"; }
+
 case "${1:-}" in
 start)
-  for stream in cmtc-a-shop cmtc-b-shop cmtc-a-mesh; do
-    cluster=${stream%-*}; target=http://shop.cf2cnp-lab/; ns=cf2cnp-lab; qps=20
-    if [ "$stream" = cmtc-a-mesh ]; then target=http://rebel-base.mesh-example/; ns=mesh-example; qps=10; fi
+  for stream in "${streams[@]}"; do
+    case "$stream" in
+      cmtc-a-shop) cluster=cmtc-a; target=http://shop.cf2cnp-lab/; ns=cf2cnp-lab; qps=20 ;;
+      cmtc-b-shop) cluster=cmtc-b; target=http://shop.cf2cnp-lab/; ns=cf2cnp-lab; qps=20 ;;
+      cmtc-a-mesh-80) cluster=cmtc-a; target=http://rebel-base-cmtc-b.mesh-example:80/; ns=mesh-example; qps=10 ;;
+      cmtc-a-mesh-8080) cluster=cmtc-a; target=http://rebel-base-cmtc-b.mesh-example:8080/; ns=mesh-example; qps=5 ;;
+      cmtc-a-mesh-31337) cluster=cmtc-a; target=http://rebel-base-cmtc-b.mesh-example:31337/; ns=mesh-example; qps=5 ;;
+      cmtc-b-mesh-80) cluster=cmtc-b; target=http://rebel-base-cmtc-a.mesh-example:80/; ns=mesh-example; qps=10 ;;
+      cmtc-b-mesh-8080) cluster=cmtc-b; target=http://rebel-base-cmtc-a.mesh-example:8080/; ns=mesh-example; qps=5 ;;
+      cmtc-b-mesh-31337) cluster=cmtc-b; target=http://rebel-base-cmtc-a.mesh-example:31337/; ns=mesh-example; qps=5 ;;
+    esac
+    job=$(job_name "$stream")
     kubectl --context "kind-$cluster" -n "$ns" apply -f - <<EOF
 apiVersion: batch/v1
 kind: Job
-metadata: {name: cmtc-load}
+metadata:
+  name: $job
+  labels: {app.kubernetes.io/name: cmtc-load, cmtc.io/load-run: "$run_id", cmtc.io/load-stream: "$stream"}
 spec:
   backoffLimit: 0
   activeDeadlineSeconds: 480
   template:
     metadata:
-      labels: {app: pos, app.kubernetes.io/name: cmtc-load}
+      labels: {app: pos, app.kubernetes.io/name: cmtc-load, cmtc.io/load-run: "$run_id"}
     spec:
       restartPolicy: Never
       securityContext: {runAsNonRoot: true, runAsUser: 65532, fsGroup: 65532}
@@ -41,35 +74,63 @@ spec:
 EOF
     pod=''
     for _ in $(seq 1 30); do
-      pod=$(kubectl --context "kind-$cluster" -n "$ns" get pods -l job-name=cmtc-load -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || true)
+      pod=$(kubectl --context "kind-$cluster" -n "$ns" get pods -l "job-name=$job" -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || true)
       [ -z "$pod" ] || break
       sleep 1
     done
-    [ -n "$pod" ] || { echo "Load pod was not created: $stream" >&2; exit 1; }
+    [ -n "$pod" ] || { echo "load pod was not created: $stream ($job)" >&2; exit 1; }
     kubectl --context "kind-$cluster" -n "$ns" wait "pod/$pod" --for=jsonpath='{.status.initContainerStatuses[0].state.running.startedAt}' --timeout=3m
+    printf '%s\t%s\t%s\t%s\n' "$stream" "$cluster" "$ns" "$target" >> "$run_dir/streams.tsv"
+    echo "Started $stream: $target (job=$job, qps=$qps, run=$run_id)"
   done
   ;;
 collect)
-  for stream in cmtc-a-shop cmtc-b-shop cmtc-a-mesh; do
-    cluster=${stream%-*}; ns=cf2cnp-lab
-    [ "$stream" != cmtc-a-mesh ] || ns=mesh-example
-    kubectl --context "kind-$cluster" -n "$ns" wait job/cmtc-load --for=condition=Complete --timeout=7m
-    kubectl --context "kind-$cluster" -n "$ns" logs job/cmtc-load -c fortio > "artifacts/load/$stream.log"
-    kubectl --context "kind-$cluster" -n "$ns" logs job/cmtc-load -c results > "artifacts/load/$stream.json"
+  for stream in "${streams[@]}"; do
+    case "$stream" in
+      cmtc-a-shop|cmtc-a-mesh-*) cluster=cmtc-a ;;
+      cmtc-b-shop|cmtc-b-mesh-*) cluster=cmtc-b ;;
+    esac
+    case "$stream" in
+      *-shop) ns=cf2cnp-lab; qps=20 ;;
+      *-mesh-80) ns=mesh-example; qps=10 ;;
+      *) ns=mesh-example; qps=5 ;;
+    esac
+    job=$(job_name "$stream")
+    kubectl --context "kind-$cluster" -n "$ns" wait "job/$job" --for=condition=Complete --timeout=7m
+    kubectl --context "kind-$cluster" -n "$ns" logs "job/$job" -c fortio > "$run_dir/$stream.log"
+    kubectl --context "kind-$cluster" -n "$ns" logs "job/$job" -c results > "$run_dir/$stream.json"
   done
-  python3 - <<'PY'
-import json,pathlib
-results=[]
-for stream,qps in [('cmtc-a-shop',20),('cmtc-b-shop',20),('cmtc-a-mesh',10)]:
-    data=json.loads(pathlib.Path('artifacts/load/'+stream+'.json').read_text())
-    total=data['DurationHistogram']['Count'];codes=data['RetCodes'];success=codes.get('200',0)
-    assert total>qps*120 and success/total>=0.99,(stream,total,codes)
-    assert data['ActualDuration']>=120*1e9 and data['ActualQPS']>=qps/2,(stream,data['ActualQPS'])
-    pathlib.Path('artifacts/load/'+stream+'.json').write_text(json.dumps(data,indent=2)+'\n')
-    results.append({'stream':stream,'requests':total,'http200':success,'actualQPS':data['ActualQPS'],'durationSeconds':data['ActualDuration']/1e9})
-pathlib.Path('artifacts/load-results.json').write_text(json.dumps(results,indent=2)+'\n')
-print('PASS: measured successful local policy and cross-cluster traffic through published fork images')
+  python3 - "$run_dir" <<'PY'
+import json
+import pathlib
+import sys
+
+run_dir = pathlib.Path(sys.argv[1])
+streams = {
+    'cmtc-a-shop': 20, 'cmtc-b-shop': 20,
+    'cmtc-a-mesh-80': 10, 'cmtc-b-mesh-80': 10,
+    'cmtc-a-mesh-8080': 5, 'cmtc-b-mesh-8080': 5,
+    'cmtc-a-mesh-31337': 5, 'cmtc-b-mesh-31337': 5,
+}
+results = []
+for stream, qps in streams.items():
+    data = json.loads((run_dir / f'{stream}.json').read_text())
+    total = data['DurationHistogram']['Count']
+    codes = data['RetCodes']
+    success = codes.get('200', 0)
+    assert total > qps * 120 and success / total >= 0.99, (stream, total, codes)
+    assert data['ActualDuration'] >= 120 * 1e9 and data['ActualQPS'] >= qps / 2, (stream, data['ActualQPS'])
+    (run_dir / f'{stream}.json').write_text(json.dumps(data, indent=2) + '\n')
+    results.append({
+        'stream': stream,
+        'requests': total,
+        'http200': success,
+        'actualQPS': data['ActualQPS'],
+        'durationSeconds': data['ActualDuration'] / 1e9,
+    })
+(run_dir / 'load-results.json').write_text(json.dumps(results, indent=2) + '\n')
+print(f'PASS: measured eight unique local and cross-cluster streams; evidence={run_dir}')
 PY
   ;;
-*) echo 'expected start or collect' >&2; exit 2;;
+*) echo 'expected start or collect' >&2; exit 2 ;;
 esac

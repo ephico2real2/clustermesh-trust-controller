@@ -1,22 +1,20 @@
-# A GLOBAL SERVICE — the same Service name in both clusters, backed by pods in either.
+# Two GLOBAL SERVICES — each cluster publishes one backend, so each direction is
+# independently testable and the response identifies the remote cluster.
 #
 # Apply the SAME file to BOTH clusters:
-#   kubectl --context kind-poc1 apply -f demos/07-clustermesh/global-service.yaml
-#   kubectl --context kind-poc2 apply -f demos/07-clustermesh/global-service.yaml
+#   kubectl --context kind-cmtc-a -n mesh-example apply -f examples/apps/clustermesh/global-service.yaml
+#   kubectl --context kind-cmtc-b -n mesh-example apply -f examples/apps/clustermesh/global-service.yaml
 #
-# HOW IT WORKS. Cilium watches for Services carrying `service.cilium.io/global: "true"` and, for
-# each one, merges the endpoint sets from every cluster in the mesh into a single load-balancing
-# decision. A client in poc1 calling `rebel-base` gets a backend from poc1 OR poc2, chosen by the
-# same eBPF load balancer that handles ordinary ClusterIP traffic -- no gateway, no DNS trickery,
-# no application awareness. The pods do not know the mesh exists.
+# HOW IT WORKS. Cilium watches Services carrying `service.cilium.io/global: "true"` and merges
+# matching endpoint sets across the mesh. `rebel-base-cmtc-a` selects only the cmtc-a backend and
+# `rebel-base-cmtc-b` only the cmtc-b backend. A client in either cluster can call both; the
+# opposite-cluster response proves that ClusterMesh selected a remote endpoint.
 #
-# WHY THE BACKENDS ANSWER WITH THEIR CLUSTER NAME. Otherwise you cannot see which side served a
-# request, and the whole demo becomes an act of faith. Each cluster's Deployment serves a different
-# static payload, so the response itself is the evidence.
+# The distinct response body makes the serving cluster visible in saved test and load evidence.
 apiVersion: v1
 kind: Service
 metadata:
-  name: rebel-base
+  name: rebel-base-cmtc-a
   annotations:
     # THE ONE ANNOTATION THAT MATTERS. Without it this is an ordinary, cluster-local Service and
     # the mesh is irrelevant to it -- being in a mesh does not make every Service global, which is
@@ -25,6 +23,25 @@ metadata:
 spec:
   type: ClusterIP
   ports:
-    - port: 80
+    - {name: http, port: 80, targetPort: 80}
+    - {name: app-alt, port: 8080, targetPort: 8080}
+    - {name: app-high, port: 31337, targetPort: 31337}
   selector:
     name: rebel-base
+    mesh.cmtc.io/cluster: cmtc-a
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: rebel-base-cmtc-b
+  annotations:
+    service.cilium.io/global: "true"
+spec:
+  type: ClusterIP
+  ports:
+    - {name: http, port: 80, targetPort: 80}
+    - {name: app-alt, port: 8080, targetPort: 8080}
+    - {name: app-high, port: 31337, targetPort: 31337}
+  selector:
+    name: rebel-base
+    mesh.cmtc.io/cluster: cmtc-b

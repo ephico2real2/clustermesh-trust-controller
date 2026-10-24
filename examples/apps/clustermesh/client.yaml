@@ -1,0 +1,24 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: mesh-client
+automountServiceAccountToken: false
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: mesh-client
+  labels:
+    app: mesh-client
+    app.kubernetes.io/name: mesh-client
+spec:
+  serviceAccountName: mesh-client
+  automountServiceAccountToken: false
+  restartPolicy: Never
+  containers:
+    - name: client
+      image: curlimages/curl:8.14.1
+      command: ["sh", "-c", "sleep 7200"]
+      resources:
+        requests: {cpu: 10m, memory: 16Mi}
+        limits: {memory: 64Mi}

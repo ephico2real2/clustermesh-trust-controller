@@ -14,9 +14,22 @@ wait_status() {
 }
 for cluster in cmtc-a cmtc-b; do
   context="kind-$cluster"
-  for ns in payments-alpha orders-delta legacy-payments cmtc-platform-fixture; do kubectl --context "$context" create namespace "$ns"; done
-  kubectl --context "$context" label ns payments-alpha legacy-payments cmtc-platform-fixture company.net/lob=alpha
-  kubectl --context "$context" label ns orders-delta company.net/mnemonic=delta
+  for ns in payments-alpha orders-delta legacy-payments cmtc-platform-fixture; do
+    kubectl --context "$context" create namespace "$ns" --dry-run=client -o yaml | kubectl --context "$context" apply -f -
+  done
+  # These are test-owned namespaces. Remove only selector labels left by an
+  # earlier run so the initial selected-count assertion is repeatable.
+  for ns in cf2cnp-lab mesh-example; do
+    if kubectl --context "$context" get namespace "$ns" >/dev/null 2>&1; then
+      for selector in company.net/lob company.net/mnemonic; do
+        value=$(kubectl --context "$context" get namespace "$ns" -o json | python3 -c \
+          'import json,sys; print(json.load(sys.stdin).get("metadata",{}).get("labels",{}).get(sys.argv[1],""))' "$selector")
+        [ -z "$value" ] || kubectl --context "$context" label namespace "$ns" "$selector-"
+      done
+    fi
+  done
+  kubectl --context "$context" label --overwrite ns payments-alpha legacy-payments cmtc-platform-fixture company.net/lob=alpha
+  kubectl --context "$context" label --overwrite ns orders-delta company.net/mnemonic=delta
   wait_status "$context" '{.status.selected}' 2
   wait_status "$context" '{.status.excluded}' 1
   wait_status "$context" '{.status.conditions[?(@.type=="EnforcementVerified")].status}' Unknown
@@ -67,27 +80,57 @@ for cluster in cmtc-a cmtc-b; do
     sleep 2
   done
   [ "$denied" = 1 ] || { echo 'FAIL: stranger reached shop' >&2;exit 1; }
-  kubectl --context "$context" create namespace mesh-example
+  kubectl --context "$context" create namespace mesh-example --dry-run=client -o yaml | kubectl --context "$context" apply -f -
   kubectl --context "$context" -n mesh-example apply -f examples/apps/clustermesh/global-service.yaml
   kubectl --context "$context" label ns cf2cnp-lab mesh-example company.net/lob=alpha
   wait_status "$context" '{.status.selected}' 4
  done
-# Reused demo 07: a remote-only backend makes the service result unambiguous.
+# Reused demo 07: both clusters publish an app, and the two directional global
+# services target only the backend in the opposite cluster.
+kubectl --context kind-cmtc-a -n mesh-example apply -f examples/apps/clustermesh/backend-poc1.yaml
 kubectl --context kind-cmtc-b -n mesh-example apply -f examples/apps/clustermesh/backend-poc2.yaml
+kubectl --context kind-cmtc-a -n mesh-example rollout status deployment/rebel-base --timeout=3m
 kubectl --context kind-cmtc-b -n mesh-example rollout status deployment/rebel-base --timeout=3m
-kubectl --context kind-cmtc-a -n mesh-example run mesh-client --restart=Never --image=curlimages/curl:8.14.1 --command -- sleep 3600
-kubectl --context kind-cmtc-a -n mesh-example wait pod/mesh-client --for=condition=Ready --timeout=3m
-success=0
-for _ in $(seq 1 60); do
-  response=$(kubectl --context kind-cmtc-a -n mesh-example exec mesh-client -- curl -fsS --max-time 5 http://rebel-base/ || true)
-  if printf '%s' "$response" | grep -q '"cluster": "poc2"'; then success=1;break;fi
-  sleep 2
- done
-[ "$success" = 1 ] || { echo 'FAIL: remote imported Global Service unavailable' >&2;exit 1; }
-printf '%s\n' "$response" > artifacts/global-service-response.json
+for cluster in cmtc-a cmtc-b; do
+  kubectl --context "kind-$cluster" -n mesh-example delete pod mesh-client --ignore-not-found --wait=true
+  kubectl --context "kind-$cluster" -n mesh-example apply -f examples/apps/clustermesh/client.yaml
+  kubectl --context "kind-$cluster" -n mesh-example wait pod/mesh-client --for=condition=Ready --timeout=3m
+done
+assert_backend() {
+  local case_name=$1 context=$2 target=$3 expected=$4 response
+  response=$(kubectl --context "$context" -n mesh-example exec mesh-client -- \
+    curl -fsS --max-time 5 "http://$target/")
+  printf '%s\n' "$response" > "artifacts/clustermesh-$case_name.json"
+  printf '%s' "$response" | grep -Fq "\"cluster\": \"$expected\"" || {
+    echo "FAIL: $case_name served an unexpected backend: $response" >&2; exit 1;
+  }
+  echo "PASS $case_name: $target returned the $expected backend"
+}
+
+pod_a=$(kubectl --context kind-cmtc-a -n mesh-example get pods \
+  -l 'name=rebel-base,mesh.cmtc.io/cluster=cmtc-a' -o jsonpath='{.items[0].status.podIP}')
+pod_b=$(kubectl --context kind-cmtc-b -n mesh-example get pods \
+  -l 'name=rebel-base,mesh.cmtc.io/cluster=cmtc-b' -o jsonpath='{.items[0].status.podIP}')
+[ -n "$pod_a" ] && [ -n "$pod_b" ] || { echo 'FAIL: backend Pod IP missing' >&2; exit 1; }
+
+for port in 80 8080 31337; do
+  for direction in a-to-a a-to-b b-to-b b-to-a; do
+    case "$direction" in
+      a-to-a) context=kind-cmtc-a; service=rebel-base-cmtc-a; expected=cmtc-a ;;
+      a-to-b) context=kind-cmtc-a; service=rebel-base-cmtc-b; expected=cmtc-b ;;
+      b-to-b) context=kind-cmtc-b; service=rebel-base-cmtc-b; expected=cmtc-b ;;
+      b-to-a) context=kind-cmtc-b; service=rebel-base-cmtc-a; expected=cmtc-a ;;
+    esac
+    assert_backend "$direction-service-$port" "$context" "$service:$port" "$expected"
+  done
+done
+for port in 80 8080 31337; do
+  assert_backend "a-to-b-podip-$port" kind-cmtc-a "$pod_b:$port" cmtc-b
+  assert_backend "b-to-a-podip-$port" kind-cmtc-b "$pod_a:$port" cmtc-a
+done
 python3 - <<'PY'
 import json,pathlib
-result={'policyReconciliation':'passed','exclusionAndPlatformPrecedence':'passed','uidRecreation':'passed','policyConflicts':'passed','strictModeRejected':'passed','readOnlyNamespaceRBAC':'passed','remoteGlobalService':'passed','reusedShopAllowedAndDenied':'passed','workloadMTLS':'blocked: Cilium integration pending','layeredEncryption':'blocked: composition pending'}
+result={'policyReconciliation':'passed','exclusionAndPlatformPrecedence':'passed','uidRecreation':'passed','policyConflicts':'passed','strictModeRejected':'passed','readOnlyNamespaceRBAC':'passed','reusedShopAllowedAndDenied':'passed','applicationPorts':[80,8080,31337],'bidirectionalGlobalService':['cmtc-a-to-cmtc-a','cmtc-a-to-cmtc-b','cmtc-b-to-cmtc-b','cmtc-b-to-cmtc-a'],'bidirectionalPodIP':['cmtc-a-to-cmtc-b','cmtc-b-to-cmtc-a'],'workloadMTLS':'blocked: the Observe profile does not enable ztunnel/SPIRE','layeredEncryption':'blocked: composition pending'}
 pathlib.Path('artifacts/results.json').write_text(json.dumps(result,indent=2)+'\n')
 PY
 echo 'PASS: deployed CMTC observation API, controller, node agents and baseline ClusterMesh assertions'

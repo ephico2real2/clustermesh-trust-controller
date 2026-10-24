@@ -21,8 +21,10 @@ The isolated two-node enforcement fixture is `cmtc-mtls`. Preserve the two
 existing Observe/ClusterMesh clusters (`cmtc-a` and `cmtc-b`) and unrelated
 containers. The CNI-admission and namespace-transition trials deliberately
 restart a node agent or ztunnel and change test namespace intent; run them only
-against the owned `cmtc-mtls` fixture. CI and image publication are deferred
-under the current local-first mandate.
+against the owned `cmtc-mtls` fixture. The user now requires CI coverage for
+CMTC, the enhanced Cilium fork and ztunnel. Complete affected local qualification
+first, then add and run focused CI coverage against the exact source/image pins.
+Do not conflate CI coverage with publishing an image to a registry.
 
 ## 1. Preflight the existing machines
 
