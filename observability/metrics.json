@@ -1,0 +1,278 @@
+{
+  "status": "Implemented types verified against source; planned types/meanings are proposed contracts to validate in each delivering story.",
+  "metrics": {
+    "cmtc_apiserver_probe_success": {
+      "kind": "gauge",
+      "status": "planned",
+      "meaning": "Latest fresh safe API connectivity/TLS probe result.",
+      "presentation": "Mapped latest state/history; not application mTLS or cluster-wide health.",
+      "owner": "CMTC platform probe"
+    },
+    "cmtc_certificate_rotation_failures_total": {
+      "kind": "counter",
+      "status": "planned",
+      "meaning": "Failed certificate rotation attempts or terminal failures with an agreed retry/event boundary.",
+      "presentation": "Failures/s and range increase; retries must not silently multiply terminal failure counts.",
+      "owner": "CMTC rotation controller"
+    },
+    "cmtc_cluster_ready": {
+      "kind": "gauge",
+      "status": "planned",
+      "meaning": "All required verified cluster gates satisfied for the current generation and freshness window.",
+      "presentation": "Mapped status/table; no sum that hides one failed or missing required gate.",
+      "owner": "CMTC cluster controller"
+    },
+    "cmtc_dual_encryption_probe_success": {
+      "kind": "gauge",
+      "status": "planned",
+      "meaning": "Latest fresh controlled probe verifies both workload mTLS and the configured node encryption layer.",
+      "presentation": "Mapped latest probe and state history; absence/staleness is unknown.",
+      "owner": "CMTC transport probe"
+    },
+    "cmtc_enforcement_available": {
+      "kind": "gauge",
+      "status": "implemented",
+      "meaning": "Whether CMTC can verify required datapath enforcement; always 0 in Observe mode.",
+      "presentation": "Mapped Unavailable status for observed zero; missing telemetry stays unavailable.",
+      "owner": "CMTC controller"
+    },
+    "cmtc_hostnetwork_pods_total": {
+      "kind": "gauge",
+      "status": "proposed-rename",
+      "meaning": "Current hostNetwork pod inventory; the old proposed _total suffix is misleading for a level.",
+      "presentation": "Use cmtc_pods_observed{network=\"host\"} now; agree a gauge name before adding another exporter. Never rate() inventory.",
+      "owner": "CMTC node agent"
+    },
+    "cmtc_issuer_ready": {
+      "kind": "gauge",
+      "status": "planned",
+      "meaning": "Expected issuer can provide a verifiable chain under a defined freshness/issuance check.",
+      "presentation": "Mapped state/history; pod Ready or Issuer object presence is insufficient.",
+      "owner": "CMTC issuer verifier"
+    },
+    "cmtc_mtls_active_connections": {
+      "kind": "gauge",
+      "status": "planned",
+      "meaning": "Currently active verified workload-mTLS connections, counted at one defined endpoint.",
+      "presentation": "Latest value and line if it varies; no rate() or source-plus-destination sum.",
+      "owner": "Cilium/ztunnel connection lifecycle"
+    },
+    "cmtc_mtls_authorization_denials_total": {
+      "kind": "counter",
+      "status": "planned",
+      "meaning": "Destination policy rejections at the authorization boundary.",
+      "presentation": "rate() or range increase, split from identity failures and attempts; avoid double counting.",
+      "owner": "Cilium/ztunnel authorization"
+    },
+    "cmtc_mtls_handshake_duration_seconds": {
+      "kind": "histogram",
+      "status": "planned",
+      "meaning": "Actual workload TLS handshake duration in seconds at the TLS boundary.",
+      "presentation": "p95/p99 from bucket rates grouped by cluster/le and bounded result; no average or TCP-counter substitute.",
+      "owner": "Cilium/ztunnel TLS boundary"
+    },
+    "cmtc_mtls_handshakes_total": {
+      "kind": "counter",
+      "status": "planned",
+      "meaning": "Completed actual TLS handshake observations, labeled by bounded result and one reporting boundary.",
+      "presentation": "rate() by result; selected-range increase for totals; not TCP starts or HTTP requests.",
+      "owner": "Cilium/ztunnel TLS boundary"
+    },
+    "cmtc_mtls_identity_validation_failures_total": {
+      "kind": "counter",
+      "status": "planned",
+      "meaning": "Failed peer certificate/identity validation events at the verifier.",
+      "presentation": "rate() by bounded reason or selected-range increase; not every plaintext attempt.",
+      "owner": "Cilium/ztunnel peer verifier"
+    },
+    "cmtc_mtu_validation_failures_total": {
+      "kind": "counter",
+      "status": "planned",
+      "meaning": "Failed controlled MTU/MSS validation attempts for the selected encryption profile.",
+      "presentation": "Failures/s or range increase; preserve attempted-probe denominator separately.",
+      "owner": "CMTC transport probe"
+    },
+    "cmtc_namespace_decisions": {
+      "kind": "gauge",
+      "status": "implemented",
+      "meaning": "Current mutually exclusive selected/excluded/platform/unselected namespace decisions.",
+      "presentation": "Latest table and one pie of all observed namespaces; categories must exhaust one denominator.",
+      "owner": "CMTC controller"
+    },
+    "cmtc_namespace_label_drift_total": {
+      "kind": "counter",
+      "status": "planned",
+      "meaning": "Detected enrollment-label drift episodes under a defined deduplication boundary.",
+      "presentation": "Event rate/range increase; not the number of namespaces currently drifting.",
+      "owner": "CMTC enrollment controller"
+    },
+    "cmtc_namespace_policy_conflicts_total": {
+      "kind": "counter",
+      "status": "planned",
+      "meaning": "Detected policy-conflict events under a defined deduplication boundary.",
+      "presentation": "Event rate/range increase; current conflict state needs its own gauge/condition.",
+      "owner": "CMTC policy controller"
+    },
+    "cmtc_namespaces_eligible": {
+      "kind": "gauge",
+      "status": "implemented",
+      "meaning": "Observed non-platform namespaces, including explicit exclusions.",
+      "presentation": "Latest count/table; not safe-to-enroll or protection coverage.",
+      "owner": "CMTC controller"
+    },
+    "cmtc_namespaces_enrolled": {
+      "kind": "gauge",
+      "status": "implemented",
+      "meaning": "Namespaces bearing the enrollment label from any actor.",
+      "presentation": "Latest count/table; never label it protected.",
+      "owner": "CMTC controller"
+    },
+    "cmtc_namespaces_excluded": {
+      "kind": "gauge",
+      "status": "planned",
+      "meaning": "Current explicitly excluded namespaces.",
+      "presentation": "Latest count; current view uses namespace_decisions{decision=\"excluded\"}.",
+      "owner": "CMTC controller"
+    },
+    "cmtc_namespaces_selected": {
+      "kind": "gauge",
+      "status": "implemented",
+      "meaning": "Current namespace policy selection intent; Observe does not mutate labels.",
+      "presentation": "Latest count/table; not encrypted or protected namespaces.",
+      "owner": "CMTC controller"
+    },
+    "cmtc_node_agent_ready": {
+      "kind": "gauge",
+      "status": "implemented",
+      "meaning": "Successful local inventory observation, 0/1 per node.",
+      "presentation": "Latest count/table; not enforcement readiness.",
+      "owner": "CMTC node agent"
+    },
+    "cmtc_node_config_drift_total": {
+      "kind": "counter",
+      "status": "planned",
+      "meaning": "Detected node desired/applied configuration drift episodes.",
+      "presentation": "Event rate/range increase; current drift is a distinct status.",
+      "owner": "CMTC node verifier"
+    },
+    "cmtc_plaintext_bypass_detected_total": {
+      "kind": "counter",
+      "status": "planned",
+      "meaning": "A verifier observes unauthorized plaintext reaching a destination that requires mTLS.",
+      "presentation": "Incident rate/count; a plaintext attempt rejected by DENY is not a bypass.",
+      "owner": "CMTC traffic verifier"
+    },
+    "cmtc_platform_dependency_healthy": {
+      "kind": "gauge",
+      "status": "planned",
+      "meaning": "Latest fresh platform dependency check, with a bounded dependency label.",
+      "presentation": "Mapped table/status history per required dependency; missing dependency cannot pass aggregate readiness.",
+      "owner": "CMTC platform verifier"
+    },
+    "cmtc_pods_enforcement_failed": {
+      "kind": "gauge",
+      "status": "planned",
+      "meaning": "Current eligible pods in a failed enforcement state, not cumulative failure events.",
+      "presentation": "Latest state count/table; never rate() this gauge.",
+      "owner": "CMTC enforcement verifier"
+    },
+    "cmtc_pods_observed": {
+      "kind": "gauge",
+      "status": "implemented",
+      "meaning": "Node-local pod inventory split by pod/host network category.",
+      "presentation": "Latest table by cluster/node/network; no protection inference.",
+      "owner": "CMTC node agent"
+    },
+    "cmtc_pods_pending": {
+      "kind": "gauge",
+      "status": "planned",
+      "meaning": "Eligible current pods awaiting one or more required enforcement gates.",
+      "presentation": "Latest state count/table; exclusive with protected/failed states.",
+      "owner": "CMTC enforcement verifier"
+    },
+    "cmtc_pods_protected": {
+      "kind": "gauge",
+      "status": "planned",
+      "meaning": "Eligible current pods with fresh verified mandatory capture, identity and destination enforcement.",
+      "presentation": "Latest state count/table; no inference from enrollment or ACK.",
+      "owner": "CMTC enforcement verifier"
+    },
+    "cmtc_policy_evaluations_total": {
+      "kind": "counter",
+      "status": "implemented",
+      "meaning": "Successful namespace policy evaluations.",
+      "presentation": "Evaluations/s over $__rate_interval, grouped by cluster.",
+      "owner": "CMTC controller"
+    },
+    "cmtc_reconcile_errors_total": {
+      "kind": "counter",
+      "status": "planned",
+      "meaning": "CMTC reconcile error events with a defined owner and retry counting boundary.",
+      "presentation": "Errors/s; current view uses actual controller_runtime_reconcile_errors_total instead of inventing an alias.",
+      "owner": "CMTC controller"
+    },
+    "cmtc_remote_identity_cache_misses_total": {
+      "kind": "counter",
+      "status": "planned",
+      "meaning": "Lookup misses in the authenticated remote workload identity cache.",
+      "presentation": "Misses/s; a miss alone is neither a rejected request nor a security breach.",
+      "owner": "Cilium remote discovery"
+    },
+    "cmtc_rollout_aborted_total": {
+      "kind": "counter",
+      "status": "planned",
+      "meaning": "Aborted rollout events with bounded reason/profile labels.",
+      "presentation": "Aborts/s or selected-range increase; distinguish current rollout state.",
+      "owner": "CMTC rollout controller"
+    },
+    "cmtc_spire_ready": {
+      "kind": "gauge",
+      "status": "planned",
+      "meaning": "Fresh authenticated SPIRE API readiness acknowledgment at a defined boundary.",
+      "presentation": "Mapped state/history; separate API ACK from registration and workload issuance.",
+      "owner": "CMTC/Cilium SPIRE client"
+    },
+    "cmtc_transport_compatibility_ready": {
+      "kind": "gauge",
+      "status": "planned",
+      "meaning": "Selected Cilium/ClusterMesh/ztunnel/transport profile passes the required compatibility gates.",
+      "presentation": "Mapped status/table per profile; not a count of encrypted packets.",
+      "owner": "CMTC transport verifier"
+    },
+    "cmtc_transport_encryption_failures_total": {
+      "kind": "counter",
+      "status": "planned",
+      "meaning": "Observed required node-layer encryption failures at a defined probe/datapath boundary.",
+      "presentation": "Failures/s by bounded profile/reason; not an application TLS handshake counter.",
+      "owner": "Cilium/CMTC transport verifier"
+    },
+    "cmtc_trust_bundle_ready": {
+      "kind": "gauge",
+      "status": "planned",
+      "meaning": "Required public bundle observed and consumed at the expected generation/digest with freshness.",
+      "presentation": "Mapped state/table; ConfigMap existence alone is insufficient.",
+      "owner": "CMTC trust verifier"
+    },
+    "cmtc_ztunnel_ready": {
+      "kind": "gauge",
+      "status": "planned",
+      "meaning": "Fresh proxy-process/configuration readiness at a stated boundary.",
+      "presentation": "Mapped table/status history; proxy readiness alone does not establish Protected.",
+      "owner": "Cilium/CMTC proxy verifier"
+    },
+    "controller_runtime_reconcile_errors_total": {
+      "kind": "counter",
+      "status": "implemented",
+      "meaning": "Actual controller-runtime reconcile error observations.",
+      "presentation": "Errors/s over $__rate_interval; observed zero is valid.",
+      "owner": "controller-runtime"
+    },
+    "controller_runtime_reconcile_time_seconds": {
+      "kind": "histogram",
+      "status": "implemented",
+      "meaning": "Observed controller reconcile duration in seconds.",
+      "presentation": "p95 from bucket rates aggregated by cluster/le; not TLS/network latency.",
+      "owner": "controller-runtime"
+    }
+  }
+}

@@ -131,7 +131,7 @@ def main():
     parser.add_argument("--out", type=pathlib.Path)
     parser.add_argument("--expect-load", action="store_true", help="Require positive mTLS, rejection and payload signals")
     args = parser.parse_args()
-    paths = args.dashboard or [FOLDER / "dashboard.json", FOLDER / "authenticated-only.json"]
+    paths = args.dashboard or [FOLDER / "authenticated-only.json"]
     reports = []
     for path in paths:
         dashboard = json.loads(path.read_text())

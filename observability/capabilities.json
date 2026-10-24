@@ -1,0 +1,142 @@
+{
+  "status": "Planned domains are retained; panels become live as their stories deliver verified instrumentation.",
+  "domains": [
+    {
+      "domain": "Security Overview",
+      "dashboard": "operations",
+      "stories": [
+        "CMTC-701",
+        "CMTC-704"
+      ],
+      "planned_metrics": [
+        "cmtc_cluster_ready",
+        "cmtc_mtls_handshakes_total",
+        "cmtc_namespaces_enrolled",
+        "cmtc_pods_protected"
+      ],
+      "original_definition": "proposals/01-security-overview.json"
+    },
+    {
+      "domain": "Namespace Enrollment",
+      "dashboard": "operations",
+      "stories": [
+        "CMTC-501",
+        "CMTC-504",
+        "CMTC-704"
+      ],
+      "planned_metrics": [
+        "cmtc_namespace_label_drift_total",
+        "cmtc_namespaces_eligible",
+        "cmtc_namespaces_enrolled",
+        "cmtc_namespaces_excluded"
+      ],
+      "original_definition": "proposals/02-namespace-enrollment.json"
+    },
+    {
+      "domain": "Pod and Node Enforcement",
+      "dashboard": "operations",
+      "stories": [
+        "CMTC-503",
+        "CMTC-703"
+      ],
+      "planned_metrics": [
+        "cmtc_node_agent_ready",
+        "cmtc_pods_enforcement_failed",
+        "cmtc_pods_pending",
+        "cmtc_pods_protected"
+      ],
+      "original_definition": "proposals/03-pod-node-enforcement.json"
+    },
+    {
+      "domain": "mTLS Performance",
+      "dashboard": "workload-mtls",
+      "stories": [
+        "CMTC-703"
+      ],
+      "planned_metrics": [
+        "cmtc_mtls_active_connections",
+        "cmtc_mtls_handshakes_total",
+        "cmtc_mtls_identity_validation_failures_total",
+        "cmtc_remote_identity_cache_misses_total"
+      ],
+      "original_definition": "proposals/04-mtls-performance.json"
+    },
+    {
+      "domain": "CA Trust and Rotation",
+      "dashboard": "workload-mtls",
+      "stories": [
+        "CMTC-101",
+        "CMTC-102",
+        "CMTC-104"
+      ],
+      "planned_metrics": [
+        "cmtc_certificate_rotation_failures_total",
+        "cmtc_issuer_ready",
+        "cmtc_spire_ready",
+        "cmtc_trust_bundle_ready"
+      ],
+      "original_definition": "proposals/05-ca-trust-rotation.json"
+    },
+    {
+      "domain": "Network Encryption",
+      "dashboard": "workload-mtls",
+      "stories": [
+        "CMTC-304",
+        "CMTC-305"
+      ],
+      "planned_metrics": [
+        "cmtc_dual_encryption_probe_success",
+        "cmtc_mtu_validation_failures_total",
+        "cmtc_transport_compatibility_ready",
+        "cmtc_transport_encryption_failures_total"
+      ],
+      "original_definition": "proposals/06-network-encryption.json"
+    },
+    {
+      "domain": "Security Violations",
+      "dashboard": "workload-mtls",
+      "stories": [
+        "CMTC-403",
+        "CMTC-703"
+      ],
+      "planned_metrics": [
+        "cmtc_mtls_authorization_denials_total",
+        "cmtc_mtls_identity_validation_failures_total",
+        "cmtc_namespace_policy_conflicts_total",
+        "cmtc_plaintext_bypass_detected_total"
+      ],
+      "original_definition": "proposals/07-security-violations.json"
+    },
+    {
+      "domain": "Control Plane Safety",
+      "dashboard": "operations",
+      "stories": [
+        "CMTC-603",
+        "CMTC-605"
+      ],
+      "planned_metrics": [
+        "cmtc_apiserver_probe_success",
+        "cmtc_hostnetwork_pods_total",
+        "cmtc_platform_dependency_healthy",
+        "cmtc_rollout_aborted_total"
+      ],
+      "original_definition": "proposals/08-control-plane-safety.json"
+    },
+    {
+      "domain": "Operator and Node Agents",
+      "dashboard": "operations",
+      "stories": [
+        "CMTC-202",
+        "CMTC-203",
+        "CMTC-702"
+      ],
+      "planned_metrics": [
+        "cmtc_node_agent_ready",
+        "cmtc_node_config_drift_total",
+        "cmtc_reconcile_errors_total",
+        "cmtc_ztunnel_ready"
+      ],
+      "original_definition": "proposals/09-operator-agents.json"
+    }
+  ]
+}

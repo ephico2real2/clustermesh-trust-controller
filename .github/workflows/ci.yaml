@@ -34,6 +34,8 @@ jobs:
           bash -n scripts/cilium/*.sh
           python3 scripts/cilium/prepare.py config/cilium-images.lock.json /tmp/cilium-image-values.json
           python3 examples/observability/ztunnel-spike/validate.py
+          python3 observability/build.py --check
+          python3 observability/validate.py
           bash -n scripts/lab/*.sh
           bash -n scripts/capture/publish.sh
           node --check scripts/capture/walk.cjs
