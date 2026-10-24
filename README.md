@@ -39,4 +39,10 @@ Repository: [ephico2real2/clustermesh-trust-controller](https://github.com/ephic
 
 The kind lab uses [versioned Cilium fork images](docs/development/CILIUM_IMAGES.md) from GHCR, pinned with their matching chart in `config/cilium-images.lock.json`.
 
+For local-first security work, follow the [Podman build, kind archive import,
+and qualification runbook](docs/development/PODMAN_LOCAL_VALIDATION.md). It keeps
+the MacBook Podman builder separate from the existing Colima/kind runtime and
+shows how to prove which exact image and source are running before load tests or
+Grafana screenshots.
+
 The imported [PoC Hubble dashboard by app](examples/observability/hubble-l7-by-app/README.md) includes the exact demo 37 generator, generated JSON and source hashes. The fork's Hubble-enabled load test exercises it with distinct app/workload names and real Gateway and direct-pod requests.

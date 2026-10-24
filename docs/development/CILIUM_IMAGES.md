@@ -8,28 +8,28 @@ The public package is `ghcr.io/ephico2real2/cilium-dev`. Each component uses a d
 
 ## Develop, build and select a version
 
-Complete the local qualification before pushing a change that starts CI or dispatching a workflow. Use the MacBook's dedicated Ubuntu Colima VM with the source mounted into Linux containers. Run the affected tests and lint, build the intended image locally, then verify the two-cluster policy/connectivity tests, sustained load and browser evidence against that image. For Hubble changes, run the local Gateway and dashboard qualification as well. When target architectures differ, build the required Linux platform locally with Docker before publication; record the platform and source revision. CI repeats a successful local qualification. A CI failure is reproduced and fixed locally before rerunning it.
+For local-first CMTC/Cilium security work, use the [Podman build, kind archive
+import, and qualification runbook](PODMAN_LOCAL_VALIDATION.md). It documents
+the MacBook's explicit Podman connection, pinned Linux ARM64 build inputs,
+archive transfer into the existing Colima kind runtime, deployed image/source
+verification, and real positive/negative traffic checks. Do not change the
+default container engine or create replacement clusters to work around an
+unavailable VM.
 
-1. Work in a full checkout of `git@github.com:ephico2real2/cilium.git`. Keep upstream changes integrated through a reviewed fork PR; preserve existing feature branches. Commit the intended source under the configured human identity with a DCO signoff. The image helper refuses tracked source modifications.
-2. Select a working Docker engine, log in locally and build from the committed checkout. The fork's `contrib/cmtc-images/build.sh` uses the native Cilium Dockerfiles and publishes all three components. On this Mac the isolated `colima-cmtc-cilium` context is available; it does not replace the existing Docker context or MongoDB environment.
+The Cilium fork's `contrib/cmtc-images/build.sh` and the
+`cmtc-development-images.yaml` workflow are optional **publication** paths.
+They build/push GHCR images and are separate from local Podman qualification.
+The active mandate defers CI and publication; do not run those paths unless the
+user changes that instruction. When publication is authorized, use one exact
+source SHA, validate the resulting digest lock, and select it with
+`CILIUM_IMAGE_LOCK=/absolute/path/to/images.lock.json` or a reviewed update to
+`config/cilium-images.lock.json`. `make cilium-prepare` then fetches the chart
+from that same source. Never select a mutable `latest` image.
 
-   ```sh
-   export DOCKER_CONTEXT=colima-cmtc-cilium
-   gh auth token | docker login ghcr.io -u ephico2real2 --password-stdin
-   CILIUM_TARGET_PLATFORM=linux/arm64 make cilium-build-push CILIUM_SOURCE_DIR=/absolute/path/to/cilium
-   ```
-
-   Native AMD64 builders use `linux/amd64`. The local build records metadata and a native lock in `artifacts/cilium-build/`. Credentials must stay outside evidence directories.
-3. Run the fork's publisher against the **same full source SHA**. `local_arm64=true` waits for the local ARM64 set instead of rebuilding it; the Ubuntu AMD64 job builds any missing images. It verifies source/platform labels and the agent version, then publishes the multi-architecture indices and `cilium-image-bundle` artifact. Future CI publication uses only `GITHUB_TOKEN` with package-write permission. The existing package must grant `ephico2real2/cilium` Write under Manage Actions access.
-
-   ```sh
-   gh workflow run cmtc-development-images.yaml -R ephico2real2/cilium -f source_sha=<40-character-SHA> -f local_arm64=true
-   gh run download <successful-run-id> -R ephico2real2/cilium -n cilium-image-bundle -D artifacts/cilium-bundle
-   ```
-
-4. Set `CILIUM_IMAGE_LOCK=/absolute/path/to/images.lock.json` for one local run, or deliberately replace `config/cilium-images.lock.json` and open a CMTC PR to advance the default. `make cilium-prepare` validates it and fetches the exact chart. `CILIUM_SOURCE_DIR` may point at an existing clean checkout at the same SHA to avoid fetching. `make image lab-up lab-test lab-evidence` then uses those images. Use the existing capture prerequisites described in [OBSERVE_LAB.md](OBSERVE_LAB.md).
-
-The CI workflow also accepts `cilium_image_lock_url`, an immutable raw GitHub URL in either owned repository, to test an alternate lock without changing the default. The lock requires full SHA and digest references under the user's GHCR namespace. A mismatched/modified chart fails before creating clusters. All three components are overridden on both Helm install and mesh upgrade. No image source is selected with `latest`.
+The workflow's `cilium_image_lock_url` input accepts an immutable raw GitHub URL
+in either owned repository for a future CI run. It does not change the checked-
+in default lock. All three components must be pinned to matching source and
+digest metadata when using this bundle path.
 
 Both clusters must pass rollout, pinned image-spec, runtime image-ID and agent binary version checks. The resulting `cilium-image-verification.json` accompanies the lock, Helm overrides and source SHA in CI artifacts. Actual shop allow/deny tests and a remote-only Global Service precede six-minute load streams (20 requests/s per local shop; 10 requests/s cross-cluster). Those streams remain active during browser capture; final Fortio summaries must show at least 99% HTTP 200, sustained duration and a minimum achieved rate. This is baseline connectivity/policy evidence; workload mTLS and transport composition remain blocked.
 
