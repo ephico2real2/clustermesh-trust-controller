@@ -1,0 +1,232 @@
+// PROPOSAL ONLY. Intended as pkg/ztunnel/admission/intent_store_linux.go.
+// Source reviewed: a23b8479cae4052eff591484e58e3d9b7adc44f8.
+package admission
+
+import (
+	"bytes"
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"io"
+	"os"
+	"path/filepath"
+	"strings"
+
+	"github.com/cilium/cilium/pkg/lock"
+	"github.com/google/uuid"
+	"golang.org/x/sys/unix"
+)
+
+// RequiredIdentity contains only validated intent and exact sandbox identity.
+// No capture, readiness, certificate, policy, ZDS or ADS acknowledgments belong here.
+type RequiredIdentity struct {
+	ClusterID      uint32 `json:"clusterID"`
+	NodeName       string `json:"nodeName"`
+	Namespace      string `json:"namespace"`
+	NamespaceUID   string `json:"namespaceUID"`
+	PodName        string `json:"podName"`
+	PodUID         string `json:"podUID"`
+	ServiceAccount string `json:"serviceAccount"`
+	EndpointID     uint16 `json:"endpointID"`
+	ContainerID    string `json:"containerID"`
+	NetnsPath      string `json:"netnsPath"`
+	NetnsDevice    uint64 `json:"netnsDevice"`
+	NetnsInode     uint64 `json:"netnsInode"`
+	NetnsCookie    uint64 `json:"netnsCookie"`
+}
+
+type RequiredIntent struct {
+	SchemaVersion int `json:"schemaVersion"`
+	RequiredIdentity
+	Incarnation string `json:"incarnation"`
+}
+
+type IntentStore struct {
+	mu        lock.Mutex
+	directory string
+	owner     *os.File
+	poisoned  error
+}
+
+// OpenIntentStore must run after StateDir exists. Call only for enabled Strict.
+// StateDir and its ancestors must already be trusted, root-owned directories.
+func OpenIntentStore(stateDir string) (*IntentStore, error) {
+	directory := filepath.Join(stateDir, "ztunnel-required")
+	if err := os.Mkdir(directory, 0700); err != nil && !errors.Is(err, os.ErrExist) {
+		return nil, err
+	}
+	info, err := os.Lstat(directory)
+	if err != nil {
+		return nil, err
+	}
+	if !info.IsDir() || info.Mode().Perm() != 0700 {
+		return nil, fmt.Errorf("unsafe Required intent directory")
+	}
+	if err := syncIntentDirectory(stateDir); err != nil {
+		return nil, err
+	}
+	fd, err := unix.Open(filepath.Join(directory, ".owner"), unix.O_CREAT|unix.O_RDWR|unix.O_CLOEXEC|unix.O_NOFOLLOW, 0600)
+	if err != nil {
+		return nil, err
+	}
+	owner := os.NewFile(uintptr(fd), "Required intent owner")
+	if err := unix.Flock(fd, unix.LOCK_EX|unix.LOCK_NB); err != nil {
+		owner.Close()
+		return nil, fmt.Errorf("another agent owns Required intents: %w", err)
+	}
+	return &IntentStore{directory: directory, owner: owner}, nil
+}
+func (s *IntentStore) Close() error { return s.owner.Close() }
+
+func validateRequiredIdentity(i RequiredIdentity) error {
+	for _, value := range []string{i.NodeName, i.Namespace, i.NamespaceUID, i.PodName, i.PodUID, i.ServiceAccount, i.ContainerID, i.NetnsPath} {
+		if strings.TrimSpace(value) == "" {
+			return fmt.Errorf("incomplete Required sandbox identity")
+		}
+	}
+	if i.EndpointID == 0 || i.NetnsInode == 0 || i.NetnsCookie == 0 || !filepath.IsAbs(i.NetnsPath) {
+		return fmt.Errorf("invalid Required endpoint or netns identity")
+	}
+	return nil
+}
+func intentFilename(i RequiredIdentity) string {
+	// Delimit the tuple through canonical JSON rather than ambiguous concatenation.
+	key, _ := json.Marshal([]any{i.ClusterID, i.NodeName, i.NamespaceUID, i.PodUID})
+	digest := sha256.Sum256(key)
+	return hex.EncodeToString(digest[:]) + ".json"
+}
+func readIntent(path string) (RequiredIntent, error) {
+	fd, err := unix.Open(path, unix.O_RDONLY|unix.O_CLOEXEC|unix.O_NOFOLLOW, 0)
+	if err != nil {
+		return RequiredIntent{}, err
+	}
+	f := os.NewFile(uintptr(fd), path)
+	defer f.Close()
+	stat, err := f.Stat()
+	if err != nil {
+		return RequiredIntent{}, err
+	}
+	if !stat.Mode().IsRegular() || stat.Size() > 64*1024 {
+		return RequiredIntent{}, fmt.Errorf("invalid Required intent file")
+	}
+	decoder := json.NewDecoder(io.LimitReader(f, 64*1024+1))
+	decoder.DisallowUnknownFields()
+	var value RequiredIntent
+	if err := decoder.Decode(&value); err != nil {
+		return RequiredIntent{}, err
+	}
+	var trailing any
+	if err := decoder.Decode(&trailing); err != io.EOF {
+		return RequiredIntent{}, fmt.Errorf("trailing Required intent data")
+	}
+	if value.SchemaVersion != 1 {
+		return RequiredIntent{}, fmt.Errorf("unsupported Required intent schema")
+	}
+	if _, err := uuid.Parse(value.Incarnation); err != nil {
+		return RequiredIntent{}, err
+	}
+	if err := validateRequiredIdentity(value.RequiredIdentity); err != nil {
+		return RequiredIntent{}, err
+	}
+	if filepath.Base(path) != intentFilename(value.RequiredIdentity) {
+		return RequiredIntent{}, fmt.Errorf("Required intent filename disagrees with identity")
+	}
+	return value, nil
+}
+func syncIntentDirectory(path string) error {
+	directory, err := os.Open(path)
+	if err != nil {
+		return err
+	}
+	defer directory.Close()
+	return directory.Sync()
+}
+
+// PersistRequired is synchronous and idempotent for the exact validated sandbox.
+// A replacement sandbox cannot inherit an old intent or its acknowledgments.
+func (s *IntentStore) PersistRequired(identity RequiredIdentity) (RequiredIntent, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.poisoned != nil {
+		return RequiredIntent{}, s.poisoned
+	}
+	if err := validateRequiredIdentity(identity); err != nil {
+		return RequiredIntent{}, err
+	}
+	path := filepath.Join(s.directory, intentFilename(identity))
+	if old, err := readIntent(path); err == nil {
+		if old.RequiredIdentity != identity {
+			return RequiredIntent{}, fmt.Errorf("Required sandbox replacement needs exact retirement")
+		}
+		return old, nil
+	} else if !errors.Is(err, os.ErrNotExist) {
+		return RequiredIntent{}, fmt.Errorf("reading existing Required intent: %w", err)
+	}
+	record := RequiredIntent{SchemaVersion: 1, RequiredIdentity: identity, Incarnation: uuid.NewString()}
+	data, err := json.Marshal(record)
+	if err != nil {
+		return RequiredIntent{}, err
+	}
+	temporary, err := os.CreateTemp(s.directory, ".intent-")
+	if err != nil {
+		return RequiredIntent{}, err
+	}
+	name := temporary.Name()
+	defer os.Remove(name)
+	// CreateTemp uses0600. Every error below prevents CNI success.
+	if _, err = io.Copy(temporary, bytes.NewReader(data)); err == nil {
+		err = temporary.Sync()
+	}
+	closeErr := temporary.Close()
+	if err == nil {
+		err = closeErr
+	}
+	if err != nil {
+		return RequiredIntent{}, err
+	}
+	if err = os.Rename(name, path); err != nil {
+		return RequiredIntent{}, err
+	}
+	if err = syncIntentDirectory(s.directory); err != nil {
+		// Rename may have committed. Never mistake an uncertain fsync for admission.
+		s.poisoned = fmt.Errorf("Required intent persistence is indeterminate; restart required: %w", err)
+		return RequiredIntent{}, s.poisoned
+	}
+	return record, nil
+}
+
+// List loads INTENT ONLY. Caller must fence traffic before live API validation.
+// Any corruption blocks strict recovery; missing files do not prove plaintext eligibility.
+func (s *IntentStore) List() ([]RequiredIntent, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.poisoned != nil {
+		return nil, s.poisoned
+	}
+	entries, err := os.ReadDir(s.directory)
+	if err != nil {
+		return nil, err
+	}
+	records := make([]RequiredIntent, 0, len(entries))
+	for _, entry := range entries {
+		if strings.HasPrefix(entry.Name(), ".intent-") || entry.Name() == ".owner" {
+			continue
+		}
+		if !strings.HasSuffix(entry.Name(), ".json") {
+			return nil, fmt.Errorf("unknown Required intent file %q", entry.Name())
+		}
+		record, err := readIntent(filepath.Join(s.directory, entry.Name()))
+		if err != nil {
+			return nil, err
+		}
+		records = append(records, record)
+	}
+	return records, nil
+}
+
+// Retirement intentionally has NO public delete API in this first increment.
+// Preserve intent on cancellation, timeout, Pod absence, API outage, namespace
+// recreation, and failed DEL. Add deletion only with exact token, sandbox-death
+// evidence, proxy flow retirement, kernel-gate retirement and directory fsync.

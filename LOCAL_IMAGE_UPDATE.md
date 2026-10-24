@@ -1,5 +1,7 @@
 # Local image rebuild and ClusterMesh update
 
+The later [admission increment](LOCAL_ADMISSION_VALIDATION.md) records the current Cilium agent pin; the table below preserves the earlier rebuild baseline.
+
 On October 24, 2026, the MacBook Podman builder rebuilt Linux ARM64 images and
 updated the existing `cmtc-a` and `cmtc-b` clusters in Colima `cmtc-cilium`.
 Cilium and CMTC are running the rebuilt images. The new ztunnel image is

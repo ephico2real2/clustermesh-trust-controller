@@ -1,0 +1,21 @@
+# Guided Cursor design review
+
+The user requested Cursor CLI with **Grok 4.7 Extra High**, complete code in files and executable tests. CLI initialization confirms `Grok 4.7 256K Extra High` in session `2358cd68-fbf8-4652-a025-5566243e07fd`. Cursor runs read-only plan mode; the primary owns implementation, tests and deployment.
+
+| Document | Role and status |
+| --- | --- |
+| [CLUSTER_TRUST_PROMPT.md](CLUSTER_TRUST_PROMPT.md) | Initial source context and security boundaries. |
+| [CLUSTER_TRUST_XHIGH_FOLLOWUP.md](CLUSTER_TRUST_XHIGH_FOLLOWUP.md) | Explicit model selection and expanded request. |
+| [FULL_CODE_REQUEST.md](FULL_CODE_REQUEST.md) | Complete files/tests and the full unfinished mandate. |
+| [CLUSTER_TRUST_DESIGN.md](CLUSTER_TRUST_DESIGN.md) | Initial Extra High design; unsafe shortcuts rejected. |
+| [CLUSTER_TRUST_IMPLEMENTATION.md](CLUSTER_TRUST_IMPLEMENTATION.md) | First complete code proposal; not applied or qualified. |
+| [PRIMARY_REVIEW.md](PRIMARY_REVIEW.md) | Corrections for policy predicates, withdrawal, retained-flow expiry and TLS evidence. |
+| [CLUSTER_TRUST_IMPLEMENTATION_REVISED.md](CLUSTER_TRUST_IMPLEMENTATION_REVISED.md) | Revision preserves the native matcher and introduces withdrawal/deadline helpers; further pin-validation findings remain. |
+| [CLUSTER_TRUST_PIN_IMPLEMENTATION.md](CLUSTER_TRUST_PIN_IMPLEMENTATION.md) | Third Extra High pass completed; further withdrawal/socket/policy findings prevent wholesale adoption. |
+| [ISSUER_PIN_REVIEW.md](ISSUER_PIN_REVIEW.md) | Additional required certificate/pin/SAN corrections sent to the same Extra High session. The next complete proposal is saved below. |
+
+The independent reviewer’s [corrected module candidate](inputs/issuer-pin-review-proposal.rs.txt) is also retained as an uncompiled proposal, including direct-issuer checks, canonical DER, withdrawal tombstones and full socket shutdown. The primary adapted this candidate into local ztunnel commit `1db4fb296beb4ca4c6c12762c61d1730dc38ceab`, added shared-root/path-length/leaf-expiry tests and passed 420 tests plus formatting/strict Clippy. It is an issuer foundation, not live TLS/pool/policy integration.
+
+The complete Cursor proposals have not been adopted wholesale. Their reviewed, corrected issuer foundation is now implemented; the remaining proposed integration is unaccepted. Review found concrete security flaws: separately supplied certificate/SPKI/expiry metadata; same-key authority substitutions; filtered malformed SANs; write-half-only socket shutdown; and incomplete identity coverage in the policy prescreen. Accepted code must be independently reviewed and tested against the actual crate interfaces. A helper or a socket test is not running TLS, pool invalidation, source authentication or workload authorization.
+
+The raw CLI event streams remain in task-owned `/private/tmp/cmtc-rebuild-20261024/` diagnostics and are not published. This directory retains human-readable prompts and proposals, not raw internal reasoning. Source/runtime pins and open acceptance gates remain in [DELIVERY_STATUS.md](../../agile/DELIVERY_STATUS.md). CI and publishing remain deferred; the compatibility guard stays closed.

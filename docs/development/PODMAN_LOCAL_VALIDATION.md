@@ -214,6 +214,20 @@ TLS handshakes. The dashboard conventions and chart/panel checks are in the
 [dashboard guide](../../DASHBOARD_GUIDE.md); the previous qualified local run is
 documented in [LOCAL_SECURITY_VALIDATION.md](../../LOCAL_SECURITY_VALIDATION.md).
 
+## Ztunnel namespace test image
+
+Use a tool-complete test builder rather than the compile-only Rust image for the full namespace suite. Missing `iproute2`/`iptables` previously caused 19 cascading failures even though compilation and issuer tests passed. The current MacBook-local qualified ARM64 test builder is `localhost/cmtc-ztunnel-test:rust1.90-netns`, configuration ID `def7f2e8dac02fbe34556331944cd766aa7f2ea9b90784f083634d52b59edb0f`. It contains Rust 1.90, `iproute2` 6.1.0 and iptables 1.8.10.
+
+Its [Containerfile](../evidence/admission-update/ztunnel-test.Containerfile) extends a machine-local compiler image; that base ID is not portable to another host. Rebuild the documented compiler/tool image first when absent, and verify versions/configuration before reuse. The [exact qualification script](../evidence/admission-update/qualify-domain-anchors.sh) mounts the worktree and common Git metadata explicitly, uses the owned privileged container, preflights namespace creation and iptables, then executes:
+
+```sh
+cargo test --locked --lib --tests --bins -- --include-ignored --test-threads=1
+cargo fmt --all -- --check
+cargo clippy --locked --benches --tests --bins -- -D warnings
+```
+
+A normally ignored case must actually run before it counts. Record library/direct/namespace counts independently; a zero-test binary target is not evidence. Use the compile-only image for compilation only. Preserve failed diagnostics and keep the exact source/image pin with [the local admission report](../../LOCAL_ADMISSION_VALIDATION.md).
+
 ## CMTC operator image
 
 The legacy image helper under `scripts/lab/mtls/build.sh` was written for the
