@@ -2,6 +2,14 @@
 
 Start with `docs/handover/CODEX_MASTER_PROMPT.md` and the current handover/agile backlog.
 
+## Explanation and visual style
+
+Use the spirit of ASD-STE100. Write direct sentences with direct verbs. Give one action per procedural step. Keep technical terms consistent. Avoid unnecessary synonyms. Apply `$ste-technical-explanations` for technical explanations. For systems and numbers, prefer useful interactive HTML visuals with sliders, toggles, or live inputs. Deliver a self-contained HTML file with bundled Tailwind CSS and canvas code when appropriate. Use existing diagram skills when a micro app is excessive. Aim for 3Blue1Brown-style clarity. Preserve the Tableau palette in CMTC Grafana dashboards. Use synthetic narration when requested or useful and supported. Keep measured evidence separate from illustrative values.
+
+Read the relevant diagram-kit skill from `/Users/olasumbo/gitRepos/diagram-kit`: [visual](../diagram-kit/skill/visual/SKILL.md) for architecture and flow diagrams, [dashboard](../diagram-kit/skill/dashboard/SKILL.md) for metrics and Grafana/Perses, and [document](../diagram-kit/skill/document/SKILL.md) for requested Word output from Markdown. Use the kit template and renderer for diagram pages. Inspect both themes. Keep proposed behavior distinct from measured behavior.
+
+## Build and delivery
+
 - Use **Podman from the MacBook host for image builds** and containerized local checks. Set the Linux target architecture explicitly and verify the resulting image/source pin.
 - Fork upstream-derived components into `ephico2real2` before implementation. Use the personal fork as `origin` and the canonical repository as `upstream`; discover and fetch the real default branch, then create the feature branch directly from its current tip. Before publishing, verify the feature branch itself is zero commits behind upstream; a current fork default branch is insufficient. Redo old work on a fresh current-base branch when requested, preserve the original branch, and rerun meaningful local tests on the new source before pushing.
 - Finish affected local tests, required lint/vet, the image build and applicable integration/load/packet/screenshots before pushing changes that trigger CI, dispatching workflows or publishing images. Reproduce failures locally before another CI run.

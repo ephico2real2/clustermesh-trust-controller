@@ -110,4 +110,26 @@ class TestPublicationClock(unittest.TestCase):
         p["publishedAt"]=stamp(now + 5);p["validUntil"]=stamp(now + 20)
         with self.assertRaises(m.Refusal): m.publication(encode(p), "cmtc-a", "output-uid", now)
 
+class TestDisabledScrape(unittest.TestCase):
+    def test_new_pod_requires_positive_fresh_observe_scrape(self):
+        lab=m.Lab.__new__(m.Lab);lab.selector=lambda:'{instance="new-pod:8080"}';lab.event=lambda *a,**k:None
+        calls=[];phase=[0]
+        def query(q):
+            calls.append(q)
+            if q.startswith('timestamp('):return [{"value":[0,str(time.time() if phase[0]>1 else time.time()-60)]}]
+            if q.startswith('cmtc_enforcement_available'):return [] if phase[0]==0 else [{"value":[0,"0"]}]
+            return []
+        lab.prom_query=query
+        def wait(fn,label,timeout):
+            self.assertFalse(fn(),"An unscripted new Pod cannot prove disabled telemetry")
+            phase[0]=1;self.assertFalse(fn(),"A stale scrape cannot prove current Observe state")
+            phase[0]=2;self.assertTrue(fn())
+        lab.wait=wait;lab.metrics(active=False)
+        self.assertTrue(any(q.startswith('timestamp(') for q in calls))
+
+    def test_advertised_enforcement_is_rejected(self):
+        lab=m.Lab.__new__(m.Lab);lab.selector=lambda:'{}';lab.prom_query=lambda q:[{"value":[0,"1"]}]
+        lab.wait=lambda fn,*a,**k:fn()
+        with self.assertRaises(m.Refusal):lab.metrics(active=False)
+
 if __name__=="__main__":unittest.main()

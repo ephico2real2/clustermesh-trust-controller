@@ -280,9 +280,14 @@ class Lab:
     def metrics(self,active=True,withdrawn=False,source_present=True):
         s=self.selector()
         if not active:
-            self.wait(lambda:all(not self.prom_query(m+s) for m in METRICS),"disabled producer metrics absent",timeout=50)
-            rows=self.prom_query('cmtc_enforcement_available'+s)
-            if not rows or any(float(x["value"][1])!=0 for x in rows):raise Refusal("Observe smoke missing/advertised enforcement")
+            def observed_disabled():
+                rows=self.prom_query('cmtc_enforcement_available'+s)
+                if not rows:return False
+                if any(float(x["value"][1])!=0 for x in rows):raise Refusal("Observe advertises enforcement")
+                stamps=self.prom_query('timestamp(cmtc_enforcement_available'+s+')')
+                if len(stamps)!=len(rows) or any(not 0 <= time.time()-float(x["value"][1]) < 20 for x in stamps):return False
+                return all(not self.prom_query(m+s) for m in METRICS)
+            self.wait(observed_disabled,"fresh Observe scrape with disabled producer metrics absent",timeout=50)
             self.event("observe-smoke",enforcementAvailable=False);return
         def ready():
             rows={m:self.prom_query(m+s) for m in METRICS}

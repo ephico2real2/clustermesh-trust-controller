@@ -1,5 +1,11 @@
 # End-to-end local delivery status
 
+## Active local qualification
+
+The user requested deployment and enablement. The exact ARM64 CMTC producer image `localhost/cmtc:issuer-7e606195f5` (source `7e606195f58359b0e0af82f219cafd5291268c67`, config `6d4b28d1935e3fecf260ee90e2baec844adcce63ee650d0cdcf61e50ac4439f6`) is imported on all four nodes. The actual API trial is running first on `cmtc-a`; its harness restores the baseline controller before owned-resource cleanup. The first trial found a harness scrape race and restored the exact controller template; it queried Observe before the new Pod had been scraped. The fix now requires a positive fresh Observe scrape;21 helper tests pass. Failure evidence remains in `/private/tmp/cmtc-issuer-profile-live-first`. The second trial is `/private/tmp/cmtc-issuer-profile-live-second`. This enables public issuer-profile publication for testing, not workload mTLS. Native identity delivery, authorization and recovery remain open; the combined startup guard stays closed.
+
+Explanation preferences are saved in root/global instructions and `$ste-technical-explanations`; both personal skills validate. Cursor Grok Extra High acknowledged the preference and all three local diagram-kit skills: visual, dashboard and document. [Request](../research/cursor/EXPLANATION_STYLE_REQUEST.md) and [acknowledgment](../research/cursor/EXPLANATION_STYLE_ACK.md) retain the actual session/model.
+
 Active mandate: October 24, 2026. Complete the full CMTC implementation autonomously through the canonical stories in [BACKLOG.md](BACKLOG.md) and [stories.csv](stories.csv). The target test design covers CMTC, the enhanced `ephico2real2/cilium` fork and ztunnel, plus the same sample application in both mesh clusters with bidirectional workload mTLS. Complete and qualify each affected slice locally first. CI is explicitly deferred at the user's current instruction: do not push a CI-triggering branch or dispatch a workflow unless the user changes that instruction.
 
 Continuity rule: questions and side requests do not cancel this mandate. Complete the pivot, then resume the first unfinished dependency without another prompt. Keep this file's current story, evidence, next action and blockers accurate across handovers and context compaction; a document or commit alone is not a stopping point.
