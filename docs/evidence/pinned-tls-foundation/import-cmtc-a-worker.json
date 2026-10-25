@@ -1,0 +1,198 @@
+{
+  "info": {
+    "chainID": "sha256:23c02a53e36e9d756b93466cbd45da3eb9588f2643ec3f24b26997f79e2d6520",
+    "imageSpec": {
+      "architecture": "arm64",
+      "config": {
+        "Entrypoint": [
+          "/usr/local/bin/ztunnel"
+        ],
+        "Env": [
+          "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+          "SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt"
+        ],
+        "Labels": {
+          "io.buildah.version": "1.33.7",
+          "io.cmtc.build.profile": "debug-pinned-tls-foundation",
+          "org.opencontainers.image.description": "Cilium ztunnel - ambient mesh proxy",
+          "org.opencontainers.image.revision": "ddb255de68cd458945f831cb1ab66f2f3f135d0c",
+          "org.opencontainers.image.source": "https://github.com/ephico2real2/ztunnel"
+        },
+        "User": "65532",
+        "WorkingDir": "/"
+      },
+      "created": "2026-10-25T01:40:13.422326356Z",
+      "history": [
+        {
+          "created": "1970-01-01T00:00:00Z",
+          "created_by": "bazel build @trixie//base-files/arm64:data_statusd"
+        },
+        {
+          "created": "1970-01-01T00:00:00Z",
+          "created_by": "bazel build @trixie//netbase/arm64:data_statusd"
+        },
+        {
+          "created": "1970-01-01T00:00:00Z",
+          "created_by": "bazel build @trixie//tzdata/arm64:data_statusd"
+        },
+        {
+          "created": "1970-01-01T00:00:00Z",
+          "created_by": "bazel build @trixie//tzdata-legacy/arm64:data_statusd"
+        },
+        {
+          "created": "1970-01-01T00:00:00Z",
+          "created_by": "bazel build @trixie//media-types/arm64:data_statusd"
+        },
+        {
+          "created": "1970-01-01T00:00:00Z",
+          "created_by": "bazel build //common:rootfs"
+        },
+        {
+          "created": "1970-01-01T00:00:00Z",
+          "created_by": "bazel build //common:passwd"
+        },
+        {
+          "created": "1970-01-01T00:00:00Z",
+          "created_by": "bazel build //common:home"
+        },
+        {
+          "created": "1970-01-01T00:00:00Z",
+          "created_by": "bazel build //common:group"
+        },
+        {
+          "created": "1970-01-01T00:00:00Z",
+          "created_by": "bazel build //common:tmp"
+        },
+        {
+          "created": "1970-01-01T00:00:00Z",
+          "created_by": "bazel build //static:nsswitch"
+        },
+        {
+          "created": "1970-01-01T00:00:00Z",
+          "created_by": "bazel build //common:os_release_debian13"
+        },
+        {
+          "created": "1970-01-01T00:00:00Z",
+          "created_by": "bazel build //common:cacerts_debian13_arm64_tar"
+        },
+        {
+          "created": "1970-01-01T00:00:00Z",
+          "created_by": "bazel build @trixie//libc6/arm64:data_statusd"
+        },
+        {
+          "created": "1970-01-01T00:00:00Z",
+          "created_by": "bazel build @trixie//libssl3t64/arm64:data_statusd"
+        },
+        {
+          "created": "1970-01-01T00:00:00Z",
+          "created_by": "bazel build @trixie//libzstd1/arm64:data_statusd"
+        },
+        {
+          "created": "1970-01-01T00:00:00Z",
+          "created_by": "bazel build @trixie//zlib1g/arm64:data_statusd"
+        },
+        {
+          "created": "1970-01-01T00:00:00Z",
+          "created_by": "bazel build @trixie//libgomp1/arm64:data_statusd"
+        },
+        {
+          "created": "1970-01-01T00:00:00Z",
+          "created_by": "bazel build @trixie//libstdc++6/arm64:data_statusd"
+        },
+        {
+          "created": "1970-01-01T00:00:00Z",
+          "created_by": "bazel build @trixie//libgcc-s1/arm64:data_statusd"
+        },
+        {
+          "created": "1970-01-01T00:00:00Z",
+          "created_by": "bazel build @trixie//gcc-14-base/arm64:data_statusd"
+        },
+        {
+          "comment": "FROM gcr.io/distroless/cc-debian13:nonroot",
+          "created": "2026-10-24T21:14:06.397827042Z",
+          "created_by": "/bin/sh -c #(nop) LABEL org.opencontainers.image.source=\"https://github.com/cilium/ztunnel\"",
+          "empty_layer": true
+        },
+        {
+          "comment": "FROM 779e3136fc67",
+          "created": "2026-10-24T21:14:06.420365075Z",
+          "created_by": "/bin/sh -c #(nop) LABEL org.opencontainers.image.description=\"Cilium ztunnel - ambient mesh proxy\"",
+          "empty_layer": true
+        },
+        {
+          "comment": "FROM 0c370feca288",
+          "created": "2026-10-24T21:14:06.442520566Z",
+          "created_by": "/bin/sh -c #(nop) WORKDIR /",
+          "empty_layer": true
+        },
+        {
+          "comment": "FROM ca05e9001db8",
+          "created": "2026-10-24T21:14:06.461669427Z",
+          "created_by": "/bin/sh -c #(nop) ARG TARGETARCH",
+          "empty_layer": true
+        },
+        {
+          "comment": "FROM 7769f3902936",
+          "created": "2026-10-25T01:40:13.187421452Z",
+          "created_by": "/bin/sh -c #(nop) COPY file:c0adca14da029e71ba4380e8bb1c8f2f5a942d83390965e012f5238c7fbd67e4 in /usr/local/bin/ztunnel "
+        },
+        {
+          "comment": "FROM 845838973a80",
+          "created": "2026-10-25T01:40:13.381830535Z",
+          "created_by": "/bin/sh -c #(nop) ENTRYPOINT [\"/usr/local/bin/ztunnel\"]",
+          "empty_layer": true
+        },
+        {
+          "comment": "FROM 7d1f50b7a08d",
+          "created": "2026-10-25T01:40:13.422616315Z",
+          "created_by": "/bin/sh -c #(nop) LABEL \"org.opencontainers.image.source\"=\"https://github.com/ephico2real2/ztunnel\" \"org.opencontainers.image.revision\"=\"ddb255de68cd458945f831cb1ab66f2f3f135d0c\" \"io.cmtc.build.profile\"=\"debug-pinned-tls-foundation\"",
+          "empty_layer": true
+        }
+      ],
+      "os": "linux",
+      "rootfs": {
+        "diff_ids": [
+          "sha256:e842bc95a0a8664498b7881e537b5929e419d590f5a9954fb7f81c73c20fc6c7",
+          "sha256:621c35e751a51a9a9dc3e80aa0b7fe8be2a93402ea6ccd307d30852cd7776cda",
+          "sha256:92a3b02188b326c1b10a0a375d3c0019dff4ee8ff02a4b51a7e640bb9400932f",
+          "sha256:ef430e4865b6130e131d5777c1d072fdcc89478668d10ab41a18549e0fdc88b5",
+          "sha256:275a30dd8ce958b21daa9ad962c6fbc09f98306ee2f486b65c9075dc257b1412",
+          "sha256:4d049f83d9cf21d1f5cc0e11deaf36df02790d0e60c1a3829538fb4b61685368",
+          "sha256:af5aa97ebe6ce1604747ec1e21af7136ded391bcabe4acef882e718a87c86bcc",
+          "sha256:6f1cdceb6a3146f0ccb986521156bef8a422cdbb0863396f7f751f575ba308f4",
+          "sha256:bd3cdfae1d3fdd83a2231d608969b38b82349777c2fff9a7c12d54f8ac5c9b38",
+          "sha256:4cde6b0bb6f50a5f255eef7b2a42162c661cf776b803225dcac9a659e396bb6b",
+          "sha256:ad51d0769d16ba578106a177987dfe3d2e02c1668c852b795b2f6b024068242a",
+          "sha256:187cfc6d1e3e8a40a5e64653bcd3239c140807dcf1c09e48021178705a5a6139",
+          "sha256:0762a1f6557d1e88a761ab05aa7f65a10dc0e559913ea13befb873d907e1a396",
+          "sha256:50a5575df19e16694e9b7bfca79ef13cfce85faab4b0585ff197a078a952b007",
+          "sha256:948af73b9b4f49fa4e0009269c2f4a5b174fb02c4485b13ab7f6d0c705d49966",
+          "sha256:91213e6dc2fda431a0de4541602a933c7a48206a0bf487217fa681260fccdc23",
+          "sha256:7b57942929394e731b49e8f1863a4da2cbd1b9fda48d9f1e75a0a28b2d89d01a",
+          "sha256:7578331450f7cd6e1f6f28caf2ce9af93ea935a049132bb63ed523dcbda068e4",
+          "sha256:323c2be748e4417f7ab7b05b33d6c1a52df0788e779143555109ddcd5325c76c",
+          "sha256:fcb0c313318aac64dde0e0574b4df3394902929eb62d43e8b6c47ec4562f170d",
+          "sha256:30884b21b6a1362fbcdb60743280a138148b6d0ac50a3f8ee3e9f213b371c9e7",
+          "sha256:d4a286bd4f8e3c48b7817de0c6326d4f9b8c5c79c8a54ac9f6417c6d09663376"
+        ],
+        "type": "layers"
+      },
+      "variant": "v8"
+    }
+  },
+  "status": {
+    "id": "sha256:09207d73016a90518449b78879b1813e8dc134bc82eed899a66ae7ed6ff76880",
+    "pinned": false,
+    "repoDigests": [
+      "docker.io/library/import-2026-10-25@sha256:4331715c7be6ad733dffcfcedc88f395d56203f188f5b38e3ebef68571b79412"
+    ],
+    "repoTags": [
+      "localhost/cmtc-ztunnel:pins-ddb255de68"
+    ],
+    "size": "98295515",
+    "uid": {
+      "value": "65532"
+    },
+    "username": ""
+  }
+}

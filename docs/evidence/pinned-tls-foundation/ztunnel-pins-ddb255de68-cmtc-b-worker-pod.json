@@ -1,0 +1,197 @@
+{
+  "apiVersion": "v1",
+  "kind": "Pod",
+  "metadata": {
+    "creationTimestamp": "2026-10-25T01:42:13Z",
+    "generateName": "ztunnel-pins-ddb255de68-cmtc-b-worker-",
+    "generation": 1,
+    "labels": {
+      "app.kubernetes.io/name": "ztunnel-image-validation",
+      "batch.kubernetes.io/controller-uid": "3546fd1e-bee8-43c9-8c46-08f4add31cb8",
+      "batch.kubernetes.io/job-name": "ztunnel-pins-ddb255de68-cmtc-b-worker",
+      "controller-uid": "3546fd1e-bee8-43c9-8c46-08f4add31cb8",
+      "job-name": "ztunnel-pins-ddb255de68-cmtc-b-worker"
+    },
+    "name": "ztunnel-pins-ddb255de68-cmtc-b-worker-t6p66",
+    "namespace": "cmtc-system",
+    "ownerReferences": [
+      {
+        "apiVersion": "batch/v1",
+        "blockOwnerDeletion": true,
+        "controller": true,
+        "kind": "Job",
+        "name": "ztunnel-pins-ddb255de68-cmtc-b-worker",
+        "uid": "3546fd1e-bee8-43c9-8c46-08f4add31cb8"
+      }
+    ],
+    "resourceVersion": "61945",
+    "uid": "3bcb83b3-c841-4a2b-b8a4-93056f0b7fcd"
+  },
+  "spec": {
+    "automountServiceAccountToken": false,
+    "containers": [
+      {
+        "args": [
+          "version"
+        ],
+        "image": "localhost/cmtc-ztunnel:pins-ddb255de68",
+        "imagePullPolicy": "Never",
+        "name": "version",
+        "resources": {
+          "limits": {
+            "cpu": "200m",
+            "memory": "128Mi"
+          },
+          "requests": {
+            "cpu": "10m",
+            "memory": "32Mi"
+          }
+        },
+        "securityContext": {
+          "allowPrivilegeEscalation": false,
+          "capabilities": {
+            "drop": [
+              "ALL"
+            ]
+          },
+          "readOnlyRootFilesystem": true
+        },
+        "terminationMessagePath": "/dev/termination-log",
+        "terminationMessagePolicy": "File"
+      }
+    ],
+    "dnsPolicy": "ClusterFirst",
+    "enableServiceLinks": true,
+    "nodeName": "cmtc-b-worker",
+    "preemptionPolicy": "PreemptLowerPriority",
+    "priority": 0,
+    "restartPolicy": "Never",
+    "schedulerName": "default-scheduler",
+    "securityContext": {
+      "runAsNonRoot": true,
+      "runAsUser": 65532,
+      "seccompProfile": {
+        "type": "RuntimeDefault"
+      }
+    },
+    "serviceAccount": "default",
+    "serviceAccountName": "default",
+    "terminationGracePeriodSeconds": 30,
+    "tolerations": [
+      {
+        "operator": "Exists"
+      }
+    ]
+  },
+  "status": {
+    "allocatedResources": {
+      "cpu": "10m",
+      "memory": "32Mi"
+    },
+    "conditions": [
+      {
+        "lastProbeTime": null,
+        "lastTransitionTime": "2026-10-25T01:42:15Z",
+        "observedGeneration": 1,
+        "status": "False",
+        "type": "PodReadyToStartContainers"
+      },
+      {
+        "lastProbeTime": null,
+        "lastTransitionTime": "2026-10-25T01:42:13Z",
+        "observedGeneration": 1,
+        "reason": "PodCompleted",
+        "status": "True",
+        "type": "Initialized"
+      },
+      {
+        "lastProbeTime": null,
+        "lastTransitionTime": "2026-10-25T01:42:14Z",
+        "observedGeneration": 1,
+        "reason": "PodCompleted",
+        "status": "False",
+        "type": "Ready"
+      },
+      {
+        "lastProbeTime": null,
+        "lastTransitionTime": "2026-10-25T01:42:14Z",
+        "observedGeneration": 1,
+        "reason": "PodCompleted",
+        "status": "False",
+        "type": "ContainersReady"
+      },
+      {
+        "lastProbeTime": null,
+        "lastTransitionTime": "2026-10-25T01:42:13Z",
+        "observedGeneration": 1,
+        "status": "True",
+        "type": "PodScheduled"
+      }
+    ],
+    "containerStatuses": [
+      {
+        "allocatedResources": {
+          "cpu": "10m",
+          "memory": "32Mi"
+        },
+        "containerID": "containerd://5f9f9895371029b1de84343cf4da532f591caaf78eac2b9e0cb0ee1b0b942b48",
+        "image": "localhost/cmtc-ztunnel:pins-ddb255de68",
+        "imageID": "docker.io/library/import-2026-10-25@sha256:4331715c7be6ad733dffcfcedc88f395d56203f188f5b38e3ebef68571b79412",
+        "lastState": {},
+        "name": "version",
+        "ready": false,
+        "resources": {
+          "limits": {
+            "cpu": "200m",
+            "memory": "128Mi"
+          },
+          "requests": {
+            "cpu": "10m",
+            "memory": "32Mi"
+          }
+        },
+        "restartCount": 0,
+        "started": false,
+        "state": {
+          "terminated": {
+            "containerID": "containerd://5f9f9895371029b1de84343cf4da532f591caaf78eac2b9e0cb0ee1b0b942b48",
+            "exitCode": 0,
+            "finishedAt": "2026-10-25T01:42:13Z",
+            "reason": "Completed",
+            "startedAt": "2026-10-25T01:42:13Z"
+          }
+        },
+        "user": {
+          "linux": {
+            "gid": 65532,
+            "supplementalGroups": [
+              65532
+            ],
+            "uid": 65532
+          }
+        }
+      }
+    ],
+    "hostIP": "172.18.0.5",
+    "hostIPs": [
+      {
+        "ip": "172.18.0.5"
+      }
+    ],
+    "observedGeneration": 1,
+    "phase": "Succeeded",
+    "podIP": "10.20.1.130",
+    "podIPs": [
+      {
+        "ip": "10.20.1.130"
+      }
+    ],
+    "qosClass": "Burstable",
+    "resources": {
+      "requests": {
+        "memory": "32Mi"
+      }
+    },
+    "startTime": "2026-10-25T01:42:13Z"
+  }
+}
