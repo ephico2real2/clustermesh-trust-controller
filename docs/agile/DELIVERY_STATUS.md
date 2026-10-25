@@ -2,6 +2,12 @@
 
 Updated 2026-10-25. Continue the full end-to-end local mandate through the existing agile stories. Complete side requests, then return to the first unfinished security dependency. The latest AGENTS instruction keeps CI, push-triggered runs and registry publication deferred until local qualification. Earlier pushes and CI results below are retained history. No new push or workflow dispatch is part of this checkpoint.
 
+## Latest effort setting
+
+The user selected **Opus5.5 max** for central complex work across layers. The same implementation session now runs with verified process arguments `--model claude-opus-5-5 --effort max`; actual CLI metadata and assistant messages confirm Opus5.5. Opus acknowledged max-effort sole source ownership. Active runner: `/private/tmp/cmtc-claude-opus-20261025/run-live-max-owner.py`, exec79321; streamed queue `live-max-input-queue.jsonl`. The prior runner exited0 at an idle tool boundary after active rollout checks completed. Preserve normal permission review, one writer/compiler and the no-substitution guard.
+
+The C3 Cilium source is committed at `a74f13a688`; A's development canary verifies the new agent on both nodes and the post-canary36-path baseline passes. Loaded-program inspection still needs correction after a parser failure. B's earlier d040 rollout was independently version-verified by Opus; earlier notes saying baseline4459 there are superseded. Ztunnel remains off. Registrar instrumentation is committed by Opus at primary `18c47cc`; source tests remain separate from live scrape/image qualification.
+
 ## Latest ownership steering
 
 The user assigned **all implementation code to Opus**: Cilium, ztunnel, SPIRE, CMTC, registrar, DaemonSet, metrics and dashboard code. Codex retains coordination, independent review, testing and evidence. Grok remains an adversarial proposal reviewer. The user requested Claude Fable5.1 **High** for very complex central design. Its installed-CLI probe resolved claude-fable-5-1 but the provider refused it and automatically substituted claude-opus-4-8. That fallback is not Fable work. No central Fable assignment has executed; preserve the probe receipt and keep Opus5.5 active.
@@ -12,7 +18,7 @@ Independent review supplied a deterministic delayed-successful-map-write repro a
 
 ## Current implementation checkpoint
 
-Opus5.5 XHigh has read the full Grok remediation, the native bootstrap proposal and the user's first-principles instrumentation mandate. It owns isolated Cilium/ztunnel source, the scoped SPIRE delegated listener, the compiler and live test writes. Current session `c03d57db-e2bf-4848-ab73-3f2696a27d2f` runs through `/private/tmp/cmtc-claude-opus-20261025/run-live-owner.py`, exec95252. Read `live-owner-pid`, transcript and eventual exit. Its streamed input queue permits future steering without test interruption. Actual metadata confirms Opus5.5 and it acknowledged all-source ownership. A wrapper guard stops provider model substitution. Older runners are complete.
+Opus5.5 XHigh has read the full Grok remediation, the native bootstrap proposal and the user's first-principles instrumentation mandate. It owns isolated Cilium/ztunnel source, the scoped SPIRE delegated listener, the compiler and live test writes. Current session `c03d57db-e2bf-4848-ab73-3f2696a27d2f` runs through `/private/tmp/cmtc-claude-opus-20261025/run-live-max-owner.py`, exec79321. Read `live-max-owner-pid`, transcript and eventual exit. Its streamed input queue permits future steering without test interruption. Actual metadata confirms Opus5.5 and it acknowledged all-source ownership. A wrapper guard stops provider model substitution. Older runners are complete.
 
 Grok's full 49,754-byte remediation is retained at `/private/tmp/cmtc-opus-final-20261025/review/GROK_REMEDIATION.md`. It includes production snippets and deterministic negative/recovery tests for the zero-address BPF collector and failed quarantine writes. Bounded retries and regeneration do not prove immediate packet denial when every map write fails. That safety interval remains open. The separate native projection/store proposal is UNRUN; real issuer, enrollment, policy and release owners must produce its authority.
 
