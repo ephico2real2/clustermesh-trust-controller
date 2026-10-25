@@ -1,0 +1,18 @@
+ARG BUILD_IMAGE=golang:1.27.3
+ARG RUNTIME_IMAGE=gcr.io/distroless/static-debian13:nonroot
+FROM --platform=$BUILDPLATFORM ${BUILD_IMAGE} AS build
+ARG TARGETOS TARGETARCH SOURCE_REVISION=development
+WORKDIR /src
+COPY go.mod go.sum ./
+RUN go mod download
+COPY api api
+COPY internal internal
+COPY cmd cmd
+RUN CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH go build -trimpath -ldflags="-s -w -X main.sourceRevision=${SOURCE_REVISION}" -o /cmtc-spire-registrar ./cmd/cmtc-spire-registrar
+FROM ${RUNTIME_IMAGE}
+ARG SOURCE_REVISION=development
+LABEL org.opencontainers.image.revision=${SOURCE_REVISION}
+COPY --from=build /cmtc-spire-registrar /cmtc-spire-registrar
+USER 1000:1000
+WORKDIR /
+ENTRYPOINT ["/cmtc-spire-registrar"]
