@@ -2,6 +2,50 @@
 
 Updated 2026-10-25. Continue the full end-to-end local mandate through the existing agile stories. Complete side requests, then return to the first unfinished security dependency. The latest AGENTS instruction keeps CI, push-triggered runs and registry publication deferred until local qualification. Earlier pushes and CI results below are retained history. No new push or workflow dispatch is part of this checkpoint.
 
+## Authorship and upstream provenance
+
+These are **CMTC-authored additions and modifications in our `ephico2real2` forks**. Name that authorship in feature descriptions, handovers, examples and status reports. Identify the upstream dependency separately. Describe AI implementation and review assistance separately from project authorship.
+
+| Work | Attribution | Source reference |
+| --- | --- | --- |
+| Remote workload Address projection and per-peer snapshot store | CMTC-authored additions to our Cilium fork | `92ce2b90d3` |
+| Effective-policy publication and workload release coordination | CMTC-authored additions to our Cilium fork | `ada009a5f0` |
+| ClusterMesh/ztunnel capability validation | CMTC modification to the upstream Cilium startup checks | `37d5fce0f7` |
+| Separate DelegatedIdentity-only listener and its isolation | CMTC extension to our SPIRE fork; it uses SPIRE's existing DelegatedIdentity API | SPIRE `0f8fe4d6` |
+| Exact workload registrar and its telemetry | CMTC helper and instrumentation using the upstream SPIRE registration API | CMTC `18c47cc` for the metric increment |
+
+Cilium, SPIRE, ztunnel, SPIFFE, Kubernetes and Prometheus remain their respective upstream projects. Reusing their APIs or extending their code does not mean CMTC authored those projects. Preserve upstream attribution and existing source notices.
+
+Git commits use the configured human author `ephico2real2`. Claude Code Opus5.5 supplies implementation assistance; Codex coordinates and independently reviews/validates; Grok supplies adversarial proposals. These roles do not change which project supplied the feature.
+
+Preferred wording: **“CMTC added remote-workload projection and effective-policy release handling to our Cilium fork.”** Then state the exact source commit and its test/deployment limits. Authorship does not establish working end-to-end mTLS or Protected status.
+
+## Current checked Opus output
+
+Opus5.5 Max owns implementation in the local Cilium/ztunnel/SPIRE fork checkouts. Its CLI tool stream does not appear as a separate chat here. These changes are local-only while CI/publishing is deferred.
+
+| Completed source increment | Commit | Current qualification |
+| --- | --- | --- |
+| Authenticated remote workload Address projection and per-peer snapshot store | `92ce2b90d3` | Implemented and source-tested; combined native runtime is not activated. |
+| Compiled effective-policy publication and release owner | `ada009a5f0` | Implemented for captured same-node sources. Cross-node/cross-cluster source-egress delivery is still missing and those callers are denied. |
+| Replace the blanket ClusterMesh rejection with required configuration/capability validation | `37d5fce0f7` | Included in the development agent on both clusters. Passing configuration validation does not establish active mTLS. |
+
+Primary independently read the `cil-go-10` JSON:2,853 passed test events,681 top-level passes,52 skips, no package failures; race exit0 and vet0. The skipped privileged/integration cases remain unqualified. Primary queried both live cluster APIs: Cilium2/2 and SPIRE agents2/2 ready in each; both Cilium DaemonSets use `dev-overlay-37d5fce0f7`. The latest both-cluster regression records36 HTTP200 results. Neither cluster has a ztunnel DaemonSet.
+
+**Current blocker:** the agents use CRD identity allocation and have no dedicated backend for lock-fenced, short-lived workload membership. Opus is adding scoped membership writer/read-only origin roles and a dedicated client, without redirecting the general agent KVStore or using administrator credentials. That change needs real backend tests and a rebuilt ClusterMesh API server on both clusters. Then cross-node/source-egress policy delivery and actual ztunnel activation still need qualification.
+
+The ztunnel image built as `localhost/cmtc-ztunnel:native-35a6c9403e`, configuration `dce7654d1664189677789891a82d491e4199a1f6b0af95ea39087ad74c1b62a6`. Its version reports the source revision but also `BuildStatus: Modified`; provenance must be explained before exact-source runtime acceptance. It is not deployed.
+
+**Unfinished:** first actual workload-mTLS request, bidirectional cross-cluster positive/negative/recovery traffic, remaining kernel/lifecycle gates, native metric collection and new Grafana data. No Protected claim.
+
+The live working checkpoint is `/private/tmp/cmtc-opus-final-20261025/review/STATUS-CLAUDE.md`. Raw tests and deployment receipts are under `/private/tmp/cmtc-claude-opus-20261025/`.
+
+## Latest independently checked runtime
+
+Primary queried both owned cluster APIs and matched their frozen kube-system UIDs. Cilium and SPIRE agent DaemonSets are2/2 ready in each cluster, using C3a74f13a688 and delegated0f8fe4d681 respectively. Both saved SPIRE probe matrices contain12 cases with pass=true; the both-cluster application regression contains36 HTTP200 results. These are credential-lifecycle and plaintext connectivity checks. Neither cluster has a ztunnel DaemonSet. End-to-end workload mTLS remains unimplemented/unqualified.
+
+Opus5.5 Max is tracing the real native remote workload, xDS and policy interfaces for the central authority/projection/effective-policy/release integration. The existing source has no complete production owner for that combined path. That is the first unfinished dependency, followed by actual ztunnel activation, failure/recovery and exact-image traffic/metric evidence. The all-kernel-write-failure and remaining admission lifecycle gates remain open. Do not label the whole mesh Protected.
+
 ## Latest effort setting
 
 The user selected **Opus5.5 max** for central complex work across layers. The same implementation session now runs with verified process arguments `--model claude-opus-5-5 --effort max`; actual CLI metadata and assistant messages confirm Opus5.5. Opus acknowledged max-effort sole source ownership. Active runner: `/private/tmp/cmtc-claude-opus-20261025/run-live-max-owner.py`, exec79321; streamed queue `live-max-input-queue.jsonl`. The prior runner exited0 at an idle tool boundary after active rollout checks completed. Preserve normal permission review, one writer/compiler and the no-substitution guard.
@@ -34,9 +78,9 @@ Use only the persistent `cmtc-a` and `cmtc-b` labs in Colima `cmtc-cilium`. Pres
 
 | Component | Deployed state |
 | --- | --- |
-| Cilium | A runs development agent/BPF overlay `d040a4bc9a` on both nodes; B remains `4459d58ed3`. The d040 canary image/version is verified. Later `dbd2d32` is not deployed. This is not a complete Cilium release or mTLS qualification. |
+| Cilium | Both clusters now run development agent/BPF overlay `37d5fce0f7`, 2/2 ready each. The both-cluster36-path regression passes. Operator/ClusterMesh server/chart remain separate; this is not a complete Cilium release or mTLS qualification. |
 | CMTC | `f5fe9992da855a22660c07b141e19feee50310ba`; six Observe processes. The issuer-profile producer is enabled in both clusters. |
-| SPIRE server and agents | `28f6b8d84ade21c6accb32ba9689a3bdf64877ec`; retained signer/PVC restart and secure node attestation passed. |
+| SPIRE server and agents | Server remains28f6b8d8. Both agent DaemonSets now run `delegated-0f8fe4d681`, 2/2 ready each. Actual delegated credential, rejection, withdrawal and restart tests pass12/12 per cluster. Existing Admin access stays unchanged. |
 | Native credential diagnostic | The earlier `3b1a6a9e8f` passed real SVID checks. Corrected `75843515d5` is now imported and version-verified on all four nodes; the corrected withdrawal trial passed in both clusters. |
 | Experimental registrar | `e39928bc4f79ad6da134e77583945c8e5e9d52bf`; image built/imported. The corrected owned runtime trial passed both clusters; the original two-container server templates are restored. |
 | Ztunnel, WireGuard and IPsec | Combined workload-mTLS profile disabled. No end-to-end Protected claim. |

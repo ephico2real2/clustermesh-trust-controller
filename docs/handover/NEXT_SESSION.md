@@ -26,6 +26,10 @@ Cursor Grok's read-only remediation completed with exit0. Full report: `/private
 
 The Codex read-only native bootstrap proposal is `review/NATIVE_MESH_BOOTSTRAP_NEXT.md`, with four complete UNRUN Go files under `review/native-mesh-proposal/`. Opus has received them. The read-only registrar proposal is complete at `review/REGISTRAR_INSTRUMENTATION_PROPOSAL.md`. Primary applied/reviewed it before the ownership transfer and ran actual Linux race/vet. See [registrar metric evidence](../evidence/registrar-metrics/README.md). Opus now owns that source.
 
+## Authorship in reports
+
+The user requires explicit authorship attribution. Name our added features as **CMTC-authored additions or modifications in our ephico2real2 forks**. Identify unchanged upstream components and reused APIs separately. Keep the configured human Git author and existing upstream notices. Report Opus/Codex/Grok assistance separately. Include source and qualification status; authorship is not runtime protection evidence. See the delivery record's authorship table.
+
 ## Ownership
 
 All four isolated trees are under `/private/tmp/cmtc-opus-final-20261025/`, branch `feat/opus-mesh-mtls-finalization`.
