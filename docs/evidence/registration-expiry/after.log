@@ -1,0 +1,90 @@
+=== RUN   TestUIDRequiresCanonicalNonzeroUUID
+--- PASS: TestUIDRequiresCanonicalNonzeroUUID (0.00s)
+=== RUN   TestMalformedOwnedListRowsFailClosedWithoutPanic
+=== RUN   TestMalformedOwnedListRowsFailClosedWithoutPanic/parent
+=== RUN   TestMalformedOwnedListRowsFailClosedWithoutPanic/identity
+=== RUN   TestMalformedOwnedListRowsFailClosedWithoutPanic/parent-domain
+=== RUN   TestMalformedOwnedListRowsFailClosedWithoutPanic/spiffe-domain
+=== RUN   TestMalformedOwnedListRowsFailClosedWithoutPanic/selectors
+=== RUN   TestMalformedOwnedListRowsFailClosedWithoutPanic/nil-selector
+=== RUN   TestMalformedOwnedListRowsFailClosedWithoutPanic/id
+--- PASS: TestMalformedOwnedListRowsFailClosedWithoutPanic (0.38s)
+    --- PASS: TestMalformedOwnedListRowsFailClosedWithoutPanic/parent (0.00s)
+    --- PASS: TestMalformedOwnedListRowsFailClosedWithoutPanic/identity (0.00s)
+    --- PASS: TestMalformedOwnedListRowsFailClosedWithoutPanic/parent-domain (0.00s)
+    --- PASS: TestMalformedOwnedListRowsFailClosedWithoutPanic/spiffe-domain (0.00s)
+    --- PASS: TestMalformedOwnedListRowsFailClosedWithoutPanic/selectors (0.00s)
+    --- PASS: TestMalformedOwnedListRowsFailClosedWithoutPanic/nil-selector (0.00s)
+    --- PASS: TestMalformedOwnedListRowsFailClosedWithoutPanic/id (0.00s)
+=== RUN   TestExactEntriesBindAgentNodeAndWorkloadIncarnations
+--- PASS: TestExactEntriesBindAgentNodeAndWorkloadIncarnations (0.01s)
+=== RUN   TestNamespaceExclusionAndUnenrollmentDeleteOnlyOwnedWorkload
+=== RUN   TestNamespaceExclusionAndUnenrollmentDeleteOnlyOwnedWorkload/unenroll
+=== RUN   TestNamespaceExclusionAndUnenrollmentDeleteOnlyOwnedWorkload/exclude
+=== RUN   TestNamespaceExclusionAndUnenrollmentDeleteOnlyOwnedWorkload/namespace-replacement
+=== RUN   TestNamespaceExclusionAndUnenrollmentDeleteOnlyOwnedWorkload/sa-replacement
+--- PASS: TestNamespaceExclusionAndUnenrollmentDeleteOnlyOwnedWorkload (0.07s)
+    --- PASS: TestNamespaceExclusionAndUnenrollmentDeleteOnlyOwnedWorkload/unenroll (0.02s)
+    --- PASS: TestNamespaceExclusionAndUnenrollmentDeleteOnlyOwnedWorkload/exclude (0.02s)
+    --- PASS: TestNamespaceExclusionAndUnenrollmentDeleteOnlyOwnedWorkload/namespace-replacement (0.01s)
+    --- PASS: TestNamespaceExclusionAndUnenrollmentDeleteOnlyOwnedWorkload/sa-replacement (0.03s)
+=== RUN   TestPodReplacementRetiresOldUIDBeforePublishingNew
+--- PASS: TestPodReplacementRetiresOldUIDBeforePublishingNew (0.02s)
+=== RUN   TestSPIREACKFailuresRestartAndRetainedRows
+=== RUN   TestSPIREACKFailuresRestartAndRetainedRows/create-ack-lost
+=== RUN   TestSPIREACKFailuresRestartAndRetainedRows/missing-result
+=== RUN   TestSPIREACKFailuresRestartAndRetainedRows/update-denied
+=== RUN   TestSPIREACKFailuresRestartAndRetainedRows/delete-ack-lost
+--- PASS: TestSPIREACKFailuresRestartAndRetainedRows (0.08s)
+    --- PASS: TestSPIREACKFailuresRestartAndRetainedRows/create-ack-lost (0.02s)
+    --- PASS: TestSPIREACKFailuresRestartAndRetainedRows/missing-result (0.02s)
+    --- PASS: TestSPIREACKFailuresRestartAndRetainedRows/update-denied (0.03s)
+    --- PASS: TestSPIREACKFailuresRestartAndRetainedRows/delete-ack-lost (0.02s)
+=== RUN   TestExactRowCollisionNeverAdopted
+=== RUN   TestExactRowCollisionNeverAdopted/foreign-owner
+=== RUN   TestExactRowCollisionNeverAdopted/wrong-selector
+=== RUN   TestExactRowCollisionNeverAdopted/admin
+=== RUN   TestExactRowCollisionNeverAdopted/duplicate-selector
+--- PASS: TestExactRowCollisionNeverAdopted (0.01s)
+    --- PASS: TestExactRowCollisionNeverAdopted/foreign-owner (0.00s)
+    --- PASS: TestExactRowCollisionNeverAdopted/wrong-selector (0.00s)
+    --- PASS: TestExactRowCollisionNeverAdopted/admin (0.00s)
+    --- PASS: TestExactRowCollisionNeverAdopted/duplicate-selector (0.00s)
+=== RUN   TestSourceAPIFailureAndRecheckCloseReadiness
+--- PASS: TestSourceAPIFailureAndRecheckCloseReadiness (0.01s)
+=== RUN   TestAgentAndNodeReplacementReparentEveryOwnedWorkload
+=== RUN   TestAgentAndNodeReplacementReparentEveryOwnedWorkload/agent
+=== RUN   TestAgentAndNodeReplacementReparentEveryOwnedWorkload/node
+--- PASS: TestAgentAndNodeReplacementReparentEveryOwnedWorkload (0.04s)
+    --- PASS: TestAgentAndNodeReplacementReparentEveryOwnedWorkload/agent (0.02s)
+    --- PASS: TestAgentAndNodeReplacementReparentEveryOwnedWorkload/node (0.02s)
+=== RUN   TestDelegateControllerImageAndServiceAccountBinding
+=== RUN   TestDelegateControllerImageAndServiceAccountBinding/owner
+=== RUN   TestDelegateControllerImageAndServiceAccountBinding/image
+=== RUN   TestDelegateControllerImageAndServiceAccountBinding/service-account
+--- PASS: TestDelegateControllerImageAndServiceAccountBinding (0.02s)
+    --- PASS: TestDelegateControllerImageAndServiceAccountBinding/owner (0.01s)
+    --- PASS: TestDelegateControllerImageAndServiceAccountBinding/image (0.01s)
+    --- PASS: TestDelegateControllerImageAndServiceAccountBinding/service-account (0.01s)
+=== RUN   TestSourceOutagePreservesExpiryAndRecoveryRenewsIt
+--- PASS: TestSourceOutagePreservesExpiryAndRecoveryRenewsIt (0.02s)
+=== RUN   TestSingleWriterRejectsMismatchedIdentityFilterBeforeCleanup
+--- PASS: TestSingleWriterRejectsMismatchedIdentityFilterBeforeCleanup (0.01s)
+=== RUN   TestLegacyBroadEntryRetiredAndForeignWriterKept
+=== RUN   TestLegacyBroadEntryRetiredAndForeignWriterKept/enrolled
+=== RUN   TestLegacyBroadEntryRetiredAndForeignWriterKept/unenrolled
+=== RUN   TestLegacyBroadEntryRetiredAndForeignWriterKept/outside-approval
+=== RUN   TestLegacyBroadEntryRetiredAndForeignWriterKept/foreign
+--- PASS: TestLegacyBroadEntryRetiredAndForeignWriterKept (0.05s)
+    --- PASS: TestLegacyBroadEntryRetiredAndForeignWriterKept/enrolled (0.01s)
+    --- PASS: TestLegacyBroadEntryRetiredAndForeignWriterKept/unenrolled (0.01s)
+    --- PASS: TestLegacyBroadEntryRetiredAndForeignWriterKept/outside-approval (0.01s)
+    --- PASS: TestLegacyBroadEntryRetiredAndForeignWriterKept/foreign (0.01s)
+=== RUN   TestRunnerActualRetryReadbackReadinessAndShutdown
+--- PASS: TestRunnerActualRetryReadbackReadinessAndShutdown (10.03s)
+=== RUN   TestDuplicateWriterFailureKeepsExactRowsAndOtherFailuresWithdraw
+--- PASS: TestDuplicateWriterFailureKeepsExactRowsAndOtherFailuresWithdraw (0.01s)
+=== RUN   TestPrivateAdminUDSServerUIDAndNonSocketRefusal
+--- PASS: TestPrivateAdminUDSServerUIDAndNonSocketRefusal (0.00s)
+PASS
+ok  	github.com/ephico2real2/clustermesh-trust-controller/internal/spireregistrar	11.790s

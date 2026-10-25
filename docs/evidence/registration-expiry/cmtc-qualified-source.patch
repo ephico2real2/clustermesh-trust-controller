@@ -1,0 +1,521 @@
+diff --git a/internal/spireregistrar/entries.go b/internal/spireregistrar/entries.go
+index 9e182cd..270cb39 100644
+--- a/internal/spireregistrar/entries.go
++++ b/internal/spireregistrar/entries.go
+@@ -4,7 +4,6 @@ import (
+ 	"context"
+ 	"errors"
+ 	"fmt"
+-	ktypes "k8s.io/apimachinery/pkg/types"
+ 	"sort"
+ 	"strings"
+ 	"time"
+@@ -15,6 +14,7 @@ import (
+ 	"google.golang.org/grpc/status"
+ 	"google.golang.org/protobuf/proto"
+ 	"google.golang.org/protobuf/types/known/wrapperspb"
++	ktypes "k8s.io/apimachinery/pkg/types"
+ )
+ 
+ type Registrar struct {
+@@ -22,7 +22,38 @@ type Registrar struct {
+ 	Entries entryv1.EntryClient
+ }
+ 
++// DuplicateWriterError means another registration writer already entitles a
++// SPIFFE ID this registrar owns. The exact rows stay in place. Readiness
++// closes. This error does not authorize deletion of the foreign row.
++type DuplicateWriterError struct {
++	Path string
++}
++
++func (e *DuplicateWriterError) Error() string {
++	return "foreign registration writer entitles " + e.Path + "; refusing a second writer"
++}
++
+ func (r Registrar) list(ctx context.Context) ([]*types.Entry, error) {
++	entries, err := r.listFiltered(ctx, &entryv1.ListEntriesRequest_Filter{ByHint: wrapperspb.String(r.Source.Options.Hint())})
++	if err != nil {
++		return nil, err
++	}
++	for _, entry := range entries {
++		if entry.Hint != r.Source.Options.Hint() || !uid(ktypes.UID(entry.Id)) || !ownedShape(entry, r.Source.Options) {
++			return nil, errors.New("SPIRE returned malformed/colliding ownership rows")
++		}
++		// Never adopt a row that can delegate administration or federation.
++		if entry.Admin || entry.Downstream || entry.StoreSvid || len(entry.FederatesWith) != 0 || len(entry.DnsNames) != 0 || entry.ExpiresAt == 0 {
++			return nil, errors.New("owned registrar row contains forbidden authority or unbounded lifetime")
++		}
++	}
++	return entries, nil
++}
++
++func (r Registrar) listFiltered(ctx context.Context, filter *entryv1.ListEntriesRequest_Filter) ([]*types.Entry, error) {
++	if filter == nil {
++		return nil, errors.New("registration list filter required")
++	}
+ 	entries := []*types.Entry{}
+ 	seen := map[string]bool{}
+ 	pages := map[string]bool{}
+@@ -32,7 +63,7 @@ func (r Registrar) list(ctx context.Context) ([]*types.Entry, error) {
+ 			return nil, errors.New("SPIRE repeated a registration page token")
+ 		}
+ 		pages[token] = true
+-		response, err := r.Entries.ListEntries(ctx, &entryv1.ListEntriesRequest{Filter: &entryv1.ListEntriesRequest_Filter{ByHint: wrapperspb.String(r.Source.Options.Hint())}, PageSize: 128, PageToken: token})
++		response, err := r.Entries.ListEntries(ctx, &entryv1.ListEntriesRequest{Filter: filter, PageSize: 128, PageToken: token})
+ 		if err != nil {
+ 			return nil, err
+ 		}
+@@ -40,12 +71,13 @@ func (r Registrar) list(ctx context.Context) ([]*types.Entry, error) {
+ 			return nil, errors.New("SPIRE registration list is nil")
+ 		}
+ 		for _, entry := range response.Entries {
+-			if entry == nil || entry.Hint != r.Source.Options.Hint() || !uid(ktypes.UID(entry.Id)) || seen[entry.Id] || !ownedShape(entry, r.Source.Options) {
+-				return nil, errors.New("SPIRE returned malformed/colliding ownership rows")
++			if entry == nil || entry.Id == "" || seen[entry.Id] {
++				return nil, errors.New("SPIRE returned malformed/colliding registration rows")
+ 			}
+-			// Never adopt a row that can delegate administration or federation.
+-			if entry.Admin || entry.Downstream || entry.StoreSvid || len(entry.FederatesWith) != 0 || len(entry.DnsNames) != 0 || entry.ExpiresAt == 0 {
+-				return nil, errors.New("owned registrar row contains forbidden authority or unbounded lifetime")
++			if (filter.ByHint != nil && entry.Hint != filter.ByHint.Value) ||
++				(filter.BySpiffeId != nil && !proto.Equal(entry.SpiffeId, filter.BySpiffeId)) ||
++				(filter.ByParentId != nil && !proto.Equal(entry.ParentId, filter.ByParentId)) {
++				return nil, errors.New("SPIRE registration response does not match the requested filter")
+ 			}
+ 			seen[entry.Id] = true
+ 			entries = append(entries, entry)
+@@ -149,18 +181,71 @@ func (r Registrar) remove(ctx context.Context, entry *types.Entry) error {
+ 	if actual == nil || actual.Hint != r.Source.Options.Hint() || !sameMaterial(actual, entry) {
+ 		return errors.New("registration changed before deletion; refusing foreign cleanup")
+ 	}
+-	response, err := r.Entries.BatchDeleteEntry(ctx, &entryv1.BatchDeleteEntryRequest{Ids: []string{entry.Id}})
++	return r.deleteAcknowledged(ctx, entry.Id)
++}
++
++// legacyCiliumEntry matches only the operator's broad namespace/service-account
++// registration: parent /ztunnel, exactly the two k8s selectors, and no hint or
++// extra authority. Other foreign rows are left in place and block this writer.
++func legacyCiliumEntry(e *types.Entry, o Options) bool {
++	if e == nil || e.ParentId == nil || e.SpiffeId == nil || e.Hint != "" || e.Admin || e.Downstream || e.StoreSvid || len(e.FederatesWith) != 0 || len(e.DnsNames) != 0 {
++		return false
++	}
++	if e.ParentId.TrustDomain != o.TrustDomain || e.SpiffeId.TrustDomain != o.TrustDomain || e.ParentId.Path != "/ztunnel" || len(e.Selectors) != 2 {
++		return false
++	}
++	parts := strings.Split(e.SpiffeId.Path, "/")
++	if len(parts) != 5 || parts[0] != "" || parts[1] != "ns" || parts[3] != "sa" || !dns(parts[2]) || !dns(parts[4]) {
++		return false
++	}
++	approved := false
++	for _, n := range o.Namespaces {
++		if n.Name == parts[2] {
++			if _, ok := n.ServiceAccounts[parts[4]]; ok {
++				approved = true
++			}
++		}
++	}
++	if !approved {
++		return false
++	}
++	seen := map[string]bool{}
++	for _, s := range e.Selectors {
++		if s == nil || s.Type != "k8s" || s.Value == "" || seen[s.Value] {
++			return false
++		}
++		seen[s.Value] = true
++	}
++	return seen["ns:"+parts[2]] && seen["sa:"+parts[4]]
++}
++
++func (r Registrar) removeLegacy(ctx context.Context, entry *types.Entry) error {
++	actual, err := r.Entries.GetEntry(ctx, &entryv1.GetEntryRequest{Id: entry.Id})
++	if status.Code(err) == codes.NotFound {
++		return nil
++	}
+ 	if err != nil {
+ 		return err
+ 	}
+-	if response == nil || len(response.Results) != 1 || response.Results[0] == nil || response.Results[0].Status == nil || response.Results[0].Id != entry.Id {
++	if !legacyCiliumEntry(actual, r.Source.Options) || !sameMaterial(actual, entry) {
++		return errors.New("legacy registration changed before deletion; refusing cleanup")
++	}
++	return r.deleteAcknowledged(ctx, entry.Id)
++}
++
++func (r Registrar) deleteAcknowledged(ctx context.Context, id string) error {
++	response, err := r.Entries.BatchDeleteEntry(ctx, &entryv1.BatchDeleteEntryRequest{Ids: []string{id}})
++	if err != nil {
++		return err
++	}
++	if response == nil || len(response.Results) != 1 || response.Results[0] == nil || response.Results[0].Status == nil || response.Results[0].Id != id {
+ 		return errors.New("malformed SPIRE deletion acknowledgment")
+ 	}
+ 	code := codes.Code(response.Results[0].Status.Code)
+ 	if code != codes.OK && code != codes.NotFound {
+ 		return status.Error(code, response.Results[0].Status.Message)
+ 	}
+-	_, err = r.Entries.GetEntry(ctx, &entryv1.GetEntryRequest{Id: entry.Id})
++	_, err = r.Entries.GetEntry(ctx, &entryv1.GetEntryRequest{Id: id})
+ 	if status.Code(err) != codes.NotFound {
+ 		if err == nil {
+ 			return errors.New("SPIRE deletion was acknowledged but row is still present")
+@@ -170,6 +255,48 @@ func (r Registrar) remove(ctx context.Context, entry *types.Entry) error {
+ 	return nil
+ }
+ 
++// enforceSingleWriter removes a leftover Cilium broad entry for an approved
++// service account, and refuses every other foreign row for an identity this
++// registrar can entitle. It does not delete those other rows.
++func (r Registrar) enforceSingleWriter(ctx context.Context, wanted map[string]*types.Entry) error {
++	o := r.Source.Options
++	paths := map[string]struct{}{}
++	for _, n := range o.Namespaces {
++		for sa := range n.ServiceAccounts {
++			paths["/ns/"+n.Name+"/sa/"+sa] = struct{}{}
++		}
++	}
++	for _, entry := range wanted {
++		if entry.SpiffeId != nil {
++			paths[entry.SpiffeId.Path] = struct{}{}
++		}
++	}
++	ordered := make([]string, 0, len(paths))
++	for path := range paths {
++		ordered = append(ordered, path)
++	}
++	sort.Strings(ordered)
++	for _, path := range ordered {
++		rows, err := r.listFiltered(ctx, &entryv1.ListEntriesRequest_Filter{BySpiffeId: &types.SPIFFEID{TrustDomain: o.TrustDomain, Path: path}})
++		if err != nil {
++			return err
++		}
++		for _, row := range rows {
++			if row.Hint == o.Hint() {
++				continue
++			}
++			if legacyCiliumEntry(row, o) {
++				if err := r.removeLegacy(ctx, row); err != nil {
++					return err
++				}
++				continue
++			}
++			return &DuplicateWriterError{Path: path}
++		}
++	}
++	return nil
++}
++
+ func (r Registrar) upsert(ctx context.Context, want *types.Entry) error {
+ 	current, err := r.Entries.GetEntry(ctx, &entryv1.GetEntryRequest{Id: want.Id})
+ 	if status.Code(err) == codes.NotFound {
+@@ -245,6 +372,9 @@ func (r Registrar) Reconcile(ctx context.Context, now time.Time) (int, error) {
+ 	for _, entry := range snapshot.Entries {
+ 		wanted[entry.Id] = entry
+ 	}
++	if err := r.enforceSingleWriter(ctx, wanted); err != nil {
++		return 0, err
++	}
+ 	entryOrder(existing)
+ 	for i := len(existing) - 1; i >= 0; i-- {
+ 		old := existing[i]
+diff --git a/internal/spireregistrar/registrar_test.go b/internal/spireregistrar/registrar_test.go
+index 6eec674..eb53f46 100644
+--- a/internal/spireregistrar/registrar_test.go
++++ b/internal/spireregistrar/registrar_test.go
+@@ -68,10 +68,25 @@ type memoryEntries struct {
+ }
+ 
+ func newEntries() *memoryEntries { return &memoryEntries{rows: map[string]*stypes.Entry{}} }
++func entrySelected(e *stypes.Entry, f *entryv1.ListEntriesRequest_Filter) bool {
++	if e == nil || f == nil {
++		return false
++	}
++	if f.ByHint != nil && e.Hint != f.ByHint.Value {
++		return false
++	}
++	if id := f.BySpiffeId; id != nil && (e.SpiffeId == nil || e.SpiffeId.TrustDomain != id.TrustDomain || e.SpiffeId.Path != id.Path) {
++		return false
++	}
++	if id := f.ByParentId; id != nil && (e.ParentId == nil || e.ParentId.TrustDomain != id.TrustDomain || e.ParentId.Path != id.Path) {
++		return false
++	}
++	return true
++}
+ func (m *memoryEntries) ListEntries(_ context.Context, in *entryv1.ListEntriesRequest, _ ...grpc.CallOption) (*entryv1.ListEntriesResponse, error) {
+ 	out := &entryv1.ListEntriesResponse{}
+ 	for _, e := range m.rows {
+-		if e.Hint == in.Filter.ByHint.Value {
++		if entrySelected(e, in.Filter) {
+ 			out.Entries = append(out.Entries, proto.Clone(e).(*stypes.Entry))
+ 		}
+ 	}
+@@ -256,6 +271,15 @@ func TestSPIREACKFailuresRestartAndRetainedRows(t *testing.T) {
+ 					t.Fatal("per-entry renewal denial accepted")
+ 				}
+ 				entries.denyUpdate = false
++				recovered := now.Add(3 * time.Second)
++				if _, err := r.Reconcile(context.Background(), recovered); err != nil {
++					t.Fatal("expiry renewal did not recover:", err)
++				}
++				for _, row := range entries.rows {
++					if row.ExpiresAt != recovered.Add(90*time.Second).Unix() {
++						t.Fatalf("recovered expiry = %d, want %d", row.ExpiresAt, recovered.Add(90*time.Second).Unix())
++					}
++				}
+ 			}
+ 			if mode == "delete-ack-lost" {
+ 				entries.lostDeleteACK = true
+@@ -413,3 +437,169 @@ func TestDelegateControllerImageAndServiceAccountBinding(t *testing.T) {
+ 		})
+ 	}
+ }
++
++func TestSourceOutagePreservesExpiryAndRecoveryRenewsIt(t *testing.T) {
++	o, c, _ := fixture(t)
++	entries := newEntries()
++	r := Registrar{Source: Source{Reader: c, Options: o}, Entries: entries}
++	now := time.Now().UTC().Truncate(time.Second)
++	if _, err := r.Reconcile(context.Background(), now); err != nil {
++		t.Fatal(err)
++	}
++	if len(entries.rows) != 3 {
++		t.Fatalf("rows = %d", len(entries.rows))
++	}
++	for _, row := range entries.rows {
++		if row.ExpiresAt != now.Add(90*time.Second).Unix() {
++			t.Fatalf("initial expiry = %d", row.ExpiresAt)
++		}
++	}
++	r.Source.Reader = failReader{c}
++	if _, err := r.Reconcile(context.Background(), now.Add(time.Minute)); err == nil {
++		t.Fatal("source outage accepted")
++	}
++	for _, row := range entries.rows {
++		if row.ExpiresAt != now.Add(90*time.Second).Unix() {
++			t.Fatal("source outage changed an entry expiry")
++		}
++	}
++	r.Source.Reader = c
++	later := now.Add(2 * time.Minute)
++	if _, err := r.Reconcile(context.Background(), later); err != nil {
++		t.Fatal(err)
++	}
++	if len(entries.rows) != 3 {
++		t.Fatalf("recovery rows = %d", len(entries.rows))
++	}
++	for _, row := range entries.rows {
++		if row.ExpiresAt != later.Add(90*time.Second).Unix() {
++			t.Fatalf("recovered expiry = %d", row.ExpiresAt)
++		}
++	}
++}
++
++func legacyBroad(o Options, path, ns, sa string) *stypes.Entry {
++	return &stypes.Entry{
++		Id:        uuid.NewSHA1(uuid.NameSpaceURL, []byte("legacy:"+path)).String(),
++		SpiffeId:  &stypes.SPIFFEID{TrustDomain: o.TrustDomain, Path: path},
++		ParentId:  &stypes.SPIFFEID{TrustDomain: o.TrustDomain, Path: "/ztunnel"},
++		Selectors: []*stypes.Selector{{Type: "k8s", Value: "sa:" + sa}, {Type: "k8s", Value: "ns:" + ns}},
++	}
++}
++
++type wrongIdentityList struct {
++	*memoryEntries
++	wrong *stypes.Entry
++}
++
++func (m wrongIdentityList) ListEntries(_ context.Context, in *entryv1.ListEntriesRequest, _ ...grpc.CallOption) (*entryv1.ListEntriesResponse, error) {
++	if in.Filter.BySpiffeId != nil {
++		return &entryv1.ListEntriesResponse{Entries: []*stypes.Entry{proto.Clone(m.wrong).(*stypes.Entry)}}, nil
++	}
++	return &entryv1.ListEntriesResponse{}, nil
++}
++
++func TestSingleWriterRejectsMismatchedIdentityFilterBeforeCleanup(t *testing.T) {
++	o, _, _ := fixture(t)
++	o.Namespaces[0].ServiceAccounts["other"] = testUID("other")
++	entries := newEntries()
++	wrong := legacyBroad(o, "/ns/orders/sa/other", "orders", "other")
++	entries.rows[wrong.Id] = proto.Clone(wrong).(*stypes.Entry)
++	r := Registrar{Source: Source{Options: o}, Entries: wrongIdentityList{memoryEntries: entries, wrong: wrong}}
++	if err := r.enforceSingleWriter(context.Background(), nil); err == nil {
++		t.Fatal("SPIRE ignored the identity filter but cleanup continued")
++	}
++	if len(entries.operations) != 0 || !proto.Equal(entries.rows[wrong.Id], wrong) {
++		t.Fatal("mismatched filter response caused registration deletion")
++	}
++}
++
++func TestLegacyBroadEntryRetiredAndForeignWriterKept(t *testing.T) {
++	for _, mode := range []string{"enrolled", "unenrolled", "outside-approval", "foreign"} {
++		t.Run(mode, func(t *testing.T) {
++			o, c, _ := fixture(t)
++			if mode == "unenrolled" {
++				var ns corev1.Namespace
++				if err := c.Get(context.Background(), client.ObjectKey{Name: "orders"}, &ns); err != nil {
++					t.Fatal(err)
++				}
++				ns.Labels = nil
++				if err := c.Update(context.Background(), &ns); err != nil {
++					t.Fatal(err)
++				}
++			}
++			entries := newEntries()
++			r := Registrar{Source: Source{Reader: c, Options: o}, Entries: entries}
++			now := time.Now().UTC().Truncate(time.Second)
++			if mode == "foreign" {
++				if _, err := r.Reconcile(context.Background(), now); err != nil {
++					t.Fatal(err)
++				}
++			}
++			legacy := legacyBroad(o, "/ns/orders/sa/api", "orders", "api")
++			if mode == "outside-approval" {
++				legacy = legacyBroad(o, "/ns/other/sa/api", "other", "api")
++			}
++			if mode == "foreign" {
++				var workload *stypes.Entry
++				for _, row := range entries.rows {
++					if row.SpiffeId.Path == "/ns/orders/sa/api" {
++						workload = proto.Clone(row).(*stypes.Entry)
++					}
++				}
++				if workload == nil {
++					t.Fatal("exact workload missing before foreign collision")
++				}
++				foreign := proto.Clone(workload).(*stypes.Entry)
++				foreign.Id = uuid.NewSHA1(uuid.NameSpaceURL, []byte("foreign-writer")).String()
++				foreign.Hint = "other-writer"
++				foreign.Admin = true
++				entries.rows[foreign.Id] = foreign
++				_, err := r.Reconcile(context.Background(), now)
++				var duplicate *DuplicateWriterError
++				if !errors.As(err, &duplicate) || duplicate.Path != "/ns/orders/sa/api" {
++					t.Fatal(err)
++				}
++				if !proto.Equal(entries.rows[workload.Id], workload) || !proto.Equal(entries.rows[foreign.Id], foreign) {
++					t.Fatal("foreign collision changed an exact row or the foreign row")
++				}
++				return
++			}
++			entries.rows[legacy.Id] = proto.Clone(legacy).(*stypes.Entry)
++			if _, err := r.Reconcile(context.Background(), now); err != nil {
++				t.Fatal(err)
++			}
++			_, legacyRemains := entries.rows[legacy.Id]
++			if mode == "outside-approval" && !legacyRemains {
++				t.Fatal("legacy row outside the approved set was deleted")
++			}
++			if mode != "outside-approval" && legacyRemains {
++				t.Fatal("approved legacy broad row survived")
++			}
++			for _, row := range entries.rows {
++				if row.ParentId.Path == "/ztunnel" && mode != "outside-approval" {
++					t.Fatal("broad parent remains for an approved identity")
++				}
++				if mode == "unenrolled" && row.SpiffeId.Path == "/ns/orders/sa/api" {
++					t.Fatal("unenrolled namespace received a workload registration")
++				}
++			}
++			if mode == "enrolled" {
++				found := false
++				for _, row := range entries.rows {
++					if row.Hint != o.Hint() || row.SpiffeId.Path != "/ns/orders/sa/api" {
++						continue
++					}
++					for _, sel := range row.Selectors {
++						if sel.Value == "pod-uid:"+string(testUID("pod")) {
++							found = true
++						}
++					}
++				}
++				if !found {
++					t.Fatal("exact pod-bound workload row missing after legacy retirement")
++				}
++			}
++		})
++	}
++}
+diff --git a/internal/spireregistrar/runner.go b/internal/spireregistrar/runner.go
+index 89ed185..8f5b453 100644
+--- a/internal/spireregistrar/runner.go
++++ b/internal/spireregistrar/runner.go
+@@ -40,13 +40,7 @@ func (r *Runner) Start(ctx context.Context) error {
+ 		cancel()
+ 		delay := 10 * time.Second
+ 		if err != nil {
+-			r.acknowledged.Store(nil)
+-			// Use a new bounded context: a failed/canceled API request cannot skip
+-			// best-effort removal of already acknowledged or ambiguously created rows.
+-			cleanup, stop := context.WithTimeout(context.Background(), 5*time.Second)
+-			cleanupErr := r.Registrar.Withdraw(cleanup)
+-			stop()
+-			r.Log.Error(errors.Join(err, cleanupErr), "SPIRE exact registration pass failed", "component", "spire-registrar", "stage", "reconcile-withdraw", "attempt", attempt, "elapsed", time.Since(start), "nextRetry", delay, "deadline", 20*time.Second)
++			r.noteFailure(err, attempt, start)
+ 		} else {
+ 			now := time.Now()
+ 			r.acknowledged.Store(&now)
+@@ -67,3 +61,21 @@ func (r *Runner) Start(ctx context.Context) error {
+ 	}
+ 	return nil
+ }
++
++func (r *Runner) noteFailure(err error, attempt int, started time.Time) {
++	r.acknowledged.Store(nil)
++	delay := 10 * time.Second
++	var duplicate *DuplicateWriterError
++	if errors.As(err, &duplicate) {
++		// Keep the stricter exact rows. Deleting them would leave the foreign
++		// entitlement as the only registration for that SPIFFE ID.
++		r.Log.Error(err, "SPIRE exact registration refused a second writer", "component", "spire-registrar", "stage", "duplicate-writer", "attempt", attempt, "elapsed", time.Since(started), "nextRetry", delay, "deadline", 20*time.Second)
++		return
++	}
++	// Use a new bounded context: a failed/canceled API request cannot skip
++	// best-effort removal of already acknowledged or ambiguously created rows.
++	cleanup, stop := context.WithTimeout(context.Background(), 5*time.Second)
++	cleanupErr := r.Registrar.Withdraw(cleanup)
++	stop()
++	r.Log.Error(errors.Join(err, cleanupErr), "SPIRE exact registration pass failed", "component", "spire-registrar", "stage", "reconcile-withdraw", "attempt", attempt, "elapsed", time.Since(started), "nextRetry", delay, "deadline", 20*time.Second)
++}
+diff --git a/internal/spireregistrar/runner_runtime_test.go b/internal/spireregistrar/runner_runtime_test.go
+index 7d3516e..e1838b6 100644
+--- a/internal/spireregistrar/runner_runtime_test.go
++++ b/internal/spireregistrar/runner_runtime_test.go
+@@ -239,3 +239,37 @@ func TestRunnerActualRetryReadbackReadinessAndShutdown(t *testing.T) {
+ 		t.Fatalf("missing verified startup/shutdown removals: deletes=%d gets=%d", entries.deleteCalls, entries.getCalls)
+ 	}
+ }
++
++func TestDuplicateWriterFailureKeepsExactRowsAndOtherFailuresWithdraw(t *testing.T) {
++	o, c, _ := fixture(t)
++	entries := newEntries()
++	registrar := Registrar{Source: Source{Reader: c, Options: o}, Entries: entries}
++	if _, err := registrar.Reconcile(context.Background(), time.Now()); err != nil {
++		t.Fatal(err)
++	}
++	if len(entries.rows) != 3 {
++		t.Fatalf("rows = %d", len(entries.rows))
++	}
++	logs := &runnerLogCapture{notify: make(chan runnerLogEvent, 4)}
++	runner := &Runner{Registrar: registrar, Log: logr.New(&runnerLogSink{capture: logs})}
++	started := time.Now()
++	runner.noteFailure(&DuplicateWriterError{Path: "/ns/orders/sa/api"}, 4, started)
++	if len(entries.rows) != 3 {
++		t.Fatal("duplicate-writer failure withdrew exact rows")
++	}
++	if runner.Ready(nil) == nil {
++		t.Fatal("duplicate-writer failure left registration readiness open")
++	}
++	failed := <-logs.notify
++	if failed.fields["stage"] != "duplicate-writer" || failed.fields["attempt"] != 4 || failed.fields["component"] != "spire-registrar" {
++		t.Fatalf("duplicate-writer log mismatch: %+v", failed.fields)
++	}
++	runner.noteFailure(errors.New("source unavailable"), 5, started)
++	if len(entries.rows) != 0 {
++		t.Fatal("source failure retained exact rows")
++	}
++	withdrawn := <-logs.notify
++	if withdrawn.fields["stage"] != "reconcile-withdraw" || withdrawn.err == nil {
++		t.Fatalf("source-failure log mismatch: %+v", withdrawn.fields)
++	}
++}

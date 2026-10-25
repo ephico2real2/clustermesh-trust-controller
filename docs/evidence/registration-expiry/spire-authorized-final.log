@@ -1,0 +1,52 @@
+=== RUN   TestAgentRecordSize
+--- PASS: TestAgentRecordSize (0.00s)
+=== RUN   TestAgentRecordByID
+--- PASS: TestAgentRecordByID (0.00s)
+=== RUN   TestAgentRecordByExpiresAt
+--- PASS: TestAgentRecordByExpiresAt (0.00s)
+=== RUN   TestAliasRecordSize
+--- PASS: TestAliasRecordSize (0.00s)
+=== RUN   TestAliasRecordByEntryID
+--- PASS: TestAliasRecordByEntryID (0.00s)
+=== RUN   TestAliasRecordBySelector
+--- PASS: TestAliasRecordBySelector (0.00s)
+=== RUN   TestGetAuthorizedEntries
+=== RUN   TestGetAuthorizedEntries/empty_cache
+=== RUN   TestGetAuthorizedEntries/agent_not_attested_still_returns_direct_children
+=== RUN   TestGetAuthorizedEntries/directly_via_agent
+=== RUN   TestGetAuthorizedEntries/entry_removed
+=== RUN   TestGetAuthorizedEntries/indirectly_via_delegated_workload
+=== RUN   TestGetAuthorizedEntries/indirectly_via_alias
+=== RUN   TestGetAuthorizedEntries/indirectly_via_alias/agent_has_strict_selector_subset
+=== RUN   TestGetAuthorizedEntries/indirectly_via_alias/agent_has_selector_match
+=== RUN   TestGetAuthorizedEntries/indirectly_via_alias/agent_has_strict_selector_superset
+=== RUN   TestGetAuthorizedEntries/alias_removed
+=== RUN   TestGetAuthorizedEntries/agent_removed
+=== RUN   TestGetAuthorizedEntries/agent_pruned_after_expiry
+--- PASS: TestGetAuthorizedEntries (0.02s)
+    --- PASS: TestGetAuthorizedEntries/empty_cache (0.00s)
+    --- PASS: TestGetAuthorizedEntries/agent_not_attested_still_returns_direct_children (0.00s)
+    --- PASS: TestGetAuthorizedEntries/directly_via_agent (0.00s)
+    --- PASS: TestGetAuthorizedEntries/entry_removed (0.00s)
+    --- PASS: TestGetAuthorizedEntries/indirectly_via_delegated_workload (0.00s)
+    --- PASS: TestGetAuthorizedEntries/indirectly_via_alias (0.01s)
+        --- PASS: TestGetAuthorizedEntries/indirectly_via_alias/agent_has_strict_selector_subset (0.00s)
+        --- PASS: TestGetAuthorizedEntries/indirectly_via_alias/agent_has_selector_match (0.00s)
+        --- PASS: TestGetAuthorizedEntries/indirectly_via_alias/agent_has_strict_selector_superset (0.00s)
+    --- PASS: TestGetAuthorizedEntries/alias_removed (0.00s)
+    --- PASS: TestGetAuthorizedEntries/agent_removed (0.00s)
+    --- PASS: TestGetAuthorizedEntries/agent_pruned_after_expiry (0.00s)
+=== RUN   TestCacheInternalStats
+=== RUN   TestCacheInternalStats/pristine
+=== RUN   TestCacheInternalStats/entries_and_aliases
+=== RUN   TestCacheInternalStats/agents
+--- PASS: TestCacheInternalStats (0.00s)
+    --- PASS: TestCacheInternalStats/pristine (0.00s)
+    --- PASS: TestCacheInternalStats/entries_and_aliases (0.00s)
+    --- PASS: TestCacheInternalStats/agents (0.00s)
+=== RUN   TestLookupEntries
+--- PASS: TestLookupEntries (0.00s)
+=== RUN   TestRegistrationExpiryStopsIssuanceBeforePrune
+--- PASS: TestRegistrationExpiryStopsIssuanceBeforePrune (0.01s)
+PASS
+ok  	github.com/spiffe/spire/pkg/server/authorizedentries	1.049s

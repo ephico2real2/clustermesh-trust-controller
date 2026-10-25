@@ -1,5 +1,7 @@
 # Continue Cursor Opus's CMTC ClusterMesh workload-mTLS implementation
 
+Current amendment: [the local cluster validation instruction](CLAUDE_LOCAL_CLUSTER_VALIDATION.md) replaces this assignment's original no-local-API restriction. Preserve the remaining source, lab and security boundaries.
+
 The human explicitly requests Claude Code with **claude-opus-5-5, effort high**, to continue where Cursor Opus stopped. The model probe succeeded with canonicalModel claude-opus-5-5. This is the complete implementation mandate, not a review-only assignment or a request for a plan.
 
 Read these handovers first:

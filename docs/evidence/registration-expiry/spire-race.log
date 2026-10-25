@@ -1,0 +1,585 @@
+=== RUN   TestRegistrationCurrent
+--- PASS: TestRegistrationCurrent (0.00s)
+=== RUN   TestProtoFromAttestedNode
+=== RUN   TestProtoFromAttestedNode/success
+=== RUN   TestProtoFromAttestedNode/banned
+=== RUN   TestProtoFromAttestedNode/missing_attested_node
+=== RUN   TestProtoFromAttestedNode/malformed_SPIFFE_ID
+--- PASS: TestProtoFromAttestedNode (0.00s)
+    --- PASS: TestProtoFromAttestedNode/success (0.00s)
+    --- PASS: TestProtoFromAttestedNode/banned (0.00s)
+    --- PASS: TestProtoFromAttestedNode/missing_attested_node (0.00s)
+    --- PASS: TestProtoFromAttestedNode/malformed_SPIFFE_ID (0.00s)
+=== RUN   TestBundleToProto
+=== RUN   TestBundleToProto/success
+=== RUN   TestBundleToProto/no_bundle
+=== RUN   TestBundleToProto/invalid_trust_domain
+--- PASS: TestBundleToProto (0.00s)
+    --- PASS: TestBundleToProto/success (0.00s)
+    --- PASS: TestBundleToProto/no_bundle (0.00s)
+    --- PASS: TestBundleToProto/invalid_trust_domain (0.00s)
+=== RUN   TestProtoToBundle
+=== RUN   TestProtoToBundle/success
+=== RUN   TestProtoToBundle/tainted_flag_is_not_propagated
+=== RUN   TestProtoToBundle/Invalid_X.509_certificate_bytes
+=== RUN   TestProtoToBundle/Invalid_JWT_key_bytes
+=== RUN   TestProtoToBundle/Empty_key_ID
+=== RUN   TestProtoToBundle/Invalid_WIT_key_bytes
+=== RUN   TestProtoToBundle/Empty_WIT_key_ID
+=== RUN   TestProtoToBundle/no_bundle
+=== RUN   TestProtoToBundle/invalid_trust_domain
+--- PASS: TestProtoToBundle (0.03s)
+    --- PASS: TestProtoToBundle/success (0.01s)
+    --- PASS: TestProtoToBundle/tainted_flag_is_not_propagated (0.01s)
+    --- PASS: TestProtoToBundle/Invalid_X.509_certificate_bytes (0.00s)
+    --- PASS: TestProtoToBundle/Invalid_JWT_key_bytes (0.00s)
+    --- PASS: TestProtoToBundle/Empty_key_ID (0.00s)
+    --- PASS: TestProtoToBundle/Invalid_WIT_key_bytes (0.00s)
+    --- PASS: TestProtoToBundle/Empty_WIT_key_ID (0.00s)
+    --- PASS: TestProtoToBundle/no_bundle (0.00s)
+    --- PASS: TestProtoToBundle/invalid_trust_domain (0.00s)
+=== RUN   TestHashByte
+--- PASS: TestHashByte (0.00s)
+=== RUN   TestFieldsFromBundleProto
+=== RUN   TestFieldsFromBundleProto/no_mask
+=== RUN   TestFieldsFromBundleProto/WIT_authorities_mask
+=== RUN   TestFieldsFromBundleProto/mask_all_false
+--- PASS: TestFieldsFromBundleProto (0.00s)
+    --- PASS: TestFieldsFromBundleProto/no_mask (0.00s)
+    --- PASS: TestFieldsFromBundleProto/WIT_authorities_mask (0.00s)
+    --- PASS: TestFieldsFromBundleProto/mask_all_false (0.00s)
+=== RUN   TestRegistrationEntryToProto
+=== RUN   TestRegistrationEntryToProto/success
+=== RUN   TestRegistrationEntryToProto/missing_entry
+=== RUN   TestRegistrationEntryToProto/malformed_ParentId
+=== RUN   TestRegistrationEntryToProto/malformed_SpiffeId
+--- PASS: TestRegistrationEntryToProto (0.00s)
+    --- PASS: TestRegistrationEntryToProto/success (0.00s)
+    --- PASS: TestRegistrationEntryToProto/missing_entry (0.00s)
+    --- PASS: TestRegistrationEntryToProto/malformed_ParentId (0.00s)
+    --- PASS: TestRegistrationEntryToProto/malformed_SpiffeId (0.00s)
+=== RUN   TestProtoToRegistrationEntryWithMask
+=== RUN   TestProtoToRegistrationEntryWithMask/mask_including_all_fields
+=== RUN   TestProtoToRegistrationEntryWithMask/mask_off_all_fields
+=== RUN   TestProtoToRegistrationEntryWithMask/invalid_parent_id
+=== RUN   TestProtoToRegistrationEntryWithMask/invalid_spiffe_id
+=== RUN   TestProtoToRegistrationEntryWithMask/invalid_dns_names
+=== RUN   TestProtoToRegistrationEntryWithMask/invalid_federates_with
+=== RUN   TestProtoToRegistrationEntryWithMask/invalid_selectors
+=== RUN   TestProtoToRegistrationEntryWithMask/invalid_hint
+=== RUN   TestProtoToRegistrationEntryWithMask/WIT-SVID_TTL_set
+--- PASS: TestProtoToRegistrationEntryWithMask (0.00s)
+    --- PASS: TestProtoToRegistrationEntryWithMask/mask_including_all_fields (0.00s)
+    --- PASS: TestProtoToRegistrationEntryWithMask/mask_off_all_fields (0.00s)
+    --- PASS: TestProtoToRegistrationEntryWithMask/invalid_parent_id (0.00s)
+    --- PASS: TestProtoToRegistrationEntryWithMask/invalid_spiffe_id (0.00s)
+    --- PASS: TestProtoToRegistrationEntryWithMask/invalid_dns_names (0.00s)
+    --- PASS: TestProtoToRegistrationEntryWithMask/invalid_federates_with (0.00s)
+    --- PASS: TestProtoToRegistrationEntryWithMask/invalid_selectors (0.00s)
+    --- PASS: TestProtoToRegistrationEntryWithMask/invalid_hint (0.00s)
+    --- PASS: TestProtoToRegistrationEntryWithMask/WIT-SVID_TTL_set (0.00s)
+=== RUN   TestProtoToRegistrationEntry
+=== RUN   TestProtoToRegistrationEntry/success
+=== RUN   TestProtoToRegistrationEntry/missing_entry
+=== RUN   TestProtoToRegistrationEntry/no_parent_ID
+=== RUN   TestProtoToRegistrationEntry/malformed_parent_ID
+=== RUN   TestProtoToRegistrationEntry/no_spiffe_ID
+=== RUN   TestProtoToRegistrationEntry/malformed_spiffe_ID
+=== RUN   TestProtoToRegistrationEntry/invalid_DNS_name
+=== RUN   TestProtoToRegistrationEntry/malformed_federated_trust_domain
+=== RUN   TestProtoToRegistrationEntry/missing_selector_type
+=== RUN   TestProtoToRegistrationEntry/malformed_selector_type
+=== RUN   TestProtoToRegistrationEntry/missing_selector_value
+=== RUN   TestProtoToRegistrationEntry/no_selectors
+--- PASS: TestProtoToRegistrationEntry (0.00s)
+    --- PASS: TestProtoToRegistrationEntry/success (0.00s)
+    --- PASS: TestProtoToRegistrationEntry/missing_entry (0.00s)
+    --- PASS: TestProtoToRegistrationEntry/no_parent_ID (0.00s)
+    --- PASS: TestProtoToRegistrationEntry/malformed_parent_ID (0.00s)
+    --- PASS: TestProtoToRegistrationEntry/no_spiffe_ID (0.00s)
+    --- PASS: TestProtoToRegistrationEntry/malformed_spiffe_ID (0.00s)
+    --- PASS: TestProtoToRegistrationEntry/invalid_DNS_name (0.00s)
+    --- PASS: TestProtoToRegistrationEntry/malformed_federated_trust_domain (0.00s)
+    --- PASS: TestProtoToRegistrationEntry/missing_selector_type (0.00s)
+    --- PASS: TestProtoToRegistrationEntry/malformed_selector_type (0.00s)
+    --- PASS: TestProtoToRegistrationEntry/missing_selector_value (0.00s)
+    --- PASS: TestProtoToRegistrationEntry/no_selectors (0.00s)
+=== RUN   TestReadOnlyEntryIsReadOnly
+--- PASS: TestReadOnlyEntryIsReadOnly (0.00s)
+=== RUN   TestReadOnlyEntry
+--- PASS: TestReadOnlyEntry (0.00s)
+=== RUN   TestReadOnlyEntryClone
+--- PASS: TestReadOnlyEntryClone (0.00s)
+=== RUN   TestIDFromProto
+=== RUN   TestIDFromProto/TrustDomainMemberIDFromProto
+=== RUN   TestIDFromProto/TrustDomainMemberIDFromProto/no_SPIFFE_ID
+=== RUN   TestIDFromProto/TrustDomainMemberIDFromProto/missing_trust_domain
+=== RUN   TestIDFromProto/TrustDomainMemberIDFromProto/wrong_trust_domain
+=== RUN   TestIDFromProto/TrustDomainMemberIDFromProto/workload_is_valid_member
+=== RUN   TestIDFromProto/TrustDomainMemberIDFromProto/reserved_is_valid_member
+=== RUN   TestIDFromProto/TrustDomainMemberIDFromProto/agent_is_valid_member
+=== RUN   TestIDFromProto/TrustDomainMemberIDFromProto/no_path
+=== RUN   TestIDFromProto/TrustDomainMemberIDFromProto/path_without_leading_slash
+=== RUN   TestIDFromProto/TrustDomainAgentIDFromProto
+=== RUN   TestIDFromProto/TrustDomainAgentIDFromProto/no_SPIFFE_ID
+=== RUN   TestIDFromProto/TrustDomainAgentIDFromProto/missing_trust_domain
+=== RUN   TestIDFromProto/TrustDomainAgentIDFromProto/wrong_trust_domain
+=== RUN   TestIDFromProto/TrustDomainAgentIDFromProto/workload_is_not_an_agent
+=== RUN   TestIDFromProto/TrustDomainAgentIDFromProto/reserved_is_not_an_agent
+=== RUN   TestIDFromProto/TrustDomainAgentIDFromProto/agent_is_an_agent
+=== RUN   TestIDFromProto/TrustDomainAgentIDFromProto/no_path
+=== RUN   TestIDFromProto/TrustDomainAgentIDFromProto/path_without_leading_slash
+=== RUN   TestIDFromProto/TrustDomainWorkloadIDFromProto
+=== RUN   TestIDFromProto/TrustDomainWorkloadIDFromProto/no_SPIFFE_ID
+=== RUN   TestIDFromProto/TrustDomainWorkloadIDFromProto/missing_trust_domain
+=== RUN   TestIDFromProto/TrustDomainWorkloadIDFromProto/wrong_trust_domain
+=== RUN   TestIDFromProto/TrustDomainWorkloadIDFromProto/workload_is_a_workload
+=== RUN   TestIDFromProto/TrustDomainWorkloadIDFromProto/reserved_is_not_a_workload
+=== RUN   TestIDFromProto/TrustDomainWorkloadIDFromProto/agent_is_not_a_workload
+=== RUN   TestIDFromProto/TrustDomainWorkloadIDFromProto/no_path
+=== RUN   TestIDFromProto/TrustDomainWorkloadIDFromProto/path_without_leading_slash
+--- PASS: TestIDFromProto (0.00s)
+    --- PASS: TestIDFromProto/TrustDomainMemberIDFromProto (0.00s)
+        --- PASS: TestIDFromProto/TrustDomainMemberIDFromProto/no_SPIFFE_ID (0.00s)
+        --- PASS: TestIDFromProto/TrustDomainMemberIDFromProto/missing_trust_domain (0.00s)
+        --- PASS: TestIDFromProto/TrustDomainMemberIDFromProto/wrong_trust_domain (0.00s)
+        --- PASS: TestIDFromProto/TrustDomainMemberIDFromProto/workload_is_valid_member (0.00s)
+        --- PASS: TestIDFromProto/TrustDomainMemberIDFromProto/reserved_is_valid_member (0.00s)
+        --- PASS: TestIDFromProto/TrustDomainMemberIDFromProto/agent_is_valid_member (0.00s)
+        --- PASS: TestIDFromProto/TrustDomainMemberIDFromProto/no_path (0.00s)
+        --- PASS: TestIDFromProto/TrustDomainMemberIDFromProto/path_without_leading_slash (0.00s)
+    --- PASS: TestIDFromProto/TrustDomainAgentIDFromProto (0.00s)
+        --- PASS: TestIDFromProto/TrustDomainAgentIDFromProto/no_SPIFFE_ID (0.00s)
+        --- PASS: TestIDFromProto/TrustDomainAgentIDFromProto/missing_trust_domain (0.00s)
+        --- PASS: TestIDFromProto/TrustDomainAgentIDFromProto/wrong_trust_domain (0.00s)
+        --- PASS: TestIDFromProto/TrustDomainAgentIDFromProto/workload_is_not_an_agent (0.00s)
+        --- PASS: TestIDFromProto/TrustDomainAgentIDFromProto/reserved_is_not_an_agent (0.00s)
+        --- PASS: TestIDFromProto/TrustDomainAgentIDFromProto/agent_is_an_agent (0.00s)
+        --- PASS: TestIDFromProto/TrustDomainAgentIDFromProto/no_path (0.00s)
+        --- PASS: TestIDFromProto/TrustDomainAgentIDFromProto/path_without_leading_slash (0.00s)
+    --- PASS: TestIDFromProto/TrustDomainWorkloadIDFromProto (0.00s)
+        --- PASS: TestIDFromProto/TrustDomainWorkloadIDFromProto/no_SPIFFE_ID (0.00s)
+        --- PASS: TestIDFromProto/TrustDomainWorkloadIDFromProto/missing_trust_domain (0.00s)
+        --- PASS: TestIDFromProto/TrustDomainWorkloadIDFromProto/wrong_trust_domain (0.00s)
+        --- PASS: TestIDFromProto/TrustDomainWorkloadIDFromProto/workload_is_a_workload (0.00s)
+        --- PASS: TestIDFromProto/TrustDomainWorkloadIDFromProto/reserved_is_not_a_workload (0.00s)
+        --- PASS: TestIDFromProto/TrustDomainWorkloadIDFromProto/agent_is_not_a_workload (0.00s)
+        --- PASS: TestIDFromProto/TrustDomainWorkloadIDFromProto/no_path (0.00s)
+        --- PASS: TestIDFromProto/TrustDomainWorkloadIDFromProto/path_without_leading_slash (0.00s)
+=== RUN   TestVerifyTrustDomainAgentIDForNodeAttestor
+=== RUN   TestVerifyTrustDomainAgentIDForNodeAttestor/not_in_trust_domain
+=== RUN   TestVerifyTrustDomainAgentIDForNodeAttestor/not_in_reserved_namespace
+=== RUN   TestVerifyTrustDomainAgentIDForNodeAttestor/not_in_namespace_for_node_attestor
+=== RUN   TestVerifyTrustDomainAgentIDForNodeAttestor/success
+--- PASS: TestVerifyTrustDomainAgentIDForNodeAttestor (0.00s)
+    --- PASS: TestVerifyTrustDomainAgentIDForNodeAttestor/not_in_trust_domain (0.00s)
+    --- PASS: TestVerifyTrustDomainAgentIDForNodeAttestor/not_in_reserved_namespace (0.00s)
+    --- PASS: TestVerifyTrustDomainAgentIDForNodeAttestor/not_in_namespace_for_node_attestor (0.00s)
+    --- PASS: TestVerifyTrustDomainAgentIDForNodeAttestor/success (0.00s)
+=== RUN   TestAttestedNodeToProto
+=== RUN   TestAttestedNodeToProto/success
+=== RUN   TestAttestedNodeToProto/invalid_SPIFFE_ID
+=== RUN   TestAttestedNodeToProto/missing_node
+--- PASS: TestAttestedNodeToProto (0.00s)
+    --- PASS: TestAttestedNodeToProto/success (0.00s)
+    --- PASS: TestAttestedNodeToProto/invalid_SPIFFE_ID (0.00s)
+    --- PASS: TestAttestedNodeToProto/missing_node (0.00s)
+=== RUN   TestSelectorsFromProto
+=== RUN   TestSelectorsFromProto/happy_path
+=== RUN   TestSelectorsFromProto/nil_input
+=== RUN   TestSelectorsFromProto/empty_slice
+=== RUN   TestSelectorsFromProto/missing_type
+=== RUN   TestSelectorsFromProto/missing_value
+=== RUN   TestSelectorsFromProto/type_contains_':'
+--- PASS: TestSelectorsFromProto (0.00s)
+    --- PASS: TestSelectorsFromProto/happy_path (0.00s)
+    --- PASS: TestSelectorsFromProto/nil_input (0.00s)
+    --- PASS: TestSelectorsFromProto/empty_slice (0.00s)
+    --- PASS: TestSelectorsFromProto/missing_type (0.00s)
+    --- PASS: TestSelectorsFromProto/missing_value (0.00s)
+    --- PASS: TestSelectorsFromProto/type_contains_':' (0.00s)
+=== RUN   TestProtoToFederationRelationship
+--- PASS: TestProtoToFederationRelationship (0.00s)
+=== RUN   TestProtoToFederationRelationshipWithMask
+=== RUN   TestProtoToFederationRelationshipWithMask/HttpsWeb:_no_mask
+=== RUN   TestProtoToFederationRelationshipWithMask/HttpsWeb:_mask_all_false
+=== RUN   TestProtoToFederationRelationshipWithMask/HttpsSpiffe:_no_mask
+=== RUN   TestProtoToFederationRelationshipWithMask/HttpsSpiffe:_mask_all_false
+=== RUN   TestProtoToFederationRelationshipWithMask/no_proto
+=== RUN   TestProtoToFederationRelationshipWithMask/malformed_trust_domain
+=== RUN   TestProtoToFederationRelationshipWithMask/malformed_BundleEndpointURL
+=== RUN   TestProtoToFederationRelationshipWithMask/malformed_EndpointSpiffeId
+=== RUN   TestProtoToFederationRelationshipWithMask/malformed_Bundle
+=== RUN   TestProtoToFederationRelationshipWithMask/no_BundleEndpointProfile_provided
+=== RUN   TestProtoToFederationRelationshipWithMask/HttpsSpiffe:_empty
+=== RUN   TestProtoToFederationRelationshipWithMask/BundleEndpointUrl_must_start_with_https
+=== RUN   TestProtoToFederationRelationshipWithMask/BundleEndpointUrl_with_user_info
+=== RUN   TestProtoToFederationRelationshipWithMask/BundleEndpointUrl_empty_host
+=== RUN   TestProtoToFederationRelationshipWithMask/TrustDomainBundle_has_mismatched_trust_domain
+--- PASS: TestProtoToFederationRelationshipWithMask (0.00s)
+    --- PASS: TestProtoToFederationRelationshipWithMask/HttpsWeb:_no_mask (0.00s)
+    --- PASS: TestProtoToFederationRelationshipWithMask/HttpsWeb:_mask_all_false (0.00s)
+    --- PASS: TestProtoToFederationRelationshipWithMask/HttpsSpiffe:_no_mask (0.00s)
+    --- PASS: TestProtoToFederationRelationshipWithMask/HttpsSpiffe:_mask_all_false (0.00s)
+    --- PASS: TestProtoToFederationRelationshipWithMask/no_proto (0.00s)
+    --- PASS: TestProtoToFederationRelationshipWithMask/malformed_trust_domain (0.00s)
+    --- PASS: TestProtoToFederationRelationshipWithMask/malformed_BundleEndpointURL (0.00s)
+    --- PASS: TestProtoToFederationRelationshipWithMask/malformed_EndpointSpiffeId (0.00s)
+    --- PASS: TestProtoToFederationRelationshipWithMask/malformed_Bundle (0.00s)
+    --- PASS: TestProtoToFederationRelationshipWithMask/no_BundleEndpointProfile_provided (0.00s)
+    --- PASS: TestProtoToFederationRelationshipWithMask/HttpsSpiffe:_empty (0.00s)
+    --- PASS: TestProtoToFederationRelationshipWithMask/BundleEndpointUrl_must_start_with_https (0.00s)
+    --- PASS: TestProtoToFederationRelationshipWithMask/BundleEndpointUrl_with_user_info (0.00s)
+    --- PASS: TestProtoToFederationRelationshipWithMask/BundleEndpointUrl_empty_host (0.00s)
+    --- PASS: TestProtoToFederationRelationshipWithMask/TrustDomainBundle_has_mismatched_trust_domain (0.00s)
+=== RUN   TestFederationRelationshipToProto
+=== RUN   TestFederationRelationshipToProto/HttpsWeb:_no_mask
+=== RUN   TestFederationRelationshipToProto/HttpsWeb:_mask_all_false
+=== RUN   TestFederationRelationshipToProto/HttpsSpiffe:_no_mask
+=== RUN   TestFederationRelationshipToProto/HttpsSpiffe:_mask_all_false
+=== RUN   TestFederationRelationshipToProto/empty_trustdomain
+=== RUN   TestFederationRelationshipToProto/no_BundleEndpointURL
+=== RUN   TestFederationRelationshipToProto/bundle_has_malformed_trust_domain
+=== RUN   TestFederationRelationshipToProto/no_BundleEndpointProvider_provided
+--- PASS: TestFederationRelationshipToProto (0.00s)
+    --- PASS: TestFederationRelationshipToProto/HttpsWeb:_no_mask (0.00s)
+    --- PASS: TestFederationRelationshipToProto/HttpsWeb:_mask_all_false (0.00s)
+    --- PASS: TestFederationRelationshipToProto/HttpsSpiffe:_no_mask (0.00s)
+    --- PASS: TestFederationRelationshipToProto/HttpsSpiffe:_mask_all_false (0.00s)
+    --- PASS: TestFederationRelationshipToProto/empty_trustdomain (0.00s)
+    --- PASS: TestFederationRelationshipToProto/no_BundleEndpointURL (0.00s)
+    --- PASS: TestFederationRelationshipToProto/bundle_has_malformed_trust_domain (0.00s)
+    --- PASS: TestFederationRelationshipToProto/no_BundleEndpointProvider_provided (0.00s)
+PASS
+ok  	github.com/spiffe/spire/pkg/server/api	1.058s
+=== RUN   TestAgentRecordSize
+--- PASS: TestAgentRecordSize (0.00s)
+=== RUN   TestAgentRecordByID
+--- PASS: TestAgentRecordByID (0.00s)
+=== RUN   TestAgentRecordByExpiresAt
+--- PASS: TestAgentRecordByExpiresAt (0.00s)
+=== RUN   TestAliasRecordSize
+    aliases_test.go:15: 
+        	Error Trace:	/src/pkg/server/authorizedentries/aliases_test.go:15
+        	Error:      	Not equal: 
+        	            	expected: 0x48
+        	            	actual  : 0x50
+        	Test:       	TestAliasRecordSize
+--- FAIL: TestAliasRecordSize (0.00s)
+=== RUN   TestAliasRecordByEntryID
+--- PASS: TestAliasRecordByEntryID (0.00s)
+=== RUN   TestAliasRecordBySelector
+--- PASS: TestAliasRecordBySelector (0.00s)
+=== RUN   TestGetAuthorizedEntries
+=== RUN   TestGetAuthorizedEntries/empty_cache
+=== RUN   TestGetAuthorizedEntries/agent_not_attested_still_returns_direct_children
+=== RUN   TestGetAuthorizedEntries/directly_via_agent
+=== RUN   TestGetAuthorizedEntries/entry_removed
+=== RUN   TestGetAuthorizedEntries/indirectly_via_delegated_workload
+=== RUN   TestGetAuthorizedEntries/indirectly_via_alias
+=== RUN   TestGetAuthorizedEntries/indirectly_via_alias/agent_has_strict_selector_subset
+=== RUN   TestGetAuthorizedEntries/indirectly_via_alias/agent_has_selector_match
+=== RUN   TestGetAuthorizedEntries/indirectly_via_alias/agent_has_strict_selector_superset
+=== RUN   TestGetAuthorizedEntries/alias_removed
+=== RUN   TestGetAuthorizedEntries/agent_removed
+=== RUN   TestGetAuthorizedEntries/agent_pruned_after_expiry
+--- PASS: TestGetAuthorizedEntries (0.02s)
+    --- PASS: TestGetAuthorizedEntries/empty_cache (0.00s)
+    --- PASS: TestGetAuthorizedEntries/agent_not_attested_still_returns_direct_children (0.00s)
+    --- PASS: TestGetAuthorizedEntries/directly_via_agent (0.00s)
+    --- PASS: TestGetAuthorizedEntries/entry_removed (0.00s)
+    --- PASS: TestGetAuthorizedEntries/indirectly_via_delegated_workload (0.00s)
+    --- PASS: TestGetAuthorizedEntries/indirectly_via_alias (0.01s)
+        --- PASS: TestGetAuthorizedEntries/indirectly_via_alias/agent_has_strict_selector_subset (0.00s)
+        --- PASS: TestGetAuthorizedEntries/indirectly_via_alias/agent_has_selector_match (0.00s)
+        --- PASS: TestGetAuthorizedEntries/indirectly_via_alias/agent_has_strict_selector_superset (0.00s)
+    --- PASS: TestGetAuthorizedEntries/alias_removed (0.00s)
+    --- PASS: TestGetAuthorizedEntries/agent_removed (0.00s)
+    --- PASS: TestGetAuthorizedEntries/agent_pruned_after_expiry (0.00s)
+=== RUN   TestCacheInternalStats
+=== RUN   TestCacheInternalStats/pristine
+=== RUN   TestCacheInternalStats/entries_and_aliases
+=== RUN   TestCacheInternalStats/agents
+--- PASS: TestCacheInternalStats (0.00s)
+    --- PASS: TestCacheInternalStats/pristine (0.00s)
+    --- PASS: TestCacheInternalStats/entries_and_aliases (0.00s)
+    --- PASS: TestCacheInternalStats/agents (0.00s)
+=== RUN   TestLookupEntries
+--- PASS: TestLookupEntries (0.00s)
+=== RUN   TestRegistrationExpiryStopsIssuanceBeforePrune
+--- PASS: TestRegistrationExpiryStopsIssuanceBeforePrune (0.01s)
+FAIL
+FAIL	github.com/spiffe/spire/pkg/server/authorizedentries	0.046s
+=== RUN   TestEntryIteratorDS
+=== RUN   TestEntryIteratorDS/no_entries
+=== RUN   TestEntryIteratorDS/existing_entries_-_multiple_pages
+=== RUN   TestEntryIteratorDS/datastore_error
+--- PASS: TestEntryIteratorDS (0.02s)
+    --- PASS: TestEntryIteratorDS/no_entries (0.00s)
+    --- PASS: TestEntryIteratorDS/existing_entries_-_multiple_pages (0.00s)
+    --- PASS: TestEntryIteratorDS/datastore_error (0.00s)
+=== RUN   TestAgentIteratorDS
+=== RUN   TestAgentIteratorDS/no_entries
+=== RUN   TestAgentIteratorDS/multiple_pages
+=== RUN   TestAgentIteratorDS/datastore_error
+--- PASS: TestAgentIteratorDS (0.01s)
+    --- PASS: TestAgentIteratorDS/no_entries (0.00s)
+    --- PASS: TestAgentIteratorDS/multiple_pages (0.00s)
+    --- PASS: TestAgentIteratorDS/datastore_error (0.00s)
+=== RUN   TestFullCacheExpiredRegistrationDoesNotAuthorizeDescendants
+--- PASS: TestFullCacheExpiredRegistrationDoesNotAuthorizeDescendants (0.00s)
+=== RUN   TestCache
+--- PASS: TestCache (0.01s)
+=== RUN   TestCacheAfterRenamingTrustDomain
+--- PASS: TestCacheAfterRenamingTrustDomain (0.01s)
+=== RUN   TestFullCacheNodeAliasing
+--- PASS: TestFullCacheNodeAliasing (0.01s)
+=== RUN   TestFullCacheExcludesNodeSelectorMappedEntriesForExpiredAgents
+--- PASS: TestFullCacheExcludesNodeSelectorMappedEntriesForExpiredAgents (0.01s)
+=== RUN   TestBuildIteratorError
+=== RUN   TestBuildIteratorError/entry_iterator_error
+=== RUN   TestBuildIteratorError/agent_iterator_error
+--- PASS: TestBuildIteratorError (0.00s)
+    --- PASS: TestBuildIteratorError/entry_iterator_error (0.00s)
+    --- PASS: TestBuildIteratorError/agent_iterator_error (0.00s)
+=== RUN   TestLookupEntries
+--- PASS: TestLookupEntries (0.02s)
+PASS
+ok  	github.com/spiffe/spire/pkg/server/cache/entrycache	1.117s
+=== RUN   TestManager
+=== RUN   TestManager/TestPruning
+--- PASS: TestManager (0.02s)
+    --- PASS: TestManager/TestPruning (0.02s)
+PASS
+ok  	github.com/spiffe/spire/pkg/server/registration	1.048s
+=== RUN   TestServiceMintX509SVID
+=== RUN   TestServiceMintX509SVID/success
+=== RUN   TestServiceMintX509SVID/custom_ttl
+=== RUN   TestServiceMintX509SVID/custom_dns
+=== RUN   TestServiceMintX509SVID/custom_subject
+=== RUN   TestServiceMintX509SVID/custom_subject_and_dns
+=== RUN   TestServiceMintX509SVID/no_CSR
+=== RUN   TestServiceMintX509SVID/malformed_CSR
+=== RUN   TestServiceMintX509SVID/invalid_signature
+=== RUN   TestServiceMintX509SVID/no_URIs
+=== RUN   TestServiceMintX509SVID/multiple_URIs
+=== RUN   TestServiceMintX509SVID/invalid_SPIFFE_ID
+=== RUN   TestServiceMintX509SVID/different_trust_domain
+=== RUN   TestServiceMintX509SVID/SPIFFE_ID_is_not_for_a_workload_in_the_trust_domain
+=== RUN   TestServiceMintX509SVID/invalid_DNS
+=== RUN   TestServiceMintX509SVID/signing_fails
+=== NAME  TestServiceMintX509SVID
+    server.go:126: Gracefully stopping gRPC server
+    server.go:128: Server stopped
+    server.go:130: Server serve returned <nil>
+    server.go:122: Waiting for handlers to drain
+    server.go:124: Handlers drained
+--- PASS: TestServiceMintX509SVID (0.03s)
+    --- PASS: TestServiceMintX509SVID/success (0.00s)
+    --- PASS: TestServiceMintX509SVID/custom_ttl (0.00s)
+    --- PASS: TestServiceMintX509SVID/custom_dns (0.00s)
+    --- PASS: TestServiceMintX509SVID/custom_subject (0.00s)
+    --- PASS: TestServiceMintX509SVID/custom_subject_and_dns (0.00s)
+    --- PASS: TestServiceMintX509SVID/no_CSR (0.00s)
+    --- PASS: TestServiceMintX509SVID/malformed_CSR (0.00s)
+    --- PASS: TestServiceMintX509SVID/invalid_signature (0.00s)
+    --- PASS: TestServiceMintX509SVID/no_URIs (0.00s)
+    --- PASS: TestServiceMintX509SVID/multiple_URIs (0.00s)
+    --- PASS: TestServiceMintX509SVID/invalid_SPIFFE_ID (0.00s)
+    --- PASS: TestServiceMintX509SVID/different_trust_domain (0.00s)
+    --- PASS: TestServiceMintX509SVID/SPIFFE_ID_is_not_for_a_workload_in_the_trust_domain (0.00s)
+    --- PASS: TestServiceMintX509SVID/invalid_DNS (0.00s)
+    --- PASS: TestServiceMintX509SVID/signing_fails (0.00s)
+=== RUN   TestServiceMintJWTSVID
+=== RUN   TestServiceMintJWTSVID/success
+=== RUN   TestServiceMintJWTSVID/success_custom_TTL
+=== RUN   TestServiceMintJWTSVID/bad_id
+=== RUN   TestServiceMintJWTSVID/invalid_trust_domain
+=== RUN   TestServiceMintJWTSVID/SPIFFE_ID_is_not_for_a_workload_in_the_trust_domain
+=== RUN   TestServiceMintJWTSVID/no_audience
+=== RUN   TestServiceMintJWTSVID/fails_minting
+=== RUN   TestServiceMintJWTSVID/jwt_is_disabled
+=== NAME  TestServiceMintJWTSVID
+    server.go:126: Gracefully stopping gRPC server
+    server.go:128: Server stopped
+    server.go:130: Server serve returned <nil>
+    server.go:122: Waiting for handlers to drain
+    server.go:124: Handlers drained
+--- PASS: TestServiceMintJWTSVID (0.01s)
+    --- PASS: TestServiceMintJWTSVID/success (0.00s)
+    --- PASS: TestServiceMintJWTSVID/success_custom_TTL (0.00s)
+    --- PASS: TestServiceMintJWTSVID/bad_id (0.00s)
+    --- PASS: TestServiceMintJWTSVID/invalid_trust_domain (0.00s)
+    --- PASS: TestServiceMintJWTSVID/SPIFFE_ID_is_not_for_a_workload_in_the_trust_domain (0.00s)
+    --- PASS: TestServiceMintJWTSVID/no_audience (0.00s)
+    --- PASS: TestServiceMintJWTSVID/fails_minting (0.00s)
+    --- PASS: TestServiceMintJWTSVID/jwt_is_disabled (0.00s)
+=== RUN   TestServiceMintWITSVID
+=== RUN   TestServiceMintWITSVID/success
+=== RUN   TestServiceMintWITSVID/success_custom_TTL
+=== RUN   TestServiceMintWITSVID/bad_id
+=== RUN   TestServiceMintWITSVID/invalid_signing_algorithm
+=== RUN   TestServiceMintWITSVID/invalid_trust_domain
+=== RUN   TestServiceMintWITSVID/SPIFFE_ID_is_not_for_a_workload_in_the_trust_domain
+=== RUN   TestServiceMintWITSVID/fails_minting
+=== RUN   TestServiceMintWITSVID/wit_is_disabled
+=== NAME  TestServiceMintWITSVID
+    server.go:126: Gracefully stopping gRPC server
+    server.go:128: Server stopped
+    server.go:130: Server serve returned <nil>
+    server.go:122: Waiting for handlers to drain
+    server.go:124: Handlers drained
+--- PASS: TestServiceMintWITSVID (0.01s)
+    --- PASS: TestServiceMintWITSVID/success (0.00s)
+    --- PASS: TestServiceMintWITSVID/success_custom_TTL (0.00s)
+    --- PASS: TestServiceMintWITSVID/bad_id (0.00s)
+    --- PASS: TestServiceMintWITSVID/invalid_signing_algorithm (0.00s)
+    --- PASS: TestServiceMintWITSVID/invalid_trust_domain (0.00s)
+    --- PASS: TestServiceMintWITSVID/SPIFFE_ID_is_not_for_a_workload_in_the_trust_domain (0.00s)
+    --- PASS: TestServiceMintWITSVID/fails_minting (0.00s)
+    --- PASS: TestServiceMintWITSVID/wit_is_disabled (0.00s)
+=== RUN   TestServiceNewJWTSVID
+=== RUN   TestServiceNewJWTSVID/success
+=== RUN   TestServiceNewJWTSVID/success_custom_TTL
+=== RUN   TestServiceNewJWTSVID/success_custom_JWT_TTL
+=== RUN   TestServiceNewJWTSVID/no_SPIFFE_ID
+=== RUN   TestServiceNewJWTSVID/no_audience
+=== RUN   TestServiceNewJWTSVID/no_caller_id
+=== RUN   TestServiceNewJWTSVID/rate_limit_fails
+=== RUN   TestServiceNewJWTSVID/entry_not_found
+=== RUN   TestServiceNewJWTSVID/fails_minting
+=== RUN   TestServiceNewJWTSVID/jwt_is_disabled
+=== RUN   TestServiceNewJWTSVID/success_without_additional_attributes_does_not_include_jti
+=== RUN   TestServiceNewJWTSVID/success_with_jwtSvidIncludeJti_false_does_not_include_jti
+=== RUN   TestServiceNewJWTSVID/success_with_jwtSvidIncludeJti_true_includes_jti
+=== NAME  TestServiceNewJWTSVID
+    server.go:126: Gracefully stopping gRPC server
+    server.go:128: Server stopped
+    server.go:130: Server serve returned <nil>
+    server.go:122: Waiting for handlers to drain
+    server.go:124: Handlers drained
+--- PASS: TestServiceNewJWTSVID (0.01s)
+    --- PASS: TestServiceNewJWTSVID/success (0.00s)
+    --- PASS: TestServiceNewJWTSVID/success_custom_TTL (0.00s)
+    --- PASS: TestServiceNewJWTSVID/success_custom_JWT_TTL (0.00s)
+    --- PASS: TestServiceNewJWTSVID/no_SPIFFE_ID (0.00s)
+    --- PASS: TestServiceNewJWTSVID/no_audience (0.00s)
+    --- PASS: TestServiceNewJWTSVID/no_caller_id (0.00s)
+    --- PASS: TestServiceNewJWTSVID/rate_limit_fails (0.00s)
+    --- PASS: TestServiceNewJWTSVID/entry_not_found (0.00s)
+    --- PASS: TestServiceNewJWTSVID/fails_minting (0.00s)
+    --- PASS: TestServiceNewJWTSVID/jwt_is_disabled (0.00s)
+    --- PASS: TestServiceNewJWTSVID/success_without_additional_attributes_does_not_include_jti (0.00s)
+    --- PASS: TestServiceNewJWTSVID/success_with_jwtSvidIncludeJti_false_does_not_include_jti (0.00s)
+    --- PASS: TestServiceNewJWTSVID/success_with_jwtSvidIncludeJti_true_includes_jti (0.00s)
+=== RUN   TestServiceBatchNewX509SVID
+=== RUN   TestServiceBatchNewX509SVID/success
+=== RUN   TestServiceBatchNewX509SVID/custom_ttl
+=== RUN   TestServiceBatchNewX509SVID/custom_x509_ttl
+=== RUN   TestServiceBatchNewX509SVID/custom_dns
+=== RUN   TestServiceBatchNewX509SVID/keep_request_order
+=== RUN   TestServiceBatchNewX509SVID/no_caller_id
+=== RUN   TestServiceBatchNewX509SVID/no_parameters
+=== RUN   TestServiceBatchNewX509SVID/rate_limit_fails
+=== RUN   TestServiceBatchNewX509SVID/fetch_entries_fails
+=== RUN   TestServiceBatchNewX509SVID/missing_entry_ID
+=== RUN   TestServiceBatchNewX509SVID/missing_CSR
+=== RUN   TestServiceBatchNewX509SVID/entry_not_found
+=== RUN   TestServiceBatchNewX509SVID/malformed_CSR
+=== RUN   TestServiceBatchNewX509SVID/invalid_signature
+=== RUN   TestServiceBatchNewX509SVID/malformed_SPIFFE_ID
+=== RUN   TestServiceBatchNewX509SVID/signing_fails
+=== NAME  TestServiceBatchNewX509SVID
+    server.go:126: Gracefully stopping gRPC server
+    server.go:128: Server stopped
+    server.go:130: Server serve returned <nil>
+    server.go:122: Waiting for handlers to drain
+    server.go:124: Handlers drained
+--- PASS: TestServiceBatchNewX509SVID (0.02s)
+    --- PASS: TestServiceBatchNewX509SVID/success (0.00s)
+    --- PASS: TestServiceBatchNewX509SVID/custom_ttl (0.00s)
+    --- PASS: TestServiceBatchNewX509SVID/custom_x509_ttl (0.00s)
+    --- PASS: TestServiceBatchNewX509SVID/custom_dns (0.00s)
+    --- PASS: TestServiceBatchNewX509SVID/keep_request_order (0.00s)
+    --- PASS: TestServiceBatchNewX509SVID/no_caller_id (0.00s)
+    --- PASS: TestServiceBatchNewX509SVID/no_parameters (0.00s)
+    --- PASS: TestServiceBatchNewX509SVID/rate_limit_fails (0.00s)
+    --- PASS: TestServiceBatchNewX509SVID/fetch_entries_fails (0.00s)
+    --- PASS: TestServiceBatchNewX509SVID/missing_entry_ID (0.00s)
+    --- PASS: TestServiceBatchNewX509SVID/missing_CSR (0.00s)
+    --- PASS: TestServiceBatchNewX509SVID/entry_not_found (0.00s)
+    --- PASS: TestServiceBatchNewX509SVID/malformed_CSR (0.00s)
+    --- PASS: TestServiceBatchNewX509SVID/invalid_signature (0.00s)
+    --- PASS: TestServiceBatchNewX509SVID/malformed_SPIFFE_ID (0.00s)
+    --- PASS: TestServiceBatchNewX509SVID/signing_fails (0.00s)
+=== RUN   TestServiceBatchNewWITSVID
+=== RUN   TestServiceBatchNewWITSVID/success
+=== RUN   TestServiceBatchNewWITSVID/success_with_entry_WIT-SVID_TTL
+=== RUN   TestServiceBatchNewWITSVID/WIT_is_disabled
+=== RUN   TestServiceBatchNewWITSVID/keep_request_order
+=== RUN   TestServiceBatchNewWITSVID/invalid_signing_algorithm
+=== RUN   TestServiceBatchNewWITSVID/no_caller_id
+=== RUN   TestServiceBatchNewWITSVID/no_parameters
+=== RUN   TestServiceBatchNewWITSVID/rate_limit_fails
+=== RUN   TestServiceBatchNewWITSVID/fetch_entries_fails
+=== RUN   TestServiceBatchNewWITSVID/missing_entry_ID
+=== RUN   TestServiceBatchNewWITSVID/missing_public_key
+=== RUN   TestServiceBatchNewWITSVID/entry_not_found
+=== RUN   TestServiceBatchNewWITSVID/malformed_public_key
+=== RUN   TestServiceBatchNewWITSVID/malformed_SPIFFE_ID
+=== RUN   TestServiceBatchNewWITSVID/signing_fails
+=== NAME  TestServiceBatchNewWITSVID
+    server.go:126: Gracefully stopping gRPC server
+    server.go:128: Server stopped
+    server.go:130: Server serve returned <nil>
+    server.go:122: Waiting for handlers to drain
+    server.go:124: Handlers drained
+--- PASS: TestServiceBatchNewWITSVID (0.01s)
+    --- PASS: TestServiceBatchNewWITSVID/success (0.00s)
+    --- PASS: TestServiceBatchNewWITSVID/success_with_entry_WIT-SVID_TTL (0.00s)
+    --- PASS: TestServiceBatchNewWITSVID/WIT_is_disabled (0.00s)
+    --- PASS: TestServiceBatchNewWITSVID/keep_request_order (0.00s)
+    --- PASS: TestServiceBatchNewWITSVID/invalid_signing_algorithm (0.00s)
+    --- PASS: TestServiceBatchNewWITSVID/no_caller_id (0.00s)
+    --- PASS: TestServiceBatchNewWITSVID/no_parameters (0.00s)
+    --- PASS: TestServiceBatchNewWITSVID/rate_limit_fails (0.00s)
+    --- PASS: TestServiceBatchNewWITSVID/fetch_entries_fails (0.00s)
+    --- PASS: TestServiceBatchNewWITSVID/missing_entry_ID (0.00s)
+    --- PASS: TestServiceBatchNewWITSVID/missing_public_key (0.00s)
+    --- PASS: TestServiceBatchNewWITSVID/entry_not_found (0.00s)
+    --- PASS: TestServiceBatchNewWITSVID/malformed_public_key (0.00s)
+    --- PASS: TestServiceBatchNewWITSVID/malformed_SPIFFE_ID (0.00s)
+    --- PASS: TestServiceBatchNewWITSVID/signing_fails (0.00s)
+=== RUN   TestNewDownstreamX509CA
+=== RUN   TestNewDownstreamX509CA/Malformed_CSR
+=== RUN   TestNewDownstreamX509CA/Rate_Limiter_Err
+=== RUN   TestNewDownstreamX509CA/Unauthorized
+=== RUN   TestNewDownstreamX509CA/Fail_Data_Store
+=== RUN   TestNewDownstreamX509CA/Successful_CA_Request
+=== NAME  TestNewDownstreamX509CA
+    server.go:126: Gracefully stopping gRPC server
+    server.go:128: Server stopped
+    server.go:130: Server serve returned <nil>
+    server.go:122: Waiting for handlers to drain
+    server.go:124: Handlers drained
+--- PASS: TestNewDownstreamX509CA (0.01s)
+    --- PASS: TestNewDownstreamX509CA/Malformed_CSR (0.00s)
+    --- PASS: TestNewDownstreamX509CA/Rate_Limiter_Err (0.00s)
+    --- PASS: TestNewDownstreamX509CA/Unauthorized (0.00s)
+    --- PASS: TestNewDownstreamX509CA/Fail_Data_Store (0.00s)
+    --- PASS: TestNewDownstreamX509CA/Successful_CA_Request (0.00s)
+=== RUN   TestValidatePublicKeyAndSigningAlgorithm
+=== RUN   TestValidatePublicKeyAndSigningAlgorithm/rsa-2048
+=== RUN   TestValidatePublicKeyAndSigningAlgorithm/rsa-4096
+=== RUN   TestValidatePublicKeyAndSigningAlgorithm/ec-p256
+=== RUN   TestValidatePublicKeyAndSigningAlgorithm/ec-p384
+=== RUN   TestValidatePublicKeyAndSigningAlgorithm/invalid_key_type
+--- PASS: TestValidatePublicKeyAndSigningAlgorithm (0.04s)
+    --- PASS: TestValidatePublicKeyAndSigningAlgorithm/rsa-2048 (0.00s)
+    --- PASS: TestValidatePublicKeyAndSigningAlgorithm/rsa-4096 (0.00s)
+    --- PASS: TestValidatePublicKeyAndSigningAlgorithm/ec-p256 (0.00s)
+    --- PASS: TestValidatePublicKeyAndSigningAlgorithm/ec-p384 (0.00s)
+    --- PASS: TestValidatePublicKeyAndSigningAlgorithm/invalid_key_type (0.00s)
+PASS
+ok  	github.com/spiffe/spire/pkg/server/api/svid/v1	1.181s
+FAIL

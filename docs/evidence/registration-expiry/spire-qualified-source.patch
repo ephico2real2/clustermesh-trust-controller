@@ -1,0 +1,363 @@
+diff --git a/pkg/server/api/entry.go b/pkg/server/api/entry.go
+index 4006f36a..a25746ca 100644
+--- a/pkg/server/api/entry.go
++++ b/pkg/server/api/entry.go
+@@ -5,6 +5,7 @@ import (
+ 	"errors"
+ 	"fmt"
+ 	"slices"
++	"time"
+ 
+ 	"github.com/spiffe/go-spiffe/v2/spiffeid"
+ 	"github.com/spiffe/spire-api-sdk/proto/spire/api/types"
+@@ -28,6 +29,15 @@ func NewReadOnlyEntry(entry *types.Entry) ReadOnlyEntry {
+ 	}
+ }
+ 
++// RegistrationCurrent reports whether a registration entry may authorize a new
++// SVID at now. ExpiresAt is Unix seconds. Zero means the entry has no expiry.
++// A nonzero expiry authorizes only while it is strictly after now. The
++// registration pruner deletes expired rows on a later cadence; callers must
++// not wait for that deletion before refusing issuance.
++func RegistrationCurrent(expiresAt int64, now time.Time) bool {
++	return expiresAt == 0 || expiresAt > now.Unix()
++}
++
+ func (e ReadOnlyEntry) GetId() string {
+ 	return e.entry.Id
+ }
+diff --git a/pkg/server/authorizedentries/aliases.go b/pkg/server/authorizedentries/aliases.go
+index 42afc055..843460e3 100644
+--- a/pkg/server/authorizedentries/aliases.go
++++ b/pkg/server/authorizedentries/aliases.go
+@@ -16,6 +16,10 @@ type aliasRecord struct {
+ 	// possesses a superset of the alias's selectors and is therefore
+ 	// authorized for the alias.
+ 	AllSelectors selectorSet
++
++	// ExpiresAt is the registration entry expiry in Unix seconds. Zero means
++	// the alias has no expiry. It is not part of the btree key.
++	ExpiresAt int64
+ }
+ 
+ func aliasRecordByEntryID(a, b aliasRecord) bool {
+diff --git a/pkg/server/authorizedentries/aliases_test.go b/pkg/server/authorizedentries/aliases_test.go
+index e0e5f70c..4218b0f9 100644
+--- a/pkg/server/authorizedentries/aliases_test.go
++++ b/pkg/server/authorizedentries/aliases_test.go
+@@ -12,7 +12,9 @@ func TestAliasRecordSize(t *testing.T) {
+ 	// The motivation for this test is to bring awareness and visibility into
+ 	// how much size the record occupies. We want to minimize the size to
+ 	// increase cache locality in the btree.
+-	require.Equal(t, uintptr(72), unsafe.Sizeof(aliasRecord{}))
++	// The cached registration expiry adds one int64 (8 bytes). Keep this
++	// explicit size budget so a later change cannot grow the btree unnoticed.
++	require.Equal(t, uintptr(80), unsafe.Sizeof(aliasRecord{}))
+ }
+ 
+ func TestAliasRecordByEntryID(t *testing.T) {
+diff --git a/pkg/server/authorizedentries/cache.go b/pkg/server/authorizedentries/cache.go
+index 0383535e..821c3021 100644
+--- a/pkg/server/authorizedentries/cache.go
++++ b/pkg/server/authorizedentries/cache.go
+@@ -78,11 +78,15 @@ func (c *Cache) LookupAuthorizedEntries(agentID spiffeid.ID, requestedEntries ma
+ 	parentSeen := allocStringSet()
+ 	defer freeStringSet(parentSeen)
+ 
+-	c.addDescendants(foundEntries, agentID.Path(), requestedEntries, parentSeen)
++	now := c.clk.Now()
++	c.addDescendants(foundEntries, agentID.Path(), requestedEntries, parentSeen, now)
+ 
+ 	agentAliases := c.getAgentAliases(agent.Selectors)
+ 	for _, alias := range agentAliases {
+-		c.addDescendants(foundEntries, alias.AliasID, requestedEntries, parentSeen)
++		if !api.RegistrationCurrent(alias.ExpiresAt, now) {
++			continue
++		}
++		c.addDescendants(foundEntries, alias.AliasID, requestedEntries, parentSeen, now)
+ 	}
+ 
+ 	return foundEntries
+@@ -104,12 +108,16 @@ func (c *Cache) GetAuthorizedEntries(agentID spiffeid.ID) []api.ReadOnlyEntry {
+ 	parentSeen := allocStringSet()
+ 	defer freeStringSet(parentSeen)
+ 
++	now := c.clk.Now()
+ 	records := make([]api.ReadOnlyEntry, 0)
+-	records = c.appendDescendents(records, agentID.Path(), parentSeen)
++	records = c.appendDescendents(records, agentID.Path(), parentSeen, now)
+ 
+ 	agentAliases := c.getAgentAliases(agent.Selectors)
+ 	for _, alias := range agentAliases {
+-		records = c.appendDescendents(records, alias.AliasID, parentSeen)
++		if !api.RegistrationCurrent(alias.ExpiresAt, now) {
++			continue
++		}
++		records = c.appendDescendents(records, alias.AliasID, parentSeen, now)
+ 	}
+ 
+ 	return records
+@@ -187,7 +195,7 @@ func (c *Cache) PruneExpiredAgents() int {
+ 	}
+ }
+ 
+-func (c *Cache) appendDescendents(records []api.ReadOnlyEntry, parentID string, parentSeen stringSet) []api.ReadOnlyEntry {
++func (c *Cache) appendDescendents(records []api.ReadOnlyEntry, parentID string, parentSeen stringSet, now time.Time) []api.ReadOnlyEntry {
+ 	if _, ok := parentSeen[parentID]; ok {
+ 		return records
+ 	}
+@@ -195,13 +203,16 @@ func (c *Cache) appendDescendents(records []api.ReadOnlyEntry, parentID string,
+ 
+ 	parentEntries := c.entriesByParentID[parentID]
+ 	for _, entry := range parentEntries {
++		if !api.RegistrationCurrent(entry.ExpiresAt, now) {
++			continue
++		}
+ 		records = append(records, api.NewReadOnlyEntry(entry))
+-		records = c.appendDescendents(records, entry.SpiffeId.Path, parentSeen)
++		records = c.appendDescendents(records, entry.SpiffeId.Path, parentSeen, now)
+ 	}
+ 	return records
+ }
+ 
+-func (c *Cache) addDescendants(foundEntries map[string]api.ReadOnlyEntry, parentID string, requestedEntries map[string]struct{}, parentSeen stringSet) {
++func (c *Cache) addDescendants(foundEntries map[string]api.ReadOnlyEntry, parentID string, requestedEntries map[string]struct{}, parentSeen stringSet, now time.Time) {
+ 	if len(foundEntries) == len(requestedEntries) {
+ 		return
+ 	}
+@@ -212,6 +223,9 @@ func (c *Cache) addDescendants(foundEntries map[string]api.ReadOnlyEntry, parent
+ 
+ 	parentEntries := c.entriesByParentID[parentID]
+ 	for _, entry := range parentEntries {
++		if !api.RegistrationCurrent(entry.ExpiresAt, now) {
++			continue
++		}
+ 		if _, ok := requestedEntries[entry.Id]; ok {
+ 			foundEntries[entry.Id] = api.NewReadOnlyEntry(entry)
+ 		}
+@@ -220,7 +234,7 @@ func (c *Cache) addDescendants(foundEntries map[string]api.ReadOnlyEntry, parent
+ 			return
+ 		}
+ 
+-		c.addDescendants(foundEntries, entry.SpiffeId.Path, requestedEntries, parentSeen)
++		c.addDescendants(foundEntries, entry.SpiffeId.Path, requestedEntries, parentSeen, now)
+ 	}
+ }
+ 
+@@ -256,6 +270,7 @@ func (c *Cache) updateEntry(entry *types.Entry) {
+ 			EntryID:      entry.Id,
+ 			AliasID:      entry.SpiffeId.Path,
+ 			AllSelectors: selectorSetFromProto(entry.Selectors),
++			ExpiresAt:    entry.ExpiresAt,
+ 		}
+ 		for selector := range ar.AllSelectors {
+ 			ar.Selector = selector
+diff --git a/pkg/server/authorizedentries/cache_test.go b/pkg/server/authorizedentries/cache_test.go
+index 53029e4c..7fa84c20 100644
+--- a/pkg/server/authorizedentries/cache_test.go
++++ b/pkg/server/authorizedentries/cache_test.go
+@@ -542,6 +542,47 @@ func TestLookupEntries(t *testing.T) {
+ 	require.Contains(t, found, "workload-child-7")
+ }
+ 
++func TestRegistrationExpiryStopsIssuanceBeforePrune(t *testing.T) {
++	past := time.Now().Add(-time.Hour).Unix()
++	future := time.Now().Add(time.Hour).Unix()
++	alias := makeAlias(alias1, sel1)
++	alias.ExpiresAt = past
++	live := makeWorkload(alias1)
++	live.SpiffeId.Path = "/ns/orders/sa/api"
++	live.ExpiresAt = future
++	directID := spiffeid.RequireFromPath(td, "/ns/orders/sa/old")
++	direct := makeWorkload(agent1)
++	direct.SpiffeId = api.ProtoFromID(directID)
++	direct.ExpiresAt = past
++	child := makeWorkload(directID)
++	child.SpiffeId.Path = "/child"
++	child.ExpiresAt = future
++	open := makeWorkload(agent1)
++	open.SpiffeId.Path = "/open"
++	test := testCache().withAgent(agent1, sel1).withEntries(alias, live, direct, child, open)
++	test.assertAuthorizedEntries(t, agent1, open)
++
++	_, cache := test.hydrate(t)
++	alias.ExpiresAt = future
++	cache.UpdateEntry(alias)
++	assertAuthorizedEntries(t, cache, agent1, test.entries, open, live)
++
++	fixed := time.Unix(1_700_000_000, 0)
++	clk := clock.NewMockAt(t, fixed)
++	boundaryCache := NewCache(clk, td.String())
++	boundary := makeWorkload(agent1)
++	boundary.ExpiresAt = fixed.Unix()
++	boundaryCache.UpdateEntry(boundary)
++	if got := boundaryCache.GetAuthorizedEntries(agent1); len(got) != 0 {
++		t.Fatalf("entry at its expiry second authorized %d rows", len(got))
++	}
++	boundary.ExpiresAt = fixed.Unix() + 1
++	boundaryCache.UpdateEntry(boundary)
++	if got := boundaryCache.GetAuthorizedEntries(agent1); len(got) != 1 {
++		t.Fatalf("entry with one second of remaining lifetime returned %d rows", len(got))
++	}
++}
++
+ func BenchmarkEntryLookup(b *testing.B) {
+ 	numEntries := 256
+ 	cache := setupLookupTest(b, numEntries)
+diff --git a/pkg/server/cache/entrycache/fullcache.go b/pkg/server/cache/entrycache/fullcache.go
+index 47f3ed4d..7b5fdc38 100644
+--- a/pkg/server/cache/entrycache/fullcache.go
++++ b/pkg/server/cache/entrycache/fullcache.go
+@@ -3,6 +3,7 @@ package entrycache
+ import (
+ 	"context"
+ 	"sync"
++	"time"
+ 
+ 	"github.com/spiffe/go-spiffe/v2/spiffeid"
+ 	"github.com/spiffe/spire-api-sdk/proto/spire/api/types"
+@@ -182,7 +183,7 @@ func (c *FullEntryCache) LookupAuthorizedEntries(agentID spiffeid.ID, requestedE
+ 	defer freeSeenSet(seen)
+ 
+ 	foundEntries := make(map[string]api.ReadOnlyEntry)
+-	c.crawl(agentID.Path(), seen, func(entry *types.Entry) bool {
++	c.crawl(agentID.Path(), seen, time.Now(), func(entry *types.Entry) bool {
+ 		if _, ok := requestedEntries[entry.Id]; ok {
+ 			foundEntries[entry.Id] = api.NewReadOnlyEntry(entry)
+ 		}
+@@ -199,7 +200,7 @@ func (c *FullEntryCache) GetAuthorizedEntries(agentID spiffeid.ID) []api.ReadOnl
+ 	defer freeSeenSet(seen)
+ 
+ 	foundEntries := []api.ReadOnlyEntry{}
+-	c.crawl(agentID.Path(), seen, func(entry *types.Entry) bool {
++	c.crawl(agentID.Path(), seen, time.Now(), func(entry *types.Entry) bool {
+ 		foundEntries = append(foundEntries, api.NewReadOnlyEntry(entry))
+ 		return true
+ 	})
+@@ -210,21 +211,29 @@ func (c *FullEntryCache) GetAuthorizedEntries(agentID spiffeid.ID) []api.ReadOnl
+ // Crawl the list of registration entries calling the visit function on all of them.
+ // visit(entry) returns a boolean indicating if we should continue iterating (if true)
+ // or if we should terminate the crawl (if false).
+-func (c *FullEntryCache) crawl(parentID string, seen map[string]struct{}, visit func(*types.Entry) bool) {
++func (c *FullEntryCache) crawl(parentID string, seen map[string]struct{}, now time.Time, visit func(*types.Entry) bool) {
+ 	if _, ok := seen[parentID]; ok {
+ 		return
+ 	}
+ 	seen[parentID] = struct{}{}
+ 
+ 	for _, entry := range c.entries[parentID] {
++		// An expired entry cannot authorize itself or any descendant. The
++		// snapshot can still contain the row until the registration pruner runs.
++		if !api.RegistrationCurrent(entry.ExpiresAt, now) {
++			continue
++		}
+ 		if !visit(entry) {
+ 			return
+ 		}
+-		c.crawl(entry.SpiffeId.Path, seen, visit)
++		c.crawl(entry.SpiffeId.Path, seen, now, visit)
+ 	}
+ 
+ 	for _, alias := range c.aliases[parentID] {
+-		c.crawl(alias.id, seen, visit)
++		if alias.entry != nil && !api.RegistrationCurrent(alias.entry.ExpiresAt, now) {
++			continue
++		}
++		c.crawl(alias.id, seen, now, visit)
+ 	}
+ }
+ 
+diff --git a/pkg/server/registration/manager.go b/pkg/server/registration/manager.go
+index 8d5ba5ec..23dd8d11 100644
+--- a/pkg/server/registration/manager.go
++++ b/pkg/server/registration/manager.go
+@@ -12,6 +12,9 @@ import (
+ )
+ 
+ const (
++	// _pruningCadence is datastore cleanup. It is not the issuance boundary.
++	// Authorized-entry reads refuse a nonzero EntryExpiry at that second
++	// through api.RegistrationCurrent, including rows this loop has not deleted.
+ 	_pruningCadence = 5 * time.Minute
+ )
+ 
+diff --git a/pkg/server/api/registration_current_test.go b/pkg/server/api/registration_current_test.go
+new file mode 100644
+index 00000000..449290e3
+--- /dev/null
++++ b/pkg/server/api/registration_current_test.go
+@@ -0,0 +1,22 @@
++package api
++
++import (
++	"testing"
++	"time"
++)
++
++func TestRegistrationCurrent(t *testing.T) {
++	now := time.Unix(1_700_000_000, 0)
++	if !RegistrationCurrent(0, now) {
++		t.Fatal("an entry with no expiry was refused")
++	}
++	if RegistrationCurrent(now.Unix(), now) {
++		t.Fatal("an entry was authorized at its expiry second")
++	}
++	if RegistrationCurrent(now.Unix()-1, now) {
++		t.Fatal("an expired entry was authorized")
++	}
++	if !RegistrationCurrent(now.Unix()+1, now) {
++		t.Fatal("an entry one second before expiry was refused")
++	}
++}
+diff --git a/pkg/server/cache/entrycache/fullcache_expiry_test.go b/pkg/server/cache/entrycache/fullcache_expiry_test.go
+new file mode 100644
+index 00000000..04f10fbf
+--- /dev/null
++++ b/pkg/server/cache/entrycache/fullcache_expiry_test.go
+@@ -0,0 +1,46 @@
++package entrycache
++
++import (
++	"testing"
++	"time"
++
++	"github.com/spiffe/go-spiffe/v2/spiffeid"
++	"github.com/spiffe/spire-api-sdk/proto/spire/api/types"
++)
++
++func TestFullCacheExpiredRegistrationDoesNotAuthorizeDescendants(t *testing.T) {
++	past := time.Now().Add(-time.Hour).Unix()
++	future := time.Now().Add(time.Hour).Unix()
++	td := spiffeid.RequireTrustDomainFromString("example.org")
++	agent := spiffeid.RequireFromPath(td, "/spire/agent/node")
++	aliasPath := "/alias/node"
++	id := func(path string) *types.SPIFFEID {
++		return &types.SPIFFEID{TrustDomain: td.String(), Path: path}
++	}
++	expiredAlias := &types.Entry{Id: "alias", ParentId: id("/spire/server"), SpiffeId: id(aliasPath), ExpiresAt: past}
++	live := &types.Entry{Id: "live", ParentId: id(aliasPath), SpiffeId: id("/ns/orders/sa/api"), ExpiresAt: future}
++	dead := &types.Entry{Id: "dead", ParentId: id(agent.Path()), SpiffeId: id("/ns/orders/sa/old"), ExpiresAt: past}
++	child := &types.Entry{Id: "child", ParentId: dead.SpiffeId, SpiffeId: id("/child"), ExpiresAt: future}
++	cache := &FullEntryCache{
++		entries: map[string][]*types.Entry{
++			agent.Path():       {dead},
++			dead.SpiffeId.Path: {child},
++			aliasPath:          {live},
++		},
++		aliases: map[string][]aliasEntry{
++			agent.Path(): {{id: aliasPath, entry: expiredAlias}},
++		},
++	}
++	if got := cache.GetAuthorizedEntries(agent); len(got) != 0 {
++		t.Fatalf("expired registration authorized %d entries", len(got))
++	}
++	expiredAlias.ExpiresAt = future
++	got := cache.GetAuthorizedEntries(agent)
++	if len(got) != 1 || got[0].GetId() != "live" {
++		t.Fatalf("renewed alias authorized %d entries", len(got))
++	}
++	found := cache.LookupAuthorizedEntries(agent, map[string]struct{}{"dead": {}, "child": {}, "live": {}})
++	if _, ok := found["live"]; !ok || len(found) != 1 {
++		t.Fatalf("lookup returned %d entries", len(found))
++	}
++}

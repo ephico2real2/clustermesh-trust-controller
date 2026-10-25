@@ -1,0 +1,52 @@
+{
+  "tests": {
+    "registrar": {
+      "topLevelPassed": 16,
+      "subtestsPassed": 28,
+      "failed": 0,
+      "skipped": 0,
+      "exit": 0,
+      "race": true
+    },
+    "spireFirstRun": {
+      "exit": 1,
+      "failed": "TestAliasRecordSize expected72 actual80; added int64 expiry adds8bytes"
+    },
+    "spireAffectedRetestAndVet": {
+      "exit": 0,
+      "commandRecord": "spire-authorized-final-command.json",
+      "description": "authorizedentries race retest; vet5SPIRE packages and CMTCregistrar"
+    }
+  },
+  "builder": "f0093acd3f0ab3a1966ebe348eaa3c78ac706f94839f52209ae7120508cf2529",
+  "architecture": "linux/arm64",
+  "sources": {
+    "cmtc": {
+      "root": "/private/tmp/cmtc-opus-final-20261025/cmtc",
+      "head": "4a93ca32cf78df773fe5f2af9ac6ecf423ff76fd",
+      "files": {
+        "internal/spireregistrar/entries.go": "3b65b3d8dfa5931fcb5bde891ee0ba020ed26606f60066ebc7ac2f19f9481048",
+        "internal/spireregistrar/registrar_test.go": "c296922b29639df6525da327f7630d9c1fbbca43f72f52749feeb4c78c543885",
+        "internal/spireregistrar/runner.go": "86915ae3dbf4a9d9d932932b3609e81bed179a025757c5b6dad94777662e40fb",
+        "internal/spireregistrar/runner_runtime_test.go": "54e25756ffd98d27e8819293f0472b6fb9f12b5520d62cbed46fb123e52c555e"
+      },
+      "patchSHA256": "d8b0f861c1549e6ebd6da53acf669594354c5e4afe708ab46f5576f021aff8fe"
+    },
+    "spire": {
+      "root": "/private/tmp/cmtc-opus-final-20261025/spire",
+      "head": "28f6b8d84ade21c6accb32ba9689a3bdf64877ec",
+      "files": {
+        "pkg/server/api/entry.go": "2b415ab1ae72a37ab3ee4d5a484b8caf697d93532180eee6955b93a5cf0e75b1",
+        "pkg/server/authorizedentries/aliases.go": "de93d91d3a5f175097597188b8158ebbd2382f77f1fbc13a87412990d2a13ffd",
+        "pkg/server/authorizedentries/aliases_test.go": "7b37ee1ccd8852659f53765807257ce3278c05f26a04b6381349a3370fce4380",
+        "pkg/server/authorizedentries/cache.go": "d01ff53b7adddd9a21903cd7f1c7b2b4cd49a78d91a61bbf07fb68746b3d59e9",
+        "pkg/server/authorizedentries/cache_test.go": "8c344624decc43df87613c9a26c0e9aedc387099c3a5dc553d826d4d4a3851c3",
+        "pkg/server/cache/entrycache/fullcache.go": "1245b8d3a0a0304d5291744e107d569847454004d44d0afe9a4fde2b10686204",
+        "pkg/server/registration/manager.go": "0d9a15e426e8e8c32c630beaddc75ab4852150ea7713d5de7b9777dd4b68791e",
+        "pkg/server/api/registration_current_test.go": "3c4978e2a8d259ea6462070686a122b0d7eb92af5ce69823dd9c706d5d2975b6",
+        "pkg/server/cache/entrycache/fullcache_expiry_test.go": "5a97f4257cd8441e13139ce63b3ef63f348b9b1a855a0935639e317c892b434e"
+      },
+      "patchSHA256": "5b8e0d319e7a0b3275aaf719ced6f68d1b02ef1b17f5702941326d4d8c9acbaa"
+    }
+  }
+}
