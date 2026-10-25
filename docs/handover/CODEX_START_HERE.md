@@ -30,6 +30,10 @@ The registrar trial found a real ztunnel client defect. The client swallowed SPI
 
 The restore path still lacks complete persistent quarantine before regeneration. Kernel policy-map reachability, mandatory capture and active transport-grant closure remain open. Keep the ClusterMesh/ztunnel guard closed.
 
+## Documentation preference
+
+Use diagram-kit for the SPIRE registration workflow guide. Generate only light-theme image files for that guide. Do not create temporary dark renders. Documentation displays light-theme figures. Preserve existing dark evidence and the separate Grafana both-theme checks.
+
 ## Local workflow
 
 1. Check the checkout, branch, SHA and dirty files.

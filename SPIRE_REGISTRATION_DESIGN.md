@@ -12,6 +12,8 @@ The baseline remains reuse of Cilium's enrollment and inventory interfaces.
 A production owner change requires a recorded design decision and passing acceptance tests.
 The project must not acquire two independent registration owners by accident.
 
+Read [the illustrated workflow comparison](SPIRE_REGISTRATION_WORKFLOW.md) for the existing Cilium path and the experiment.
+
 ## Why this helper was created
 
 The immediate problem was registration precision and lifecycle control.

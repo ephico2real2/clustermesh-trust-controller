@@ -68,7 +68,9 @@ A packet counter is not an HTTP request count. A TCP connection is not a TLS han
 
 Use a diagram when it makes the mechanism clearer. Use an interactive page when controls help explain a system or quantity. A simple status statement needs no diagram.
 
-The component-role figure uses the local diagram-kit template and renderer:
+For the SPIRE registration workflow guide, generate only light-theme PNGs. Do not create dark PNGs, including in a temporary directory. Use diagram-kit `--check` for validation, then [the light-only capture helper](scripts/capture/render_light_diagrams.py). Preserve existing historical dark renders. Grafana both-theme qualification is a separate rule.
+
+The earlier component-role figure uses the local diagram-kit template and renderer:
 
 ```bash
 ~/.local/share/diagram-kit/.venv/bin/diagram-render \

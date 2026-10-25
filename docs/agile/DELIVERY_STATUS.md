@@ -47,6 +47,14 @@ The seventh trial obtained valid SVIDs and withdrew exact server entries. It lat
 
 The policy-map proposal is not compiled or tested yet. A point-in-time map/program reference cannot prove full traffic coverage. Keep the combined startup guard closed. Never add a blanket port-15008 allowance.
 
+## Documentation and current qualification
+
+The illustrated [registration workflow](../../SPIRE_REGISTRATION_WORKFLOW.md) compares Cilium enrollment with the exact helper. The user requires diagram-kit and light-only PNG generation for this guide. This preference is saved in repository instructions, handover and the validated personal explanation skill.
+
+The corrected owned runtime fixture is running from `/private/tmp/cmtc-exact-registrar-20261025/runtime-snapshot-eighth/`. All 124 host helper tests pass. Both clusters observed explicit empty target SVID responses with valid same-node controls before and after. Reenrollment, Pod replacement and server restart ran; final cleanup is still pending at this snapshot. No final runtime pass is claimed until cleanup completes.
+
+The policy-map reachability proposal is now applied but uncommitted in the Cilium checkout. Primary fixed a ProgramID comparison compile error. The focused ordinary tests pass, but the first actual kernel path test fails because its source-IP fixture compiles out the policy maps. The separate actual KernelMapID case passes. An agent is preparing a real policy-enabled fixture correction. Do not fabricate maps or count package-only/zero-selected results as kernel proof. Logs: `/private/tmp/cmtc-policy-reachability-20261025/`.
+
 ## Approval boundary
 
 Automatic approval review rejected the persistent four-node agent Admin group-permission migration. Explicit user approval is still pending. No migration occurred. Preserve agent UID1000/GID1000 and its private directory permissions.

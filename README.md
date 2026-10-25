@@ -50,6 +50,7 @@ Ztunnel activation is pending in both ClusterMesh labs.
 | Build and test locally | [Podman workflow](docs/development/PODMAN_LOCAL_VALIDATION.md) |
 | Understand node images | [DaemonSet implementation](CMTC_DAEMONSET_IMPLEMENTATION.md) |
 | Check native credentials | [Credential evidence](LOCAL_NATIVE_CREDENTIALS.md) |
+| Compare registration workflows | [Existing and enhanced flow](SPIRE_REGISTRATION_WORKFLOW.md) |
 | Check registration | [Registrar guide](LOCAL_SPIRE_REGISTRAR.md) |
 | Check the actual source-IP program | [Kernel validation](LOCAL_SOURCE_IP_VALIDATION.md) |
 | Check native policy transitions | [Policy transition guide](LOCAL_NATIVE_POLICY_TRANSITIONS.md) |
