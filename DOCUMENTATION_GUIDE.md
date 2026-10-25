@@ -29,8 +29,9 @@ Read [the PKI trust flow](PKI_TRUST_FLOW.md) for the certificate hierarchy. Read
 | --- | --- |
 | CMTC controller | The Go process for policy intent and trust coordination |
 | CMTC node agent | The unprivileged inventory process in the standard DaemonSet |
-| eBPF observer | The opt-in packet-counting prototype |
-| eBPF fence | The opt-in packet-blocking prototype |
+| eBPF measurement plane | The permanent, observe-only eBPF programs of the CMTC DaemonSet ([ADR-005](docs/architecture/adr/ADR-005.md)) |
+| eBPF observer | The current single-workload packet counter of the measurement plane |
+| eBPF fence | The lab-only packet-blocking tool for deny-path tests; not the production gate |
 | SPIRE registrar | The experimental registration helper in the SPIRE server Pod |
 | SPIRE server | The registration store and SVID issuer |
 | SPIRE node agent | The node process that attests workloads |

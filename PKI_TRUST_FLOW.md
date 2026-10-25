@@ -1,12 +1,14 @@
 # PKI trust and workload verification flow
 
+Status: current, revised 2026-10-25.
+
 The intended certificate chain has four levels:
 
 **Organization root → cluster intermediate → exact SPIRE signing CA → workload SVID.**
 
 The first verifier supported a direct-root SPIRE signer. That model did not match the cert-manager fixture. The corrected producer accepts one explicitly approved cluster intermediate. It still pins the exact SPIRE signing CA.
 
-Direct-root tests remain valid for that topology. They do not qualify the parented topology. [The parented qualification](LOCAL_ISSUER_PROFILE.md#approved-cluster-intermediate-support) records its separate rejection and recovery results.
+Direct-root tests remain valid for that topology. They do not qualify the parented topology. [The parented qualification](LOCAL_ISSUER_PROFILE.md#approved-cluster-intermediate-support-historical-source-f5fe9992da) records its separate rejection and recovery results.
 
 ## Current implementation
 
@@ -17,9 +19,9 @@ Direct-root tests remain valid for that topology. They do not qualify the parent
 | SPIRE | Retained the approved signing keys and PVCs through real restart tests. |
 | CMTC producer | Publishes the real approved SPIRE signer mappings in both clusters. |
 | Native credential diagnostic | Obtained and verified workload SVIDs through the native process-attestation path. |
-| Cilium and ztunnel candidates | Passed source-level profile, TLS and stale-flow regression tests. Combined runtime activation remains open. |
+| Cilium and ztunnel forks | Passed source-level profile, TLS and stale-flow regression tests. Deployed in both clusters; ztunnel verifies each peer against the exact approved signer of its trust domain. |
 
-The shared clusters still have ztunnel disabled. A public profile, valid SVID or successful image version Job does not establish `Protected`.
+Since 2026-10-25 ztunnel runs in `cmtc-a` and `cmtc-b` with per-cluster trust domains (`cmtc-a.mesh.example`, `cmtc-b.mesh.example`). Allow-path traffic passes in both directions; see the [test matrix](docs/architecture/SECURITY_AND_FAILURE_TEST_MATRIX.md). A public profile, valid SVID or successful image version Job does not establish `Protected`.
 
 ## Issuance and approval
 
@@ -29,7 +31,7 @@ The shared clusters still have ztunnel disabled. A public profile, valid SVID or
 </picture>
 <!-- markdownlint-enable MD033 -->
 
-*Issuance and public-profile publication have recorded local evidence. Each cluster retains its own keys. Proxy activation remains a separate gate.*
+*Issuance and public-profile publication have recorded local evidence. Each cluster retains its own keys. Traffic results are a separate record.*
 
 ```text
 Host organization root key
@@ -73,11 +75,11 @@ The peer verifier pins the approved SPIRE signer. The organization root and clus
 
 <!-- markdownlint-disable MD033 -->
 <picture>
-  <img src="docs/diagrams/pki-trust-flow/verification.light.png" alt="The proxy source checks the exact peer signer and live authority before ciphertext I/O, buffered plaintext release and pooled CONNECT admission. Combined runtime activation remains pending.">
+  <img src="docs/diagrams/pki-trust-flow/verification.light.png" alt="The proxy checks the exact peer signer and live authority before ciphertext I/O, buffered plaintext release and pooled CONNECT admission. These checks are deployed; live stale-authority tests have not run.">
 </picture>
 <!-- markdownlint-enable MD033 -->
 
-*The proxy checks have local source-test evidence. The dashed box marks combined runtime activation that is still unqualified.*
+*The proxy checks have local source-test evidence and run in the deployed ztunnel. Stale-authority behavior has no live test yet.*
 
 ```text
 Approved profile + current native session -> live authority lease
@@ -95,7 +97,7 @@ Local tests reproduced two bypasses before the fix:
 
 The corrected source guards both ciphertext and application plaintext. It also rechecks authority after awaited CONNECT work. Loss of the configured provider cannot select the legacy path as a fallback.
 
-The [live-provider evidence](docs/evidence/native-issuer-profile/live-provider/summary.json) records the failing regressions and corrected tests. Later [source-binding tests](docs/evidence/native-issuer-profile/source-binding/summary.json) add kernel-peer, verified-identity and native-workload checks. These results do not qualify an undeployed image.
+The [live-provider evidence](docs/evidence/native-issuer-profile/live-provider/summary.json) records the failing regressions and corrected tests. Later [source-binding tests](docs/evidence/native-issuer-profile/source-binding/summary.json) add kernel-peer, verified-identity and native-workload checks. These are source results; they do not qualify the stale-authority behavior of the deployed image.
 
 Registration withdrawal, credential availability and active-flow revocation remain distinct. Removing an entry does not revoke an issued SVID. A timeout does not prove a policy denial.
 
@@ -111,9 +113,9 @@ The [real-cluster PKI ledger](docs/evidence/spire-ca-initializer/real-clusters/s
 
 Read [local PKI preparation](LOCAL_SPIRE_PKI.md), [issuer-profile qualification](LOCAL_ISSUER_PROFILE.md), and [native credentials](LOCAL_NATIVE_CREDENTIALS.md) for measured results.
 
-The remaining acceptance requires exact-image deployment, authenticated remote membership, effective policy, mandatory traffic capture, startup and restore quarantine, and positive/negative recovery traffic. WireGuard and IPsec composition require separate tests.
+Exact-image deployment, authenticated remote membership and effective policy are in place, and the allow paths pass. Still open: live negative identity tests (wrong issuer, wrong domain, cross-cluster issuance), stale-authority and recovery traffic, rotation, and per-connection peer-certificate evidence. WireGuard and IPsec composition require separate tests.
 
-Use [delivery status](docs/agile/DELIVERY_STATUS.md) for current source and image pins. Keep the combined ClusterMesh/ztunnel guard closed until its security gates pass.
+Use [delivery status](docs/agile/DELIVERY_STATUS.md) for current source and image pins. Our Cilium fork replaces the upstream ClusterMesh/ztunnel rejection with a capability check that requires issuer-profile pins among other owners; the security gates above stay open.
 
 ## Diagram sources
 

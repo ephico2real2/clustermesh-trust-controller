@@ -84,8 +84,9 @@ Read the source pins and ownership guards in each one before adapting it.
 | 4.3 | Patch the DaemonSet images with `test` operations on the old image | Before and after differ only in images (and, once, in the agent's dropped `hostPID`). |
 | 4.4 | `restart_agent.py <cluster> <node>`, one node at a time | The new Pod is Ready and its `imageID` is the built ID. Restored endpoints are quarantined, then re-admitted (`Re-admitted restored Required endpoint`). |
 
-Loading an image does not deploy it, and a Ready Pod does not mean mTLS. Only
-a passing traffic matrix with rising TLS handshake counters shows that.
+Loading an image does not deploy it, and a Ready Pod does not mean mTLS. A
+passing traffic matrix shows traffic outcomes only; workload mTLS also needs
+per-connection peer-certificate evidence and passing recovery tests.
 
 ## 5. Checks you can run at any time
 
@@ -95,7 +96,7 @@ a passing traffic matrix with rising TLS handshake counters shows that.
 | `python3 scripts/lab/clock-offset-sample.py cmtc-a-worker 30 2 colima-cmtc-cilium` | Guest minus host offset, with its error bound. |
 | `cilium clustermesh status --context kind-cmtc-a` (and `kind-cmtc-b`) | Are both mesh links up? |
 | `python3 scripts/cilium/verify.py` | Do the running Cilium images match the lock? |
-| `venv/bin/python -m unittest discover -s scripts/lab -p 'test_*.py'` | Pure checks of the lab helpers. They use no cluster. The repository venv provides PyYAML, and 40 tests pass. The system `python3` fails on `import yaml`. |
+| `venv/bin/python -m unittest discover -s scripts/lab -p 'test_*.py'` | Pure checks of the lab helpers. They use no cluster. The repository venv provides PyYAML, and 40 tests pass (run 2026-10-25T23:20Z). The system `python3` fails on `import yaml`. |
 
 ## 6. Remove the lab
 

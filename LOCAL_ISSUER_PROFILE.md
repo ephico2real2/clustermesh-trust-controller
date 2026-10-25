@@ -4,20 +4,23 @@
 Evidence scope: results apply to the recorded source, image and fixture. Read [current delivery status](docs/agile/DELIVERY_STATUS.md) and [documentation terms](DOCUMENTATION_GUIDE.md).
 <!-- /CMTC_DOC_CONTEXT -->
 
-The issuer-profile producer is enabled on both existing mesh clusters.
-It publishes verified mappings from the real SPIRE signing authorities.
-Both clusters pass renewal, restricted RBAC, structured logging and five live metric queries.
-The controller image remains the qualified `f5fe9992da` image below.
-CMTC remains in Observe mode. Workload mTLS is not enabled.
+**Current state (read 2026-10-25T23:13Z):** the issuer-profile producer is enabled on the CMTC controller in both
+clusters (`--issuer-profile-producer=true`, source `cmtc-issuer-approval-g1`, minimum generation 1). The controller
+now runs `localhost/cmtc:current-46d01e91ce`, which includes the leader-handover fix (`46d01e9`); exact pins are in
+[delivery status](docs/agile/DELIVERY_STATUS.md). CMTC policy stays in Observe mode. Ztunnel now runs in both
+clusters and mounts the issuer pins and its issuer checkpoint.
 
-[The live publication ledger](docs/evidence/live-issuer-publication/summary.json) records the exact resource UIDs, image pins and renewal sequences.
-Generation1 approval expires at `2026-10-26T03:55:11Z`.
-Rotate the immutable approval before expiry. Do not extend it by resetting the ledger or version floors.
-The mutable publication has a lease of at most30 seconds.
+**Action needed:** the generation-1 approval in both clusters has `expiresAt` `2026-10-26T03:55:11Z` (read from
+`cmtc-system/cmtc-issuer-approval-g1`). Rotate the immutable approval before that time. Do not extend it by
+resetting the ledger or version floors. What expiry does to running workload traffic is not tested.
+
+The mutable publication has a lease of at most 30 seconds.
 A publication acknowledgment does not prove native consumer acceptance or traffic protection.
+[The live publication ledger](docs/evidence/live-issuer-publication/summary.json) records the activation resource
+UIDs, image pins and renewal sequences. Its image pins are historical (`f5fe9992da`, below).
 
 The earlier direct-root and approved-parent trials restored their templates and removed their trial resources.
-The current activation is persistent. Preserve its source, output, RBAC and private host ownership ledger at `~/.local/share/cmtc-issuer-profile/live-a-b/`.
+The activation is persistent. Preserve its source, output, RBAC and private host ownership ledger at `~/.local/share/cmtc-issuer-profile/live-a-b/`.
 The ledger contains public proof and ownership state. It does not contain CA private keys.
 
 ## Persistent activation helper
@@ -28,7 +31,7 @@ It obtains fresh nonce proofs from both exact SPIRE server images before each ac
 It creates an immutable approval and a mutable output with exact ownership checks.
 It validates effective RBAC and verifies the same producer image before it enables the controller arguments.
 It confirms publication renewal, current metrics and structured logs.
-Its41 local tests, including the existing helper tests, pass.
+Its 41 local tests, including the existing helper tests, pass.
 
 [The actual invocation](docs/evidence/live-issuer-publication/publisher-command.json) records all public pins.
 It uses the canonical SPIRE manifest digest from [the recovery ledger](docs/evidence/spire-recovery/image-pin.json).
@@ -50,7 +53,7 @@ A hash detects changed content. It is not an authority signature.
 Verified Kubernetes TLS, restricted permissions and independent configuration provide the API boundary.
 No root private key is placed in either cluster or the evidence.
 
-## Exact build and deployment
+## Exact build and deployment (historical, 2026-10-24)
 
 | Item | Qualified value |
 | --- | --- |
@@ -99,12 +102,12 @@ UID and resourceVersion preconditions protect cleanup.
 The public fixture generator retains no signing keys.
 Its certificates test publication. They are not a production workload authority.
 
-## Completed direct-root trial
+## Completed direct-root trial (historical)
 
 These results apply to source `7e606195f5`. The evidence remains available.
 
-- CMTC unit/race tests:52 top-level tests and150 subtests passed. Vet passed.
-- Helper checks:22 tests passed after correcting two rollout/scrape timing errors.
+- CMTC unit/race tests: 52 top-level tests and 150 subtests passed. Vet passed.
+- Helper checks: 22 tests passed after correcting two rollout/scrape timing errors.
 - Both clusters passed publication, idle stability, lease renewal and restart-floor checks.
 - Both clusters passed source deletion, UID replacement and generation rollback checks.
 - Both clusters rejected wrong roots, duplicate issuer keys and expired approvals.
@@ -114,11 +117,11 @@ These results apply to source `7e606195f5`. The evidence remains available.
 - All four metric families were scraped locally.
 - Fresh B-to-A remote-write samples were verified centrally.
 - Cleanup restored both controllers and left zero owned resources.
-- The deployed baseline passed the existing API/policy and36 application-path checks.
+- The deployed baseline passed the existing API/policy and 36 application-path checks.
 
 [Cluster A report](docs/evidence/issuer-profile-producer/cmtc-a-report.json) and [Cluster B report](docs/evidence/issuer-profile-producer/cmtc-b-report.json) contain actual results.
 [Central query evidence](docs/evidence/issuer-profile-producer/central-b.json) records sample timestamps.
-The comparison allows10 ms for target timestamps with nanoseconds and samples with milliseconds.
+The comparison allows 10 ms for target timestamps with nanoseconds and samples with milliseconds.
 [Raw evidence](docs/evidence/issuer-profile-producer/raw-evidence.tar.gz) retains commands, outputs, logs and the initial failures.
 
 ## Metric meaning
@@ -130,18 +133,17 @@ A source-read timestamp does not prove valid approval.
 A publication lease does not prove protected traffic.
 [The metric contract](observability/METRICS.md) defines each family.
 
-## Remaining security gates
+## Security gates
 
-The Cilium consumer and ztunnel decoder are under local qualification.
-Their production ADS delivery and durable transition are unfinished.
-Remote workload provenance, effective authorization, admission recovery and actual peer TLS integration remain open.
-WireGuard/IPsec composition remains open.
-The ClusterMesh-plus-ztunnel startup guard stays closed.
-No mTLS or Protected claim follows from these producer tests.
+At the producer qualification (2026-10-24) the Cilium consumer, the ztunnel decoder and the ClusterMesh-plus-ztunnel
+startup guard were still closed. That state is historical: the Cilium guard was replaced by capability validation
+(`37d5fce0f7`), and ztunnel now runs with issuer pins in both clusters. Still open: per-connection peer-certificate
+evidence, the behavior at approval expiry, recovery on the current images and WireGuard/IPsec composition. No mTLS or
+`Protected` claim follows from producer tests. Read [delivery status](docs/agile/DELIVERY_STATUS.md).
 
-## Approved cluster-intermediate support
+## Approved cluster-intermediate support (historical, source `f5fe9992da`)
 
-The deployed producer source increment accepts the intended Option A hierarchy:
+The producer source increment accepts the intended Option A hierarchy:
 organization root → cluster intermediate → explicitly pinned SPIRE CA → workload SVID.
 The existing direct-root form remains supported.
 The cluster intermediate is public approved lineage. It is not a workload signer.
@@ -153,12 +155,12 @@ The parent expiry bounds the publication lease.
 SPIRE's optional CA URI SAN must equal the independently approved trust domain.
 It cannot contain a workload path or additional names.
 
-The complete CMTC race suite passes57 top-level tests and172 subtests.
+The complete CMTC race suite passes 57 top-level tests and 172 subtests.
 No test failed or was skipped. Three packages contain no tests.
 Formatting and vet pass on the same ARM64 source snapshot.
 [The source ledger and raw log](docs/evidence/approved-issuer-lineage/root-summary.json) retain the checks.
-The new ARM64 image is deployed in all six containers. Their running binaries match the source ledger.
-The API/policy and36 app paths pass after rollout. Both real clusters pass parented-profile publication, renewal, restart, invalid-input and recovery checks.
+The new ARM64 image was deployed in all six containers. Their running binaries matched the source ledger.
+The API/policy and 36 app paths pass after rollout. Both real clusters pass parented-profile publication, renewal, restart, invalid-input and recovery checks.
 Fresh B-to-A producer telemetry is verified. Cleanup reports no errors.
 [Cluster A report](docs/evidence/approved-issuer-lineage/cmtc-a-report.json), [Cluster B report](docs/evidence/approved-issuer-lineage/cmtc-b-report.json) and [raw evidence](docs/evidence/approved-issuer-lineage/raw-live-evidence.tar.gz) retain the actual output.
 [Application output](docs/evidence/approved-issuer-lineage/baseline-test.log) retains the actual responses.

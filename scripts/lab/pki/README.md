@@ -4,11 +4,14 @@
 Guide scope: check current runtime and feature gates before using these instructions. Read [current delivery status](../../../docs/agile/DELIVERY_STATUS.md) and [documentation terms](../../../DOCUMENTATION_GUIDE.md).
 <!-- /CMTC_DOC_CONTEXT -->
 
-`pki.py` is runnable Python3.11+ with cryptography>=44, host
-OpenSSL3, kubectl, Colima and Docker inside the retained cmtc-cilium VM. The
-bundled Codex Python has cryptography50.0.2; no package installation is needed to
-run the pure tests. Root TokenSave serves stale main and refuses this branch;
-the reviewed initializer source/Dockerfile were inspected directly.
+`pki.py` needs Python 3.11+ with cryptography>=44, host OpenSSL 3, kubectl,
+Colima and Docker inside the retained cmtc-cilium VM. The repository `venv` does
+not provide cryptography (checked 2026-10-25); use an interpreter that does.
+
+**Current state (read 2026-10-25T23:13Z):** this helper ran once per cluster on
+2026-10-24 ([LOCAL_SPIRE_PKI.md](../../../LOCAL_SPIRE_PKI.md)). Both SPIRE
+servers still run the image that guide qualified. The helper refuses to rotate
+an existing cluster certificate (see "Kubernetes ownership and recovery").
 
 This increment issues the isolated cluster-parent certificate. It does not
 install SPIRE, select a workload signer by bundle order, publish issuer profiles,
@@ -25,11 +28,11 @@ helper confirms the running Pod manifest and actual node CRI config+OCI revision
 The Kubernetes API is selected explicitly through kind-cmtc-a or kind-cmtc-b;
 only the retained two-node clusters are supported.
 
-Create an empty host directory outside the repository/evidence tree, mode0700,
+Create an empty host directory outside the repository/evidence tree, mode 0700,
 using its canonical absolute path. Symlink path components are rejected (on macOS
 use `/private/var/...`, not `/var/...`). The helper never removes this directory.
 The organizational P256 key and self-signed pathLen2 root are an atomic directory
-pair, private0600 files behind an exclusive lock. Unknown/partial root state is
+pair, private 0600 files behind an exclusive lock. Unknown/partial root state is
 refused. Visible committed files are re-fsynced before reuse. Host root private
 key material is never sent to Kubernetes, printed, or included in evidence.
 The root key is read through held FDs by OpenSSL; a held private directory and
@@ -114,7 +117,7 @@ publishes a profile or accepts a passed hash string as that proof.
 
 ## Tests and remaining execution gates
 
-Executed locally:20 top-level unittest cases, all pass, no skips. Tests use a
+Executed locally on 2026-10-24: 20 top-level unittest cases, all pass, no skips. Tests use a
 real OpenSSL executable and real ephemeral P256 keys; fake API implements UID/RV
 CAS and checks metadata-only Secret requests. They cover root/signing identity,
 separate cluster parents, pathLen2/1, stable reuse, root partial/symlink/mode/key
@@ -124,8 +127,8 @@ immutable approval UID persistence/replay, exact UID/RV deletion, unknown create
 leftovers and public CertificateRequest identity/lineage/reobservation rejection.
 
 ```sh
-/Users/olasumbo/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/bin/python3 \
-  -m unittest -v test_pki
+# From scripts/lab/pki, with a Python that has cryptography>=44:
+python3 -m unittest -v test_pki
 ```
 
 The primary qualified actual cluster-parent Jobs on both clusters with exact

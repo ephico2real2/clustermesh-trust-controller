@@ -4,9 +4,14 @@
 Evidence scope: results apply to the recorded source, image and fixture. Read [current delivery status](docs/agile/DELIVERY_STATUS.md) and [documentation terms](DOCUMENTATION_GUIDE.md).
 <!-- /CMTC_DOC_CONTEXT -->
 
-The Cilium fork now verifies the source-IP check in the actual loaded endpoint program. Source commit: `df2a6c1ec88f0358c52e95229dd8fe21c2b56201`.
+**Historical record (source only).** Source commit `df2a6c1ec88f0358c52e95229dd8fe21c2b56201`. That commit is an
+ancestor of the deployed Cilium agent `6090aa6eff` (`git merge-base --is-ancestor`), so its code is in the running
+build. The tests below ran against `df2a6c1ec8` only; they do not qualify the deployed build. Current pins are in
+[delivery status](docs/agile/DELIVERY_STATUS.md).
 
-This is a prerequisite for workload identity binding. It does not encrypt traffic or prove that traffic passed through ztunnel. The two ClusterMesh labs still need mandatory capture, effective authorization and recovery qualification before mTLS activation.
+The Cilium fork verifies the source-IP check in the actual loaded endpoint program.
+
+This is a prerequisite for workload identity binding. It does not encrypt traffic or prove that traffic passed through ztunnel.
 
 ## What the loader verifies
 
@@ -46,4 +51,6 @@ The actual kernel test compiles and loads Cilium's endpoint program. It checks a
 
 ## Deployment boundary
 
-This source increment is committed locally. Its new Cilium image has not been built or deployed. Existing application connectivity is a separate check. Keep the compatibility guard closed until the remaining capture, policy, identity and recovery gates pass with the exact deployed images.
+At the time of this record no image was built from this source. Its code later reached the deployed agent through
+descendant commits. Live recovery of the deployed agent (restart, reboot, drain) is still open; read
+[delivery status](docs/agile/DELIVERY_STATUS.md).

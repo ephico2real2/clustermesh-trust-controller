@@ -4,6 +4,14 @@
 Guide scope: check current runtime and feature gates before using these instructions. Read [current delivery status](../agile/DELIVERY_STATUS.md) and [documentation terms](../../DOCUMENTATION_GUIDE.md).
 <!-- /CMTC_DOC_CONTEXT -->
 
+**Current state (read 2026-10-25T23:07Z):** both clusters run the Cilium fork agent with ztunnel and the SPIRE fork,
+deployed after bootstrap by the one-time operations recorded in
+[the activation evidence](../evidence/local-activation-20261025/operations/). No reusable install procedure for that
+stack exists yet.
+ClusterMesh reports `1/1 remote clusters ready` on the agents of both clusters. Recreating a cluster loses that
+deployed state, the SPIRE signer and datastore PVCs, the issuer-profile activation and the enrolled fixtures. Recover
+first (next section); recreate only on explicit operator request.
+
 `cmtc-a` and `cmtc-b` are the only persistent local Kind clusters. Recreate
 these two when their state is damaged or when the user explicitly requests a
 fresh lab. Use another temporary cluster only for a test that requires a
@@ -109,8 +117,10 @@ bash scripts/lab/test.sh
 Check node readiness, issuer/certificate readiness, Cilium image IDs, and
 `cilium clustermesh status` in both contexts. `scripts/lab/test.sh` verifies
 CMTC Observe behavior plus local and cross-cluster Service and Pod-IP traffic on
-ports 80, 8080 and 31337. The current bootstrap has `encryption.enabled=false`
-and does not install ztunnel, so this baseline is **not** workload-mTLS or
-node-encryption evidence. Keep those acceptance gates open until the exact
+ports 80, 8080 and 31337. The bootstrap has `encryption.enabled=false`
+and does not install ztunnel, SPIRE or the fork agent overlays, so this baseline
+is **not** workload-mTLS or node-encryption evidence. A recreated lab needs the
+mesh stack installed again; the 2026-10-25 operations scripts are records, not a
+reusable installer ([lab scripts, section 4](LAB_SCRIPTS.md#4-update-the-mesh-images-on-the-running-lab)). Keep those acceptance gates open until the exact
 Cilium and ztunnel images run the positive, plaintext-negative, restart and
 packet-capture checks on this same two-cluster lab.

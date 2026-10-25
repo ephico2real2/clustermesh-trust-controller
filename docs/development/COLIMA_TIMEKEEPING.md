@@ -126,8 +126,11 @@ All files are in [`docs/evidence/colima-timekeeping-20261025/`](../evidence/coli
 taken 19 minutes apart. Their slopes are well inside measurement noise, and the
 guest now tracks the host to within the sampler's error.
 
-The 60-minute acceptance window for #24 is open until `--check --window 60`
-passes, from 19:52:10Z.
+The 60-minute acceptance check for #24 passed at 2026-10-25T23:13:28Z:
+`bash scripts/lab/colima-timekeeping.sh --check --profile cmtc-cilium --window 60`
+printed `active_guest_ntp=[] kernel: freq_ppm=0.000 pll=off`,
+`lima_steps_last_60m=0 backward=0` and `Timekeeping OK`, exit 0. Issue #24 was
+still open on GitHub at that time.
 
 ## Limits
 

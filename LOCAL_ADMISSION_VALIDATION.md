@@ -4,7 +4,13 @@
 Evidence scope: results apply to the recorded source, image and fixture. Read [current delivery status](docs/agile/DELIVERY_STATUS.md) and [documentation terms](DOCUMENTATION_GUIDE.md).
 <!-- /CMTC_DOC_CONTEXT -->
 
-On October 24, 2026, the MacBook's Podman builder qualified the admission changes and rebuilt the enhanced Cilium agent. Both retained ClusterMesh clusters now run that image. The sample apps remain installed with one backend per node. **This run proves source behavior and Observe-mode reachability; it does not prove cross-cluster workload mTLS.** Ztunnel interception and node encryption remain disabled, and the compatibility guard is unchanged.
+**Historical record (2026-10-24).** Cilium agent `8b01a7c954`, CMTC `85d0cd8acc`, ztunnel issuer foundation
+`1db4fb296b`. It does not qualify the current build. **Current state:** ztunnel runs in both clusters from our fork,
+the ClusterMesh/ztunnel startup guard was replaced by capability validation (Cilium `37d5fce0f7`), and enrolled
+same-node, cross-node and cross-cluster traffic is allowed ([G1 evidence](docs/evidence/g1-destination-sources/README.md)).
+Exact pins and open gates are in [delivery status](docs/agile/DELIVERY_STATUS.md).
+
+On October 24, 2026, the MacBook's Podman builder qualified the admission changes and rebuilt the enhanced Cilium agent. Both retained ClusterMesh clusters then ran that image, with one sample backend per node. **This run proved source behavior and Observe-mode reachability; it did not prove cross-cluster workload mTLS.** At that time ztunnel interception and node encryption were disabled, and the compatibility guard was unchanged.
 
 | Component | Source and local image | Verified scope |
 | --- | --- | --- |
@@ -44,8 +50,8 @@ The first broad Rust run accidentally used the compile-only image without `ip`/`
 
 These viewport captures show live intent/inventory. The Workload Security page's native panels refer to the historical isolated trial; that fixture is not running in these two clusters, so current mTLS series are absent.
 
-![Operations under load, dark](docs/evidence/admission-update/grafana/operations-dark.jpg)
+![Operations under load, light](docs/evidence/admission-update/grafana/operations-light.jpg)
 
-[Operations light](docs/evidence/admission-update/grafana/operations-light.jpg), [Workload Security dark](docs/evidence/admission-update/grafana/workload-security-dark.jpg), [Workload Security light](docs/evidence/admission-update/grafana/workload-security-light.jpg).
+[Operations dark](docs/evidence/admission-update/grafana/operations-dark.jpg), [Workload Security dark](docs/evidence/admission-update/grafana/workload-security-dark.jpg), [Workload Security light](docs/evidence/admission-update/grafana/workload-security-light.jpg).
 
-The next gates are kernel fencing before restore and during agent absence, exact retirement, authenticated recurring remote discovery, live issuer/CRL/freshness integration, effective authorization, and workload mTLS composed with WireGuard/IPsec. No CI dispatch, branch push, registry publication or cluster recreation was performed.
+At that checkpoint the next gates were kernel fencing before restore and during agent absence, exact retirement, authenticated recurring remote discovery, live issuer/CRL/freshness integration, effective authorization, and workload mTLS composed with WireGuard/IPsec. No CI dispatch, branch push, registry publication or cluster recreation was performed in this run.

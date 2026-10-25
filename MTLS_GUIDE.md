@@ -4,14 +4,25 @@
 Evidence scope: results apply to the recorded source, image and fixture. Read [current delivery status](docs/agile/DELIVERY_STATUS.md) and [documentation terms](DOCUMENTATION_GUIDE.md).
 <!-- /CMTC_DOC_CONTEXT -->
 
-Updated October 24, 2026. This guide explains the local authenticated-only
-ztunnel trial, its measured results, the Grafana panels and the remaining work.
-The [original evidence report][report] preserves every command, exit status,
-test result, source/image pin and screenshot.
+**Historical test record, 2026-10-24.** Cilium agent `f052d1276b`, ztunnel
+v1.0.0 `5bb9cf256b`, single-cluster fixture `cmtc-mtls` (since removed). The
+measurements below are kept unchanged. They do not qualify the current build,
+topology or policy model.
 
-**Current status:** the two-node development fixture passes the tested
+**Current state (2026-10-25):** workload mTLS runs across ClusterMesh between
+`cmtc-a` and `cmtc-b` on our Cilium, ztunnel and SPIRE forks. Read the
+[security and failure test matrix](docs/architecture/SECURITY_AND_FAILURE_TEST_MATRIX.md)
+for current results and open gates, and [delivery status](docs/agile/DELIVERY_STATUS.md)
+for pins.
+
+This guide explains the 2026-10-24 local authenticated-only ztunnel trial, its
+measured results and the Grafana panels of that trial. The
+[original evidence report][report] preserves every command, exit status, test
+result, source/image pin and screenshot.
+
+**Status at that time:** the two-node development fixture passed the tested
 authenticated-only TCP paths. Complete fail-closed protection and cross-cluster
-workload mTLS remain unqualified. The public CMTC API remains Observe-only.
+workload mTLS were unqualified. The public CMTC API was Observe-only.
 
 The [latest local security validation](LOCAL_SECURITY_VALIDATION.md) records the
 persistent proxy authentication floor, empty-policy-cache tests, ZDS ACK and
@@ -147,9 +158,14 @@ rejections, HTTP requests and TLS handshakes; complete protection remains open.*
 [full light dashboard](docs/images/mtls-dashboard.light.png) ·
 [open the recorded window locally](http://127.0.0.1:13000/d/cmtc-authenticated-only?from=1792817142251&to=1792817452353).
 
-## Repeat the local checks
+## Repeat the local checks (historical)
 
-Use the matching development checkout and the isolated `cmtc-mtls` fixture.
+The `cmtc-mtls` fixture is removed. Do not recreate it for normal testing; use
+`cmtc-a` and `cmtc-b`. `qualify.py` refuses any context but `kind-cmtc-mtls`
+(`scripts/lab/mtls/qualify.py:138`), so the command below cannot run against the
+current lab. It is kept to document how the record was produced.
+
+The trial used the matching development checkout and the isolated `cmtc-mtls` fixture.
 [SPIRE fixture setup](docs/development/SPIRE_SPIKE.md) covers issuer/bootstrap
 requirements and the host-Podman build. The default Observe lab does not enable
 this experimental policy. The Cilium flag is `ztunnel-require-mtls`; the chart
@@ -231,9 +247,14 @@ entry point.
 | Screenshot/query checks | [browser verdicts][browser], [layout bounds][layout], [query vectors][queries] and [capture window][window] |
 | Reproducibility | [executed helpers and source patch][reproduction], [local tests/build logs][local-tests] and [SHA-256 checksums][checksums] |
 
-## Remaining work
+## Remaining work at that time (historical)
 
-`fullFailClosedProtection` remains **false**. The next acceptance gates are:
+`fullFailClosedProtection` was **false** in this record. Several items below have
+since been implemented in our forks (persistent admission with the native
+quarantine gate, deny on an empty ALLOW set, authenticated remote discovery and
+ClusterMesh workload mTLS); their live qualification state is in the
+[test matrix](docs/architecture/SECURITY_AND_FAILURE_TEST_MATRIX.md). The gates
+recorded on 2026-10-24 were:
 
 - Persistent admission while policy is missing, including the proxy's known
   default-allow behavior, fresh first-packet capture, reconnect/NACK and revocation.
@@ -247,8 +268,9 @@ entry point.
 [Issue #8][enforcement-issue] tracks enforcement acceptance;
 [issue #7][retry-issue] tracks retry/ACK/logging lifecycle acceptance.
 [EP10, issue #9][envoy-issue] evaluates the user's per-node Envoy alternative.
-Envoy has not been selected or deployed by this trial. Strict/Protected and the
-ClusterMesh compatibility guard remain unchanged until their gates pass.
+Envoy has not been selected or deployed by this trial. `Protected` remains
+unset; the ClusterMesh compatibility guard was later replaced by a capability
+check in our Cilium fork.
 
 [report]: https://github.com/ephico2real2/clustermesh-trust-controller/blob/1c192a5ee84fb5218cb1385fdd9c5bf45ca69e1a/2026-10-24T0509Z-local-authenticated-only-f052d127/README.md
 [checks]: https://github.com/ephico2real2/clustermesh-trust-controller/blob/1c192a5ee84fb5218cb1385fdd9c5bf45ca69e1a/2026-10-24T0509Z-local-authenticated-only-f052d127/check.txt

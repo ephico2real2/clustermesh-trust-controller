@@ -132,10 +132,11 @@ The required result includes these behaviors:
 - WireGuard or IPsec supplies the separately selected node transport layer.
   Workload TLS and transport encryption require separate evidence and a tested
   combined path. Ztunnel does not replace that transport requirement.
-- The opt-in CMTC Go/eBPF DaemonSet is a staged enforcement experiment. Its
-  packet counters and quarantine do not encrypt traffic. Qualify that path,
-  then port the appropriate enforcement into the Cilium fork on a separate
-  branch so Cilium's existing DaemonSet can become its production owner.
+- The CMTC Go/eBPF DaemonSet is the permanent, observe-only per-node
+  measurement plane (operator mandate 2026-10-25,
+  [ADR-005](docs/architecture/adr/ADR-005.md)). It measures and never decides.
+  Enforcement and the quarantine gate are native in the Cilium fork. The CMTC
+  fence remains a lab qualification tool for deny-path tests.
 - Real collectors fulfill the planned metric contracts. Operations and Workload
   Security dashboards show meaningful measured data. Preserve the nine original
   dashboard domains. Generate load before query checks and screenshots.

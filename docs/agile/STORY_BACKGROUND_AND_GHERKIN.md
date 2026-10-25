@@ -39,7 +39,7 @@ spiffe://mesh.example.com/ns/orders/sa/api
 
 It is an identity namespace for a trusted group. Actual trust comes from verified certificates and trusted CA bundles; matching that string alone does not establish trust. See [SPIFFE concepts](https://spiffe.io/docs/latest/spiffe-about/spiffe-concepts/).
 
-If two clusters share that domain and both have namespace `orders` and service account `api`, this format gives them the **same identity**. The namespace/service-account path alone has no cluster component. CMTC therefore needs either cluster-specific trust domains with explicit trust between them, or another cryptographically verified cluster binding. A display-only cluster label or common root with unconstrained intermediates does not establish that boundary. The [Cilium/ztunnel identity contract](../architecture/CILIUM_ZTUNNEL_CONTRACT.md) records the candidate designs; this clarification does not approve a final scheme.
+If two clusters share that domain and both have namespace `orders` and service account `api`, this format gives them the **same identity**. The namespace/service-account path alone has no cluster component. CMTC therefore needs either cluster-specific trust domains with explicit trust between them, or another cryptographically verified cluster binding. A display-only cluster label or common root with unconstrained intermediates does not establish that boundary. The [Cilium/ztunnel identity contract](../architecture/CILIUM_ZTUNNEL_CONTRACT.md#identity-decision) records the scheme now used in the lab; this clarification does not approve it as final.
 
 Acceptance scenarios to implement and qualify locally before CI:
 
@@ -50,7 +50,7 @@ Acceptance scenarios to implement and qualify locally before CI:
 5. **Failure and recovery:** Given missing, stale or removed peer trust/issuer constraints, when a new connection is attempted, then it fails closed. After verified trust is restored, legitimate traffic recovers without accepting the impersonation cases.
 6. **Evidence:** Retain source/image pins, public certificate chains, expected and observed identities, request outcomes and bounded rejection/status telemetry. Correlate records with authenticated cluster/workload provenance; exclude private keys and tokens. Metrics, labels and successful configuration acknowledgments alone cannot establish identity isolation or Protected status.
 
-**Status: Planned.** These are acceptance requirements, not claims of implemented cluster isolation. The ClusterMesh compatibility guard remains until the supported cross-cluster profile passes its identity, capture and authorization gates.
+**Status (2026-10-25): In progress.** The lab uses cluster-specific trust domains (`cmtc-a.mesh.example`, `cmtc-b.mesh.example`), and our ztunnel fork verifies each peer against the exact approved signer of its trust domain. Scenario 1 passes as traffic outcomes (cross-cluster allow paths, both directions); per-connection peer-identity evidence is not recorded. Scenarios 2–5 have not run live. These are acceptance requirements, not claims of qualified cluster isolation. Our Cilium fork replaced the blanket ClusterMesh/ztunnel rejection with a capability check; that check is not a substitute for these scenarios.
 
 ## CMTC-301..305 / 401..404 — Native encryption and authorization
 **As a** Cilium maintainer, **I want** remote SPIFFE identity, HBONE and L4 policy to work across ClusterMesh, **so that** workloads remain authenticated and authorized with optional WireGuard/IPsec.

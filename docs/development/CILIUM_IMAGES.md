@@ -10,16 +10,20 @@ The historical published source is `42f89f83aa5a03ea80f7a2b8cece56b27f87385a`, w
 
 The public package is `ghcr.io/ephico2real2/cilium-dev`. Each component uses a distinct `sha-<full-source-commit>-<component>` tag and a two-platform image index (Linux AMD64 and ARM64). Native tags append the architecture. Digest pins, not mutable tags, select the tested version. This keeps the existing public package accessible to kind without registry Secrets.
 
-The persistent local clusters currently run Cilium `4459d58ed3`. Newer qualified source is not automatically deployed. See [delivery status](../agile/DELIVERY_STATUS.md) for the exact candidate and runtime pins. Local archive overrides take precedence over the historical publication lock. CI and publication remain deferred.
+**Current state (read 2026-10-25T23:07Z):** `cmtc-a` and `cmtc-b` do not run the published GHCR bundle. They run
+local Podman overlay images from our fork, imported by archive: the agent `localhost/cilium:dev-overlay-6090aa6eff`
+and the operator and ClusterMesh API server `dev-overlay-0ed63bf906`. Local archive overrides take precedence over
+the historical publication lock. See [delivery status](../agile/DELIVERY_STATUS.md) for the exact pins. CI and
+publication remain deferred.
 
 ## Develop, build and select a version
 
-The strict ZDS profile requires a shared node PID namespace for the Cilium agent
-and SPIRE-backed ztunnel. Follow [installation requirements](../../INSTALLATION_REQUIREMENTS.md)
-before deployment and after every chart upgrade. At source `51170b1239`, the
-chart needs the documented agent manifest patch; `--set hostPID=true` has no
-effect. Verify both DaemonSet templates and all replacement Pods. Keep the
-root-owned peer check enabled.
+The strict ZDS profile requires the node PID namespace for the SPIRE-backed
+ztunnel only. Since Cilium `0ed63bf906` the agent must **not** have `hostPID`;
+the root-owned peer check reads only the proxy's UID. Follow
+[installation requirements](../../INSTALLATION_REQUIREMENTS.md) before deployment
+and after every chart upgrade. Verify both DaemonSet templates and all
+replacement Pods. Keep the root-owned peer check enabled.
 
 For local-first CMTC/Cilium security work, use the [Podman build, kind archive
 import, and qualification runbook](PODMAN_LOCAL_VALIDATION.md). It documents
@@ -44,7 +48,7 @@ in either owned repository for a future CI run. It does not change the checked-
 in default lock. All three components must be pinned to matching source and
 digest metadata when using this bundle path.
 
-Both clusters must pass rollout, pinned image-spec, runtime image-ID and agent binary version checks. The resulting `cilium-image-verification.json` accompanies the lock, Helm overrides and source SHA in CI artifacts. Actual shop allow/deny tests and a remote-only Global Service precede six-minute load streams (20 requests/s per local shop; 10 requests/s cross-cluster). Those streams remain active during browser capture; final Fortio summaries must show at least 99% HTTP 200, sustained duration and a minimum achieved rate. This is baseline connectivity/policy evidence; workload mTLS and transport composition remain blocked.
+Both clusters must pass rollout, pinned image-spec, runtime image-ID and agent binary version checks. The resulting `cilium-image-verification.json` accompanies the lock, Helm overrides and source SHA in CI artifacts. Actual shop allow/deny tests and a remote-only Global Service precede six-minute load streams (20 requests/s per local shop; 10 requests/s cross-cluster). Those streams remain active during browser capture; final Fortio summaries must show at least 99% HTTP 200, sustained duration and a minimum achieved rate. This is baseline connectivity/policy evidence for the publication path; it is not workload-mTLS or transport-encryption evidence.
 
 ## Which Hubble image contains the change?
 
@@ -58,9 +62,9 @@ Both clusters must pass rollout, pinned image-spec, runtime image-ID and agent b
 
 The [September draft](https://github.com/ephico2real2/cilium-implementation-poc/blob/main/docs/upstream/drafts/cilium-pr-remote-workload.md) describes an older CEP-only workaround. The broader remote-workload fix [#48563](https://github.com/cilium/cilium/pull/48563) merged October 6 and is already in our current-main fork. The remaining source-All dashboard fix is also in our chart. Reapplying that old patch or creating a separate Hubble fork is unnecessary for these changes.
 
-Optional `images.hubble-relay`, `images.hubble-ui` and `images.hubble-ui-backend` entries in a bundle accept the same `{"image":"ghcr.io/ephico2real2/...@sha256:..."}` form and render the corresponding Helm image overrides. They do not enable those components implicitly. The current CMTC Observe profile keeps Hubble disabled; the separate fork dashboard CI enables it and retains [real Gateway load evidence](https://github.com/ephico2real2/cilium/actions/runs/40035107452). Future Relay/UI changes need their own source pins and tests before adding them to this bundle.
+Optional `images.hubble-relay`, `images.hubble-ui` and `images.hubble-ui-backend` entries in a bundle accept the same `{"image":"ghcr.io/ephico2real2/...@sha256:..."}` form and render the corresponding Helm image overrides. They do not enable those components implicitly. The CMTC Observe profile keeps Hubble disabled; the separate fork dashboard CI enables it and retains [real Gateway load evidence](https://github.com/ephico2real2/cilium/actions/runs/40035107452). Future Relay/UI changes need their own source pins and tests before adding them to this bundle.
 
-The ztunnel compatibility rejection is retained. Custom images and screenshots do not establish workload mTLS, authorization enforcement or layered WireGuard/IPsec encryption.
+The static ClusterMesh/ztunnel rejection was replaced by capability validation in Cilium `37d5fce0f7`. Custom images and screenshots do not establish workload mTLS, authorization enforcement or layered WireGuard/IPsec encryption.
 
 ## CMTC and KVStoreMesh
 

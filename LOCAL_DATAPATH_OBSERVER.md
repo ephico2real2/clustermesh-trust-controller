@@ -4,9 +4,21 @@
 Evidence scope: results apply to the recorded source, image and fixture. Read [current delivery status](docs/agile/DELIVERY_STATUS.md) and [documentation terms](DOCUMENTATION_GUIDE.md).
 <!-- /CMTC_DOC_CONTEXT -->
 
-This is the first custom CMTC Go plus eBPF prototype. It counts packets and skb bytes on an explicitly selected disposable workload's host-veth TCX hook, then returns `TCX_NEXT`. It never changes packet data or a Cilium policy verdict. It does not enforce mTLS, admit workloads or establish `Protected` status.
+The eBPF observer is the first, single-workload increment of the CMTC **eBPF measurement plane**
+([ADR-005](docs/architecture/adr/ADR-005.md), status Proposed, revised 2026-10-25). It counts packets and skb bytes
+on the host-veth TCX hook of one explicitly selected disposable workload, then returns `TCX_NEXT`
+(`internal/datapath/bpf/observer.c:29`). It never changes packet data or a Cilium policy verdict. It does not enforce
+mTLS, admit workloads or establish `Protected` status.
 
-The production destination remains native integration in the enhanced Cilium agent. The existing CMTC Observe DaemonSet stays unprivileged. The experimental manifest is outside default provisioning in [config/experimental/datapath-observer.yaml](config/experimental/datapath-observer.yaml).
+**Current state (read 2026-10-25T23:07Z):** the observer is not deployed in `cmtc-a` or `cmtc-b`. Its manifest
+[config/experimental/datapath-observer.yaml](config/experimental/datapath-observer.yaml) is outside default
+provisioning. Under ADR-005 the measurement plane is permanent and observe-only. The node-wide plane, which discovers
+enrolled workloads automatically, is **proposed** and not built. Cilium owns packet enforcement and the quarantine
+gate; ztunnel owns workload TLS and authorization. The CMTC node agent stays unprivileged. Read
+[the DaemonSet guide](CMTC_DAEMONSET_IMPLEMENTATION.md) for the role split.
+
+The qualification and cluster results below are **historical** (2026-10-24, CMTC source `b193510f20`, Cilium agent
+`8b01a7c954`). They do not qualify a newer build.
 
 ## Ownership and lifecycle
 
@@ -14,7 +26,7 @@ The operator supplies an immutable node-specific configuration with cluster, nod
 
 The attach transaction holds the exact foreign link FD, checks the baseline revision and inserts its own link immediately before Cilium. It then releases the foreign FD so it cannot prolong Cilium's link lifetime. Every sample checks the frozen interface and complete chain. Drift stops the process; it never follows replacement interfaces automatically. Cleanup closes only its own link/maps/programs. SIGKILL closes the process-owned FDs through the kernel.
 
-Readiness and counter emission require a successful sample within three seconds. Failed or stale samples suppress packet/byte series rather than fabricating zeros. Netlink receives have a two-second inactivity timeout; freshness independently covers a stalled sampling loop. The only HTTP listener is node-loopback `127.0.0.1:18082`. This profile has no remote Prometheus scraper or active dashboard panel yet.
+Readiness and counter emission require a successful sample within three seconds. Failed or stale samples suppress packet/byte series rather than fabricating zeros. Netlink receives have a two-second inactivity timeout; freshness independently covers a stalled sampling loop. At source `b193510f20` the only HTTP listener was node-loopback `127.0.0.1:18082`. The later telemetry increment (`5b1bc205fe`) added a metrics-only listener on the node IP, port 18085, and a central scrape ([telemetry guide](LOCAL_DAEMONSET_TELEMETRY.md)).
 
 | Metric | Meaning |
 | --- | --- |
@@ -24,7 +36,7 @@ Readiness and counter emission require a successful sample within three seconds.
 
 These are not HTTP requests, TCP connections, rejection counters or TLS handshakes. GRO and ordinary protocol traffic affect packet counts. Labels are limited to the configured cluster, node and direction; Pod UID, IP and interface incarnations are not metric labels.
 
-## Qualified local kernel loop
+## Qualified local kernel loop (historical, 2026-10-24)
 
 Builds use the MacBook's Podman CLI, Linux ARM64 and the selected `cmtc-ubuntu-build` connection. The reusable Ubuntu test builder is based on `quay.io/cilium/cilium-builder@sha256:97d3a0f90898e83c8e63712accb64518f50ae0c4709c423f047c7871e8710ad5`, with Go 1.27.3, clang 21.1.8, iproute2, iptables and bpftool. The qualified local builder configuration ID is `f0093acd3f0ab3a1966ebe348eaa3c78ac706f94839f52209ae7120508cf2529`.
 
@@ -47,7 +59,7 @@ Nine privileged tests exercise the actual verifier and `BPF_PROG_TEST_RUN`, unch
 
 Raw diagnostics are under `/private/tmp/cmtc-observer-20261024/`. [Durable qualification results](docs/evidence/datapath-observer/qualification.json) and adjacent original-failure/final logs record 25 unique top-level tests and 49 subtests, zero failures/skips, across the full CMTC regression and privileged profiles. Three local subprocess checks also qualify bounded log capture/reaping. The image's extracted BPF ELF exactly matches the kernel-tested ELF: `74c67287b17c8f346db54bd8e7a02ba3bc7fb83b92a822762b5de1b3edcc8716`.
 
-## Image and cluster qualification
+## Image and cluster qualification (historical, 2026-10-24)
 
 Build only committed source with `build/Containerfile.bpf-observer`, passing the qualified builder ID as `BUILD_IMAGE` and the full commit SHA as `SOURCE_SHA`. The image packages the static CLI and compiled ELF, records the revision label, and exposes it through `--version`. Use Podman on the host, explicitly `--platform linux/arm64`.
 
@@ -80,7 +92,7 @@ Kind's Kubernetes image ID is an imported manifest reference. It differs from th
 
 Before accepting cluster integration, record actual native Cilium link/program IDs, positive packet deltas and unchanged allow/deny behavior before/during/after attachment. Exercise crash/restart and workload deletion/recreation; stale configuration must fail instead of selecting a new incarnation. Compare baseline chains after removing only task-owned resources. Keep authenticated remote discovery, pre-restore/first-packet fencing, effective authorization and workload mTLS/WireGuard/IPsec acceptance open. CI and image publication remain deferred.
 
-## Measured two-cluster results
+## Measured two-cluster results (historical, 2026-10-24)
 
 [Integration evidence](docs/evidence/datapath-observer/integration.json), [all HTTP outputs](docs/evidence/datapath-observer/http-attempts.txt), adjacent native DROP logs and structured JSON logs record:
 
@@ -91,6 +103,16 @@ Before accepting cluster integration, record actual native Cilium link/program I
 
 The selected client veth's complete program/link identity stays frozen. Cilium legitimately regenerates host programs on its retained links: the harness accepts only five audited host-hook tuples, with exact matching current-run Cilium loader paths, program names and timestamps. Unknown/veth program changes still fail. [Original harness diagnostics](docs/evidence/datapath-observer/harness-diagnostics.json) preserve the corrected HTTP-tool, numeric-UID, import-reference and program-update assumptions. No observer implementation failure was established by those diagnostics.
 
-The shared dependency update also rebuilt and deployed unprivileged CMTC as `localhost/cmtc:observe-b193510f20`, configuration ID `sha256:e00900c6966ec7b8797a9598c65214e0a95529bc7ef74e78c7dfee4fbe7e897a`. The normal 36-path/API/policy suite passes. [Runtime verification](docs/evidence/datapath-observer/verified-runtime.json) checks sixteen imported component identities, ten ready CMTC/Cilium containers and all four Cilium agent binary hashes. [Image metadata](docs/evidence/datapath-observer/images.json) and adjacent build commands/toolchain hashes identify each component. Cilium remains `8b01a7c954`; the imported proxy remains `1db4fb296b`, with no active ztunnel or node encryption.
+The shared dependency update also rebuilt and deployed unprivileged CMTC as `localhost/cmtc:observe-b193510f20`, configuration ID `sha256:e00900c6966ec7b8797a9598c65214e0a95529bc7ef74e78c7dfee4fbe7e897a`. The normal 36-path/API/policy suite passed. [Runtime verification](docs/evidence/datapath-observer/verified-runtime.json) checks sixteen imported component identities, ten ready CMTC/Cilium containers and all four Cilium agent binary hashes. [Image metadata](docs/evidence/datapath-observer/images.json) and adjacent build commands/toolchain hashes identify each component. At that time Cilium was `8b01a7c954` and the imported proxy `1db4fb296b`, with no active ztunnel or node encryption.
 
-The observer was implemented here with internal agent review. Cursor/Grok supplied the separate issuer proposals and is working on a persistent fence proposal. Neither the current process-owned observer nor its successful tests establish fail-closed enforcement: its link intentionally disappears on process death. The persistent kernel fence is the next implementation dependency.
+The observer was implemented with internal agent review; Cursor/Grok supplied the separate issuer and fence proposals. Its link intentionally disappears on process death, so it
+cannot establish fail-closed enforcement. That was never its role. At the time, a persistent kernel fence was the
+next dependency; the fence was then built as a lab qualification tool ([fence guide](LOCAL_DATAPATH_FENCE.md)), and
+the production quarantine gate now lives natively in the Cilium fork (ADR-005).
+
+## Next measurement work
+
+The ADR-005 acceptance gates are open: no verdict on any path, attribution under Pod/IP/ifindex reuse, recovery
+after loader and Cilium restarts, a tested cardinality bound, one reporter per event, freshness, measured footprint
+and separation from signing keys and policy. The feature ranking, the loader language and the read-only discovery
+source are under review. Read [delivery status](docs/agile/DELIVERY_STATUS.md) for the current order of work.

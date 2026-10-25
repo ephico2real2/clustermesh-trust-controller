@@ -9,7 +9,7 @@ The local labs are `cmtc-a` and `cmtc-b`. ClusterMesh and KVStoreMesh run in bot
 | Part | What works | What remains open |
 | --- | --- | --- |
 | CMTC controller and node agents | Observe policy, Pod inventory and public issuer-profile publication | Complete enforcement and recovery |
-| CMTC eBPF prototypes | Local observer and deny-fence qualification | Mandatory capture and production integration |
+| CMTC eBPF measurement plane | Single-workload observer and lab deny-fence qualification | Node-wide, observe-only measurement plane ([ADR-005](docs/architecture/adr/ADR-005.md)) |
 | SPIRE server and node agents | Retained signers, secure node attestation and native workload SVID delivery | Complete trust rotation and production proxy access |
 | Cilium fork | Routing; source-qualified membership, source-IP receipts and native policy-drain guards | Exact-image activation, policy-map reachability and restore quarantine |
 | Ztunnel fork | Local TLS, identity and flow-drain tests | Combined ClusterMesh runtime qualification |

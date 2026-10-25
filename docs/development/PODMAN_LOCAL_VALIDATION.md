@@ -71,9 +71,18 @@ traffic; it refreshes both Helm releases only if those addresses changed. See
 ## 2. Build a Cilium agent image with Podman
 
 Before deploying the strict ZDS profile, check [installation requirements](../../INSTALLATION_REQUIREMENTS.md).
-Both Cilium and its SPIRE-backed ztunnel need `hostPID: true`. Verify the rendered
-manifest and every replacement Pod. An image rebuild does not set this field.
-The agent must observe the proxy's UID 0 and positive PID through `SO_PEERCRED`.
+Only the SPIRE-backed ztunnel needs `hostPID: true`; since Cilium `0ed63bf906` the
+agent must not have it. The agent checks only the proxy's UID 0 through
+`SO_PEERCRED`. Verify the rendered manifest and every replacement Pod. An image
+rebuild does not change this field.
+
+The script below is the 2026-10-24 form of the agent overlay build. The
+2026-10-25 builds of the deployed agent, operator and ClusterMesh API server used
+`build_agent_overlay.sh`, `build_operator_current.sh` and
+`build_apiserver_overlay.sh` in
+[the activation operations](../evidence/local-activation-20261025/operations/).
+Those scripts are records with machine-local paths; read their pins and guards
+before adapting them.
 
 For the current Cilium agent-only work, compile the agent in the pinned Go
 builder and overlay that binary on the digest-pinned fork runtime image. This is
@@ -172,16 +181,19 @@ done
 ```
 
 Loading only makes an image available to the kind nodes; it does not deploy
-that image. Apply the exact local image override through the pinned Cilium
-chart for the feature under test. Then verify the requested image and runtime
-image IDs on every Cilium agent in both clusters. Refresh peer addresses and
-wait for both ClusterMesh links:
+that image. The `cilium` DaemonSet uses `OnDelete`: change only its image field,
+then replace one agent Pod at a time with a UID precondition
+([lab scripts, section 4](LAB_SCRIPTS.md#4-update-the-mesh-images-on-the-running-lab)).
+Then verify the requested image and runtime image IDs on every Cilium agent in
+both clusters. Refresh peer addresses and wait for both ClusterMesh links.
+`kubectl rollout status` does not apply to an `OnDelete` DaemonSet, so check the
+Pods directly:
 
 ```bash
 bash scripts/lab/reconcile-clustermesh-endpoints.sh
 for cluster in cmtc-a cmtc-b; do
   kubectl --context "kind-$cluster" get nodes -o wide
-  kubectl --context "kind-$cluster" -n kube-system rollout status ds/cilium --timeout=5m
+  kubectl --context "kind-$cluster" -n kube-system wait pod -l k8s-app=cilium --for=condition=Ready --timeout=5m
   kubectl --context "kind-$cluster" -n kube-system get pods -l k8s-app=cilium -o wide
   cilium clustermesh status --context "kind-$cluster" --wait --wait-duration 10m
 done
@@ -246,9 +258,9 @@ archive into both clusters, then apply the repository manifests with the exact
 image reference and verify both controller and node-agent rollouts in each
 cluster. Loading an archive alone does not prove that a workload is running it.
 
-## Evidence already qualified
+## Evidence already qualified (historical)
 
-The [current local report](../../LOCAL_SECURITY_VALIDATION.md) records the
+The [isolated-fixture report](../../LOCAL_SECURITY_VALIDATION.md) (2026-10-24, retired `cmtc-mtls` fixture) records the
 `f142e58d06` Cilium source, the Podman-built ARM64 image config ID
 `7baf3a4e4c3796e942243f67a2a54f0ce064f1cb92d8884fb6ff6ea25ea8da89`, both-node
 deployment, 127 selected unit/race/privileged cases with zero skips, vet/lint,
@@ -259,11 +271,11 @@ bundle is under `/private/tmp/cmtc-mac-captures/2026-10-24-cni-startup-validatio
 These are bounded local qualifications, not completion of CMTC-403 or the full
 CMTC security mandate.
 
-## Current two-cluster image update
+## Two-cluster image updates
 
-The [local image update report](../../LOCAL_IMAGE_UPDATE.md) records the current
-Cilium/CMTC deployment and the staged ztunnel image, exact executed build/import
-commands, worktree Git-metadata handling, all node image IDs, startup checks,
-28,800 measured HTTP responses, and live dashboard queries. The proxy remains
-inactive until the native ClusterMesh security gates pass. Do not use the
-retired isolated fixture scripts to activate it on the retained clusters.
+The [local image update report](../../LOCAL_IMAGE_UPDATE.md) records the 2026-10-24
+Cilium/CMTC deployment, its build/import commands, node image IDs and 28,800
+measured HTTP responses. It is historical. Ztunnel now runs in both clusters; the
+current image-update loop is in [lab scripts, section 4](LAB_SCRIPTS.md#4-update-the-mesh-images-on-the-running-lab),
+and current pins are in [delivery status](../agile/DELIVERY_STATUS.md). Do not use
+the retired isolated fixture scripts on the retained clusters.

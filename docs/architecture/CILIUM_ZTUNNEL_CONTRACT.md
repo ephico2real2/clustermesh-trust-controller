@@ -1,138 +1,240 @@
-# Proposed Cilium remote workload and authorization contract
+# Cilium remote workload and authorization contract
 
 <!-- CMTC_DOC_CONTEXT -->
 Design scope: proposed behavior requires the stated acceptance tests. Read [current delivery status](../agile/DELIVERY_STATUS.md) and [documentation terms](../../DOCUMENTATION_GUIDE.md).
 <!-- /CMTC_DOC_CONTEXT -->
 
-Status: proposed engineering contract, 2026-10-23. Based on the [pinned mesh comparison](../research/MESH_MTLS_COMPARISON.md) and [Cilium audit](../research/SOURCE_AUDIT.md). This is the next implementation boundary; no new production API or enforcement capability is implied.
+Status: engineering contract, first written 2026-10-23 and revised 2026-10-25. Most of the contract is now
+implemented in our Cilium and ztunnel forks and deployed in `cmtc-a` and `cmtc-b`. The recovery, policy-shape,
+transport-encryption and per-connection evidence gates stay open. No `Protected` claim follows from this page.
 
-## Implementation snapshot
+## Result first
 
-The original protocol and transport PRs are historical groundwork. Current candidate Cilium source is `8bb97137fcc92b935171d60e59d7fb8a93714bd8`. The deployed agent remains `4459d58ed3`.
+| Contract part | State on 2026-10-25 |
+| --- | --- |
+| Authenticated remote workload discovery (slice 1) | Implemented, deployed. Every agent reports `1/1 remote clusters ready`. |
+| Cluster-bound identity (slice 2) | Implemented, deployed. Each cluster has its own trust domain (`cmtc-a.mesh.example`, `cmtc-b.mesh.example`). |
+| Effective L4 policy and admission (slice 3) | Implemented, deployed, traffic-qualified for the allow paths. Deny-policy shapes are unit-tested only. |
+| Supported ClusterMesh profile (slice 4) | The blanket startup rejection is replaced by a capability check. Pod-IP and Global Service by ClusterIP pass in both directions. Global Service by name fails (DNS). Recovery is not yet run. |
+| Layered transport (slice 5) | Not started. WireGuard and IPsec are not configured. |
 
-The source now has authenticated membership work, native map observations, source-IP loader receipts and policy-withdrawal drain guards. These increments do not finish this contract. Policy-map reachability, restore quarantine, complete capture and exact-image traffic remain open. See [delivery status](../agile/DELIVERY_STATUS.md) and [policy transition evidence](../../LOCAL_NATIVE_POLICY_TRANSITIONS.md).
-
-The first two PRs did not implement effective policy admission. Their results remain useful protocol tests. They cannot qualify the newer native security candidate.
-
-<details>
-<summary>Historical protocol and transport groundwork</summary>
-
-Implementation tracking: [Cilium fork PR #1](https://github.com/ephico2real2/cilium/pull/1) starts the protocol portion with the exact `cilium/ztunnel` v1.0.0 Authorization schema, a separate Go security package, independent wire fixture and reproducible generation tests. [Focused CI passed](https://github.com/ephico2real2/cilium/actions/runs/40022647528) at `636e441044379d48db0686eb21becf9351f782f6`. This is partial groundwork for slices 1 and 3 below; neither remote discovery nor authorization delivery/admission is implemented by that patch. [Cilium PR #6](https://github.com/ephico2real2/cilium/pull/6) subsequently implements the agent-local Authorization transport lifecycle through the existing delta engine and a typed Hive cache, with immutable atomic batches, subscriptions, ACK/NACK isolation, removals and reconnect cleanup. [CI 40052995200](https://github.com/ephico2real2/cilium/actions/runs/40052995200) and local Linux ARM64 each passed 150 race-enabled tests/subtests. These call the actual Go ADS handler over in-memory gRPC with fake policies; no effective-policy producer or admission gate is enabled. Keep every runtime acceptance gate open.
-
-
-</details>
+Use [delivery status](../agile/DELIVERY_STATUS.md) for the source and image pins. The live traffic record is
+[G1 destination sources](../evidence/g1-destination-sources/README.md).
 
 ## Ownership
 
-CMTC evaluates namespace intent, coordinates trust lifecycle and reports verified observations. Cilium owns local interception, endpoint identity, service translation, network policy and xDS. SPIRE owns workload attestation and SVID issuance. Ztunnel authenticates peers and enforces the supported destination L4 policy. WireGuard/IPsec protects node transport independently. An admission result must combine these actual capabilities without letting one stand in for another.
+These owners do not change:
 
-Local ZDS continues to exchange local workload/netns resources. Remote workloads enter the xDS discovery graph through a new ClusterMesh adapter; they never cause a node to enroll a remote network namespace.
+- **CMTC** evaluates namespace intent, coordinates the trust lifecycle and publishes approved public issuer profiles.
+- **Cilium** owns local capture, endpoint identity, service translation, native network policy, the workload
+  quarantine gate, remote workload discovery and xDS.
+- **SPIRE** owns workload attestation and SVID issuance.
+- **ztunnel** authenticates peers and enforces the destination L4 policy that Cilium delivers.
+- **WireGuard or IPsec** protects node transport independently. Neither is configured in the lab.
+
+An admission result combines these capabilities. One capability never stands in for another.
+
+Local ZDS exchanges local workload and network-namespace resources. Remote workloads enter the xDS graph through a
+ClusterMesh adapter. A node never enrolls a remote network namespace.
 
 ## Discovery record
 
-The authenticated export must bind the following fields together:
+The authenticated export binds these fields together:
 
 | Field | Required meaning |
-|---|---|
-| Origin | Configured cluster authority and cluster ID; reject payloads claiming another origin. |
-| Object identity | Namespace UID, Pod UID and service-account identity; namespace/name alone cannot survive delete/recreate safely. |
-| Resource key | Cluster-qualified kind/namespace/name plus UID incarnation in the adapter. Any wire key mapping must preserve deletion/recreation ordering. |
-| Addresses | Validated pod addresses and network ID; address ownership must agree with the configured cluster/ipcache provenance. |
-| Expected principal | Exact SPIFFE identity and approved trust/issuer mapping; never infer it only from an IP or telemetry Workload record. |
-| Enrollment | Explicit namespace intent plus supported workload type; hostNetwork/platform paths remain outside initial enrollment. |
-| Version | Origin epoch/revision, policy generation/digest and expiry/freshness bounds; reconnect snapshots cannot revive removed records. |
+| --- | --- |
+| Origin | Configured cluster authority and cluster ID. A payload that claims another origin is refused. |
+| Object identity | Namespace UID, Pod UID and service-account identity. A namespace/name alone does not survive delete and recreate. |
+| Resource key | Cluster-qualified kind/namespace/name plus the UID incarnation. A wire key keeps deletion and recreation order. |
+| Addresses | Validated Pod addresses and network ID. Address ownership agrees with the configured cluster and the ipcache. |
+| Expected principal | Exact SPIFFE identity and the approved trust domain and issuer. Never inferred from an IP or a telemetry record. |
+| Enrollment | Explicit namespace intent and a supported workload type. hostNetwork and platform paths stay outside enrollment. |
+| Version | Origin epoch, revision, policy generation, digest and expiry. A reconnect snapshot cannot revive a removed record. |
 
-Import must validate the transport peer against the configured origin, then validate record ownership. This is a proposed new interface; CEP/CES, remote identities and the existing Hubble workload export do not currently provide this complete contract. No adapter may fabricate a service account from an endpoint's display name. Conflicting origins, missing identity fields and unknown incarnations block protected routing.
+Import validates the transport peer against the configured origin, then validates record ownership. No adapter
+creates a service account from an endpoint's display name. Conflicting origins, missing identity fields and unknown
+incarnations block routing to the workload.
 
-Removal withdraws address lookup and authority for that incarnation. Full resync must reconcile deletions, not only upserts. A revoked origin loses its records and policy-derived permissions. Specify a bounded stale-state policy for temporary partitions before enabling enforcement; neither indefinite acceptance nor automatic plaintext fallback is permitted.
+Removal withdraws the address lookup and the authority of that incarnation. A full resync reconciles deletions, not
+only upserts. A revoked origin loses its records and the permissions derived from them. A partition has a bounded
+stale-state policy: neither indefinite acceptance nor plaintext fallback is permitted.
+
+**Implemented (Cilium fork).** The per-peer snapshot store and remote projection gate remote workloads
+(`pkg/ztunnel/remote_workload/`). Source membership leases carry each captured workload's state, and since ADR-010
+its realized egress policy (`pkg/ztunnel/membership/source_publisher.go`). The record decoder refuses case variants,
+duplicate members and unknown members.
 
 ## Identity decision
 
-Keep the protected shared root and cluster-local intermediate keys. Select an identity scheme only after a two-cluster issuance/verification spike. The leading candidate is cluster-specific trust domains using the existing namespace/service-account path, with explicit permitted peer domains and issuer constraints. The current Cilium proxy's same-domain verifier needs changes for that candidate. A shared trust domain instead requires a different cryptographically verifiable cluster binding; the display-only `cluster_id` is insufficient.
+The lab uses **cluster-specific trust domains**: the ztunnel DaemonSet in `cmtc-a` sets
+`TRUST_DOMAIN=cmtc-a.mesh.example`, and `cmtc-b` sets `cmtc-b.mesh.example` (read 2026-10-25 from the DaemonSet
+environment). The protected shared root and cluster-local intermediates stay as before ([PKI trust
+flow](../../PKI_TRUST_FLOW.md)).
 
-The issuer/attestation path must refuse cluster A requests for cluster B identities. Peer verification must refuse a certificate that has the expected URI but an unauthorized issuer binding. If the chosen common-root PKI cannot enforce that property, record the larger compromise boundary and do not claim issuer isolation. Public trust-bundle propagation, issuer selection and actual consumer reload evidence are separate operations.
+The ztunnel fork verifies a peer against the exact approved signer for the trust domain in the peer's authenticated
+SAN. It never falls back to the organization root or the local SPIRE root store (`src/tls/workload.rs:389-400` at
+`f221f29b59`). The issuer profile that CMTC publishes supplies the approved signers.
+
+Open:
+
+- The issuer and attestation path must refuse a cluster A request for a cluster B identity. That negative test has not
+  run against the deployed images.
+- A certificate with the expected URI but an unauthorized issuer must be refused. Source tests cover this; a live
+  negative test has not run.
+- Trust-bundle propagation, issuer selection and consumer reload are separate operations, each with its own evidence.
 
 ## Destination authorization
 
-Use the **pinned Cilium proxy's** `istio.security.Authorization` descriptor and type URL. Add generated types and a real delta resource lifecycle to Cilium's xDS server, including versions, subscriptions, ACK/NACK and removals. Keep Address and Authorization resource tracking distinct; a local ZDS ACK cannot acknowledge authorization.
+Cilium compiles the destination's ztunnel ALLOW rules from its own effective policy
+(`policy.CompileZtunnelTCP`, `pkg/policy/ztunnel_l4.go:286`). A port is admitted only when the destination's realized
+ingress permits the source identity **and** the source's realized egress permits the destination. A separate CMTC
+allow policy never overrides a Cilium deny.
 
-Start with a narrow, explicitly supported TCP L4 subset. Compile from the effective Cilium policy authority, preserving selector logic, explicit denials, application port and peer identity; resolve named ports against the destination incarnation. A separate CMTC allow policy must never override a Cilium deny. Reject unsupported egress, L7, FQDN, CIDR or other policy combinations until their semantics are traced and tested. Unsupported cases remain in Observe and cannot enter a Protected profile.
+The egress half cannot be enforced at the source: in-pod redirection hides the original port, and the traffic that
+leaves the Pod is HBONE to 15008. [ADR-010](adr/ADR-010.md) therefore delivers each source's realized egress to the
+destination:
 
-Use exact SPIFFE principals for cluster-specific permissions; this proxy's namespace/service-account matcher ignores the trust domain. A service-account identity also cannot distinguish two pods with different policy labels that share that account. Preserve those finer Cilium restrictions through the authenticated datapath or reject the profile. Do not convert a label-specific allow into a broader service-account allow.
+- The source agent publishes the egress-only snapshot in its membership lease.
+- The destination policy owner admits an external caller only with a current lease, the trust domain the issuer
+  profile approves, a capture by its source, a policy that decodes under the receiver-fixed owner, compiler subject
+  validation, and an ipcache identity and Pod UID match for every address (`pkg/ztunnel/xds/effective_sources.go`).
+- Conflicting claims are refused per source.
+- The metric `cilium_ztunnel_xds_effective_policy_sources{origin=node|cluster|peer}` counts admitted callers.
 
-The receiving proxy must check the authenticated source principal and resolved application destination, validate that the CONNECT target belongs to the local destination workload, and enforce the effective policy before opening the application connection. Tunnel port 15008 is transport plumbing. Allowing it broadly does not preserve an existing port 80 denial or caller restriction. Cilium's outer eBPF checks and inner proxy checks need a documented division of responsibility, including egress, return traffic, socket-LB and reverse NAT.
+Rules that still bind:
+
+- The compiler supports a narrow TCP L4 subset. Unsupported egress, L7, FQDN and CIDR shapes are refused, never
+  approximated.
+- A service-account identity cannot separate two Pods with different policy labels. The compiler therefore emits
+  one rule per source Pod that matches the exact principal, the source Pod addresses, the destination addresses and
+  the ports. It emits no principal-only approximation (`pkg/policy/ztunnel_l4.go:284`, `:371-374`).
+- The receiving ztunnel checks the authenticated source principal and the original destination before it opens the
+  application connection. Port 15008 is transport only. Allowing it does not allow port 80.
+- With `REQUIRE_INBOUND_MTLS=true`, a protected workload with no effective ALLOW policy is denied
+  (`src/state.rs:762-768` in the ztunnel fork). The upstream default, which allows when no ALLOW policy exists, does
+  not apply to protected workloads.
+- With `REQUIRE_MESH_HBONE=true`, an unknown destination inside the configured mesh ranges is refused, and other
+  egress needs an explicit exception (`src/proxy/outbound.rs:787-803`). Both flags are set in the deployed DaemonSets.
+
+Open (from the [ADR-010 review](adr/ADR-010.md), not yet fixed):
+
+- One compromised agent can make every reader of its cluster's leases invalid.
+- Expiry starts when a record is received, so a reader restart plus a partition allows up to two lease TTLs.
+- Narrowed egress can take up to 30 s to reach other destinations, not 5 s.
+- More than 64 sources, 512 cuts or 4,096 ports makes a destination deny every caller.
 
 ## Traffic admission and observation
 
-Protected admission needs all of the following for the **same workload UID/incarnation and configuration generation**:
+Admission for a workload requires all of these, for the **same workload UID, incarnation and configuration
+generation**:
 
-1. Platform classification permits enrollment and local interception is installed with a first-packet hold.
-2. The workload SVID and required trust bundle are valid and consumed by the actual proxy.
-3. Expected local/remote identity records are authenticated, current and unambiguous.
-4. Every required policy is present and active, including explicit plaintext denial; missing references fail closed.
-5. Required WireGuard/IPsec state and the qualified datapath composition are ready.
+1. Platform classification permits enrollment, and Cilium holds the workload in quarantine until release.
+2. The workload SVID and the required trust data are valid and used by the actual proxy.
+3. The local and remote identity records are authenticated, current and unambiguous.
+4. Every required policy is present and acknowledged. A missing reference fails closed.
+5. Where the profile requires it, WireGuard or IPsec state is ready. No lab profile requires it today.
 
-Independent xDS type ACKs cannot create a transactional admission barrier by themselves. The proxy or datapath must hold new protected traffic until the complete generation is active. Restart, reconnect, NACK, missing-reference, removal and stale-policy paths must preserve that hold. Initial implementation must not rely on a transient bootstrap DENY that can disappear during resync.
+Independent xDS type ACKs are not a transactional barrier by themselves. The Cilium fork releases a workload from
+quarantine only after the compiled plan is acknowledged on the current ADS stream, and only while every plan that
+admits it as a caller is current (`callerPlansCurrent`, `pkg/ztunnel/xds/effective_policy.go:285`). Restart,
+reconnect, NACK, missing references, removal and stale policy must keep that hold. Recovery on the deployed build has
+not been run.
 
-Observations exposed to CMTC should include node/proxy identity, workload and namespace UID, software/protocol versions, intent generation, trust/policy digests, local interception state, active admission state, observation time and reason. Bind them to an authenticated observer. CMTC can then report Unknown/Blocked for absent or stale evidence. Successful ACKs and namespace labels remain insufficient for Protected; runtime positive and negative canaries validate the claimed path.
+Observations that CMTC consumes bind node, proxy, workload and namespace UIDs, versions, intent generation, trust and
+policy digests, capture state, admission state, time and reason to an authenticated observer. Absent or stale
+evidence is Unknown or Blocked. ACKs and namespace labels never set `Protected`. Positive and negative traffic tests
+validate the claimed path.
 
-## Temporary CMTC DaemonSet eBPF prototype
+## eBPF measurement plane
 
-The requested CMTC-first stage is a development prototype, not a change to the
-production ownership contract above. In the audited fork, `cil_from_container`
-is attached to the pod veth TCX ingress path and `cil_to_container` is attached
-for selected reverse paths by `pkg/datapath/loader/endpoint.go`. Cilium uses
-tail-anchored TCX links, with legacy TC fallback and a separate netkit path.
-An external TCX program is not a stable Cilium extension API. The prototype
-must explicitly reject unqualified legacy-TC, netkit and no-TCX modes, use its
-own map/pin namespace, and never replace or reorder Cilium's links.
+Decision: [ADR-005](adr/ADR-005.md) (operator mandate 2026-10-25; status Proposed). It replaces the earlier
+"temporary CMTC DaemonSet eBPF prototype" direction.
 
-Start with an observe-only hook, then a deny-only gate for disposable test
-workloads. Allowed packets must continue into Cilium's existing pipeline so
-socket-LB, service translation, policy, conntrack/NAT, routing and transport
-encryption remain authoritative. A Pod informer cannot close the first-packet
-race: CNI ADD must synchronously establish Required state through an
-authenticated local CMTC-agent handshake before the workload can start. A
-missing agent/response, wrong workload incarnation, map or attach error, stale
-lease, or unsupported hook mode must fail CNI admission or drop protected test
-traffic. Restart restores intent only and requires fresh evidence before the
-gate opens. This prototype does not inspect TLS or prove workload identity.
+**Roles.**
 
-The final gate belongs in Cilium's endpoint loader and BPF programs, keyed to
-the Cilium endpoint and Pod/Namespace incarnation. Only Cilium can integrate
-the gate atomically with its endpoint lifecycle and preserve native policy and
-service semantics. ztunnel must supply verifiable peer-authentication and
-authorization evidence; a label, packet mark or xDS ACK alone cannot set
-Protected. The ClusterMesh+ztunnel compatibility guard stays closed until the
-native path passes the full negative and recovery matrix.
+| Role | Owner | Where |
+| --- | --- | --- |
+| Packet verdicts, service translation, native policy, workload quarantine | Cilium agent | `bpf/lib/ztunnel_admission.h`, `pkg/endpoint/ztunnel_policy*.go` in the fork |
+| Workload TLS and delivered authorization | ztunnel | ztunnel fork |
+| Per-node observation of datapath, enrollment, capture, authorization, TLS shape, withdrawal and recovery | CMTC eBPF measurement plane | CMTC node DaemonSet, separate measurement loader container |
 
-## Reviewable fork slices
+The two roles never share a program, a map or a decision.
 
-| Slice | Code boundary | Acceptance before the next security claim |
-|---|---|---|
-| 1. Protocol and discovery | Cilium Go/Hive remote exporter/importer, cluster-qualified keys, exact proxy protobuf pin | Colliding names/IPs, UID recreation, deletes, reconnect and unauthorized-origin records are tested. No guard removal yet. |
-| 2. Identity spike | SPIRE registration/attestation and proxy verifier | Same-name namespace/SA in two clusters is distinguishable; wrong issuer/domain/cluster is denied. Prove image provenance. |
-| 3. L4 policy and admission | Cilium effective-policy translation, real authorization delta stream, proxy/datapath hold | Allowed peer:80 passes; stranger:80, allowed peer:81, plaintext, missing policy, L7 profile and reorder/restart races deny. |
-| 4. Supported ClusterMesh profile | Capability validation and narrowly revised compatibility guard | Direct pod-IP and Global Service paths pass both directions plus disconnect/recovery tests. |
-| 5. Layered profiles | Independent workload/transport settings and WG/XFRM datapath | Separate WireGuard and IPsec runs prove inner workload identities and outer encryption; loss of either required layer blocks traffic. |
+**What the measurement plane may do.**
 
-Use an isolated Cilium fork branch based on the selected pin. Preserve the user's existing Hubble branch. Any required Rust proxy change is tracked explicitly rather than described as Go-only work. Upstream messages remain a separate authorized activity.
+- Every program returns the hook's pass verdict on every path: `TCX_NEXT` at TCX, allow at cgroup socket hooks.
+  Tracepoints and `sock_ops` have no verdict.
+- No program modifies a packet or socket, redirects traffic, or writes a map that Cilium or ztunnel reads.
+- A measurement fault can lose data. It can never change traffic.
+- The node agent container stays unprivileged. Only the measurement loader container holds `CAP_BPF`,
+  `CAP_PERFMON`, `CAP_NET_ADMIN`, bpffs and the cgroup v2 mount.
+- Discovery of enrolled workloads is node-wide and automatic. A frozen-identity mismatch makes that workload's data
+  unavailable, never attributed to another workload.
+- Its evidence never sets `Protected` by itself.
 
-## CI acceptance matrix
+**TCX coexistence.** In the fork, `cil_from_container` and `cil_to_container` attach to the Pod veth through TCX
+(`pkg/datapath/loader/endpoint.go`). An external TCX program is not a stable Cilium extension API. A measurement
+program uses its own map and pin namespace and never replaces or reorders Cilium's links. Its position must not hide
+traffic from it; the loader verifies the full chain on every sample, as the current observer does.
 
-Reuse `examples/apps/shop` with distinct service accounts for POS/stranger in the encrypted fixture; the current baseline app manifests do not yet establish distinct mTLS principals. Reuse `examples/apps/clustermesh` for cross-cluster-only backends. Run each case on same-node, different-node and cross-cluster paths where applicable:
+**Current implementation.** The CMTC source has one single-workload observer that reads `skb->len` and returns
+`TCX_NEXT` (`internal/datapath/bpf/observer.c:29`). The node-wide loader is not built. Neither the observer nor the
+fence is deployed in `cmtc-a` or `cmtc-b`.
 
-| Test | Expected evidence |
-|---|---|
-| Authorized source, intended application port | Success plus verified peer identities and policy generation. |
-| Different SA; same SA/namespace in unapproved cluster; wrong issuer | Denial attributable to authenticated identity policy, not only a network timeout. |
-| Correct peer, forbidden application port | Denial despite a working HBONE tunnel. |
-| Same service account, forbidden pod labels | Denial remains effective even though the pods share an mTLS principal. |
-| Direct plaintext / non-enrolled caller | Denial at a protected destination with no fallback. |
-| Missing policy, removed policy, NACK, reconnect with initial resource versions | No admission window; intended revocation takes effect. |
-| Pod/namespace recreation, endpoint IP reuse | Old identity/policy observation cannot authorize the new incarnation. |
-| Cluster disconnection, stale export, SPIRE/proxy/Cilium outage | Bounded behavior, no downgrade; recovery does not bypass admission. |
-| Required WireGuard or IPsec loses keys/state | Traffic blocks; restore resumes only with both layers verified. |
-| API, DNS TCP/UDP, webhooks and excluded/platform workloads | Baseline platform health remains intact. |
+**eBPF fence.** The fence returns `TCX_DROP` unconditionally (`internal/datapath/bpf/fence.c:33`). It is a lab
+qualification tool for deny-path tests on disposable workloads. It is not the production gate and never becomes an
+allow controller. The production gate is the native Cilium quarantine above.
 
-Preserve packet captures, authenticated connection/policy decisions and transport counters/state alongside machine-readable assertions. Captures alone cannot prove the caller was authorized; screenshots cannot replace security assertions. The current Observe workflow reports encrypted profiles as blocked and must continue doing so until these cases run against the implemented fork.
+**History.** The 2026-10-23 text of this section described a CMTC-first "development prototype" with a deny gate that
+"belongs in Cilium's endpoint loader" in the end. That gate now lives natively in the Cilium fork. The prototype
+framing is superseded; see git history of this file.
+
+## Fork slices
+
+| Slice | Code boundary | State, 2026-10-25 | Acceptance still open |
+| --- | --- | --- | --- |
+| 1. Protocol and discovery | Cilium remote exporter/importer, cluster-qualified keys, proxy protobuf pin | Implemented, deployed | Colliding names and IPs, UID recreation and unauthorized-origin records in the live lab |
+| 2. Identity | SPIRE registration and attestation, proxy verifier | Implemented, deployed with per-cluster trust domains | Wrong issuer, wrong domain and cross-cluster issuance negatives, live |
+| 3. L4 policy and admission | Effective-policy compiler, authorization delta stream, quarantine hold | Implemented, deployed; allow paths traffic-qualified | Stranger on port 80, allowed peer on a denied port, deny egress, missing policy, restart races, live |
+| 4. Supported ClusterMesh profile | Capability check (`pkg/ztunnel/cell.go:73`) | Implemented, deployed | DNS from enrolled Pods, Global Service by name, disconnect and recovery |
+| 5. Layered profiles | Independent workload and transport settings, WireGuard and XFRM | Not started | All |
+
+Keep the CMTC work on isolated fork branches. Preserve the user's Hubble branch. Track any Rust proxy change
+explicitly. Upstream messages remain a separately authorized activity.
+
+## Acceptance matrix
+
+The live fixture is the enrolled namespace `cmtc-live-mtls` with the negative namespace `cmtc-live-mtls-unauth` in
+both clusters. `examples/apps/shop` and `examples/apps/clustermesh` remain candidate fixtures for distinct service
+accounts and cross-cluster-only backends. Run each case on same-node, cross-node and cross-cluster paths:
+
+| Test | Expected evidence | State |
+| --- | --- | --- |
+| Authorized source, intended port | Success, verified peer identities and policy generation | Allowed on 80, 8080, 31337 in both directions; per-connection peer evidence not recorded |
+| Different SA; same SA in an unapproved cluster; wrong issuer | Denial attributable to identity policy, not only a timeout | Not run live |
+| Correct peer, forbidden port | Denial despite a working HBONE tunnel | Not run live (fixture has no CiliumNetworkPolicy) |
+| Same SA, forbidden Pod labels | Denial although the Pods share an mTLS principal | Not run live |
+| Direct plaintext or unenrolled caller | Denial, no fallback | Unregistered caller got no response (curl timeout) |
+| Missing, removed or NACKed policy; reconnect | No admission window; revocation takes effect | Not run on the deployed build |
+| Pod or namespace recreation, IP reuse | Old observations cannot authorize the new incarnation | Not run on the deployed build |
+| Cluster disconnect, stale export, SPIRE/proxy/Cilium outage | Bounded behavior, no downgrade; recovery keeps admission | Not run on the deployed build |
+| Required WireGuard or IPsec loses state | Traffic blocks; restore needs both layers | Not applicable until slice 5 |
+| API, DNS TCP/UDP, webhooks, platform workloads | Platform health intact | **Failing:** DNS from enrolled Pods times out |
+
+Keep packet captures, authenticated connection and policy decisions, and transport state beside machine-readable
+assertions. A capture alone does not prove the caller was authorized. A screenshot does not replace an assertion.
+The full matrix and its results are in the [security and failure test matrix](SECURITY_AND_FAILURE_TEST_MATRIX.md).
+
+<details>
+<summary>Historical protocol and transport groundwork (2026-10-23)</summary>
+
+[Cilium fork PR #1](https://github.com/ephico2real2/cilium/pull/1) started the protocol portion with the exact
+`cilium/ztunnel` v1.0.0 Authorization schema, a separate Go security package, an independent wire fixture and
+reproducible generation tests. [Focused CI passed](https://github.com/ephico2real2/cilium/actions/runs/40022647528) at
+`636e441044379d48db0686eb21becf9351f782f6`. [Cilium PR #6](https://github.com/ephico2real2/cilium/pull/6) implemented
+the agent-local Authorization transport lifecycle through the delta engine and a typed Hive cache.
+[CI 40052995200](https://github.com/ephico2real2/cilium/actions/runs/40052995200) and local Linux ARM64 each passed
+150 race-enabled tests and subtests. Those PRs had no effective-policy producer or admission gate. Their results are
+protocol tests; they do not qualify the current build.
+
+</details>

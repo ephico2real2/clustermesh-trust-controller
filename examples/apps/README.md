@@ -26,18 +26,20 @@ kubectl --context kind-cmtc-a -n mesh-example apply -f examples/apps/clustermesh
 kubectl --context kind-cmtc-b -n mesh-example apply -f examples/apps/clustermesh/backend-poc2.yaml -f examples/apps/clustermesh/client.yaml
 ```
 
-These examples exercise Cilium ClusterMesh routing and policy and provide real application screenshots. The current CMTC Observe profile evaluates their namespace metadata and inventories pods; it does not enable ztunnel or establish workload mTLS. See [the ClusterMesh example contract](clustermesh/README.md), `scripts/lab/test.sh` for failing assertions and the [lab runbook](../../docs/development/OBSERVE_LAB.md) for the complete evidence workflow. No production credentials or signing keys are included.
+These examples exercise Cilium ClusterMesh routing and policy and provide real application screenshots. The CMTC Observe profile evaluates their namespace metadata and inventories pods; it does not enable ztunnel or establish workload mTLS. Ztunnel now runs in both lab clusters, but `mesh-example` and `cf2cnp-lab` are not enrolled (no `io.cilium/mtls-enabled=true` label, read 2026-10-25T23:13Z), so their traffic does not pass through ztunnel. The enrolled test fixture is `cmtc-live-mtls` ([G1 evidence](../../docs/evidence/g1-destination-sources/README.md)). See [the ClusterMesh example contract](clustermesh/README.md), `scripts/lab/test.sh` for failing assertions and the [lab runbook](../../docs/development/OBSERVE_LAB.md) for the complete evidence workflow. No production credentials or signing keys are included.
 
 ## Current local demonstration
 
-Both retained clusters run `rebel-base` (two replicas, one on each node),
-`mesh-client`, and the shop/POS/stranger example. Backend responses identify the
+Both retained clusters run `rebel-base` (two replicas, one on each node) and the
+shop/POS/stranger example. The `mesh-client` Pod is in state `Completed` in both
+clusters (read 2026-10-25T23:13Z). `cf2cnp-lab` belongs to a separate project;
+read it, never change it. Backend responses identify the
 cluster in JSON and the serving Pod in `X-CMTC-Pod`. Required anti-affinity plus
 an explicit lab control-plane toleration makes cross-node testing repeatable;
 `maxSurge: 0`/`maxUnavailable: 1` avoids a rolling-update scheduling deadlock on
 the two-node fixture.
 
-Local loopback forwards for the current session:
+Loopback forwards used in an earlier session (recreate them as needed):
 
 | Sample | cmtc-a | cmtc-b |
 | --- | --- | --- |
@@ -61,4 +63,4 @@ and 24 direct Pod-IP assertions across every local/remote backend and port
 each cluster, and checks the intended Pod's response header for direct requests.
 The existing Observe/API, exclusion, conflict, namespace recreation, RBAC and
 shop allow/deny assertions still run. The latest topology update passed all
-36 paths; workload encryption remains an unfinished security gate.
+36 paths. These are plaintext reachability checks in unenrolled namespaces.

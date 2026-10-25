@@ -20,7 +20,7 @@ Preserve these decisions:
 - Keep WireGuard/IPsec as a separate transport layer.
 - Keep exclusion precedence and platform safety.
 - Keep the standard Observe node agent unprivileged.
-- Qualify the opt-in eBPF prototype before production integration into Cilium.
+- Build the CMTC DaemonSet eBPF into the permanent, observe-only per-node measurement plane ([ADR-005](../architecture/adr/ADR-005.md)). It never decides a verdict; Cilium keeps enforcement and the native quarantine gate.
 - Treat the separate registrar image as an experimental design change.
 
 Use `cmtc-a` and `cmtc-b`. Keep KVStoreMesh enabled. Preserve the existing Colima runtime and applications.
