@@ -8,6 +8,14 @@ Complete native workload mTLS through the enhanced Cilium ClusterMesh path on bo
 
 All agents use **edit → run against cmtc-a/cmtc-b → test traffic, failures and recovery → package the verified change**. Preserve existing labs, signers, applications and security gates. The latest AGENTS instruction defers CI and pushes that trigger CI, plus workflow dispatch and registry publication. Qualified local commits are allowed.
 
+## Grok recommendation review and requested XHigh handoff
+
+Codex completed the [historical recommendation comparison](../research/cursor/GROK_RECOMMENDATION_REVIEW.md) against immutable Cilium37d5fce0f7. The original Grok report audited d040a4bc9a and remains unchanged. Retained red/green evidence supports the node-watch, zero-address and serialized-publication fixes. Temporary quarantine-write recovery is tested; permanent kernel-update failure remains open. CT_RELATED traces to selected ICMP control traffic, not a demonstrated TCP payload bypass. Preserve PMTU and qualify the actual classifier. The [open-gate review](../research/cursor/GROK_CURRENT_OPEN_GATES_REVIEW.md) includes UNRUN proposals and tests. The proposed kernel lease bounds a stale interval; it does not guarantee immediate denial or implement a complete renewal owner.
+
+The completed package was sent to a separate **Opus5.5 XHigh read-only review**, session `c0e51864-c536-41eb-8839-a34043c36e6e`. Actual init and assistant metadata report `claude-opus-5-5`; the recorded CLI effort is xhigh. Tools are Read/Glob/Grep only, with a no-substitution guard. Files: `/private/tmp/cmtc-grok-followup-20261025/opus-xhigh-{prompt.txt,command.json,session.jsonl}`. The ongoing Opus5.5 Max session retains the only implementation/compiler/live lease and received a non-interrupting queued summary. Deliver the XHigh result to that owner at its next boundary; independently validate accepted changes. No result is accepted yet.
+
+Primary's latest API read now finds both Cilium DaemonSets at `dev-overlay-51170b1239`,2 ready each, and both ClusterMesh API-server Deployments at `dev-overlay-51170b1239`,1 ready each. See [runtime receipt](../evidence/grok-recommendation-review/runtime-receipt.json). The owner reports36/36 plaintext connectivity after each API-server rollout. This update does not qualify mTLS or the full release. Ztunnel is still off in the owner's checkpoint. Next: complete and qualify membership/source-egress/ADS client-authentication boundaries, activate ztunnel locally, then positive/negative/recovery traffic and real telemetry. Grafana changes remain undelivered.
+
 ## Active external agents
 
 Claude Code uses canonical `claude-opus-5-5`, effort `max`, normal automatic permission review, session `c03d57db-e2bf-4848-ab73-3f2696a27d2f`.

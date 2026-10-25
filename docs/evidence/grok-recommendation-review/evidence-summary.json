@@ -1,0 +1,352 @@
+{
+  "method": "Parsed retained real test outputs; no tests rerun during this review",
+  "runs": {
+    "cil-xds-bindfix-1": {
+      "exits": {
+        "race.exit": "0",
+        "vet.exit": "0"
+      },
+      "tests": {
+        "pass": 169
+      },
+      "topLevel": {
+        "pass": 67
+      },
+      "failures": [],
+      "selectedPasses": [
+        "TestNativeNodeNameUsesKubernetesNameNotAddress",
+        "TestNativeNodeNameDeniesMissingAmbiguousUnsyncedAndInvalid",
+        "TestNativeNodeNameRepeatedNamesInDifferentClusters",
+        "TestNativeNodeNameWatchInvalidatesStreamOnNodeChange",
+        "TestNativeNodeNameLaterBatchRejectsAnEarlierNodeChange",
+        "TestNativeNodeNameChangeBeforeSendWithholdsResponse",
+        "TestNativeNodeNameRemovalRetiresExactPodUID",
+        "TestNativeNodeNameFailedSendDoesNotCommit",
+        "TestNativeNodeNameRemovalNeedsNoNode"
+      ]
+    },
+    "cil-c3-before-1": {
+      "exits": {
+        "bpf-ztunnel_required_single_stack.exit": "0",
+        "stage-a.exit": "0",
+        "pkg-race.exit": "1",
+        "bpf-ztunnel_required_unconfigured.exit": "1",
+        "vet.exit": "0",
+        "stage-b.exit": "0"
+      },
+      "tests": {
+        "fail": 5,
+        "pass": 5
+      },
+      "topLevel": {
+        "fail": 3
+      },
+      "failures": [
+        "TestSemanticRepeatedWithdrawalRetriesFailedMapWrite",
+        "TestSemanticReleaseRejectsZeroAddresses",
+        "TestEndpointConfigSeparatesRequiredFromQuarantine/required_without_any_address_is_compiled_quarantined",
+        "TestEndpointConfigSeparatesRequiredFromQuarantine/required_with_only_unspecified_addresses_is_compiled_quarantined",
+        "TestEndpointConfigSeparatesRequiredFromQuarantine"
+      ],
+      "selectedPasses": []
+    },
+    "cil-c3-1": {
+      "exits": {
+        "bpf-ztunnel_required_single_stack.exit": "0",
+        "bpf-ztunnel_required_admission.exit": "0",
+        "stage-a.exit": "0",
+        "bpf-skip_tunnel_from_lxc.exit": "0",
+        "pkg-race.exit": "1",
+        "bpf-tc_policy_reject_response_test.exit": "0",
+        "bpf-tc_lxc_policy_drop.exit": "0",
+        "bpf-network_policy.exit": "0",
+        "bpf-ztunnel_required_unconfigured.exit": "0",
+        "vet.exit": "0",
+        "bpf-ztunnel_mesh_admission.exit": "0",
+        "stage-b.exit": "0"
+      },
+      "tests": {
+        "pass": 310,
+        "skip": 21
+      },
+      "topLevel": {
+        "pass": 111,
+        "skip": 21
+      },
+      "failures": [],
+      "selectedPasses": [
+        "TestZtunnelReleaseRequiresExactNativeReceipt",
+        "TestZtunnelWithdrawalRewritesEndpointMapAndCannotRevive",
+        "TestNativeNodeNameUsesKubernetesNameNotAddress",
+        "TestNativeNodeNameDeniesMissingAmbiguousUnsyncedAndInvalid",
+        "TestNativeNodeNameRepeatedNamesInDifferentClusters",
+        "TestNativeNodeNameWatchInvalidatesStreamOnNodeChange",
+        "TestNativeNodeNameLaterBatchRejectsAnEarlierNodeChange",
+        "TestNativeNodeNameChangeBeforeSendWithholdsResponse",
+        "TestNativeNodeNameRemovalRetiresExactPodUID",
+        "TestNativeNodeNameFailedSendDoesNotCommit",
+        "TestNativeNodeNameRemovalNeedsNoNode"
+      ],
+      "kernelLeaves": {
+        "PASS": 72
+      }
+    },
+    "cil-go-red-1": {
+      "exits": {
+        "pkg-race.exit": "1",
+        "vet.exit": "0"
+      },
+      "tests": {
+        "fail": 1
+      },
+      "topLevel": {
+        "fail": 1
+      },
+      "failures": [
+        "TestC3RedDelayedWithdrawalRestoresReleasedMap"
+      ],
+      "selectedPasses": []
+    },
+    "cil-go-4": {
+      "exits": {
+        "pkg-race.exit": "0",
+        "vet.exit": "0"
+      },
+      "tests": {
+        "pass": 167,
+        "skip": 21
+      },
+      "topLevel": {
+        "pass": 62,
+        "skip": 21
+      },
+      "failures": [],
+      "selectedPasses": [
+        "TestZtunnelReleaseRequiresExactNativeReceipt",
+        "TestZtunnelWithdrawalRewritesEndpointMapAndCannotRevive",
+        "TestZtunnelReleaseRejectsZeroAddressesThenAcceptsOneFamily",
+        "TestZtunnelRegenerationCannotOverwriteCompletedWithdrawal",
+        "TestZtunnelReleaseDoesNotOvertakeInFlightWithdrawal",
+        "TestZtunnelQuarantinedRegenerationWriteAcknowledges",
+        "TestZtunnelDeletionRetiresEndpointMapPublication",
+        "TestZtunnelFailedMapWriteRecoversDeterministically",
+        "TestZtunnelCanceledRecoveryAttemptDoesNotAcknowledgeOrWrite",
+        "TestZtunnelQuarantineRegenerationRecompilesDatapath",
+        "TestZtunnelWithdrawalMapFailureRetriesQueuesRegenerationAndRecovers",
+        "TestZtunnelWithdrawalAcknowledgementIsPerReleaseInterval",
+        "TestZtunnelQuarantineRecoveryStopsAfterVerifiedRelease",
+        "TestZtunnelQuarantineRecoveryNeverWritesAnotherIncarnation",
+        "TestZtunnelQuarantineRecoveryEndsWithEndpointDeletion"
+      ]
+    },
+    "cil-go-10": {
+      "exits": {
+        "pkg-race.exit": "0",
+        "vet.exit": "0"
+      },
+      "tests": {
+        "pass": 2853,
+        "skip": 52
+      },
+      "topLevel": {
+        "pass": 681,
+        "skip": 52
+      },
+      "failures": [],
+      "selectedPasses": [
+        "TestNativeNodeNameUsesKubernetesNameNotAddress",
+        "TestNativeNodeNameDeniesMissingAmbiguousUnsyncedAndInvalid",
+        "TestNativeNodeNameRepeatedNamesInDifferentClusters",
+        "TestNativeNodeNameWatchInvalidatesStreamOnNodeChange",
+        "TestNativeNodeNameLaterBatchRejectsAnEarlierNodeChange",
+        "TestNativeNodeNameChangeBeforeSendWithholdsResponse",
+        "TestNativeNodeNameRemovalRetiresExactPodUID",
+        "TestNativeNodeNameFailedSendDoesNotCommit",
+        "TestNativeNodeNameRemovalNeedsNoNode",
+        "TestZtunnelReleaseRequiresExactNativeReceipt",
+        "TestZtunnelWithdrawalRewritesEndpointMapAndCannotRevive",
+        "TestZtunnelReleaseRejectsZeroAddressesThenAcceptsOneFamily",
+        "TestZtunnelRegenerationCannotOverwriteCompletedWithdrawal",
+        "TestZtunnelReleaseDoesNotOvertakeInFlightWithdrawal",
+        "TestZtunnelQuarantinedRegenerationWriteAcknowledges",
+        "TestZtunnelDeletionRetiresEndpointMapPublication",
+        "TestZtunnelFailedMapWriteRecoversDeterministically",
+        "TestZtunnelCanceledRecoveryAttemptDoesNotAcknowledgeOrWrite",
+        "TestZtunnelQuarantineRegenerationRecompilesDatapath",
+        "TestZtunnelWithdrawalMapFailureRetriesQueuesRegenerationAndRecovers",
+        "TestZtunnelWithdrawalAcknowledgementIsPerReleaseInterval",
+        "TestZtunnelQuarantineRecoveryStopsAfterVerifiedRelease",
+        "TestZtunnelQuarantineRecoveryNeverWritesAnotherIncarnation",
+        "TestZtunnelQuarantineRecoveryEndsWithEndpointDeletion"
+      ]
+    },
+    "spire-delegated-1": {
+      "exits": {
+        "vet-windows.exit": "0",
+        "race.exit": "1",
+        "runner.exit": "0",
+        "vet.exit": "0",
+        "build.exit": "0",
+        "vet-darwin.exit": "0"
+      },
+      "tests": {
+        "pass": 316,
+        "fail": 1
+      },
+      "topLevel": {
+        "pass": 29,
+        "fail": 1
+      },
+      "failures": [
+        "TestListenerModesRegisterExactServices"
+      ],
+      "selectedPasses": []
+    },
+    "spire-delegated-2": {
+      "exits": {
+        "vet-windows.exit": "0",
+        "race.exit": "0",
+        "runner.exit": "0",
+        "vet.exit": "0",
+        "build.exit": "0",
+        "vet-darwin.exit": "0"
+      },
+      "tests": {
+        "pass": 317
+      },
+      "topLevel": {
+        "pass": 30
+      },
+      "failures": [],
+      "selectedPasses": []
+    },
+    "spire-delegated-3": {
+      "exits": {
+        "vet-windows.exit": "0",
+        "race.exit": "0",
+        "runner.exit": "0",
+        "vet.exit": "0",
+        "build.exit": "0",
+        "vet-darwin.exit": "0"
+      },
+      "tests": {
+        "pass": 321
+      },
+      "topLevel": {
+        "pass": 33
+      },
+      "failures": [],
+      "selectedPasses": []
+    }
+  },
+  "spireLiveProbeReceipts": {
+    "cmtc-a": {
+      "total": 12,
+      "pass": 12,
+      "cases": [
+        {
+          "case": "unauthorized-caller-denied",
+          "pass": true
+        },
+        {
+          "case": "delegated-credential-acquired",
+          "pass": true
+        },
+        {
+          "case": "wrong-group-eacces",
+          "pass": true
+        },
+        {
+          "case": "delegated-socket-debug-getinfo-unimplemented",
+          "pass": true
+        },
+        {
+          "case": "delegated-socket-logger-get-unimplemented",
+          "pass": true
+        },
+        {
+          "case": "delegated-socket-logger-set-unimplemented",
+          "pass": true
+        },
+        {
+          "case": "original-admin-socket-serves-logger",
+          "pass": true
+        },
+        {
+          "case": "delegate-withdrawal-denied",
+          "pass": true
+        },
+        {
+          "case": "delegate-recovery",
+          "pass": true
+        },
+        {
+          "case": "workload-withdrawal-denied",
+          "pass": true
+        },
+        {
+          "case": "workload-recovery",
+          "pass": true
+        },
+        {
+          "case": "agent-restart-recovery",
+          "pass": true
+        }
+      ]
+    },
+    "cmtc-b": {
+      "total": 12,
+      "pass": 12,
+      "cases": [
+        {
+          "case": "unauthorized-caller-denied",
+          "pass": true
+        },
+        {
+          "case": "delegated-credential-acquired",
+          "pass": true
+        },
+        {
+          "case": "wrong-group-eacces",
+          "pass": true
+        },
+        {
+          "case": "delegated-socket-debug-getinfo-unimplemented",
+          "pass": true
+        },
+        {
+          "case": "delegated-socket-logger-get-unimplemented",
+          "pass": true
+        },
+        {
+          "case": "delegated-socket-logger-set-unimplemented",
+          "pass": true
+        },
+        {
+          "case": "original-admin-socket-serves-logger",
+          "pass": true
+        },
+        {
+          "case": "delegate-withdrawal-denied",
+          "pass": true
+        },
+        {
+          "case": "delegate-recovery",
+          "pass": true
+        },
+        {
+          "case": "workload-withdrawal-denied",
+          "pass": true
+        },
+        {
+          "case": "workload-recovery",
+          "pass": true
+        },
+        {
+          "case": "agent-restart-recovery",
+          "pass": true
+        }
+      ]
+    }
+  }
+}

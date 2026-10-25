@@ -1,0 +1,29 @@
+// UNRUN deterministic tests for the proposal primitive; no clock sleeps.
+package endpoint
+
+import "testing"
+
+func TestZtunnelAdmissionDeadline(t *testing.T) {
+	for _, tc := range []struct {
+		name  string
+		now   uint64
+		valid bool
+	}{
+		{"ordinary uptime", 100_000_000_000, true},
+		{"zero clock", 0, false},
+		{"overflow", ^uint64(0), false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			until, err := ztunnelAdmissionDeadline(tc.now)
+			if !tc.valid {
+				if err == nil || until != 0 {
+					t.Fatal("invalid clock minted a lease")
+				}
+				return
+			}
+			if err != nil || until-tc.now != ztunnelAdmissionMaxLeaseNS {
+				t.Fatalf("deadline=%d err=%v", until, err)
+			}
+		})
+	}
+}

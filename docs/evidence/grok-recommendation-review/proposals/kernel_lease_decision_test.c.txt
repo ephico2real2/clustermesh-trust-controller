@@ -1,0 +1,43 @@
+/* SPDX-License-Identifier: (GPL-2.0-only OR BSD-2-Clause) */
+/* Copyright Authors of Cilium */
+/* UNRUN proposal. Place the primitive header at
+ * bpf/lib/ztunnel_admission_lease.h before using this test object. These
+ * boundary checks do not replace real packet expiry/failure/recovery tests. */
+#include <bpf/ctx/skb.h>
+#include "common.h"
+#include "lib/eps.h"
+#include "lib/ztunnel_admission_lease.h"
+
+CHECK("tc", "ztunnel_admission_lease_boundaries")
+int lease_boundaries(__maybe_unused struct __ctx_buff *ctx)
+{
+	__u64 now = 100ULL * 1000 * 1000 * 1000;
+	__u64 ttl = ZTUNNEL_ADMISSION_MAX_LEASE_NS;
+	struct endpoint_info ep = {};
+	__u64 until = now + ttl;
+	test_init();
+	TEST("zero and expired leases are closed", {
+		assert(!ztunnel_admission_lease_live(0, now));
+		assert(!ztunnel_admission_lease_live(now - 1, now));
+		assert(!ztunnel_admission_lease_live(now, now));
+	});
+	TEST("last nanosecond and exact expiry", {
+		assert(ztunnel_admission_lease_live(until, until - 1));
+		assert(!ztunnel_admission_lease_live(until, until));
+		assert(!ztunnel_admission_lease_live(until, until + 1));
+	});
+	TEST("bounded future and overflow input", {
+		assert(ztunnel_admission_lease_live(now + ttl, now));
+		assert(!ztunnel_admission_lease_live(now + ttl + 1, now));
+		assert(!ztunnel_admission_lease_live(~0ULL, now));
+		assert(!ztunnel_admission_lease_live(1, ~0ULL));
+	});
+	TEST("padding encoding and missing entry", {
+		ep.pad[0] = (__u32)until;
+		ep.pad[1] = (__u32)(until >> 32);
+		assert(ztunnel_entry_admission_until(&ep) == until);
+		assert(ztunnel_entry_admission_live(&ep, now));
+		assert(!ztunnel_entry_admission_live(NULL, now));
+	});
+	test_finish();
+}
