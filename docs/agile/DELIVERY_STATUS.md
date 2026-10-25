@@ -2,6 +2,10 @@
 
 Updated 2026-10-25. Continue the full end-to-end local mandate through the existing agile stories. Complete side requests, then return to the first unfinished security dependency. The latest AGENTS instruction keeps CI, push-triggered runs and registry publication deferred until local qualification. Earlier pushes and CI results below are retained history. No new push or workflow dispatch is part of this checkpoint.
 
+## Immediate local activation mandate
+
+The user now explicitly directs Opus to **rebuild the current code, deploy it and enable mTLS now** on the owned lab. Codex queued the full mandate to the active Max implementation owner. Prioritize current-source host-Podman rebuild, exact-image deployment, concrete ztunnel activation and immediate real traffic; do not wait for optional reviews, dashboards, quota reset or CI. Keep one compiler/live writer and preserve the restricted Admin/socket and signer boundaries. Report actual positive/denied/failed paths; activation is not a Protected claim. Finish the requested root resume-opus.md as a concise checkpoint. The Claude quota has not been reached. No external publishing was requested.
+
 ## Grok recommendation review and requested XHigh handoff
 
 Codex completed the [historical recommendation comparison](../research/cursor/GROK_RECOMMENDATION_REVIEW.md) against immutable Cilium37d5fce0f7. The original Grok report audited d040a4bc9a and remains unchanged. Retained red/green evidence supports the node-watch, zero-address and serialized-publication fixes. Temporary quarantine-write recovery is tested; permanent kernel-update failure remains open. CT_RELATED traces to selected ICMP control traffic, not a demonstrated TCP payload bypass. Preserve PMTU and qualify the actual classifier. The [open-gate review](../research/cursor/GROK_CURRENT_OPEN_GATES_REVIEW.md) includes UNRUN proposals and tests. The proposed kernel lease bounds a stale interval; it does not guarantee immediate denial or implement a complete renewal owner.

@@ -1,114 +1,101 @@
 # Current continuation checkpoint
 
-Updated 2026-10-25. The full end-to-end workload-mTLS mandate is active. Questions, documentation and dashboard requests steer it; they do not pause it. Read [the master prompt](CODEX_MASTER_PROMPT.md), [delivery status](../agile/DELIVERY_STATUS.md), [recovery receipt](OPUS_RECOVERY.md) and the current security acceptance matrix.
+Updated 2026-10-25. This checkpoint supersedes older current-state paragraphs in delivery history. The full end-to-end workload-mTLS mandate is active. A question, review, document or commit does not pause it. Read [the master prompt](CODEX_MASTER_PROMPT.md), [delivery status](../agile/DELIVERY_STATUS.md), [recovery receipt](OPUS_RECOVERY.md) and the security acceptance matrix.
 
-## Current request
+## Immediate local activation mandate
 
-Complete native workload mTLS through the enhanced Cilium ClusterMesh path on both `cmtc-a` and `cmtc-b`. Test it immediately with real positive, plaintext-negative, policy-negative and recovery traffic. Fulfill the defined metrics through their actual component owners. The user permits Opus to improve instrumentation from first principles, with documented rationale and contract changes. The latest steering assigns ALL implementation code to Opus. Codex owns coordination, independent review, tests and evidence. Claude Fable5.1 High is requested for central complex design; its provider refused the probe and automatically substituted Opus4.8. That response is rejected as Fable work. The user explicitly forbids Opus4.8; no development was assigned to it.
+The user now explicitly directs Opus to **rebuild the current code, deploy it and enable mTLS now** on the owned lab. Codex queued the full mandate to the active Max implementation owner. Prioritize current-source host-Podman rebuild, exact-image deployment, concrete ztunnel activation and immediate real traffic; do not wait for optional reviews, dashboards, quota reset or CI. Keep one compiler/live writer and preserve the restricted Admin/socket and signer boundaries. Report actual positive/denied/failed paths; activation is not a Protected claim. Finish the requested root resume-opus.md as a concise checkpoint. The Claude quota has not been reached. No external publishing was requested.
 
-All agents use **edit → run against cmtc-a/cmtc-b → test traffic, failures and recovery → package the verified change**. Preserve existing labs, signers, applications and security gates. The latest AGENTS instruction defers CI and pushes that trigger CI, plus workflow dispatch and registry publication. Qualified local commits are allowed.
+## Mandate and ownership
 
-## Grok recommendation review and requested XHigh handoff
+Complete workload mTLS through our enhanced Cilium ClusterMesh path on both `cmtc-a` and `cmtc-b`. Use **edit → run against cmtc-a/cmtc-b → test traffic, failures and recovery → package the verified change**. All implementation belongs to **Opus5.5**. Codex coordinates, maintains documentation and independently reviews source and evidence. Grok supplies adversarial proposals. Preserve one compiler and one live writer.
 
-Codex completed the [historical recommendation comparison](../research/cursor/GROK_RECOMMENDATION_REVIEW.md) against immutable Cilium37d5fce0f7. The original Grok report audited d040a4bc9a and remains unchanged. Retained red/green evidence supports the node-watch, zero-address and serialized-publication fixes. Temporary quarantine-write recovery is tested; permanent kernel-update failure remains open. CT_RELATED traces to selected ICMP control traffic, not a demonstrated TCP payload bypass. Preserve PMTU and qualify the actual classifier. The [open-gate review](../research/cursor/GROK_CURRENT_OPEN_GATES_REVIEW.md) includes UNRUN proposals and tests. The proposed kernel lease bounds a stale interval; it does not guarantee immediate denial or implement a complete renewal owner.
+Opus5.5 Max owns the isolated Cilium, ztunnel, SPIRE and CMTC source, plus registrar, DaemonSet, metrics and dashboard implementation. Read `review/OWNERSHIP.json`, `BUILD_SLOT.json` and `LAB_OWNER.json` under `/private/tmp/cmtc-opus-final-20261025/`. Primary compilation and live writes remain disabled. Normal permission review remains enabled. Agent/Server Admin DAC migration is **not approved**. Use the separate restricted DelegatedIdentity-only listener. Preserve signers, root keys, unrelated applications and security gates.
 
-The completed package was sent to a separate **Opus5.5 XHigh read-only review**, session `c0e51864-c536-41eb-8839-a34043c36e6e`. Actual init and assistant metadata report `claude-opus-5-5`; the recorded CLI effort is xhigh. Tools are Read/Glob/Grep only, with a no-substitution guard. Files: `/private/tmp/cmtc-grok-followup-20261025/opus-xhigh-{prompt.txt,command.json,session.jsonl}`. The ongoing Opus5.5 Max session retains the only implementation/compiler/live lease and received a non-interrupting queued summary. Deliver the XHigh result to that owner at its next boundary; independently validate accepted changes. No result is accepted yet.
+The latest AGENTS instruction defers pushes that trigger CI, manual workflow dispatch and registry publication. Qualified local commits are allowed. Do not substitute Opus4.8 or another model. The refused Fable probe's substituted response is not used.
 
-Primary's latest API read now finds both Cilium DaemonSets at `dev-overlay-51170b1239`,2 ready each, and both ClusterMesh API-server Deployments at `dev-overlay-51170b1239`,1 ready each. See [runtime receipt](../evidence/grok-recommendation-review/runtime-receipt.json). The owner reports36/36 plaintext connectivity after each API-server rollout. This update does not qualify mTLS or the full release. Ztunnel is still off in the owner's checkpoint. Next: complete and qualify membership/source-egress/ADS client-authentication boundaries, activate ztunnel locally, then positive/negative/recovery traffic and real telemetry. Grafana changes remain undelivered.
+## Claude session window
 
-## Active external agents
+The user reports the current Claude allowance will end soon and resume at **11:00 a.m. Central**. This is an expected reset, not verified quota state. The user explicitly clarifies that the limit has **not** been reached; continue work now. The checkpoint request is not a pause or instruction to wait until11. Codex queued a request for a durable source/live/test/next-command checkpoint at the next safe boundary. Preserve active tools and do not interrupt a compiler or rollout. On an actual rate limit, retain the exact error/reset time, avoid repeated retries or model substitution, and continue independent read-only review/documentation. The user has not paused the CMTC mandate. No new scheduled automation was created.
 
-Claude Code uses canonical `claude-opus-5-5`, effort `max`, normal automatic permission review, session `c03d57db-e2bf-4848-ab73-3f2696a27d2f`.
+## Active implementation session
 
-- Current runner: `/private/tmp/cmtc-claude-opus-20261025/run-live-max-owner.py`.
-- Exec session: `79321`; read `live-max-owner-pid` and verify the actual process.
+- CLI model: `claude-opus-5-5`; actual effort argument: `max`.
+- Session: `c03d57db-e2bf-4848-ab73-3f2696a27d2f`.
+- Runner: `/private/tmp/cmtc-claude-opus-20261025/run-live-max-owner.py`.
+- Exec session: `79321`. Read `live-max-owner-pid` and verify the process before steering.
 - Transcript: `live-max-owner-session.jsonl`; errors: `live-max-owner-stderr.log`; eventual completion: `live-max-owner-exit`.
-- This runner uses documented streamed input. Append one complete user-message JSON record to `live-max-input-queue.jsonl` to deliver steering without interrupting tests. `live-max-input-offset` records sent bytes. Check the replay and Opus acknowledgment before claiming delivery. Never start a concurrent session writer.
-- Latest message: `USER_OPUS_MAX.md`, followed by the max continuation in the input queue. Actual process arguments confirm `--model claude-opus-5-5 --effort max`; CLI/API metadata confirms Opus5.5 and Opus acknowledged max-effort sole implementation ownership. Use max for central changes across layers.
-- The previous live-owner runner exited0 after an idle tool boundary: zero pending tool calls and zero active owned compiler containers. Preserve its transcript; no in-progress rollout was interrupted.
-- `live-max-owner-model-block.json`, if present, records that the guard stopped a provider model substitution. Do not accept a fallback as requested-model work.
-- Older `run-concurrency-registrar.py` completed exit0 after Go3/4 test containers ended. It is not active. Older logs remain diagnostics/evidence.
-- Full registrar handoff: `review/REGISTRAR_METRICS_PRIMARY_TESTED.patch` and `REGISTRAR_METRICS_TEST_RESULT.json`. Opus reviewed and committed the seven source files at primary18c47cc, hash-matched to27 top-level/58 total Linux ARM64 race passes plus vet0. No registrar image or live scrape is qualified yet. Primary makes no implementation edits.
+- Append one complete user-message JSON record to `live-max-input-queue.jsonl` to steer without interrupting tools. `live-max-input-offset` records forwarded bytes. Verify replay and acknowledgment. Do not start another implementation writer.
+- `live-max-owner-model-block.json`, if present, records a stopped model substitution. Do not accept fallback output as requested-model work.
+- Current working status: `/private/tmp/cmtc-opus-final-20261025/review/STATUS-CLAUDE.md`. Raw logs and lab receipts: `/private/tmp/cmtc-claude-opus-20261025/`.
 
-Cursor Grok's read-only remediation completed with exit0. Full report: `/private/tmp/cmtc-opus-final-20261025/review/GROK_REMEDIATION.md`. It contains complete production snippets, technical rationale and negative/recovery tests against Cilium `dbd2d32`. These proposals are not executed evidence. Opus is adapting the quarantine failure fix. Reuse the existing retained-node fix; do not reapply stale address-only binding code.
+## Requested XHigh review
 
-The Codex read-only native bootstrap proposal is `review/NATIVE_MESH_BOOTSTRAP_NEXT.md`, with four complete UNRUN Go files under `review/native-mesh-proposal/`. Opus has received them. The read-only registrar proposal is complete at `review/REGISTRAR_INSTRUMENTATION_PROPOSAL.md`. Primary applied/reviewed it before the ownership transfer and ran actual Linux race/vet. See [registrar metric evidence](../evidence/registrar-metrics/README.md). Opus now owns that source.
+Codex completed the [Grok recommendation comparison](../research/cursor/GROK_RECOMMENDATION_REVIEW.md) and [open-gate review](../research/cursor/GROK_CURRENT_OPEN_GATES_REVIEW.md). The original report audits d040a4bc9a. The comparison freezes37d5fce0f7; it does not qualify newer membership changes.
 
-## Authorship in reports
+The full package was sent to a separate **Opus5.5 XHigh read-only reviewer**, session `c0e51864-c536-41eb-8839-a34043c36e6e`. Actual init and assistant messages report `claude-opus-5-5`; its CLI argument is `--effort xhigh`. It has only Read/Glob/Grep and a model-substitution guard. Main Max retains all implementation/compiler/live ownership.
 
-The user requires explicit authorship attribution. Name our added features as **CMTC-authored additions or modifications in our ephico2real2 forks**. Identify unchanged upstream components and reused APIs separately. Keep the configured human Git author and existing upstream notices. Report Opus/Codex/Grok assistance separately. Include source and qualification status; authorship is not runtime protection evidence. See the delivery record's authorship table.
+Review files: `/private/tmp/cmtc-grok-followup-20261025/opus-xhigh-{prompt.txt,command.json,session.jsonl,stderr.log}`. Read `opus-xhigh-exit` or `opus-xhigh-model-block.json` when present. The model receipt is in [review evidence](../evidence/grok-recommendation-review/opus-xhigh-receipt.json). This review is still in progress. On completion, independently inspect the answer, preserve the full report, and send accepted recommendations, full code and tests to the Max owner at a safe boundary. All new proposal code is UNRUN.
 
-## Ownership
+## Source checkpoints
 
-All four isolated trees are under `/private/tmp/cmtc-opus-final-20261025/`, branch `feat/opus-mesh-mtls-finalization`.
+All isolated trees are under `/private/tmp/cmtc-opus-final-20261025/`, branch `feat/opus-mesh-mtls-finalization`. Verify actual HEAD and dirty state before any work. Latest primary read found the Cilium and isolated CMTC trees clean.
 
-| Area | Current owner |
-| --- | --- |
-| Isolated Cilium/ztunnel implementation | Opus |
-| Scoped SPIRE separate DelegatedIdentity listener and matching fixture | Opus |
-| Compiler and live lab writes | Opus |
-| All CMTC/registrar/DaemonSet/metric/dashboard implementation | Opus |
-| Coordination, docs, independent review, tests and evidence | Codex primary |
-| Grok | Read-only adversarial proposals; completed turn |
+| Source | Commit | Scope |
+| --- | --- | --- |
+| Cilium | `51170b123988cda86aaea1bef3ccd95d221b8bbb` | Dedicated membership etcd transport and scoped server users. Builds on remote projection92ce2b90d3, policy/releaseada009a5f0 and capability guard37d5fce0f7. |
+| Cilium admission | `a74f13a688` | Zero-address rejection, retry, publication serialization and retirement. |
+| SPIRE | `0f8fe4d6812c388be9ffd7b6d160e67b59163d95` | Separate DelegatedIdentity-only listener. |
+| Ztunnel | `35a6c9403eb5c00b1b79aafe2851f423cd195540` | Preserved native proxy implementation. |
+| Root CMTC registrar | `18c47cc` | Source-tested metric instrumentation; no live scrape yet. |
 
-Read `review/OWNERSHIP.json`, `BUILD_SLOT.json` and `LAB_OWNER.json`. Their latest handoff fields supersede old ownership text. Coordinate one compiler and one live writer. Primary may inspect live state read-only. Do not overlap source edits.
+The four original recovery commits and backup are recorded in [OPUS_RECOVERY](OPUS_RECOVERY.md). Preserve them, old branches and failure logs. Root CMTC branch is `feat/end-to-end-enforcement`; inspect actual HEAD. Review documents and evidence were locally committed at1e62673 andee8e8df before this checkpoint update. No push occurred.
 
-The broader Agent/Server Admin DAC migration remains unapproved after automatic-review rejection. Keep existing Admin directory ownership, modes and mounts unchanged. The accepted scoped fix is a separate DelegatedIdentity-only listener. Add no DAC-bypass capability. The user asked about Admin access, then explicitly clarified that the question did not change the direction.
+## Current runtime
 
-## Source and evidence
-
-The four recovery commits preserve all earlier work:
-
-- Cilium `a7ffbc8c85eeed89d7105704a643633c7d408118`.
-- Ztunnel `35a6c9403eb5c00b1b79aafe2851f423cd195540`.
-- SPIRE `ff52bdcd8d05f85f893221b604c3113cd47d57ed`.
-- Isolated CMTC `7a133dc7449173b3e1a15dc6e3b32037ef2b1b91`.
-
-Verified backup: `artifacts/recovery/opus-20261025T113157Z/`. Read [OPUS_RECOVERY](OPUS_RECOVERY.md) before recovery actions. Preserve source, failed logs and old branches.
-
-Newer Cilium commits: `d040a4bc9a` adds native node-name binding and HBONE-only admission; `dbd2d32` fixes retained node-binding invalidation. The latter passes67 top-level/169 total race tests, zero failures/skips, plus vet. It is not deployed. Evidence is in [native-node-discovery](../evidence/native-node-discovery/README.md).
-
-The full C2 profile passes120 top-level/345 total race cases, with21 pre-existing integration skips, plus vet, BPF build permutations, generated-config consistency and57 kernel leaf cases. Never count the skips as executed integration proof.
-
-Ztunnel35a6 source qualification passes533 library+20 direct+30 namespace+2 diagnostic tests, zero failures/ignored, formatting and strict Clippy. It includes real TLS collectors and source-witness cancellation. No new proxy image is live.
-
-SPIRE separate-listener run2 passes30 top-level/317 total race tests, zero failures/skips, Linux/Windows/Darwin vet and agent build. Logs: `/private/tmp/cmtc-claude-opus-20261025/logs/spire-delegated-2/`. This source is not yet deployed. Preserve run1's service-name assertion failure.
-
-Root CMTC branch is `feat/end-to-end-enforcement`; last checkpoint HEAD `bf8abab` before the current local increment. Registrar source5ce3db3 passes16 top-level/28 subtests with race and vet; exact-image/live qualification remains open. Check actual HEAD and dirty files before edits.
-
-## Runtime
-
-Use kubeconfig `/private/tmp/cmtc-a-b-20261024.kubeconfig` with explicit `kind-cmtc-a` and `kind-cmtc-b`. Never print its contents.
+Use kubeconfig `/private/tmp/cmtc-a-b-20261024.kubeconfig`, with explicit `kind-cmtc-a` and `kind-cmtc-b`. Never print its contents.
 
 - A kube-system UID: `bb7182c7-de95-4e70-816a-a1400d755794`.
 - B kube-system UID: `f2687af6-bd96-45a3-98a2-d1397a3ee244`.
-- Colima `cmtc-cilium`: Ubuntu ARM64,8CPU/16GiB/90GiB; preserve provider/apps.
-- A now runs C3 development overlay `localhost/cilium:dev-overlay-a74f13a688` on both nodes; the canary logs verify both running agent revisions and the actual imported configuration prefixfc4a5a342b4f. The post-canary36-path baseline passes. Live loaded-program inspection remains incomplete after a parser error; no program conclusion follows from that failed probe.
-- B runs the earlier d040 development overlay on both nodes, as later Opus version verification corrected. C3 is not yet qualified there. The original A canary attempt1 was a caught no-op; preserve its diagnostics. Agent overlays do not rebuild the operator/ClusterMesh server/chart.
-- KVStoreMesh is ON. Ztunnel proxies, WireGuard and IPsec remain OFF. No workload-mTLS or Protected claim.
-- Post-canary36-path traffic and exact loaded-BPF checks remain open unless newer logs prove completion.
+- Colima `cmtc-cilium`: Ubuntu ARM64,8CPU/16GiB/90GiB. Preserve this runtime and existing applications.
+- Primary API read: both Cilium DaemonSets use `localhost/cilium:dev-overlay-51170b1239`,2 ready each. Both ClusterMesh API-server Deployments use `localhost/cilium-clustermesh-apiserver:dev-overlay-51170b1239`,1 ready each. [Read receipt](../evidence/grok-recommendation-review/runtime-receipt.json). These are development overlays, not a complete Cilium release.
+- The owner records36/36 plaintext HTTP connectivity after each API-server rollout. Opus also records agent canary endpoint/program checks; inspect actual logs before claiming their acceptance.
+- SPIRE delegated agents0f8fe4d6 run on all four nodes. Both actual credential/rejection/withdrawal/restart matrices pass12/12. Existing Admin DAC is unchanged.
+- KVStoreMesh is ON. The latest owner checkpoint has ztunnel, WireGuard and IPsec OFF. No workload-mTLS or Protected claim.
+- Issuer-profile approval and SPIRE cluster CAs expire `2026-10-26T03:55:11Z`; output leases are at most30s. Preserve private state under `~/.local/share/cmtc-issuer-profile/live-a-b/`. Never reset floors or read protected root keys.
 
-Public issuer-profile approval expires `2026-10-26T03:55:11Z`; leases are at most30s. Preserve the private ledger under `~/.local/share/cmtc-issuer-profile/live-a-b/`. Never read or publish protected root keys.
+## Evidence and open failures
 
-## Metrics and dashboards
+- Node binding:67 top-level/169 total race passes, zero skips/failures, vet0. Old-source semantic regression fails.
+- C3 kernel:8 objects/72 leaf cases pass. Old-source zero-address failures and delayed-write red reproducer are retained. Corrected endpoint Go runs pass167/62 top-level with21 existing integration skips. Do not count wrapper exit0 over the earlier package panic as a pass.
+- Broader37d source run:2,853 test passes/681 top-level,52 skips, race0/vet0. Skipped privileged cases are unqualified.
+- SPIRE run3:321 passes/33 top-level, zero skip/fail, cross-platform vet/build0. Preserve run1 assertion failure and the independently reproduced set-group-ID defect fixed before rollout.
+- Registrar:27 top-level/58 total Linux ARM64 race passes, zero skip/fail, vet0. No image/live-scrape qualification.
+- R6 focused suites:280 passes/144 top-level with40 skips, then176/94 top-level withzero skips; race/vet0. Real etcd authorization and lease tests ran. The broader scripts still fail under race in runs13/14. Run15 passes16 cases without race and does not close that failure. [Independent receipt](../evidence/grok-recommendation-review/r6-test-receipt.json). Require a real clean-baseline reproduction or fix/race rerun before accepting an unchanged-upstream explanation.
 
-Primary contracts: `observability/metrics.json` and `capabilities.json`. Older isolated dashboard drafts are not authoritative. Both consolidated dashboards retain all nine original domains.
+## First unfinished delivery dependencies
 
-The live query at12:38:49Z returns205 CMTC names/1658series and six up CMTC targets. The full inventory groups181families. There are no ztunnel targets or native TLS series. The new contract maps native source-tested TLS families and selects destination once for handshakes, durations and active sessions. Identity failures count local verifier events. Live status stays planned. Twenty dashboard tests, reproducibility, static validation and real query validation pass. Evidence: [metrics instrumentation](../evidence/metrics-instrumentation/README.md). Source-tested is separate from deployed/collected/protected.
+1. Complete and qualify R6 agent membership credentials, origin readers and real publication. Do not point the general agent KVStore at ClusterMesh etcd. Do not use Admin credentials or ephemeral manual roles.
+2. Close ADS client authentication: server-only loopback TLS allows a local host-network process to open a newer stream and supply ACKs. Bind release evidence to the actual authorized proxy. Keep this open until tested.
+3. Deliver realized source-egress policy for cross-node and cross-cluster callers. Current effective ALLOW covers captured same-node sources only; other sources fail closed. Cluster-shared writer credentials also leave per-node provenance open.
+4. Activate the exact qualified ztunnel image locally. First qualify a limited same-node path, then both clusters and cross-node/cross-cluster paths. Preserve all unmet security gates.
+5. Test positives, plaintext/identity/policy negatives, stale/disconnected/NACKed state, restart, withdrawal and recovery. Cover Global Service and Pod IP with80/8080/31337, both directions. Record authenticated peers, effective policy, packets and exact image versions.
+6. Close kernel/lifecycle gates: permanent update failure, initial capture/restore, endpoint-ID/IP reuse, old programs, probe/platform exceptions and original-tuple policy. The proposed kernel lease only bounds stale forwarding; it is not implemented or an approved SLA. CT_RELATED traces to selected ICMP errors, not demonstrated TCP payload bypass. Preserve PMTU and qualify real packet classification.
+7. Fulfill live telemetry and update Grafana under representative load. Commit qualified increments and continue.
 
-Grafana: http://127.0.0.1:13000. Preserve existing application/Prometheus forwards and task-owned SSH capture forwards (old exec23400 guest33000→Mac13000,38080→Mac18081).
+## Metrics, images and build environment
 
-## Build pins
+The two consolidated dashboards retain all nine historical domains. Contracts are in root `observability/metrics.json` and `capabilities.json`. Source-tested collectors are separate from deployed/collected/protected state. Grafana at http://127.0.0.1:13000 remains unchanged in the last independent query: both dashboards version4, six CMTC Observe targets, no native TLS/registrar series or ztunnel targets. Do not insert healthy zeros for absent exporters. Opus owns instrumentation and dashboard implementation.
 
-Use host Podman connection `cmtc-ubuntu-build`, explicit Linux ARM64 and bounded2CPU/4GiB.
+The ztunnel rebuild now reports Clean at35a6c94; owner records configae3844096b58 and binary hash5a348cdb, using a refreshed private index. The earlier dce7654 image reporting Modified is superseded. Independently verify full provenance and running digest before acceptance; it is not yet live.
 
-- Go/clang: `f0093acd3f0ab3a1966ebe348eaa3c78ac706f94839f52209ae7120508cf2529`.
+Use host Podman connection `cmtc-ubuntu-build`, explicit Linux ARM64 and bounded2CPU/4GiB. Preserve default connections and shared resources. Transfer archives into the existing Colima/kind runtime; verify loaded configuration IDs, architecture and actual running binary revisions.
+
+- Go/clang image: `f0093acd3f0ab3a1966ebe348eaa3c78ac706f94839f52209ae7120508cf2529`.
 - Rust namespace image: `def7f2e8dac02fbe34556331944cd766aa7f2ea9b90784f083634d52b59edb0f`.
-- Go cache `/private/tmp/cilium-ztunnel-linux-go-cache`; modules `/private/tmp/cmtc-spire-go-modules`.
-- Private rootful socket `/tmp/cmtc-observer-rootful/podman.sock`; preserve active tests. No global prune/sysctl changes.
+- Go cache: `/private/tmp/cilium-ztunnel-linux-go-cache`; modules: `/private/tmp/cmtc-spire-go-modules`.
+- Private rootful socket: `/tmp/cmtc-observer-rootful/podman.sock`. Preserve active tests. No global prune/sysctl changes.
 
-## First unfinished dependency
+## Authorship
 
-Review Opus's current source and actual test results. Finish zero-address and quarantine-write failures, native authority/remote Address/policy/release integration and the separate delegated listener. Recheck initial capture, restart, old programs and original-tuple authorization. Bounded regeneration cannot prove immediate denial if every kernel write fails. Keep that gap explicit.
-
-Use both clusters, enable ztunnel when those gates are real, and immediately test local+A→B+B→A, Global Service/direct Pod IP and80/8080/31337. Include bad identity, unauthorized policy, plaintext, stale/disconnected control state and recovery. Record peer identity, effective policy, packets, exact image/version and real metrics. Finish with host Podman packaging and exact-image rechecks. Update this checkpoint from actual receipts and continue the mandate.
+Name our work as **CMTC-authored additions or modifications in our ephico2real2 forks**. Identify unchanged upstream components and reused APIs separately. Preserve the human Git author and upstream notices. Describe Opus/Codex/Grok assistance separately. Authorship, source tests, readiness and ACKs do not establish working workload mTLS.
