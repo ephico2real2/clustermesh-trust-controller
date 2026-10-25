@@ -1,5 +1,7 @@
 # Local CMTC eBPF DaemonSet and telemetry qualification
 
+For a plain-language explanation, read [the DaemonSet implementation guide](CMTC_DAEMONSET_IMPLEMENTATION.md).
+
 The opt-in CMTC image contains the compiled eBPF object and its Go loader. The
 loader validates the frozen workload/interface identity and native Cilium chain
 before attachment. The ordinary Observe node agent stays unprivileged. This
