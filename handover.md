@@ -1,6 +1,104 @@
 # CMTC engineering handover
 
-Checkpoint: **2026-10-25, approximately 16:40 UTC / 11:40 America/Chicago**.
+## Update 2026-10-25 21:30 UTC (Claude Code session b744973a)
+
+Supersedes the 17:50 update below where they differ.
+
+**Running in both clusters** (all four nodes, verified by image ID):
+Cilium agent `dev-overlay-bc2c9639c5` without `hostPID`; ztunnel
+`localhost/cmtc-ztunnel@sha256:b27235a4b7ec…` (`a3afcb7`, config
+`83bca098a88c…`); CMTC controller and node agent `current-46d01e91ce`;
+operator and ClusterMesh API server `dev-overlay-0ed63bf906`.
+
+**Fixed since 17:50 and deployed:**
+
+| Fork | Commit | Change |
+| --- | --- | --- |
+| Cilium | `58f511dc4f`, `0732ac1bb7` | The membership registry alone owns the current ADS stream, and a stream's generation ends when it closes |
+| Cilium | `091676e790` | One admission at a time per Pod UID |
+| Cilium | `0ed63bf906` | ZDS peer authorized by UID 0 only; the agent no longer needs `hostPID` |
+| Cilium | `bc2c9639c5` | A refused (NACKed) bound ADD is not uncertainty |
+| ztunnel | `a3afcb7` | A snapshot omission completes the bound owner it drains |
+| CMTC | `46d01e9` | Issuer-profile publication outlives a leader handover |
+| CMTC | `6c31b8d` | Colima guest clock has a single owner |
+
+The J2 stranding (workloads quarantined forever after an agent restart) is
+cleared on the live cluster. Record:
+[zds-ownership-rollout-20261025](docs/evidence/zds-ownership-rollout-20261025/README.md).
+
+**Mission blocker (open, next work).** Same-node mTLS works (18/18 per
+cluster); unregistered clients are refused. Cross-node, cross-cluster and
+Global Service requests are denied by authorization after a verified HBONE
+handshake: `effectivePolicyOwner.reconcile()` compiles each destination's plan
+from local sources only. Remote source-egress delivery must be designed and
+built.
+
+**Other open items.** The source membership lock is freed by 25 s lease
+expiry, not released (agent grace period 1 s). The OB3 review of
+`bc2c9639c5`/`a3afcb7` was still running at rollout.
+
+## Update 2026-10-25 17:50 UTC (Claude Code session b744973a)
+
+This section supersedes the open-failure list below where they differ. The
+16:40 record that follows is kept unchanged as history.
+
+**Leases.** Compiler and live writer are held by Claude Code session
+b744973a (PID 52816), claimed 17:20:30Z in
+`/private/tmp/cmtc-opus-final-20261025/review/{BUILD_SLOT,LAB_OWNER}.json`.
+The released handoff state is kept beside them as `*.handoff-released-*`.
+
+**Root cause of the enrolled-request failures (demonstrated).** The two
+halves of the native xDS protocol contradicted each other. The ztunnel strict
+client accepted one initial snapshot per type, then tore the session down on
+any later Address/Authorization delta (`src/xds/client.rs`, from `8106c02`).
+The Cilium control plane publishes the compiled effective ALLOW and refreshed
+Address evidence as deltas on the same stream, and releases quarantine only
+from ACKs on that stream (`pkg/ztunnel/xds/effective_policy.go`). Each forced
+reconnect began a new ADS generation and discarded those ACKs. Release was
+unreachable; every endpoint change drained every connection.
+
+**Fixed and deployed.**
+
+| Fork | Commit | Change | Verification |
+| --- | --- | --- | --- |
+| ztunnel | `a75d885` | Strict sessions apply later Address/Authorization deltas in-session; NACK still revokes; reconnect backoff restarts after a complete snapshot | Linux ARM64 privileged: new tests pass; full lib 534/534 in one of three runs, 1-2 rotating failures in untouched timing tests that pass alone; fmt, clippy `-D warnings` clean |
+| ztunnel image | `localhost/cmtc-ztunnel:native-a75d885ac9` | Config `sha256:7b8e2066e129…`, OCI manifest `sha256:fbe72eea…`, binary `051f2fb4…` | Same digest on all four nodes; all four proxies replaced one node at a time with exact delegate SPIRE entries; zero warn/error lines after start; ledger `review/ztunnel-rollout-a75d885.jsonl` |
+| Cilium | `ef2c78cdc4` (source only, not deployed) | Policy-ownership observation takes the shared lock; concurrent regenerations no longer fail each other with "native ZDS ownership is busy" | `./pkg/ztunnel/zds` 141/141 race pass, 0 skip, vet clean |
+
+After the ztunnel deployment the proxy accepted post-initial Address and
+Authorization deltas (verified in its config dump). The first cmtc-a same-node
+probe changed from curl 7 to an HBONE connection with verified identities on
+both ends, then `No route to host`: the destination is still in Cilium
+datapath quarantine. No CMTC eBPF prototype is deployed or loaded.
+
+**Cilium lifecycle defects now being fixed (demonstrated with file:line).**
+
+1. `pkg/ztunnel/membership/source_publisher.go:32,407-418`: the 5 s source
+   membership refresh re-runs full CNI admission for every captured endpoint.
+   That re-quarantines the endpoint and sends a new ZDS ADD every 5 s, so the
+   release candidate never stays current.
+2. `pkg/endpoint/ztunnel_policy_transition.go:105-150` with
+   `pkg/ztunnel/admission/policy_transition.go:29-126`: any desired-policy or
+   revision change on a captured Required endpoint starts a terminal drain;
+   the incarnation can never be admitted again. A failed ownership observation
+   also fences it terminally.
+3. `pkg/ztunnel/zds`: after a ztunnel restart, retiring a deleted endpoint
+   fails with "drain request does not belong to this proxy execution", keeps
+   capture/uncertainty, and closes the ZDS connection.
+4. `pkg/ztunnel/reconciler/reconciler.go:154-184`: one failing endpoint makes
+   the namespace reconcile retry re-admit every endpoint in the namespace.
+
+The cmtc-a fixture Pods were replaced (new UIDs, new exact SPIRE entries,
+superseded entries deleted by exact ID, ledgers archived as
+`cmtc-a-entries.superseded-*.json`) with
+`review/live_mtls_fixture_runner.py replace`. cmtc-b still has the old,
+terminally closed incarnations.
+
+hostPID remains the explicitly approved interim requirement. Replacing it with
+`SO_PEERPIDFD` peer verification (kernel 6.8 here supports it) is a tracked
+follow-up that needs restart/drain qualification.
+
+Checkpoint (history): **2026-10-25, approximately 16:40 UTC / 11:40 America/Chicago**.
 Read [resume.md](resume.md) for the next actions. This document supersedes older
 statements that ztunnel is disabled. The end-to-end security work is unfinished.
 

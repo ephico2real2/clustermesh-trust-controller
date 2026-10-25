@@ -63,7 +63,7 @@ operations, not by `up.sh`. The loop is:
 3. Stream it into every node with `ctr -n k8s.io images import`.
 4. Check that every node holds the exact built image ID.
 5. Change the DaemonSet images. Both use `updateStrategy: OnDelete`, so change
-   only the image fields and keep `hostPID`.
+   only the image fields. ztunnel keeps `hostPID: true`; the Cilium agent has none.
 6. Restart one node at a time, deleting each Pod with a UID precondition.
 
 The scripts that did this on 2026-10-25 are kept in
@@ -80,7 +80,8 @@ Read the source pins and ownership guards in each one before adapting it.
 |---|---|---|
 | 4.1 | Build: `build_agent_overlay.sh`, `build_ztunnel_image.sh` (each checks the build lease and needs a clean tree) | `--version` names the source commit. |
 | 4.2 | Import the image into all four nodes | `crictl inspecti` on every node returns the Podman image ID. |
-| 4.3 | Patch the DaemonSet images with `test` operations on the old image and on `hostPID: true` | Before and after differ only in images. |
+| 4.2a | ztunnel only: `pin_digest.py <tag>` names the imported manifest `repo@sha256:…` on every node (the DaemonSet pins ztunnel by digest) | Every node reports the same digest, its manifest hashes to it and its config is the Podman image ID. |
+| 4.3 | Patch the DaemonSet images with `test` operations on the old image | Before and after differ only in images (and, once, in the agent's dropped `hostPID`). |
 | 4.4 | `restart_agent.py <cluster> <node>`, one node at a time | The new Pod is Ready and its `imageID` is the built ID. Restored endpoints are quarantined, then re-admitted (`Re-admitted restored Required endpoint`). |
 
 Loading an image does not deploy it, and a Ready Pod does not mean mTLS. Only

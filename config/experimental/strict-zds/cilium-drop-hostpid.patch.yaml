@@ -1,0 +1,7 @@
+# Merge patch for the current CMTC strict ZDS profile; not a standalone resource.
+# Removes the interim agent hostPID: since Cilium 0ed63bf906 the ZDS peer check
+# needs only the proxy's UID. See INSTALLATION_REQUIREMENTS.md.
+spec:
+  template:
+    spec:
+      hostPID: null
