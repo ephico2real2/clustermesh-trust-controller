@@ -1,0 +1,251 @@
+{
+  "cil-go-11": {
+    "testEvents": {
+      "skip": 40,
+      "top_skip": 40,
+      "pass": 280,
+      "top_pass": 144
+    },
+    "failed": [],
+    "dataRacePackages": [],
+    "selectedPasses": [
+      "TestLeaseManager",
+      "TestLeaseThatExpiresImmediately",
+      "TestLeaseManagerParallel",
+      "TestLeaseManagerReleasePrefix",
+      "TestLeaseManagerCancelIfExpired",
+      "TestLeaseManagerKeyHasLease",
+      "TestLeaseTTLWriterForChecksSelectedBackendCapability",
+      "TestLeaseTTLWriteHeadHasSeparateStableNamespace",
+      "TestLeaseTTLGrantRequiresExactBound/missing",
+      "TestLeaseTTLGrantRequiresExactBound/missing-id",
+      "TestLeaseTTLGrantRequiresExactBound/shorter",
+      "TestLeaseTTLGrantRequiresExactBound/longer",
+      "TestLeaseTTLGrantRequiresExactBound/exact",
+      "TestLeaseTTLGrantRequiresExactBound",
+      "TestLocalLock",
+      "TestLocalLockCancel",
+      "TestWorkqueueSyncStoreWithoutLease",
+      "TestClusterMeshEtcdInitZtunnelMembershipUsers",
+      "TestSourcePublisherPublishesRevalidatedCompleteSnapshotWithShortLease",
+      "TestSourcePublisherPreservesPreviousLeaseWhenWriteFails",
+      "TestSourcePublisherShutdownPublishesRestrictiveLeaseWhileStillHoldingLock",
+      "TestSourcePublisherPositiveWriteDoesNotHoldRegistryLockAndWithdrawsRace"
+    ],
+    "exits": {
+      "pkg-race.exit": "0",
+      "vet.exit": "0"
+    }
+  },
+  "cil-go-12": {
+    "testEvents": {
+      "pass": 176,
+      "top_pass": 94
+    },
+    "failed": [],
+    "dataRacePackages": [],
+    "selectedPasses": [
+      "TestLock",
+      "TestLeaseManager",
+      "TestLeaseThatExpiresImmediately",
+      "TestLeaseManagerParallel",
+      "TestLeaseManagerReleasePrefix",
+      "TestLeaseManagerCancelIfExpired",
+      "TestLeaseManagerKeyHasLease",
+      "TestWorkqueueSyncStoreWithoutLease",
+      "TestGetIfLocked",
+      "TestDeleteIfLocked",
+      "TestUpdateIfLocked",
+      "TestUpdateWithExplicitLeaseTTLIfLocked",
+      "TestUpdateIfDifferentIfLocked",
+      "TestCreateOnlyIfLocked",
+      "TestListPrefixIfLocked",
+      "TestEtcdRateLimiter/with_QPS=100/GetIfLocked",
+      "TestEtcdRateLimiter/with_QPS=100/ListPrefixIfLocked",
+      "TestEtcdRateLimiter/with_QPS=100/UpdateIfDifferentIfLocked",
+      "TestEtcdRateLimiter/with_QPS=100/UpdateIfLocked",
+      "TestEtcdRateLimiter/with_QPS=100/CreateOnlyIfLocked",
+      "TestEtcdRateLimiter/with_QPS=100/DeleteIfLocked",
+      "TestSourcePublisherPublishesRevalidatedCompleteSnapshotWithShortLease",
+      "TestSourcePublisherPreservesPreviousLeaseWhenWriteFails",
+      "TestSourcePublisherShutdownPublishesRestrictiveLeaseWhileStillHoldingLock",
+      "TestSourcePublisherPositiveWriteDoesNotHoldRegistryLockAndWithdrawsRace",
+      "TestEtcdRateLimiter/with_QPS=4/GetIfLocked",
+      "TestEtcdRateLimiter/with_QPS=4/ListPrefixIfLocked",
+      "TestEtcdRateLimiter/with_QPS=4/UpdateIfDifferentIfLocked",
+      "TestEtcdRateLimiter/with_QPS=4/UpdateIfLocked",
+      "TestEtcdRateLimiter/with_QPS=4/CreateOnlyIfLocked",
+      "TestEtcdRateLimiter/with_QPS=4/DeleteIfLocked",
+      "TestLeaseTTLWriteHeadRejectsDelayedCommitAfterWithdrawalAndKeyRemoval",
+      "TestLeaseTTLWriteHeadRejectsOldOwnerAndExpiringHead",
+      "TestGetLockPath",
+      "TestLeaseTTLWriterForChecksSelectedBackendCapability",
+      "TestLeaseTTLWriteHeadHasSeparateStableNamespace",
+      "TestLeaseTTLGrantRequiresExactBound/missing",
+      "TestLeaseTTLGrantRequiresExactBound/missing-id",
+      "TestLeaseTTLGrantRequiresExactBound/shorter",
+      "TestLeaseTTLGrantRequiresExactBound/longer",
+      "TestLeaseTTLGrantRequiresExactBound/exact",
+      "TestLeaseTTLGrantRequiresExactBound",
+      "TestLocalLock",
+      "TestLocalLockCancel"
+    ],
+    "exits": {
+      "pkg-race.exit": "0",
+      "vet.exit": "0"
+    }
+  },
+  "cil-go-13": {
+    "testEvents": {
+      "pass": 779,
+      "top_pass": 342,
+      "skip": 31,
+      "top_skip": 31,
+      "fail": 16,
+      "top_fail": 1
+    },
+    "failed": [
+      {
+        "package": "github.com/cilium/cilium/clustermesh-apiserver/clustermesh",
+        "test": "TestScript/ciliumendpointslices.txtar"
+      },
+      {
+        "package": "github.com/cilium/cilium/clustermesh-apiserver/clustermesh",
+        "test": "TestScript/endpointslices.txtar"
+      },
+      {
+        "package": "github.com/cilium/cilium/clustermesh-apiserver/clustermesh",
+        "test": "TestScript/clusterconfig-serviceexport.txtar"
+      },
+      {
+        "package": "github.com/cilium/cilium/clustermesh-apiserver/clustermesh",
+        "test": "TestScript/clusterconfig.txtar"
+      },
+      {
+        "package": "github.com/cilium/cilium/clustermesh-apiserver/clustermesh",
+        "test": "TestScript/clusterconfig-endpointslices-only.txtar"
+      },
+      {
+        "package": "github.com/cilium/cilium/clustermesh-apiserver/clustermesh",
+        "test": "TestScript/globalnamespace-endpointslices.txtar"
+      },
+      {
+        "package": "github.com/cilium/cilium/clustermesh-apiserver/clustermesh",
+        "test": "TestScript/ciliumidentitites.txtar"
+      },
+      {
+        "package": "github.com/cilium/cilium/clustermesh-apiserver/clustermesh",
+        "test": "TestScript/ciliumnodes.txtar"
+      },
+      {
+        "package": "github.com/cilium/cilium/clustermesh-apiserver/clustermesh",
+        "test": "TestScript/ciliumendpoints.txtar"
+      },
+      {
+        "package": "github.com/cilium/cilium/clustermesh-apiserver/clustermesh",
+        "test": "TestScript/globalnamespace.txtar"
+      },
+      {
+        "package": "github.com/cilium/cilium/clustermesh-apiserver/clustermesh",
+        "test": "TestScript/services.txtar"
+      },
+      {
+        "package": "github.com/cilium/cilium/clustermesh-apiserver/clustermesh",
+        "test": "TestScript/serviceexports-crd-upgrade.txtar"
+      },
+      {
+        "package": "github.com/cilium/cilium/clustermesh-apiserver/clustermesh",
+        "test": "TestScript/globalnamespace-services.txtar"
+      },
+      {
+        "package": "github.com/cilium/cilium/clustermesh-apiserver/clustermesh",
+        "test": "TestScript/serviceexports.txtar"
+      },
+      {
+        "package": "github.com/cilium/cilium/clustermesh-apiserver/clustermesh",
+        "test": "TestScript/globalnamespace-serviceexports.txtar"
+      },
+      {
+        "package": "github.com/cilium/cilium/clustermesh-apiserver/clustermesh",
+        "test": "TestScript"
+      },
+      {
+        "package": "github.com/cilium/cilium/clustermesh-apiserver/clustermesh",
+        "test": null
+      }
+    ],
+    "dataRacePackages": [
+      "github.com/cilium/cilium/clustermesh-apiserver/clustermesh"
+    ],
+    "selectedPasses": [
+      "TestSourcePublisherPublishesRevalidatedCompleteSnapshotWithShortLease",
+      "TestSourcePublisherPreservesPreviousLeaseWhenWriteFails",
+      "TestSourcePublisherShutdownPublishesRestrictiveLeaseWhileStillHoldingLock",
+      "TestSourcePublisherPositiveWriteDoesNotHoldRegistryLockAndWithdrawsRace",
+      "TestRejectInvalidAPIBindingsAndLease/output-uid",
+      "TestRejectInvalidAPIBindingsAndLease/source-uid",
+      "TestRejectInvalidAPIBindingsAndLease/source-not-immutable",
+      "TestRejectInvalidAPIBindingsAndLease/source-rv",
+      "TestRejectInvalidAPIBindingsAndLease/output-label",
+      "TestRejectInvalidAPIBindingsAndLease/output-not-initialized",
+      "TestRejectInvalidAPIBindingsAndLease/lease-expiry",
+      "TestRejectInvalidAPIBindingsAndLease/future",
+      "TestRejectInvalidAPIBindingsAndLease/sequence-floor",
+      "TestRejectInvalidAPIBindingsAndLease/generation-floor",
+      "TestRejectInvalidAPIBindingsAndLease/independent-root-pin",
+      "TestRejectInvalidAPIBindingsAndLease",
+      "TestSourceReadyCallbackRunsOutsideJoinerLock",
+      "TestSourceLeaseReplayAcrossReconnectCannotExtendDeadline"
+    ],
+    "exits": {
+      "pkg-race.exit": "1",
+      "vet.exit": "0"
+    }
+  },
+  "cil-go-14": {
+    "testEvents": {
+      "fail": 3,
+      "top_fail": 1,
+      "pass": 13,
+      "top_pass": 0
+    },
+    "failed": [
+      {
+        "package": "github.com/cilium/cilium/clustermesh-apiserver/clustermesh",
+        "test": "TestScript/globalnamespace-endpointslices.txtar"
+      },
+      {
+        "package": "github.com/cilium/cilium/clustermesh-apiserver/clustermesh",
+        "test": "TestScript/ciliumendpoints.txtar"
+      },
+      {
+        "package": "github.com/cilium/cilium/clustermesh-apiserver/clustermesh",
+        "test": "TestScript"
+      },
+      {
+        "package": "github.com/cilium/cilium/clustermesh-apiserver/clustermesh",
+        "test": null
+      }
+    ],
+    "dataRacePackages": [
+      "github.com/cilium/cilium/clustermesh-apiserver/clustermesh"
+    ],
+    "selectedPasses": [],
+    "exits": {
+      "pkg-race.exit": "1",
+      "vet.exit": "0"
+    }
+  },
+  "cil-go-15": {
+    "testEvents": {
+      "pass": 16,
+      "top_pass": 1
+    },
+    "failed": [],
+    "dataRacePackages": [],
+    "selectedPasses": [],
+    "exits": {
+      "pkg-norace.exit": "0"
+    }
+  }
+}
