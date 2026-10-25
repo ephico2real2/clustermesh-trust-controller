@@ -2,9 +2,17 @@
 
 Updated 2026-10-25. Continue the full end-to-end local mandate through the existing agile stories. Complete side requests, then return to the first unfinished security dependency. The latest AGENTS instruction keeps CI, push-triggered runs and registry publication deferred until local qualification. Earlier pushes and CI results below are retained history. No new push or workflow dispatch is part of this checkpoint.
 
+## Latest ownership steering
+
+The user assigned **all implementation code to Opus**: Cilium, ztunnel, SPIRE, CMTC, registrar, DaemonSet, metrics and dashboard code. Codex retains coordination, independent review, testing and evidence. Grok remains an adversarial proposal reviewer. The user requested Claude Fable5.1 **High** for very complex central design. Its installed-CLI probe resolved claude-fable-5-1 but the provider refused it and automatically substituted claude-opus-4-8. That fallback is not Fable work. No central Fable assignment has executed; preserve the probe receipt and keep Opus5.5 active.
+
+The primary registrar instrumentation source passes27 top-level/58 total Linux ARM64 race tests, zero failures/skips, and vet0. [Full source and evidence](../evidence/registrar-metrics/README.md) are handed to Opus; seven source files are uncommitted and must be preserved. The compiler lease has returned to Opus. No registrar image/live scrape is qualified yet.
+
+Independent review supplied a deterministic delayed-successful-map-write repro and a complete serialization patch. Opus has read it and is adapting the fix. C3run1's BPF objects pass, but the endpoint Go package panicked in an incompletely initialized older test fixture; it is not a full Go pass. A later partial run was interrupted at handoff and remains diagnostic. Preserve both failures. Native regeneration already retries ordinary failed builds; do not infer missing production retry from a fixture that omits that handler.
+
 ## Current implementation checkpoint
 
-Opus5.5 XHigh has read the full Grok remediation, the native bootstrap proposal and the user's first-principles instrumentation mandate. It owns isolated Cilium/ztunnel source, the scoped SPIRE delegated listener, the compiler and live test writes. Current session `c03d57db-e2bf-4848-ab73-3f2696a27d2f` runs through `/private/tmp/cmtc-claude-opus-20261025/run-remediation-metrics.py`, exec73444. Read `remediation-metrics-pid`, transcript and eventual exit; older runners are complete.
+Opus5.5 XHigh has read the full Grok remediation, the native bootstrap proposal and the user's first-principles instrumentation mandate. It owns isolated Cilium/ztunnel source, the scoped SPIRE delegated listener, the compiler and live test writes. Current session `c03d57db-e2bf-4848-ab73-3f2696a27d2f` runs through `/private/tmp/cmtc-claude-opus-20261025/run-live-owner.py`, exec95252. Read `live-owner-pid`, transcript and eventual exit. Its streamed input queue permits future steering without test interruption. Actual metadata confirms Opus5.5 and it acknowledged all-source ownership. A wrapper guard stops provider model substitution. Older runners are complete.
 
 Grok's full 49,754-byte remediation is retained at `/private/tmp/cmtc-opus-final-20261025/review/GROK_REMEDIATION.md`. It includes production snippets and deterministic negative/recovery tests for the zero-address BPF collector and failed quarantine writes. Bounded retries and regeneration do not prove immediate packet denial when every map write fails. That safety interval remains open. The separate native projection/store proposal is UNRUN; real issuer, enrollment, policy and release owners must produce its authority.
 

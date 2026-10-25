@@ -4,7 +4,7 @@ Updated 2026-10-25. The full end-to-end workload-mTLS mandate is active. Questio
 
 ## Current request
 
-Complete native workload mTLS through the enhanced Cilium ClusterMesh path on both `cmtc-a` and `cmtc-b`. Test it immediately with real positive, plaintext-negative, policy-negative and recovery traffic. Fulfill the defined metrics through their actual component owners. The user permits Opus to improve instrumentation from first principles, with documented rationale and contract changes.
+Complete native workload mTLS through the enhanced Cilium ClusterMesh path on both `cmtc-a` and `cmtc-b`. Test it immediately with real positive, plaintext-negative, policy-negative and recovery traffic. Fulfill the defined metrics through their actual component owners. The user permits Opus to improve instrumentation from first principles, with documented rationale and contract changes. The latest steering assigns ALL implementation code to Opus. Codex owns coordination, independent review, tests and evidence. Claude Fable5.1 High is requested for central complex design; its provider refused the probe and automatically substituted Opus4.8. That response is rejected as Fable work. The user explicitly forbids Opus4.8; no development was assigned to it.
 
 All agents use **edit → run against cmtc-a/cmtc-b → test traffic, failures and recovery → package the verified change**. Preserve existing labs, signers, applications and security gates. The latest AGENTS instruction defers CI and pushes that trigger CI, plus workflow dispatch and registry publication. Qualified local commits are allowed.
 
@@ -12,16 +12,18 @@ All agents use **edit → run against cmtc-a/cmtc-b → test traffic, failures a
 
 Claude Code uses canonical `claude-opus-5-5`, effort `xhigh`, normal automatic permission review, session `c03d57db-e2bf-4848-ab73-3f2696a27d2f`.
 
-- Current runner: `/private/tmp/cmtc-claude-opus-20261025/run-remediation-metrics.py`.
-- Exec session: `73444`.
-- Read `remediation-metrics-pid` and verify the command before any signal.
-- Transcript: `remediation-metrics-session.jsonl`; errors: `remediation-metrics-stderr.log`; eventual completion: `remediation-metrics-exit`.
-- The previous `run-adversarial-followup.py` completed with exit0 at a source/reasoning boundary. It is not active.
-- Current prompt: `REMEDIATION_AND_METRICS_FOR_OPUS.md`. Opus has read the full Grok remediation, first-principles metric mandate and native bootstrap proposal. Do not start another concurrent Claude writer or edit a running wrapper.
+- Current runner: `/private/tmp/cmtc-claude-opus-20261025/run-live-owner.py`.
+- Exec session: `95252`; read `live-owner-pid` and verify the actual process.
+- Transcript: `live-owner-session.jsonl`; errors: `live-owner-stderr.log`; eventual completion: `live-owner-exit`.
+- This runner uses documented streamed input. Append one complete user-message JSON record to `live-input-queue.jsonl` to deliver steering without interrupting tests. `live-input-offset` records sent bytes. Check the replay and Opus acknowledgment before claiming delivery. Never start a concurrent session writer.
+- Latest message: `USER_ALL_CODE_TO_OPUS.md`. Actual CLI metadata confirms `claude-opus-5-5`; Opus explicitly acknowledged ALL source ownership and read the tested registrar bundle/leases.
+- `live-owner-model-block.json`, if present, records that the guard stopped a provider model substitution. Do not accept a fallback as requested-model work.
+- Older `run-concurrency-registrar.py` completed exit0 after Go3/4 test containers ended. It is not active. Older logs remain diagnostics/evidence.
+- Full registrar handoff: `review/REGISTRAR_METRICS_PRIMARY_TESTED.patch` and `REGISTRAR_METRICS_TEST_RESULT.json`. Seven root source files are dirty, hash-matched to27 top-level/58 total Linux ARM64 race passes plus vet0. No image or live scrape yet. Preserve and let Opus commit/integrate them. Primary makes no further implementation edits.
 
 Cursor Grok's read-only remediation completed with exit0. Full report: `/private/tmp/cmtc-opus-final-20261025/review/GROK_REMEDIATION.md`. It contains complete production snippets, technical rationale and negative/recovery tests against Cilium `dbd2d32`. These proposals are not executed evidence. Opus is adapting the quarantine failure fix. Reuse the existing retained-node fix; do not reapply stale address-only binding code.
 
-The Codex read-only native bootstrap proposal is `review/NATIVE_MESH_BOOTSTRAP_NEXT.md`, with four complete UNRUN Go files under `review/native-mesh-proposal/`. Opus has received them. A follow-up read-only reviewer is preparing `review/REGISTRAR_INSTRUMENTATION_PROPOSAL.md`. It must provide complete implementation and tests against primary registrar interfaces, without compiler, source or API writes.
+The Codex read-only native bootstrap proposal is `review/NATIVE_MESH_BOOTSTRAP_NEXT.md`, with four complete UNRUN Go files under `review/native-mesh-proposal/`. Opus has received them. The read-only registrar proposal is complete at `review/REGISTRAR_INSTRUMENTATION_PROPOSAL.md`. Primary applied/reviewed it before the ownership transfer and ran actual Linux race/vet. See [registrar metric evidence](../evidence/registrar-metrics/README.md). Opus now owns that source.
 
 ## Ownership
 
@@ -32,7 +34,8 @@ All four isolated trees are under `/private/tmp/cmtc-opus-final-20261025/`, bran
 | Isolated Cilium/ztunnel implementation | Opus |
 | Scoped SPIRE separate DelegatedIdentity listener and matching fixture | Opus |
 | Compiler and live lab writes | Opus |
-| Primary CMTC observability, docs and independent review | Codex primary |
+| All CMTC/registrar/DaemonSet/metric/dashboard implementation | Opus |
+| Coordination, docs, independent review, tests and evidence | Codex primary |
 | Grok | Read-only adversarial proposals; completed turn |
 
 Read `review/OWNERSHIP.json`, `BUILD_SLOT.json` and `LAB_OWNER.json`. Their latest handoff fields supersede old ownership text. Coordinate one compiler and one live writer. Primary may inspect live state read-only. Do not overlap source edits.

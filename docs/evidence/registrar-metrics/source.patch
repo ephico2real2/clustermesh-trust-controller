@@ -1,0 +1,643 @@
+diff --git a/cmd/cmtc-spire-registrar/main.go b/cmd/cmtc-spire-registrar/main.go
+index 15139f9..0686a7b 100644
+--- a/cmd/cmtc-spire-registrar/main.go
++++ b/cmd/cmtc-spire-registrar/main.go
+@@ -29,6 +29,7 @@ import (
+ 	ctrl "sigs.k8s.io/controller-runtime"
+ 	"sigs.k8s.io/controller-runtime/pkg/healthz"
+ 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
++	controllermetrics "sigs.k8s.io/controller-runtime/pkg/metrics"
+ 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
+ )
+ 
+@@ -85,9 +86,10 @@ func verifiedAPIConfig() (*rest.Config, error) {
+ 	return cfg, nil
+ }
+ func run() error {
+-	var path, pin string
++	var path, pin, metricsAddress string
+ 	flag.StringVar(&path, "config", "/etc/cmtc-registrar/approval.json", "Exact immutable administrator approval")
+ 	flag.StringVar(&pin, "config-sha256", "", "Independently pinned approval bytes in Pod spec")
++	flag.StringVar(&metricsAddress, "metrics-bind-address", "0", "Opt-in registrar metrics: pod or the exact POD_IP:18087")
+ 	flag.Parse()
+ 	options, err := load(path, pin)
+ 	if err != nil {
+@@ -97,6 +99,10 @@ func run() error {
+ 	if err != nil {
+ 		return err
+ 	}
++	metricsAddress, err = registrarMetricsAddress(metricsAddress, os.Getenv("POD_IP"))
++	if err != nil {
++		return err
++	}
+ 	scheme := runtime.NewScheme()
+ 	if err := corev1.AddToScheme(scheme); err != nil {
+ 		return err
+@@ -104,7 +110,7 @@ func run() error {
+ 	if err := appsv1.AddToScheme(scheme); err != nil {
+ 		return err
+ 	}
+-	mgr, err := ctrl.NewManager(cfg, ctrl.Options{Scheme: scheme, Metrics: metricsserver.Options{BindAddress: "0"}, HealthProbeBindAddress: ":18086", LeaderElection: false})
++	mgr, err := ctrl.NewManager(cfg, ctrl.Options{Scheme: scheme, Metrics: metricsserver.Options{BindAddress: metricsAddress}, HealthProbeBindAddress: ":18086", LeaderElection: false})
+ 	if err != nil {
+ 		return err
+ 	}
+@@ -118,6 +124,12 @@ func run() error {
+ 	}
+ 	defer conn.Close()
+ 	runner := &spireregistrar.Runner{Registrar: spireregistrar.Registrar{Source: spireregistrar.Source{Reader: mgr.GetAPIReader(), Options: options}, Entries: entryv1.NewEntryClient(conn)}, Log: ctrl.Log.WithName("spire-registrar")}
++	registrarMetrics, err := spireregistrar.NewMetrics(controllermetrics.Registry, runner)
++	if err != nil {
++		return err
++	}
++	runner.Metrics = registrarMetrics
++	runner.Registrar.Metrics = registrarMetrics
+ 	if err := mgr.Add(runner); err != nil {
+ 		return err
+ 	}
+diff --git a/internal/spireregistrar/entries.go b/internal/spireregistrar/entries.go
+index 270cb39..19788bd 100644
+--- a/internal/spireregistrar/entries.go
++++ b/internal/spireregistrar/entries.go
+@@ -18,6 +18,7 @@ import (
+ )
+ 
+ type Registrar struct {
++	Metrics *Metrics
+ 	Source  Source
+ 	Entries entryv1.EntryClient
+ }
+@@ -233,7 +234,8 @@ func (r Registrar) removeLegacy(ctx context.Context, entry *types.Entry) error {
+ 	return r.deleteAcknowledged(ctx, entry.Id)
+ }
+ 
+-func (r Registrar) deleteAcknowledged(ctx context.Context, id string) error {
++func (r Registrar) deleteAcknowledged(ctx context.Context, id string) (resultErr error) {
++	defer func() { r.Metrics.deleted(resultErr) }()
+ 	response, err := r.Entries.BatchDeleteEntry(ctx, &entryv1.BatchDeleteEntryRequest{Ids: []string{id}})
+ 	if err != nil {
+ 		return err
+diff --git a/internal/spireregistrar/runner.go b/internal/spireregistrar/runner.go
+index 8f5b453..5acdcb4 100644
+--- a/internal/spireregistrar/runner.go
++++ b/internal/spireregistrar/runner.go
+@@ -14,15 +14,20 @@ import (
+ type Runner struct {
+ 	Registrar    Registrar
+ 	Log          logr.Logger
++	Metrics      *Metrics
++	retryResult  passResult
+ 	acknowledged atomic.Pointer[time.Time]
+ }
+ 
+ var _ manager.Runnable = (*Runner)(nil)
+ 
+ func (*Runner) NeedLeaderElection() bool { return false }
+-func (r *Runner) Ready(*http.Request) error {
++func (r *Runner) readbackCurrent(now time.Time) bool {
+ 	last := r.acknowledged.Load()
+-	if last == nil || time.Since(*last) > 20*time.Second {
++	return last != nil && !now.Before(*last) && now.Sub(*last) <= 20*time.Second
++}
++func (r *Runner) Ready(*http.Request) error {
++	if !r.readbackCurrent(time.Now()) {
+ 		return errors.New("exact SPIRE registration readback is unavailable or stale")
+ 	}
+ 	return nil
+@@ -34,18 +39,8 @@ func (r *Runner) Start(ctx context.Context) error {
+ 			break
+ 		}
+ 		attempt++
+-		start := time.Now()
+-		pass, cancel := context.WithTimeout(ctx, 20*time.Second)
+-		count, err := r.Registrar.Reconcile(pass, start)
+-		cancel()
++		r.runPass(ctx, attempt, time.Now())
+ 		delay := 10 * time.Second
+-		if err != nil {
+-			r.noteFailure(err, attempt, start)
+-		} else {
+-			now := time.Now()
+-			r.acknowledged.Store(&now)
+-			r.Log.Info("SPIRE exact registration rows acknowledged", "component", "spire-registrar", "stage", "readback-ack", "attempt", attempt, "elapsed", time.Since(start), "entries", count, "nextRetry", delay, "deadline", 20*time.Second)
+-		}
+ 		timer := time.NewTimer(delay)
+ 		select {
+ 		case <-ctx.Done():
+@@ -56,7 +51,7 @@ func (r *Runner) Start(ctx context.Context) error {
+ 	r.acknowledged.Store(nil)
+ 	cleanup, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+ 	defer cancel()
+-	if err := r.Registrar.Withdraw(cleanup); err != nil {
++	if err := r.withdraw(cleanup, withdrawalShutdown); err != nil {
+ 		r.Log.Error(err, "SPIRE registrar shutdown withdrawal failed; owned entries retain bounded expiry", "stage", "shutdown-withdraw")
+ 	}
+ 	return nil
+@@ -75,7 +70,41 @@ func (r *Runner) noteFailure(err error, attempt int, started time.Time) {
+ 	// Use a new bounded context: a failed/canceled API request cannot skip
+ 	// best-effort removal of already acknowledged or ambiguously created rows.
+ 	cleanup, stop := context.WithTimeout(context.Background(), 5*time.Second)
+-	cleanupErr := r.Registrar.Withdraw(cleanup)
++	cleanupErr := r.withdraw(cleanup, withdrawalFailure)
+ 	stop()
+ 	r.Log.Error(errors.Join(err, cleanupErr), "SPIRE exact registration pass failed", "component", "spire-registrar", "stage", "reconcile-withdraw", "attempt", attempt, "elapsed", time.Since(started), "nextRetry", delay, "deadline", 20*time.Second)
+ }
++
++// runPass is also the deterministic test seam. Production still owns the real
++// 20s request bound, 10s timer and 5s failure/shutdown cleanup budgets.
++func (r *Runner) runPass(ctx context.Context, attempt int, start time.Time) {
++	if ctx.Err() != nil {
++		return
++	}
++	if r.retryResult != passReadbackACK {
++		r.Metrics.retried(r.retryResult)
++	}
++	pass, cancel := context.WithTimeout(ctx, 20*time.Second)
++	count, err := r.Registrar.Reconcile(pass, start)
++	cancel()
++	result := passReadbackACK
++	if err != nil {
++		result = passError
++		var duplicate *DuplicateWriterError
++		if errors.As(err, &duplicate) {
++			result = passDuplicateWriter
++		}
++		r.noteFailure(err, attempt, start)
++	} else {
++		now := time.Now()
++		r.acknowledged.Store(&now)
++		r.Log.Info("SPIRE exact registration rows acknowledged", "component", "spire-registrar", "stage", "readback-ack", "attempt", attempt, "elapsed", time.Since(start), "entries", count, "nextRetry", 10*time.Second, "deadline", 20*time.Second)
++	}
++	r.retryResult = result
++	r.Metrics.completed(result)
++}
++
++func (r *Runner) withdraw(ctx context.Context, reason withdrawalReason) (err error) {
++	defer func() { r.Metrics.withdrew(reason, err) }()
++	return r.Registrar.Withdraw(ctx)
++}
+diff --git a/cmd/cmtc-spire-registrar/metrics.go b/cmd/cmtc-spire-registrar/metrics.go
+new file mode 100644
+index 0000000..8f89227
+--- /dev/null
++++ b/cmd/cmtc-spire-registrar/metrics.go
+@@ -0,0 +1,29 @@
++//go:build linux
++
++package main
++
++import (
++	"fmt"
++	"net"
++	"net/netip"
++)
++
++// Off by default. "pod" derives the exact Pod IP from the downward API and
++// works with IPv4 or IPv6. No wildcard, loopback, foreign address or extra port.
++func registrarMetricsAddress(value, podIP string) (string, error) {
++	if value == "0" {
++		return value, nil
++	}
++	ip, err := netip.ParseAddr(podIP)
++	if err != nil || !ip.IsGlobalUnicast() || ip.IsLoopback() || ip.Is4In6() || ip.Zone() != "" || ip.String() != podIP {
++		return "", fmt.Errorf("registrar metrics requires canonical downward POD_IP")
++	}
++	if value == "pod" {
++		value = net.JoinHostPort(podIP, "18087")
++	}
++	address, err := netip.ParseAddrPort(value)
++	if err != nil || address.Addr() != ip || address.Port() != 18087 || address.String() != value {
++		return "", fmt.Errorf("registrar metrics must bind exactly POD_IP:18087")
++	}
++	return value, nil
++}
+diff --git a/cmd/cmtc-spire-registrar/metrics_test.go b/cmd/cmtc-spire-registrar/metrics_test.go
+new file mode 100644
+index 0000000..70f8f28
+--- /dev/null
++++ b/cmd/cmtc-spire-registrar/metrics_test.go
+@@ -0,0 +1,21 @@
++//go:build linux
++
++package main
++
++import "testing"
++
++func TestRegistrarMetricsAddressOptInAndExactPodIP(t *testing.T) {
++	for _, tc := range []struct {
++		value, ip, want string
++		valid           bool
++	}{
++		{"0", "", "0", true}, {"pod", "10.10.1.3", "10.10.1.3:18087", true}, {"pod", "fd00::3", "[fd00::3]:18087", true},
++		{"0.0.0.0:18087", "10.10.1.3", "", false}, {"pod", "", "", false}, {"pod", "127.0.0.1", "", false},
++		{"10.10.1.4:18087", "10.10.1.3", "", false}, {"10.10.1.3:18086", "10.10.1.3", "", false},
++	} {
++		got, err := registrarMetricsAddress(tc.value, tc.ip)
++		if (err == nil) != tc.valid || (tc.valid && got != tc.want) {
++			t.Fatalf("%q/%q = %q,%v", tc.value, tc.ip, got, err)
++		}
++	}
++}
+diff --git a/internal/spireregistrar/metrics.go b/internal/spireregistrar/metrics.go
+new file mode 100644
+index 0000000..ac6c023
+--- /dev/null
++++ b/internal/spireregistrar/metrics.go
+@@ -0,0 +1,155 @@
++package spireregistrar
++
++import (
++	"errors"
++	"time"
++
++	"github.com/prometheus/client_golang/prometheus"
++)
++
++type passResult uint8
++
++const (
++	passReadbackACK passResult = iota
++	passError
++	passDuplicateWriter
++)
++
++type withdrawalReason uint8
++
++const (
++	withdrawalFailure withdrawalReason = iota
++	withdrawalShutdown
++)
++
++// Metrics describes this registrar process's observations, not agent readiness,
++// certificate issuance/revocation, TLS, policy enforcement or Protected status.
++// Cluster/node/instance are discovery/scrape labels, not workload label values.
++type Metrics struct {
++	passes            *prometheus.CounterVec
++	retries           *prometheus.CounterVec
++	withdrawals       *prometheus.CounterVec
++	deletions         *prometheus.CounterVec
++	available         prometheus.GaugeFunc
++	readbackTimestamp prometheus.GaugeFunc
++}
++
++func NewMetrics(reg prometheus.Registerer, runner *Runner) (*Metrics, error) {
++	return newMetrics(reg, runner, time.Now)
++}
++
++func newMetrics(reg prometheus.Registerer, runner *Runner, now func() time.Time) (*Metrics, error) {
++	if reg == nil || runner == nil || now == nil {
++		return nil, errors.New("registrar metrics requires registry, runner and clock")
++	}
++	m := &Metrics{
++		passes:      prometheus.NewCounterVec(prometheus.CounterOpts{Name: "cmtc_spire_registrar_reconcile_attempts_total", Help: "Completed registrar passes by result; one final readback_ack or error outcome per pass, including retries."}, []string{"result"}),
++		retries:     prometheus.NewCounterVec(prometheus.CounterOpts{Name: "cmtc_spire_registrar_retries_total", Help: "Actual next registrar passes after failure; successful periodic refreshes and canceled scheduled retries do not count."}, []string{"cause"}),
++		withdrawals: prometheus.NewCounterVec(prometheus.CounterOpts{Name: "cmtc_spire_registrar_withdrawal_attempts_total", Help: "Whole owned-inventory withdrawal calls by trigger and result; empty inventory may succeed; not certificate revocation."}, []string{"reason", "result"}),
++		deletions:   prometheus.NewCounterVec(prometheus.CounterOpts{Name: "cmtc_spire_registrar_entry_deletion_attempts_total", Help: "Actual BatchDeleteEntry calls; acknowledged_absent requires explicit deletion response plus GetEntry NotFound; errors can follow a committed delete."}, []string{"result"}),
++	}
++	m.available = prometheus.NewGaugeFunc(prometheus.GaugeOpts{Name: "cmtc_spire_registrar_readback_available", Help: "One only while this process has a successful complete exact registration readback at most 20 seconds old and no later pass failure; not SPIRE or workload readiness."}, func() float64 {
++		if runner.readbackCurrent(now()) {
++			return 1
++		}
++		return 0
++	})
++	m.readbackTimestamp = prometheus.NewGaugeFunc(prometheus.GaugeOpts{Name: "cmtc_spire_registrar_readback_timestamp_seconds", Help: "Timestamp of this process's current complete successful readback; zero before success or after failure/shutdown; may be stale, so check readback_available."}, func() float64 {
++		last := runner.acknowledged.Load()
++		if last == nil {
++			return 0
++		}
++		return float64(last.UnixNano()) / 1e9
++	})
++	for _, result := range []string{"readback_ack", "error", "duplicate_writer"} {
++		m.passes.WithLabelValues(result)
++	}
++	for _, cause := range []string{"error", "duplicate_writer"} {
++		m.retries.WithLabelValues(cause)
++	}
++	for _, reason := range []string{"failure", "shutdown"} {
++		for _, result := range []string{"acknowledged", "error"} {
++			m.withdrawals.WithLabelValues(reason, result)
++		}
++	}
++	for _, result := range []string{"acknowledged_absent", "error"} {
++		m.deletions.WithLabelValues(result)
++	}
++	// Register the aggregate once: duplicate registration cannot leave a prefix
++	// of the metric set installed in the registry.
++	if err := reg.Register(m); err != nil {
++		return nil, err
++	}
++	return m, nil
++}
++
++func (m *Metrics) collectors() []prometheus.Collector {
++	return []prometheus.Collector{m.passes, m.retries, m.withdrawals, m.deletions, m.available, m.readbackTimestamp}
++}
++func (m *Metrics) Describe(ch chan<- *prometheus.Desc) {
++	for _, collector := range m.collectors() {
++		collector.Describe(ch)
++	}
++}
++func (m *Metrics) Collect(ch chan<- prometheus.Metric) {
++	for _, collector := range m.collectors() {
++		collector.Collect(ch)
++	}
++}
++
++func passLabel(result passResult) string {
++	switch result {
++	case passReadbackACK:
++		return "readback_ack"
++	case passError:
++		return "error"
++	case passDuplicateWriter:
++		return "duplicate_writer"
++	}
++	return ""
++}
++func (m *Metrics) completed(result passResult) {
++	if m == nil {
++		return
++	}
++	if label := passLabel(result); label != "" {
++		m.passes.WithLabelValues(label).Inc()
++	}
++}
++func (m *Metrics) retried(result passResult) {
++	if m == nil || result == passReadbackACK {
++		return
++	}
++	if label := passLabel(result); label != "" {
++		m.retries.WithLabelValues(label).Inc()
++	}
++}
++func (m *Metrics) withdrew(reason withdrawalReason, err error) {
++	if m == nil {
++		return
++	}
++	var label string
++	switch reason {
++	case withdrawalFailure:
++		label = "failure"
++	case withdrawalShutdown:
++		label = "shutdown"
++	default:
++		return
++	}
++	result := "acknowledged"
++	if err != nil {
++		result = "error"
++	}
++	m.withdrawals.WithLabelValues(label, result).Inc()
++}
++func (m *Metrics) deleted(err error) {
++	if m == nil {
++		return
++	}
++	result := "acknowledged_absent"
++	if err != nil {
++		result = "error"
++	}
++	m.deletions.WithLabelValues(result).Inc()
++}
+diff --git a/internal/spireregistrar/metrics_test.go b/internal/spireregistrar/metrics_test.go
+new file mode 100644
+index 0000000..a055aef
+--- /dev/null
++++ b/internal/spireregistrar/metrics_test.go
+@@ -0,0 +1,236 @@
++package spireregistrar
++
++import (
++	"context"
++	"testing"
++	"time"
++
++	"github.com/go-logr/logr"
++	"github.com/prometheus/client_golang/prometheus"
++	entryv1 "github.com/spiffe/spire-api-sdk/proto/spire/api/server/entry/v1"
++	"github.com/spiffe/spire-api-sdk/proto/spire/api/types"
++	"google.golang.org/grpc"
++	"google.golang.org/grpc/codes"
++	corev1 "k8s.io/api/core/v1"
++	"sigs.k8s.io/controller-runtime/pkg/client"
++)
++
++func registrarSample(t *testing.T, reg *prometheus.Registry, name string, labels map[string]string) float64 {
++	t.Helper()
++	families, err := reg.Gather()
++	if err != nil {
++		t.Fatal(err)
++	}
++	for _, family := range families {
++		if family.GetName() != name {
++			continue
++		}
++		for _, metric := range family.Metric {
++			if len(metric.Label) != len(labels) {
++				continue
++			}
++			matches := true
++			for _, label := range metric.Label {
++				if labels[label.GetName()] != label.GetValue() {
++					matches = false
++				}
++			}
++			if matches {
++				if metric.Counter != nil {
++					return metric.Counter.GetValue()
++				}
++				return metric.Gauge.GetValue()
++			}
++		}
++	}
++	t.Fatalf("missing expected observed series %s %v", name, labels)
++	return 0
++}
++func requireRegistrarSample(t *testing.T, reg *prometheus.Registry, name string, labels map[string]string, want float64) {
++	t.Helper()
++	if got := registrarSample(t, reg, name, labels); got != want {
++		t.Fatalf("%s %v = %v, want %v", name, labels, got, want)
++	}
++}
++func metricRunner(t *testing.T) (*Runner, *memoryEntries, *prometheus.Registry) {
++	t.Helper()
++	o, c, _ := fixture(t)
++	entries := newEntries()
++	r := &Runner{Registrar: Registrar{Source: Source{Reader: c, Options: o}, Entries: entries}, Log: logr.Discard()}
++	reg := prometheus.NewRegistry()
++	m, err := NewMetrics(reg, r)
++	if err != nil {
++		t.Fatal(err)
++	}
++	r.Metrics = m
++	r.Registrar.Metrics = m
++	return r, entries, reg
++}
++
++func TestRegistrarMetricsUnknownCreateACKRetryAndRecovery(t *testing.T) {
++	r, entries, reg := metricRunner(t)
++	entries.createErr = true
++	r.runPass(context.Background(), 1, time.Now())
++	requireRegistrarSample(t, reg, "cmtc_spire_registrar_reconcile_attempts_total", map[string]string{"result": "error"}, 1)
++	requireRegistrarSample(t, reg, "cmtc_spire_registrar_reconcile_attempts_total", map[string]string{"result": "readback_ack"}, 0)
++	requireRegistrarSample(t, reg, "cmtc_spire_registrar_retries_total", map[string]string{"cause": "error"}, 0)
++	requireRegistrarSample(t, reg, "cmtc_spire_registrar_withdrawal_attempts_total", map[string]string{"reason": "failure", "result": "acknowledged"}, 1)
++	requireRegistrarSample(t, reg, "cmtc_spire_registrar_readback_available", nil, 0)
++	if len(entries.rows) != 0 {
++		t.Fatal("unknown create acknowledgment retained a row")
++	}
++	entries.createErr = false
++	r.runPass(context.Background(), 2, time.Now())
++	requireRegistrarSample(t, reg, "cmtc_spire_registrar_retries_total", map[string]string{"cause": "error"}, 1)
++	requireRegistrarSample(t, reg, "cmtc_spire_registrar_reconcile_attempts_total", map[string]string{"result": "readback_ack"}, 1)
++	requireRegistrarSample(t, reg, "cmtc_spire_registrar_readback_available", nil, 1)
++	if len(entries.rows) != 3 {
++		t.Fatal("recovery did not run exact production reconciliation")
++	}
++	r.runPass(context.Background(), 3, time.Now())
++	requireRegistrarSample(t, reg, "cmtc_spire_registrar_retries_total", map[string]string{"cause": "error"}, 1)
++	requireRegistrarSample(t, reg, "cmtc_spire_registrar_reconcile_attempts_total", map[string]string{"result": "readback_ack"}, 2)
++}
++
++func TestRegistrarMetricsDuplicateWriterRetainsExactRowsAndRecovers(t *testing.T) {
++	r, entries, reg := metricRunner(t)
++	r.runPass(context.Background(), 1, time.Now())
++	id := string(testUID("foreign-metric-test"))
++	entries.rows[id] = &types.Entry{Id: id, Hint: "foreign", SpiffeId: &types.SPIFFEID{TrustDomain: r.Registrar.Source.Options.TrustDomain, Path: "/ns/orders/sa/api"}, ParentId: &types.SPIFFEID{TrustDomain: r.Registrar.Source.Options.TrustDomain, Path: "/foreign"}}
++	r.runPass(context.Background(), 2, time.Now())
++	requireRegistrarSample(t, reg, "cmtc_spire_registrar_reconcile_attempts_total", map[string]string{"result": "duplicate_writer"}, 1)
++	requireRegistrarSample(t, reg, "cmtc_spire_registrar_withdrawal_attempts_total", map[string]string{"reason": "failure", "result": "acknowledged"}, 0)
++	requireRegistrarSample(t, reg, "cmtc_spire_registrar_readback_available", nil, 0)
++	if len(entries.rows) != 4 {
++		t.Fatal("duplicate writer changed the exact or foreign rows")
++	}
++	delete(entries.rows, id)
++	r.runPass(context.Background(), 3, time.Now())
++	requireRegistrarSample(t, reg, "cmtc_spire_registrar_retries_total", map[string]string{"cause": "duplicate_writer"}, 1)
++	requireRegistrarSample(t, reg, "cmtc_spire_registrar_readback_available", nil, 1)
++}
++
++type retainedMetricDeletion struct{ *memoryEntries }
++
++func (m retainedMetricDeletion) BatchDeleteEntry(_ context.Context, in *entryv1.BatchDeleteEntryRequest, _ ...grpc.CallOption) (*entryv1.BatchDeleteEntryResponse, error) {
++	return &entryv1.BatchDeleteEntryResponse{Results: []*entryv1.BatchDeleteEntryResponse_Result{{Id: in.Ids[0], Status: &types.Status{Code: int32(codes.OK)}}}}, nil
++}
++
++func TestRegistrarMetricsDeleteNeedsACKAndAbsence(t *testing.T) {
++	r, entries, reg := metricRunner(t)
++	r.runPass(context.Background(), 1, time.Now())
++	var id string
++	for key := range entries.rows {
++		id = key
++		break
++	}
++	r.Registrar.Entries = retainedMetricDeletion{entries}
++	if err := r.Registrar.deleteAcknowledged(context.Background(), id); err == nil {
++		t.Fatal("delete ACK without absent readback succeeded")
++	}
++	requireRegistrarSample(t, reg, "cmtc_spire_registrar_entry_deletion_attempts_total", map[string]string{"result": "error"}, 1)
++	requireRegistrarSample(t, reg, "cmtc_spire_registrar_entry_deletion_attempts_total", map[string]string{"result": "acknowledged_absent"}, 0)
++	r.Registrar.Entries = entries
++	entries.lostDeleteACK = true
++	if err := r.Registrar.deleteAcknowledged(context.Background(), id); err == nil {
++		t.Fatal("lost deletion acknowledgment counted success")
++	}
++	requireRegistrarSample(t, reg, "cmtc_spire_registrar_entry_deletion_attempts_total", map[string]string{"result": "error"}, 2)
++	entries.lostDeleteACK = false
++	if err := r.Registrar.Withdraw(context.Background()); err != nil {
++		t.Fatal(err)
++	}
++	// The row deleted under a lost ACK is absent and causes no new delete RPC.
++	requireRegistrarSample(t, reg, "cmtc_spire_registrar_entry_deletion_attempts_total", map[string]string{"result": "acknowledged_absent"}, 2)
++}
++
++func TestRegistrarMetricsEnrollmentWithdrawalUsesRealDeleteReadback(t *testing.T) {
++	r, entries, reg := metricRunner(t)
++	r.runPass(context.Background(), 1, time.Now())
++	var namespace corev1.Namespace
++	if err := r.Registrar.Source.Reader.Get(context.Background(), client.ObjectKey{Name: "orders"}, &namespace); err != nil {
++		t.Fatal(err)
++	}
++	delete(namespace.Labels, "io.cilium/mtls-enabled")
++	writer := r.Registrar.Source.Reader.(client.Client)
++	if err := writer.Update(context.Background(), &namespace); err != nil {
++		t.Fatal(err)
++	}
++	r.runPass(context.Background(), 2, time.Now())
++	if len(entries.rows) != 2 {
++		t.Fatal("normal unenrollment did not remove exactly its workload row")
++	}
++	requireRegistrarSample(t, reg, "cmtc_spire_registrar_entry_deletion_attempts_total", map[string]string{"result": "acknowledged_absent"}, 1)
++	requireRegistrarSample(t, reg, "cmtc_spire_registrar_withdrawal_attempts_total", map[string]string{"reason": "failure", "result": "acknowledged"}, 0)
++	requireRegistrarSample(t, reg, "cmtc_spire_registrar_retries_total", map[string]string{"cause": "error"}, 0)
++}
++
++func TestRegistrarMetricsFreshnessAndProcessReset(t *testing.T) {
++	r := &Runner{Log: logr.Discard()}
++	now := time.Unix(2000000000, 0)
++	reg := prometheus.NewRegistry()
++	m, err := newMetrics(reg, r, func() time.Time { return now })
++	if err != nil {
++		t.Fatal(err)
++	}
++	r.Metrics = m
++	requireRegistrarSample(t, reg, "cmtc_spire_registrar_readback_available", nil, 0)
++	requireRegistrarSample(t, reg, "cmtc_spire_registrar_readback_timestamp_seconds", nil, 0)
++	ack := now
++	r.acknowledged.Store(&ack)
++	requireRegistrarSample(t, reg, "cmtc_spire_registrar_readback_available", nil, 1)
++	now = now.Add(21 * time.Second)
++	requireRegistrarSample(t, reg, "cmtc_spire_registrar_readback_available", nil, 0)
++	requireRegistrarSample(t, reg, "cmtc_spire_registrar_readback_timestamp_seconds", nil, float64(ack.Unix()))
++	r.acknowledged.Store(nil)
++	requireRegistrarSample(t, reg, "cmtc_spire_registrar_readback_timestamp_seconds", nil, 0)
++	_, _, fresh := metricRunner(t)
++	requireRegistrarSample(t, fresh, "cmtc_spire_registrar_readback_available", nil, 0)
++	requireRegistrarSample(t, fresh, "cmtc_spire_registrar_reconcile_attempts_total", map[string]string{"result": "readback_ack"}, 0)
++	if _, err := NewMetrics(reg, r); err == nil {
++		t.Fatal("duplicate metric registration succeeded")
++	}
++}
++
++func TestRegistrarMetricsCanceledRetryAndShutdown(t *testing.T) {
++	r, _, reg := metricRunner(t)
++	r.retryResult = passError
++	ctx, cancel := context.WithCancel(context.Background())
++	cancel()
++	r.runPass(ctx, 2, time.Now())
++	requireRegistrarSample(t, reg, "cmtc_spire_registrar_retries_total", map[string]string{"cause": "error"}, 0)
++	if err := r.Start(ctx); err != nil {
++		t.Fatal(err)
++	}
++	requireRegistrarSample(t, reg, "cmtc_spire_registrar_withdrawal_attempts_total", map[string]string{"reason": "shutdown", "result": "acknowledged"}, 1)
++	requireRegistrarSample(t, reg, "cmtc_spire_registrar_entry_deletion_attempts_total", map[string]string{"result": "acknowledged_absent"}, 0)
++}
++
++func TestRegistrarMetricsLabelsAreCodeOwned(t *testing.T) {
++	r, _, reg := metricRunner(t)
++	r.Metrics.completed(passResult(255))
++	r.Metrics.retried(passResult(255))
++	r.Metrics.withdrew(withdrawalReason(255), nil)
++	families, err := reg.Gather()
++	if err != nil {
++		t.Fatal(err)
++	}
++	allowed := map[string]bool{"readback_ack": true, "error": true, "duplicate_writer": true, "failure": true, "shutdown": true, "acknowledged": true, "acknowledged_absent": true}
++	series := 0
++	for _, family := range families {
++		for _, metric := range family.Metric {
++			series++
++			for _, label := range metric.Label {
++				if label.GetName() != "result" && label.GetName() != "cause" && label.GetName() != "reason" {
++					t.Fatal("unbounded label name")
++				}
++				if !allowed[label.GetValue()] {
++					t.Fatal("unbounded label value")
++				}
++			}
++		}
++	}
++	if series != 13 {
++		t.Fatalf("series=%d, want 13 fixed initialized series", series)
++	}
++}

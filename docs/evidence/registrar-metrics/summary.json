@@ -1,0 +1,20 @@
+{
+  "sourceHead": "aa26ff267c077dd3e0fb60dd03afafddf2b79573",
+  "sourceState": "Primary registrar metrics candidate captured by source-sha256.json",
+  "totalTestEvents": {
+    "pass": 58
+  },
+  "topLevelTests": {
+    "pass": 27
+  },
+  "packages": {
+    "github.com/ephico2real2/clustermesh-trust-controller/cmd/cmtc-spire-registrar": "pass",
+    "github.com/ephico2real2/clustermesh-trust-controller/internal/spireregistrar": "pass"
+  },
+  "raceExit": 0,
+  "vetExit": 0,
+  "testCommand": "go test -race -count=1 -timeout=180s -json ./internal/spireregistrar ./cmd/cmtc-spire-registrar",
+  "vetCommand": "go vet ./internal/spireregistrar ./cmd/cmtc-spire-registrar",
+  "toolchain": "go version go1.27.3 linux/arm64",
+  "qualification": "Linux ARM64 source only; no new image or live scrape; no SPIRE-ready or Protected alias"
+}
