@@ -1,0 +1,25 @@
+pkg/datapath/loader/loader.go:62:29: use of `sync.RWMutex` forbidden because "Use pkg/lock instead to improve deadlock detection." (forbidigo)
+	sourceIPReceiptMu          sync.RWMutex
+	                           ^
+pkg/datapath/loader/source_ip_receipt.go:196:18: use of `netlink.FilterList` forbidden because "Found netlink function which can return ErrDumpInterrupted. Use safenetlink package instead." (forbidigo)
+	filters, err := netlink.FilterList(device, netlink.HANDLE_MIN_INGRESS)
+	                ^
+pkg/datapath/loader/source_ip_receipt_kernel_test.go:70:15: use of `netlink.LinkByName` forbidden because "Found netlink function which can return ErrDumpInterrupted. Use safenetlink package instead." (forbidigo)
+	host, err := netlink.LinkByName(ifName)
+	             ^
+pkg/datapath/loader/source_ip_receipt_kernel_test.go:75:16: use of `netlink.LinkByName` forbidden because "Found netlink function which can return ErrDumpInterrupted. Use safenetlink package instead." (forbidigo)
+		peer, err := netlink.LinkByName(peerName)
+		             ^
+pkg/datapath/loader/source_ip_receipt_test.go:12:1: File is not properly formatted (goimports)
+
+^
+pkg/endpoint/source_ip_option_guard_test.go:8:1: File is not properly formatted (goimports)
+
+^
+pkg/datapath/loader/source_ip_receipt.go:411:2: slicessort: sort.Slice can be modernized using slices.Sort (modernize)
+	sort.Slice(sortedIDs, func(i, j int) bool { return sortedIDs[i] < sortedIDs[j] })
+	^
+7 issues:
+* forbidigo: 4
+* goimports: 2
+* modernize: 1

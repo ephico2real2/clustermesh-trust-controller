@@ -1,0 +1,261 @@
+{
+  "scope": "Actual Cilium loaded-FD, sole TCX ingress and frozen source-IP configuration receipt. Local source qualification only.",
+  "sourceSHA": "df2a6c1ec88f0358c52e95229dd8fe21c2b56201",
+  "parentSHA": "fbdb039ed8",
+  "passed": {
+    "functionalTopLevel": 102,
+    "functionalSubtests": 177,
+    "exactLockdebugTopLevel": 20,
+    "exactLockdebugSubtests": 44,
+    "failed": 0,
+    "skippedSelectedCases": 0
+  },
+  "vet": true,
+  "requiredLintIssues": 0,
+  "profileExclusions": [
+    "Standalone TestPrivilegedVerifier complexity benchmark requires its own base-path/results harness and is outside this functional acceptance profile. It was skipped in the diagnostic first run and explicitly excluded thereafter."
+  ],
+  "diagnostics": [
+    "First kernel run required private bpffs mount.",
+    "Kernel function name includes exact full BTF symbol on this kernel; retain exact full and legacy 15-byte forms.",
+    "ProgramSpec.Compatible compares pre-relocation tags. Replaced with equality to actual committed loader FD ID, type, tag and map IDs; never accept only program name.",
+    "Updated legacy membership fixture to explicitly enable required source-IP verification. Missing-receipt check precedes loader-state check.",
+    "Lint corrections: Cilium lock, safe netlink and slices.Sort.",
+    "Debug template compilation exceeded existing lock log threshold with uninitialized package logger; initialize stable default logger before this fixture."
+  ],
+  "actualKernelChecks": [
+    "real Cilium ReloadDatapath",
+    "frozen read-only config rejects mutation",
+    "actual endpoint IP/netns/UID bindings",
+    "wrong live program FD rejection",
+    "actual plugin state rejection",
+    "extra TCX attachment invalidation",
+    "attachment revision remains stale until real reload",
+    "endpoint ID reuse invalidates old incarnation",
+    "SIP-disabled reload withholds receipt and re-enable recovers",
+    "Unload invalidates receipt"
+  ],
+  "newImageBuilt": false,
+  "deployed": false,
+  "Protected": false,
+  "remainingGates": [
+    "Kernel reachability of native endpoint policy map",
+    "Mandatory first-packet capture and startup/restore quarantine",
+    "Native source egress and destination ingress authorization",
+    "Authenticated remote source-to-tunnel binding",
+    "Policy freshness/active-flow drain and durable admission/recovery",
+    "Production proxy socket access and exact-image workload mTLS / WireGuard/IPsec composition"
+  ],
+  "files": [
+    {
+      "path": "docs/evidence/native-source-ip-receipt/etcd-cleanup-second.log",
+      "bytes": 65,
+      "sha256": "1e3ef686bb149acf24d7948e19280f298a3fc2cf8f1cc3b60325065f0c350388",
+      "storedSHA256": "1e3ef686bb149acf24d7948e19280f298a3fc2cf8f1cc3b60325065f0c350388"
+    },
+    {
+      "path": "docs/evidence/native-source-ip-receipt/etcd-cleanup-third.log",
+      "bytes": 65,
+      "sha256": "13acc39e0d347b33684fea000477aa0eb3fba20036bd37292d5dec14f6ce5b2f",
+      "storedSHA256": "13acc39e0d347b33684fea000477aa0eb3fba20036bd37292d5dec14f6ce5b2f"
+    },
+    {
+      "path": "docs/evidence/native-source-ip-receipt/etcd-cleanup.log",
+      "bytes": 65,
+      "sha256": "99de1a55fc66d517571ed858b488a545e59a99d498e420b6c738330e0093a15c",
+      "storedSHA256": "99de1a55fc66d517571ed858b488a545e59a99d498e420b6c738330e0093a15c"
+    },
+    {
+      "path": "docs/evidence/native-source-ip-receipt/etcd-container-final-second.json",
+      "bytes": 14892,
+      "sha256": "320a9392d09452ed557e94be7116b0470e40d97415eb0c34f8fb7df6997b410b",
+      "storedSHA256": "320a9392d09452ed557e94be7116b0470e40d97415eb0c34f8fb7df6997b410b"
+    },
+    {
+      "path": "docs/evidence/native-source-ip-receipt/etcd-container-final-third.json",
+      "bytes": 14892,
+      "sha256": "411174cb1fb00a291792de9aa167c1c7c450fa0077eb09f9ca6c61d992850282",
+      "storedSHA256": "411174cb1fb00a291792de9aa167c1c7c450fa0077eb09f9ca6c61d992850282"
+    },
+    {
+      "path": "docs/evidence/native-source-ip-receipt/etcd-container-final.json",
+      "bytes": 14892,
+      "sha256": "285ae3e08e16fd1031407237ac42e05772d97fe7c0174e51e89991fd1c335be2",
+      "storedSHA256": "285ae3e08e16fd1031407237ac42e05772d97fe7c0174e51e89991fd1c335be2"
+    },
+    {
+      "path": "docs/evidence/native-source-ip-receipt/etcd-export.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "storedSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "docs/evidence/native-source-ip-receipt/etcd-image.json",
+      "bytes": 8817,
+      "sha256": "b07cb7db171dc73c0b0964df03bc312074a8a5e3f61b82070c8e67f64daa324a",
+      "storedSHA256": "b07cb7db171dc73c0b0964df03bc312074a8a5e3f61b82070c8e67f64daa324a"
+    },
+    {
+      "path": "docs/evidence/native-source-ip-receipt/etcd-import.log",
+      "bytes": 86,
+      "sha256": "cf099234367df4465f328e90eedc6066c927dd2ae13e5ba915358e0baffae141",
+      "storedSHA256": "cf099234367df4465f328e90eedc6066c927dd2ae13e5ba915358e0baffae141"
+    },
+    {
+      "path": "docs/evidence/native-source-ip-receipt/etcd-runtime-second.log",
+      "bytes": 12416,
+      "sha256": "852afc5d0e60296e2cdef909c823df6b3b7d68d51e7261180fefb06a3707d46b",
+      "storedSHA256": "852afc5d0e60296e2cdef909c823df6b3b7d68d51e7261180fefb06a3707d46b"
+    },
+    {
+      "path": "docs/evidence/native-source-ip-receipt/etcd-runtime-third.log",
+      "bytes": 12415,
+      "sha256": "b620940d1a969e35e2dbed1abbc1c1e8f2d3ba592f1c87f1cdc9aec585f33efc",
+      "storedSHA256": "b620940d1a969e35e2dbed1abbc1c1e8f2d3ba592f1c87f1cdc9aec585f33efc"
+    },
+    {
+      "path": "docs/evidence/native-source-ip-receipt/etcd-runtime.log",
+      "bytes": 12416,
+      "sha256": "97bffc292b2ddc3aba8a99cb372a01e871c30701e7d39908241b2c928aecf6a2",
+      "storedSHA256": "97bffc292b2ddc3aba8a99cb372a01e871c30701e7d39908241b2c928aecf6a2"
+    },
+    {
+      "path": "docs/evidence/native-source-ip-receipt/full-first.jsonl.gz",
+      "bytes": 770154,
+      "sha256": "73a2e624e6ed9282051830cff583af0b0ce0c28a16e95c83aeef71643c2b5702",
+      "storedSHA256": "6b0e555b647d4e81e84b74f7ee529fb25debbf3f8c8aa36f61ac0cff36f5dc1a"
+    },
+    {
+      "path": "docs/evidence/native-source-ip-receipt/full-second.jsonl.gz",
+      "bytes": 768475,
+      "sha256": "47ab8d29f51fb7721c8dbb1dea206d21414074618b1df06964ae2fdac2ea72a2",
+      "storedSHA256": "71605296f761e98778ad3c80469efbe41b58c9746595420d9e074eeb8537f990"
+    },
+    {
+      "path": "docs/evidence/native-source-ip-receipt/full-third.jsonl.gz",
+      "bytes": 767707,
+      "sha256": "4ecdd64ca7993fc8252c9cf7daa30d56d7c300ed520cfcac5b3996e21a7c7625",
+      "storedSHA256": "abf94af00487caa7e0cc8965455a04531dce0f81327a0fe5b97b8f01de569a92"
+    },
+    {
+      "path": "docs/evidence/native-source-ip-receipt/full.sh",
+      "bytes": 2186,
+      "sha256": "46d6a3f356db6913e31b451e98a45ddf56d06c6c5003e7aa477684bd337e661f",
+      "storedSHA256": "46d6a3f356db6913e31b451e98a45ddf56d06c6c5003e7aa477684bd337e661f"
+    },
+    {
+      "path": "docs/evidence/native-source-ip-receipt/kernel-fifth.jsonl",
+      "bytes": 16277,
+      "sha256": "81a8eae1b5ded1bb9d12cddf2581fbd8c3c2690621970b121e7125e3f4d07f1f",
+      "storedSHA256": "81a8eae1b5ded1bb9d12cddf2581fbd8c3c2690621970b121e7125e3f4d07f1f"
+    },
+    {
+      "path": "docs/evidence/native-source-ip-receipt/kernel-first.jsonl",
+      "bytes": 3484,
+      "sha256": "99f38d5ff9fc57113cd405cbcceae5d714ca485d7bb483c3d6cbd9bca06a965d",
+      "storedSHA256": "99f38d5ff9fc57113cd405cbcceae5d714ca485d7bb483c3d6cbd9bca06a965d"
+    },
+    {
+      "path": "docs/evidence/native-source-ip-receipt/kernel-fourth.jsonl",
+      "bytes": 16326,
+      "sha256": "02a46c4c674e50c572fd1d0db645833aa2d14c670ecc0c4263bf18cfa6f08bd1",
+      "storedSHA256": "02a46c4c674e50c572fd1d0db645833aa2d14c670ecc0c4263bf18cfa6f08bd1"
+    },
+    {
+      "path": "docs/evidence/native-source-ip-receipt/kernel-lockdebug-second.jsonl",
+      "bytes": 66506,
+      "sha256": "1d223c6559f2603ab1ca6a6940159b0f418bf06f8b24efefd69a98d937a0fef4",
+      "storedSHA256": "1d223c6559f2603ab1ca6a6940159b0f418bf06f8b24efefd69a98d937a0fef4"
+    },
+    {
+      "path": "docs/evidence/native-source-ip-receipt/kernel-lockdebug.jsonl",
+      "bytes": 12151,
+      "sha256": "039fdbd3396675278695354d552c99ad3a746f48e7bd7eaafd524da553f9d37c",
+      "storedSHA256": "039fdbd3396675278695354d552c99ad3a746f48e7bd7eaafd524da553f9d37c"
+    },
+    {
+      "path": "docs/evidence/native-source-ip-receipt/kernel-second.jsonl",
+      "bytes": 5587,
+      "sha256": "055e7de5d028466794c5fe5dfd3a3d78127d68436b8fcc1787b5f532bb8dee56",
+      "storedSHA256": "055e7de5d028466794c5fe5dfd3a3d78127d68436b8fcc1787b5f532bb8dee56"
+    },
+    {
+      "path": "docs/evidence/native-source-ip-receipt/kernel-seventh.jsonl",
+      "bytes": 57808,
+      "sha256": "f980a2ded8c89cfae90b53113e673e0ef512d82a3023bb225aff2dd718f83806",
+      "storedSHA256": "f980a2ded8c89cfae90b53113e673e0ef512d82a3023bb225aff2dd718f83806"
+    },
+    {
+      "path": "docs/evidence/native-source-ip-receipt/kernel-sixth.jsonl",
+      "bytes": 57804,
+      "sha256": "d8c11c98362f9d11cd09a6662f282deb5fc4cfc6470496c45e45edbc56432569",
+      "storedSHA256": "d8c11c98362f9d11cd09a6662f282deb5fc4cfc6470496c45e45edbc56432569"
+    },
+    {
+      "path": "docs/evidence/native-source-ip-receipt/kernel-third.jsonl",
+      "bytes": 16198,
+      "sha256": "3e4d0438d723dab550bd97436940e1236c09a35a0722bc322b490575a918c1cb",
+      "storedSHA256": "3e4d0438d723dab550bd97436940e1236c09a35a0722bc322b490575a918c1cb"
+    },
+    {
+      "path": "docs/evidence/native-source-ip-receipt/kernel.sh",
+      "bytes": 904,
+      "sha256": "c5d9baf61859f5e7515e0b3e12027ac89f402baec370af105c22f30f3cea8143",
+      "storedSHA256": "c5d9baf61859f5e7515e0b3e12027ac89f402baec370af105c22f30f3cea8143"
+    },
+    {
+      "path": "docs/evidence/native-source-ip-receipt/lint-final.log",
+      "bytes": 10,
+      "sha256": "e92606b0bf483111dff0a120c315ea165821348f31365020e2468a0059095c47",
+      "storedSHA256": "e92606b0bf483111dff0a120c315ea165821348f31365020e2468a0059095c47"
+    },
+    {
+      "path": "docs/evidence/native-source-ip-receipt/lint-first.log",
+      "bytes": 1504,
+      "sha256": "47634738346b29c2ded1f43929baa34436e883958cca48651556687d1af10463",
+      "storedSHA256": "47634738346b29c2ded1f43929baa34436e883958cca48651556687d1af10463"
+    },
+    {
+      "path": "docs/evidence/native-source-ip-receipt/lint-second.log",
+      "bytes": 10,
+      "sha256": "e92606b0bf483111dff0a120c315ea165821348f31365020e2468a0059095c47",
+      "storedSHA256": "e92606b0bf483111dff0a120c315ea165821348f31365020e2468a0059095c47"
+    },
+    {
+      "path": "docs/evidence/native-source-ip-receipt/lint.sh",
+      "bytes": 1111,
+      "sha256": "ec3050e8778a820c2fe30d3c2e4a327433c075e72d75169a36b69d91800a4478",
+      "storedSHA256": "ec3050e8778a820c2fe30d3c2e4a327433c075e72d75169a36b69d91800a4478"
+    },
+    {
+      "path": "docs/evidence/native-source-ip-receipt/lockdebug.sh",
+      "bytes": 1961,
+      "sha256": "c5c64d91605827c516132fb8f1172da70ac25f47c37eed6a277f1cd4a1d1add4",
+      "storedSHA256": "c5c64d91605827c516132fb8f1172da70ac25f47c37eed6a277f1cd4a1d1add4"
+    },
+    {
+      "path": "docs/evidence/native-source-ip-receipt/selected-first.jsonl",
+      "bytes": 14384,
+      "sha256": "2bdb13ca888c62c53218f321381c01b6da64e9b1c0a47c807f69927a345499cb",
+      "storedSHA256": "2bdb13ca888c62c53218f321381c01b6da64e9b1c0a47c807f69927a345499cb"
+    },
+    {
+      "path": "docs/evidence/native-source-ip-receipt/selected-lockdebug.jsonl.gz",
+      "bytes": 131143,
+      "sha256": "5ffc900990be81a7756bd39391e27b711f4dcfbfd6d54eba3cb40ee1b2996d6c",
+      "storedSHA256": "433d87b94e2262663c74af9896603eca214bd81336e61507d1c88397a8e52b37"
+    },
+    {
+      "path": "docs/evidence/native-source-ip-receipt/selected-second.jsonl",
+      "bytes": 65498,
+      "sha256": "fbb3b6a795415d94ee7827e5e1cb06445f1b4afc26e1bfc885edbc3668eff563",
+      "storedSHA256": "fbb3b6a795415d94ee7827e5e1cb06445f1b4afc26e1bfc885edbc3668eff563"
+    },
+    {
+      "path": "docs/evidence/native-source-ip-receipt/selected.sh",
+      "bytes": 653,
+      "sha256": "39f558479482ec121656bd29d923bd8a94e99e9c6790d796e9200251f448b0a2",
+      "storedSHA256": "39f558479482ec121656bd29d923bd8a94e99e9c6790d796e9200251f448b0a2"
+    }
+  ]
+}
