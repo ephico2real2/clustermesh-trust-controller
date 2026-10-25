@@ -1,0 +1,69 @@
+{
+  "result": "PASS: exact current-fork SPIRE agent and secure kubelet config deployed on all four nodes",
+  "scope": "Workload/Admin API node bootstrap; actual workload credential fetch and workload mTLS remain open",
+  "agentImage": {
+    "sourceSHA": "28f6b8d84ade21c6accb32ba9689a3bdf64877ec",
+    "baseSHA": "0d589ad07d7b7e7a244f5b5548bf9d2d21e9fbba",
+    "image": "localhost/cmtc-spire-agent:workload-28f6b8d84a",
+    "configurationID": "sha256:707fcee4feff6cfc29478b7fbb86b4ad2a592784659b2b77c67b07fec53d0ff6",
+    "architecture": "arm64",
+    "canonicalImage": "localhost/cmtc-spire-agent@sha256:bf2286fb7a93084ebd17128d629e1b12715722c30d37e430ac922b0503219078",
+    "importedManifestDigest": "sha256:bf2286fb7a93084ebd17128d629e1b12715722c30d37e430ac922b0503219078"
+  },
+  "tests": {
+    "agentRaceTop": 170,
+    "agentRaceSub": 373,
+    "agentFailed": 0,
+    "agentSkipped": 0,
+    "agentVet": "PASS",
+    "pythonFixturesIncludingActualLoopbackTLS": 72,
+    "pythonFailed": 0,
+    "pythonSkipped": 0
+  },
+  "kubeletTLS": {
+    "observed": "two public certificates per node, unique self-signed CA and DNS-only server leaf",
+    "verification": "CA-only trust and exact spec.nodeName hostname, explicit hostAliases",
+    "skipVerification": false,
+    "servingCertificateChanges": false,
+    "sameCAValidDNSLeafRenewal": "allowed",
+    "unapprovedCARotation": "rejected until explicit approval"
+  },
+  "clusters": {
+    "cmtc-a": {
+      "phase": "agent-bootstrap-ready-no-workload-proof",
+      "daemonSetUID": "a800c691-b74f-4d9e-ad64-8e04a81b75dc",
+      "configMapUIDs": {
+        "cmtc-workload-api-0f2db7877a3120b4": "a8da7c09-cd21-4965-82e8-559c1d6d190c",
+        "cmtc-kubelet-pins-0f2db7877a3120b4": "815a52d2-ae01-4849-88d0-28c72bc84022"
+      },
+      "retainedSignerSHA256": "9ab32899b0f0b0b0799f95b5ae6f2e5054317f90e742215c8d7e2653ed953ef0",
+      "preserved": [
+        "Cilium DS/config",
+        "SPIRE server template/PVC",
+        "CMTC producer deployment/output UID"
+      ]
+    },
+    "cmtc-b": {
+      "phase": "agent-bootstrap-ready-no-workload-proof",
+      "daemonSetUID": "bbb248dc-fa87-4f78-a40e-aa23fc4a7530",
+      "configMapUIDs": {
+        "cmtc-workload-api-33f9e32b243b9905": "393f0d01-32cb-4253-98c0-680a9e7a515a",
+        "cmtc-kubelet-pins-33f9e32b243b9905": "84182158-2994-4e8e-9466-c3af43d385a6"
+      },
+      "retainedSignerSHA256": "c5be88b52a130dc883f31689dfb343e2b5f9898069d2dae96fb71422356fe855",
+      "preserved": [
+        "Cilium DS/config",
+        "SPIRE server template/PVC",
+        "CMTC producer deployment/output UID"
+      ]
+    }
+  },
+  "privateKeyExported": false,
+  "nodeSockets": "separate private UID1000 Workload/Admin socket directories; no application mounts",
+  "remaining": [
+    "exact PodUID workload/delegate registrations and real native fetch",
+    "native CRI held process incarnation and ambiguous sandbox rejection",
+    "native source leases, effective policy and runtime typed drain integration",
+    "cross-cluster mTLS traffic and failure evidence"
+  ]
+}

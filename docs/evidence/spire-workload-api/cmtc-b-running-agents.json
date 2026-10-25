@@ -1,0 +1,1322 @@
+[
+  {
+    "apiVersion": "v1",
+    "kind": "Pod",
+    "metadata": {
+      "annotations": {
+        "security.cmtc.io/workload-api-config": "33f9e32b243b9905"
+      },
+      "creationTimestamp": "2026-10-25T05:03:31Z",
+      "generateName": "spire-agent-",
+      "generation": 1,
+      "labels": {
+        "app": "spire-agent",
+        "controller-revision-hash": "8468cd9d9b",
+        "pod-template-generation": "2",
+        "security.cmtc.io/pki-cluster": "cmtc-b",
+        "security.cmtc.io/pki-owner": "cmtc-lab-pki",
+        "security.cmtc.io/pki-role": "spire-agent"
+      },
+      "name": "spire-agent-ftqrr",
+      "namespace": "cilium-spire",
+      "ownerReferences": [
+        {
+          "apiVersion": "apps/v1",
+          "blockOwnerDeletion": true,
+          "controller": true,
+          "kind": "DaemonSet",
+          "name": "spire-agent",
+          "uid": "bbb248dc-fa87-4f78-a40e-aa23fc4a7530"
+        }
+      ],
+      "resourceVersion": "96440",
+      "uid": "9c4d37b8-7477-4b3f-866e-201b272ff0ef"
+    },
+    "spec": {
+      "affinity": {
+        "nodeAffinity": {
+          "requiredDuringSchedulingIgnoredDuringExecution": {
+            "nodeSelectorTerms": [
+              {
+                "matchFields": [
+                  {
+                    "key": "metadata.name",
+                    "operator": "In",
+                    "values": [
+                      "cmtc-b-control-plane"
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      },
+      "containers": [
+        {
+          "args": [
+            "-config",
+            "/run/spire/config/agent.conf"
+          ],
+          "env": [
+            {
+              "name": "CMTC_NODE_NAME",
+              "valueFrom": {
+                "fieldRef": {
+                  "apiVersion": "v1",
+                  "fieldPath": "spec.nodeName"
+                }
+              }
+            }
+          ],
+          "image": "localhost/cmtc-spire-agent@sha256:bf2286fb7a93084ebd17128d629e1b12715722c30d37e430ac922b0503219078",
+          "imagePullPolicy": "IfNotPresent",
+          "livenessProbe": {
+            "failureThreshold": 2,
+            "httpGet": {
+              "path": "/live",
+              "port": "http",
+              "scheme": "HTTP"
+            },
+            "initialDelaySeconds": 15,
+            "periodSeconds": 60,
+            "successThreshold": 1,
+            "timeoutSeconds": 3
+          },
+          "name": "spire-agent",
+          "ports": [
+            {
+              "containerPort": 4251,
+              "hostPort": 4251,
+              "name": "http",
+              "protocol": "TCP"
+            }
+          ],
+          "readinessProbe": {
+            "failureThreshold": 3,
+            "httpGet": {
+              "path": "/ready",
+              "port": "http",
+              "scheme": "HTTP"
+            },
+            "initialDelaySeconds": 5,
+            "periodSeconds": 5,
+            "successThreshold": 1,
+            "timeoutSeconds": 1
+          },
+          "resources": {},
+          "startupProbe": {
+            "failureThreshold": 30,
+            "httpGet": {
+              "path": "/live",
+              "port": "http",
+              "scheme": "HTTP"
+            },
+            "periodSeconds": 5,
+            "successThreshold": 1,
+            "timeoutSeconds": 3
+          },
+          "terminationMessagePath": "/dev/termination-log",
+          "terminationMessagePolicy": "File",
+          "volumeMounts": [
+            {
+              "mountPath": "/run/spire/config",
+              "name": "spire-config",
+              "readOnly": true
+            },
+            {
+              "mountPath": "/run/spire/bundle",
+              "name": "spire-bundle",
+              "readOnly": true
+            },
+            {
+              "mountPath": "/run/spire/data",
+              "name": "spire-agent-data"
+            },
+            {
+              "mountPath": "/var/run/secrets/tokens",
+              "name": "spire-token",
+              "readOnly": true
+            },
+            {
+              "mountPath": "/run/spire/sockets/agent",
+              "name": "cmtc-node-sockets",
+              "subPath": "agent"
+            },
+            {
+              "mountPath": "/run/spire/sockets/admin",
+              "name": "cmtc-node-sockets",
+              "subPath": "admin"
+            },
+            {
+              "mountPath": "/run/cmtc-kubelet/serving.pem",
+              "name": "cmtc-kubelet-pins",
+              "readOnly": true,
+              "subPathExpr": "$(CMTC_NODE_NAME).pem"
+            },
+            {
+              "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount",
+              "name": "kube-api-access-5bfj4",
+              "readOnly": true
+            }
+          ]
+        }
+      ],
+      "dnsPolicy": "ClusterFirstWithHostNet",
+      "enableServiceLinks": true,
+      "hostAliases": [
+        {
+          "hostnames": [
+            "cmtc-b-control-plane"
+          ],
+          "ip": "172.18.0.4"
+        },
+        {
+          "hostnames": [
+            "cmtc-b-worker"
+          ],
+          "ip": "172.18.0.5"
+        }
+      ],
+      "hostNetwork": true,
+      "hostPID": true,
+      "hostUsers": true,
+      "initContainers": [
+        {
+          "command": [
+            "/bin/sh",
+            "/opt/cmtc/wait-for-server.sh"
+          ],
+          "env": [
+            {
+              "name": "SPIRE_WAIT_ATTEMPTS",
+              "value": "60"
+            },
+            {
+              "name": "SPIRE_WAIT_DEADLINE",
+              "value": "60"
+            },
+            {
+              "name": "SPIRE_WAIT_BACKOFF",
+              "value": "1"
+            },
+            {
+              "name": "SPIRE_SERVER_HOST",
+              "value": "spire-server.cilium-spire.svc"
+            },
+            {
+              "name": "SPIRE_SERVER_PORT",
+              "value": "8081"
+            }
+          ],
+          "image": "docker.io/library/busybox:1.38.0@sha256:fd7dc98638c8e305f4dc34e979f1c0fdfdcaeb0fbf8fcff77ae834b6da3d7e6e",
+          "imagePullPolicy": "IfNotPresent",
+          "name": "wait-for-server",
+          "resources": {},
+          "terminationMessagePath": "/dev/termination-log",
+          "terminationMessagePolicy": "File",
+          "volumeMounts": [
+            {
+              "mountPath": "/opt/cmtc",
+              "name": "spire-helpers",
+              "readOnly": true
+            },
+            {
+              "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount",
+              "name": "kube-api-access-5bfj4",
+              "readOnly": true
+            }
+          ]
+        },
+        {
+          "command": [
+            "/bin/sh",
+            "-ec",
+            "set -eu\numask 077\nif [ \"$(stat -c '%u:%g:%a' /cmtc-node-sockets)\" != '0:0:755' ]; then exit 30; fi\nfor name in agent admin; do\n p=/cmtc-node-sockets/$name\n if [ -e \"$p\" ] || [ -L \"$p\" ]; then\n  if [ ! -d \"$p\" ] || [ -L \"$p\" ]; then exit 31; fi\n  if [ \"$(stat -c '%u:%g:%a' \"$p\")\" != '1000:1000:700' ]; then exit 32; fi\n else\n  mkdir -m 700 \"$p\"\n  chown 1000:1000 \"$p\"\n fi\ndone\n"
+          ],
+          "image": "docker.io/library/busybox:1.38.0@sha256:fd7dc98638c8e305f4dc34e979f1c0fdfdcaeb0fbf8fcff77ae834b6da3d7e6e",
+          "imagePullPolicy": "IfNotPresent",
+          "name": "prepare-node-sockets",
+          "resources": {},
+          "securityContext": {
+            "allowPrivilegeEscalation": false,
+            "capabilities": {
+              "add": [
+                "CHOWN"
+              ],
+              "drop": [
+                "ALL"
+              ]
+            },
+            "readOnlyRootFilesystem": true,
+            "runAsGroup": 0,
+            "runAsNonRoot": false,
+            "runAsUser": 0
+          },
+          "terminationMessagePath": "/dev/termination-log",
+          "terminationMessagePolicy": "File",
+          "volumeMounts": [
+            {
+              "mountPath": "/cmtc-node-sockets",
+              "name": "cmtc-node-sockets"
+            },
+            {
+              "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount",
+              "name": "kube-api-access-5bfj4",
+              "readOnly": true
+            }
+          ]
+        }
+      ],
+      "nodeName": "cmtc-b-control-plane",
+      "preemptionPolicy": "PreemptLowerPriority",
+      "priority": 2000001000,
+      "priorityClassName": "system-node-critical",
+      "restartPolicy": "Always",
+      "schedulerName": "default-scheduler",
+      "securityContext": {
+        "fsGroup": 1000,
+        "fsGroupChangePolicy": "OnRootMismatch",
+        "runAsGroup": 1000,
+        "runAsNonRoot": true,
+        "runAsUser": 1000
+      },
+      "serviceAccount": "spire-agent",
+      "serviceAccountName": "spire-agent",
+      "terminationGracePeriodSeconds": 30,
+      "tolerations": [
+        {
+          "effect": "NoSchedule",
+          "key": "node.kubernetes.io/not-ready"
+        },
+        {
+          "effect": "NoSchedule",
+          "key": "node-role.kubernetes.io/master"
+        },
+        {
+          "effect": "NoSchedule",
+          "key": "node-role.kubernetes.io/control-plane"
+        },
+        {
+          "effect": "NoSchedule",
+          "key": "node.cloudprovider.kubernetes.io/uninitialized",
+          "value": "true"
+        },
+        {
+          "key": "CriticalAddonsOnly",
+          "operator": "Exists"
+        },
+        {
+          "effect": "NoSchedule",
+          "key": "node.cilium.io/agent-not-ready"
+        },
+        {
+          "effect": "NoExecute",
+          "key": "node.kubernetes.io/not-ready",
+          "operator": "Exists"
+        },
+        {
+          "effect": "NoExecute",
+          "key": "node.kubernetes.io/unreachable",
+          "operator": "Exists"
+        },
+        {
+          "effect": "NoSchedule",
+          "key": "node.kubernetes.io/disk-pressure",
+          "operator": "Exists"
+        },
+        {
+          "effect": "NoSchedule",
+          "key": "node.kubernetes.io/memory-pressure",
+          "operator": "Exists"
+        },
+        {
+          "effect": "NoSchedule",
+          "key": "node.kubernetes.io/pid-pressure",
+          "operator": "Exists"
+        },
+        {
+          "effect": "NoSchedule",
+          "key": "node.kubernetes.io/unschedulable",
+          "operator": "Exists"
+        },
+        {
+          "effect": "NoSchedule",
+          "key": "node.kubernetes.io/network-unavailable",
+          "operator": "Exists"
+        }
+      ],
+      "volumes": [
+        {
+          "configMap": {
+            "defaultMode": 420,
+            "name": "cmtc-workload-api-33f9e32b243b9905"
+          },
+          "name": "spire-config"
+        },
+        {
+          "configMap": {
+            "defaultMode": 420,
+            "name": "spire-bundle"
+          },
+          "name": "spire-bundle"
+        },
+        {
+          "emptyDir": {
+            "sizeLimit": "64Mi"
+          },
+          "name": "spire-agent-data"
+        },
+        {
+          "configMap": {
+            "defaultMode": 292,
+            "name": "spire-helpers"
+          },
+          "name": "spire-helpers"
+        },
+        {
+          "name": "spire-token",
+          "projected": {
+            "defaultMode": 420,
+            "sources": [
+              {
+                "serviceAccountToken": {
+                  "audience": "spire-server",
+                  "expirationSeconds": 600,
+                  "path": "spire-agent"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "hostPath": {
+            "path": "/run/cmtc-spire/cmtc-b",
+            "type": "DirectoryOrCreate"
+          },
+          "name": "cmtc-node-sockets"
+        },
+        {
+          "configMap": {
+            "defaultMode": 420,
+            "name": "cmtc-kubelet-pins-33f9e32b243b9905"
+          },
+          "name": "cmtc-kubelet-pins"
+        },
+        {
+          "name": "kube-api-access-5bfj4",
+          "projected": {
+            "defaultMode": 420,
+            "sources": [
+              {
+                "serviceAccountToken": {
+                  "expirationSeconds": 3607,
+                  "path": "token"
+                }
+              },
+              {
+                "configMap": {
+                  "items": [
+                    {
+                      "key": "ca.crt",
+                      "path": "ca.crt"
+                    }
+                  ],
+                  "name": "kube-root-ca.crt"
+                }
+              },
+              {
+                "downwardAPI": {
+                  "items": [
+                    {
+                      "fieldRef": {
+                        "apiVersion": "v1",
+                        "fieldPath": "metadata.namespace"
+                      },
+                      "path": "namespace"
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "status": {
+      "conditions": [
+        {
+          "lastProbeTime": null,
+          "lastTransitionTime": "2026-10-25T05:03:32Z",
+          "observedGeneration": 1,
+          "status": "True",
+          "type": "PodReadyToStartContainers"
+        },
+        {
+          "lastProbeTime": null,
+          "lastTransitionTime": "2026-10-25T05:03:33Z",
+          "observedGeneration": 1,
+          "status": "True",
+          "type": "Initialized"
+        },
+        {
+          "lastProbeTime": null,
+          "lastTransitionTime": "2026-10-25T05:03:42Z",
+          "observedGeneration": 1,
+          "status": "True",
+          "type": "Ready"
+        },
+        {
+          "lastProbeTime": null,
+          "lastTransitionTime": "2026-10-25T05:03:42Z",
+          "observedGeneration": 1,
+          "status": "True",
+          "type": "ContainersReady"
+        },
+        {
+          "lastProbeTime": null,
+          "lastTransitionTime": "2026-10-25T05:03:31Z",
+          "observedGeneration": 1,
+          "status": "True",
+          "type": "PodScheduled"
+        }
+      ],
+      "containerStatuses": [
+        {
+          "containerID": "containerd://aec7cd490d432783f77af64144887a916468b629528335bce5b96b21c2ecb63d",
+          "image": "localhost/cmtc-spire-agent:workload-28f6b8d84a",
+          "imageID": "docker.io/library/import-2026-10-25@sha256:9f8fb19e119c7c825f00780d58d245281c33274bd61c4b53932c48daca8c15dc",
+          "lastState": {},
+          "name": "spire-agent",
+          "ready": true,
+          "resources": {},
+          "restartCount": 0,
+          "started": true,
+          "state": {
+            "running": {
+              "startedAt": "2026-10-25T05:03:33Z"
+            }
+          },
+          "user": {
+            "linux": {
+              "gid": 1000,
+              "supplementalGroups": [
+                1000
+              ],
+              "uid": 1000
+            }
+          },
+          "volumeMounts": [
+            {
+              "mountPath": "/run/spire/config",
+              "name": "spire-config",
+              "readOnly": true,
+              "recursiveReadOnly": "Disabled"
+            },
+            {
+              "mountPath": "/run/spire/bundle",
+              "name": "spire-bundle",
+              "readOnly": true,
+              "recursiveReadOnly": "Disabled"
+            },
+            {
+              "mountPath": "/run/spire/data",
+              "name": "spire-agent-data"
+            },
+            {
+              "mountPath": "/var/run/secrets/tokens",
+              "name": "spire-token",
+              "readOnly": true,
+              "recursiveReadOnly": "Disabled"
+            },
+            {
+              "mountPath": "/run/spire/sockets/agent",
+              "name": "cmtc-node-sockets"
+            },
+            {
+              "mountPath": "/run/spire/sockets/admin",
+              "name": "cmtc-node-sockets"
+            },
+            {
+              "mountPath": "/run/cmtc-kubelet/serving.pem",
+              "name": "cmtc-kubelet-pins",
+              "readOnly": true,
+              "recursiveReadOnly": "Disabled"
+            },
+            {
+              "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount",
+              "name": "kube-api-access-5bfj4",
+              "readOnly": true,
+              "recursiveReadOnly": "Disabled"
+            }
+          ]
+        }
+      ],
+      "hostIP": "172.18.0.4",
+      "hostIPs": [
+        {
+          "ip": "172.18.0.4"
+        }
+      ],
+      "initContainerStatuses": [
+        {
+          "containerID": "containerd://9eed46affacd6577a2dc3d01c2ec5a69f511c9de5c22832391e9581ce84660fd",
+          "image": "sha256:d2482869a6b838d3b4c9cad0c8085c06277909482771eb525d298fc3a7d07927",
+          "imageID": "docker.io/library/busybox@sha256:fd7dc98638c8e305f4dc34e979f1c0fdfdcaeb0fbf8fcff77ae834b6da3d7e6e",
+          "lastState": {},
+          "name": "wait-for-server",
+          "ready": true,
+          "resources": {},
+          "restartCount": 0,
+          "started": false,
+          "state": {
+            "terminated": {
+              "containerID": "containerd://9eed46affacd6577a2dc3d01c2ec5a69f511c9de5c22832391e9581ce84660fd",
+              "exitCode": 0,
+              "finishedAt": "2026-10-25T05:03:32Z",
+              "reason": "Completed",
+              "startedAt": "2026-10-25T05:03:32Z"
+            }
+          },
+          "user": {
+            "linux": {
+              "gid": 1000,
+              "supplementalGroups": [
+                1000
+              ],
+              "uid": 1000
+            }
+          },
+          "volumeMounts": [
+            {
+              "mountPath": "/opt/cmtc",
+              "name": "spire-helpers",
+              "readOnly": true,
+              "recursiveReadOnly": "Disabled"
+            },
+            {
+              "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount",
+              "name": "kube-api-access-5bfj4",
+              "readOnly": true,
+              "recursiveReadOnly": "Disabled"
+            }
+          ]
+        },
+        {
+          "containerID": "containerd://76ac369a6fca108b19201bfb3f5072e35ae1d6e503589616d9a224223e723928",
+          "image": "sha256:d2482869a6b838d3b4c9cad0c8085c06277909482771eb525d298fc3a7d07927",
+          "imageID": "docker.io/library/busybox@sha256:fd7dc98638c8e305f4dc34e979f1c0fdfdcaeb0fbf8fcff77ae834b6da3d7e6e",
+          "lastState": {},
+          "name": "prepare-node-sockets",
+          "ready": true,
+          "resources": {},
+          "restartCount": 0,
+          "started": false,
+          "state": {
+            "terminated": {
+              "containerID": "containerd://76ac369a6fca108b19201bfb3f5072e35ae1d6e503589616d9a224223e723928",
+              "exitCode": 0,
+              "finishedAt": "2026-10-25T05:03:32Z",
+              "reason": "Completed",
+              "startedAt": "2026-10-25T05:03:32Z"
+            }
+          },
+          "user": {
+            "linux": {
+              "gid": 0,
+              "supplementalGroups": [
+                0,
+                10,
+                1000
+              ],
+              "uid": 0
+            }
+          },
+          "volumeMounts": [
+            {
+              "mountPath": "/cmtc-node-sockets",
+              "name": "cmtc-node-sockets"
+            },
+            {
+              "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount",
+              "name": "kube-api-access-5bfj4",
+              "readOnly": true,
+              "recursiveReadOnly": "Disabled"
+            }
+          ]
+        }
+      ],
+      "observedGeneration": 1,
+      "phase": "Running",
+      "podIP": "172.18.0.4",
+      "podIPs": [
+        {
+          "ip": "172.18.0.4"
+        }
+      ],
+      "qosClass": "BestEffort",
+      "resources": {},
+      "startTime": "2026-10-25T05:03:31Z"
+    }
+  },
+  {
+    "apiVersion": "v1",
+    "kind": "Pod",
+    "metadata": {
+      "annotations": {
+        "security.cmtc.io/workload-api-config": "33f9e32b243b9905"
+      },
+      "creationTimestamp": "2026-10-25T05:03:24Z",
+      "generateName": "spire-agent-",
+      "generation": 1,
+      "labels": {
+        "app": "spire-agent",
+        "controller-revision-hash": "8468cd9d9b",
+        "pod-template-generation": "2",
+        "security.cmtc.io/pki-cluster": "cmtc-b",
+        "security.cmtc.io/pki-owner": "cmtc-lab-pki",
+        "security.cmtc.io/pki-role": "spire-agent"
+      },
+      "name": "spire-agent-kwqv8",
+      "namespace": "cilium-spire",
+      "ownerReferences": [
+        {
+          "apiVersion": "apps/v1",
+          "blockOwnerDeletion": true,
+          "controller": true,
+          "kind": "DaemonSet",
+          "name": "spire-agent",
+          "uid": "bbb248dc-fa87-4f78-a40e-aa23fc4a7530"
+        }
+      ],
+      "resourceVersion": "96378",
+      "uid": "2aa7b11e-79c5-48f5-9e51-6b53b2f7a00a"
+    },
+    "spec": {
+      "affinity": {
+        "nodeAffinity": {
+          "requiredDuringSchedulingIgnoredDuringExecution": {
+            "nodeSelectorTerms": [
+              {
+                "matchFields": [
+                  {
+                    "key": "metadata.name",
+                    "operator": "In",
+                    "values": [
+                      "cmtc-b-worker"
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      },
+      "containers": [
+        {
+          "args": [
+            "-config",
+            "/run/spire/config/agent.conf"
+          ],
+          "env": [
+            {
+              "name": "CMTC_NODE_NAME",
+              "valueFrom": {
+                "fieldRef": {
+                  "apiVersion": "v1",
+                  "fieldPath": "spec.nodeName"
+                }
+              }
+            }
+          ],
+          "image": "localhost/cmtc-spire-agent@sha256:bf2286fb7a93084ebd17128d629e1b12715722c30d37e430ac922b0503219078",
+          "imagePullPolicy": "IfNotPresent",
+          "livenessProbe": {
+            "failureThreshold": 2,
+            "httpGet": {
+              "path": "/live",
+              "port": "http",
+              "scheme": "HTTP"
+            },
+            "initialDelaySeconds": 15,
+            "periodSeconds": 60,
+            "successThreshold": 1,
+            "timeoutSeconds": 3
+          },
+          "name": "spire-agent",
+          "ports": [
+            {
+              "containerPort": 4251,
+              "hostPort": 4251,
+              "name": "http",
+              "protocol": "TCP"
+            }
+          ],
+          "readinessProbe": {
+            "failureThreshold": 3,
+            "httpGet": {
+              "path": "/ready",
+              "port": "http",
+              "scheme": "HTTP"
+            },
+            "initialDelaySeconds": 5,
+            "periodSeconds": 5,
+            "successThreshold": 1,
+            "timeoutSeconds": 1
+          },
+          "resources": {},
+          "startupProbe": {
+            "failureThreshold": 30,
+            "httpGet": {
+              "path": "/live",
+              "port": "http",
+              "scheme": "HTTP"
+            },
+            "periodSeconds": 5,
+            "successThreshold": 1,
+            "timeoutSeconds": 3
+          },
+          "terminationMessagePath": "/dev/termination-log",
+          "terminationMessagePolicy": "File",
+          "volumeMounts": [
+            {
+              "mountPath": "/run/spire/config",
+              "name": "spire-config",
+              "readOnly": true
+            },
+            {
+              "mountPath": "/run/spire/bundle",
+              "name": "spire-bundle",
+              "readOnly": true
+            },
+            {
+              "mountPath": "/run/spire/data",
+              "name": "spire-agent-data"
+            },
+            {
+              "mountPath": "/var/run/secrets/tokens",
+              "name": "spire-token",
+              "readOnly": true
+            },
+            {
+              "mountPath": "/run/spire/sockets/agent",
+              "name": "cmtc-node-sockets",
+              "subPath": "agent"
+            },
+            {
+              "mountPath": "/run/spire/sockets/admin",
+              "name": "cmtc-node-sockets",
+              "subPath": "admin"
+            },
+            {
+              "mountPath": "/run/cmtc-kubelet/serving.pem",
+              "name": "cmtc-kubelet-pins",
+              "readOnly": true,
+              "subPathExpr": "$(CMTC_NODE_NAME).pem"
+            },
+            {
+              "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount",
+              "name": "kube-api-access-4bzbt",
+              "readOnly": true
+            }
+          ]
+        }
+      ],
+      "dnsPolicy": "ClusterFirstWithHostNet",
+      "enableServiceLinks": true,
+      "hostAliases": [
+        {
+          "hostnames": [
+            "cmtc-b-control-plane"
+          ],
+          "ip": "172.18.0.4"
+        },
+        {
+          "hostnames": [
+            "cmtc-b-worker"
+          ],
+          "ip": "172.18.0.5"
+        }
+      ],
+      "hostNetwork": true,
+      "hostPID": true,
+      "hostUsers": true,
+      "initContainers": [
+        {
+          "command": [
+            "/bin/sh",
+            "/opt/cmtc/wait-for-server.sh"
+          ],
+          "env": [
+            {
+              "name": "SPIRE_WAIT_ATTEMPTS",
+              "value": "60"
+            },
+            {
+              "name": "SPIRE_WAIT_DEADLINE",
+              "value": "60"
+            },
+            {
+              "name": "SPIRE_WAIT_BACKOFF",
+              "value": "1"
+            },
+            {
+              "name": "SPIRE_SERVER_HOST",
+              "value": "spire-server.cilium-spire.svc"
+            },
+            {
+              "name": "SPIRE_SERVER_PORT",
+              "value": "8081"
+            }
+          ],
+          "image": "docker.io/library/busybox:1.38.0@sha256:fd7dc98638c8e305f4dc34e979f1c0fdfdcaeb0fbf8fcff77ae834b6da3d7e6e",
+          "imagePullPolicy": "IfNotPresent",
+          "name": "wait-for-server",
+          "resources": {},
+          "terminationMessagePath": "/dev/termination-log",
+          "terminationMessagePolicy": "File",
+          "volumeMounts": [
+            {
+              "mountPath": "/opt/cmtc",
+              "name": "spire-helpers",
+              "readOnly": true
+            },
+            {
+              "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount",
+              "name": "kube-api-access-4bzbt",
+              "readOnly": true
+            }
+          ]
+        },
+        {
+          "command": [
+            "/bin/sh",
+            "-ec",
+            "set -eu\numask 077\nif [ \"$(stat -c '%u:%g:%a' /cmtc-node-sockets)\" != '0:0:755' ]; then exit 30; fi\nfor name in agent admin; do\n p=/cmtc-node-sockets/$name\n if [ -e \"$p\" ] || [ -L \"$p\" ]; then\n  if [ ! -d \"$p\" ] || [ -L \"$p\" ]; then exit 31; fi\n  if [ \"$(stat -c '%u:%g:%a' \"$p\")\" != '1000:1000:700' ]; then exit 32; fi\n else\n  mkdir -m 700 \"$p\"\n  chown 1000:1000 \"$p\"\n fi\ndone\n"
+          ],
+          "image": "docker.io/library/busybox:1.38.0@sha256:fd7dc98638c8e305f4dc34e979f1c0fdfdcaeb0fbf8fcff77ae834b6da3d7e6e",
+          "imagePullPolicy": "IfNotPresent",
+          "name": "prepare-node-sockets",
+          "resources": {},
+          "securityContext": {
+            "allowPrivilegeEscalation": false,
+            "capabilities": {
+              "add": [
+                "CHOWN"
+              ],
+              "drop": [
+                "ALL"
+              ]
+            },
+            "readOnlyRootFilesystem": true,
+            "runAsGroup": 0,
+            "runAsNonRoot": false,
+            "runAsUser": 0
+          },
+          "terminationMessagePath": "/dev/termination-log",
+          "terminationMessagePolicy": "File",
+          "volumeMounts": [
+            {
+              "mountPath": "/cmtc-node-sockets",
+              "name": "cmtc-node-sockets"
+            },
+            {
+              "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount",
+              "name": "kube-api-access-4bzbt",
+              "readOnly": true
+            }
+          ]
+        }
+      ],
+      "nodeName": "cmtc-b-worker",
+      "preemptionPolicy": "PreemptLowerPriority",
+      "priority": 2000001000,
+      "priorityClassName": "system-node-critical",
+      "restartPolicy": "Always",
+      "schedulerName": "default-scheduler",
+      "securityContext": {
+        "fsGroup": 1000,
+        "fsGroupChangePolicy": "OnRootMismatch",
+        "runAsGroup": 1000,
+        "runAsNonRoot": true,
+        "runAsUser": 1000
+      },
+      "serviceAccount": "spire-agent",
+      "serviceAccountName": "spire-agent",
+      "terminationGracePeriodSeconds": 30,
+      "tolerations": [
+        {
+          "effect": "NoSchedule",
+          "key": "node.kubernetes.io/not-ready"
+        },
+        {
+          "effect": "NoSchedule",
+          "key": "node-role.kubernetes.io/master"
+        },
+        {
+          "effect": "NoSchedule",
+          "key": "node-role.kubernetes.io/control-plane"
+        },
+        {
+          "effect": "NoSchedule",
+          "key": "node.cloudprovider.kubernetes.io/uninitialized",
+          "value": "true"
+        },
+        {
+          "key": "CriticalAddonsOnly",
+          "operator": "Exists"
+        },
+        {
+          "effect": "NoSchedule",
+          "key": "node.cilium.io/agent-not-ready"
+        },
+        {
+          "effect": "NoExecute",
+          "key": "node.kubernetes.io/not-ready",
+          "operator": "Exists"
+        },
+        {
+          "effect": "NoExecute",
+          "key": "node.kubernetes.io/unreachable",
+          "operator": "Exists"
+        },
+        {
+          "effect": "NoSchedule",
+          "key": "node.kubernetes.io/disk-pressure",
+          "operator": "Exists"
+        },
+        {
+          "effect": "NoSchedule",
+          "key": "node.kubernetes.io/memory-pressure",
+          "operator": "Exists"
+        },
+        {
+          "effect": "NoSchedule",
+          "key": "node.kubernetes.io/pid-pressure",
+          "operator": "Exists"
+        },
+        {
+          "effect": "NoSchedule",
+          "key": "node.kubernetes.io/unschedulable",
+          "operator": "Exists"
+        },
+        {
+          "effect": "NoSchedule",
+          "key": "node.kubernetes.io/network-unavailable",
+          "operator": "Exists"
+        }
+      ],
+      "volumes": [
+        {
+          "configMap": {
+            "defaultMode": 420,
+            "name": "cmtc-workload-api-33f9e32b243b9905"
+          },
+          "name": "spire-config"
+        },
+        {
+          "configMap": {
+            "defaultMode": 420,
+            "name": "spire-bundle"
+          },
+          "name": "spire-bundle"
+        },
+        {
+          "emptyDir": {
+            "sizeLimit": "64Mi"
+          },
+          "name": "spire-agent-data"
+        },
+        {
+          "configMap": {
+            "defaultMode": 292,
+            "name": "spire-helpers"
+          },
+          "name": "spire-helpers"
+        },
+        {
+          "name": "spire-token",
+          "projected": {
+            "defaultMode": 420,
+            "sources": [
+              {
+                "serviceAccountToken": {
+                  "audience": "spire-server",
+                  "expirationSeconds": 600,
+                  "path": "spire-agent"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "hostPath": {
+            "path": "/run/cmtc-spire/cmtc-b",
+            "type": "DirectoryOrCreate"
+          },
+          "name": "cmtc-node-sockets"
+        },
+        {
+          "configMap": {
+            "defaultMode": 420,
+            "name": "cmtc-kubelet-pins-33f9e32b243b9905"
+          },
+          "name": "cmtc-kubelet-pins"
+        },
+        {
+          "name": "kube-api-access-4bzbt",
+          "projected": {
+            "defaultMode": 420,
+            "sources": [
+              {
+                "serviceAccountToken": {
+                  "expirationSeconds": 3607,
+                  "path": "token"
+                }
+              },
+              {
+                "configMap": {
+                  "items": [
+                    {
+                      "key": "ca.crt",
+                      "path": "ca.crt"
+                    }
+                  ],
+                  "name": "kube-root-ca.crt"
+                }
+              },
+              {
+                "downwardAPI": {
+                  "items": [
+                    {
+                      "fieldRef": {
+                        "apiVersion": "v1",
+                        "fieldPath": "metadata.namespace"
+                      },
+                      "path": "namespace"
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "status": {
+      "conditions": [
+        {
+          "lastProbeTime": null,
+          "lastTransitionTime": "2026-10-25T05:03:25Z",
+          "observedGeneration": 1,
+          "status": "True",
+          "type": "PodReadyToStartContainers"
+        },
+        {
+          "lastProbeTime": null,
+          "lastTransitionTime": "2026-10-25T05:03:26Z",
+          "observedGeneration": 1,
+          "status": "True",
+          "type": "Initialized"
+        },
+        {
+          "lastProbeTime": null,
+          "lastTransitionTime": "2026-10-25T05:03:31Z",
+          "observedGeneration": 1,
+          "status": "True",
+          "type": "Ready"
+        },
+        {
+          "lastProbeTime": null,
+          "lastTransitionTime": "2026-10-25T05:03:31Z",
+          "observedGeneration": 1,
+          "status": "True",
+          "type": "ContainersReady"
+        },
+        {
+          "lastProbeTime": null,
+          "lastTransitionTime": "2026-10-25T05:03:24Z",
+          "observedGeneration": 1,
+          "status": "True",
+          "type": "PodScheduled"
+        }
+      ],
+      "containerStatuses": [
+        {
+          "containerID": "containerd://cb40d80510120557b10f21973eaef2618299364742f708f16ba7d2ea37d489ea",
+          "image": "localhost/cmtc-spire-agent:workload-28f6b8d84a",
+          "imageID": "docker.io/library/import-2026-10-25@sha256:9f8fb19e119c7c825f00780d58d245281c33274bd61c4b53932c48daca8c15dc",
+          "lastState": {},
+          "name": "spire-agent",
+          "ready": true,
+          "resources": {},
+          "restartCount": 0,
+          "started": true,
+          "state": {
+            "running": {
+              "startedAt": "2026-10-25T05:03:26Z"
+            }
+          },
+          "user": {
+            "linux": {
+              "gid": 1000,
+              "supplementalGroups": [
+                1000
+              ],
+              "uid": 1000
+            }
+          },
+          "volumeMounts": [
+            {
+              "mountPath": "/run/spire/config",
+              "name": "spire-config",
+              "readOnly": true,
+              "recursiveReadOnly": "Disabled"
+            },
+            {
+              "mountPath": "/run/spire/bundle",
+              "name": "spire-bundle",
+              "readOnly": true,
+              "recursiveReadOnly": "Disabled"
+            },
+            {
+              "mountPath": "/run/spire/data",
+              "name": "spire-agent-data"
+            },
+            {
+              "mountPath": "/var/run/secrets/tokens",
+              "name": "spire-token",
+              "readOnly": true,
+              "recursiveReadOnly": "Disabled"
+            },
+            {
+              "mountPath": "/run/spire/sockets/agent",
+              "name": "cmtc-node-sockets"
+            },
+            {
+              "mountPath": "/run/spire/sockets/admin",
+              "name": "cmtc-node-sockets"
+            },
+            {
+              "mountPath": "/run/cmtc-kubelet/serving.pem",
+              "name": "cmtc-kubelet-pins",
+              "readOnly": true,
+              "recursiveReadOnly": "Disabled"
+            },
+            {
+              "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount",
+              "name": "kube-api-access-4bzbt",
+              "readOnly": true,
+              "recursiveReadOnly": "Disabled"
+            }
+          ]
+        }
+      ],
+      "hostIP": "172.18.0.5",
+      "hostIPs": [
+        {
+          "ip": "172.18.0.5"
+        }
+      ],
+      "initContainerStatuses": [
+        {
+          "containerID": "containerd://1324e28004bce571e1702e55027d931ac48dbf908b10cb974f542ce2cb51db17",
+          "image": "sha256:d2482869a6b838d3b4c9cad0c8085c06277909482771eb525d298fc3a7d07927",
+          "imageID": "docker.io/library/busybox@sha256:fd7dc98638c8e305f4dc34e979f1c0fdfdcaeb0fbf8fcff77ae834b6da3d7e6e",
+          "lastState": {},
+          "name": "wait-for-server",
+          "ready": true,
+          "resources": {},
+          "restartCount": 0,
+          "started": false,
+          "state": {
+            "terminated": {
+              "containerID": "containerd://1324e28004bce571e1702e55027d931ac48dbf908b10cb974f542ce2cb51db17",
+              "exitCode": 0,
+              "finishedAt": "2026-10-25T05:03:25Z",
+              "reason": "Completed",
+              "startedAt": "2026-10-25T05:03:25Z"
+            }
+          },
+          "user": {
+            "linux": {
+              "gid": 1000,
+              "supplementalGroups": [
+                1000
+              ],
+              "uid": 1000
+            }
+          },
+          "volumeMounts": [
+            {
+              "mountPath": "/opt/cmtc",
+              "name": "spire-helpers",
+              "readOnly": true,
+              "recursiveReadOnly": "Disabled"
+            },
+            {
+              "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount",
+              "name": "kube-api-access-4bzbt",
+              "readOnly": true,
+              "recursiveReadOnly": "Disabled"
+            }
+          ]
+        },
+        {
+          "containerID": "containerd://89cfdf45245a1b1d5ba6a53bb5367e9a026ce85b419b4a73172dea2e534b2bc4",
+          "image": "sha256:d2482869a6b838d3b4c9cad0c8085c06277909482771eb525d298fc3a7d07927",
+          "imageID": "docker.io/library/busybox@sha256:fd7dc98638c8e305f4dc34e979f1c0fdfdcaeb0fbf8fcff77ae834b6da3d7e6e",
+          "lastState": {},
+          "name": "prepare-node-sockets",
+          "ready": true,
+          "resources": {},
+          "restartCount": 0,
+          "started": false,
+          "state": {
+            "terminated": {
+              "containerID": "containerd://89cfdf45245a1b1d5ba6a53bb5367e9a026ce85b419b4a73172dea2e534b2bc4",
+              "exitCode": 0,
+              "finishedAt": "2026-10-25T05:03:25Z",
+              "reason": "Completed",
+              "startedAt": "2026-10-25T05:03:25Z"
+            }
+          },
+          "user": {
+            "linux": {
+              "gid": 0,
+              "supplementalGroups": [
+                0,
+                10,
+                1000
+              ],
+              "uid": 0
+            }
+          },
+          "volumeMounts": [
+            {
+              "mountPath": "/cmtc-node-sockets",
+              "name": "cmtc-node-sockets"
+            },
+            {
+              "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount",
+              "name": "kube-api-access-4bzbt",
+              "readOnly": true,
+              "recursiveReadOnly": "Disabled"
+            }
+          ]
+        }
+      ],
+      "observedGeneration": 1,
+      "phase": "Running",
+      "podIP": "172.18.0.5",
+      "podIPs": [
+        {
+          "ip": "172.18.0.5"
+        }
+      ],
+      "qosClass": "BestEffort",
+      "resources": {},
+      "startTime": "2026-10-25T05:03:24Z"
+    }
+  }
+]

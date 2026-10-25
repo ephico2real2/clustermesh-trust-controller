@@ -1,0 +1,326 @@
+{
+  "schema": "cmtc-workload-api-plan-input/v1",
+  "cluster": "cmtc-a",
+  "clusterUID": "bb7182c7-de95-4e70-816a-a1400d755794",
+  "domain": "cmtc-a.mesh.example",
+  "nodes": [
+    {
+      "name": "cmtc-a-control-plane",
+      "uid": "1e707131-badc-45d7-b543-758f6267f1d6",
+      "ip": "172.18.0.3",
+      "kubeletCertificatePEM": "-----BEGIN CERTIFICATE-----\nMIIDUDCCAjigAwIBAgIIO4BRJe4wdXwwDQYJKoZIhvcNAQELBQAwLTErMCkGA1UE\nAwwiY210Yy1hLWNvbnRyb2wtcGxhbmUtY2FAMTc5Mjg3MDUxNzAeFw0yNjEwMjQx\nODM1MTdaFw0yNzEwMjQxODM1MTdaMCoxKDAmBgNVBAMMH2NtdGMtYS1jb250cm9s\nLXBsYW5lQDE3OTI4NzA1MTcwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIB\nAQDn4LwyRYHuJuvqe31qLi+Il1ZX297v5l9oJ3ZuhNuBnAwy7fqpw4bmDXvpSK4H\nIwnhpX89Rj50GBqoR3CBT0CM90fEKIUiYvICmraGy8ehchBZFvDd4Gj5a6SvV9pC\nFgess6FSDLhT4z4JW0tpHnV5PNGeDhwzstseCwPMyt80E4n+W4alwpxzQWJ7j/NU\ngVfw5NpVivnkBc+vBf5rvxadM6v7U4e0Ez/QCE9MYx4zZb1X3+FafwqIEZGH0/7x\noWHeMPNLXlOLgehmiAaJvhSeC3546zgt/3xJ1RczA8mzA44rQ3cj6xs7puOhBxKh\nEfGU7UdhYURpOyLOg7BSQAovAgMBAAGjdzB1MA4GA1UdDwEB/wQEAwIFoDATBgNV\nHSUEDDAKBggrBgEFBQcDATAMBgNVHRMBAf8EAjAAMB8GA1UdIwQYMBaAFGf9NSbT\n/HJTdwzsoSEu8m/3Yg1kMB8GA1UdEQQYMBaCFGNtdGMtYS1jb250cm9sLXBsYW5l\nMA0GCSqGSIb3DQEBCwUAA4IBAQBJKdRE9m0AV6VWRbkjz+f1IWIBnaEhN51gDOoN\n04fSYWEyJy89J/a/4X2GUs0ppxyrbgqKDurqx9JhUAzGRpKiU63X5kS37mjKyb3Q\nRM/cUuZXvAQLj+/GZK28SNZ+WBNen8HWhlViQjkhlfV6wfLNBuWdvRAnbg0E9ssu\nVtvHAVH0EsVgcgTl92lasn/Nw2Z8K1SIp/RNJuwiQbwADNUCyLBfV5OY9TrDV88S\nki5DZvePsFaW/cdZ77w0i0nqoVG+gcXW6yL+FFlHjPFOBf62oMDCLwIH/S7SvA0J\nzwzXdiitf2z0MRiLaQmdCfuv232Fu5UQ0ZKpV6SdG/5mFpZo\n-----END CERTIFICATE-----\n-----BEGIN CERTIFICATE-----\nMIIDHjCCAgagAwIBAgIIUz4OiMw1nocwDQYJKoZIhvcNAQELBQAwLTErMCkGA1UE\nAwwiY210Yy1hLWNvbnRyb2wtcGxhbmUtY2FAMTc5Mjg3MDUxNzAeFw0yNjEwMjQx\nODM1MTdaFw0yNzEwMjQxODM1MTdaMC0xKzApBgNVBAMMImNtdGMtYS1jb250cm9s\nLXBsYW5lLWNhQDE3OTI4NzA1MTcwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEK\nAoIBAQDHLwbMio8AeSIxvPVnBfci9HlbflhHaRtIrMYTPYjzaopBjGfWNqmGfTWh\njREfB9oHEf7Xk/jbaOnszfWB9MLdgRiRE/a5Z1G8+V3tmh/ylquOPI/1rzQBwsgU\nUHtPbnHbnxUUE/sSZWk3HFrMdptlbh2nFobM3JUfCz+5vkj9Oss68YxsE8W2lk92\nhKOiRzD7/xX0TSbTRtqwujyUxMTuVam6j290PYfv/ls3LNATtRJYyYzcGbfvyM/c\nuwWCS7PVrWoiA0tVJCDGMquj5DyXXOHHLOgPtohCXWNk0B35YzdKnwvlR5gf7d5v\nzgP23yCmiReWDP2ystee6Na2zG0tAgMBAAGjQjBAMA4GA1UdDwEB/wQEAwICpDAP\nBgNVHRMBAf8EBTADAQH/MB0GA1UdDgQWBBRn/TUm0/xyU3cM7KEhLvJv92INZDAN\nBgkqhkiG9w0BAQsFAAOCAQEAoCa55YKyqz/piIRfeKTuZBuc48++khGSGOHlKeXo\nMqIBOfuQSWZiZNHaCHldJAI1mqvduEfrqdkk0Vh2pNbjanNe99+aHuYnlobTJmQj\nA6rMULxxrm4sHqJOj8CwJGFEsv+d0J2/SnLGD77VEbNeyJIGtZA6cbOgm9d57+CR\nJ45Po1omZqLkhBBxHUqLKcqsb7WmAEW1hvl9pfhnfFdYONQ3euL+55+LgsIxQAKp\n0x38Jhw6aIVe/4bhxpVWl8auaNnj5fGCwQD5OrH1A/tMX8mKXMttMsNQQsOAmldl\nIByGwaGizqTd4fDGL6kc+SkxBy9GG1Jevtk4GlrawvKtRA==\n-----END CERTIFICATE-----\n",
+      "kubeletCertificateSHA256": "93f141bc21f60860d16e5882d088cb764cb66cd7ab52b0581ff9903e79950aea",
+      "kubeletCASHA256": "15151e9bf9d09c383d96e4e683be5205302eb1cc354af0a52d96d5375eb70cad"
+    },
+    {
+      "name": "cmtc-a-worker",
+      "uid": "35a6f095-90e9-41ff-a713-216cde5596f0",
+      "ip": "172.18.0.2",
+      "kubeletCertificatePEM": "-----BEGIN CERTIFICATE-----\nMIIDOzCCAiOgAwIBAgIIfQuo8zFaWHMwDQYJKoZIhvcNAQELBQAwJjEkMCIGA1UE\nAwwbY210Yy1hLXdvcmtlci1jYUAxNzkyODcwNTMyMB4XDTI2MTAyNDE4MzUzMloX\nDTI3MTAyNDE4MzUzMlowIzEhMB8GA1UEAwwYY210Yy1hLXdvcmtlckAxNzkyODcw\nNTMyMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAtoFQA86VUb9suP85\nekegaPbmbRNCz0rmvXVt4I0DsD0fEs5xvRy2JvDP+k9ftmVkAuEysa3SqMg3Hryb\nKNkuEYmR7SAIbOGWVdqpeDLOFspGkcjju8ienGX32YfAvv8hQsLEtIOpUi/rTj/b\nb+k2TET8MZm9LYE3wD6v1fvDswNLetoe1mooqI2lC7tHq2gwevSDYJLRLSeknfqY\nCpMzHhiZ50exVu1qf5MPt4dmKvPZ0DJZbmWE5d7NIDctCjr0cVsO/5layev2yjMl\n9eXTvTB8KPhAAsiUqJeqhcQSi0OZHsvzls9yfG8Q6VAzY/CQM7gvN9q+za48Tily\niS4U9wIDAQABo3AwbjAOBgNVHQ8BAf8EBAMCBaAwEwYDVR0lBAwwCgYIKwYBBQUH\nAwEwDAYDVR0TAQH/BAIwADAfBgNVHSMEGDAWgBTniOJpEaueUgQujCdqbnKKooia\nCjAYBgNVHREEETAPgg1jbXRjLWEtd29ya2VyMA0GCSqGSIb3DQEBCwUAA4IBAQAL\n9YfsoJqc8RxaLS+0x6xj70nYFen41K2W4u0zzodPUWC+CD/Ln/MQuKOXmTDGvDSk\nbqFYQCvDoALSiHVODPtlW7E63eScY4ribNLhp+6h9ENAA6wE4jMH+ENIeuo1QGbT\ns3+Q6h93F0Z2oRadDH0Cg0taTvWROHB2GgC2XeSfyGas5V1v7I8aLcXAWdYqcg/t\nz5MLHzuJO9nE8ARqWzTpyXUvNVQY2yax8DtmRu/MyOVBwirIJnyHVL2gFPGofL60\nak/eCt3Hnp7AKi9XHXhuubOIbT49n9ZVf243+8i6f9DKADWsJC17PZ9QFsJNCsZg\n2gGNUGxkbd7DVdMAY2MF\n-----END CERTIFICATE-----\n-----BEGIN CERTIFICATE-----\nMIIDEDCCAfigAwIBAgIIbHU2ILmEotQwDQYJKoZIhvcNAQELBQAwJjEkMCIGA1UE\nAwwbY210Yy1hLXdvcmtlci1jYUAxNzkyODcwNTMyMB4XDTI2MTAyNDE4MzUzMloX\nDTI3MTAyNDE4MzUzMlowJjEkMCIGA1UEAwwbY210Yy1hLXdvcmtlci1jYUAxNzky\nODcwNTMyMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAnS89il+hF8J4\nux88hydYz/MD5br6Y6WQzrdoEPo3eDRJuAK8oIAo/cfTKqmV6QcNXFhm7XFbBn20\nPufI8xqT0l9DMN/4N/Soezb1jylhaFrNKdt4K/X1yEWxgTRH4Vn/Of6/c/7CJaS7\nL0P/tujbwCDphfgcQz9kAVTynPwAVnr1z4BNPAJQnqJYjVCZAas3j6zEqR/QXWlP\n+jH7GF/XVW8PXOLfk+m6yfooTpeph9iRfcSAITdLNBnXi1Fz/pVPxxmJcttbcIhr\nqx7VrBJblOsOwhi0MkAd3oigLdAeTBe7Zazt9zOcYsPmJAPogvujTBKHqTDFrmTH\nxUABoW4nUQIDAQABo0IwQDAOBgNVHQ8BAf8EBAMCAqQwDwYDVR0TAQH/BAUwAwEB\n/zAdBgNVHQ4EFgQU54jiaRGrnlIELownam5yiqKImgowDQYJKoZIhvcNAQELBQAD\nggEBAHRa2/5kW2bo5bIqa2b1ouO77GwqxcaIEVdAOxa3igwjVTLkosiYvEUJWDvc\nV94tFNFWhELxLTp8XcXLlhYqNF/UCZZg88B2GXPG+mzNBf+PXK73IDidz3jxA6/8\nxo9KitLlCCwPTbJ65Se8p834bigKcJI08l//NOtPG3j1bEIihLiv6reWdLOJ3rtd\nsGYGR8TJ2xZoZnfGeY+dwFuBVOGggH5dXb/4YrtKh+GOkYqzVgVaTXzWGUTUi6xn\ngcAQEPahX6vvndAKdUAZJeGr9GsCgTMTCunnxalBUlQnOQ5WDqdbwnCuRxF4QFvu\nwa6w0UgcemLNrHoT1NK4tCjSL/Y=\n-----END CERTIFICATE-----\n",
+      "kubeletCertificateSHA256": "a482f805563bc0d432d674b8410d63199ec5f50a649cd8ed01249bcfdebd0018",
+      "kubeletCASHA256": "c9d909da29426325a310085af6f6e7d8a76674fcdecc5867699bbe9715f623df"
+    }
+  ],
+  "expectedNodes": [
+    "cmtc-a-control-plane",
+    "cmtc-a-worker"
+  ],
+  "approvedAgentImage": "localhost/cmtc-spire-agent@sha256:bf2286fb7a93084ebd17128d629e1b12715722c30d37e430ac922b0503219078",
+  "approvedAgentSource": "28f6b8d84ade21c6accb32ba9689a3bdf64877ec",
+  "agentDaemonSet": {
+    "apiVersion": "apps/v1",
+    "kind": "DaemonSet",
+    "metadata": {
+      "annotations": {
+        "deprecated.daemonset.template.generation": "1"
+      },
+      "creationTimestamp": "2026-10-25T03:44:45Z",
+      "generation": 1,
+      "labels": {
+        "app": "spire-agent",
+        "security.cmtc.io/pki-cluster": "cmtc-a",
+        "security.cmtc.io/pki-owner": "cmtc-lab-pki",
+        "security.cmtc.io/pki-role": "spire-agent"
+      },
+      "name": "spire-agent",
+      "namespace": "cilium-spire",
+      "resourceVersion": "93390",
+      "uid": "a800c691-b74f-4d9e-ad64-8e04a81b75dc"
+    },
+    "spec": {
+      "revisionHistoryLimit": 10,
+      "selector": {
+        "matchLabels": {
+          "app": "spire-agent"
+        }
+      },
+      "template": {
+        "metadata": {
+          "labels": {
+            "app": "spire-agent",
+            "security.cmtc.io/pki-cluster": "cmtc-a",
+            "security.cmtc.io/pki-owner": "cmtc-lab-pki",
+            "security.cmtc.io/pki-role": "spire-agent"
+          }
+        },
+        "spec": {
+          "containers": [
+            {
+              "args": [
+                "-config",
+                "/run/spire/config/agent.conf"
+              ],
+              "image": "ghcr.io/spiffe/spire-agent:1.15.5@sha256:3652c732b0f0d36f4dd78394230a1b1cd0ddcc29548a46c67a996b1a78c14481",
+              "imagePullPolicy": "IfNotPresent",
+              "livenessProbe": {
+                "failureThreshold": 2,
+                "httpGet": {
+                  "path": "/live",
+                  "port": "http",
+                  "scheme": "HTTP"
+                },
+                "initialDelaySeconds": 15,
+                "periodSeconds": 60,
+                "successThreshold": 1,
+                "timeoutSeconds": 3
+              },
+              "name": "spire-agent",
+              "ports": [
+                {
+                  "containerPort": 4251,
+                  "name": "http",
+                  "protocol": "TCP"
+                }
+              ],
+              "readinessProbe": {
+                "failureThreshold": 3,
+                "httpGet": {
+                  "path": "/ready",
+                  "port": "http",
+                  "scheme": "HTTP"
+                },
+                "initialDelaySeconds": 5,
+                "periodSeconds": 5,
+                "successThreshold": 1,
+                "timeoutSeconds": 1
+              },
+              "resources": {},
+              "startupProbe": {
+                "failureThreshold": 30,
+                "httpGet": {
+                  "path": "/live",
+                  "port": "http",
+                  "scheme": "HTTP"
+                },
+                "periodSeconds": 5,
+                "successThreshold": 1,
+                "timeoutSeconds": 3
+              },
+              "terminationMessagePath": "/dev/termination-log",
+              "terminationMessagePolicy": "File",
+              "volumeMounts": [
+                {
+                  "mountPath": "/run/spire/config",
+                  "name": "spire-config",
+                  "readOnly": true
+                },
+                {
+                  "mountPath": "/run/spire/bundle",
+                  "name": "spire-bundle",
+                  "readOnly": true
+                },
+                {
+                  "mountPath": "/run/spire/data",
+                  "name": "spire-agent-data"
+                },
+                {
+                  "mountPath": "/run/spire/sockets",
+                  "name": "spire-agent-socket"
+                },
+                {
+                  "mountPath": "/var/run/secrets/tokens",
+                  "name": "spire-token",
+                  "readOnly": true
+                }
+              ]
+            }
+          ],
+          "dnsPolicy": "ClusterFirstWithHostNet",
+          "hostNetwork": true,
+          "hostPID": true,
+          "hostUsers": true,
+          "initContainers": [
+            {
+              "command": [
+                "/bin/sh",
+                "/opt/cmtc/wait-for-server.sh"
+              ],
+              "env": [
+                {
+                  "name": "SPIRE_WAIT_ATTEMPTS",
+                  "value": "60"
+                },
+                {
+                  "name": "SPIRE_WAIT_DEADLINE",
+                  "value": "60"
+                },
+                {
+                  "name": "SPIRE_WAIT_BACKOFF",
+                  "value": "1"
+                },
+                {
+                  "name": "SPIRE_SERVER_HOST",
+                  "value": "spire-server.cilium-spire.svc"
+                },
+                {
+                  "name": "SPIRE_SERVER_PORT",
+                  "value": "8081"
+                }
+              ],
+              "image": "docker.io/library/busybox:1.38.0@sha256:fd7dc98638c8e305f4dc34e979f1c0fdfdcaeb0fbf8fcff77ae834b6da3d7e6e",
+              "imagePullPolicy": "IfNotPresent",
+              "name": "wait-for-server",
+              "resources": {},
+              "terminationMessagePath": "/dev/termination-log",
+              "terminationMessagePolicy": "File",
+              "volumeMounts": [
+                {
+                  "mountPath": "/opt/cmtc",
+                  "name": "spire-helpers",
+                  "readOnly": true
+                }
+              ]
+            }
+          ],
+          "priorityClassName": "system-node-critical",
+          "restartPolicy": "Always",
+          "schedulerName": "default-scheduler",
+          "securityContext": {
+            "fsGroup": 1000,
+            "fsGroupChangePolicy": "OnRootMismatch",
+            "runAsGroup": 1000,
+            "runAsNonRoot": true,
+            "runAsUser": 1000
+          },
+          "serviceAccount": "spire-agent",
+          "serviceAccountName": "spire-agent",
+          "terminationGracePeriodSeconds": 30,
+          "tolerations": [
+            {
+              "effect": "NoSchedule",
+              "key": "node.kubernetes.io/not-ready"
+            },
+            {
+              "effect": "NoSchedule",
+              "key": "node-role.kubernetes.io/master"
+            },
+            {
+              "effect": "NoSchedule",
+              "key": "node-role.kubernetes.io/control-plane"
+            },
+            {
+              "effect": "NoSchedule",
+              "key": "node.cloudprovider.kubernetes.io/uninitialized",
+              "value": "true"
+            },
+            {
+              "key": "CriticalAddonsOnly",
+              "operator": "Exists"
+            },
+            {
+              "effect": "NoSchedule",
+              "key": "node.cilium.io/agent-not-ready"
+            }
+          ],
+          "volumes": [
+            {
+              "configMap": {
+                "defaultMode": 420,
+                "name": "spire-agent"
+              },
+              "name": "spire-config"
+            },
+            {
+              "configMap": {
+                "defaultMode": 420,
+                "name": "spire-bundle"
+              },
+              "name": "spire-bundle"
+            },
+            {
+              "emptyDir": {},
+              "name": "spire-agent-socket"
+            },
+            {
+              "emptyDir": {
+                "sizeLimit": "64Mi"
+              },
+              "name": "spire-agent-data"
+            },
+            {
+              "configMap": {
+                "defaultMode": 292,
+                "name": "spire-helpers"
+              },
+              "name": "spire-helpers"
+            },
+            {
+              "name": "spire-token",
+              "projected": {
+                "defaultMode": 420,
+                "sources": [
+                  {
+                    "serviceAccountToken": {
+                      "audience": "spire-server",
+                      "expirationSeconds": 600,
+                      "path": "spire-agent"
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      },
+      "updateStrategy": {
+        "rollingUpdate": {
+          "maxSurge": 0,
+          "maxUnavailable": 1
+        },
+        "type": "RollingUpdate"
+      }
+    },
+    "status": {
+      "currentNumberScheduled": 2,
+      "desiredNumberScheduled": 2,
+      "numberAvailable": 2,
+      "numberMisscheduled": 0,
+      "numberReady": 2,
+      "observedGeneration": 1,
+      "updatedNumberScheduled": 2
+    }
+  },
+  "agentConfigMap": {
+    "apiVersion": "v1",
+    "data": {
+      "agent.conf": "agent {\n  data_dir = \"/run/spire/data\"\n  log_level = \"ERROR\"\n  server_address = \"spire-server.cilium-spire.svc\"\n  server_port = \"8081\"\n  socket_path = \"/run/spire/sockets/agent/agent.sock\"\n  trust_bundle_path = \"/run/spire/bundle/bundle.crt\"\n  trust_domain = \"cmtc-a.mesh.example\"\n}\n\nplugins {\n  NodeAttestor \"k8s_psat\" {\n    plugin_data {\n      cluster = \"cmtc-a\"\n      token_path = \"/var/run/secrets/tokens/spire-agent\"\n    }\n  }\n\n  KeyManager \"memory\" {\n    plugin_data {\n    }\n  }\n\n  WorkloadAttestor \"k8s\" {\n    plugin_data {\n      skip_kubelet_verification = true\n    }\n  }\n}\n\nhealth_checks {\n  listener_enabled = true\n  bind_address = \"0.0.0.0\"\n  bind_port = \"4251\"\n  live_path = \"/live\"\n  ready_path = \"/ready\"\n}\n"
+    },
+    "kind": "ConfigMap",
+    "metadata": {
+      "creationTimestamp": "2026-10-25T03:44:45Z",
+      "labels": {
+        "security.cmtc.io/pki-cluster": "cmtc-a",
+        "security.cmtc.io/pki-owner": "cmtc-lab-pki",
+        "security.cmtc.io/pki-role": "spire-agent-config"
+      },
+      "name": "spire-agent",
+      "namespace": "cilium-spire",
+      "resourceVersion": "84169",
+      "uid": "72f74960-2236-4326-92d6-20053ad2ad00"
+    }
+  },
+  "delegateNamespace": "cmtc-workload-api-lab",
+  "delegateServiceAccount": "node-probe",
+  "delegates": [],
+  "workloads": []
+}

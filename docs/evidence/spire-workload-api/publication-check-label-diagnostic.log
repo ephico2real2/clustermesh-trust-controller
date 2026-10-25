@@ -1,0 +1,5 @@
+Traceback (most recent call last):
+  File "/private/tmp/cmtc-spire-workload-runtime-20261024/check-publications.py", line 10, in <module>
+    raw=subprocess.check_output(args,timeout=30,text=True);obj=json.loads(raw);assert obj['metadata']['uid']==v['uids']['ConfigMap/cmtc-issuer-publication'] and obj['metadata']['annotations'][pub.OWNER]==owner['owner']
+                                                                                                                                                                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^
+KeyError: 'security.cmtc.io/live-issuer-owner'

@@ -83,7 +83,7 @@ Fallback recovery also verifies the exact CA, signing key and upstream authority
 The exact ARM64 image is `localhost/cmtc-spire-server@sha256:f57e537d42e5a8cc94fbae110b4f67a70481f391fef70171143d9a1b81cf0288`.
 Its configuration ID is `sha256:70f8fbde787b46479d8bd22aed9005d36caa7c597fcff7108cee9bf122a6edd0`.
 The server reports `1.16.0-dev-28f6b8d84ade21c6accb32ba9689a3bdf64877ec`.
-The node agents remain on the pinned1.15.5 image.
+The node agents now run the same current-fork source. [The node API guide](LOCAL_SPIRE_WORKLOAD_API.md) records their exact image and secure kubelet configuration.
 
 Host Podman builds a static ARM64 server with the pinned musl builder.
 [The build script](docs/evidence/spire-recovery/build-server.sh) records the toolchain, base image, explicit platform, resource limits and source label.
@@ -115,7 +115,7 @@ No selected test fails or is skipped.
 
 The real issuer-profile producer is now enabled in both clusters.
 [Its guide](LOCAL_ISSUER_PROFILE.md) and [live ledger](docs/evidence/live-issuer-publication/summary.json) record the activation.
-Workload socket access, exact workload registration and native consumers remain unfinished.
+Node Workload/Admin socket access is now enabled. Exact workload registration, native credential qualification and native consumers remain unfinished.
 A public bundle, node readiness or publication ACK is not evidence of workload protection.
 
 Native remote identity, effective policy, durable admission and connection recovery remain required.

@@ -1,0 +1,25 @@
+{
+  "receiptSHA": "bd1685ca92",
+  "originSHA": "ccbec970b38b0bab04ab8498bcb854aef45827eb",
+  "baseSHA": "15f7e0d526fc516d5538e55831b47a0856efed01",
+  "scope": "native source qualification only; no new runtime image or compatibility enablement",
+  "platform": "linux/arm64",
+  "race": {
+    "topLevel": 270,
+    "subtests": 322,
+    "failed": 0,
+    "skipped": 0
+  },
+  "vet": "PASS",
+  "requiredChangeOnlyLint": "0 issues",
+  "initialLint": "11 issues fixed: pkg/lock, import grouping, test idioms, logger formatting",
+  "privilegedProfile": "PRIVILEGED_TESTS=1, disposable Podman namespace fixtures",
+  "ordinaryProfile": "20 privileged cases skipped; not counted as proof",
+  "fullKvstoreIntegration": "not run; only affected missing-config cancellation regression selected",
+  "remaining": [
+    "short source-process lease publisher and authenticated reader join",
+    "native consumer/policy/admission recovery integration",
+    "exact Cilium image build/deploy",
+    "cross-cluster workload mTLS traffic"
+  ]
+}

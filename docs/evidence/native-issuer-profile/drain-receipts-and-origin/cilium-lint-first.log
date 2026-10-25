@@ -1,0 +1,38 @@
+pkg/ztunnel/remote_workload/origin_supervisor_test.go:609:10: use of `sync.Mutex` forbidden because "Use pkg/lock instead to improve deadlock detection." (forbidigo)
+	mu      sync.Mutex
+	        ^
+pkg/ztunnel/remote_workload/origin_supervisor_test.go:627:11: use of `sync.RWMutex` forbidden because "Use pkg/lock instead to improve deadlock detection." (forbidigo)
+	mu       sync.RWMutex
+	         ^
+pkg/ztunnel/remote_workload/origin_supervisor_test.go:666:13: use of `sync.Mutex` forbidden because "Use pkg/lock instead to improve deadlock detection." (forbidigo)
+	mu         sync.Mutex
+	           ^
+pkg/ztunnel/remote_workload/origin_supervisor_test.go:729:10: use of `sync.Mutex` forbidden because "Use pkg/lock instead to improve deadlock detection." (forbidigo)
+	mu      sync.Mutex
+	        ^
+pkg/ztunnel/remote_workload/origin_supervisor_test.go:789:13: use of `sync.Mutex` forbidden because "Use pkg/lock instead to improve deadlock detection." (forbidigo)
+	mu         sync.Mutex
+	           ^
+pkg/ztunnel/zds/deleted_endpoint_test.go:30:1: File is not properly formatted (goimports)
+	"google.golang.org/protobuf/proto"
+^
+pkg/ztunnel/zds/drain_receipt_test.go:10:1: File is not properly formatted (goimports)
+
+^
+pkg/ztunnel/remote_workload/origin_supervisor_test.go:1075:17: testingcontext: context.WithCancel can be modernized using t.Context (modernize)
+	ctx, cancel := context.WithCancel(context.Background())
+	               ^
+pkg/ztunnel/zds/drain_receipt_test.go:153:6: rangeint: for loop can be modernized using range over int (modernize)
+	for attempt := 0; attempt < 3; attempt++ {
+	    ^
+pkg/ztunnel/reconciler/reconciler.go:382:116: arguments should be put on separate lines (sloglint)
+			ops.logger.Error("Native workload retirement incomplete; capture retained", logfields.EndpointID, ep.GetID16(), logfields.Error, err)
+			                                                                                                                ^
+pkg/ztunnel/remote_workload/origin_supervisor_test.go:605:18: use slog.DiscardHandler instead (sloglint)
+	return slog.New(slog.NewTextHandler(io.Discard, nil))
+	                ^
+11 issues:
+* forbidigo: 5
+* goimports: 2
+* modernize: 2
+* sloglint: 2
