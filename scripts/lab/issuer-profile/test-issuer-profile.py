@@ -228,7 +228,7 @@ class Lab:
             self.event("running-image-verified",podUID=p["metadata"]["uid"],node=p["spec"]["nodeName"],imageID=cs["imageID"],configID=status["id"],sourceRevision=self.a.source_sha,binarySHA256=binary.split()[0])
             if p["metadata"]["uid"] not in self.pod_seen:
                 self.pod_seen.add(p["metadata"]["uid"])
-                self.r.follow(self.kbase+["logs","-f",p["metadata"]["name"],"-c","controller","--timestamps"],"controller-"+p["metadata"]["uid"]+".log")
+                self.r.follow(self.kbase+["--request-timeout=0","logs","-f",p["metadata"]["name"],"-c","controller","--timestamps"],"controller-"+p["metadata"]["uid"]+".log")
         self.event("rollout",restored=restoring,podUID=p["metadata"]["uid"])
         return p
     def cm(self,name,data,immutable=False,output=False):
@@ -261,6 +261,7 @@ class Lab:
         def matches():
             cm,p=self.readpub()
             if p["state"]!=state or (reason and p["reason"]!=reason) or (generation is not None and p["acceptedGeneration"]!=generation):return None
+            if p["expectedSourceUID"]!=self.active_source_uid:return None
             return cm,p
         cm,p=self.wait(matches,"publication "+state+" "+str(reason),timeout=110)
         if p["expectedSourceUID"] != self.active_source_uid:raise Refusal("publication expected source UID differs from active Deployment approval")

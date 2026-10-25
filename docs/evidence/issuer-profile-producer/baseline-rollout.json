@@ -1,0 +1,83 @@
+{
+  "image": {
+    "source": "7e606195f58359b0e0af82f219cafd5291268c67",
+    "image": "localhost/cmtc:issuer-7e606195f5",
+    "imageConfigurationID": "sha256:6d4b28d1935e3fecf260ee90e2baec844adcce63ee650d0cdcf61e50ac4439f6",
+    "architecture": "arm64",
+    "builderConfigID": "sha256:f0093acd3f0ab3a1966ebe348eaa3c78ac706f94839f52209ae7120508cf2529",
+    "toolchain": "go1.27.3",
+    "runtime": "gcr.io/distroless/static-debian13@sha256:18f4cc26c9ffa7f20a359298be7deadac5c607c8e03a02b8119f1a5fc2f82c99",
+    "archiveSHA256": "b9ecc61f5083bae6f5103c1e48cce2a002ba440e326093897583216cada71f29",
+    "binarySHA256": {
+      "cmtc": "55d8adb6b01e9902c30c60d2557d07b123da098dce35ccfe5ab7066b9e8b9071",
+      "lab-ca-init": "e08d6d33739e05d74e94d2979e4cbf254141a0e1adc1bda8cae68b1805ea2f13",
+      "lab-identity-init": "a6723c7813b6f52e49184503400742867da0be40b7d70d46ce41681f5b83d5ae"
+    },
+    "labels": {
+      "io.buildah.version": "1.33.7",
+      "io.cmtc.build.toolchain": "go1.27.3",
+      "org.opencontainers.image.revision": "7e606195f58359b0e0af82f219cafd5291268c67",
+      "org.opencontainers.image.source": "https://github.com/ephico2real2/clustermesh-trust-controller"
+    }
+  },
+  "containers": [
+    {
+      "pod": "cmtc-controller-b7bcfb85b-zfmn9",
+      "podUID": "a98e118d-723f-42be-b554-038deafe37a4",
+      "node": "cmtc-a-worker",
+      "imageID": "docker.io/library/import-2026-10-25@sha256:7109d7f10f3fb322679cf7f73adb83ae2265b97dde5a740fddd6d5dac9b0d06a",
+      "configID": "sha256:6d4b28d1935e3fecf260ee90e2baec844adcce63ee650d0cdcf61e50ac4439f6",
+      "source": "7e606195f58359b0e0af82f219cafd5291268c67",
+      "binarySHA256": "55d8adb6b01e9902c30c60d2557d07b123da098dce35ccfe5ab7066b9e8b9071"
+    },
+    {
+      "pod": "cmtc-node-agent-2rcdt",
+      "podUID": "8920cf4f-d92d-4890-b9aa-c8fa42bdb8da",
+      "node": "cmtc-a-control-plane",
+      "imageID": "docker.io/library/import-2026-10-25@sha256:47daa9ac71d646308f2a2d4d89dd9ade88d342158a7c754dbc011dd39dc7d256",
+      "configID": "sha256:6d4b28d1935e3fecf260ee90e2baec844adcce63ee650d0cdcf61e50ac4439f6",
+      "source": "7e606195f58359b0e0af82f219cafd5291268c67",
+      "binarySHA256": "55d8adb6b01e9902c30c60d2557d07b123da098dce35ccfe5ab7066b9e8b9071"
+    },
+    {
+      "pod": "cmtc-node-agent-x7vw4",
+      "podUID": "169f709f-c6c9-4c23-8a44-2e3b309c15c8",
+      "node": "cmtc-a-worker",
+      "imageID": "docker.io/library/import-2026-10-25@sha256:7109d7f10f3fb322679cf7f73adb83ae2265b97dde5a740fddd6d5dac9b0d06a",
+      "configID": "sha256:6d4b28d1935e3fecf260ee90e2baec844adcce63ee650d0cdcf61e50ac4439f6",
+      "source": "7e606195f58359b0e0af82f219cafd5291268c67",
+      "binarySHA256": "55d8adb6b01e9902c30c60d2557d07b123da098dce35ccfe5ab7066b9e8b9071"
+    },
+    {
+      "pod": "cmtc-controller-66c78f7cc-7wj74",
+      "podUID": "f556f9b2-a012-4ce8-a14b-d145a7f739da",
+      "node": "cmtc-b-worker",
+      "imageID": "docker.io/library/import-2026-10-25@sha256:7109d7f10f3fb322679cf7f73adb83ae2265b97dde5a740fddd6d5dac9b0d06a",
+      "configID": "sha256:6d4b28d1935e3fecf260ee90e2baec844adcce63ee650d0cdcf61e50ac4439f6",
+      "source": "7e606195f58359b0e0af82f219cafd5291268c67",
+      "binarySHA256": "55d8adb6b01e9902c30c60d2557d07b123da098dce35ccfe5ab7066b9e8b9071"
+    },
+    {
+      "pod": "cmtc-node-agent-877bp",
+      "podUID": "20199cf5-5756-43c1-a70e-50df9b930fb9",
+      "node": "cmtc-b-worker",
+      "imageID": "docker.io/library/import-2026-10-25@sha256:7109d7f10f3fb322679cf7f73adb83ae2265b97dde5a740fddd6d5dac9b0d06a",
+      "configID": "sha256:6d4b28d1935e3fecf260ee90e2baec844adcce63ee650d0cdcf61e50ac4439f6",
+      "source": "7e606195f58359b0e0af82f219cafd5291268c67",
+      "binarySHA256": "55d8adb6b01e9902c30c60d2557d07b123da098dce35ccfe5ab7066b9e8b9071"
+    },
+    {
+      "pod": "cmtc-node-agent-ll5sm",
+      "podUID": "cdbd6f60-3c98-4428-bf47-8a95901859cf",
+      "node": "cmtc-b-control-plane",
+      "imageID": "docker.io/library/import-2026-10-25@sha256:47daa9ac71d646308f2a2d4d89dd9ade88d342158a7c754dbc011dd39dc7d256",
+      "configID": "sha256:6d4b28d1935e3fecf260ee90e2baec844adcce63ee650d0cdcf61e50ac4439f6",
+      "source": "7e606195f58359b0e0af82f219cafd5291268c67",
+      "binarySHA256": "55d8adb6b01e9902c30c60d2557d07b123da098dce35ccfe5ab7066b9e8b9071"
+    }
+  ],
+  "producerEnabled": false,
+  "mode": "Observe",
+  "workloadMTLS": false,
+  "scope": "qualified CMTC binary baseline; issuer producer remains explicit opt-in after trial cleanup"
+}

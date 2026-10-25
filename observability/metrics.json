@@ -135,35 +135,35 @@
     },
     "cmtc_issuer_profile_acknowledged_valid_until_timestamp_seconds": {
       "kind": "gauge",
-      "status": "planned",
+      "status": "implemented",
       "meaning": "Lease expiry from this producer process's last acknowledged published output write; zero means no acknowledged write in this process or acknowledged withdrawal.",
       "presentation": "Latest timestamp with stated local-process scope; compare clock separately. It is not actual consumer consumption, authorization or trust_bundle_ready. Lost-ack commits can exist while this gauge remains zero.",
       "owner": "CMTC optional public issuer-profile producer",
-      "qualification": "Proposal only; promote after actual source/image/API/scrape/query and failure/recovery qualification. Does not satisfy planned trust consumption/TLS/authorization metrics."
+      "qualification": "Exact CMTC source7e606195f5/image/API/scrape qualified locally on both mesh clusters; fresh B-to-A remote-write verified. Optional producer only, absent when disabled. docs/evidence/issuer-profile-producer. Does not satisfy trust consumption, TLS or authorization metrics."
     },
     "cmtc_issuer_profile_publication_writes_total": {
       "kind": "counter",
-      "status": "planned",
+      "status": "implemented",
       "meaning": "Output API Update responses, by bounded state published/withdrawn and result acknowledged/error. A lost response can count error even when the server committed; no global exactly-once count is claimed.",
       "presentation": "rate/increase by state/result. Unchanged reconcile does not increment. Retry re-reads output and avoids an extra write after an unknown acknowledgment; process restart resets.",
       "owner": "CMTC optional public issuer-profile producer",
-      "qualification": "Proposal only; promote after actual source/image/API/scrape/query and failure/recovery qualification. Does not satisfy planned trust consumption/TLS/authorization metrics."
+      "qualification": "Exact CMTC source7e606195f5/image/API/scrape qualified locally on both mesh clusters; fresh B-to-A remote-write verified. Optional producer only, absent when disabled. docs/evidence/issuer-profile-producer. Does not satisfy trust consumption, TLS or authorization metrics."
     },
     "cmtc_issuer_profile_source_checked_timestamp_seconds": {
       "kind": "gauge",
-      "status": "planned",
+      "status": "implemented",
       "meaning": "Wall-clock timestamp of the last successful uncached configured-source API GET, including invalid or UID-mismatched objects.",
       "presentation": "Latest timestamp/age by producer. It is not approval success, current consumer state or Ready; stale read age is unknown. Process restart starts at zero.",
       "owner": "CMTC optional public issuer-profile producer",
-      "qualification": "Proposal only; promote after actual source/image/API/scrape/query and failure/recovery qualification. Does not satisfy planned trust consumption/TLS/authorization metrics."
+      "qualification": "Exact CMTC source7e606195f5/image/API/scrape qualified locally on both mesh clusters; fresh B-to-A remote-write verified. Optional producer only, absent when disabled. docs/evidence/issuer-profile-producer. Does not satisfy trust consumption, TLS or authorization metrics."
     },
     "cmtc_issuer_profile_validation_attempts_total": {
       "kind": "counter",
-      "status": "planned",
+      "status": "implemented",
       "meaning": "One opted-in producer pass result after exact API source-read, certificate/pin validation and final source-snapshot check. Retries count as attempts, not distinct security incidents.",
       "presentation": "rate/increase by bounded result accepted/rejected/unavailable; process restart resets. Owner is public issuer-profile producer, not TLS verifier.",
       "owner": "CMTC optional public issuer-profile producer",
-      "qualification": "Proposal only; promote after actual source/image/API/scrape/query and failure/recovery qualification. Does not satisfy planned trust consumption/TLS/authorization metrics."
+      "qualification": "Exact CMTC source7e606195f5/image/API/scrape qualified locally on both mesh clusters; fresh B-to-A remote-write verified. Optional producer only, absent when disabled. docs/evidence/issuer-profile-producer. Does not satisfy trust consumption, TLS or authorization metrics."
     },
     "cmtc_issuer_ready": {
       "kind": "gauge",

@@ -110,6 +110,19 @@ class TestPublicationClock(unittest.TestCase):
         p["publishedAt"]=stamp(now + 5);p["validUntil"]=stamp(now + 20)
         with self.assertRaises(m.Refusal): m.publication(encode(p), "cmtc-a", "output-uid", now)
 
+class TestPublicationTransition(unittest.TestCase):
+    def test_waits_for_current_deployment_source_binding(self):
+        lab=m.Lab.__new__(m.Lab);lab.active_source_uid="new-source";lab.event=lambda *a,**k:None
+        old={"state":"withdrawn","reason":"GenerationRollback","acceptedGeneration":1,"expectedSourceUID":"old-source"}
+        new={**old,"expectedSourceUID":"new-source"};cm={"data":{"profile.json":"public-test"},"metadata":{"resourceVersion":"2"}};values=iter([(cm,old),(cm,new)])
+        lab.readpub=lambda:next(values)
+        def wait(fn,*a,**k):
+            self.assertIsNone(fn(),"A prior controller publication must not satisfy a new controller approval")
+            return fn()
+        lab.wait=wait
+        _,p=lab.expect("withdrawn","GenerationRollback",1)
+        self.assertEqual(p["expectedSourceUID"],"new-source")
+
 class TestDisabledScrape(unittest.TestCase):
     def test_new_pod_requires_positive_fresh_observe_scrape(self):
         lab=m.Lab.__new__(m.Lab);lab.selector=lambda:'{instance="new-pod:8080"}';lab.event=lambda *a,**k:None
