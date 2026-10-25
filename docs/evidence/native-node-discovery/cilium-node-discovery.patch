@@ -1,0 +1,2432 @@
+From d040a4bc9aeb045f84477541cbebdbd24ce7c130 Mon Sep 17 00:00:00 2001
+From: ephico2real2 <ephico2real@gmail.com>
+Date: Sun, 25 Oct 2026 07:01:39 -0500
+Subject: [PATCH] ztunnel: fail-closed HBONE-only admission and native
+ Kubernetes node names
+
+Datapath (review findings 1-5 on the C1 draft):
+- Add a sticky load-time ztunnel_required obligation. A Required program never
+  forwards as an ordinary endpoint: a missing, foreign (wrong lxc_id) or
+  partial-family own cilium_lxc entry is quarantined.
+- HBONE-only mode accepts only the TCP/15008 transport shape in both
+  directions. Remove the world/CIDR/reserved, DNS and host plaintext
+  exceptions. Check REPLY packets on actual packet ports so an older plaintext
+  conntrack entry cannot carry data after release. Native policy on the outer
+  15008 flow is not widened. TCP/15008 is not authentication; ztunnel supplies
+  the cryptographic proof.
+- Kubelet probes to released Required endpoints are an explicit open gate: the
+  slim Pod type has no probe ports, so no host exception is provided.
+
+xDS:
+- Publish Workload.Node as the Kubernetes Node name from Cilium's native node
+  table (local-cluster rows only, every address, no NodeIP fallback). Reject
+  missing, ambiguous, unsynchronized or foreign-cluster bindings. Bind once at
+  the Address response boundary and close the stream when a published binding
+  changes without an endpoint event.
+- Set the ztunnel NODE_NAME to spec.nodeName to match.
+
+Tests: race on pkg/endpoint, pkg/maps/lxcmap, pkg/datapath/config and
+pkg/ztunnel/xds (120 top-level / 345 total pass, 21 pre-existing
+integration-dependent skips), vet, dpgen drift check, BPF build_all, and
+privileged BPF PROG_RUN (63 subtests, including 26 new admission cases).
+Live: the native node tables on cmtc-a/cmtc-b resolve all 35 CiliumEndpoints
+to the API Pod spec.nodeName. Not a release; the ClusterMesh/ztunnel guard
+stays closed.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Signed-off-by: ephico2real2 <ephico2real@gmail.com>
+---
+ bpf/bpf_lxc.c                                 |  26 +-
+ bpf/lib/lxc.h                                 |   8 -
+ bpf/lib/ztunnel_admission.h                   |  42 +-
+ bpf/tests/ztunnel_mesh_admission.c            | 545 ++++++++----------
+ bpf/tests/ztunnel_required_admission.c        | 149 +++++
+ .../cilium/templates/ztunnel/daemonset.yaml   |   4 +-
+ pkg/datapath/config/endpoint.go               |   3 +
+ pkg/datapath/config/endpoint_ztunnel_test.go  |   2 +
+ pkg/datapath/config/lxc_config.go             |   4 +-
+ pkg/endpoint/types/source_ip_receipt.go       |   7 +
+ pkg/ztunnel/xds/authorization_test.go         |   4 +-
+ pkg/ztunnel/xds/cell.go                       |  10 +
+ pkg/ztunnel/xds/effective_quarantine_test.go  |   4 +-
+ pkg/ztunnel/xds/endpoint_event.go             |  12 +-
+ pkg/ztunnel/xds/endpoint_event_test.go        |  52 +-
+ pkg/ztunnel/xds/issuer_profile_test.go        |   2 +-
+ pkg/ztunnel/xds/native_node_name.go           | 181 ++++++
+ pkg/ztunnel/xds/native_node_name_test.go      | 264 +++++++++
+ pkg/ztunnel/xds/stream_processor.go           |  17 +
+ pkg/ztunnel/xds/stream_processor_test.go      | 110 ++--
+ pkg/ztunnel/xds/xds_server.go                 |   2 +
+ 21 files changed, 996 insertions(+), 452 deletions(-)
+ create mode 100644 bpf/tests/ztunnel_required_admission.c
+ create mode 100644 pkg/ztunnel/xds/native_node_name.go
+ create mode 100644 pkg/ztunnel/xds/native_node_name_test.go
+
+diff --git a/bpf/bpf_lxc.c b/bpf/bpf_lxc.c
+index 4b16df164f..493a4cc19c 100644
+--- a/bpf/bpf_lxc.c
++++ b/bpf/bpf_lxc.c
+@@ -944,12 +944,11 @@ static __always_inline int handle_ipv6_from_lxc(struct __ctx_buff *ctx, __u32 *d
+ 		/* Skip policy enforcement for return traffic. */
+ 
+ 		/* An HBONE-only endpoint's replies must belong to an HBONE
+-		 * flow (or a local-host probe), whatever conntrack recorded.
++		 * flow, whatever conntrack recorded.
+ 		 */
+ 		if (ct_status == CT_REPLY &&
+ 		    ztunnel_own_mode() == ZTUNNEL_MODE_HBONE_ONLY) {
+-			verdict = ztunnel_hbone_reply_verdict(ctx, tuple->nexthdr, l4_off,
+-							      true, *dst_sec_identity);
++			verdict = ztunnel_hbone_reply_verdict(ctx, tuple->nexthdr, l4_off);
+ 			if (verdict != CTX_ACT_OK)
+ 				return verdict;
+ 		}
+@@ -1505,12 +1504,11 @@ static __always_inline int handle_ipv4_from_lxc(struct __ctx_buff *ctx, __u32 *d
+ 		/* Skip policy enforcement for return traffic. */
+ 
+ 		/* An HBONE-only endpoint's replies must belong to an HBONE
+-		 * flow (or a local-host probe), whatever conntrack recorded.
++		 * flow, whatever conntrack recorded.
+ 		 */
+ 		if (ct_status == CT_REPLY &&
+ 		    ztunnel_own_mode() == ZTUNNEL_MODE_HBONE_ONLY) {
+-			verdict = ztunnel_hbone_reply_verdict(ctx, tuple->nexthdr, l4_off,
+-							      true, *dst_sec_identity);
++			verdict = ztunnel_hbone_reply_verdict(ctx, tuple->nexthdr, l4_off);
+ 			if (verdict != CTX_ACT_OK)
+ 				return verdict;
+ 		}
+@@ -1858,8 +1856,7 @@ ipv6_policy(struct __ctx_buff *ctx, struct ipv6hdr *ip6, __u32 src_label,
+ 		 * listener; an older plaintext CT entry cannot carry data.
+ 		 */
+ 		if (ret == CT_REPLY && ztunnel_own_mode() == ZTUNNEL_MODE_HBONE_ONLY) {
+-			verdict = ztunnel_hbone_reply_verdict(ctx, tuple->nexthdr, l4_off,
+-							      false, src_label);
++			verdict = ztunnel_hbone_reply_verdict(ctx, tuple->nexthdr, l4_off);
+ 			if (verdict != CTX_ACT_OK)
+ 				return verdict;
+ 		}
+@@ -1914,11 +1911,10 @@ ipv6_policy(struct __ctx_buff *ctx, struct ipv6hdr *ip6, __u32 src_label,
+ 		}
+ 
+ 		/* A released Required endpoint accepts only TCP/15008 (HBONE
+-		 * transport shape) and local-host probes on declared probe ports.
++		 * transport shape; ztunnel authenticates). No host exception.
+ 		 */
+ 		if (ztunnel_own_mode() == ZTUNNEL_MODE_HBONE_ONLY) {
+-			verdict = ztunnel_hbone_ingress_verdict(tuple->nexthdr, tuple->dport,
+-								src_label);
++			verdict = ztunnel_hbone_ingress_verdict(tuple->nexthdr, tuple->dport);
+ 			if (verdict != CTX_ACT_OK) {
+ 				send_policy_verdict_notify(ctx, src_label, tuple->dport,
+ 							   tuple->nexthdr, POLICY_INGRESS, 1,
+@@ -2170,8 +2166,7 @@ ipv4_policy(struct __ctx_buff *ctx, struct iphdr *ip4, __u32 src_label,
+ 		 * listener; an older plaintext CT entry cannot carry data.
+ 		 */
+ 		if (ret == CT_REPLY && ztunnel_own_mode() == ZTUNNEL_MODE_HBONE_ONLY) {
+-			verdict = ztunnel_hbone_reply_verdict(ctx, tuple->nexthdr, l4_off,
+-							      false, src_label);
++			verdict = ztunnel_hbone_reply_verdict(ctx, tuple->nexthdr, l4_off);
+ 			if (verdict != CTX_ACT_OK)
+ 				return verdict;
+ 		}
+@@ -2233,11 +2228,10 @@ ipv4_policy(struct __ctx_buff *ctx, struct iphdr *ip4, __u32 src_label,
+ 		}
+ 
+ 		/* A released Required endpoint accepts only TCP/15008 (HBONE
+-		 * transport shape) and local-host probes on declared probe ports.
++		 * transport shape; ztunnel authenticates). No host exception.
+ 		 */
+ 		if (ztunnel_own_mode() == ZTUNNEL_MODE_HBONE_ONLY) {
+-			verdict = ztunnel_hbone_ingress_verdict(tuple->nexthdr, tuple->dport,
+-								src_label);
++			verdict = ztunnel_hbone_ingress_verdict(tuple->nexthdr, tuple->dport);
+ 			if (verdict != CTX_ACT_OK) {
+ 				send_policy_verdict_notify(ctx, src_label, tuple->dport,
+ 							   tuple->nexthdr, POLICY_INGRESS, 0,
+diff --git a/bpf/lib/lxc.h b/bpf/lib/lxc.h
+index d50e8fcd8d..5f888c24b3 100644
+--- a/bpf/lib/lxc.h
++++ b/bpf/lib/lxc.h
+@@ -21,14 +21,6 @@ DECLARE_CONFIG(bool, ztunnel_quarantined,
+ 	       "Deny endpoint traffic while native ztunnel admission is quarantined")
+ DECLARE_CONFIG(bool, ztunnel_required,
+ 	       "Sticky Required ztunnel obligation: never ordinary forwarding")
+-DECLARE_CONFIG(__u16, ztunnel_probe_port_0,
+-	       "Kubelet probe port accepted from the local host (network order, 0 unused)")
+-DECLARE_CONFIG(__u16, ztunnel_probe_port_1,
+-	       "Kubelet probe port accepted from the local host (network order, 0 unused)")
+-DECLARE_CONFIG(__u16, ztunnel_probe_port_2,
+-	       "Kubelet probe port accepted from the local host (network order, 0 unused)")
+-DECLARE_CONFIG(__u16, ztunnel_probe_port_3,
+-	       "Kubelet probe port accepted from the local host (network order, 0 unused)")
+ 
+ static __always_inline
+ int is_valid_lxc_src_ip(struct ipv6hdr *ip6 __maybe_unused)
+diff --git a/bpf/lib/ztunnel_admission.h b/bpf/lib/ztunnel_admission.h
+index c5b56098d0..c851d58d2b 100644
+--- a/bpf/lib/ztunnel_admission.h
++++ b/bpf/lib/ztunnel_admission.h
+@@ -29,11 +29,10 @@
+  *   - own cilium_lxc flags: QUARANTINED overrides HBONE_ONLY. One map write
+  *     changes both directions without a program reload.
+  *
+- * Exceptions are explicit and narrow:
+- *   - ingress from the local host only to the Pod's declared probe ports;
+- *   - no DNS, world, CIDR, remote-node or host egress exception. An approved
+- *     resolver/service binding and a typed egress exception map are separate
+- *     open dependencies; until then those flows are dropped.
++ * There are no plaintext exceptions: no host (kubelet probe), DNS, world,
++ * CIDR or remote-node exception in either direction. An approved resolver or
++ * service binding, a native probe-port source and a typed egress exception
++ * map are separate open dependencies; until then those flows are dropped.
+  * Programs that predate these checks ignore all of this; a staged upgrade
+  * remains required.
+  */
+@@ -74,34 +73,19 @@ static __always_inline int ztunnel_hbone_egress_verdict(__u8 nexthdr, __be16 dpo
+ 	return ztunnel_is_hbone(nexthdr, dport) ? CTX_ACT_OK : DROP_POLICY;
+ }
+ 
+-#ifdef IS_BPF_LXC
+-static __always_inline bool ztunnel_is_probe_port(__be16 port)
++/* New or established ingress to an HBONE_ONLY endpoint, from any source. */
++static __always_inline int ztunnel_hbone_ingress_verdict(__u8 nexthdr, __be16 dport)
+ {
+-	return port &&
+-	       (port == CONFIG(ztunnel_probe_port_0) || port == CONFIG(ztunnel_probe_port_1) ||
+-		port == CONFIG(ztunnel_probe_port_2) || port == CONFIG(ztunnel_probe_port_3));
+-}
+-
+-/* New or established ingress to an HBONE_ONLY endpoint. */
+-static __always_inline int
+-ztunnel_hbone_ingress_verdict(__u8 nexthdr, __be16 dport, __u32 src_identity)
+-{
+-	if (ztunnel_is_hbone(nexthdr, dport))
+-		return CTX_ACT_OK;
+-	if (nexthdr == IPPROTO_TCP && identity_is_host(src_identity) &&
+-	    ztunnel_is_probe_port(dport))
+-		return CTX_ACT_OK;
+-	return DROP_POLICY;
++	return ztunnel_is_hbone(nexthdr, dport) ? CTX_ACT_OK : DROP_POLICY;
+ }
+ 
++#ifdef IS_BPF_LXC
+ /* Reply packets. A conntrack entry that predates HBONE_ONLY cannot keep a
+  * plaintext flow alive: the actual packet source port must be the HBONE
+- * port (a reply from the endpoint's listener or from a peer listener), or an
+- * egress reply from a declared probe port to the local host.
++ * port (a reply from the endpoint's listener or from a peer listener).
+  */
+ static __always_inline int
+-ztunnel_hbone_reply_verdict(const struct __ctx_buff *ctx, __u8 nexthdr, int l4_off,
+-			    bool egress, __u32 peer_identity)
++ztunnel_hbone_reply_verdict(const struct __ctx_buff *ctx, __u8 nexthdr, int l4_off)
+ {
+ 	__be16 ports[2];
+ 
+@@ -109,11 +93,7 @@ ztunnel_hbone_reply_verdict(const struct __ctx_buff *ctx, __u8 nexthdr, int l4_o
+ 		return DROP_POLICY;
+ 	if (l4_load_ports(ctx, l4_off, ports) < 0)
+ 		return DROP_INVALID;
+-	if (ports[0] == bpf_htons(ZTUNNEL_HBONE_PORT))
+-		return CTX_ACT_OK;
+-	if (egress && identity_is_host(peer_identity) && ztunnel_is_probe_port(ports[0]))
+-		return CTX_ACT_OK;
+-	return DROP_POLICY;
++	return ports[0] == bpf_htons(ZTUNNEL_HBONE_PORT) ? CTX_ACT_OK : DROP_POLICY;
+ }
+ 
+ /* Collect the endpoint's own admission inputs. Every configured family must
+diff --git a/bpf/tests/ztunnel_mesh_admission.c b/bpf/tests/ztunnel_mesh_admission.c
+index 579ea741bd..4609830b1f 100644
+--- a/bpf/tests/ztunnel_mesh_admission.c
++++ b/bpf/tests/ztunnel_mesh_admission.c
+@@ -1,11 +1,13 @@
+ // SPDX-License-Identifier: (GPL-2.0-only OR BSD-2-Clause)
+ /* Copyright Authors of Cilium */
+ 
+-/* Native ztunnel datapath admission: quarantine and mesh-only forwarding.
++/* Native ztunnel datapath admission, map-driven modes (load-time
++ * ztunnel_required=false). Each case runs the real bpf_lxc entry programs
++ * (from-container, to-container, local-delivery policy tail call) against real
++ * cilium_lxc, ipcache, policy, conntrack and metrics maps.
+  *
+- * Each case runs the real bpf_lxc entry programs (from-container, to-container
+- * and the local-delivery policy tail call) against real cilium_lxc, ipcache,
+- * policy and metrics maps. The endpoint's own cilium_lxc flags select the mode.
++ * HBONE_ONLY is a transport-shape condition (TCP/15008); it does not verify
++ * TLS. These tests prove only the datapath shape, never authentication.
+  */
+ 
+ #include <bpf/ctx/skb.h>
+@@ -20,6 +22,7 @@
+ #define PEER_IP		v4_pod_two
+ #define PEER_NODE	v4_node_two
+ #define PEER_IDENTITY	1230
++#define OWN_EPID	77
+ 
+ #define APP_PORT	__bpf_htons(8080)
+ #define HBONE_PORT	__bpf_htons(15008)
+@@ -30,6 +33,7 @@ static volatile const __u8 *peer_mac = mac_two;
+ #include "lib/bpf_lxc.h"
+ 
+ ASSIGN_CONFIG(union v4addr, endpoint_ipv4, { .be32 = v4_pod_one })
++ASSIGN_CONFIG(__u16, endpoint_id, OWN_EPID)
+ 
+ #include "lib/endpoint.h"
+ #include "lib/ipcache.h"
+@@ -37,24 +41,23 @@ ASSIGN_CONFIG(union v4addr, endpoint_ipv4, { .be32 = v4_pod_one })
+ #include "lib/policy.h"
+ 
+ #define QUARANTINED	(ENDPOINT_F_ZTUNNEL_QUARANTINED | ENDPOINT_F_ZTUNNEL_MESH_ONLY)
+-#define MESH_ONLY	ENDPOINT_F_ZTUNNEL_MESH_ONLY
++#define HBONE_ONLY	ENDPOINT_F_ZTUNNEL_MESH_ONLY
+ #define ORDINARY	0
+ 
+ static __always_inline int
+-build_tcp(struct __ctx_buff *ctx, __be32 saddr, __be32 daddr, __be16 sport, __be16 dport,
+-	  bool egress)
++build_l4(struct __ctx_buff *ctx, bool udp, __be32 saddr, __be32 daddr, __be16 sport,
++	 __be16 dport, bool from_pod)
+ {
++	__u8 *smac = from_pod ? (__u8 *)pod_mac : (__u8 *)peer_mac;
++	__u8 *dmac = from_pod ? (__u8 *)peer_mac : (__u8 *)pod_mac;
+ 	struct pktgen builder;
+-	struct tcphdr *l4;
+-	void *data;
++	void *l4, *data;
+ 
+ 	pktgen__init(&builder, ctx);
+-	if (egress)
+-		l4 = pktgen__push_ipv4_tcp_packet(&builder, (__u8 *)pod_mac, (__u8 *)peer_mac,
+-						  saddr, daddr, sport, dport);
++	if (udp)
++		l4 = pktgen__push_ipv4_udp_packet(&builder, smac, dmac, saddr, daddr, sport, dport);
+ 	else
+-		l4 = pktgen__push_ipv4_tcp_packet(&builder, (__u8 *)peer_mac, (__u8 *)pod_mac,
+-						  saddr, daddr, sport, dport);
++		l4 = pktgen__push_ipv4_tcp_packet(&builder, smac, dmac, saddr, daddr, sport, dport);
+ 	if (!l4)
+ 		return TEST_ERROR;
+ 	data = pktgen__push_data(&builder, default_data, sizeof(default_data));
+@@ -64,10 +67,9 @@ build_tcp(struct __ctx_buff *ctx, __be32 saddr, __be32 daddr, __be16 sport, __be
+ 	return 0;
+ }
+ 
+-static __always_inline void
+-prepare(__u32 own_flags, __u32 peer_identity)
++static __always_inline void prepare(__u32 own_flags, __u32 peer_identity)
+ {
+-	endpoint_v4_add_entry(POD_IP, 0, 0, own_flags, 0, 0, (__u8 *)pod_mac, NULL);
++	endpoint_v4_add_entry(POD_IP, 0, OWN_EPID, own_flags, 0, 0, (__u8 *)pod_mac, NULL);
+ 	ipcache_v4_add_entry(PEER_IP, 0, peer_identity, PEER_NODE, 0);
+ 	policy_add_egress_allow_all_entry();
+ 	policy_add_ingress_allow_all_entry();
+@@ -75,8 +77,7 @@ prepare(__u32 own_flags, __u32 peer_identity)
+ 	metrics_del_entry((__u8)-DROP_POLICY, METRIC_INGRESS);
+ }
+ 
+-static __always_inline int
+-status_of(const struct __ctx_buff *ctx, __u32 *status)
++static __always_inline int status_of(const struct __ctx_buff *ctx, __u32 *status)
+ {
+ 	void *data = (void *)(long)ctx_data(ctx);
+ 	void *data_end = (void *)(long)ctx->data_end;
+@@ -87,8 +88,7 @@ status_of(const struct __ctx_buff *ctx, __u32 *status)
+ 	return 0;
+ }
+ 
+-static __always_inline __u64
+-policy_drops(__u8 dir)
++static __always_inline __u64 policy_drops(__u8 dir)
+ {
+ 	struct metrics_key key = { .reason = (__u8)-DROP_POLICY, .dir = dir };
+ 	struct metrics_value *entry = map_lookup_elem(&cilium_metrics, &key);
+@@ -96,352 +96,257 @@ policy_drops(__u8 dir)
+ 	return entry ? entry->count : 0;
+ }
+ 
++#define ZT_CAT2(a, b) a##b
++#define ZT_CAT(a, b) ZT_CAT2(a, b)
++
++#define EXPECT(name, want_status, dir, want_drops)				\
++CHECK("tc", name)								\
++int ZT_CAT(check_, __LINE__)(const struct __ctx_buff *ctx)				\
++{										\
++	__u32 status;								\
++										\
++	test_init();								\
++	if (status_of(ctx, &status))						\
++		test_fatal("status code out of bounds");			\
++	assert(status == (want_status));					\
++	assert(policy_drops(dir) == (want_drops));				\
++	test_finish();								\
++}
++
++#define EXPECT_NOT_DROPPED(name, dir)						\
++CHECK("tc", name)								\
++int ZT_CAT(check_, __LINE__)(const struct __ctx_buff *ctx)				\
++{										\
++	__u32 status;								\
++										\
++	test_init();								\
++	if (status_of(ctx, &status))						\
++		test_fatal("status code out of bounds");			\
++	assert(status != CTX_ACT_DROP);						\
++	assert(policy_drops(dir) == 0);						\
++	test_finish();								\
++}
++
+ /* Pure decision table, independent of packet plumbing. */
+ CHECK("tc", "ztunnel_admission_decision_table")
+ int ztunnel_admission_decision_table(__maybe_unused struct __ctx_buff *ctx)
+ {
+ 	test_init();
+ 
+-	TEST("mode: quarantine overrides mesh-only and the config only tightens", {
+-		assert(ztunnel_mode_from_flags(ORDINARY, false) == ZTUNNEL_MODE_ORDINARY);
+-		assert(ztunnel_mode_from_flags(MESH_ONLY, false) == ZTUNNEL_MODE_MESH_ONLY);
+-		assert(ztunnel_mode_from_flags(QUARANTINED, false) == ZTUNNEL_MODE_QUARANTINED);
+-		assert(ztunnel_mode_from_flags(ENDPOINT_F_ZTUNNEL_QUARANTINED, false) ==
+-		       ZTUNNEL_MODE_QUARANTINED);
+-		assert(ztunnel_mode_from_flags(MESH_ONLY, true) == ZTUNNEL_MODE_QUARANTINED);
+-		assert(ztunnel_mode_from_flags(ORDINARY, true) == ZTUNNEL_MODE_QUARANTINED);
+-	});
+-
+-	TEST("egress: workloads only via HBONE or DNS; platform keeps native policy", {
+-		assert(ztunnel_mesh_egress_verdict(IPPROTO_TCP, HBONE_PORT, PEER_IDENTITY) == CTX_ACT_OK);
+-		assert(ztunnel_mesh_egress_verdict(IPPROTO_TCP, APP_PORT, PEER_IDENTITY) == DROP_POLICY);
+-		assert(ztunnel_mesh_egress_verdict(IPPROTO_TCP, __bpf_htons(31337), PEER_IDENTITY) ==
+-		       DROP_POLICY);
+-		assert(ztunnel_mesh_egress_verdict(IPPROTO_UDP, HBONE_PORT, PEER_IDENTITY) == DROP_POLICY);
+-		assert(ztunnel_mesh_egress_verdict(IPPROTO_UDP, __bpf_htons(53), PEER_IDENTITY) == CTX_ACT_OK);
+-		assert(ztunnel_mesh_egress_verdict(IPPROTO_TCP, __bpf_htons(53), PEER_IDENTITY) == CTX_ACT_OK);
+-		/* Remote-cluster workload identity (cluster 2). */
+-		assert(ztunnel_mesh_egress_verdict(IPPROTO_TCP, APP_PORT, (2 << 16) | 300) == DROP_POLICY);
+-		assert(ztunnel_mesh_egress_verdict(IPPROTO_TCP, APP_PORT, WORLD_ID) == CTX_ACT_OK);
+-		assert(ztunnel_mesh_egress_verdict(IPPROTO_TCP, APP_PORT, HOST_ID) == CTX_ACT_OK);
+-		assert(ztunnel_mesh_egress_verdict(IPPROTO_TCP, APP_PORT, REMOTE_NODE_ID) == CTX_ACT_OK);
+-		assert(ztunnel_mesh_egress_verdict(IPPROTO_TCP, APP_PORT,
+-						   IDENTITY_LOCAL_SCOPE_CIDR | 5) == CTX_ACT_OK);
++	TEST("mode: quarantine overrides; sticky Required never ordinary", {
++		assert(ztunnel_mode_decide(false, false, true, ORDINARY) == ZTUNNEL_MODE_ORDINARY);
++		assert(ztunnel_mode_decide(false, false, false, ORDINARY) == ZTUNNEL_MODE_ORDINARY);
++		assert(ztunnel_mode_decide(false, false, true, HBONE_ONLY) == ZTUNNEL_MODE_HBONE_ONLY);
++		assert(ztunnel_mode_decide(false, false, true, QUARANTINED) == ZTUNNEL_MODE_QUARANTINED);
++		assert(ztunnel_mode_decide(false, true, true, ORDINARY) == ZTUNNEL_MODE_QUARANTINED);
++		assert(ztunnel_mode_decide(true, false, true, ORDINARY) == ZTUNNEL_MODE_HBONE_ONLY);
++		assert(ztunnel_mode_decide(true, false, false, ORDINARY) == ZTUNNEL_MODE_QUARANTINED);
++		assert(ztunnel_mode_decide(true, false, false, HBONE_ONLY) == ZTUNNEL_MODE_QUARANTINED);
++		assert(ztunnel_mode_decide(true, false, true, QUARANTINED) == ZTUNNEL_MODE_QUARANTINED);
+ 	});
+ 
+-	TEST("ingress: workloads only via HBONE; host probes keep native policy", {
+-		assert(ztunnel_mesh_ingress_verdict(IPPROTO_TCP, HBONE_PORT, PEER_IDENTITY) == CTX_ACT_OK);
+-		assert(ztunnel_mesh_ingress_verdict(IPPROTO_TCP, APP_PORT, PEER_IDENTITY) == DROP_POLICY);
+-		assert(ztunnel_mesh_ingress_verdict(IPPROTO_UDP, HBONE_PORT, PEER_IDENTITY) == DROP_POLICY);
+-		assert(ztunnel_mesh_ingress_verdict(IPPROTO_TCP, APP_PORT, WORLD_ID) == DROP_POLICY);
+-		assert(ztunnel_mesh_ingress_verdict(IPPROTO_TCP, APP_PORT, HOST_ID) == CTX_ACT_OK);
++	TEST("verdicts: only TCP/15008 in either direction", {
++		assert(ztunnel_hbone_egress_verdict(IPPROTO_TCP, HBONE_PORT) == CTX_ACT_OK);
++		assert(ztunnel_hbone_egress_verdict(IPPROTO_TCP, APP_PORT) == DROP_POLICY);
++		assert(ztunnel_hbone_egress_verdict(IPPROTO_TCP, __bpf_htons(31337)) == DROP_POLICY);
++		assert(ztunnel_hbone_egress_verdict(IPPROTO_UDP, HBONE_PORT) == DROP_POLICY);
++		assert(ztunnel_hbone_egress_verdict(IPPROTO_UDP, __bpf_htons(53)) == DROP_POLICY);
++		assert(ztunnel_hbone_egress_verdict(IPPROTO_TCP, __bpf_htons(53)) == DROP_POLICY);
++		assert(ztunnel_hbone_ingress_verdict(IPPROTO_TCP, HBONE_PORT) == CTX_ACT_OK);
++		assert(ztunnel_hbone_ingress_verdict(IPPROTO_TCP, APP_PORT) == DROP_POLICY);
++		assert(ztunnel_hbone_ingress_verdict(IPPROTO_UDP, HBONE_PORT) == DROP_POLICY);
+ 	});
+ 
+ 	test_finish();
+ }
+ 
+-/* 1. Ordinary endpoint (control): application port is forwarded. */
+-PKTGEN("tc", "ztunnel_egress_ordinary_app_port")
+-int ztunnel_egress_ordinary_app_port_pktgen(struct __ctx_buff *ctx)
+-{
+-	return build_tcp(ctx, POD_IP, PEER_IP, __bpf_htons(40001), APP_PORT, true);
+-}
+-
+-SETUP("tc", "ztunnel_egress_ordinary_app_port")
+-int ztunnel_egress_ordinary_app_port_setup(struct __ctx_buff *ctx)
+-{
+-	prepare(ORDINARY, PEER_IDENTITY);
+-	return pod_send_packet(ctx);
+-}
+-
+-CHECK("tc", "ztunnel_egress_ordinary_app_port")
+-int ztunnel_egress_ordinary_app_port_check(const struct __ctx_buff *ctx)
+-{
+-	__u32 status;
+-
+-	test_init();
+-	if (status_of(ctx, &status))
+-		test_fatal("status code out of bounds");
+-	assert(status == CTX_ACT_REDIRECT);
+-	assert(policy_drops(METRIC_EGRESS) == 0);
+-	test_finish();
+-}
++/* 1. Ordinary endpoint (control): the application port is forwarded. */
++PKTGEN("tc", "ztunnel_01_egress_ordinary_app_port")
++int pktgen_01(struct __ctx_buff *ctx) { return build_l4(ctx, false, POD_IP, PEER_IP, __bpf_htons(40001), APP_PORT, true); }
++SETUP("tc", "ztunnel_01_egress_ordinary_app_port")
++int setup_01(struct __ctx_buff *ctx) { prepare(ORDINARY, PEER_IDENTITY); return pod_send_packet(ctx); }
++EXPECT("ztunnel_01_egress_ordinary_app_port", CTX_ACT_REDIRECT, METRIC_EGRESS, 0)
+ 
+ /* 2. Quarantined endpoint drops even HBONE egress. */
+-PKTGEN("tc", "ztunnel_egress_quarantined_hbone")
+-int ztunnel_egress_quarantined_hbone_pktgen(struct __ctx_buff *ctx)
+-{
+-	return build_tcp(ctx, POD_IP, PEER_IP, __bpf_htons(40002), HBONE_PORT, true);
+-}
+-
+-SETUP("tc", "ztunnel_egress_quarantined_hbone")
+-int ztunnel_egress_quarantined_hbone_setup(struct __ctx_buff *ctx)
+-{
+-	prepare(QUARANTINED, PEER_IDENTITY);
+-	return pod_send_packet(ctx);
+-}
+-
+-CHECK("tc", "ztunnel_egress_quarantined_hbone")
+-int ztunnel_egress_quarantined_hbone_check(const struct __ctx_buff *ctx)
+-{
+-	__u32 status;
+-
+-	test_init();
+-	if (status_of(ctx, &status))
+-		test_fatal("status code out of bounds");
+-	assert(status == CTX_ACT_DROP);
+-	assert(policy_drops(METRIC_EGRESS) == 1);
+-	test_finish();
+-}
+-
+-/* 3. Mesh-only endpoint: plaintext to a workload application port is dropped. */
+-PKTGEN("tc", "ztunnel_egress_mesh_only_app_port")
+-int ztunnel_egress_mesh_only_app_port_pktgen(struct __ctx_buff *ctx)
+-{
+-	return build_tcp(ctx, POD_IP, PEER_IP, __bpf_htons(40003), APP_PORT, true);
+-}
+-
+-SETUP("tc", "ztunnel_egress_mesh_only_app_port")
+-int ztunnel_egress_mesh_only_app_port_setup(struct __ctx_buff *ctx)
+-{
+-	prepare(MESH_ONLY, PEER_IDENTITY);
+-	return pod_send_packet(ctx);
+-}
+-
+-CHECK("tc", "ztunnel_egress_mesh_only_app_port")
+-int ztunnel_egress_mesh_only_app_port_check(const struct __ctx_buff *ctx)
+-{
+-	__u32 status;
+-
+-	test_init();
+-	if (status_of(ctx, &status))
+-		test_fatal("status code out of bounds");
+-	assert(status == CTX_ACT_DROP);
+-	assert(policy_drops(METRIC_EGRESS) == 1);
+-	test_finish();
+-}
+-
+-/* 4. Mesh-only endpoint: HBONE to the workload is forwarded through the tunnel. */
+-PKTGEN("tc", "ztunnel_egress_mesh_only_hbone")
+-int ztunnel_egress_mesh_only_hbone_pktgen(struct __ctx_buff *ctx)
+-{
+-	return build_tcp(ctx, POD_IP, PEER_IP, __bpf_htons(40004), HBONE_PORT, true);
+-}
+-
+-SETUP("tc", "ztunnel_egress_mesh_only_hbone")
+-int ztunnel_egress_mesh_only_hbone_setup(struct __ctx_buff *ctx)
+-{
+-	prepare(MESH_ONLY, PEER_IDENTITY);
+-	return pod_send_packet(ctx);
+-}
+-
+-CHECK("tc", "ztunnel_egress_mesh_only_hbone")
+-int ztunnel_egress_mesh_only_hbone_check(const struct __ctx_buff *ctx)
+-{
+-	__u32 status;
+-
+-	test_init();
+-	if (status_of(ctx, &status))
+-		test_fatal("status code out of bounds");
+-	assert(status == CTX_ACT_REDIRECT);
+-	assert(policy_drops(METRIC_EGRESS) == 0);
+-	test_finish();
+-}
+-
+-/* 5. Mesh-only endpoint: a world destination keeps native policy. */
+-PKTGEN("tc", "ztunnel_egress_mesh_only_world")
+-int ztunnel_egress_mesh_only_world_pktgen(struct __ctx_buff *ctx)
+-{
+-	return build_tcp(ctx, POD_IP, PEER_IP, __bpf_htons(40005), APP_PORT, true);
+-}
+-
+-SETUP("tc", "ztunnel_egress_mesh_only_world")
+-int ztunnel_egress_mesh_only_world_setup(struct __ctx_buff *ctx)
+-{
+-	prepare(MESH_ONLY, WORLD_ID);
+-	return pod_send_packet(ctx);
+-}
+-
+-CHECK("tc", "ztunnel_egress_mesh_only_world")
+-int ztunnel_egress_mesh_only_world_check(const struct __ctx_buff *ctx)
+-{
+-	__u32 status;
+-
+-	test_init();
+-	if (status_of(ctx, &status))
+-		test_fatal("status code out of bounds");
+-	assert(status != CTX_ACT_DROP);
+-	assert(policy_drops(METRIC_EGRESS) == 0);
+-	test_finish();
+-}
+-
+-/* 6. Mesh-only endpoint: plaintext from a workload to the application port is
+- * dropped at the local-delivery policy tail call (cross-node/overlay path).
++PKTGEN("tc", "ztunnel_02_egress_quarantined_hbone")
++int pktgen_02(struct __ctx_buff *ctx) { return build_l4(ctx, false, POD_IP, PEER_IP, __bpf_htons(40002), HBONE_PORT, true); }
++SETUP("tc", "ztunnel_02_egress_quarantined_hbone")
++int setup_02(struct __ctx_buff *ctx) { prepare(QUARANTINED, PEER_IDENTITY); return pod_send_packet(ctx); }
++EXPECT("ztunnel_02_egress_quarantined_hbone", CTX_ACT_DROP, METRIC_EGRESS, 1)
++
++/* 3. HBONE-only: plaintext to a workload application port is dropped. */
++PKTGEN("tc", "ztunnel_03_egress_hbone_only_app_port")
++int pktgen_03(struct __ctx_buff *ctx) { return build_l4(ctx, false, POD_IP, PEER_IP, __bpf_htons(40003), APP_PORT, true); }
++SETUP("tc", "ztunnel_03_egress_hbone_only_app_port")
++int setup_03(struct __ctx_buff *ctx) { prepare(HBONE_ONLY, PEER_IDENTITY); return pod_send_packet(ctx); }
++EXPECT("ztunnel_03_egress_hbone_only_app_port", CTX_ACT_DROP, METRIC_EGRESS, 1)
++
++/* 4. HBONE-only: TCP/15008 to the workload is forwarded through the tunnel. */
++PKTGEN("tc", "ztunnel_04_egress_hbone_only_hbone")
++int pktgen_04(struct __ctx_buff *ctx) { return build_l4(ctx, false, POD_IP, PEER_IP, __bpf_htons(40004), HBONE_PORT, true); }
++SETUP("tc", "ztunnel_04_egress_hbone_only_hbone")
++int setup_04(struct __ctx_buff *ctx) { prepare(HBONE_ONLY, PEER_IDENTITY); return pod_send_packet(ctx); }
++EXPECT("ztunnel_04_egress_hbone_only_hbone", CTX_ACT_REDIRECT, METRIC_EGRESS, 0)
++
++/* 5. HBONE-only: a destination resolved as world (missing/stale identity in a
++ * protected range is indistinguishable) never becomes a plaintext exception.
+  */
+-PKTGEN("tc", "ztunnel_ingress_mesh_only_app_port")
+-int ztunnel_ingress_mesh_only_app_port_pktgen(struct __ctx_buff *ctx)
+-{
+-	return build_tcp(ctx, PEER_IP, POD_IP, __bpf_htons(41006), APP_PORT, false);
+-}
+-
+-SETUP("tc", "ztunnel_ingress_mesh_only_app_port")
+-int ztunnel_ingress_mesh_only_app_port_setup(struct __ctx_buff *ctx)
++PKTGEN("tc", "ztunnel_05_egress_hbone_only_world_plaintext")
++int pktgen_05(struct __ctx_buff *ctx) { return build_l4(ctx, false, POD_IP, PEER_IP, __bpf_htons(40005), APP_PORT, true); }
++SETUP("tc", "ztunnel_05_egress_hbone_only_world_plaintext")
++int setup_05(struct __ctx_buff *ctx) { prepare(HBONE_ONLY, WORLD_ID); return pod_send_packet(ctx); }
++EXPECT("ztunnel_05_egress_hbone_only_world_plaintext", CTX_ACT_DROP, METRIC_EGRESS, 1)
++
++/* 6. HBONE-only: UDP/53 to an arbitrary workload is not a DNS exception. */
++PKTGEN("tc", "ztunnel_06_egress_hbone_only_udp53")
++int pktgen_06(struct __ctx_buff *ctx) { return build_l4(ctx, true, POD_IP, PEER_IP, __bpf_htons(40006), __bpf_htons(53), true); }
++SETUP("tc", "ztunnel_06_egress_hbone_only_udp53")
++int setup_06(struct __ctx_buff *ctx) { prepare(HBONE_ONLY, PEER_IDENTITY); return pod_send_packet(ctx); }
++EXPECT("ztunnel_06_egress_hbone_only_udp53", CTX_ACT_DROP, METRIC_EGRESS, 1)
++
++/* 7. HBONE-only: plaintext from a workload to the application port is dropped
++ * at the local-delivery policy tail call (cross-node/overlay path).
++ */
++PKTGEN("tc", "ztunnel_07_ingress_hbone_only_app_port")
++int pktgen_07(struct __ctx_buff *ctx) { return build_l4(ctx, false, PEER_IP, POD_IP, __bpf_htons(41007), APP_PORT, false); }
++SETUP("tc", "ztunnel_07_ingress_hbone_only_app_port")
++int setup_07(struct __ctx_buff *ctx)
+ {
+-	prepare(MESH_ONLY, PEER_IDENTITY);
++	prepare(HBONE_ONLY, PEER_IDENTITY);
+ 	ctx_store_meta(ctx, CB_SRC_LABEL, PEER_IDENTITY);
+ 	return pod_receive_packet_by_tailcall(ctx);
+ }
++EXPECT("ztunnel_07_ingress_hbone_only_app_port", CTX_ACT_DROP, METRIC_INGRESS, 1)
+ 
+-CHECK("tc", "ztunnel_ingress_mesh_only_app_port")
+-int ztunnel_ingress_mesh_only_app_port_check(const struct __ctx_buff *ctx)
++/* 8. HBONE-only: TCP/15008 from a workload is accepted on the same path. */
++PKTGEN("tc", "ztunnel_08_ingress_hbone_only_hbone")
++int pktgen_08(struct __ctx_buff *ctx) { return build_l4(ctx, false, PEER_IP, POD_IP, __bpf_htons(41008), HBONE_PORT, false); }
++SETUP("tc", "ztunnel_08_ingress_hbone_only_hbone")
++int setup_08(struct __ctx_buff *ctx)
+ {
+-	__u32 status;
+-
+-	test_init();
+-	if (status_of(ctx, &status))
+-		test_fatal("status code out of bounds");
+-	assert(status == CTX_ACT_DROP);
+-	assert(policy_drops(METRIC_INGRESS) == 1);
+-	test_finish();
+-}
+-
+-/* 7. Mesh-only endpoint: HBONE from a workload is accepted on the same path. */
+-PKTGEN("tc", "ztunnel_ingress_mesh_only_hbone")
+-int ztunnel_ingress_mesh_only_hbone_pktgen(struct __ctx_buff *ctx)
+-{
+-	return build_tcp(ctx, PEER_IP, POD_IP, __bpf_htons(41007), HBONE_PORT, false);
+-}
+-
+-SETUP("tc", "ztunnel_ingress_mesh_only_hbone")
+-int ztunnel_ingress_mesh_only_hbone_setup(struct __ctx_buff *ctx)
+-{
+-	prepare(MESH_ONLY, PEER_IDENTITY);
++	prepare(HBONE_ONLY, PEER_IDENTITY);
+ 	ctx_store_meta(ctx, CB_SRC_LABEL, PEER_IDENTITY);
+ 	return pod_receive_packet_by_tailcall(ctx);
+ }
++EXPECT_NOT_DROPPED("ztunnel_08_ingress_hbone_only_hbone", METRIC_INGRESS)
+ 
+-CHECK("tc", "ztunnel_ingress_mesh_only_hbone")
+-int ztunnel_ingress_mesh_only_hbone_check(const struct __ctx_buff *ctx)
+-{
+-	__u32 status;
+-
+-	test_init();
+-	if (status_of(ctx, &status))
+-		test_fatal("status code out of bounds");
+-	assert(status != CTX_ACT_DROP);
+-	assert(policy_drops(METRIC_INGRESS) == 0);
+-	test_finish();
+-}
+-
+-/* 8. Mesh-only endpoint: a host-sourced probe to the application port keeps
+- * native policy (cil_to_container, identity from the host mark).
++/* 9. HBONE-only: the egress reply from the endpoint's HBONE listener for the
++ * flow accepted in case 8 is forwarded (positive reply path).
+  */
+-PKTGEN("tc", "ztunnel_ingress_mesh_only_host_probe")
+-int ztunnel_ingress_mesh_only_host_probe_pktgen(struct __ctx_buff *ctx)
+-{
+-	return build_tcp(ctx, v4_node_one, POD_IP, __bpf_htons(41008), APP_PORT, false);
+-}
+-
+-SETUP("tc", "ztunnel_ingress_mesh_only_host_probe")
+-int ztunnel_ingress_mesh_only_host_probe_setup(struct __ctx_buff *ctx)
++PKTGEN("tc", "ztunnel_09_egress_hbone_listener_reply")
++int pktgen_09(struct __ctx_buff *ctx) { return build_l4(ctx, false, POD_IP, PEER_IP, HBONE_PORT, __bpf_htons(41008), true); }
++SETUP("tc", "ztunnel_09_egress_hbone_listener_reply")
++int setup_09(struct __ctx_buff *ctx) { prepare(HBONE_ONLY, PEER_IDENTITY); return pod_send_packet(ctx); }
++EXPECT("ztunnel_09_egress_hbone_listener_reply", CTX_ACT_REDIRECT, METRIC_EGRESS, 0)
++
++/* 10. HBONE-only: host-sourced plaintext to the application port is dropped;
++ * there is no host exception that could reopen a plaintext bypass.
++ */
++PKTGEN("tc", "ztunnel_10_ingress_hbone_only_host_plaintext")
++int pktgen_10(struct __ctx_buff *ctx) { return build_l4(ctx, false, v4_node_one, POD_IP, __bpf_htons(41010), APP_PORT, false); }
++SETUP("tc", "ztunnel_10_ingress_hbone_only_host_plaintext")
++int setup_10(struct __ctx_buff *ctx)
+ {
+-	prepare(MESH_ONLY, PEER_IDENTITY);
++	prepare(HBONE_ONLY, PEER_IDENTITY);
+ 	ctx->mark = MARK_MAGIC_HOST;
+ 	return pod_receive_packet(ctx);
+ }
++EXPECT("ztunnel_10_ingress_hbone_only_host_plaintext", CTX_ACT_DROP, METRIC_INGRESS, 1)
+ 
+-CHECK("tc", "ztunnel_ingress_mesh_only_host_probe")
+-int ztunnel_ingress_mesh_only_host_probe_check(const struct __ctx_buff *ctx)
+-{
+-	__u32 status;
+-
+-	test_init();
+-	if (status_of(ctx, &status))
+-		test_fatal("status code out of bounds");
+-	assert(status != CTX_ACT_DROP);
+-	assert(policy_drops(METRIC_INGRESS) == 0);
+-	test_finish();
+-}
+-
+-/* 9. Quarantined endpoint drops HBONE ingress on both delivery paths. */
+-PKTGEN("tc", "ztunnel_ingress_quarantined_hbone")
+-int ztunnel_ingress_quarantined_hbone_pktgen(struct __ctx_buff *ctx)
+-{
+-	return build_tcp(ctx, PEER_IP, POD_IP, __bpf_htons(41009), HBONE_PORT, false);
+-}
+-
+-SETUP("tc", "ztunnel_ingress_quarantined_hbone")
+-int ztunnel_ingress_quarantined_hbone_setup(struct __ctx_buff *ctx)
++/* 11-12. Quarantined endpoint drops HBONE ingress on both delivery paths. */
++PKTGEN("tc", "ztunnel_11_ingress_quarantined_tailcall")
++int pktgen_11(struct __ctx_buff *ctx) { return build_l4(ctx, false, PEER_IP, POD_IP, __bpf_htons(41011), HBONE_PORT, false); }
++SETUP("tc", "ztunnel_11_ingress_quarantined_tailcall")
++int setup_11(struct __ctx_buff *ctx)
+ {
+ 	prepare(QUARANTINED, PEER_IDENTITY);
+ 	ctx_store_meta(ctx, CB_SRC_LABEL, PEER_IDENTITY);
+ 	return pod_receive_packet_by_tailcall(ctx);
+ }
++EXPECT("ztunnel_11_ingress_quarantined_tailcall", CTX_ACT_DROP, METRIC_INGRESS, 1)
+ 
+-CHECK("tc", "ztunnel_ingress_quarantined_hbone")
+-int ztunnel_ingress_quarantined_hbone_check(const struct __ctx_buff *ctx)
+-{
+-	__u32 status;
++PKTGEN("tc", "ztunnel_12_ingress_quarantined_to_container")
++int pktgen_12(struct __ctx_buff *ctx) { return build_l4(ctx, false, PEER_IP, POD_IP, __bpf_htons(41012), HBONE_PORT, false); }
++SETUP("tc", "ztunnel_12_ingress_quarantined_to_container")
++int setup_12(struct __ctx_buff *ctx) { prepare(QUARANTINED, PEER_IDENTITY); return pod_receive_packet(ctx); }
++EXPECT("ztunnel_12_ingress_quarantined_to_container", CTX_ACT_DROP, METRIC_INGRESS, 1)
+ 
+-	test_init();
+-	if (status_of(ctx, &status))
+-		test_fatal("status code out of bounds");
+-	assert(status == CTX_ACT_DROP);
+-	test_finish();
+-}
+-
+-PKTGEN("tc", "ztunnel_ingress_quarantined_to_container")
+-int ztunnel_ingress_quarantined_to_container_pktgen(struct __ctx_buff *ctx)
++/* 13-15. Transition ORDINARY -> HBONE_ONLY with conntrack already holding a
++ * plaintext flow. 13 opens an inbound plaintext flow while ORDINARY.
++ */
++PKTGEN("tc", "ztunnel_13_transition_ordinary_inbound_plaintext")
++int pktgen_13(struct __ctx_buff *ctx) { return build_l4(ctx, false, PEER_IP, POD_IP, __bpf_htons(41013), APP_PORT, false); }
++SETUP("tc", "ztunnel_13_transition_ordinary_inbound_plaintext")
++int setup_13(struct __ctx_buff *ctx)
+ {
+-	return build_tcp(ctx, PEER_IP, POD_IP, __bpf_htons(41010), HBONE_PORT, false);
++	prepare(ORDINARY, PEER_IDENTITY);
++	ctx_store_meta(ctx, CB_SRC_LABEL, PEER_IDENTITY);
++	return pod_receive_packet_by_tailcall(ctx);
+ }
++EXPECT_NOT_DROPPED("ztunnel_13_transition_ordinary_inbound_plaintext", METRIC_INGRESS)
+ 
+-SETUP("tc", "ztunnel_ingress_quarantined_to_container")
+-int ztunnel_ingress_quarantined_to_container_setup(struct __ctx_buff *ctx)
++/* 14. Same tuple after the map write to HBONE_ONLY (CT_ESTABLISHED): dropped. */
++PKTGEN("tc", "ztunnel_14_transition_established_plaintext_dropped")
++int pktgen_14(struct __ctx_buff *ctx) { return build_l4(ctx, false, PEER_IP, POD_IP, __bpf_htons(41013), APP_PORT, false); }
++SETUP("tc", "ztunnel_14_transition_established_plaintext_dropped")
++int setup_14(struct __ctx_buff *ctx)
+ {
+-	prepare(QUARANTINED, PEER_IDENTITY);
+-	return pod_receive_packet(ctx);
++	prepare(HBONE_ONLY, PEER_IDENTITY);
++	ctx_store_meta(ctx, CB_SRC_LABEL, PEER_IDENTITY);
++	return pod_receive_packet_by_tailcall(ctx);
+ }
++EXPECT("ztunnel_14_transition_established_plaintext_dropped", CTX_ACT_DROP, METRIC_INGRESS, 1)
+ 
+-CHECK("tc", "ztunnel_ingress_quarantined_to_container")
+-int ztunnel_ingress_quarantined_to_container_check(const struct __ctx_buff *ctx)
+-{
+-	__u32 status;
+-
+-	test_init();
+-	if (status_of(ctx, &status))
+-		test_fatal("status code out of bounds");
+-	assert(status == CTX_ACT_DROP);
+-	assert(policy_drops(METRIC_INGRESS) == 1);
+-	test_finish();
+-}
++/* 15. The endpoint's plaintext reply for that old flow (CT_REPLY): dropped. */
++PKTGEN("tc", "ztunnel_15_transition_reply_plaintext_dropped")
++int pktgen_15(struct __ctx_buff *ctx) { return build_l4(ctx, false, POD_IP, PEER_IP, APP_PORT, __bpf_htons(41013), true); }
++SETUP("tc", "ztunnel_15_transition_reply_plaintext_dropped")
++int setup_15(struct __ctx_buff *ctx) { prepare(HBONE_ONLY, PEER_IDENTITY); return pod_send_packet(ctx); }
++EXPECT("ztunnel_15_transition_reply_plaintext_dropped", CTX_ACT_DROP, METRIC_EGRESS, 1)
+ 
+-/* 10. A single map write moves a released endpoint back to quarantine with no
+- * program reload: the same program drops the previously accepted HBONE flow.
++/* 16-17. An ordinary outbound UDP flow, then a UDP reply into the endpoint
++ * after the transition: the CT_REPLY entry cannot carry plaintext data.
+  */
+-PKTGEN("tc", "ztunnel_egress_rewrite_requarantines")
+-int ztunnel_egress_rewrite_requarantines_pktgen(struct __ctx_buff *ctx)
+-{
+-	/* Same 5-tuple as case 4, so conntrack already has the flow. */
+-	return build_tcp(ctx, POD_IP, PEER_IP, __bpf_htons(40004), HBONE_PORT, true);
+-}
+-
+-SETUP("tc", "ztunnel_egress_rewrite_requarantines")
+-int ztunnel_egress_rewrite_requarantines_setup(struct __ctx_buff *ctx)
+-{
+-	prepare(QUARANTINED, PEER_IDENTITY);
+-	return pod_send_packet(ctx);
++PKTGEN("tc", "ztunnel_16_transition_ordinary_outbound_udp")
++int pktgen_16(struct __ctx_buff *ctx) { return build_l4(ctx, true, POD_IP, PEER_IP, __bpf_htons(40016), __bpf_htons(5353), true); }
++SETUP("tc", "ztunnel_16_transition_ordinary_outbound_udp")
++int setup_16(struct __ctx_buff *ctx) { prepare(ORDINARY, PEER_IDENTITY); return pod_send_packet(ctx); }
++EXPECT("ztunnel_16_transition_ordinary_outbound_udp", CTX_ACT_REDIRECT, METRIC_EGRESS, 0)
++
++PKTGEN("tc", "ztunnel_17_transition_udp_reply_dropped")
++int pktgen_17(struct __ctx_buff *ctx) { return build_l4(ctx, true, PEER_IP, POD_IP, __bpf_htons(5353), __bpf_htons(40016), false); }
++SETUP("tc", "ztunnel_17_transition_udp_reply_dropped")
++int setup_17(struct __ctx_buff *ctx)
++{
++	prepare(HBONE_ONLY, PEER_IDENTITY);
++	ctx_store_meta(ctx, CB_SRC_LABEL, PEER_IDENTITY);
++	return pod_receive_packet_by_tailcall(ctx);
+ }
++EXPECT("ztunnel_17_transition_udp_reply_dropped", CTX_ACT_DROP, METRIC_INGRESS, 1)
+ 
+-CHECK("tc", "ztunnel_egress_rewrite_requarantines")
+-int ztunnel_egress_rewrite_requarantines_check(const struct __ctx_buff *ctx)
+-{
+-	__u32 status;
+-
+-	test_init();
+-	if (status_of(ctx, &status))
+-		test_fatal("status code out of bounds");
+-	assert(status == CTX_ACT_DROP);
+-	assert(policy_drops(METRIC_EGRESS) == 1);
+-	test_finish();
++/* 18. One map write moves a released endpoint back to quarantine with no
++ * program reload: the flow accepted in case 4 is now dropped.
++ */
++PKTGEN("tc", "ztunnel_18_rewrite_requarantines_established_hbone")
++int pktgen_18(struct __ctx_buff *ctx) { return build_l4(ctx, false, POD_IP, PEER_IP, __bpf_htons(40004), HBONE_PORT, true); }
++SETUP("tc", "ztunnel_18_rewrite_requarantines_established_hbone")
++int setup_18(struct __ctx_buff *ctx) { prepare(QUARANTINED, PEER_IDENTITY); return pod_send_packet(ctx); }
++EXPECT("ztunnel_18_rewrite_requarantines_established_hbone", CTX_ACT_DROP, METRIC_EGRESS, 1)
++
++/* 19. Native policy on the outer TCP/15008 flow is not widened: an ingress
++ * policy that allows the peer only on 8080 also blocks its HBONE. Original
++ * application-tuple authorization is a separate (ztunnel) dependency.
++ * Runs last: it removes the allow-all ingress entry.
++ */
++PKTGEN("tc", "ztunnel_19_native_policy_not_widened_for_hbone")
++int pktgen_19(struct __ctx_buff *ctx) { return build_l4(ctx, false, PEER_IP, POD_IP, __bpf_htons(41019), HBONE_PORT, false); }
++SETUP("tc", "ztunnel_19_native_policy_not_widened_for_hbone")
++int setup_19(struct __ctx_buff *ctx)
++{
++	prepare(HBONE_ONLY, PEER_IDENTITY);
++	policy_delete_ingress_all_entry();
++	policy_add_ingress_allow_l3_l4_entry(PEER_IDENTITY, IPPROTO_TCP, APP_PORT, 0);
++	ctx_store_meta(ctx, CB_SRC_LABEL, PEER_IDENTITY);
++	return pod_receive_packet_by_tailcall(ctx);
+ }
++EXPECT("ztunnel_19_native_policy_not_widened_for_hbone", CTX_ACT_DROP, METRIC_INGRESS, 1)
+diff --git a/bpf/tests/ztunnel_required_admission.c b/bpf/tests/ztunnel_required_admission.c
+new file mode 100644
+index 0000000000..7950b4dfbf
+--- /dev/null
++++ b/bpf/tests/ztunnel_required_admission.c
+@@ -0,0 +1,149 @@
++// SPDX-License-Identifier: (GPL-2.0-only OR BSD-2-Clause)
++/* Copyright Authors of Cilium */
++
++/* Native ztunnel admission with the sticky load-time Required obligation
++ * (ztunnel_required=true), dual-stack. A Required program never forwards as an
++ * ordinary endpoint: a missing, foreign (wrong lxc_id) or partial-family own
++ * endpoint-map entry is QUARANTINED. Real bpf_lxc programs and maps.
++ */
++
++#include <bpf/ctx/skb.h>
++#include "common.h"
++#include "pktgen.h"
++
++#define ENABLE_IPV4 1
++#define ENABLE_IPV6 1
++#define TUNNEL_MODE 1
++#define ENCAP_IFINDEX 1
++
++#define POD_IP		v4_pod_one
++#define PEER_IP		v4_pod_two
++#define PEER_NODE	v4_node_two
++#define PEER_IDENTITY	1230
++#define OWN_EPID	77
++#define FOREIGN_EPID	78
++
++#define APP_PORT	__bpf_htons(8080)
++#define HBONE_PORT	__bpf_htons(15008)
++
++static volatile const __u8 *pod_mac = mac_one;
++static volatile const __u8 *peer_mac = mac_two;
++
++#include "lib/bpf_lxc.h"
++
++ASSIGN_CONFIG(union v4addr, endpoint_ipv4, { .be32 = v4_pod_one })
++ASSIGN_CONFIG(union v6addr, endpoint_ipv6, { .addr = v6_pod_one_addr })
++ASSIGN_CONFIG(__u16, endpoint_id, OWN_EPID)
++ASSIGN_CONFIG(bool, ztunnel_required, true)
++
++#include "lib/endpoint.h"
++#include "lib/ipcache.h"
++#include "lib/metrics.h"
++#include "lib/policy.h"
++
++#define ZT_CAT2(a, b) a##b
++#define ZT_CAT(a, b) ZT_CAT2(a, b)
++
++enum own_entries {
++	OWN_NONE,		/* neither family has an entry */
++	OWN_FOREIGN,		/* both entries belong to another endpoint ID */
++	OWN_V4_ONLY,		/* IPv6 entry missing */
++	OWN_BOTH_PLAIN,		/* both entries, no admission bits */
++	OWN_V6_QUARANTINED,	/* both entries, only IPv6 carries quarantine */
++};
++
++static __always_inline void prepare(enum own_entries entries)
++{
++	union v6addr own6 = { .addr = v6_pod_one_addr };
++	__u16 v4id = OWN_EPID, v6id = OWN_EPID;
++	__u32 v6flags = 0;
++
++	endpoint_v4_del_entry(POD_IP);
++	endpoint_v6_del_entry(&own6);
++	if (entries == OWN_FOREIGN)
++		v4id = v6id = FOREIGN_EPID;
++	if (entries == OWN_V6_QUARANTINED)
++		v6flags = ENDPOINT_F_ZTUNNEL_QUARANTINED;
++	if (entries != OWN_NONE)
++		endpoint_v4_add_entry(POD_IP, 0, v4id, 0, 0, 0, (__u8 *)pod_mac, NULL);
++	if (entries != OWN_NONE && entries != OWN_V4_ONLY)
++		endpoint_v6_add_entry(&own6, 0, v6id, v6flags, 0, (__u8 *)pod_mac, NULL);
++	ipcache_v4_add_entry(PEER_IP, 0, PEER_IDENTITY, PEER_NODE, 0);
++	policy_add_egress_allow_all_entry();
++	policy_add_ingress_allow_all_entry();
++	metrics_del_entry((__u8)-DROP_POLICY, METRIC_EGRESS);
++}
++
++static __always_inline int build(struct __ctx_buff *ctx, __be16 sport, __be16 dport)
++{
++	struct pktgen builder;
++	void *l4, *data;
++
++	pktgen__init(&builder, ctx);
++	l4 = pktgen__push_ipv4_tcp_packet(&builder, (__u8 *)pod_mac, (__u8 *)peer_mac,
++					  POD_IP, PEER_IP, sport, dport);
++	if (!l4)
++		return TEST_ERROR;
++	data = pktgen__push_data(&builder, default_data, sizeof(default_data));
++	if (!data)
++		return TEST_ERROR;
++	pktgen__finish(&builder);
++	return 0;
++}
++
++static __always_inline int status_of(const struct __ctx_buff *ctx, __u32 *status)
++{
++	void *data = (void *)(long)ctx_data(ctx);
++	void *data_end = (void *)(long)ctx->data_end;
++
++	if (data + sizeof(__u32) > data_end)
++		return -1;
++	*status = *(__u32 *)data;
++	return 0;
++}
++
++static __always_inline __u64 egress_policy_drops(void)
++{
++	struct metrics_key key = { .reason = (__u8)-DROP_POLICY, .dir = METRIC_EGRESS };
++	struct metrics_value *entry = map_lookup_elem(&cilium_metrics, &key);
++
++	return entry ? entry->count : 0;
++}
++
++#define CASE(name, entries, sport, dport, want_status, want_drops)		\
++PKTGEN("tc", name)								\
++int ZT_CAT(pktgen_, __LINE__)(struct __ctx_buff *ctx)				\
++{										\
++	return build(ctx, __bpf_htons(sport), dport);				\
++}										\
++SETUP("tc", name)								\
++int ZT_CAT(setup_, __LINE__)(struct __ctx_buff *ctx)				\
++{										\
++	prepare(entries);							\
++	return pod_send_packet(ctx);						\
++}										\
++CHECK("tc", name)								\
++int ZT_CAT(check_, __LINE__)(const struct __ctx_buff *ctx)			\
++{										\
++	__u32 status;								\
++										\
++	test_init();								\
++	if (status_of(ctx, &status))						\
++		test_fatal("status code out of bounds");			\
++	assert(status == (want_status));					\
++	assert(egress_policy_drops() == (want_drops));				\
++	test_finish();								\
++}
++
++/* Missing own entries: never ordinary, even for HBONE. */
++CASE("ztunnel_required_01_missing_entries_quarantined", OWN_NONE, 42001, HBONE_PORT, CTX_ACT_DROP, 1)
++/* Entries owned by another endpoint ID (reuse) are not this endpoint's. */
++CASE("ztunnel_required_02_foreign_epid_quarantined", OWN_FOREIGN, 42002, HBONE_PORT, CTX_ACT_DROP, 1)
++/* Partial family: the configured IPv6 entry is missing. */
++CASE("ztunnel_required_03_partial_family_quarantined", OWN_V4_ONLY, 42003, HBONE_PORT, CTX_ACT_DROP, 1)
++/* Complete own entries without bits: HBONE-only, never ordinary. */
++CASE("ztunnel_required_04_complete_hbone_forwarded", OWN_BOTH_PLAIN, 42004, HBONE_PORT, CTX_ACT_REDIRECT, 0)
++CASE("ztunnel_required_05_complete_app_port_dropped", OWN_BOTH_PLAIN, 42005, APP_PORT, CTX_ACT_DROP, 1)
++CASE("ztunnel_required_06_complete_31337_dropped", OWN_BOTH_PLAIN, 42006, __bpf_htons(31337), CTX_ACT_DROP, 1)
++/* Mixed family: quarantine on one family quarantines the endpoint. */
++CASE("ztunnel_required_07_one_family_quarantined", OWN_V6_QUARANTINED, 42007, HBONE_PORT, CTX_ACT_DROP, 1)
+diff --git a/install/kubernetes/cilium/templates/ztunnel/daemonset.yaml b/install/kubernetes/cilium/templates/ztunnel/daemonset.yaml
+index a35f977c15..3a0c918f8a 100644
+--- a/install/kubernetes/cilium/templates/ztunnel/daemonset.yaml
++++ b/install/kubernetes/cilium/templates/ztunnel/daemonset.yaml
+@@ -97,11 +97,13 @@ spec:
+               value: "false"
+             - name: INPOD_UDS
+               value: "/var/run/cilium/ztunnel.sock"
++            # Kubernetes Node metadata.name. Cilium xDS publishes the same
++            # native node name in Workload.Node; it is never a node IP.
+             - name: NODE_NAME
+               valueFrom:
+                 fieldRef:
+                   apiVersion: v1
+-                  fieldPath: status.hostIP
++                  fieldPath: spec.nodeName
+             - name: INSTANCE_IP
+               valueFrom:
+                 fieldRef:
+diff --git a/pkg/datapath/config/endpoint.go b/pkg/datapath/config/endpoint.go
+index c19a07b1c0..83cecf1e23 100644
+--- a/pkg/datapath/config/endpoint.go
++++ b/pkg/datapath/config/endpoint.go
+@@ -56,6 +56,9 @@ func Endpoint(ep endpoint.Config, lnc *Config) any {
+ 	if quarantine, ok := ep.(endpoint.ZtunnelQuarantineProvider); ok {
+ 		cfg.ZtunnelQuarantined = quarantine.IsZtunnelQuarantined()
+ 	}
++	if required, ok := ep.(endpoint.ZtunnelMeshOnlyProvider); ok {
++		cfg.ZtunnelRequired = required.IsZtunnelMeshOnly()
++	}
+ 	cfg.EnableLRP = lnc.EnableLocalRedirectPolicy
+ 
+ 	cfg.EphemeralMin = lnc.EphemeralMin
+diff --git a/pkg/datapath/config/endpoint_ztunnel_test.go b/pkg/datapath/config/endpoint_ztunnel_test.go
+index 6007163050..0da54e45fc 100644
+--- a/pkg/datapath/config/endpoint_ztunnel_test.go
++++ b/pkg/datapath/config/endpoint_ztunnel_test.go
+@@ -39,6 +39,7 @@ func (e testZtunnelConfigEndpoint) SourceIPDatapathIdentity() endpointtypes.Sour
+ 	return endpointtypes.SourceIPDatapathIdentity{ZtunnelRequired: e.required}
+ }
+ func (e testZtunnelConfigEndpoint) IsZtunnelQuarantined() bool { return e.quarantined }
++func (e testZtunnelConfigEndpoint) IsZtunnelMeshOnly() bool    { return e.required }
+ 
+ func TestEndpointConfigSeparatesRequiredFromQuarantine(t *testing.T) {
+ 	lib := option.GetEndpointMutableOptionLibrary()
+@@ -58,6 +59,7 @@ func TestEndpointConfigSeparatesRequiredFromQuarantine(t *testing.T) {
+ 			cfg := Endpoint(ep, &Config{}).(*BPFLXC)
+ 			require.Equal(t, tc.required, ep.SourceIPDatapathIdentity().ZtunnelRequired, "SourceIP identity keeps the sticky Required meaning")
+ 			require.Equal(t, tc.quarantined, cfg.ZtunnelQuarantined, "BPF drop config reads quarantine only")
++			require.Equal(t, tc.required, cfg.ZtunnelRequired, "sticky Required forbids ordinary forwarding at load time")
+ 		})
+ 	}
+ }
+diff --git a/pkg/datapath/config/lxc_config.go b/pkg/datapath/config/lxc_config.go
+index 43786b4155..af7c0572b7 100644
+--- a/pkg/datapath/config/lxc_config.go
++++ b/pkg/datapath/config/lxc_config.go
+@@ -91,6 +91,8 @@ type BPFLXC struct {
+ 	VTEPMask uint32 `config:"vtep_mask"`
+ 	// Deny endpoint traffic while native ztunnel admission is quarantined.
+ 	ZtunnelQuarantined bool `config:"ztunnel_quarantined"`
++	// Sticky Required ztunnel obligation: never ordinary forwarding.
++	ZtunnelRequired bool `config:"ztunnel_required"`
+ 
+ 	Node
+ }
+@@ -105,5 +107,5 @@ func NewBPFLXC(node Node) *BPFLXC {
+ 		cast[types.V4Addr]([]byte{0x0, 0x0, 0x0, 0x0}),
+ 		cast[types.V6Addr]([]byte{0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0}),
+ 		0x0, false, 0x0, 0x20, 0x0, cast[types.SocketLBConfig]([]byte{0x0, 0x0, 0x0}),
+-		0x0, 0x0, 0x0, false, node}
++		0x0, 0x0, 0x0, false, false, node}
+ }
+diff --git a/pkg/endpoint/types/source_ip_receipt.go b/pkg/endpoint/types/source_ip_receipt.go
+index 44797af58e..24a8fe0a82 100644
+--- a/pkg/endpoint/types/source_ip_receipt.go
++++ b/pkg/endpoint/types/source_ip_receipt.go
+@@ -66,3 +66,10 @@ type SourceIPDatapathIdentityProvider interface {
+ type ZtunnelQuarantineProvider interface {
+ 	IsZtunnelQuarantined() bool
+ }
++
++// ZtunnelMeshOnlyProvider exposes the sticky Required obligation as the
++// load-time ztunnel_required config: such a program never forwards as an
++// ordinary endpoint, even if its own endpoint-map entry is missing.
++type ZtunnelMeshOnlyProvider interface {
++	IsZtunnelMeshOnly() bool
++}
+diff --git a/pkg/ztunnel/xds/authorization_test.go b/pkg/ztunnel/xds/authorization_test.go
+index 73e2e44e16..20f7dc909d 100644
+--- a/pkg/ztunnel/xds/authorization_test.go
++++ b/pkg/ztunnel/xds/authorization_test.go
+@@ -356,7 +356,7 @@ type multiplexAuthorizationTestServer struct {
+ }
+ 
+ func (s *multiplexAuthorizationTestServer) DeltaAggregatedResources(stream v3.AggregatedDiscoveryService_DeltaAggregatedResourcesServer) error {
+-	sp := NewStreamProcessor(&StreamProcessorParams{
++	sp := NewStreamProcessor(&StreamProcessorParams{NodeNames: mustFixtureNodeNames(),
+ 		Stream: stream, StreamRecv: make(chan *v3.DeltaDiscoveryRequest, 1),
+ 		EndpointEventRecv: s.endpointEventChan, Log: s.log, Metrics: s.metrics,
+ 		Authorizations: s.authorizations, TrustDomain: s.trustDomain,
+@@ -428,7 +428,7 @@ func TestAuthorizationSendFailureTerminatesStream(t *testing.T) {
+ 	stream.OnSendMsg = func(any) error { return writeError }
+ 	metrics := NewMetrics()
+ 	metrics.Enable()
+-	sp := NewStreamProcessor(&StreamProcessorParams{Stream: stream, StreamRecv: make(chan *v3.DeltaDiscoveryRequest, 1), EndpointEventRecv: make(chan *EndpointEvent), Log: slog.New(slog.DiscardHandler), Metrics: metrics})
++	sp := NewStreamProcessor(&StreamProcessorParams{NodeNames: fixtureNodeNames(t), Stream: stream, StreamRecv: make(chan *v3.DeltaDiscoveryRequest, 1), EndpointEventRecv: make(chan *EndpointEvent), Log: slog.New(slog.DiscardHandler), Metrics: metrics})
+ 	done := make(chan error, 1)
+ 	go func() { done <- sp.Start() }()
+ 	select {
+diff --git a/pkg/ztunnel/xds/cell.go b/pkg/ztunnel/xds/cell.go
+index 0573faa7d7..0c872ef750 100644
+--- a/pkg/ztunnel/xds/cell.go
++++ b/pkg/ztunnel/xds/cell.go
+@@ -12,7 +12,9 @@ import (
+ 	cmtypes "github.com/cilium/cilium/pkg/clustermesh/types"
+ 	"github.com/cilium/cilium/pkg/endpointmanager"
+ 	"github.com/cilium/cilium/pkg/k8s/watchers"
++	"github.com/cilium/cilium/pkg/logging/logfields"
+ 	"github.com/cilium/cilium/pkg/metrics"
++	"github.com/cilium/cilium/pkg/node"
+ 	"github.com/cilium/cilium/pkg/ztunnel/config"
+ 	"github.com/cilium/cilium/pkg/ztunnel/table"
+ )
+@@ -53,6 +55,8 @@ type xdsServerParams struct {
+ 	EnrolledNamespaceTable statedb.RWTable[*table.EnrolledNamespace]
+ 	Metrics                *Metrics
+ 	IssuerProfile          *issuerProfileSource
++	// Nodes is Cilium's native node table (Kubernetes Node discovery).
++	Nodes statedb.Table[*node.Node]
+ }
+ 
+ func NewServer(params xdsServerParams) *Server {
+@@ -77,6 +81,12 @@ func NewServer(params xdsServerParams) *Server {
+ 	server.requireMTLS = params.Config.RequireMTLS
+ 	server.effectivePolicyQuarantine = params.Config.EffectivePolicyQuarantine
+ 	server.issuerProfile = params.IssuerProfile
++	if names, err := newNativeNodeNames(params.DB, params.Nodes, params.ClusterInfo); err != nil {
++		// Every Address response then fails closed; no IP fallback exists.
++		params.Logger.Error("ztunnel xDS has no Kubernetes node discovery", logfields.Error, err)
++	} else {
++		server.nodeNames = names
++	}
+ 
+ 	params.Lifecycle.Append(cell.Hook{
+ 		OnStart: func(_ cell.HookContext) error {
+diff --git a/pkg/ztunnel/xds/effective_quarantine_test.go b/pkg/ztunnel/xds/effective_quarantine_test.go
+index 1a77fd1d52..4866143e50 100644
+--- a/pkg/ztunnel/xds/effective_quarantine_test.go
++++ b/pkg/ztunnel/xds/effective_quarantine_test.go
+@@ -27,7 +27,7 @@ func TestNativeQuarantineDeliveredOverADSAndBoundToIncarnation(t *testing.T) {
+ 	_, _, err = tbl.Insert(tx, &table.EnrolledNamespace{Name: "orders", UID: nsUID})
+ 	require.NoError(t, err)
+ 	tx.Commit()
+-	sp := &StreamProcessor{db: db, enrolledNamespaceTable: tbl, authorizations: server.authorizations, log: server.log}
++	sp := &StreamProcessor{nodeNames: fixtureNodeNames(t), db: db, enrolledNamespaceTable: tbl, authorizations: server.authorizations, log: server.log}
+ 	wire, err := anypb.New(&pb.Address{Type: &pb.Address_Workload{Workload: &pb.Workload{Uid: podUID, Namespace: "orders"}}})
+ 	require.NoError(t, err)
+ 	response := &v3.DeltaDiscoveryResponse{TypeUrl: xdsTypeURLAddress, Resources: []*v3.Resource{{Name: podUID, Resource: wire}}}
+@@ -71,7 +71,7 @@ func TestNativeQuarantineMissingNamespaceNeverPublishesOrphanAllow(t *testing.T)
+ 	db := statedb.New()
+ 	tbl, err := table.NewEnrolledNamespacesTable(db)
+ 	require.NoError(t, err)
+-	sp := &StreamProcessor{db: db, enrolledNamespaceTable: tbl, authorizations: server.authorizations, log: server.log}
++	sp := &StreamProcessor{nodeNames: fixtureNodeNames(t), db: db, enrolledNamespaceTable: tbl, authorizations: server.authorizations, log: server.log}
+ 	wire, err := anypb.New(&pb.Address{Type: &pb.Address_Workload{Workload: &pb.Workload{Uid: "22222222-2222-4222-8222-222222222222", Namespace: "orders"}}})
+ 	require.NoError(t, err)
+ 	require.Error(t, sp.bindEffectiveQuarantine(&v3.DeltaDiscoveryResponse{Resources: []*v3.Resource{{Name: "pod", Resource: wire}}}))
+diff --git a/pkg/ztunnel/xds/endpoint_event.go b/pkg/ztunnel/xds/endpoint_event.go
+index aee4b2ac94..4c992a13f5 100644
+--- a/pkg/ztunnel/xds/endpoint_event.go
++++ b/pkg/ztunnel/xds/endpoint_event.go
+@@ -227,6 +227,10 @@ type EndpointEvent struct {
+ 	Type EndpointEventType
+ 	*types.CiliumEndpoint
+ 	Err error
++	// NodeName is the Kubernetes Node metadata.name bound from Cilium's native
++	// node discovery at the Address response boundary. Networking.NodeIP stays
++	// an address and is never used as the node identity.
++	NodeName string
+ }
+ 
+ // getPodUID returns the Pod UID from the CiliumEndpoint's OwnerReferences.
+@@ -285,6 +289,9 @@ func (e *EndpointEvent) ToXDSAddress() (*pb.Address, error) {
+ 	if e.Networking == nil {
+ 		return nil, wrapValidationError(errInvalidWorkloadData, "cannot transform EndpointEvent to XDS Address, missing networking information")
+ 	}
++	if e.NodeName == "" {
++		return nil, wrapValidationError(errInvalidWorkloadData, "cannot transform EndpointEvent to XDS Address, missing Kubernetes node name")
++	}
+ 
+ 	ipAddresses := make([][]byte, 0)
+ 
+@@ -307,9 +314,8 @@ func (e *EndpointEvent) ToXDSAddress() (*pb.Address, error) {
+ 
+ 	w := &pb.Workload{
+ 		Uid: e.getPodUID(),
+-		// TODO(hemanthmalla) Convert this field to node name.
+-		// zTunnel will match this with it's own node name.
+-		Node:           e.Networking.NodeIP,
++		// Kubernetes Node name; ztunnel matches it with its own NODE_NAME.
++		Node:           e.NodeName,
+ 		Name:           e.Name,
+ 		Namespace:      e.Namespace,
+ 		ServiceAccount: e.ServiceAccount,
+diff --git a/pkg/ztunnel/xds/endpoint_event_test.go b/pkg/ztunnel/xds/endpoint_event_test.go
+index 1f8de6ec85..143a333a9f 100644
+--- a/pkg/ztunnel/xds/endpoint_event_test.go
++++ b/pkg/ztunnel/xds/endpoint_event_test.go
+@@ -49,8 +49,8 @@ func TestEndpointEventToXDSAddress(t *testing.T) {
+ 			CiliumEndpoint: cep,
+ 		}
+ 
+-		// Transform to XDS Address
+-		address, err := event.ToXDSAddress()
++		// Transform to XDS Address after native node-name binding.
++		address, err := withFixtureNodeName(t, event).ToXDSAddress()
+ 		require.NoError(t, err, "ToXDSAddress should not error for valid endpoint")
+ 		require.NotNil(t, address, "Address should not be nil")
+ 
+@@ -63,9 +63,9 @@ func TestEndpointEventToXDSAddress(t *testing.T) {
+ 		require.Equal(t, ep.K8sUID, workload.Uid, "Workload.Uid should match Pod UID from OwnerReferences")
+ 		require.Equal(t, ep.K8sPodName, workload.Name, "Workload.Name should match endpoint.K8sPodName")
+ 		require.Equal(t, ep.K8sNamespace, workload.Namespace, "Workload.Namespace should match endpoint.K8sNamespace")
+-		// TODO(hemanthmalla): Currently we're setting zTunnel node name to host IP due to lack of nodename in CEP.
+-		// Revert to node name once we lookup with a local object that has node name.
+-		require.Equal(t, pod.Status.HostIP, workload.Node, "Workload.Node should match pod.Status.HostIP")
++		// Native node discovery binds the Kubernetes Node name, never the host IP.
++		require.Equal(t, pod.Spec.NodeName, workload.Node, "Workload.Node should match pod.Spec.NodeName")
++		require.NotEqual(t, pod.Status.HostIP, workload.Node, "Workload.Node must not be the host IP")
+ 
+ 		require.Equal(t, pod.Spec.ServiceAccountName, workload.ServiceAccount, "Workload.ServiceAccount should match pod.Spec.ServiceAccountName")
+ 		require.Equal(t, pb.TunnelProtocol_HBONE, workload.TunnelProtocol, "Workload.TunnelProtocol should be HBONE")
+@@ -115,7 +115,7 @@ func TestEndpointEventToXDSAddress(t *testing.T) {
+ 		// Note: REMOVE events don't use ToXDSAddress() in the transformation pipeline.
+ 		// They are handled directly by adding the K8sUID to RemovedResources in
+ 		// ToDeltaDiscoveryResponse(). However, the method should still work.
+-		address, err := event.ToXDSAddress()
++		address, err := withFixtureNodeName(t, event).ToXDSAddress()
+ 		require.NoError(t, err, "ToXDSAddress should not error for REMOVE event")
+ 		require.NotNil(t, address, "Address should not be nil")
+ 
+@@ -128,9 +128,9 @@ func TestEndpointEventToXDSAddress(t *testing.T) {
+ 		require.Equal(t, ep.K8sUID, workload.Uid, "Workload.Uid should match Pod UID from OwnerReferences")
+ 		require.Equal(t, ep.K8sPodName, workload.Name, "Workload.Name should match endpoint.K8sPodName")
+ 		require.Equal(t, ep.K8sNamespace, workload.Namespace, "Workload.Namespace should match endpoint.K8sNamespace")
+-		// TODO(hemanthmalla): Currently we're setting zTunnel node name to host IP due to lack of nodename in CEP.
+-		// Revert to node name once we lookup with a local object that has node name.
+-		require.Equal(t, pod.Status.HostIP, workload.Node, "Workload.Node should match pod.Status.HostIP")
++		// Native node discovery binds the Kubernetes Node name, never the host IP.
++		require.Equal(t, pod.Spec.NodeName, workload.Node, "Workload.Node should match pod.Spec.NodeName")
++		require.NotEqual(t, pod.Status.HostIP, workload.Node, "Workload.Node must not be the host IP")
+ 		require.Equal(t, pod.Spec.ServiceAccountName, workload.ServiceAccount, "Workload.ServiceAccount should match pod.Spec.ServiceAccountName")
+ 		require.Equal(t, pb.TunnelProtocol_HBONE, workload.TunnelProtocol, "Workload.TunnelProtocol should be HBONE")
+ 
+@@ -263,7 +263,7 @@ func TestEndpointEventCollectionToDeltaDiscoveryResponse(t *testing.T) {
+ 		}
+ 
+ 		// Transform to DeltaDiscoveryResponse
+-		response := collection.ToDeltaDiscoveryResponse()
++		response := bindFixtureNodes(t, collection).ToDeltaDiscoveryResponse()
+ 		require.NotNil(t, response, "DeltaDiscoveryResponse should not be nil")
+ 
+ 		// Validate response structure
+@@ -292,8 +292,7 @@ func TestEndpointEventCollectionToDeltaDiscoveryResponse(t *testing.T) {
+ 				require.Equal(t, testUIDs[0], workload.Uid)
+ 				require.Equal(t, "create-pod-1", workload.Name)
+ 				require.Equal(t, "create-namespace-1", workload.Namespace)
+-				// require.Equal(t, "create-node-1", workload.Node)
+-				require.Equal(t, "100.1.1.10", workload.Node)
++				require.Equal(t, "create-node-1", workload.Node)
+ 				require.Equal(t, "create-sa-1", workload.ServiceAccount)
+ 				require.Equal(t, pb.TunnelProtocol_HBONE, workload.TunnelProtocol)
+ 				require.Len(t, workload.Addresses, 2, "Should have 2 IP addresses")
+@@ -302,8 +301,7 @@ func TestEndpointEventCollectionToDeltaDiscoveryResponse(t *testing.T) {
+ 				require.Equal(t, testUIDs[2], workload.Uid)
+ 				require.Equal(t, "create-pod-2", workload.Name)
+ 				require.Equal(t, "create-namespace-2", workload.Namespace)
+-				// require.Equal(t, "create-node-2", workload.Node)
+-				require.Equal(t, "100.1.1.20", workload.Node)
++				require.Equal(t, "create-node-2", workload.Node)
+ 				require.Equal(t, "create-sa-2", workload.ServiceAccount)
+ 				require.Equal(t, pb.TunnelProtocol_HBONE, workload.TunnelProtocol)
+ 				require.Len(t, workload.Addresses, 2, "Should have 2 IP addresses")
+@@ -332,7 +330,8 @@ func TestEndpointEventCollectionToValidatedDeltaDiscoveryResponse(t *testing.T)
+ 			Spec:   slim_corev1.PodSpec{ServiceAccountName: "api"},
+ 			Status: slim_corev1.PodStatus{HostIP: "10.0.0.1"},
+ 		})
+-		return &EndpointEvent{Type: eventType, CiliumEndpoint: endpointToCiliumEndpoint(ep)}
++		// Bound as at the Address response boundary (native node discovery).
++		return &EndpointEvent{Type: eventType, CiliumEndpoint: endpointToCiliumEndpoint(ep), NodeName: "worker-a"}
+ 	}
+ 
+ 	t.Run("valid batch binds trust domain and removes exact UID", func(t *testing.T) {
+@@ -469,7 +468,7 @@ func TestStreamProcessorAddressResponseCarriesClusterID(t *testing.T) {
+ 
+ 	for _, clusterName := range []string{"cluster-alpha", "cluster-beta"} {
+ 		for _, requireMTLS := range []bool{true, false} {
+-			sp := &StreamProcessor{
++			sp := &StreamProcessor{nodeNames: fixtureNodeNames(t),
+ 				trustDomain: "mesh.example.com",
+ 				clusterName: clusterName,
+ 				requireMTLS: requireMTLS,
+@@ -496,7 +495,8 @@ func TestEndpointEventCollectionCoalesceStrictEndpointEvents(t *testing.T) {
+ 			Spec:   slim_corev1.PodSpec{ServiceAccountName: "api"},
+ 			Status: slim_corev1.PodStatus{HostIP: "10.0.0.1"},
+ 		})
+-		return &EndpointEvent{Type: eventType, CiliumEndpoint: endpointToCiliumEndpoint(ep)}
++		// Bound as at the Address response boundary (native node discovery).
++		return &EndpointEvent{Type: eventType, CiliumEndpoint: endpointToCiliumEndpoint(ep), NodeName: "worker-a"}
+ 	}
+ 
+ 	t.Run("last create wins", func(t *testing.T) {
+@@ -542,3 +542,21 @@ func TestEndpointEventCollectionCoalesceStrictEndpointEvents(t *testing.T) {
+ 		require.Equal(t, netip.MustParseAddr("10.0.0.12").AsSlice(), address.GetWorkload().Addresses[0])
+ 	})
+ }
++
++// withFixtureNodeName binds a single event through native node discovery,
++// including REMOVED events that are converted directly by these unit tests.
++func withFixtureNodeName(t testing.TB, event *EndpointEvent) *EndpointEvent {
++	probe := *event
++	probe.Type = CREATE
++	bound, _, _, err := fixtureNodeNames(t).bind(EndpointEventCollection{&probe})
++	require.NoError(t, err)
++	copy := *event
++	copy.NodeName = bound[0].NodeName
++	return &copy
++}
++
++func bindFixtureNodes(t testing.TB, collection EndpointEventCollection) EndpointEventCollection {
++	bound, _, _, err := fixtureNodeNames(t).bind(collection)
++	require.NoError(t, err)
++	return bound
++}
+diff --git a/pkg/ztunnel/xds/issuer_profile_test.go b/pkg/ztunnel/xds/issuer_profile_test.go
+index 2f9d1f84d0..5298912f36 100644
+--- a/pkg/ztunnel/xds/issuer_profile_test.go
++++ b/pkg/ztunnel/xds/issuer_profile_test.go
+@@ -56,7 +56,7 @@ type profileTestServer struct {
+ }
+ 
+ func (s *profileTestServer) DeltaAggregatedResources(stream v3.AggregatedDiscoveryService_DeltaAggregatedResourcesServer) error {
+-	sp := NewStreamProcessor(&StreamProcessorParams{Stream: stream, StreamRecv: make(chan *v3.DeltaDiscoveryRequest, 1), EndpointEventRecv: make(chan *EndpointEvent), Log: slog.New(slog.DiscardHandler), IssuerProfile: s.source})
++	sp := NewStreamProcessor(&StreamProcessorParams{NodeNames: mustFixtureNodeNames(), Stream: stream, StreamRecv: make(chan *v3.DeltaDiscoveryRequest, 1), EndpointEventRecv: make(chan *EndpointEvent), Log: slog.New(slog.DiscardHandler), IssuerProfile: s.source})
+ 	// Exercise the actual native router with a package-private test deadline.
+ 	return sp.Start()
+ }
+diff --git a/pkg/ztunnel/xds/native_node_name.go b/pkg/ztunnel/xds/native_node_name.go
+new file mode 100644
+index 0000000000..53cc72c6d6
+--- /dev/null
++++ b/pkg/ztunnel/xds/native_node_name.go
+@@ -0,0 +1,181 @@
++// SPDX-License-Identifier: Apache-2.0
++// Copyright Authors of Cilium
++
++package xds
++
++import (
++	"fmt"
++	"maps"
++	"net/netip"
++
++	"github.com/cilium/statedb"
++
++	cmtypes "github.com/cilium/cilium/pkg/clustermesh/types"
++	"github.com/cilium/cilium/pkg/logging/logfields"
++	"github.com/cilium/cilium/pkg/node"
++)
++
++// nodeNameResolver binds the Kubernetes Node metadata.name of each workload's
++// node into an Address batch. ztunnel compares Workload.Node with its own
++// NODE_NAME (spec.nodeName), so the value is the API Node name, never an IP.
++type nodeNameResolver interface {
++	// bind returns copies of the CREATE events with NodeName set, the
++	// address-to-name pairs it used, and a watch from the same read.
++	bind(EndpointEventCollection) (EndpointEventCollection, map[netip.Addr]string, <-chan struct{}, error)
++	// verify re-reads previously bound pairs in one read. It fails if any pair
++	// changed, disappeared or became ambiguous, and returns a fresh watch.
++	verify(map[netip.Addr]string) (<-chan struct{}, error)
++}
++
++// nativeNodeNames reads Cilium's native node table. That table is fed by
++// Cilium's node discovery (Kubernetes Node / CiliumNode for the local cluster,
++// ClusterMesh for remote clusters). Only nodes of the local cluster are used:
++// CiliumEndpoints are local-cluster objects, so a remote node with the same
++// name or address can never be substituted. This is a name projection; Pod
++// incarnation authorization stays with the strict CEP and membership checks.
++type nativeNodeNames struct {
++	db      *statedb.DB
++	nodes   statedb.Table[*node.Node]
++	cluster cmtypes.ClusterInfo
++}
++
++func newNativeNodeNames(db *statedb.DB, nodes statedb.Table[*node.Node], cluster cmtypes.ClusterInfo) (*nativeNodeNames, error) {
++	if db == nil || nodes == nil || cluster.Name == "" || cluster.ID == 0 {
++		return nil, fmt.Errorf("native Kubernetes node discovery is unavailable")
++	}
++	return &nativeNodeNames{db: db, nodes: nodes, cluster: cluster}, nil
++}
++
++// snapshot indexes every address of every local-cluster node under one read.
++// NodeByAddress indexes underlay addresses with cluster zero, so it is not a
++// substitute for filtering Cluster and ClusterID explicitly here.
++func (r *nativeNodeNames) snapshot() (map[netip.Addr]string, map[netip.Addr]bool, <-chan struct{}, error) {
++	txn := r.db.ReadTxn()
++	if ready, _ := r.nodes.Initialized(txn); !ready {
++		return nil, nil, nil, wrapValidationError(errInvalidWorkloadData, "native Kubernetes node discovery has not synchronized")
++	}
++	rows, watch := r.nodes.AllWatch(txn)
++	byAddress := make(map[netip.Addr]string)
++	ambiguous := make(map[netip.Addr]bool)
++	for n := range rows {
++		if n == nil || n.Cluster != r.cluster.Name || n.ClusterID != r.cluster.ID {
++			continue
++		}
++		for _, address := range n.IPAddresses {
++			ip := address.IP.Addr.Unmap()
++			if !ip.IsValid() {
++				continue
++			}
++			if previous, found := byAddress[ip]; found && previous != n.Name {
++				ambiguous[ip] = true
++			}
++			byAddress[ip] = n.Name
++		}
++	}
++	return byAddress, ambiguous, watch, nil
++}
++
++func (r *nativeNodeNames) lookup(byAddress map[netip.Addr]string, ambiguous map[netip.Addr]bool, ip netip.Addr) (string, error) {
++	ip = ip.Unmap()
++	name := byAddress[ip]
++	switch {
++	case ambiguous[ip]:
++		return "", wrapValidationError(errInvalidWorkloadData, "node address %s maps to more than one Kubernetes node in cluster %q", ip, r.cluster.Name)
++	case name == "":
++		return "", wrapValidationError(errInvalidWorkloadData, "no Kubernetes node name for node address %s in cluster %q", ip, r.cluster.Name)
++	}
++	return name, nil
++}
++
++func (r *nativeNodeNames) bind(events EndpointEventCollection) (EndpointEventCollection, map[netip.Addr]string, <-chan struct{}, error) {
++	byAddress, ambiguous, watch, err := r.snapshot()
++	if err != nil {
++		return nil, nil, nil, err
++	}
++	bound := make(map[netip.Addr]string)
++	result := make(EndpointEventCollection, 0, len(events))
++	for i, event := range events {
++		if event == nil {
++			return nil, nil, nil, wrapValidationError(errInvalidWorkloadData, "workload event %d is nil", i)
++		}
++		if event.Err != nil || event.Type == REMOVED {
++			// A source rejection is reported, and fails the batch, in the
++			// strict converter. A removal names only the original Pod UID;
++			// its node may be gone.
++			result = append(result, event)
++			continue
++		}
++		if event.Type != CREATE || event.CiliumEndpoint == nil || event.Networking == nil {
++			return nil, nil, nil, wrapValidationError(errInvalidWorkloadData, "workload event %d has no endpoint networking", i)
++		}
++		ip, err := netip.ParseAddr(event.Networking.NodeIP)
++		if err != nil {
++			return nil, nil, nil, wrapValidationError(errInvalidWorkloadData, "invalid node address %q", event.Networking.NodeIP)
++		}
++		name, err := r.lookup(byAddress, ambiguous, ip)
++		if err != nil {
++			return nil, nil, nil, err
++		}
++		copy := *event
++		copy.NodeName = name
++		result = append(result, &copy)
++		bound[ip.Unmap()] = name
++	}
++	return result, bound, watch, nil
++}
++
++func (r *nativeNodeNames) verify(bound map[netip.Addr]string) (<-chan struct{}, error) {
++	byAddress, ambiguous, watch, err := r.snapshot()
++	if err != nil {
++		return nil, err
++	}
++	for ip, want := range bound {
++		got, err := r.lookup(byAddress, ambiguous, ip)
++		if err != nil {
++			return nil, err
++		}
++		if got != want {
++			return nil, wrapValidationError(errInvalidWorkloadData, "Kubernetes node for address %s changed from %q to %q", ip, want, got)
++		}
++	}
++	return watch, nil
++}
++
++// bindNodeNames is the common boundary for initial replay, CEP/CES updates and
++// namespace enrollment. It records what this stream has published so a later
++// node-only change (with no endpoint event) still invalidates the stream.
++func (sp *StreamProcessor) bindNodeNames(collection EndpointEventCollection) (EndpointEventCollection, error) {
++	if sp.nodeNames == nil {
++		return nil, wrapValidationError(errInvalidWorkloadData, "Kubernetes node discovery is not configured")
++	}
++	bound, pairs, watch, err := sp.nodeNames.bind(collection)
++	if err != nil {
++		return nil, err
++	}
++	if sp.boundNodeNames == nil {
++		sp.boundNodeNames = make(map[netip.Addr]string)
++	}
++	for ip, name := range pairs {
++		if previous, found := sp.boundNodeNames[ip]; found && previous != name {
++			return nil, wrapValidationError(errInvalidWorkloadData, "node address %s was published as %q and is now %q", ip, previous, name)
++		}
++	}
++	maps.Copy(sp.boundNodeNames, pairs)
++	sp.nodeNameWatch = watch
++	return bound, nil
++}
++
++// revalidateNodeNames runs when the native node table changes. Unchanged
++// bindings re-arm the watch; any change ends the stream so ztunnel receives a
++// complete fresh snapshot instead of keeping a stale node binding.
++func (sp *StreamProcessor) revalidateNodeNames() error {
++	watch, err := sp.nodeNames.verify(sp.boundNodeNames)
++	if err != nil {
++		sp.log.Warn("Closing ztunnel xDS stream after a Kubernetes node binding changed",
++			logStage, "xds-node-binding",
++			logfields.Error, err)
++		return fmt.Errorf("Kubernetes node binding changed: %w", err)
++	}
++	sp.nodeNameWatch = watch
++	return nil
++}
+diff --git a/pkg/ztunnel/xds/native_node_name_test.go b/pkg/ztunnel/xds/native_node_name_test.go
+new file mode 100644
+index 0000000000..35a572abd8
+--- /dev/null
++++ b/pkg/ztunnel/xds/native_node_name_test.go
+@@ -0,0 +1,264 @@
++// SPDX-License-Identifier: Apache-2.0
++// Copyright Authors of Cilium
++
++package xds
++
++import (
++	"fmt"
++	"log/slog"
++	"net/netip"
++	"testing"
++
++	"github.com/cilium/statedb"
++	"github.com/stretchr/testify/require"
++	apimachineryTypes "k8s.io/apimachinery/pkg/types"
++
++	cmtypes "github.com/cilium/cilium/pkg/clustermesh/types"
++	v2 "github.com/cilium/cilium/pkg/k8s/apis/cilium.io/v2"
++	slim_metav1 "github.com/cilium/cilium/pkg/k8s/slim/k8s/apis/meta/v1"
++	"github.com/cilium/cilium/pkg/k8s/types"
++	"github.com/cilium/cilium/pkg/node"
++	"github.com/cilium/cilium/pkg/node/addressing"
++	nodetypes "github.com/cilium/cilium/pkg/node/types"
++)
++
++var testLocalCluster = cmtypes.ClusterInfo{Name: "cmtc-a", ID: 1}
++
++type testNodeRow struct {
++	name, cluster string
++	clusterID     uint32
++	addresses     []string
++	internal      []string // CiliumInternalIP addresses (cluster-scoped index)
++}
++
++// testNodeTable is a real native node table, written the way Cilium's node
++// discovery writes it. registerInitializer leaves it unsynchronized.
++func testNodeTable(t testing.TB, registerInitializer bool, rows ...testNodeRow) (*statedb.DB, statedb.RWTable[*node.Node]) {
++	db := statedb.New()
++	nodes, err := node.NewNodeTable(db)
++	require.NoError(t, err)
++	txn := db.WriteTxn(nodes)
++	if registerInitializer {
++		nodes.RegisterInitializer(txn, "test")
++	}
++	for _, row := range rows {
++		n := &node.Node{Node: nodetypes.Node{Name: row.name, Cluster: row.cluster, ClusterID: row.clusterID}}
++		for _, a := range row.addresses {
++			n.IPAddresses = append(n.IPAddresses, nodetypes.NewAddress(addressing.NodeInternalIP, netip.MustParseAddr(a)))
++		}
++		for _, a := range row.internal {
++			n.IPAddresses = append(n.IPAddresses, nodetypes.NewAddress(addressing.NodeCiliumInternalIP, netip.MustParseAddr(a)))
++		}
++		_, _, err := nodes.Insert(txn, n)
++		require.NoError(t, err)
++	}
++	txn.Commit()
++	return db, nodes
++}
++
++// fixtureNodeNames is the native node discovery used by tests whose subject
++// is not node naming. Each name differs from its address.
++func fixtureNodeNames(t testing.TB) nodeNameResolver {
++	db, nodes := testNodeTable(t, false,
++		testNodeRow{name: "worker-a", cluster: "cmtc-a", clusterID: 1, addresses: []string{"10.0.0.1"}},
++		testNodeRow{name: "test-node", cluster: "cmtc-a", clusterID: 1, addresses: []string{"10.1.1.10"}},
++		testNodeRow{name: "remove-node", cluster: "cmtc-a", clusterID: 1, addresses: []string{"10.2.1.10"}},
++		testNodeRow{name: "create-node-1", cluster: "cmtc-a", clusterID: 1, addresses: []string{"100.1.1.10"}},
++		testNodeRow{name: "create-node-2", cluster: "cmtc-a", clusterID: 1, addresses: []string{"100.1.1.20"}},
++		testNodeRow{name: "test-node-1", cluster: "cmtc-a", clusterID: 1, addresses: []string{"10.3.3.1"}},
++		testNodeRow{name: "test-node-2", cluster: "cmtc-a", clusterID: 1, addresses: []string{"10.3.3.2"}},
++		testNodeRow{name: "test-node-3", cluster: "cmtc-a", clusterID: 1, addresses: []string{"10.3.3.3"}},
++	)
++	names, err := newNativeNodeNames(db, nodes, testLocalCluster)
++	require.NoError(t, err)
++	return names
++}
++
++// panicTB lets gRPC test servers (which have no *testing.T) build the same
++// real native fixture; any setup failure panics the test binary.
++type panicTB struct{ testing.TB }
++
++func (panicTB) Helper()                           {}
++func (panicTB) Errorf(format string, args ...any) { panic(fmt.Sprintf(format, args...)) }
++func (panicTB) FailNow()                          { panic("fixture setup failed") }
++
++func mustFixtureNodeNames() nodeNameResolver { return fixtureNodeNames(panicTB{}) }
++
++func nodeTestEvent(uid, nodeIP string) *EndpointEvent {
++	return &EndpointEvent{Type: CREATE, CiliumEndpoint: &types.CiliumEndpoint{
++		ObjectMeta: slim_metav1.ObjectMeta{Name: "api", Namespace: "orders",
++			OwnerReferences: []slim_metav1.OwnerReference{{Kind: "Pod", UID: apimachineryTypes.UID(uid)}}},
++		Networking:     &v2.EndpointNetworking{Addressing: v2.AddressPairList{{IPV4: "10.10.1.33"}}, NodeIP: nodeIP},
++		ServiceAccount: "api",
++	}}
++}
++
++// Mirrors the live kind APIs: names are not addresses, and each cluster has
++// its own nodes (cmtc-a-worker 172.18.0.2, cmtc-b-worker 172.18.0.5).
++func TestNativeNodeNameUsesKubernetesNameNotAddress(t *testing.T) {
++	db, nodes := testNodeTable(t, false,
++		testNodeRow{name: "cmtc-a-control-plane", cluster: "cmtc-a", clusterID: 1, addresses: []string{"172.18.0.3"}, internal: []string{"10.10.0.249"}},
++		testNodeRow{name: "cmtc-a-worker", cluster: "cmtc-a", clusterID: 1, addresses: []string{"172.18.0.2"}, internal: []string{"10.10.1.147"}},
++		testNodeRow{name: "cmtc-b-worker", cluster: "cmtc-b", clusterID: 2, addresses: []string{"172.18.0.5"}, internal: []string{"10.20.1.171"}},
++	)
++	names, err := newNativeNodeNames(db, nodes, testLocalCluster)
++	require.NoError(t, err)
++
++	event := nodeTestEvent("11111111-1111-4111-8111-111111111111", "172.18.0.2")
++	bound, pairs, watch, err := names.bind(EndpointEventCollection{event})
++	require.NoError(t, err)
++	require.NotNil(t, watch)
++	require.Equal(t, "cmtc-a-worker", bound[0].NodeName)
++	require.NotEqual(t, bound[0].Networking.NodeIP, bound[0].NodeName, "the node name is never the node IP")
++	require.Empty(t, event.NodeName, "input events are not mutated")
++	require.Equal(t, map[netip.Addr]string{netip.MustParseAddr("172.18.0.2"): "cmtc-a-worker"}, pairs)
++
++	address, err := bound[0].ToXDSAddress()
++	require.NoError(t, err)
++	require.Equal(t, "cmtc-a-worker", address.GetWorkload().Node)
++
++	// A remote-cluster node address is never resolved by the local stream.
++	_, _, _, err = names.bind(EndpointEventCollection{nodeTestEvent("22222222-2222-4222-8222-222222222222", "172.18.0.5")})
++	require.ErrorContains(t, err, "no Kubernetes node name")
++}
++
++func TestNativeNodeNameDeniesMissingAmbiguousUnsyncedAndInvalid(t *testing.T) {
++	for _, tc := range []struct {
++		name  string
++		rows  []testNodeRow
++		init  bool
++		ip    string
++		error string
++	}{
++		{name: "missing node", ip: "172.18.0.2", error: "no Kubernetes node name"},
++		{name: "empty node name", rows: []testNodeRow{{name: "", cluster: "cmtc-a", clusterID: 1, addresses: []string{"172.18.0.2"}}},
++			ip: "172.18.0.2", error: "no Kubernetes node name"},
++		{name: "same cluster name, other cluster ID", rows: []testNodeRow{{name: "cmtc-a-worker", cluster: "cmtc-a", clusterID: 7, addresses: []string{"172.18.0.2"}}},
++			ip: "172.18.0.2", error: "no Kubernetes node name"},
++		{name: "ambiguous address", rows: []testNodeRow{
++			{name: "cmtc-a-worker", cluster: "cmtc-a", clusterID: 1, addresses: []string{"172.18.0.2"}},
++			{name: "cmtc-a-other", cluster: "cmtc-a", clusterID: 1, addresses: []string{"172.18.0.2"}},
++		}, ip: "172.18.0.2", error: "more than one Kubernetes node"},
++		{name: "not synchronized", rows: []testNodeRow{{name: "cmtc-a-worker", cluster: "cmtc-a", clusterID: 1, addresses: []string{"172.18.0.2"}}},
++			init: true, ip: "172.18.0.2", error: "has not synchronized"},
++		{name: "invalid node address", rows: []testNodeRow{{name: "cmtc-a-worker", cluster: "cmtc-a", clusterID: 1, addresses: []string{"172.18.0.2"}}},
++			ip: "cmtc-a-worker", error: "invalid node address"},
++	} {
++		t.Run(tc.name, func(t *testing.T) {
++			db, nodes := testNodeTable(t, tc.init, tc.rows...)
++			names, err := newNativeNodeNames(db, nodes, testLocalCluster)
++			require.NoError(t, err)
++			bound, _, _, err := names.bind(EndpointEventCollection{nodeTestEvent("11111111-1111-4111-8111-111111111111", tc.ip)})
++			require.ErrorContains(t, err, tc.error)
++			require.Nil(t, bound)
++		})
++	}
++	_, err := newNativeNodeNames(nil, nil, testLocalCluster)
++	require.Error(t, err)
++
++	// Without the resolver an Address response fails closed; there is no
++	// NodeIP fallback.
++	sp := &StreamProcessor{log: slog.New(slog.DiscardHandler)}
++	_, err = sp.addressResponse(EndpointEventCollection{nodeTestEvent("11111111-1111-4111-8111-111111111111", "10.0.0.1")})
++	require.ErrorContains(t, err, "node discovery is not configured")
++	unbound := nodeTestEvent("11111111-1111-4111-8111-111111111111", "10.0.0.1")
++	_, err = unbound.ToXDSAddress()
++	require.ErrorContains(t, err, "missing Kubernetes node name")
++}
++
++// Repeated node names in two clusters stay separate: each stream resolves only
++// its own cluster's rows, and removal of one cluster's node is never covered by
++// the other cluster's identical name/address.
++func TestNativeNodeNameRepeatedNamesInDifferentClusters(t *testing.T) {
++	db, nodes := testNodeTable(t, false,
++		testNodeRow{name: "worker-shared", cluster: "cmtc-a", clusterID: 1, addresses: []string{"192.0.2.1"}},
++		testNodeRow{name: "worker-shared", cluster: "cmtc-b", clusterID: 2, addresses: []string{"192.0.2.1"}},
++	)
++	event := nodeTestEvent("11111111-1111-4111-8111-111111111111", "192.0.2.1")
++	for _, cluster := range []cmtypes.ClusterInfo{{Name: "cmtc-a", ID: 1}, {Name: "cmtc-b", ID: 2}} {
++		names, err := newNativeNodeNames(db, nodes, cluster)
++		require.NoError(t, err)
++		bound, _, _, err := names.bind(EndpointEventCollection{event})
++		require.NoError(t, err, cluster.Name)
++		require.Equal(t, "worker-shared", bound[0].NodeName)
++	}
++	txn := db.WriteTxn(nodes)
++	_, _, err := nodes.Delete(txn, &node.Node{Node: nodetypes.Node{Name: "worker-shared", Cluster: "cmtc-a"}})
++	require.NoError(t, err)
++	txn.Commit()
++	names, err := newNativeNodeNames(db, nodes, testLocalCluster)
++	require.NoError(t, err)
++	_, _, _, err = names.bind(EndpointEventCollection{event})
++	require.ErrorContains(t, err, "no Kubernetes node name", "cmtc-b's identical row must not substitute")
++}
++
++// A node-only change (no endpoint event) must invalidate the active stream;
++// unrelated node writes re-arm the watch without closing it.
++func TestNativeNodeNameWatchInvalidatesStreamOnNodeChange(t *testing.T) {
++	db, nodes := testNodeTable(t, false,
++		testNodeRow{name: "cmtc-a-worker", cluster: "cmtc-a", clusterID: 1, addresses: []string{"172.18.0.2"}},
++		testNodeRow{name: "cmtc-a-control-plane", cluster: "cmtc-a", clusterID: 1, addresses: []string{"172.18.0.3"}},
++	)
++	names, err := newNativeNodeNames(db, nodes, testLocalCluster)
++	require.NoError(t, err)
++	sp := &StreamProcessor{log: slog.New(slog.DiscardHandler), nodeNames: names}
++	bound, err := sp.bindNodeNames(EndpointEventCollection{nodeTestEvent("11111111-1111-4111-8111-111111111111", "172.18.0.2")})
++	require.NoError(t, err)
++	require.Equal(t, "cmtc-a-worker", bound[0].NodeName)
++	watch := sp.nodeNameWatch
++	require.NotNil(t, watch)
++
++	// Unrelated node write: watch fires, binding unchanged, stream survives.
++	txn := db.WriteTxn(nodes)
++	_, _, err = nodes.Insert(txn, &node.Node{Node: nodetypes.Node{Name: "cmtc-a-extra", Cluster: "cmtc-a", ClusterID: 1,
++		IPAddresses: []nodetypes.Address{nodetypes.NewAddress(addressing.NodeInternalIP, netip.MustParseAddr("172.18.0.9"))}}})
++	require.NoError(t, err)
++	txn.Commit()
++	<-watch
++	require.NoError(t, sp.revalidateNodeNames())
++	require.NotEqual(t, watch, sp.nodeNameWatch, "watch is re-armed from the new read")
++
++	// The bound node disappears without any CEP event: the stream must end.
++	watch = sp.nodeNameWatch
++	txn = db.WriteTxn(nodes)
++	_, _, err = nodes.Delete(txn, &node.Node{Node: nodetypes.Node{Name: "cmtc-a-worker", Cluster: "cmtc-a"}})
++	require.NoError(t, err)
++	txn.Commit()
++	<-watch
++	require.ErrorContains(t, sp.revalidateNodeNames(), "Kubernetes node binding changed")
++
++	// A name change for an address already published is refused at bind time.
++	db2, nodes2 := testNodeTable(t, false, testNodeRow{name: "renamed", cluster: "cmtc-a", clusterID: 1, addresses: []string{"172.18.0.3"}})
++	names2, err := newNativeNodeNames(db2, nodes2, testLocalCluster)
++	require.NoError(t, err)
++	sp.nodeNames = names2
++	sp.boundNodeNames = map[netip.Addr]string{netip.MustParseAddr("172.18.0.3"): "cmtc-a-control-plane"}
++	_, err = sp.bindNodeNames(EndpointEventCollection{nodeTestEvent("33333333-3333-4333-8333-333333333333", "172.18.0.3")})
++	require.ErrorContains(t, err, "was published as")
++}
++
++// REMOVED events name only the Pod UID; they must work after the node is gone.
++func TestNativeNodeNameRemovalNeedsNoNode(t *testing.T) {
++	db, nodes := testNodeTable(t, false)
++	names, err := newNativeNodeNames(db, nodes, testLocalCluster)
++	require.NoError(t, err)
++	removed := &EndpointEvent{Type: REMOVED, CiliumEndpoint: nodeTestEvent("11111111-1111-4111-8111-111111111111", "172.18.0.2").CiliumEndpoint}
++	sourceError := &EndpointEvent{Err: errInvalidWorkloadData}
++	bound, _, _, err := names.bind(EndpointEventCollection{removed, sourceError})
++	require.NoError(t, err)
++	require.Same(t, removed, bound[0])
++	require.Same(t, sourceError, bound[1], "source rejections reach the strict converter unchanged")
++	_, err = bound.toValidatedDeltaDiscoveryResponse("mesh.example.com", "cmtc-a")
++	require.ErrorContains(t, err, "endpoint source rejected workload data", "and still fail the batch")
++}
++
++// fixtureBound binds through the real native fixture for converter-focused
++// tests. If binding rejects the batch, the events pass through unchanged so
++// the converter's own validation error stays the subject of the test.
++func fixtureBound(t testing.TB, collection EndpointEventCollection) EndpointEventCollection {
++	bound, _, _, err := fixtureNodeNames(t).bind(collection)
++	if err != nil {
++		return collection
++	}
++	return bound
++}
+diff --git a/pkg/ztunnel/xds/stream_processor.go b/pkg/ztunnel/xds/stream_processor.go
+index cee8010154..b19398708a 100644
+--- a/pkg/ztunnel/xds/stream_processor.go
++++ b/pkg/ztunnel/xds/stream_processor.go
+@@ -9,6 +9,7 @@ import (
+ 	"fmt"
+ 	"io"
+ 	"log/slog"
++	"net/netip"
+ 	"sort"
+ 
+ 	corev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+@@ -54,6 +55,8 @@ type StreamProcessorParams struct {
+ 	RequireMTLS               bool
+ 	EffectivePolicyQuarantine bool
+ 	IssuerProfile             *issuerProfileSource
++	// NodeNames binds Kubernetes Node names from native node discovery.
++	NodeNames nodeNameResolver
+ }
+ 
+ // StreamProcessor implements the logic for handling xDS streams to zTunnel.
+@@ -77,6 +80,11 @@ type StreamProcessor struct {
+ 	effectivePolicyQuarantine bool
+ 	quarantineResources       map[string]string
+ 	issuerProfile             *issuerProfileSource
++	nodeNames                 nodeNameResolver
++	// Node bindings published on this stream and the native table watch from
++	// the read that produced the latest binding.
++	boundNodeNames map[netip.Addr]string
++	nodeNameWatch  <-chan struct{}
+ }
+ 
+ // CiliumEndpointsWatcher defines the interface for watching CiliumEndpoints and CiliumEndpointSlices.
+@@ -142,6 +150,7 @@ func NewStreamProcessor(params *StreamProcessorParams) *StreamProcessor {
+ 		requireMTLS:               params.RequireMTLS,
+ 		effectivePolicyQuarantine: params.EffectivePolicyQuarantine,
+ 		issuerProfile:             params.IssuerProfile,
++		nodeNames:                 params.NodeNames,
+ 	}
+ 	sp.endpointSource = NewEndpointSource(params.K8sCiliumEndpointsWatcher, sp)
+ 	return sp
+@@ -764,6 +773,10 @@ func (sp *StreamProcessor) drainEndpointEvents(first *EndpointEvent) (EndpointEv
+ }
+ 
+ func (sp *StreamProcessor) addressResponse(collection EndpointEventCollection) (*v3.DeltaDiscoveryResponse, error) {
++	collection, err := sp.bindNodeNames(collection)
++	if err != nil {
++		return nil, err
++	}
+ 	if sp.requireMTLS {
+ 		response, err := collection.toValidatedDeltaDiscoveryResponse(sp.trustDomain, sp.clusterName)
+ 		if err != nil {
+@@ -885,6 +898,10 @@ func (sp *StreamProcessor) Start() error {
+ 			if err := sp.handleDeltaDiscoveryReq(req); err != nil {
+ 				return err
+ 			}
++		case <-sp.nodeNameWatch:
++			if err := sp.revalidateNodeNames(); err != nil {
++				return err
++			}
+ 		case ep, ok := <-sp.endpointRecv:
+ 			if !ok || ep == nil {
+ 				return wrapValidationError(errEndpointSourceClosed, "xDS endpoint channel closed or nil event")
+diff --git a/pkg/ztunnel/xds/stream_processor_test.go b/pkg/ztunnel/xds/stream_processor_test.go
+index 32f42d8deb..2a093bf249 100644
+--- a/pkg/ztunnel/xds/stream_processor_test.go
++++ b/pkg/ztunnel/xds/stream_processor_test.go
+@@ -56,6 +56,7 @@ func makeCEP(name, namespace, ip string) *types.CiliumEndpoint {
+ 			Addressing: v2.AddressPairList{
+ 				{IPV4: ip},
+ 			},
++			NodeIP: "10.0.0.1", // fixture node "worker-a"
+ 		}
+ 	}
+ 
+@@ -154,7 +155,7 @@ func TestStreamProcessorStart(t *testing.T) {
+ 		require.NoError(t, err, "Failed to create EnrolledNamespaces table")
+ 
+ 		// Create stream processor
+-		sp := NewStreamProcessor(&StreamProcessorParams{
++		sp := NewStreamProcessor(&StreamProcessorParams{NodeNames: fixtureNodeNames(t),
+ 			Stream:                 mockStream,
+ 			StreamRecv:             streamRecv,
+ 			EndpointEventRecv:      endpointEventRecv,
+@@ -207,6 +208,7 @@ func TestStreamProcessorEndpointEvents(t *testing.T) {
+ 				NodeName:           "test-node-1",
+ 				ServiceAccountName: "test-sa-1",
+ 			},
++			Status: slim_corev1.PodStatus{HostIP: "10.3.3.1"},
+ 		}
+ 		createEp1.SetPod(createPod1)
+ 
+@@ -222,6 +224,7 @@ func TestStreamProcessorEndpointEvents(t *testing.T) {
+ 				NodeName:           "test-node-2",
+ 				ServiceAccountName: "test-sa-2",
+ 			},
++			Status: slim_corev1.PodStatus{HostIP: "10.3.3.2"},
+ 		}
+ 		removeEp.SetPod(removePod)
+ 
+@@ -237,6 +240,7 @@ func TestStreamProcessorEndpointEvents(t *testing.T) {
+ 				NodeName:           "test-node-3",
+ 				ServiceAccountName: "test-sa-3",
+ 			},
++			Status: slim_corev1.PodStatus{HostIP: "10.3.3.3"},
+ 		}
+ 		createEp2.SetPod(createPod3)
+ 
+@@ -261,7 +265,7 @@ func TestStreamProcessorEndpointEvents(t *testing.T) {
+ 		endpointEventChan <- event3
+ 
+ 		// Create StreamProcessor with the populated channel
+-		sp := &StreamProcessor{
++		sp := &StreamProcessor{nodeNames: fixtureNodeNames(t),
+ 			metrics:       NewMetrics(),
+ 			stream:        mockStream,
+ 			endpointRecv:  endpointEventChan,
+@@ -298,6 +302,12 @@ func TestStreamProcessorEndpointEvents(t *testing.T) {
+ 			actualCreateUIDs[i] = resource.Name
+ 		}
+ 		require.ElementsMatch(t, expectedCreateUIDs, actualCreateUIDs, "CREATE resource UIDs should match expected")
++		for _, resource := range capturedResponse.Resources {
++			var address pb.Address
++			require.NoError(t, resource.Resource.UnmarshalTo(&address))
++			want := map[string]string{testUIDs[0]: "test-node-1", testUIDs[2]: "test-node-3"}[resource.Name]
++			require.Equal(t, want, address.GetWorkload().Node, "native Kubernetes node name, not host IP")
++		}
+ 		require.ElementsMatch(t, expectedRemoveUIDs, capturedResponse.RemovedResources, "REMOVE resource UIDs should match expected")
+ 
+ 		// Verify nonce was added to expectedNonce map
+@@ -323,7 +333,7 @@ func TestStrictAddressSnapshotRejectsIncompleteWorkload(t *testing.T) {
+ 		sent++
+ 		return nil
+ 	}
+-	sp := &StreamProcessor{
++	sp := &StreamProcessor{nodeNames: fixtureNodeNames(t),
+ 		stream:        stream,
+ 		metrics:       NewMetrics(),
+ 		expectedNonce: make(map[string]struct{}),
+@@ -348,7 +358,7 @@ func TestStrictAddressInitialSubscriptionRequiresSync(t *testing.T) {
+ 		sent++
+ 		return nil
+ 	}
+-	sp := &StreamProcessor{
++	sp := &StreamProcessor{nodeNames: fixtureNodeNames(t),
+ 		stream:        stream,
+ 		metrics:       NewMetrics(),
+ 		expectedNonce: make(map[string]struct{}),
+@@ -373,7 +383,7 @@ func TestStrictAddressExplicitEmptySnapshotIsValid(t *testing.T) {
+ 		response = message.(*v3.DeltaDiscoveryResponse)
+ 		return nil
+ 	}
+-	sp := &StreamProcessor{
++	sp := &StreamProcessor{nodeNames: fixtureNodeNames(t),
+ 		stream:        stream,
+ 		metrics:       NewMetrics(),
+ 		expectedNonce: make(map[string]struct{}),
+@@ -401,7 +411,7 @@ func TestStrictAddressInitialSnapshotRemovesStaleClientResources(t *testing.T) {
+ 		return nil
+ 	}
+ 	current := makeStrictCEP("api", "orders", "pod-current", "10.0.0.20")
+-	sp := &StreamProcessor{
++	sp := &StreamProcessor{nodeNames: fixtureNodeNames(t),
+ 		stream:        stream,
+ 		metrics:       NewMetrics(),
+ 		expectedNonce: make(map[string]struct{}),
+@@ -434,7 +444,7 @@ func TestStrictAddressSendFailureDoesNotTrackNonce(t *testing.T) {
+ 		stream.OnSendMsg = func(any) error { return errTestStreamSendFailed }
+ 		metrics := NewMetrics()
+ 		metrics.Enable()
+-		sp := &StreamProcessor{
++		sp := &StreamProcessor{nodeNames: fixtureNodeNames(t),
+ 			stream:        stream,
+ 			metrics:       metrics,
+ 			expectedNonce: make(map[string]struct{}),
+@@ -457,7 +467,7 @@ func TestStrictAddressSendFailureDoesNotTrackNonce(t *testing.T) {
+ 		stream.OnSendMsg = func(any) error { return errTestStreamSendFailed }
+ 		metrics := NewMetrics()
+ 		metrics.Enable()
+-		sp := &StreamProcessor{
++		sp := &StreamProcessor{nodeNames: fixtureNodeNames(t),
+ 			stream:        stream,
+ 			endpointRecv:  make(chan *EndpointEvent),
+ 			metrics:       metrics,
+@@ -479,7 +489,7 @@ func TestDrainEndpointEventsRejectsInvalidOrUnboundedInput(t *testing.T) {
+ 	t.Run("closed channel", func(t *testing.T) {
+ 		stream := &MockStream{}
+ 		stream.OnContext = func() context.Context { return context.Background() }
+-		sp := &StreamProcessor{stream: stream, endpointRecv: make(chan *EndpointEvent)}
++		sp := &StreamProcessor{nodeNames: fixtureNodeNames(t), stream: stream, endpointRecv: make(chan *EndpointEvent)}
+ 		close(sp.endpointRecv)
+ 		_, err := sp.drainEndpointEvents(&EndpointEvent{})
+ 		require.ErrorContains(t, err, "channel closed")
+@@ -490,7 +500,7 @@ func TestDrainEndpointEventsRejectsInvalidOrUnboundedInput(t *testing.T) {
+ 		stream.OnContext = func() context.Context { return context.Background() }
+ 		endpointRecv := make(chan *EndpointEvent, 1)
+ 		endpointRecv <- nil
+-		sp := &StreamProcessor{stream: stream, endpointRecv: endpointRecv}
++		sp := &StreamProcessor{nodeNames: fixtureNodeNames(t), stream: stream, endpointRecv: endpointRecv}
+ 		_, err := sp.drainEndpointEvents(&EndpointEvent{})
+ 		require.ErrorContains(t, err, "contains a nil event")
+ 	})
+@@ -502,7 +512,7 @@ func TestDrainEndpointEventsRejectsInvalidOrUnboundedInput(t *testing.T) {
+ 		for range maxEndpointEventsPerBatch + 50 {
+ 			endpointRecv <- &EndpointEvent{}
+ 		}
+-		sp := &StreamProcessor{stream: stream, endpointRecv: endpointRecv}
++		sp := &StreamProcessor{nodeNames: fixtureNodeNames(t), stream: stream, endpointRecv: endpointRecv}
+ 		batch, err := sp.drainEndpointEvents(&EndpointEvent{})
+ 		require.NoError(t, err)
+ 		require.Len(t, batch, maxEndpointEventsPerBatch)
+@@ -514,7 +524,7 @@ func TestDrainEndpointEventsRejectsInvalidOrUnboundedInput(t *testing.T) {
+ 		cancel()
+ 		stream := &MockStream{}
+ 		stream.OnContext = func() context.Context { return ctx }
+-		sp := &StreamProcessor{stream: stream, endpointRecv: make(chan *EndpointEvent, 1)}
++		sp := &StreamProcessor{nodeNames: fixtureNodeNames(t), stream: stream, endpointRecv: make(chan *EndpointEvent, 1)}
+ 		_, err := sp.drainEndpointEvents(&EndpointEvent{})
+ 		require.ErrorIs(t, err, context.Canceled)
+ 	})
+@@ -581,7 +591,7 @@ func TestStrictStreamProcessorCoalescesQueuedEndpointChurn(t *testing.T) {
+ 			for _, event := range tt.queued {
+ 				endpointRecv <- event
+ 			}
+-			sp := &StreamProcessor{
++			sp := &StreamProcessor{nodeNames: fixtureNodeNames(t),
+ 				stream:        stream,
+ 				endpointRecv:  endpointRecv,
+ 				metrics:       NewMetrics(),
+@@ -619,7 +629,7 @@ func TestStrictIncrementalInvalidWorkloadIsNotSent(t *testing.T) {
+ 	}
+ 	metrics := NewMetrics()
+ 	metrics.Enable()
+-	sp := &StreamProcessor{
++	sp := &StreamProcessor{nodeNames: fixtureNodeNames(t),
+ 		stream:        stream,
+ 		endpointRecv:  make(chan *EndpointEvent),
+ 		metrics:       metrics,
+@@ -643,7 +653,7 @@ func TestStrictIncrementalInvalidWorkloadIsNotSent(t *testing.T) {
+ // DeltaDiscoveryRequest from the client.
+ func TestStreamProcessorDeltaDiscoveryRequest(t *testing.T) {
+ 	t.Run("Ack", func(t *testing.T) {
+-		sp := &StreamProcessor{
++		sp := &StreamProcessor{nodeNames: fixtureNodeNames(t),
+ 			metrics: NewMetrics(),
+ 			expectedNonce: map[string]struct{}{
+ 				"x": {},
+@@ -665,7 +675,7 @@ func TestStreamProcessorDeltaDiscoveryRequest(t *testing.T) {
+ 	})
+ 
+ 	t.Run("Unexpected Nonce", func(t *testing.T) {
+-		sp := &StreamProcessor{
++		sp := &StreamProcessor{nodeNames: fixtureNodeNames(t),
+ 			metrics: NewMetrics(),
+ 			// no Nonce recorded
+ 			expectedNonce: map[string]struct{}{},
+@@ -687,7 +697,7 @@ func TestStreamProcessorDeltaDiscoveryRequest(t *testing.T) {
+ 	})
+ 
+ 	t.Run("Nack logs error but does not return error", func(t *testing.T) {
+-		sp := &StreamProcessor{
++		sp := &StreamProcessor{nodeNames: fixtureNodeNames(t),
+ 			metrics: NewMetrics(),
+ 			expectedNonce: map[string]struct{}{
+ 				"nack-nonce": {},
+@@ -713,7 +723,7 @@ func TestStreamProcessorDeltaDiscoveryRequest(t *testing.T) {
+ 	})
+ 
+ 	t.Run("Strict Nack terminates the stream for full snapshot recovery", func(t *testing.T) {
+-		sp := &StreamProcessor{
++		sp := &StreamProcessor{nodeNames: fixtureNodeNames(t),
+ 			metrics:     NewMetrics(),
+ 			clusterName: "cluster-alpha", requireMTLS: true,
+ 			expectedNonce: map[string]struct{}{
+@@ -742,7 +752,7 @@ func TestStreamProcessorDeltaDiscoveryRequest(t *testing.T) {
+ 	})
+ 
+ 	t.Run("Unexpected TypeURL returns error", func(t *testing.T) {
+-		sp := &StreamProcessor{
++		sp := &StreamProcessor{nodeNames: fixtureNodeNames(t),
+ 			metrics:       NewMetrics(),
+ 			expectedNonce: make(map[string]struct{}),
+ 			log:           slog.New(slog.DiscardHandler),
+@@ -765,7 +775,7 @@ func TestHandleAddressTypeURL(t *testing.T) {
+ 			return context.Background()
+ 		}
+ 
+-		sp := &StreamProcessor{
++		sp := &StreamProcessor{nodeNames: fixtureNodeNames(t),
+ 			metrics:       NewMetrics(),
+ 			stream:        mockStream,
+ 			expectedNonce: make(map[string]struct{}),
+@@ -800,7 +810,7 @@ func TestHandleAddressTypeURL(t *testing.T) {
+ 		require.NoError(t, err)
+ 
+ 		mockEpSource := &MockEndpointEventSource{}
+-		sp := &StreamProcessor{
++		sp := &StreamProcessor{nodeNames: fixtureNodeNames(t),
+ 			metrics:                NewMetrics(),
+ 			stream:                 mockStream,
+ 			expectedNonce:          make(map[string]struct{}),
+@@ -1140,7 +1150,7 @@ func TestSubscribeToEndpointEvents_CEP(t *testing.T) {
+ 		require.NoError(t, err)
+ 
+ 		endpointRecv := make(chan *EndpointEvent, 10)
+-		sp := &StreamProcessor{
++		sp := &StreamProcessor{nodeNames: fixtureNodeNames(t),
+ 			metrics:                NewMetrics(),
+ 			endpointRecv:           endpointRecv,
+ 			db:                     db,
+@@ -1175,7 +1185,7 @@ func TestSubscribeToEndpointEvents_CEP(t *testing.T) {
+ 		enrollNamespace(t, db, tbl, "default")
+ 
+ 		endpointRecv := make(chan *EndpointEvent, 10)
+-		sp := &StreamProcessor{
++		sp := &StreamProcessor{nodeNames: fixtureNodeNames(t),
+ 			metrics:                NewMetrics(),
+ 			endpointRecv:           endpointRecv,
+ 			db:                     db,
+@@ -1225,7 +1235,7 @@ func TestSubscribeToEndpointEvents_CEP(t *testing.T) {
+ 		enrollNamespace(t, db, tbl, "default")
+ 
+ 		endpointRecv := make(chan *EndpointEvent, 10)
+-		sp := &StreamProcessor{
++		sp := &StreamProcessor{nodeNames: fixtureNodeNames(t),
+ 			metrics:                NewMetrics(),
+ 			endpointRecv:           endpointRecv,
+ 			db:                     db,
+@@ -1281,7 +1291,7 @@ func TestSubscribeToEndpointEvents_CEP(t *testing.T) {
+ 		require.NoError(t, err)
+ 
+ 		endpointRecv := make(chan *EndpointEvent, 10)
+-		sp := &StreamProcessor{
++		sp := &StreamProcessor{nodeNames: fixtureNodeNames(t),
+ 			metrics:                NewMetrics(),
+ 			endpointRecv:           endpointRecv,
+ 			db:                     db,
+@@ -1321,7 +1331,7 @@ func TestSubscribeToEndpointEvents_CEP(t *testing.T) {
+ 		require.NoError(t, err)
+ 
+ 		endpointRecv := make(chan *EndpointEvent, 10)
+-		sp := &StreamProcessor{
++		sp := &StreamProcessor{nodeNames: fixtureNodeNames(t),
+ 			metrics:                NewMetrics(),
+ 			endpointRecv:           endpointRecv,
+ 			db:                     db,
+@@ -1366,7 +1376,7 @@ func TestSubscribeToEndpointEvents_CES(t *testing.T) {
+ 		require.NoError(t, err)
+ 
+ 		endpointRecv := make(chan *EndpointEvent, 10)
+-		sp := &StreamProcessor{
++		sp := &StreamProcessor{nodeNames: fixtureNodeNames(t),
+ 			metrics:                NewMetrics(),
+ 			endpointRecv:           endpointRecv,
+ 			db:                     db,
+@@ -1401,7 +1411,7 @@ func TestSubscribeToEndpointEvents_CES(t *testing.T) {
+ 		enrollNamespace(t, db, tbl, "default")
+ 
+ 		endpointRecv := make(chan *EndpointEvent, 10)
+-		sp := &StreamProcessor{
++		sp := &StreamProcessor{nodeNames: fixtureNodeNames(t),
+ 			metrics:                NewMetrics(),
+ 			endpointRecv:           endpointRecv,
+ 			db:                     db,
+@@ -1450,7 +1460,7 @@ func TestSubscribeToEndpointEvents_CES(t *testing.T) {
+ 		enrollNamespace(t, db, tbl, "default")
+ 
+ 		endpointRecv := make(chan *EndpointEvent, 10)
+-		sp := &StreamProcessor{
++		sp := &StreamProcessor{nodeNames: fixtureNodeNames(t),
+ 			metrics:                NewMetrics(),
+ 			endpointRecv:           endpointRecv,
+ 			db:                     db,
+@@ -1506,7 +1516,7 @@ func TestSubscribeToEndpointEvents_CES(t *testing.T) {
+ 		enrollNamespace(t, db, tbl, "default")
+ 
+ 		endpointRecv := make(chan *EndpointEvent, 10)
+-		sp := &StreamProcessor{
++		sp := &StreamProcessor{nodeNames: fixtureNodeNames(t),
+ 			metrics:                NewMetrics(),
+ 			endpointRecv:           endpointRecv,
+ 			db:                     db,
+@@ -1588,7 +1598,7 @@ func TestSubscribeToEndpointEvents_CES(t *testing.T) {
+ 		enrollNamespace(t, db, tbl, "default")
+ 
+ 		endpointRecv := make(chan *EndpointEvent, 10)
+-		sp := &StreamProcessor{
++		sp := &StreamProcessor{nodeNames: fixtureNodeNames(t),
+ 			metrics:                NewMetrics(),
+ 			endpointRecv:           endpointRecv,
+ 			db:                     db,
+@@ -1652,7 +1662,7 @@ func TestSubscribeToEndpointEvents_CES(t *testing.T) {
+ 		require.NoError(t, err)
+ 
+ 		endpointRecv := make(chan *EndpointEvent, 10)
+-		sp := &StreamProcessor{
++		sp := &StreamProcessor{nodeNames: fixtureNodeNames(t),
+ 			metrics:                NewMetrics(),
+ 			endpointRecv:           endpointRecv,
+ 			db:                     db,
+@@ -1691,7 +1701,7 @@ func TestSubscribeToEndpointEvents_CES(t *testing.T) {
+ 		require.NoError(t, err)
+ 
+ 		endpointRecv := make(chan *EndpointEvent, 10)
+-		sp := &StreamProcessor{
++		sp := &StreamProcessor{nodeNames: fixtureNodeNames(t),
+ 			metrics:                NewMetrics(),
+ 			endpointRecv:           endpointRecv,
+ 			db:                     db,
+@@ -1786,14 +1796,14 @@ func TestStrictPreSyncCEPReplayBuildsFinalSnapshot(t *testing.T) {
+ 			tbl, err := table.NewEnrolledNamespacesTable(db)
+ 			require.NoError(t, err)
+ 			enrollNamespace(t, db, tbl, "orders")
+-			sp := &StreamProcessor{
++			sp := &StreamProcessor{nodeNames: fixtureNodeNames(t),
+ 				metrics: NewMetrics(), db: db, enrolledNamespaceTable: tbl,
+ 				log: slog.New(slog.DiscardHandler), clusterName: "cluster-alpha", requireMTLS: true,
+ 			}
+ 			es := &EndpointSource{k8sCiliumEndpointsWatcher: watcher, sp: sp}
+ 			batch := subscribeAndSync(es, context.Background())
+ 			if tt.wantError != "" {
+-				_, err := batch.toValidatedDeltaDiscoveryResponse("mesh.example.com", "cluster-alpha")
++				_, err := fixtureBound(t, batch).toValidatedDeltaDiscoveryResponse("mesh.example.com", "cluster-alpha")
+ 				require.ErrorContains(t, err, tt.wantError)
+ 				return
+ 			}
+@@ -1804,7 +1814,7 @@ func TestStrictPreSyncCEPReplayBuildsFinalSnapshot(t *testing.T) {
+ 			require.Len(t, batch, 1)
+ 			require.Equal(t, CREATE, batch[0].Type)
+ 			require.Equal(t, tt.wantUID, string(batch[0].CiliumEndpoint.OwnerReferences[0].UID))
+-			_, err = batch.toValidatedDeltaDiscoveryResponse("mesh.example.com", "cluster-alpha")
++			_, err = fixtureBound(t, batch).toValidatedDeltaDiscoveryResponse("mesh.example.com", "cluster-alpha")
+ 			require.NoError(t, err)
+ 		})
+ 	}
+@@ -1842,12 +1852,12 @@ func TestStrictPreSyncCESReplayBuildsFinalSnapshot(t *testing.T) {
+ 		tbl, err := table.NewEnrolledNamespacesTable(db)
+ 		require.NoError(t, err)
+ 		enrollNamespace(t, db, tbl, "orders")
+-		sp := &StreamProcessor{metrics: NewMetrics(), db: db, enrolledNamespaceTable: tbl, log: slog.New(slog.DiscardHandler), clusterName: "cluster-alpha", requireMTLS: true}
++		sp := &StreamProcessor{nodeNames: fixtureNodeNames(t), metrics: NewMetrics(), db: db, enrolledNamespaceTable: tbl, log: slog.New(slog.DiscardHandler), clusterName: "cluster-alpha", requireMTLS: true}
+ 		es := &EndpointSource{k8sCiliumEndpointsWatcher: watcher, sp: sp}
+ 		batch := subscribeAndSync(es, context.Background())
+ 		require.Len(t, batch, 1)
+ 		require.Equal(t, "pod-new", string(batch[0].CiliumEndpoint.OwnerReferences[0].UID))
+-		_, err = batch.toValidatedDeltaDiscoveryResponse("mesh.example.com", "cluster-alpha")
++		_, err = fixtureBound(t, batch).toValidatedDeltaDiscoveryResponse("mesh.example.com", "cluster-alpha")
+ 		require.NoError(t, err)
+ 	})
+ 
+@@ -1864,7 +1874,7 @@ func TestStrictPreSyncCESReplayBuildsFinalSnapshot(t *testing.T) {
+ 		tbl, err := table.NewEnrolledNamespacesTable(db)
+ 		require.NoError(t, err)
+ 		enrollNamespace(t, db, tbl, "orders")
+-		sp := &StreamProcessor{metrics: NewMetrics(), db: db, enrolledNamespaceTable: tbl, log: slog.New(slog.DiscardHandler), clusterName: "cluster-alpha", requireMTLS: true}
++		sp := &StreamProcessor{nodeNames: fixtureNodeNames(t), metrics: NewMetrics(), db: db, enrolledNamespaceTable: tbl, log: slog.New(slog.DiscardHandler), clusterName: "cluster-alpha", requireMTLS: true}
+ 		es := &EndpointSource{k8sCiliumEndpointsWatcher: watcher, sp: sp}
+ 		require.Empty(t, subscribeAndSync(es, context.Background()))
+ 	})
+@@ -1892,7 +1902,7 @@ func TestStrictPostSyncCEPRecreationRemovesOldUID(t *testing.T) {
+ 	require.NoError(t, err)
+ 	enrollNamespace(t, db, tbl, "orders")
+ 	endpointRecv := make(chan *EndpointEvent, 4)
+-	sp := &StreamProcessor{metrics: NewMetrics(), endpointRecv: endpointRecv, db: db, enrolledNamespaceTable: tbl, log: slog.New(slog.DiscardHandler), clusterName: "cluster-alpha", requireMTLS: true}
++	sp := &StreamProcessor{nodeNames: fixtureNodeNames(t), metrics: NewMetrics(), endpointRecv: endpointRecv, db: db, enrolledNamespaceTable: tbl, log: slog.New(slog.DiscardHandler), clusterName: "cluster-alpha", requireMTLS: true}
+ 	es := &EndpointSource{k8sCiliumEndpointsWatcher: watcher, sp: sp}
+ 	syncCh := make(chan EndpointEventCollection, 1)
+ 	es.SubscribeToEndpointEvents(context.Background(), syncCh)
+@@ -1908,7 +1918,7 @@ func TestStrictPostSyncCEPRecreationRemovesOldUID(t *testing.T) {
+ 	require.Equal(t, "pod-new", string(created.CiliumEndpoint.OwnerReferences[0].UID))
+ 	require.Equal(t, CREATE, added.Type, "a new CEP key after Sync must be accepted without an old snapshot entry")
+ 	require.Equal(t, "pod-added", string(added.CiliumEndpoint.OwnerReferences[0].UID))
+-	response, err := EndpointEventCollection{removed, created, added}.toValidatedDeltaDiscoveryResponse("mesh.example.com", "cluster-alpha")
++	response, err := fixtureBound(t, EndpointEventCollection{removed, created, added}).toValidatedDeltaDiscoveryResponse("mesh.example.com", "cluster-alpha")
+ 	require.NoError(t, err, "same-address reuse is safe when the previous UID is removed in the same batch")
+ 	require.Equal(t, []string{"pod-old"}, response.RemovedResources)
+ 	require.ElementsMatch(t, []string{"pod-new", "pod-added"}, []string{response.Resources[0].Name, response.Resources[1].Name})
+@@ -1943,7 +1953,7 @@ func TestStrictPostSyncCESRecreationRemovesOldUID(t *testing.T) {
+ 	require.NoError(t, err)
+ 	enrollNamespace(t, db, tbl, "orders")
+ 	endpointRecv := make(chan *EndpointEvent, 4)
+-	sp := &StreamProcessor{metrics: NewMetrics(), endpointRecv: endpointRecv, db: db, enrolledNamespaceTable: tbl, log: slog.New(slog.DiscardHandler), clusterName: "cluster-alpha", requireMTLS: true}
++	sp := &StreamProcessor{nodeNames: fixtureNodeNames(t), metrics: NewMetrics(), endpointRecv: endpointRecv, db: db, enrolledNamespaceTable: tbl, log: slog.New(slog.DiscardHandler), clusterName: "cluster-alpha", requireMTLS: true}
+ 	es := &EndpointSource{k8sCiliumEndpointsWatcher: watcher, sp: sp}
+ 	syncCh := make(chan EndpointEventCollection, 1)
+ 	es.SubscribeToEndpointEvents(context.Background(), syncCh)
+@@ -1957,7 +1967,7 @@ func TestStrictPostSyncCESRecreationRemovesOldUID(t *testing.T) {
+ 	require.Equal(t, "pod-old", string(removed.CiliumEndpoint.OwnerReferences[0].UID))
+ 	require.Equal(t, CREATE, created.Type)
+ 	require.Equal(t, "pod-new", string(created.CiliumEndpoint.OwnerReferences[0].UID))
+-	response, err := EndpointEventCollection{removed, created}.toValidatedDeltaDiscoveryResponse("mesh.example.com", "cluster-alpha")
++	response, err := fixtureBound(t, EndpointEventCollection{removed, created}).toValidatedDeltaDiscoveryResponse("mesh.example.com", "cluster-alpha")
+ 	require.NoError(t, err)
+ 	require.Equal(t, []string{"pod-old"}, response.RemovedResources)
+ 	require.Equal(t, []string{"pod-new"}, []string{response.Resources[0].Name})
+@@ -2008,7 +2018,7 @@ func TestStrictCESDuplicateEndpointNamesFailClosed(t *testing.T) {
+ 			sent := 0
+ 			stream.OnSendMsg = func(any) error { sent++; return nil }
+ 			metrics := NewMetrics()
+-			sp := &StreamProcessor{
++			sp := &StreamProcessor{nodeNames: fixtureNodeNames(t),
+ 				stream: stream, metrics: metrics, expectedNonce: make(map[string]struct{}),
+ 				log: slog.New(slog.DiscardHandler), db: db, enrolledNamespaceTable: tbl,
+ 				trustDomain: "mesh.example.com", clusterName: "cluster-alpha", requireMTLS: true,
+@@ -2048,10 +2058,10 @@ func TestStrictCESReplayRecoveryAfterInvalidSliceDeleted(t *testing.T) {
+ 	tbl, err := table.NewEnrolledNamespacesTable(db)
+ 	require.NoError(t, err)
+ 	enrollNamespace(t, db, tbl, "orders")
+-	sp := &StreamProcessor{metrics: NewMetrics(), db: db, enrolledNamespaceTable: tbl, log: slog.New(slog.DiscardHandler), clusterName: "cluster-alpha", requireMTLS: true}
++	sp := &StreamProcessor{nodeNames: fixtureNodeNames(t), metrics: NewMetrics(), db: db, enrolledNamespaceTable: tbl, log: slog.New(slog.DiscardHandler), clusterName: "cluster-alpha", requireMTLS: true}
+ 	es := &EndpointSource{k8sCiliumEndpointsWatcher: watcher, sp: sp}
+ 	batch := subscribeAndSync(es, context.Background())
+-	response, err := batch.toValidatedDeltaDiscoveryResponse("mesh.example.com", "cluster-alpha")
++	response, err := fixtureBound(t, batch).toValidatedDeltaDiscoveryResponse("mesh.example.com", "cluster-alpha")
+ 	require.NoError(t, err, "deleting the malformed CES before Sync clears the source error")
+ 	require.Empty(t, response.Resources)
+ }
+@@ -2101,10 +2111,10 @@ func TestStrictCESReplayRecoveryAfterDuplicateEndpointFix(t *testing.T) {
+ 			tbl, err := table.NewEnrolledNamespacesTable(db)
+ 			require.NoError(t, err)
+ 			enrollNamespace(t, db, tbl, "orders")
+-			sp := &StreamProcessor{metrics: NewMetrics(), db: db, enrolledNamespaceTable: tbl, log: slog.New(slog.DiscardHandler), clusterName: "cluster-alpha", requireMTLS: true}
++			sp := &StreamProcessor{nodeNames: fixtureNodeNames(t), metrics: NewMetrics(), db: db, enrolledNamespaceTable: tbl, log: slog.New(slog.DiscardHandler), clusterName: "cluster-alpha", requireMTLS: true}
+ 			es := &EndpointSource{k8sCiliumEndpointsWatcher: watcher, sp: sp}
+ 			batch := subscribeAndSync(es, context.Background())
+-			response, err := batch.toValidatedDeltaDiscoveryResponse("mesh.example.com", "cluster-alpha")
++			response, err := fixtureBound(t, batch).toValidatedDeltaDiscoveryResponse("mesh.example.com", "cluster-alpha")
+ 			if tt.wantError {
+ 				require.ErrorContains(t, err, "duplicate endpoint")
+ 				require.Nil(t, response)
+@@ -2146,7 +2156,7 @@ func TestStrictPostSyncCESRejectsDuplicateNamesAndReconnectRecovers(t *testing.T
+ 	require.NoError(t, err)
+ 	enrollNamespace(t, db, tbl, "orders")
+ 	endpointRecv := make(chan *EndpointEvent, 2)
+-	sp := &StreamProcessor{metrics: NewMetrics(), endpointRecv: endpointRecv, db: db, enrolledNamespaceTable: tbl, log: slog.New(slog.DiscardHandler), clusterName: "cluster-alpha", requireMTLS: true}
++	sp := &StreamProcessor{nodeNames: fixtureNodeNames(t), metrics: NewMetrics(), endpointRecv: endpointRecv, db: db, enrolledNamespaceTable: tbl, log: slog.New(slog.DiscardHandler), clusterName: "cluster-alpha", requireMTLS: true}
+ 	es := &EndpointSource{k8sCiliumEndpointsWatcher: watcher, sp: sp}
+ 	syncCh := make(chan EndpointEventCollection, 1)
+ 	es.SubscribeToEndpointEvents(context.Background(), syncCh)
+@@ -2167,7 +2177,7 @@ func TestStrictPostSyncCESRejectsDuplicateNamesAndReconnectRecovers(t *testing.T
+ 	recoveryWatcher := &MockCiliumEndpointsWatcher{cesResource: &MockCESResource{eventsChan: recoveryChan}}
+ 	recoverySource := &EndpointSource{k8sCiliumEndpointsWatcher: recoveryWatcher, sp: sp}
+ 	recovered := subscribeAndSync(recoverySource, context.Background())
+-	recoveryResponse, err := recovered.toValidatedDeltaDiscoveryResponse("mesh.example.com", "cluster-alpha")
++	recoveryResponse, err := fixtureBound(t, recovered).toValidatedDeltaDiscoveryResponse("mesh.example.com", "cluster-alpha")
+ 	require.NoError(t, err)
+ 	require.Len(t, recoveryResponse.Resources, 1)
+ 	require.Equal(t, "pod-recovered", recoveryResponse.Resources[0].Name)
+diff --git a/pkg/ztunnel/xds/xds_server.go b/pkg/ztunnel/xds/xds_server.go
+index 01d662ea87..66f14b9079 100644
+--- a/pkg/ztunnel/xds/xds_server.go
++++ b/pkg/ztunnel/xds/xds_server.go
+@@ -63,6 +63,7 @@ type Server struct {
+ 	requireMTLS               bool
+ 	effectivePolicyQuarantine bool
+ 	issuerProfile             *issuerProfileSource
++	nodeNames                 nodeNameResolver
+ 	v3.UnimplementedAggregatedDiscoveryServiceServer
+ }
+ 
+@@ -218,6 +219,7 @@ func (x *Server) DeltaAggregatedResources(stream v3.AggregatedDiscoveryService_D
+ 		RequireMTLS:               x.requireMTLS,
+ 		EffectivePolicyQuarantine: x.effectivePolicyQuarantine,
+ 		IssuerProfile:             x.issuerProfile,
++		NodeNames:                 x.nodeNames,
+ 	}
+ 
+ 	x.log.Debug("begin processing DeltaAggregatedResources stream")
+-- 
+2.55.0
+
