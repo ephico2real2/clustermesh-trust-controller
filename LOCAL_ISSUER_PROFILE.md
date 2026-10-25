@@ -106,3 +106,24 @@ Remote workload provenance, effective authorization, admission recovery and actu
 WireGuard/IPsec composition remains open.
 The ClusterMesh-plus-ztunnel startup guard stays closed.
 No mTLS or Protected claim follows from these producer tests.
+
+## Approved cluster-intermediate support
+
+The next producer source increment accepts the intended Option A hierarchy:
+organization root → cluster intermediate → explicitly pinned SPIRE CA → workload SVID.
+The existing direct-root form remains supported.
+The cluster intermediate is public approved lineage. It is not a workload signer.
+
+Approval includes exactly one parent certificate in `chainPEM`.
+The verifier checks its exact root signature, key usage, validity and path depth.
+It rejects missing, extra, cyclic, substituted and reused cross-cluster parents.
+The parent expiry bounds the publication lease.
+SPIRE's optional CA URI SAN must equal the independently approved trust domain.
+It cannot contain a workload path or additional names.
+
+The complete CMTC race suite passes57 top-level tests and172 subtests.
+No test failed or was skipped. Three packages contain no tests.
+Formatting and vet pass on the same ARM64 source snapshot.
+[The source ledger and raw log](docs/evidence/approved-issuer-lineage/root-summary.json) retain the checks.
+This source result does not update the deployed image table above.
+Live SPIRE certificates, matching Cilium/ztunnel consumers and actual traffic protection still need qualification.
