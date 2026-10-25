@@ -10,7 +10,7 @@ from unittest.mock import patch
 
 from cryptography import x509
 from cryptography.hazmat.primitives import hashes, serialization
-from cryptography.hazmat.primitives.asymmetric import ec
+from cryptography.hazmat.primitives.asymmetric import ec, rsa
 from cryptography.x509.oid import NameOID, ExtendedKeyUsageOID
 import pki
 
@@ -231,6 +231,12 @@ class Tests(unittest.TestCase):
             with self.assertRaisesRegex(pki.Refusal,'replaced'):
                 r.sign(self.csr('cmtc-a',r.pin))
     def test_public_certificate_request_signer_exact_source_and_lineage(self):
+        self._check_public_signer(ec.generate_private_key(ec.SECP256R1()))
+
+    def test_rsa_spire_direct_signer_exact_source_and_lineage(self):
+        self._check_public_signer(rsa.generate_private_key(public_exponent=65537,key_size=2048))
+
+    def _check_public_signer(self, key):
         with pki.Root(self.temp()) as root:
             parent_key=ec.generate_private_key(ec.SECP256R1())
             csr=x509.CertificateSigningRequestBuilder().subject_name(x509.Name([
@@ -240,7 +246,6 @@ class Tests(unittest.TestCase):
                            csrSHA256=pki.digest(csr.public_bytes(serialization.Encoding.DER)))
             parent_chain=root.sign(request)
             parent=x509.load_pem_x509_certificates(parent_chain.encode())[0]
-            key=ec.generate_private_key(ec.SECP256R1())
             subject=x509.Name([x509.NameAttribute(NameOID.COMMON_NAME,'SPIRE signing CA')])
             sans=x509.SubjectAlternativeName([x509.UniformResourceIdentifier('spiffe://cmtc-a.mesh.example')])
             signing_csr=x509.CertificateSigningRequestBuilder().subject_name(subject).add_extension(sans,False).sign(key,hashes.SHA256())
@@ -295,6 +300,10 @@ class Tests(unittest.TestCase):
                     .add_extension(x509.ExtendedKeyUsage([ExtendedKeyUsageOID.SERVER_AUTH,ExtendedKeyUsageOID.CLIENT_AUTH]),False)
                     .sign(signing_key,hashes.SHA256()).public_bytes(serialization.Encoding.PEM))
             self.assertTrue(pki.verify_spire_direct_leaf(candidate,make_leaf(signer,key),identity))
+            # Keep the same issuer name; only the signature differs.
+            wrong_key=ec.generate_private_key(ec.SECP256R1())
+            with self.assertRaisesRegex(pki.Refusal,'signature does not match'):
+                pki.verify_spire_direct_leaf(candidate,make_leaf(signer,wrong_key),identity)
             delegated_key=ec.generate_private_key(ec.SECP256R1())
             delegated=(x509.CertificateBuilder().subject_name(x509.Name([x509.NameAttribute(NameOID.COMMON_NAME,'child')]))
                 .issuer_name(signer.subject).public_key(delegated_key.public_key()).serial_number(x509.random_serial_number())

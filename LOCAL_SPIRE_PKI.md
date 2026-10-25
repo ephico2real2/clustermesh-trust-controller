@@ -67,11 +67,40 @@ Both runs confirmed unchanged Cilium, node and cert-manager snapshots and remove
 Both separate `cmtc-spire-issuer` ClusterIssuers are Ready.
 [The exact image, public Job logs and cluster pins](docs/evidence/spire-ca-initializer/real-clusters/summary.json) are retained.
 
+## SPIRE deployment and recovery test
+
+SPIRE 1.15.5 now runs in `cilium-spire` on both clusters.
+Each server uses a retained PVC for its database and disk KeyManager.
+All four node agents pass PSAT attestation with their actual Pod UID and Node UID.
+Registration uses bounded retries, exact selector confirmation and an explicit readiness acknowledgment.
+
+The renderer is [render_spire.py](scripts/lab/spire/render_spire.py).
+The active-key check is [public_proof.py](scripts/lab/spire/public_proof.py).
+The check creates a fresh nonce identity and asks the running server to mint a short-lived certificate.
+Only its public certificate leaves the Pod.
+The check verifies the direct signer, approved cluster parent and organization root.
+This administrator check proves active signing-key possession. It does not prove workload attestation.
+
+Both clusters pass the nonce check before and after a real server restart.
+However, the restart test fails signing-authority retention.
+The servers recover the same PVCs and databases but select new direct signers.
+Cert-manager returns RFC7093 SHA256 subject-key identifiers; non-FIPS SPIRE uses SHA1 to find its CA journal.
+The identifiers differ for the same public key.
+The disk key path is correct.
+Do not delete keys, journals or PVCs to bypass this failure.
+
+The native recovery fix starts from current upstream in [the SPIRE fork](https://github.com/ephico2real2/spire).
+It remains under local qualification.
+The issuer producer stays disabled until the exact fix image passes retained-signer recovery.
+[Public deployment logs, nonce proofs and the failed assertion](docs/evidence/spire-runtime/summary.json) are retained.
+The existing 36 application paths still pass on TCP ports 80, 8080 and 31337.
+These are reachability checks, not mTLS evidence.
+
 ## Remaining gates
 
 This increment prepares the cluster CA. It does not install or activate workload mTLS.
-SPIRE needs durable server storage, node attestation, bounded registration and real readiness checks.
-Its active signer must be verified from actual issuance and a running-server key proof.
+SPIRE still needs a passing retained-signer restart test with the exact fix image.
+Workload registration and the real issuer producer are not active yet.
 A bundle's first certificate is not sufficient evidence.
 
 Native remote identity, effective policy, durable admission and connection recovery remain required.

@@ -22,6 +22,7 @@ import urllib.parse
 import uuid
 from pathlib import Path
 
+from cryptography.exceptions import InvalidSignature
 from cryptography import x509
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import ec
@@ -753,7 +754,12 @@ def verify_spire_direct_leaf(candidate, leaf_pem, expected_spiffe, role='server'
     required=ExtendedKeyUsageOID.SERVER_AUTH if role=='server' else ExtendedKeyUsageOID.CLIENT_AUTH
     if required not in leaf.extensions.get_extension_for_class(x509.ExtendedKeyUsage).value:
         raise Refusal('workload certificate role mismatch')
-    signer.public_key().verify(leaf.signature,leaf.tbs_certificate_bytes,ec.ECDSA(leaf.signature_hash_algorithm))
+    # SPIRE's pinned profile can use RSA-4096. Let the certificate library
+    # verify the actual signature algorithm against this exact issuer.
+    try:
+        leaf.verify_directly_issued_by(signer)
+    except (ValueError, TypeError, InvalidSignature) as error:
+        raise Refusal('workload signature does not match exact SPIRE issuer') from error
     return digest(leaf.public_bytes(serialization.Encoding.DER))
 
 def main():

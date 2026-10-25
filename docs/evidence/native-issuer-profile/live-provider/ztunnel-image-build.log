@@ -1,0 +1,22 @@
+STEP 1/8: FROM gcr.io/distroless/cc-debian13@sha256:91e80685018de611a20450bed6b011c3d3242b3d9cc4452208121f342703ada0
+STEP 2/8: LABEL org.opencontainers.image.source="https://github.com/cilium/ztunnel"
+--> Using cache 779e3136fc6782d604ac94b1ab2ae799be65dcd9e1ea0d1137b493ec4811a0fe
+--> 779e3136fc67
+STEP 3/8: LABEL org.opencontainers.image.description="Cilium ztunnel - ambient mesh proxy"
+--> Using cache 0c370feca28808660d19dd8289511fc897d16be3ceb5dc3a3b87cc9c0c373e0f
+--> 0c370feca288
+STEP 4/8: WORKDIR /
+--> Using cache ca05e9001db833503e12de6bfbdf10568812e0ade0ddce7be7fab0bf22a61101
+--> ca05e9001db8
+STEP 5/8: ARG TARGETARCH
+--> Using cache 7769f3902936b575357147619945ddef8cf159ac3b43ba4832d7720251fb6bf6
+--> 7769f3902936
+STEP 6/8: COPY ${TARGETARCH:-amd64}/ztunnel /usr/local/bin/ztunnel
+--> a2f6caa08f37
+STEP 7/8: ENTRYPOINT ["/usr/local/bin/ztunnel"]
+--> 01328cea9621
+STEP 8/8: LABEL "org.opencontainers.image.source"="https://github.com/ephico2real2/ztunnel" "org.opencontainers.image.revision"="84cfe1c40b03347eaf7913c7df39707594e4c82f" "io.cmtc.build.profile"="debug-native-profile-provider"
+COMMIT localhost/cmtc-ztunnel:provider-84cfe1c40b
+--> f2a2b7568ee5
+Successfully tagged localhost/cmtc-ztunnel:provider-84cfe1c40b
+f2a2b7568ee541b1ec2bee17bda63c64b49dded31dcd00b2342ff5aad8bebde5

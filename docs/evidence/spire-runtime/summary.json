@@ -1,0 +1,312 @@
+{
+  "schemaVersion": 1,
+  "scope": "Actual stock SPIRE1.15.5 deployment and administrator nonce proof; no workload mTLS",
+  "clusters": {
+    "cmtc-a": {
+      "nonceMintProofBefore": true,
+      "nonceMintProofAfter": true,
+      "beforeSignerSHA256": "0c044bfd7dc52348933ae912138f2d894fea3e1335bb0634f71354d239b45b0b",
+      "afterSignerSHA256": "9ab32899b0f0b0b0799f95b5ae6f2e5054317f90e742215c8d7e2653ed953ef0",
+      "signerRetained": false,
+      "beforePodUID": "6eece3b1-2391-4dd9-8907-c7fe1df32af4",
+      "afterPodUID": "0d9f2881-5a27-4464-8d55-66bfbdf14470"
+    },
+    "cmtc-b": {
+      "nonceMintProofBefore": true,
+      "nonceMintProofAfter": true,
+      "beforeSignerSHA256": "b6feac11e36b0f0d884cb007f0794dad8237ebfa8ee2cd70c361b8fbf2eec8d9",
+      "afterSignerSHA256": "c5be88b52a130dc883f31689dfb343e2b5f9898069d2dae96fb71422356fe855",
+      "signerRetained": false,
+      "beforePodUID": "de0005db-3d3d-4543-81ad-6ca411354c61",
+      "afterPodUID": "8675beae-dd60-4a2e-9ad5-5dfe08a920ea"
+    }
+  },
+  "status": {
+    "serversReady": 2,
+    "agentsReady": 4,
+    "pvcsBound": 2,
+    "psatCurrentNodePodBindingVerified": true,
+    "activeIssuerLineageVerified": true,
+    "signerRetention": "FAILED",
+    "applicationReachabilityPathsPassed": 36,
+    "applicationPorts": [
+      80,
+      8080,
+      31337
+    ],
+    "issuerProducerEnabled": false,
+    "ztunnelEnabled": false,
+    "protected": false
+  },
+  "diagnosis": "Certificate SKID RFC7093 SHA256 truncated160 differs from non-FIPS SPIRE journal lookup SHA1; database and disk key paths retained. Current upstream fork fix is under local qualification.",
+  "files": [
+    {
+      "source": "deploy-first.log",
+      "file": "deploy-first.log.gz",
+      "sha256": "d4e5d136f9a927e67ddbe85b819b72694b117dc225649a165de8c7058d341511",
+      "bytes": 944
+    },
+    {
+      "source": "deploy-second.log",
+      "file": "deploy-second.log.gz",
+      "sha256": "d7e210b8b442bbe9014e02352dc01ad27ef95c1bc6a0814a4366c24c31003571",
+      "bytes": 92
+    },
+    {
+      "source": "deploy.py",
+      "file": "deploy.py.gz",
+      "sha256": "9099946514392c3b65936411f42fb09c43548b66f973f50e26fef5aeadb5a4f4",
+      "bytes": 3264
+    },
+    {
+      "source": "created.json",
+      "file": "created.json.gz",
+      "sha256": "db8841c2208d2fe52fb93eff3c6f572afe283ed4ee8d70d89324c7f774c8247f",
+      "bytes": 81503
+    },
+    {
+      "source": "primary-tests.log",
+      "file": "primary-tests.log.gz",
+      "sha256": "cec6eb2ccdfa35b5ff9e4e6bf453dbd27ed54d37a352e3862f316673374a572b",
+      "bytes": 4402
+    },
+    {
+      "source": "prove.py",
+      "file": "prove.py.gz",
+      "sha256": "656b06abaf6899df3b3994ce34c930ab0931916cd4b086fce2cb4bb92ef91c67",
+      "bytes": 1813
+    },
+    {
+      "source": "prove.log",
+      "file": "prove.log.gz",
+      "sha256": "b7ecce01e0d47bf22500209f20ed940c2fbe41a31252d36b0a96461b5795dd11",
+      "bytes": 130
+    },
+    {
+      "source": "restart.py",
+      "file": "restart.py.gz",
+      "sha256": "5cd97247cd442fe9ad49aa55343b4e8cc954acb0413932d39c90e6d56499b150",
+      "bytes": 2684
+    },
+    {
+      "source": "restart.log",
+      "file": "restart.log.gz",
+      "sha256": "e139c32d1b90c0c76039935bca66889c1b91e2e2cb502ca768f41245710ec992",
+      "bytes": 182
+    },
+    {
+      "source": "runtime-verification.log",
+      "file": "runtime-verification.log.gz",
+      "sha256": "e5635b7d1955ca41d0c5cdc345465ee312934dda775c112bcae10b20d975f7ad",
+      "bytes": 719
+    },
+    {
+      "source": "check-apps.sh",
+      "file": "check-apps.sh.gz",
+      "sha256": "3d86c94d72dcb6bcdb52ef5a837277474d3e8efd37d9c61486c38ad58dbd218b",
+      "bytes": 3864
+    },
+    {
+      "source": "apps.log",
+      "file": "apps.log.gz",
+      "sha256": "532f0d752d9a9beb716bc23fda1c86d86d2e31908fcc7f942d215708e503ce09",
+      "bytes": 3666
+    },
+    {
+      "source": "cmtc-a-manifest.json",
+      "file": "cmtc-a-manifest.json.gz",
+      "sha256": "b0d081331d7e3ee8687f48d405b0cc91be59f50bf59d07baf32dcc94cdc79532",
+      "bytes": 34539
+    },
+    {
+      "source": "cmtc-a-server-dry-run.json",
+      "file": "cmtc-a-server-dry-run.json.gz",
+      "sha256": "52489a2737d4aa2ab5c8906a7d690f3019a179889dfc0775774f12684f80b9a0",
+      "bytes": 39523
+    },
+    {
+      "source": "cmtc-a-registration.log",
+      "file": "cmtc-a-registration.log.gz",
+      "sha256": "fa10ea80af99072f21827477d5744fcdf76b1e93eb0a5d5607edb67bb627602d",
+      "bytes": 687
+    },
+    {
+      "source": "cmtc-a-attested-agents.json",
+      "file": "cmtc-a-attested-agents.json.gz",
+      "sha256": "06155ab85c0da43360938cd50f140aca0c661e994430b5126eae4fc76d13f94f",
+      "bytes": 1672
+    },
+    {
+      "source": "cmtc-a-socket-and-entries.log",
+      "file": "cmtc-a-socket-and-entries.log.gz",
+      "sha256": "36d2000b1fd2cc3074456bc4cd0927a700e25e9ed86706cf1b987988e4a1924d",
+      "bytes": 678
+    },
+    {
+      "source": "cmtc-a-proof.json",
+      "file": "cmtc-a-proof.json.gz",
+      "sha256": "403c984ebd542342c4c0ac28c89374c61c8e3f69dc7a2171492392e9e3517bba",
+      "bytes": 5708
+    },
+    {
+      "source": "cmtc-a-proof-command.json",
+      "file": "cmtc-a-proof-command.json.gz",
+      "sha256": "1945b8e5ba5107dfb18af2b2f95010e694e3ac75d2d6d539be96db78d293ee99",
+      "bytes": 654
+    },
+    {
+      "source": "cmtc-a-proof.exit",
+      "file": "cmtc-a-proof.exit.gz",
+      "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9",
+      "bytes": 1
+    },
+    {
+      "source": "cmtc-a-before.json",
+      "file": "cmtc-a-before.json.gz",
+      "sha256": "3fb54372fd764f7c711d18ef9d35e6118d66bd113e77ae016f0eaeac0f4c2a09",
+      "bytes": 33181
+    },
+    {
+      "source": "cmtc-a-after.json",
+      "file": "cmtc-a-after.json.gz",
+      "sha256": "3fb54372fd764f7c711d18ef9d35e6118d66bd113e77ae016f0eaeac0f4c2a09",
+      "bytes": 33181
+    },
+    {
+      "source": "restart/cmtc-a-before.json",
+      "file": "restart--cmtc-a-before.json.gz",
+      "sha256": "fabf4ed0b20580ebcf2b5cbaef8f7a4fa066f8dc36445181577f0fcbad218ed5",
+      "bytes": 15320
+    },
+    {
+      "source": "restart/cmtc-a-after.json",
+      "file": "restart--cmtc-a-after.json.gz",
+      "sha256": "dedfa1885d3b4ab7a8a6d97adcdc1a66d44b1fea270fde482082d777f470db9e",
+      "bytes": 15322
+    },
+    {
+      "source": "restart/cmtc-a-delete-ack.json",
+      "file": "restart--cmtc-a-delete-ack.json.gz",
+      "sha256": "154c4b268ca0c499fce322e49f735ac15c0c338dcfde474ab366b3cc92fd9022",
+      "bytes": 24607
+    },
+    {
+      "source": "restart/cmtc-a-proof.json",
+      "file": "restart--cmtc-a-proof.json.gz",
+      "sha256": "dd765f0650cbb9084b024e0df45cf05a63d3a45d9dc3a0ec99ce9cfee2e46745",
+      "bytes": 5708
+    },
+    {
+      "source": "restart/cmtc-a-server.log",
+      "file": "restart--cmtc-a-server.log.gz",
+      "sha256": "cb6e048120cc9f4b02ed832a7ff2f39e0448f2e1418adf2ae12ece0b7a9b3ccb",
+      "bytes": 4537
+    },
+    {
+      "source": "cmtc-b-manifest.json",
+      "file": "cmtc-b-manifest.json.gz",
+      "sha256": "cbe97dac33e318c20c248adb014d2b4a7e1dd98b99d08d80578b29c68909bde2",
+      "bytes": 34539
+    },
+    {
+      "source": "cmtc-b-server-dry-run.json",
+      "file": "cmtc-b-server-dry-run.json.gz",
+      "sha256": "1190672e86fdf9d26e94966a50c5fc5de947fb60bad5a1419daacc5ae235af7a",
+      "bytes": 39523
+    },
+    {
+      "source": "cmtc-b-registration.log",
+      "file": "cmtc-b-registration.log.gz",
+      "sha256": "fa10ea80af99072f21827477d5744fcdf76b1e93eb0a5d5607edb67bb627602d",
+      "bytes": 687
+    },
+    {
+      "source": "cmtc-b-attested-agents.json",
+      "file": "cmtc-b-attested-agents.json.gz",
+      "sha256": "9792db7ea614590cdfdacf05152d5690e3c5ed7be8f7763f499c581d4eec2007",
+      "bytes": 1673
+    },
+    {
+      "source": "cmtc-b-socket-and-entries.log",
+      "file": "cmtc-b-socket-and-entries.log.gz",
+      "sha256": "7eac7d4a474888f7af03f9035aff3f0129d4e530444c49266fdad942f7af7e2d",
+      "bytes": 678
+    },
+    {
+      "source": "cmtc-b-proof.json",
+      "file": "cmtc-b-proof.json.gz",
+      "sha256": "b3498b4977ff6dbdaf2d229b51d6e196b4075c7d704e63384b8e9ab5aa93f8d2",
+      "bytes": 5712
+    },
+    {
+      "source": "cmtc-b-proof-command.json",
+      "file": "cmtc-b-proof-command.json.gz",
+      "sha256": "ac6124f8347d41689d4fdf5bf76fab67de80b98959ab7637f3b01ba422b83e19",
+      "bytes": 654
+    },
+    {
+      "source": "cmtc-b-proof.exit",
+      "file": "cmtc-b-proof.exit.gz",
+      "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9",
+      "bytes": 1
+    },
+    {
+      "source": "cmtc-b-before.json",
+      "file": "cmtc-b-before.json.gz",
+      "sha256": "4b02f9d1808b3d2c76227d518bbd1d0e9745ec96768b77e377169ead7dd5ab7e",
+      "bytes": 33181
+    },
+    {
+      "source": "cmtc-b-after.json",
+      "file": "cmtc-b-after.json.gz",
+      "sha256": "4b02f9d1808b3d2c76227d518bbd1d0e9745ec96768b77e377169ead7dd5ab7e",
+      "bytes": 33181
+    },
+    {
+      "source": "restart/cmtc-b-before.json",
+      "file": "restart--cmtc-b-before.json.gz",
+      "sha256": "0a5a7558c73d555dd8897c92e7495eff311349849cb1fbab1ecb1b628542991c",
+      "bytes": 15322
+    },
+    {
+      "source": "restart/cmtc-b-after.json",
+      "file": "restart--cmtc-b-after.json.gz",
+      "sha256": "e2535196c5d638c2c9631c1c6972c8b35dea955481b1a4baabc1c410fb473260",
+      "bytes": 15322
+    },
+    {
+      "source": "restart/cmtc-b-delete-ack.json",
+      "file": "restart--cmtc-b-delete-ack.json.gz",
+      "sha256": "f8345cfa976faac0886ed49467013fb5a9bb1326cc5fa25b64e861cc06ce457b",
+      "bytes": 24610
+    },
+    {
+      "source": "restart/cmtc-b-proof.json",
+      "file": "restart--cmtc-b-proof.json.gz",
+      "sha256": "7634165c35f188d168a8cea01441341b041e7840cac33ac7f19253e767ac30f9",
+      "bytes": 5712
+    },
+    {
+      "source": "restart/cmtc-b-server.log",
+      "file": "restart--cmtc-b-server.log.gz",
+      "sha256": "222f539e23639419f4f5105c89829dcab7c1b91934f960e2ba873b3a34a917ed",
+      "bytes": 4537
+    }
+  ],
+  "postDeploymentSourceTests": {
+    "rendererAndProof": 40,
+    "pki": 21,
+    "failed": 0,
+    "skipped": 0,
+    "files": [
+      {
+        "file": "renderer-proof-tests.log.gz",
+        "sha256": "e53df814cec5f561cf692760a39ff57e39d07817f4f7d567e89d675101a6788b"
+      },
+      {
+        "file": "pki-tests.log.gz",
+        "sha256": "5b1c2a7ec91b97ae879378692461c1d0a037a18d8ef06b6e0d63262fc0f17a66"
+      }
+    ]
+  }
+}
