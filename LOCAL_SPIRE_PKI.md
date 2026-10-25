@@ -17,7 +17,7 @@ Its certificates do not allow the extra SPIRE CA level.
 Keep that issuer and Secret intact.
 
 The new SPIRE cluster CA uses `cert-manager/cmtc-spire-cluster-ca`.
-The new SPIRE issuer will be `cmtc-spire-issuer`.
+The new SPIRE issuer is `cmtc-spire-issuer`.
 Only the existing `cmtc-a` and `cmtc-b` clusters are used.
 Installing this dependency must preserve the Cilium images, networking and encryption settings.
 
@@ -60,7 +60,12 @@ Cancellation after a successful confirmation returns no acknowledgment.
 The next invocation must reuse the existing key and CSR.
 
 A fake API does not prove Kubernetes Secret typing, effective RBAC or actual Job execution.
-The next step is the host-Podman image build and exact-image Job test on both clusters.
+The corrected ARM64 image was built with host Podman and loaded into all four nodes.
+Actual initializer and completion Jobs passed on both clusters.
+The cmtc-a retry preserved its existing key, CSR, Secret UID and public approval.
+Both runs confirmed unchanged Cilium, node and cert-manager snapshots and removed all temporary permissions and Jobs.
+Both separate `cmtc-spire-issuer` ClusterIssuers are Ready.
+[The exact image, public Job logs and cluster pins](docs/evidence/spire-ca-initializer/real-clusters/summary.json) are retained.
 
 ## Remaining gates
 

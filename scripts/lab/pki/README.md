@@ -1,6 +1,6 @@
 # Owned SPIRE cluster-parent PKI orchestrator
 
-Proposal only. `pki.py` is runnable Python3.11+ with cryptography>=44, host
+`pki.py` is runnable Python3.11+ with cryptography>=44, host
 OpenSSL3, kubectl, Colima and Docker inside the retained cmtc-cilium VM. The
 bundled Codex Python has cryptography50.0.2; no package installation is needed to
 run the pure tests. Root TokenSave serves stale main and refuses this branch;
@@ -78,7 +78,7 @@ its UID; an unrecorded existing approval is refused. Administrator recovery must
 inspect metadata/public state and explicitly repair the owned ledger using its
 UID/RV; this tool does not read an existing private key to reconstruct authority.
 Retries with a committed UID reuse the reviewed initializer's stable CSR/key.
-Already-completed TLS state is accepted only through the exact immutable public
+Already-completed Opaque certificate state is accepted only through the exact immutable public
 approval and completer. Existing certificate rotation is deliberately refused.
 
 Temporary Job/SA/Role/RoleBinding objects have unique names and recorded UIDs.
@@ -110,7 +110,7 @@ publishes a profile or accepts a passed hash string as that proof.
 
 ## Tests and remaining execution gates
 
-Executed locally:19 top-level unittest cases, all pass, no skips. Tests use a
+Executed locally:20 top-level unittest cases, all pass, no skips. Tests use a
 real OpenSSL executable and real ephemeral P256 keys; fake API implements UID/RV
 CAS and checks metadata-only Secret requests. They cover root/signing identity,
 separate cluster parents, pathLen2/1, stable reuse, root partial/symlink/mode/key
@@ -124,8 +124,9 @@ leftovers and public CertificateRequest identity/lineage/reobservation rejection
   -m unittest -v test_pki
 ```
 
-No actual API, root directory, image build, cluster Job or SPIRE deployment was
-executed by the proposal agent. Primary must review and qualify the actual
+The primary qualified actual cluster-parent Jobs on both clusters with exact
+image/source checks. See the root LOCAL_SPIRE_PKI.md guide. SPIRE deployment
+and runtime signer proof remain separate. Qualification includes the actual
 metadata content negotiation (406 must refuse), CRI labels/config identity,
 Secret real-API typing, Job RBAC/logs, helper stdout contract and cleanup absence.
 Fake tests cannot establish these properties. Root initialization fsync/rename
