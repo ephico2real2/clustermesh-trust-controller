@@ -1,0 +1,43 @@
+{
+  "scope": "source qualification only; no new native image or TLS activation",
+  "sources": {
+    "cilium": "53c65b478e0f57a475a53dbf1b98f39436ac2d75",
+    "ztunnel": "777b0e6f26b178be75e642a85e840ce89a10722f"
+  },
+  "cilium": {
+    "topLevelPassed": 72,
+    "subtestsPassed": 138,
+    "race": true,
+    "vet": true,
+    "lintIssues": 0,
+    "repeatedTLSADS": {
+      "runs": 20,
+      "topLevelInvocationsPassed": 60,
+      "subtestsPassed": 160
+    }
+  },
+  "ztunnel": {
+    "libraryPassed": 437,
+    "directPassed": 20,
+    "namespacePassed": 30,
+    "totalPassed": 487,
+    "failed": 0,
+    "ignored": 0,
+    "forcedTLS12Passed": 1,
+    "format": true,
+    "strictClippy": true
+  },
+  "runtime": {
+    "ciliumDeployedSource": "4459d58ed3d98805f15c74298076025fc97dd540",
+    "ztunnelEnabled": false,
+    "workloadMTLS": false,
+    "compatibilityGuardClosed": true
+  },
+  "remaining": [
+    "native durable provider and actual inbound/outbound/pool drain integration",
+    "authenticated native remote workload and enrollment discovery",
+    "effective authorization and durable admission/recovery",
+    "real SPIRE dependency qualification",
+    "WireGuard/IPsec composition"
+  ]
+}

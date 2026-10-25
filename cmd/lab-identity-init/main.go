@@ -13,12 +13,14 @@ import (
 	"encoding/pem"
 	"fmt"
 	"io"
+	"log/slog"
 	"net"
 	"os"
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/validation"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -68,7 +70,25 @@ func initialize(ctx context.Context, client kubernetes.Interface, cluster string
 	return json.NewEncoder(output).Encode(publicRequests{ClusterIssuerCSR: issuerCSR, ADSServerCSR: adsCSR})
 }
 
+func selectMode(mode string) (string, error) {
+	switch mode {
+	case "", "legacy":
+		return "legacy", nil
+	case "cluster-ca-init", "cluster-ca-complete":
+		return mode, nil
+	default:
+		return "", fmt.Errorf("unsupported LAB_INIT_MODE")
+	}
+}
 func run() error {
+	mode, err := selectMode(os.Getenv("LAB_INIT_MODE"))
+	if err != nil {
+		return err
+	}
+	if mode == "legacy" && (os.Getenv("CLUSTER_CA_SECRET_UID") != "" || os.Getenv("CLUSTER_CA_ROOT_SHA256") != "" || os.Getenv("CLUSTER_CA_APPROVAL_UID") != "") {
+		return fmt.Errorf("CLUSTER_CA pins require an explicit cluster-ca LAB_INIT_MODE")
+	}
+
 	cfg, err := rest.InClusterConfig()
 	if err != nil {
 		return err
@@ -79,7 +99,11 @@ func run() error {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
-	return initialize(ctx, client, os.Getenv("CLUSTER_NAME"), os.Stdout)
+	if mode == "legacy" {
+		return initialize(ctx, client, os.Getenv("CLUSTER_NAME"), os.Stdout)
+	}
+	options := clusterCAOptions{Cluster: os.Getenv("CLUSTER_NAME"), SecretUID: types.UID(os.Getenv("CLUSTER_CA_SECRET_UID")), RootSHA256: os.Getenv("CLUSTER_CA_ROOT_SHA256"), ApprovalUID: types.UID(os.Getenv("CLUSTER_CA_APPROVAL_UID")), Log: slog.New(slog.NewJSONHandler(os.Stderr, nil))}
+	return runClusterCA(ctx, client, options, mode == "cluster-ca-complete", os.Stdout)
 }
 
 func main() {

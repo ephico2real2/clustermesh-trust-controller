@@ -1,12 +1,15 @@
 # Local issuer-profile qualification
 
-The public issuer-profile producer passes local tests on both mesh clusters.
+The issuer-profile producer is deployed on both mesh clusters.
+The earlier direct-root producer passed both live cluster trials.
+The updated approved-parent producer also passed both live cluster trials.
 It does not establish workload mTLS.
 
 The tested image is now the baseline for both controllers and all four node agents.
 Baseline mode remains Observe. The producer is an explicit opt-in feature.
-The test enabled the producer, then restored its configuration and removed its test resources.
-No issuer profile is active after cleanup.
+The completed direct-root trial enabled the producer, then restored its configuration and removed its test resources.
+The approved-parent trial also restored both controller templates and removed its owned resources.
+The baseline remains Observe with the producer disabled after cleanup.
 
 ## What the producer does
 
@@ -24,17 +27,17 @@ No root private key is placed in either cluster or the evidence.
 
 | Item | Qualified value |
 | --- | --- |
-| Source | `7e606195f58359b0e0af82f219cafd5291268c67` |
-| Image | `localhost/cmtc:issuer-7e606195f5` |
-| Configuration ID | `sha256:6d4b28d1935e3fecf260ee90e2baec844adcce63ee650d0cdcf61e50ac4439f6` |
+| Source | `f5fe9992da855a22660c07b141e19feee50310ba` |
+| Image | `localhost/cmtc:lineage-f5fe9992da` |
+| Configuration ID | `sha256:3f5839e26f82395d820cd2fc4439648a7e9fa3957544c705b53092031d7c9be7` |
 | Platform | Linux ARM64 |
 | Toolchain | Go 1.27.3 |
 | Runtime | Pinned distroless Debian 13 |
 | Runtime provider | Existing Colima `cmtc-cilium` Docker provider |
 | Build provider | Host Podman, explicit `cmtc-ubuntu-build` connection |
 
-[The image ledger](docs/evidence/issuer-profile-producer/image.json) records the builder, runtime digest, archive hash and binary hashes.
-[The build command](docs/evidence/issuer-profile-producer/build-command.json) records the exact argument list.
+[The image ledger](docs/evidence/approved-issuer-lineage/image.json) records the builder, runtime digest, archive hash and binary hashes.
+[The build command](docs/evidence/approved-issuer-lineage/build-command.json) records the exact argument list.
 The builder configuration ID is local to this host. It is not a portable registry reference.
 [The Podman guide](docs/development/PODMAN_LOCAL_VALIDATION.md) describes the prepared environment.
 
@@ -45,7 +48,7 @@ CRI checks verified the configuration ID, source label and ARM64 platform.
 Running Pod digests matched the imported image manifests.
 Each running binary matched the recorded SHA-256.
 
-[The rollout ledger](docs/evidence/issuer-profile-producer/baseline-rollout.json) covers all six containers.
+[The rollout ledger](docs/evidence/approved-issuer-lineage/baseline-rollout.json) covers all six containers.
 Only their image field changed. Their service accounts, privileges and arguments stayed intact.
 
 ## Local test loop
@@ -69,7 +72,9 @@ UID and resourceVersion preconditions protect cleanup.
 The public fixture generator retains no signing keys.
 Its certificates test publication. They are not a production workload authority.
 
-## Results
+## Completed direct-root trial
+
+These results apply to source `7e606195f5`. The evidence remains available.
 
 - CMTC unit/race tests:52 top-level tests and150 subtests passed. Vet passed.
 - Helper checks:22 tests passed after correcting two rollout/scrape timing errors.
@@ -125,5 +130,9 @@ The complete CMTC race suite passes57 top-level tests and172 subtests.
 No test failed or was skipped. Three packages contain no tests.
 Formatting and vet pass on the same ARM64 source snapshot.
 [The source ledger and raw log](docs/evidence/approved-issuer-lineage/root-summary.json) retain the checks.
-This source result does not update the deployed image table above.
+The new ARM64 image is deployed in all six containers. Their running binaries match the source ledger.
+The API/policy and36 app paths pass after rollout. Both real clusters pass parented-profile publication, renewal, restart, invalid-input and recovery checks.
+Fresh B-to-A producer telemetry is verified. Cleanup reports no errors.
+[Cluster A report](docs/evidence/approved-issuer-lineage/cmtc-a-report.json), [Cluster B report](docs/evidence/approved-issuer-lineage/cmtc-b-report.json) and [raw evidence](docs/evidence/approved-issuer-lineage/raw-live-evidence.tar.gz) retain the actual output.
+[Application output](docs/evidence/approved-issuer-lineage/baseline-test.log) retains the actual responses.
 Live SPIRE certificates, matching Cilium/ztunnel consumers and actual traffic protection still need qualification.

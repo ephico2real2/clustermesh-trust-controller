@@ -87,3 +87,22 @@ These source commits are local. They have no new runtime image or active ADS han
 The deployed Cilium image remains4459; ztunnel remains disabled.
 Durable checkpoints, live provider transitions, peer-root CRL registration and actual socket draining remain open.
 No publication acknowledgment or parser result can open admission.
+
+## Native ADS and durable-history increment
+
+The native Cilium source `53c65b478e` now sends a generated typed issuer profile over ADS.
+It pins the current Kubernetes API source, node, cluster, root and version floors.
+It bounds ACK and lease waits. A mixed API observation closes the stream.
+The deterministic concurrent-renewal test requires a fresh coherent reconnect.
+API observation failures use native bounded backoff.
+
+Ztunnel source `777b0e6` validates that profile and its exact approved CA hierarchy.
+Its private checkpoint preserves cumulative authority history and version floors.
+Atomic rename requires file and directory synchronization before a durability receipt.
+FIFO, symlink, ownership, corrupt-state, replay and interrupted-write tests pass.
+A recovered checkpoint is history. It does not grant traffic permission.
+
+The profile subscriber still rejects activation.
+The next increment must bind this state to the actual TLS provider and drain active and idle connections on loss.
+No native image was built from these source-only commits. The deployed Cilium remains4459, and ztunnel remains disabled.
+[The evidence ledger](docs/evidence/native-issuer-profile/ads-lineage-checkpoint/summary.json) retains exact sources, counts, raw results and initial failures.

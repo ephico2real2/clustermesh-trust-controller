@@ -1,0 +1,254 @@
+{
+  "cluster": "cmtc-b",
+  "scope": "fresh central remote-write producer telemetry only; no trust consumption or mTLS proof",
+  "localTarget": {
+    "discoveredLabels": {
+      "__address__": "10.20.1.13:8080",
+      "__meta_kubernetes_namespace": "cmtc-system",
+      "__meta_kubernetes_pod_annotation_security_cmtc_io_issuer_lab_restart": "c6f826c3-a96d-4ac5-ab72-c7e16118eb7c",
+      "__meta_kubernetes_pod_annotation_security_cmtc_io_issuer_profile_lab_run": "b076a811d881",
+      "__meta_kubernetes_pod_annotationpresent_security_cmtc_io_issuer_lab_restart": "true",
+      "__meta_kubernetes_pod_annotationpresent_security_cmtc_io_issuer_profile_lab_run": "true",
+      "__meta_kubernetes_pod_container_id": "containerd://f36a7bba7da6cfa2d3d01f13d4f577961047e281373bbcb3fb347f02b55659cd",
+      "__meta_kubernetes_pod_container_image": "localhost/cmtc:lineage-f5fe9992da",
+      "__meta_kubernetes_pod_container_init": "false",
+      "__meta_kubernetes_pod_container_name": "controller",
+      "__meta_kubernetes_pod_container_port_name": "metrics",
+      "__meta_kubernetes_pod_container_port_number": "8080",
+      "__meta_kubernetes_pod_container_port_protocol": "TCP",
+      "__meta_kubernetes_pod_controller_kind": "ReplicaSet",
+      "__meta_kubernetes_pod_controller_name": "cmtc-controller-67644f8bd4",
+      "__meta_kubernetes_pod_host_ip": "172.18.0.5",
+      "__meta_kubernetes_pod_ip": "10.20.1.13",
+      "__meta_kubernetes_pod_label_app_kubernetes_io_name": "cmtc-controller",
+      "__meta_kubernetes_pod_label_pod_template_hash": "67644f8bd4",
+      "__meta_kubernetes_pod_label_security_cmtc_io_metrics": "true",
+      "__meta_kubernetes_pod_labelpresent_app_kubernetes_io_name": "true",
+      "__meta_kubernetes_pod_labelpresent_pod_template_hash": "true",
+      "__meta_kubernetes_pod_labelpresent_security_cmtc_io_metrics": "true",
+      "__meta_kubernetes_pod_name": "cmtc-controller-67644f8bd4-8dlxv",
+      "__meta_kubernetes_pod_node_name": "cmtc-b-worker",
+      "__meta_kubernetes_pod_phase": "Running",
+      "__meta_kubernetes_pod_ready": "true",
+      "__meta_kubernetes_pod_uid": "fae5a9ed-0e80-49bf-b5b1-05375b140b42",
+      "__metrics_path__": "/metrics",
+      "__scheme__": "http",
+      "__scrape_interval__": "5s",
+      "__scrape_timeout__": "5s",
+      "job": "cmtc"
+    },
+    "labels": {
+      "cluster": "cmtc-b",
+      "component": "cmtc-controller",
+      "instance": "10.20.1.13:8080",
+      "job": "cmtc",
+      "node": "cmtc-b-worker"
+    },
+    "scrapePool": "cmtc",
+    "scrapeUrl": "http://10.20.1.13:8080/metrics",
+    "globalUrl": "http://10.20.1.13:8080/metrics",
+    "lastError": "",
+    "lastScrape": "2026-10-25T03:08:20.953031937Z",
+    "lastScrapeDuration": 0.00167726,
+    "health": "up",
+    "scrapeInterval": "5s",
+    "scrapeTimeout": "5s"
+  },
+  "timestampToleranceSeconds": 0.01,
+  "central": {
+    "cmtc_issuer_profile_validation_attempts_total": {
+      "values": {
+        "status": "success",
+        "data": {
+          "resultType": "vector",
+          "result": [
+            {
+              "metric": {
+                "__name__": "cmtc_issuer_profile_validation_attempts_total",
+                "cluster": "cmtc-b",
+                "component": "cmtc-controller",
+                "exported_cluster": "cmtc-b",
+                "instance": "10.20.1.13:8080",
+                "job": "cmtc",
+                "node": "cmtc-b-worker",
+                "result": "accepted"
+              },
+              "value": [
+                1792897706.181,
+                "1"
+              ]
+            }
+          ]
+        }
+      },
+      "sampleTimestamps": {
+        "status": "success",
+        "data": {
+          "resultType": "vector",
+          "result": [
+            {
+              "metric": {
+                "cluster": "cmtc-b",
+                "component": "cmtc-controller",
+                "exported_cluster": "cmtc-b",
+                "instance": "10.20.1.13:8080",
+                "job": "cmtc",
+                "node": "cmtc-b-worker",
+                "result": "accepted"
+              },
+              "value": [
+                1792897706.187,
+                "1792897700.953"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "cmtc_issuer_profile_publication_writes_total": {
+      "values": {
+        "status": "success",
+        "data": {
+          "resultType": "vector",
+          "result": [
+            {
+              "metric": {
+                "__name__": "cmtc_issuer_profile_publication_writes_total",
+                "cluster": "cmtc-b",
+                "component": "cmtc-controller",
+                "exported_cluster": "cmtc-b",
+                "instance": "10.20.1.13:8080",
+                "job": "cmtc",
+                "node": "cmtc-b-worker",
+                "result": "acknowledged",
+                "state": "published"
+              },
+              "value": [
+                1792897706.191,
+                "1"
+              ]
+            }
+          ]
+        }
+      },
+      "sampleTimestamps": {
+        "status": "success",
+        "data": {
+          "resultType": "vector",
+          "result": [
+            {
+              "metric": {
+                "cluster": "cmtc-b",
+                "component": "cmtc-controller",
+                "exported_cluster": "cmtc-b",
+                "instance": "10.20.1.13:8080",
+                "job": "cmtc",
+                "node": "cmtc-b-worker",
+                "result": "acknowledged",
+                "state": "published"
+              },
+              "value": [
+                1792897706.196,
+                "1792897700.953"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "cmtc_issuer_profile_source_checked_timestamp_seconds": {
+      "values": {
+        "status": "success",
+        "data": {
+          "resultType": "vector",
+          "result": [
+            {
+              "metric": {
+                "__name__": "cmtc_issuer_profile_source_checked_timestamp_seconds",
+                "cluster": "cmtc-b",
+                "component": "cmtc-controller",
+                "exported_cluster": "cmtc-b",
+                "instance": "10.20.1.13:8080",
+                "job": "cmtc",
+                "node": "cmtc-b-worker"
+              },
+              "value": [
+                1792897706.201,
+                "1792897699"
+              ]
+            }
+          ]
+        }
+      },
+      "sampleTimestamps": {
+        "status": "success",
+        "data": {
+          "resultType": "vector",
+          "result": [
+            {
+              "metric": {
+                "cluster": "cmtc-b",
+                "component": "cmtc-controller",
+                "exported_cluster": "cmtc-b",
+                "instance": "10.20.1.13:8080",
+                "job": "cmtc",
+                "node": "cmtc-b-worker"
+              },
+              "value": [
+                1792897706.206,
+                "1792897700.953"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "cmtc_issuer_profile_acknowledged_valid_until_timestamp_seconds": {
+      "values": {
+        "status": "success",
+        "data": {
+          "resultType": "vector",
+          "result": [
+            {
+              "metric": {
+                "__name__": "cmtc_issuer_profile_acknowledged_valid_until_timestamp_seconds",
+                "cluster": "cmtc-b",
+                "component": "cmtc-controller",
+                "exported_cluster": "cmtc-b",
+                "instance": "10.20.1.13:8080",
+                "job": "cmtc",
+                "node": "cmtc-b-worker"
+              },
+              "value": [
+                1792897706.21,
+                "1792897729"
+              ]
+            }
+          ]
+        }
+      },
+      "sampleTimestamps": {
+        "status": "success",
+        "data": {
+          "resultType": "vector",
+          "result": [
+            {
+              "metric": {
+                "cluster": "cmtc-b",
+                "component": "cmtc-controller",
+                "exported_cluster": "cmtc-b",
+                "instance": "10.20.1.13:8080",
+                "job": "cmtc",
+                "node": "cmtc-b-worker"
+              },
+              "value": [
+                1792897706.214,
+                "1792897700.953"
+              ]
+            }
+          ]
+        }
+      }
+    }
+  }
+}

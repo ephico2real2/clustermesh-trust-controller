@@ -14,6 +14,7 @@ import (
 	"flag"
 	"fmt"
 	"math/big"
+	"net/url"
 	"os"
 	"time"
 )
@@ -23,6 +24,7 @@ type root struct {
 	SHA256         string `json:"sha256"`
 }
 type issuer struct {
+	ChainPEM       string `json:"chainPEM,omitempty"`
 	CertificatePEM string `json:"certificatePEM"`
 	SPKISHA256     string `json:"spkiSHA256"`
 	RootSHA256     string `json:"rootSHA256"`
@@ -53,7 +55,8 @@ func cert(t, parent *x509.Certificate, key *ecdsa.PrivateKey, parentKey *ecdsa.P
 	c, e := x509.ParseCertificate(b)
 	return c, string(pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: b})), e
 }
-func makeApproval(now time.Time) (approval, error) {
+func makeApproval(now time.Time) (approval, error) { return makeApprovalHierarchy(now, false) }
+func makeApprovalHierarchy(now time.Time, parented bool) (approval, error) {
 	key, e := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	if e != nil {
 		return approval{}, e
@@ -71,20 +74,36 @@ func makeApproval(now time.Time) (approval, error) {
 			return approval{}, err
 		}
 		it := &x509.Certificate{SerialNumber: big.NewInt(int64(i + 2)), Subject: pkix.Name{CommonName: "CMTC disposable " + name + " direct issuer"}, NotBefore: now.Add(-time.Hour), NotAfter: now.Add(36 * time.Hour), IsCA: true, BasicConstraintsValid: true, MaxPathLenZero: true, KeyUsage: x509.KeyUsageCertSign | x509.KeyUsageCRLSign}
-		ic, ipem, err := cert(it, rc, k, key)
+		parent, parentKey, parentPEM := rc, key, ""
+		if parented {
+			pk, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+			if err != nil {
+				return approval{}, err
+			}
+			pt := &x509.Certificate{SerialNumber: big.NewInt(int64(i + 10)), Subject: pkix.Name{CommonName: "CMTC disposable " + name + " cluster CA"}, NotBefore: now.Add(-time.Hour), NotAfter: now.Add(40 * time.Hour), IsCA: true, BasicConstraintsValid: true, MaxPathLen: 1, KeyUsage: x509.KeyUsageCertSign | x509.KeyUsageCRLSign}
+			pc, pp, err := cert(pt, rc, pk, key)
+			if err != nil {
+				return approval{}, err
+			}
+			parent, parentKey, parentPEM = pc, pk, pp
+			it.Subject.CommonName = "CMTC disposable " + name + " SPIRE CA"
+			it.URIs = []*url.URL{{Scheme: "spiffe", Host: name + ".mesh"}}
+		}
+		ic, ipem, err := cert(it, parent, k, parentKey)
 		if err != nil {
 			return approval{}, err
 		}
-		a.Clusters = append(a.Clusters, cluster{name, name + ".mesh", []issuer{{ipem, digest(ic.RawSubjectPublicKeyInfo), pin}}})
+		a.Clusters = append(a.Clusters, cluster{name, name + ".mesh", []issuer{{ChainPEM: parentPEM, CertificatePEM: ipem, SPKISHA256: digest(ic.RawSubjectPublicKeyInfo), RootSHA256: pin}}})
 	}
 	return a, nil
 }
-func generate(now time.Time) (bundle, error) {
-	a, e := makeApproval(now)
+func generate(now time.Time) (bundle, error) { return generateHierarchy(now, false) }
+func generateHierarchy(now time.Time, parented bool) (bundle, error) {
+	a, e := makeApprovalHierarchy(now, parented)
 	if e != nil {
 		return bundle{}, e
 	}
-	other, e := makeApproval(now)
+	other, e := makeApprovalHierarchy(now, parented)
 	if e != nil {
 		return bundle{}, e
 	}
@@ -104,6 +123,7 @@ func generate(now time.Time) (bundle, error) {
 }
 func main() {
 	nowFlag := flag.String("now", "", "Optional RFC3339 fixture clock (default actual UTC)")
+	parented := flag.Bool("with-cluster-parent", false, "Generate the explicit cluster CA -> SPIRE CA hierarchy")
 	flag.Parse()
 	now := time.Now().UTC()
 	if *nowFlag != "" {
@@ -114,7 +134,7 @@ func main() {
 			os.Exit(2)
 		}
 	}
-	b, e := generate(now)
+	b, e := generateHierarchy(now, *parented)
 	if e != nil {
 		fmt.Fprintln(os.Stderr, e)
 		os.Exit(1)
