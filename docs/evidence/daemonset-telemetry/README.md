@@ -9,6 +9,7 @@ archive import, health/scrape surfaces and remaining security gates.
 - [Ubuntu capture build](capture-build.log) and [image/source-file ledger](capture-image.json).
 - [Passed four-node fence trial](fence/summary.json), [integration ledger](fence/integration.json), [raw commands/logs/source archive](fence/raw-integration.tar.gz).
 - [Additional84-attempt worker lifecycle trial](fence-lifecycle/summary.json): corrupted adoption, stale Pod replacement and defunct retirement.
+- [Passed144-attempt observer trial](observer/summary.json), [full ledger](observer/integration.json) and [raw archive](observer/raw-integration.tar.gz).
 - [Real dashboard queries](fence/telemetry/candidate-dashboard-queries.json) and [browser expectations](fence/screenshots/walk-results.json).
 
 The four-node run has168 audited client attempts:24 baseline successes and144
@@ -26,3 +27,12 @@ zero. Planned security panels remain visible and unavailable.
 ![Four audited nodes and real quarantine load, dark theme](fence/screenshots/cmtc-fence-section-dark.png)
 
 ![Same load and node scope, light theme](fence/screenshots/cmtc-fence-section-light.png)
+
+The observer run passes144 audited attempts:96 allowed and48 rejected by native
+Cilium policy. The observer returns NEXT; it does not make those verdicts. Both
+workers demonstrate a real map/program replacement and central counter reset
+after SIGKILL, plus source absence and zero cleanup errors.
+
+![Observer load before Cilium verdict, dark theme](observer/screenshots/cmtc-observer-section-dark.png)
+
+![Same observer load, light theme](observer/screenshots/cmtc-observer-section-light.png)

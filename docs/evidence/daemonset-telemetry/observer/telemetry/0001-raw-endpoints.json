@@ -1,0 +1,74 @@
+{
+  "cmtc-a": {
+    "nodeUID": "35a6f095-90e9-41ff-a713-216cde5596f0",
+    "internalIP": "172.18.0.2",
+    "cases": [
+      {
+        "method": "GET",
+        "path": "/metrics",
+        "status": 200,
+        "body": "# HELP cmtc_datapath_observer_bytes_total skb bytes at selected TCX hook before Cilium verdict.\n# TYPE cmtc_datapath_observer_bytes_total counter\ncmtc_datapath_observer_bytes_total{cluster=\"cmtc-a\",direction=\"ingress\",node=\"cmtc-a-worker\"} 70\n# HELP cmtc_datapath_observer_packets_total Packets at selected TCX hook before Cilium verdict; not requests or mTLS proof.\n# TYPE cmtc_datapath_observer_packets_total counter\ncmtc_datapath_observer_packets_total{cluster=\"cmtc-a\",direction=\"ingress\",node=\"cmtc-a-worker\"} 1\n# HELP cmtc_datapath_observer_ready Last sample is fresh and attachment matches frozen test interface and baseline chain.\n# TYPE cmtc_datapath_observer_ready gauge\ncmtc_datapath_observer_ready{cluster=\"cmtc-a\",direction=\"ingress\",node=\"cmtc-a-worker\"} 1\n"
+      },
+      {
+        "method": "GET",
+        "path": "/healthz",
+        "status": 404,
+        "body": "404 page not found\n"
+      },
+      {
+        "method": "GET",
+        "path": "/readyz",
+        "status": 404,
+        "body": "404 page not found\n"
+      },
+      {
+        "method": "GET",
+        "path": "/debug/pprof/",
+        "status": 404,
+        "body": "404 page not found\n"
+      },
+      {
+        "method": "POST",
+        "path": "/metrics",
+        "status": 405,
+        "body": "GET required\n"
+      }
+    ]
+  },
+  "cmtc-b": {
+    "nodeUID": "fcbbc49e-268c-411b-9083-1346f53bbb88",
+    "internalIP": "172.18.0.5",
+    "cases": [
+      {
+        "method": "GET",
+        "path": "/metrics",
+        "status": 200,
+        "body": "# HELP cmtc_datapath_observer_bytes_total skb bytes at selected TCX hook before Cilium verdict.\n# TYPE cmtc_datapath_observer_bytes_total counter\ncmtc_datapath_observer_bytes_total{cluster=\"cmtc-b\",direction=\"ingress\",node=\"cmtc-b-worker\"} 0\n# HELP cmtc_datapath_observer_packets_total Packets at selected TCX hook before Cilium verdict; not requests or mTLS proof.\n# TYPE cmtc_datapath_observer_packets_total counter\ncmtc_datapath_observer_packets_total{cluster=\"cmtc-b\",direction=\"ingress\",node=\"cmtc-b-worker\"} 0\n# HELP cmtc_datapath_observer_ready Last sample is fresh and attachment matches frozen test interface and baseline chain.\n# TYPE cmtc_datapath_observer_ready gauge\ncmtc_datapath_observer_ready{cluster=\"cmtc-b\",direction=\"ingress\",node=\"cmtc-b-worker\"} 1\n"
+      },
+      {
+        "method": "GET",
+        "path": "/healthz",
+        "status": 404,
+        "body": "404 page not found\n"
+      },
+      {
+        "method": "GET",
+        "path": "/readyz",
+        "status": 404,
+        "body": "404 page not found\n"
+      },
+      {
+        "method": "GET",
+        "path": "/debug/pprof/",
+        "status": 404,
+        "body": "404 page not found\n"
+      },
+      {
+        "method": "POST",
+        "path": "/metrics",
+        "status": 405,
+        "body": "GET required\n"
+      }
+    ]
+  }
+}

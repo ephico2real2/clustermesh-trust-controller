@@ -83,7 +83,14 @@ and foreign/native-link cleanup pass with zero cleanup errors. No fence from tha
 trial remains. The [separate worker lifecycle trial](docs/evidence/daemonset-telemetry/fence-lifecycle/summary.json)
 also passes84 attempts (36 baseline/recovery successes,48 denials), corrupted
 adoption rejection, stale-Pod identity rejection and exact defunct retirement,
-with zero cleanup errors. Observer scrape/reset/visual qualification is running.
+with zero cleanup errors. The [observer trial](docs/evidence/daemonset-telemetry/observer/summary.json)
+also passes144 audited attempts:96 native-allowed and48 native-policy-denied.
+Both workers demonstrate new kernel map/program IDs and an actual central
+counter reset after SIGKILL. Raw endpoints, load/idle, both themes, stale-Pod
+rejection, absent telemetry and foreign/native cleanup pass with zero errors.
+All six collector families now have collection/query/render evidence. This
+completes the bounded prototype and its telemetry increment; it does not close
+the security gates listed above.
 
 [Full dashboards and readable sections](docs/evidence/daemonset-telemetry/fence/screenshots/)
 were inspected in both themes: Operations39/39 panels, Workload Security29/29.
@@ -98,3 +105,16 @@ The [delivery status](docs/agile/DELIVERY_STATUS.md) records the next gate and
 supersedes historical checkpoints. CI, pushing and image publication remain
 deferred. ClusterMesh connectivity works; ztunnel is disabled and cross-cluster
 workload mTLS is not qualified.
+
+## Open the measured Grafana windows
+
+The disposable opt-in clients, labels and DaemonSets are removed after each
+trial. Use the retained absolute windows to review real measurements after
+cleanup; a later live range correctly has no prototype targets.
+
+- [Four-node fence load](http://127.0.0.1:13000/d/cmtc-observe-lab/cmtc-operations?from=1792889979803&to=1792890025855&theme=dark).
+- [Two-worker observer load](http://127.0.0.1:13000/d/cmtc-observe-lab/cmtc-operations?from=1792890555035&to=1792890606197&theme=dark).
+
+Both links require the existing local Grafana port-forward and retained
+Prometheus history. Static screenshots and raw evidence remain in the repository.
+The normal Observe controllers/node agents and existing applications remain.

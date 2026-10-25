@@ -1,0 +1,5736 @@
+{
+  "operations.json": {
+    "annotations": {
+      "list": []
+    },
+    "editable": false,
+    "id": 2,
+    "panels": [
+      {
+        "description": "Visible context and scope; documented status is not a live health metric.",
+        "fieldConfig": {
+          "defaults": {
+            "min": 0,
+            "unit": "short"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 4,
+          "w": 24,
+          "x": 0,
+          "y": 0
+        },
+        "id": 1,
+        "options": {
+          "content": "**Observe mode:** namespace selection, existing enrollment labels, node inventory and controller activity are live. **Enforcement verification is unavailable.** These readings do not establish workload protection.\n\nUse the cluster selector for one cluster or both. Blue identifies cmtc-a; red identifies cmtc-b in charts and table cells. [Workload mTLS evidence](https://github.com/ephico2real2/clustermesh-trust-controller/blob/1c192a5ee84fb5218cb1385fdd9c5bf45ca69e1a/2026-10-24T0509Z-local-authenticated-only-f052d127/README.md) is a separate isolated trial.",
+          "mode": "markdown"
+        },
+        "title": "CMTC operations \u00b7 observed intent and inventory",
+        "type": "text"
+      },
+      {
+        "collapsed": false,
+        "gridPos": {
+          "h": 1,
+          "w": 24,
+          "x": 0,
+          "y": 4
+        },
+        "id": 2,
+        "panels": [],
+        "title": "Is CMTC reporting?",
+        "type": "row"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${DS_PROMETHEUS}"
+        },
+        "description": "Latest controller metric series at range end, one per reporting controller. Not application or datapath readiness.",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "fixedColor": "#4e79a7",
+              "mode": "fixed"
+            },
+            "decimals": 0,
+            "min": 0,
+            "unit": "short"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 4,
+          "w": 6,
+          "x": 0,
+          "y": 5
+        },
+        "id": 3,
+        "options": {
+          "colorMode": "value",
+          "graphMode": "none",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "text": {
+            "valueSize": 40
+          },
+          "textMode": "value"
+        },
+        "targets": [
+          {
+            "expr": "count(cmtc_enforcement_available{job=\"cmtc\",cluster=~\"$cluster\",component=\"cmtc-controller\"} @ end())",
+            "instant": true,
+            "legendFormat": "",
+            "range": false,
+            "refId": "A"
+          }
+        ],
+        "title": "Controllers reporting",
+        "type": "stat"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${DS_PROMETHEUS}"
+        },
+        "description": "Latest successful local inventory observations at range end. Not encrypted or protected node counts.",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "fixedColor": "#4e79a7",
+              "mode": "fixed"
+            },
+            "decimals": 0,
+            "min": 0,
+            "unit": "short"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 4,
+          "w": 6,
+          "x": 6,
+          "y": 5
+        },
+        "id": 4,
+        "options": {
+          "colorMode": "value",
+          "graphMode": "none",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "text": {
+            "valueSize": 40
+          },
+          "textMode": "value"
+        },
+        "targets": [
+          {
+            "expr": "sum(cmtc_node_agent_ready{job=\"cmtc\",cluster=~\"$cluster\",component=\"cmtc-node-agent\"} @ end())",
+            "instant": true,
+            "legendFormat": "",
+            "range": false,
+            "refId": "A"
+          }
+        ],
+        "title": "Node inventories ready",
+        "type": "stat"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${DS_PROMETHEUS}"
+        },
+        "description": "Latest namespace selection intent at range end. The Observe controller does not change labels or enforce traffic.",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "fixedColor": "#4e79a7",
+              "mode": "fixed"
+            },
+            "decimals": 0,
+            "min": 0,
+            "unit": "short"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 4,
+          "w": 6,
+          "x": 12,
+          "y": 5
+        },
+        "id": 5,
+        "options": {
+          "colorMode": "value",
+          "graphMode": "none",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "text": {
+            "valueSize": 40
+          },
+          "textMode": "value"
+        },
+        "targets": [
+          {
+            "expr": "sum(cmtc_namespaces_selected{job=\"cmtc\",cluster=~\"$cluster\",component=\"cmtc-controller\"} @ end())",
+            "instant": true,
+            "legendFormat": "",
+            "range": false,
+            "refId": "A"
+          }
+        ],
+        "title": "Namespaces selected \u00b7 intent",
+        "type": "stat"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${DS_PROMETHEUS}"
+        },
+        "description": "Native CMTC capability gauge at range end. Zero means verification is unavailable in Observe mode; missing telemetry remains unavailable.",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "fixedColor": "#f28e2b",
+              "mode": "fixed"
+            },
+            "decimals": 0,
+            "mappings": [
+              {
+                "options": {
+                  "0": {
+                    "color": "#f28e2b",
+                    "text": "Unavailable"
+                  }
+                },
+                "type": "value"
+              }
+            ],
+            "min": 0,
+            "unit": "short"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 4,
+          "w": 6,
+          "x": 18,
+          "y": 5
+        },
+        "id": 6,
+        "options": {
+          "colorMode": "value",
+          "graphMode": "none",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "text": {
+            "valueSize": 40
+          },
+          "textMode": "value"
+        },
+        "targets": [
+          {
+            "expr": "max(cmtc_enforcement_available{job=\"cmtc\",cluster=~\"$cluster\",component=\"cmtc-controller\"} @ end())",
+            "instant": true,
+            "legendFormat": "",
+            "range": false,
+            "refId": "A"
+          }
+        ],
+        "title": "Enforcement verification",
+        "type": "stat"
+      },
+      {
+        "collapsed": false,
+        "gridPos": {
+          "h": 1,
+          "w": 24,
+          "x": 0,
+          "y": 9
+        },
+        "id": 7,
+        "panels": [],
+        "title": "Which namespaces are selected?",
+        "type": "row"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${DS_PROMETHEUS}"
+        },
+        "description": "Latest namespaces carrying the Cilium enrollment label from any actor. Label presence is intent, not protection.",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "fixedColor": "#4e79a7",
+              "mode": "fixed"
+            },
+            "decimals": 0,
+            "min": 0,
+            "unit": "short"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 4,
+          "w": 12,
+          "x": 0,
+          "y": 10
+        },
+        "id": 8,
+        "options": {
+          "colorMode": "value",
+          "graphMode": "none",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "text": {
+            "valueSize": 40
+          },
+          "textMode": "value"
+        },
+        "targets": [
+          {
+            "expr": "sum(cmtc_namespaces_enrolled{job=\"cmtc\",cluster=~\"$cluster\",component=\"cmtc-controller\"} @ end())",
+            "instant": true,
+            "legendFormat": "",
+            "range": false,
+            "refId": "A"
+          }
+        ],
+        "title": "Enrollment labels observed",
+        "type": "stat"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${DS_PROMETHEUS}"
+        },
+        "description": "Latest non-platform namespace inventory, including explicitly excluded namespaces; not a count of safe-to-enroll namespaces.",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "fixedColor": "#4e79a7",
+              "mode": "fixed"
+            },
+            "decimals": 0,
+            "min": 0,
+            "unit": "short"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 4,
+          "w": 12,
+          "x": 12,
+          "y": 10
+        },
+        "id": 9,
+        "options": {
+          "colorMode": "value",
+          "graphMode": "none",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "text": {
+            "valueSize": 40
+          },
+          "textMode": "value"
+        },
+        "targets": [
+          {
+            "expr": "sum(cmtc_namespaces_eligible{job=\"cmtc\",cluster=~\"$cluster\",component=\"cmtc-controller\"} @ end())",
+            "instant": true,
+            "legendFormat": "",
+            "range": false,
+            "refId": "A"
+          }
+        ],
+        "title": "Non-platform namespaces observed",
+        "type": "stat"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${DS_PROMETHEUS}"
+        },
+        "description": "Latest namespace decisions at the selected range end. Selected, excluded, platform and unselected are disjoint and sum to all observed namespaces in the selected clusters. This is inventory/intent, not mTLS coverage. Missing telemetry stays unavailable.",
+        "fieldConfig": {
+          "defaults": {
+            "decimals": 1,
+            "min": 0,
+            "unit": "short"
+          },
+          "overrides": [
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "Selected"
+              },
+              "properties": [
+                {
+                  "id": "color",
+                  "value": {
+                    "fixedColor": "#4e79a7",
+                    "mode": "fixed"
+                  }
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "Excluded"
+              },
+              "properties": [
+                {
+                  "id": "color",
+                  "value": {
+                    "fixedColor": "#e15759",
+                    "mode": "fixed"
+                  }
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "Platform"
+              },
+              "properties": [
+                {
+                  "id": "color",
+                  "value": {
+                    "fixedColor": "#edc948",
+                    "mode": "fixed"
+                  }
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "Unselected"
+              },
+              "properties": [
+                {
+                  "id": "color",
+                  "value": {
+                    "fixedColor": "#b07aa1",
+                    "mode": "fixed"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "gridPos": {
+          "h": 14,
+          "w": 12,
+          "x": 0,
+          "y": 14
+        },
+        "id": 10,
+        "options": {
+          "displayLabels": [
+            "percent"
+          ],
+          "legend": {
+            "displayMode": "table",
+            "placement": "bottom",
+            "values": [
+              "value",
+              "percent"
+            ]
+          },
+          "pieType": "pie",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "tooltip": {
+            "mode": "single"
+          }
+        },
+        "targets": [
+          {
+            "expr": "sum(cmtc_namespace_decisions{job=\"cmtc\",cluster=~\"$cluster\",component=\"cmtc-controller\",decision=\"selected\"} @ end())",
+            "instant": true,
+            "legendFormat": "Selected",
+            "range": false,
+            "refId": "A"
+          },
+          {
+            "expr": "sum(cmtc_namespace_decisions{job=\"cmtc\",cluster=~\"$cluster\",component=\"cmtc-controller\",decision=\"excluded\"} @ end())",
+            "instant": true,
+            "legendFormat": "Excluded",
+            "range": false,
+            "refId": "B"
+          },
+          {
+            "expr": "sum(cmtc_namespace_decisions{job=\"cmtc\",cluster=~\"$cluster\",component=\"cmtc-controller\",decision=\"platform\"} @ end())",
+            "instant": true,
+            "legendFormat": "Platform",
+            "range": false,
+            "refId": "C"
+          },
+          {
+            "expr": "sum(cmtc_namespace_decisions{job=\"cmtc\",cluster=~\"$cluster\",component=\"cmtc-controller\",decision=\"unselected\"} @ end())",
+            "instant": true,
+            "legendFormat": "Unselected",
+            "range": false,
+            "refId": "D"
+          }
+        ],
+        "title": "Namespace decisions \u00b7 latest share",
+        "type": "piechart"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${DS_PROMETHEUS}"
+        },
+        "description": "Latest namespace decision gauges at range end, one row per cluster and decision. Zero is an observed empty category; a missing controller is not zero.",
+        "fieldConfig": {
+          "defaults": {
+            "decimals": 0,
+            "min": 0,
+            "unit": "short"
+          },
+          "overrides": [
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "Cluster"
+              },
+              "properties": [
+                {
+                  "id": "custom.width",
+                  "value": 115
+                },
+                {
+                  "id": "custom.cellOptions",
+                  "value": {
+                    "mode": "basic",
+                    "type": "color-background"
+                  }
+                },
+                {
+                  "id": "mappings",
+                  "value": [
+                    {
+                      "options": {
+                        "cmtc-a": {
+                          "color": "#4e79a7",
+                          "text": "cmtc-a"
+                        },
+                        "cmtc-b": {
+                          "color": "#e15759",
+                          "text": "cmtc-b"
+                        }
+                      },
+                      "type": "value"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "Decision"
+              },
+              "properties": [
+                {
+                  "id": "custom.cellOptions",
+                  "value": {
+                    "mode": "basic",
+                    "type": "color-background"
+                  }
+                },
+                {
+                  "id": "mappings",
+                  "value": [
+                    {
+                      "options": {
+                        "excluded": {
+                          "color": "#e15759",
+                          "text": "Excluded"
+                        },
+                        "platform": {
+                          "color": "#edc948",
+                          "text": "Platform"
+                        },
+                        "selected": {
+                          "color": "#4e79a7",
+                          "text": "Selected"
+                        },
+                        "unselected": {
+                          "color": "#b07aa1",
+                          "text": "Unselected"
+                        }
+                      },
+                      "type": "value"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        "gridPos": {
+          "h": 10,
+          "w": 12,
+          "x": 12,
+          "y": 14
+        },
+        "id": 11,
+        "options": {
+          "cellHeight": "sm",
+          "footer": {
+            "show": false
+          },
+          "showHeader": true
+        },
+        "targets": [
+          {
+            "expr": "sum by(cluster,decision) (cmtc_namespace_decisions{job=\"cmtc\",cluster=~\"$cluster\",component=\"cmtc-controller\"} @ end())",
+            "format": "table",
+            "instant": true,
+            "legendFormat": "",
+            "range": false,
+            "refId": "A"
+          }
+        ],
+        "title": "Namespace decisions by cluster",
+        "transformations": [
+          {
+            "id": "organize",
+            "options": {
+              "excludeByName": {
+                "Time": true
+              },
+              "indexByName": {
+                "Value": 2,
+                "cluster": 0,
+                "decision": 1
+              },
+              "renameByName": {
+                "Value": "Namespaces",
+                "cluster": "Cluster",
+                "decision": "Decision"
+              }
+            }
+          }
+        ],
+        "type": "table"
+      },
+      {
+        "description": "Visible context and scope; documented status is not a live health metric.",
+        "fieldConfig": {
+          "defaults": {
+            "min": 0,
+            "unit": "short"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 4,
+          "w": 12,
+          "x": 12,
+          "y": 24
+        },
+        "id": 12,
+        "options": {
+          "content": "**Selected** = policy intent. **Excluded** = explicit exclusion. **Platform** = protected infrastructure. **Unselected** = remaining namespaces.\n\nThe pie includes platform namespaces in its denominator. Non-platform inventory includes excluded namespaces. Enrollment labels are observed from any actor. None of these counts proves mTLS or Protected status.",
+          "mode": "markdown"
+        },
+        "title": "Read the namespace categories",
+        "type": "text"
+      },
+      {
+        "collapsed": false,
+        "gridPos": {
+          "h": 1,
+          "w": 24,
+          "x": 0,
+          "y": 28
+        },
+        "id": 13,
+        "panels": [],
+        "title": "Do controllers and node agents keep up?",
+        "type": "row"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${DS_PROMETHEUS}"
+        },
+        "description": "Latest successful scrapes at range end. The two-cluster lab expects six inventory/controller targets: two controllers plus four node agents. Opt-in fence targets are shown separately below. Filtered views have fewer targets. Read the target table for individual failures; this count is not an all-healthy verdict.",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "fixedColor": "#4e79a7",
+              "mode": "fixed"
+            },
+            "decimals": 0,
+            "min": 0,
+            "unit": "short"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 4,
+          "w": 12,
+          "x": 0,
+          "y": 29
+        },
+        "id": 14,
+        "options": {
+          "colorMode": "value",
+          "graphMode": "none",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "text": {
+            "valueSize": 40
+          },
+          "textMode": "value"
+        },
+        "targets": [
+          {
+            "expr": "sum(up{job=\"cmtc\",cluster=~\"$cluster\",component=~\"cmtc-controller|cmtc-node-agent\"} @ end())",
+            "instant": true,
+            "legendFormat": "",
+            "range": false,
+            "refId": "A"
+          }
+        ],
+        "title": "Inventory/controller targets reachable",
+        "type": "stat"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${DS_PROMETHEUS}"
+        },
+        "description": "Controller-runtime reconcile errors per second over the adaptive rate interval. An observed zero means no recorded errors; missing data is unavailable.",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "fixedColor": "#f28e2b",
+              "mode": "fixed"
+            },
+            "decimals": 3,
+            "min": 0,
+            "unit": "ops"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 4,
+          "w": 12,
+          "x": 12,
+          "y": 29
+        },
+        "id": 15,
+        "options": {
+          "colorMode": "value",
+          "graphMode": "none",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "text": {
+            "valueSize": 40
+          },
+          "textMode": "value"
+        },
+        "targets": [
+          {
+            "expr": "sum(rate(controller_runtime_reconcile_errors_total{job=\"cmtc\",cluster=~\"$cluster\",component=\"cmtc-controller\"}[$__rate_interval]))",
+            "instant": true,
+            "legendFormat": "",
+            "range": false,
+            "refId": "A"
+          }
+        ],
+        "title": "Controller reconcile errors/s",
+        "type": "stat"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${DS_PROMETHEUS}"
+        },
+        "description": "Successful CMTC policy evaluations per second over $__rate_interval. A fall to zero can mean idle work; it is not protection readiness. Missing metrics remain unavailable.",
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "drawStyle": "line",
+              "fillOpacity": 10,
+              "lineWidth": 1,
+              "showPoints": "never"
+            },
+            "min": 0,
+            "unit": "ops"
+          },
+          "overrides": [
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "cmtc-a"
+              },
+              "properties": [
+                {
+                  "id": "color",
+                  "value": {
+                    "fixedColor": "#4e79a7",
+                    "mode": "fixed"
+                  }
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "cmtc-b"
+              },
+              "properties": [
+                {
+                  "id": "color",
+                  "value": {
+                    "fixedColor": "#e15759",
+                    "mode": "fixed"
+                  }
+                },
+                {
+                  "id": "custom.lineStyle",
+                  "value": {
+                    "dash": [
+                      8,
+                      6
+                    ],
+                    "fill": "dash"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 33
+        },
+        "id": 16,
+        "options": {
+          "legend": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "displayMode": "list",
+            "placement": "bottom"
+          },
+          "tooltip": {
+            "mode": "multi",
+            "sort": "none"
+          }
+        },
+        "targets": [
+          {
+            "expr": "sum by(cluster) (rate(cmtc_policy_evaluations_total{job=\"cmtc\",cluster=~\"$cluster\",component=\"cmtc-controller\"}[$__rate_interval]))",
+            "instant": false,
+            "legendFormat": "{{cluster}}",
+            "range": true,
+            "refId": "A"
+          }
+        ],
+        "title": "Policy evaluations/s \u00b7 by cluster",
+        "type": "timeseries"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${DS_PROMETHEUS}"
+        },
+        "description": "95th-percentile controller-runtime reconcile duration from real histogram buckets, over $__rate_interval. It measures controller work, not network or TLS latency. No observations mean the percentile is unavailable.",
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "drawStyle": "line",
+              "fillOpacity": 10,
+              "lineWidth": 1,
+              "showPoints": "never"
+            },
+            "min": 0,
+            "unit": "s"
+          },
+          "overrides": [
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "cmtc-a"
+              },
+              "properties": [
+                {
+                  "id": "color",
+                  "value": {
+                    "fixedColor": "#4e79a7",
+                    "mode": "fixed"
+                  }
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "cmtc-b"
+              },
+              "properties": [
+                {
+                  "id": "color",
+                  "value": {
+                    "fixedColor": "#e15759",
+                    "mode": "fixed"
+                  }
+                },
+                {
+                  "id": "custom.lineStyle",
+                  "value": {
+                    "dash": [
+                      8,
+                      6
+                    ],
+                    "fill": "dash"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 33
+        },
+        "id": 17,
+        "options": {
+          "legend": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "displayMode": "list",
+            "placement": "bottom"
+          },
+          "tooltip": {
+            "mode": "multi",
+            "sort": "none"
+          }
+        },
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, sum by(cluster,le) (rate(controller_runtime_reconcile_time_seconds_bucket{job=\"cmtc\",cluster=~\"$cluster\",component=\"cmtc-controller\"}[$__rate_interval])))",
+            "instant": false,
+            "legendFormat": "{{cluster}}",
+            "range": true,
+            "refId": "A"
+          }
+        ],
+        "title": "Controller reconcile p95 \u00b7 seconds",
+        "type": "timeseries"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${DS_PROMETHEUS}"
+        },
+        "description": "Latest node-local pod inventory at range end. pod and host classify network mode. Counts are not protected pods or successful platform probes.",
+        "fieldConfig": {
+          "defaults": {
+            "decimals": 0,
+            "min": 0,
+            "unit": "short"
+          },
+          "overrides": [
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "Cluster"
+              },
+              "properties": [
+                {
+                  "id": "custom.width",
+                  "value": 115
+                },
+                {
+                  "id": "custom.cellOptions",
+                  "value": {
+                    "mode": "basic",
+                    "type": "color-background"
+                  }
+                },
+                {
+                  "id": "mappings",
+                  "value": [
+                    {
+                      "options": {
+                        "cmtc-a": {
+                          "color": "#4e79a7",
+                          "text": "cmtc-a"
+                        },
+                        "cmtc-b": {
+                          "color": "#e15759",
+                          "text": "cmtc-b"
+                        }
+                      },
+                      "type": "value"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        "gridPos": {
+          "h": 10,
+          "w": 12,
+          "x": 0,
+          "y": 41
+        },
+        "id": 18,
+        "options": {
+          "cellHeight": "sm",
+          "footer": {
+            "show": false
+          },
+          "showHeader": true
+        },
+        "targets": [
+          {
+            "expr": "sum by(cluster,node,network) (cmtc_pods_observed{job=\"cmtc\",cluster=~\"$cluster\",component=\"cmtc-node-agent\"} @ end())",
+            "format": "table",
+            "instant": true,
+            "legendFormat": "",
+            "range": false,
+            "refId": "A"
+          }
+        ],
+        "title": "Pod inventory by node",
+        "transformations": [
+          {
+            "id": "organize",
+            "options": {
+              "excludeByName": {
+                "Time": true
+              },
+              "indexByName": {
+                "Value": 3,
+                "cluster": 0,
+                "network": 2,
+                "node": 1
+              },
+              "renameByName": {
+                "Value": "Pods",
+                "cluster": "Cluster",
+                "network": "Network",
+                "node": "Node"
+              }
+            }
+          }
+        ],
+        "type": "table"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${DS_PROMETHEUS}"
+        },
+        "description": "Latest Prometheus target reachability at range end, with authoritative scrape cluster/component/node labels. UP does not establish workload or certificate readiness.",
+        "fieldConfig": {
+          "defaults": {
+            "decimals": 0,
+            "min": 0,
+            "unit": "short"
+          },
+          "overrides": [
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "Cluster"
+              },
+              "properties": [
+                {
+                  "id": "custom.width",
+                  "value": 115
+                },
+                {
+                  "id": "custom.cellOptions",
+                  "value": {
+                    "mode": "basic",
+                    "type": "color-background"
+                  }
+                },
+                {
+                  "id": "mappings",
+                  "value": [
+                    {
+                      "options": {
+                        "cmtc-a": {
+                          "color": "#4e79a7",
+                          "text": "cmtc-a"
+                        },
+                        "cmtc-b": {
+                          "color": "#e15759",
+                          "text": "cmtc-b"
+                        }
+                      },
+                      "type": "value"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "Scrape"
+              },
+              "properties": [
+                {
+                  "id": "custom.cellOptions",
+                  "value": {
+                    "type": "color-text"
+                  }
+                },
+                {
+                  "id": "mappings",
+                  "value": [
+                    {
+                      "options": {
+                        "0": {
+                          "color": "#e15759",
+                          "text": "DOWN"
+                        },
+                        "1": {
+                          "color": "#59a14f",
+                          "text": "UP"
+                        }
+                      },
+                      "type": "value"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        "gridPos": {
+          "h": 10,
+          "w": 12,
+          "x": 12,
+          "y": 41
+        },
+        "id": 19,
+        "options": {
+          "cellHeight": "sm",
+          "footer": {
+            "show": false
+          },
+          "showHeader": true
+        },
+        "targets": [
+          {
+            "expr": "max by(cluster,component,node) (up{job=\"cmtc\",cluster=~\"$cluster\",component=~\"cmtc-controller|cmtc-node-agent\"} @ end())",
+            "format": "table",
+            "instant": true,
+            "legendFormat": "",
+            "range": false,
+            "refId": "A"
+          }
+        ],
+        "title": "Inventory/controller targets \u00b7 current state",
+        "transformations": [
+          {
+            "id": "organize",
+            "options": {
+              "excludeByName": {
+                "Time": true
+              },
+              "indexByName": {
+                "Value": 3,
+                "cluster": 0,
+                "component": 1,
+                "node": 2
+              },
+              "renameByName": {
+                "Value": "Scrape",
+                "cluster": "Cluster",
+                "component": "Component",
+                "node": "Node"
+              }
+            }
+          }
+        ],
+        "type": "table"
+      },
+      {
+        "description": "Visible context and scope; documented status is not a live health metric.",
+        "fieldConfig": {
+          "defaults": {
+            "min": 0,
+            "unit": "short"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 3,
+          "w": 24,
+          "x": 0,
+          "y": 51
+        },
+        "id": 20,
+        "options": {
+          "content": "Rates use the adaptive scrape/zoom interval; lines start at zero, with solid blue cmtc-a and dashed red cmtc-b. Tables show the latest observations at range end. **hostNetwork inventory is not platform safety.** API, DNS, probe health, certificate rotation and layered encryption still require their own verified instrumentation.",
+          "mode": "markdown"
+        },
+        "title": "Inventory and controller telemetry boundaries",
+        "type": "text"
+      },
+      {
+        "collapsed": false,
+        "gridPos": {
+          "h": 1,
+          "w": 24,
+          "x": 0,
+          "y": 54
+        },
+        "id": 21,
+        "panels": [],
+        "title": "What is still awaiting security qualification?",
+        "type": "row"
+      },
+      {
+        "description": "Visible context and scope; documented status is not a live health metric.",
+        "fieldConfig": {
+          "defaults": {
+            "min": 0,
+            "unit": "short"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 10,
+          "w": 24,
+          "x": 0,
+          "y": 55
+        },
+        "id": 22,
+        "options": {
+          "content": "| Capability | Current evidence boundary |\n| --- | --- |\n| Namespace intent / node inventory | Live CMTC telemetry above; Observe remains read-only |\n| Workload mTLS / native DENY | Tested in the isolated two-node SPIRE fixture; see the separate mTLS evidence |\n| Persistent strict admission / authorization | Missing-policy, first-packet, finer caller permissions and restart/revocation gates remain open |\n| CA trust / rotation / remote identity | Public SVID validation demonstrated locally; rotation, issuer faults and cluster identity isolation remain open |\n| ClusterMesh / WireGuard / IPsec | Observe ClusterMesh baseline tested; cross-cluster workload mTLS and transport composition remain unqualified |\n| Kubernetes / OpenShift platform safety | Platform namespace exclusion implemented; required traffic/probe checks remain separate gates |\n\n**Missing security metrics are unknown.** No invented handshake, protected-pod, trust-ready or transport-success numbers are substituted. Planned panels below retain every original domain; their metrics will be implemented as the agile stories progress.",
+          "mode": "markdown"
+        },
+        "title": "Implementation status \u00b7 documented scope, not live health",
+        "type": "text"
+      },
+      {
+        "collapsed": false,
+        "gridPos": {
+          "h": 1,
+          "w": 24,
+          "x": 0,
+          "y": 65
+        },
+        "id": 30,
+        "panels": [],
+        "title": "Audited datapath quarantine \u00b7 opt-in lab only",
+        "type": "row"
+      },
+      {
+        "description": "Visible context and scope; documented status is not a live health metric.",
+        "fieldConfig": {
+          "defaults": {
+            "min": 0,
+            "unit": "short"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 4,
+          "w": 24,
+          "x": 0,
+          "y": 66
+        },
+        "id": 31,
+        "options": {
+          "content": "**One audited workload veth/hook per selected node.** These panels observe the opt-in deny-only DaemonSet, not whole-node traffic or workload mTLS. Packet retransmissions count; counters are not HTTP request totals. **No mTLS or Protected claim.**\n\nA fresh verified sample permits counters to be exported; stale/unverified samples omit counters and report verification 0. Missing exporter/scrape is unavailable. Exact pinned-map adoption retains counters; a newly installed map resets them. There is no meaningful success-percentage pie from these counters.",
+          "mode": "markdown"
+        },
+        "title": "Packet counters and quarantine scope",
+        "type": "text"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${DS_PROMETHEUS}"
+        },
+        "description": "Explicit deny-only disposable-veth prototype. Packets are not requests, connections or TLS handshakes. Missing telemetry remains unavailable; quarantine verification is not Protected or mTLS. Latest 0/1 sample at range end, filtered to reachable scrapes. Do not sum away individual failed or missing nodes.",
+        "fieldConfig": {
+          "defaults": {
+            "decimals": 0,
+            "min": 0,
+            "unit": "short"
+          },
+          "overrides": [
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "Cluster"
+              },
+              "properties": [
+                {
+                  "id": "custom.width",
+                  "value": 115
+                },
+                {
+                  "id": "custom.cellOptions",
+                  "value": {
+                    "mode": "basic",
+                    "type": "color-background"
+                  }
+                },
+                {
+                  "id": "mappings",
+                  "value": [
+                    {
+                      "options": {
+                        "cmtc-a": {
+                          "color": "#4e79a7",
+                          "text": "cmtc-a"
+                        },
+                        "cmtc-b": {
+                          "color": "#e15759",
+                          "text": "cmtc-b"
+                        }
+                      },
+                      "type": "value"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "Quarantine"
+              },
+              "properties": [
+                {
+                  "id": "mappings",
+                  "value": [
+                    {
+                      "options": {
+                        "0": {
+                          "color": "#f28e2b",
+                          "text": "Unverified"
+                        },
+                        "1": {
+                          "color": "#4e79a7",
+                          "text": "Quarantine verified"
+                        }
+                      },
+                      "type": "value"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 70
+        },
+        "id": 32,
+        "options": {
+          "cellHeight": "sm",
+          "footer": {
+            "show": false
+          },
+          "showHeader": true
+        },
+        "targets": [
+          {
+            "expr": "min by(cluster,node,direction) (cmtc_datapath_fence_quarantine_verified{job=\"cmtc\",cluster=~\"$cluster\",component=\"cmtc-bpf-fence\"} @ end()) and on(cluster,node) (up{job=\"cmtc\",cluster=~\"$cluster\",component=\"cmtc-bpf-fence\"} @ end() == 1)",
+            "format": "table",
+            "instant": true,
+            "legendFormat": "",
+            "range": false,
+            "refId": "A"
+          }
+        ],
+        "title": "Audited quarantine \u00b7 latest by node",
+        "transformations": [
+          {
+            "id": "organize",
+            "options": {
+              "excludeByName": {
+                "Time": true
+              },
+              "indexByName": {
+                "Value": 3,
+                "cluster": 0,
+                "direction": 2,
+                "node": 1
+              },
+              "renameByName": {
+                "Value": "Quarantine",
+                "cluster": "Cluster",
+                "direction": "Hook",
+                "node": "Node"
+              }
+            }
+          }
+        ],
+        "type": "table"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${DS_PROMETHEUS}"
+        },
+        "description": "Explicit deny-only disposable-veth prototype. Packets are not requests, connections or TLS handshakes. Missing telemetry remains unavailable; quarantine verification is not Protected or mTLS. Rate of actual TCX DROP packets over the adaptive scrape interval; an idle verified hook can report zero.",
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "drawStyle": "line",
+              "fillOpacity": 10,
+              "lineWidth": 1,
+              "showPoints": "never"
+            },
+            "min": 0,
+            "unit": "pps"
+          },
+          "overrides": [
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "cmtc-a"
+              },
+              "properties": [
+                {
+                  "id": "color",
+                  "value": {
+                    "fixedColor": "#4e79a7",
+                    "mode": "fixed"
+                  }
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "cmtc-b"
+              },
+              "properties": [
+                {
+                  "id": "color",
+                  "value": {
+                    "fixedColor": "#e15759",
+                    "mode": "fixed"
+                  }
+                },
+                {
+                  "id": "custom.lineStyle",
+                  "value": {
+                    "dash": [
+                      8,
+                      6
+                    ],
+                    "fill": "dash"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 70
+        },
+        "id": 33,
+        "options": {
+          "legend": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "displayMode": "list",
+            "placement": "bottom"
+          },
+          "tooltip": {
+            "mode": "multi",
+            "sort": "none"
+          }
+        },
+        "targets": [
+          {
+            "expr": "sum by(cluster) (rate(cmtc_datapath_fence_dropped_packets_total{job=\"cmtc\",cluster=~\"$cluster\",component=\"cmtc-bpf-fence\"}[$__rate_interval]))",
+            "instant": false,
+            "legendFormat": "{{cluster}}",
+            "range": true,
+            "refId": "A"
+          }
+        ],
+        "title": "Packets rejected by audited quarantine/s",
+        "type": "timeseries"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${DS_PROMETHEUS}"
+        },
+        "description": "Explicit deny-only disposable-veth prototype. Packets are not requests, connections or TLS handshakes. Missing telemetry remains unavailable; quarantine verification is not Protected or mTLS. Prometheus extrapolated selected-range packet increase; retransmits count. This is not an exact application-attempt ledger.",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "fixedColor": "#4e79a7",
+              "mode": "fixed"
+            },
+            "decimals": 1,
+            "min": 0,
+            "unit": "short"
+          },
+          "overrides": [
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "cmtc-a"
+              },
+              "properties": [
+                {
+                  "id": "color",
+                  "value": {
+                    "fixedColor": "#4e79a7",
+                    "mode": "fixed"
+                  }
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "cmtc-b"
+              },
+              "properties": [
+                {
+                  "id": "color",
+                  "value": {
+                    "fixedColor": "#e15759",
+                    "mode": "fixed"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "gridPos": {
+          "h": 6,
+          "w": 12,
+          "x": 0,
+          "y": 78
+        },
+        "id": 34,
+        "options": {
+          "colorMode": "value",
+          "graphMode": "none",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "text": {
+            "valueSize": 40
+          },
+          "textMode": "value_and_name"
+        },
+        "targets": [
+          {
+            "expr": "sum by(cluster) (increase(cmtc_datapath_fence_dropped_packets_total{job=\"cmtc\",cluster=~\"$cluster\",component=\"cmtc-bpf-fence\"}[$__range]))",
+            "instant": true,
+            "legendFormat": "{{cluster}}",
+            "range": false,
+            "refId": "A"
+          }
+        ],
+        "title": "Quarantine rejected packets \u00b7 selected range",
+        "type": "stat"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${DS_PROMETHEUS}"
+        },
+        "description": "Explicit deny-only disposable-veth prototype. Packets are not requests, connections or TLS handshakes. Missing telemetry remains unavailable; quarantine verification is not Protected or mTLS. skb byte lengths per second, including network headers; not payload or encrypted bytes.",
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "drawStyle": "line",
+              "fillOpacity": 10,
+              "lineWidth": 1,
+              "showPoints": "never"
+            },
+            "min": 0,
+            "unit": "Bps"
+          },
+          "overrides": [
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "cmtc-a"
+              },
+              "properties": [
+                {
+                  "id": "color",
+                  "value": {
+                    "fixedColor": "#4e79a7",
+                    "mode": "fixed"
+                  }
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "cmtc-b"
+              },
+              "properties": [
+                {
+                  "id": "color",
+                  "value": {
+                    "fixedColor": "#e15759",
+                    "mode": "fixed"
+                  }
+                },
+                {
+                  "id": "custom.lineStyle",
+                  "value": {
+                    "dash": [
+                      8,
+                      6
+                    ],
+                    "fill": "dash"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "gridPos": {
+          "h": 6,
+          "w": 12,
+          "x": 12,
+          "y": 78
+        },
+        "id": 35,
+        "options": {
+          "legend": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "displayMode": "list",
+            "placement": "bottom"
+          },
+          "tooltip": {
+            "mode": "multi",
+            "sort": "none"
+          }
+        },
+        "targets": [
+          {
+            "expr": "sum by(cluster) (rate(cmtc_datapath_fence_dropped_bytes_total{job=\"cmtc\",cluster=~\"$cluster\",component=\"cmtc-bpf-fence\"}[$__rate_interval]))",
+            "instant": false,
+            "legendFormat": "{{cluster}}",
+            "range": true,
+            "refId": "A"
+          }
+        ],
+        "title": "skb bytes rejected by quarantine/s",
+        "type": "timeseries"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${DS_PROMETHEUS}"
+        },
+        "description": "Explicit deny-only disposable-veth prototype. Packets are not requests, connections or TLS handshakes. Missing telemetry remains unavailable; quarantine verification is not Protected or mTLS. UP means only scrape reachable. Missing expected nodes must be checked against the explicit selected-node ledger; this table cannot invent a missing target.",
+        "fieldConfig": {
+          "defaults": {
+            "decimals": 0,
+            "min": 0,
+            "unit": "short"
+          },
+          "overrides": [
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "Cluster"
+              },
+              "properties": [
+                {
+                  "id": "custom.width",
+                  "value": 115
+                },
+                {
+                  "id": "custom.cellOptions",
+                  "value": {
+                    "mode": "basic",
+                    "type": "color-background"
+                  }
+                },
+                {
+                  "id": "mappings",
+                  "value": [
+                    {
+                      "options": {
+                        "cmtc-a": {
+                          "color": "#4e79a7",
+                          "text": "cmtc-a"
+                        },
+                        "cmtc-b": {
+                          "color": "#e15759",
+                          "text": "cmtc-b"
+                        }
+                      },
+                      "type": "value"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        "gridPos": {
+          "h": 8,
+          "w": 24,
+          "x": 0,
+          "y": 84
+        },
+        "id": 36,
+        "options": {
+          "cellHeight": "sm",
+          "footer": {
+            "show": false
+          },
+          "showHeader": true
+        },
+        "targets": [
+          {
+            "expr": "max by(cluster,node) (up{job=\"cmtc\",cluster=~\"$cluster\",component=\"cmtc-bpf-fence\"} @ end())",
+            "format": "table",
+            "instant": true,
+            "legendFormat": "",
+            "range": false,
+            "refId": "A"
+          }
+        ],
+        "title": "Fence metrics targets \u00b7 latest reachability",
+        "transformations": [
+          {
+            "id": "organize",
+            "options": {
+              "excludeByName": {
+                "Time": true
+              },
+              "indexByName": {
+                "Value": 2,
+                "cluster": 0,
+                "node": 1
+              },
+              "renameByName": {
+                "Value": "Scrape",
+                "cluster": "Cluster",
+                "node": "Node"
+              }
+            }
+          }
+        ],
+        "type": "table"
+      },
+      {
+        "collapsed": false,
+        "gridPos": {
+          "h": 1,
+          "w": 24,
+          "x": 0,
+          "y": 92
+        },
+        "id": 40,
+        "panels": [],
+        "title": "Audited packet observation \u00b7 opt-in lab only",
+        "type": "row"
+      },
+      {
+        "description": "Visible context and scope; documented status is not a live health metric.",
+        "fieldConfig": {
+          "defaults": {
+            "min": 0,
+            "unit": "short"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 4,
+          "w": 24,
+          "x": 0,
+          "y": 93
+        },
+        "id": 41,
+        "options": {
+          "content": "**Observer counts packets at an audited TCX hook before native Cilium makes its verdict.** It returns NEXT and does not allow/deny traffic itself. Native Cilium can still drop a counted packet. These are skb/packet totals, not HTTP attempts, connections or TLS handshakes.\n\nThe observer and deny-only fence have different hooks/lifecycles. They are qualified sequentially and cannot be combined into an outcome pie. Missing observer telemetry means it is not installed or not reporting; no successful zero is invented. A fresh idle observer can report zero, and unpinned maps reset on process/attachment restart.",
+          "mode": "markdown"
+        },
+        "title": "Read observation separately from quarantine",
+        "type": "text"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${DS_PROMETHEUS}"
+        },
+        "description": "Opt-in Observe prototype at one audited TCX hook per selected node, before native Cilium verdict. The observer returns NEXT, so its counters do not prove forwarding, a Cilium decision, requests, TLS or protection. Latest fresh0/1 sample at range end, filtered to reachable scrapes. Failed/missing expected nodes remain an explicit evidence gate.",
+        "fieldConfig": {
+          "defaults": {
+            "decimals": 0,
+            "min": 0,
+            "unit": "short"
+          },
+          "overrides": [
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "Cluster"
+              },
+              "properties": [
+                {
+                  "id": "custom.width",
+                  "value": 115
+                },
+                {
+                  "id": "custom.cellOptions",
+                  "value": {
+                    "mode": "basic",
+                    "type": "color-background"
+                  }
+                },
+                {
+                  "id": "mappings",
+                  "value": [
+                    {
+                      "options": {
+                        "cmtc-a": {
+                          "color": "#4e79a7",
+                          "text": "cmtc-a"
+                        },
+                        "cmtc-b": {
+                          "color": "#e15759",
+                          "text": "cmtc-b"
+                        }
+                      },
+                      "type": "value"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "Observation"
+              },
+              "properties": [
+                {
+                  "id": "mappings",
+                  "value": [
+                    {
+                      "options": {
+                        "0": {
+                          "color": "#f28e2b",
+                          "text": "Unverified"
+                        },
+                        "1": {
+                          "color": "#4e79a7",
+                          "text": "Observation verified"
+                        }
+                      },
+                      "type": "value"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 97
+        },
+        "id": 42,
+        "options": {
+          "cellHeight": "sm",
+          "footer": {
+            "show": false
+          },
+          "showHeader": true
+        },
+        "targets": [
+          {
+            "expr": "min by(cluster,node,direction) (cmtc_datapath_observer_ready{job=\"cmtc\",cluster=~\"$cluster\",component=\"cmtc-bpf-observer\"} @ end()) and on(cluster,node) (up{job=\"cmtc\",cluster=~\"$cluster\",component=\"cmtc-bpf-observer\"} @ end() == 1)",
+            "format": "table",
+            "instant": true,
+            "legendFormat": "",
+            "range": false,
+            "refId": "A"
+          }
+        ],
+        "title": "Audited observer \u00b7 latest by node",
+        "transformations": [
+          {
+            "id": "organize",
+            "options": {
+              "excludeByName": {
+                "Time": true
+              },
+              "indexByName": {
+                "Value": 3,
+                "cluster": 0,
+                "direction": 2,
+                "node": 1
+              },
+              "renameByName": {
+                "Value": "Observation",
+                "cluster": "Cluster",
+                "direction": "Hook",
+                "node": "Node"
+              }
+            }
+          }
+        ],
+        "type": "table"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${DS_PROMETHEUS}"
+        },
+        "description": "Opt-in Observe prototype at one audited TCX hook per selected node, before native Cilium verdict. The observer returns NEXT, so its counters do not prove forwarding, a Cilium decision, requests, TLS or protection. Packet rate over the adaptive scrape interval. Retransmits/non-HTTP traffic count; zero can mean idle. Missing/stale counters remain unavailable.",
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "drawStyle": "line",
+              "fillOpacity": 10,
+              "lineWidth": 1,
+              "showPoints": "never"
+            },
+            "min": 0,
+            "unit": "pps"
+          },
+          "overrides": [
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "cmtc-a"
+              },
+              "properties": [
+                {
+                  "id": "color",
+                  "value": {
+                    "fixedColor": "#4e79a7",
+                    "mode": "fixed"
+                  }
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "cmtc-b"
+              },
+              "properties": [
+                {
+                  "id": "color",
+                  "value": {
+                    "fixedColor": "#e15759",
+                    "mode": "fixed"
+                  }
+                },
+                {
+                  "id": "custom.lineStyle",
+                  "value": {
+                    "dash": [
+                      8,
+                      6
+                    ],
+                    "fill": "dash"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 97
+        },
+        "id": 43,
+        "options": {
+          "legend": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "displayMode": "list",
+            "placement": "bottom"
+          },
+          "tooltip": {
+            "mode": "multi",
+            "sort": "none"
+          }
+        },
+        "targets": [
+          {
+            "expr": "sum by(cluster) (rate(cmtc_datapath_observer_packets_total{job=\"cmtc\",cluster=~\"$cluster\",component=\"cmtc-bpf-observer\"}[$__rate_interval]))",
+            "instant": false,
+            "legendFormat": "{{cluster}}",
+            "range": true,
+            "refId": "A"
+          }
+        ],
+        "title": "Packets observed before Cilium verdict/s",
+        "type": "timeseries"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${DS_PROMETHEUS}"
+        },
+        "description": "Opt-in Observe prototype at one audited TCX hook per selected node, before native Cilium verdict. The observer returns NEXT, so its counters do not prove forwarding, a Cilium decision, requests, TLS or protection. skb byte lengths per second over the adaptive interval, including network headers; not payload or encrypted bytes.",
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "drawStyle": "line",
+              "fillOpacity": 10,
+              "lineWidth": 1,
+              "showPoints": "never"
+            },
+            "min": 0,
+            "unit": "Bps"
+          },
+          "overrides": [
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "cmtc-a"
+              },
+              "properties": [
+                {
+                  "id": "color",
+                  "value": {
+                    "fixedColor": "#4e79a7",
+                    "mode": "fixed"
+                  }
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "cmtc-b"
+              },
+              "properties": [
+                {
+                  "id": "color",
+                  "value": {
+                    "fixedColor": "#e15759",
+                    "mode": "fixed"
+                  }
+                },
+                {
+                  "id": "custom.lineStyle",
+                  "value": {
+                    "dash": [
+                      8,
+                      6
+                    ],
+                    "fill": "dash"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 105
+        },
+        "id": 44,
+        "options": {
+          "legend": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "displayMode": "list",
+            "placement": "bottom"
+          },
+          "tooltip": {
+            "mode": "multi",
+            "sort": "none"
+          }
+        },
+        "targets": [
+          {
+            "expr": "sum by(cluster) (rate(cmtc_datapath_observer_bytes_total{job=\"cmtc\",cluster=~\"$cluster\",component=\"cmtc-bpf-observer\"}[$__rate_interval]))",
+            "instant": false,
+            "legendFormat": "{{cluster}}",
+            "range": true,
+            "refId": "A"
+          }
+        ],
+        "title": "skb bytes observed before Cilium verdict/s",
+        "type": "timeseries"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${DS_PROMETHEUS}"
+        },
+        "description": "Opt-in Observe prototype at one audited TCX hook per selected node, before native Cilium verdict. The observer returns NEXT, so its counters do not prove forwarding, a Cilium decision, requests, TLS or protection. Latest scrape UP is reachability only. The two-worker observer qualification expects one selected worker per cluster; this is separate from the four-node fence profile.",
+        "fieldConfig": {
+          "defaults": {
+            "decimals": 0,
+            "min": 0,
+            "unit": "short"
+          },
+          "overrides": [
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "Cluster"
+              },
+              "properties": [
+                {
+                  "id": "custom.width",
+                  "value": 115
+                },
+                {
+                  "id": "custom.cellOptions",
+                  "value": {
+                    "mode": "basic",
+                    "type": "color-background"
+                  }
+                },
+                {
+                  "id": "mappings",
+                  "value": [
+                    {
+                      "options": {
+                        "cmtc-a": {
+                          "color": "#4e79a7",
+                          "text": "cmtc-a"
+                        },
+                        "cmtc-b": {
+                          "color": "#e15759",
+                          "text": "cmtc-b"
+                        }
+                      },
+                      "type": "value"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 105
+        },
+        "id": 45,
+        "options": {
+          "cellHeight": "sm",
+          "footer": {
+            "show": false
+          },
+          "showHeader": true
+        },
+        "targets": [
+          {
+            "expr": "max by(cluster,node) (up{job=\"cmtc\",cluster=~\"$cluster\",component=\"cmtc-bpf-observer\"} @ end())",
+            "format": "table",
+            "instant": true,
+            "legendFormat": "",
+            "range": false,
+            "refId": "A"
+          }
+        ],
+        "title": "Observer metrics targets \u00b7 latest reachability",
+        "transformations": [
+          {
+            "id": "organize",
+            "options": {
+              "excludeByName": {
+                "Time": true
+              },
+              "indexByName": {
+                "Value": 2,
+                "cluster": 0,
+                "node": 1
+              },
+              "renameByName": {
+                "Value": "Scrape",
+                "cluster": "Cluster",
+                "node": "Node"
+              }
+            }
+          }
+        ],
+        "type": "table"
+      },
+      {
+        "collapsed": false,
+        "gridPos": {
+          "h": 1,
+          "w": 24,
+          "x": 0,
+          "y": 113
+        },
+        "id": 100,
+        "panels": [],
+        "title": "Can workloads be verified as protected? \u00b7 planned",
+        "type": "row"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${DS_PROMETHEUS}"
+        },
+        "description": "Planned instrumentation; missing data means not implemented, never success. All required verified cluster gates satisfied for the current generation and freshness window. Mapped status/table; no sum that hides one failed or missing required gate. Proposed labels/source must be qualified in the delivering story. Metric contract: cmtc_cluster_ready",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "fixedColor": "#4e79a7",
+              "mode": "fixed"
+            },
+            "decimals": 0,
+            "mappings": [
+              {
+                "options": {
+                  "0": {
+                    "color": "#f28e2b",
+                    "text": "Not ready"
+                  },
+                  "1": {
+                    "color": "#59a14f",
+                    "text": "Verified"
+                  }
+                },
+                "type": "value"
+              }
+            ],
+            "min": 0,
+            "unit": "short"
+          },
+          "overrides": [
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "cmtc-a"
+              },
+              "properties": [
+                {
+                  "id": "color",
+                  "value": {
+                    "fixedColor": "#4e79a7",
+                    "mode": "fixed"
+                  }
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "cmtc-b"
+              },
+              "properties": [
+                {
+                  "id": "color",
+                  "value": {
+                    "fixedColor": "#e15759",
+                    "mode": "fixed"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "gridPos": {
+          "h": 7,
+          "w": 12,
+          "x": 0,
+          "y": 114
+        },
+        "id": 101,
+        "options": {
+          "colorMode": "value",
+          "graphMode": "none",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "text": {
+            "valueSize": 40
+          },
+          "textMode": "value_and_name"
+        },
+        "targets": [
+          {
+            "expr": "min by(cluster) (cmtc_cluster_ready{job=\"cmtc\",cluster=~\"$cluster\",component=~\"cmtc-controller|cmtc-node-agent\"} @ end())",
+            "instant": true,
+            "legendFormat": "{{cluster}}",
+            "range": false,
+            "refId": "A"
+          }
+        ],
+        "title": "Verified cluster gates \u00b7 planned",
+        "type": "stat"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${DS_PROMETHEUS}"
+        },
+        "description": "Planned instrumentation; missing data means not implemented, never success. Eligible current pods with fresh verified mandatory capture, identity and destination enforcement. Latest state count/table; no inference from enrollment or ACK. Proposed labels/source must be qualified in the delivering story. Metric contract: cmtc_pods_protected",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "fixedColor": "#4e79a7",
+              "mode": "fixed"
+            },
+            "decimals": 0,
+            "min": 0,
+            "unit": "short"
+          },
+          "overrides": [
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "cmtc-a"
+              },
+              "properties": [
+                {
+                  "id": "color",
+                  "value": {
+                    "fixedColor": "#4e79a7",
+                    "mode": "fixed"
+                  }
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "cmtc-b"
+              },
+              "properties": [
+                {
+                  "id": "color",
+                  "value": {
+                    "fixedColor": "#e15759",
+                    "mode": "fixed"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "gridPos": {
+          "h": 7,
+          "w": 12,
+          "x": 12,
+          "y": 114
+        },
+        "id": 102,
+        "options": {
+          "colorMode": "value",
+          "graphMode": "none",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "text": {
+            "valueSize": 40
+          },
+          "textMode": "value_and_name"
+        },
+        "targets": [
+          {
+            "expr": "sum by(cluster) (cmtc_pods_protected{job=\"cmtc\",cluster=~\"$cluster\",component=~\"cmtc-controller|cmtc-node-agent\"} @ end())",
+            "instant": true,
+            "legendFormat": "{{cluster}}",
+            "range": false,
+            "refId": "A"
+          }
+        ],
+        "title": "Pods protected \u00b7 planned",
+        "type": "stat"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${DS_PROMETHEUS}"
+        },
+        "description": "Planned instrumentation; missing data means not implemented, never success. Eligible current pods awaiting one or more required enforcement gates. Latest state count/table; exclusive with protected/failed states. Proposed labels/source must be qualified in the delivering story. Metric contract: cmtc_pods_pending",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "fixedColor": "#4e79a7",
+              "mode": "fixed"
+            },
+            "decimals": 0,
+            "min": 0,
+            "unit": "short"
+          },
+          "overrides": [
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "cmtc-a"
+              },
+              "properties": [
+                {
+                  "id": "color",
+                  "value": {
+                    "fixedColor": "#4e79a7",
+                    "mode": "fixed"
+                  }
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "cmtc-b"
+              },
+              "properties": [
+                {
+                  "id": "color",
+                  "value": {
+                    "fixedColor": "#e15759",
+                    "mode": "fixed"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "gridPos": {
+          "h": 7,
+          "w": 12,
+          "x": 0,
+          "y": 121
+        },
+        "id": 103,
+        "options": {
+          "colorMode": "value",
+          "graphMode": "none",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "text": {
+            "valueSize": 40
+          },
+          "textMode": "value_and_name"
+        },
+        "targets": [
+          {
+            "expr": "sum by(cluster) (cmtc_pods_pending{job=\"cmtc\",cluster=~\"$cluster\",component=~\"cmtc-controller|cmtc-node-agent\"} @ end())",
+            "instant": true,
+            "legendFormat": "{{cluster}}",
+            "range": false,
+            "refId": "A"
+          }
+        ],
+        "title": "Pods awaiting enforcement \u00b7 planned",
+        "type": "stat"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${DS_PROMETHEUS}"
+        },
+        "description": "Planned instrumentation; missing data means not implemented, never success. Current eligible pods in a failed enforcement state, not cumulative failure events. Latest state count/table; never rate() this gauge. Proposed labels/source must be qualified in the delivering story. Metric contract: cmtc_pods_enforcement_failed",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "fixedColor": "#4e79a7",
+              "mode": "fixed"
+            },
+            "decimals": 0,
+            "min": 0,
+            "unit": "short"
+          },
+          "overrides": [
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "cmtc-a"
+              },
+              "properties": [
+                {
+                  "id": "color",
+                  "value": {
+                    "fixedColor": "#4e79a7",
+                    "mode": "fixed"
+                  }
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "cmtc-b"
+              },
+              "properties": [
+                {
+                  "id": "color",
+                  "value": {
+                    "fixedColor": "#e15759",
+                    "mode": "fixed"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "gridPos": {
+          "h": 7,
+          "w": 12,
+          "x": 12,
+          "y": 121
+        },
+        "id": 104,
+        "options": {
+          "colorMode": "value",
+          "graphMode": "none",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "text": {
+            "valueSize": 40
+          },
+          "textMode": "value_and_name"
+        },
+        "targets": [
+          {
+            "expr": "sum by(cluster) (cmtc_pods_enforcement_failed{job=\"cmtc\",cluster=~\"$cluster\",component=~\"cmtc-controller|cmtc-node-agent\"} @ end())",
+            "instant": true,
+            "legendFormat": "{{cluster}}",
+            "range": false,
+            "refId": "A"
+          }
+        ],
+        "title": "Pods enforcement failed \u00b7 planned",
+        "type": "stat"
+      },
+      {
+        "collapsed": false,
+        "gridPos": {
+          "h": 1,
+          "w": 24,
+          "x": 0,
+          "y": 128
+        },
+        "id": 105,
+        "panels": [],
+        "title": "Are platform dependencies safe? \u00b7 planned",
+        "type": "row"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${DS_PROMETHEUS}"
+        },
+        "description": "Planned instrumentation; missing data means not implemented, never success. Latest fresh platform dependency check, with a bounded dependency label. Mapped table/status history per required dependency; missing dependency cannot pass aggregate readiness. Proposed labels/source must be qualified in the delivering story. Metric contract: cmtc_platform_dependency_healthy",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "fixedColor": "#4e79a7",
+              "mode": "fixed"
+            },
+            "decimals": 0,
+            "mappings": [
+              {
+                "options": {
+                  "0": {
+                    "color": "#f28e2b",
+                    "text": "Not ready"
+                  },
+                  "1": {
+                    "color": "#59a14f",
+                    "text": "Verified"
+                  }
+                },
+                "type": "value"
+              }
+            ],
+            "min": 0,
+            "unit": "short"
+          },
+          "overrides": [
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "cmtc-a"
+              },
+              "properties": [
+                {
+                  "id": "color",
+                  "value": {
+                    "fixedColor": "#4e79a7",
+                    "mode": "fixed"
+                  }
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "cmtc-b"
+              },
+              "properties": [
+                {
+                  "id": "color",
+                  "value": {
+                    "fixedColor": "#e15759",
+                    "mode": "fixed"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "gridPos": {
+          "h": 7,
+          "w": 12,
+          "x": 0,
+          "y": 129
+        },
+        "id": 106,
+        "options": {
+          "colorMode": "value",
+          "graphMode": "none",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "text": {
+            "valueSize": 40
+          },
+          "textMode": "value_and_name"
+        },
+        "targets": [
+          {
+            "expr": "cmtc_platform_dependency_healthy{job=\"cmtc\",cluster=~\"$cluster\",component=~\"cmtc-controller|cmtc-node-agent\"} @ end()",
+            "instant": true,
+            "legendFormat": "{{cluster}} \u00b7 {{dependency}}",
+            "range": false,
+            "refId": "A"
+          }
+        ],
+        "title": "Platform dependency health \u00b7 planned",
+        "type": "stat"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${DS_PROMETHEUS}"
+        },
+        "description": "Planned instrumentation; missing data means not implemented, never success. Latest fresh safe API connectivity/TLS probe result. Mapped latest state/history; not application mTLS or cluster-wide health. Proposed labels/source must be qualified in the delivering story. Metric contract: cmtc_apiserver_probe_success",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "fixedColor": "#4e79a7",
+              "mode": "fixed"
+            },
+            "decimals": 0,
+            "mappings": [
+              {
+                "options": {
+                  "0": {
+                    "color": "#f28e2b",
+                    "text": "Not ready"
+                  },
+                  "1": {
+                    "color": "#59a14f",
+                    "text": "Verified"
+                  }
+                },
+                "type": "value"
+              }
+            ],
+            "min": 0,
+            "unit": "short"
+          },
+          "overrides": [
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "cmtc-a"
+              },
+              "properties": [
+                {
+                  "id": "color",
+                  "value": {
+                    "fixedColor": "#4e79a7",
+                    "mode": "fixed"
+                  }
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "cmtc-b"
+              },
+              "properties": [
+                {
+                  "id": "color",
+                  "value": {
+                    "fixedColor": "#e15759",
+                    "mode": "fixed"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "gridPos": {
+          "h": 7,
+          "w": 12,
+          "x": 12,
+          "y": 129
+        },
+        "id": 107,
+        "options": {
+          "colorMode": "value",
+          "graphMode": "none",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "text": {
+            "valueSize": 40
+          },
+          "textMode": "value_and_name"
+        },
+        "targets": [
+          {
+            "expr": "min by(cluster) (cmtc_apiserver_probe_success{job=\"cmtc\",cluster=~\"$cluster\",component=~\"cmtc-controller|cmtc-node-agent\"} @ end())",
+            "instant": true,
+            "legendFormat": "{{cluster}}",
+            "range": false,
+            "refId": "A"
+          }
+        ],
+        "title": "API probe result \u00b7 planned",
+        "type": "stat"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${DS_PROMETHEUS}"
+        },
+        "description": "Planned instrumentation; missing data means not implemented, never success. Aborted rollout events with bounded reason/profile labels. Aborts/s or selected-range increase; distinguish current rollout state. Proposed labels/source must be qualified in the delivering story. Metric contract: cmtc_rollout_aborted_total",
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "drawStyle": "line",
+              "fillOpacity": 10,
+              "lineWidth": 1,
+              "showPoints": "never"
+            },
+            "min": 0,
+            "unit": "ops"
+          },
+          "overrides": [
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "cmtc-a"
+              },
+              "properties": [
+                {
+                  "id": "color",
+                  "value": {
+                    "fixedColor": "#4e79a7",
+                    "mode": "fixed"
+                  }
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "cmtc-b"
+              },
+              "properties": [
+                {
+                  "id": "color",
+                  "value": {
+                    "fixedColor": "#e15759",
+                    "mode": "fixed"
+                  }
+                },
+                {
+                  "id": "custom.lineStyle",
+                  "value": {
+                    "dash": [
+                      8,
+                      6
+                    ],
+                    "fill": "dash"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "gridPos": {
+          "h": 7,
+          "w": 12,
+          "x": 0,
+          "y": 136
+        },
+        "id": 108,
+        "options": {
+          "legend": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "displayMode": "list",
+            "placement": "bottom"
+          },
+          "tooltip": {
+            "mode": "multi",
+            "sort": "none"
+          }
+        },
+        "targets": [
+          {
+            "expr": "sum by(cluster) (rate(cmtc_rollout_aborted_total{job=\"cmtc\",cluster=~\"$cluster\",component=~\"cmtc-controller|cmtc-node-agent\"}[$__rate_interval]))",
+            "instant": false,
+            "legendFormat": "{{cluster}}",
+            "range": true,
+            "refId": "A"
+          }
+        ],
+        "title": "Rollouts aborted/s \u00b7 planned",
+        "type": "timeseries"
+      },
+      {
+        "collapsed": false,
+        "gridPos": {
+          "h": 1,
+          "w": 24,
+          "x": 0,
+          "y": 143
+        },
+        "id": 109,
+        "panels": [],
+        "title": "Are enrollment and node configurations drifting? \u00b7 planned",
+        "type": "row"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${DS_PROMETHEUS}"
+        },
+        "description": "Planned instrumentation; missing data means not implemented, never success. Detected enrollment-label drift episodes under a defined deduplication boundary. Event rate/range increase; not the number of namespaces currently drifting. Proposed labels/source must be qualified in the delivering story. Metric contract: cmtc_namespace_label_drift_total",
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "drawStyle": "line",
+              "fillOpacity": 10,
+              "lineWidth": 1,
+              "showPoints": "never"
+            },
+            "min": 0,
+            "unit": "ops"
+          },
+          "overrides": [
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "cmtc-a"
+              },
+              "properties": [
+                {
+                  "id": "color",
+                  "value": {
+                    "fixedColor": "#4e79a7",
+                    "mode": "fixed"
+                  }
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "cmtc-b"
+              },
+              "properties": [
+                {
+                  "id": "color",
+                  "value": {
+                    "fixedColor": "#e15759",
+                    "mode": "fixed"
+                  }
+                },
+                {
+                  "id": "custom.lineStyle",
+                  "value": {
+                    "dash": [
+                      8,
+                      6
+                    ],
+                    "fill": "dash"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "gridPos": {
+          "h": 7,
+          "w": 12,
+          "x": 0,
+          "y": 144
+        },
+        "id": 110,
+        "options": {
+          "legend": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "displayMode": "list",
+            "placement": "bottom"
+          },
+          "tooltip": {
+            "mode": "multi",
+            "sort": "none"
+          }
+        },
+        "targets": [
+          {
+            "expr": "sum by(cluster) (rate(cmtc_namespace_label_drift_total{job=\"cmtc\",cluster=~\"$cluster\",component=~\"cmtc-controller|cmtc-node-agent\"}[$__rate_interval]))",
+            "instant": false,
+            "legendFormat": "{{cluster}}",
+            "range": true,
+            "refId": "A"
+          }
+        ],
+        "title": "Enrollment label drift/s \u00b7 planned",
+        "type": "timeseries"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${DS_PROMETHEUS}"
+        },
+        "description": "Planned instrumentation; missing data means not implemented, never success. Detected node desired/applied configuration drift episodes. Event rate/range increase; current drift is a distinct status. Proposed labels/source must be qualified in the delivering story. Metric contract: cmtc_node_config_drift_total",
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "drawStyle": "line",
+              "fillOpacity": 10,
+              "lineWidth": 1,
+              "showPoints": "never"
+            },
+            "min": 0,
+            "unit": "ops"
+          },
+          "overrides": [
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "cmtc-a"
+              },
+              "properties": [
+                {
+                  "id": "color",
+                  "value": {
+                    "fixedColor": "#4e79a7",
+                    "mode": "fixed"
+                  }
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "cmtc-b"
+              },
+              "properties": [
+                {
+                  "id": "color",
+                  "value": {
+                    "fixedColor": "#e15759",
+                    "mode": "fixed"
+                  }
+                },
+                {
+                  "id": "custom.lineStyle",
+                  "value": {
+                    "dash": [
+                      8,
+                      6
+                    ],
+                    "fill": "dash"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "gridPos": {
+          "h": 7,
+          "w": 12,
+          "x": 12,
+          "y": 144
+        },
+        "id": 111,
+        "options": {
+          "legend": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "displayMode": "list",
+            "placement": "bottom"
+          },
+          "tooltip": {
+            "mode": "multi",
+            "sort": "none"
+          }
+        },
+        "targets": [
+          {
+            "expr": "sum by(cluster) (rate(cmtc_node_config_drift_total{job=\"cmtc\",cluster=~\"$cluster\",component=~\"cmtc-controller|cmtc-node-agent\"}[$__rate_interval]))",
+            "instant": false,
+            "legendFormat": "{{cluster}}",
+            "range": true,
+            "refId": "A"
+          }
+        ],
+        "title": "Node configuration drift/s \u00b7 planned",
+        "type": "timeseries"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${DS_PROMETHEUS}"
+        },
+        "description": "Planned instrumentation; missing data means not implemented, never success. Fresh proxy-process/configuration readiness at a stated boundary. Mapped table/status history; proxy readiness alone does not establish Protected. Proposed labels/source must be qualified in the delivering story. Metric contract: cmtc_ztunnel_ready",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "fixedColor": "#4e79a7",
+              "mode": "fixed"
+            },
+            "decimals": 0,
+            "mappings": [
+              {
+                "options": {
+                  "0": {
+                    "color": "#f28e2b",
+                    "text": "Not ready"
+                  },
+                  "1": {
+                    "color": "#59a14f",
+                    "text": "Verified"
+                  }
+                },
+                "type": "value"
+              }
+            ],
+            "min": 0,
+            "unit": "short"
+          },
+          "overrides": [
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "cmtc-a"
+              },
+              "properties": [
+                {
+                  "id": "color",
+                  "value": {
+                    "fixedColor": "#4e79a7",
+                    "mode": "fixed"
+                  }
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "cmtc-b"
+              },
+              "properties": [
+                {
+                  "id": "color",
+                  "value": {
+                    "fixedColor": "#e15759",
+                    "mode": "fixed"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "gridPos": {
+          "h": 7,
+          "w": 12,
+          "x": 0,
+          "y": 151
+        },
+        "id": 112,
+        "options": {
+          "colorMode": "value",
+          "graphMode": "none",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "text": {
+            "valueSize": 40
+          },
+          "textMode": "value_and_name"
+        },
+        "targets": [
+          {
+            "expr": "min by(cluster) (cmtc_ztunnel_ready{job=\"cmtc\",cluster=~\"$cluster\",component=~\"cmtc-controller|cmtc-node-agent\"} @ end())",
+            "instant": true,
+            "legendFormat": "{{cluster}}",
+            "range": false,
+            "refId": "A"
+          }
+        ],
+        "title": "Proxy configuration ready \u00b7 planned",
+        "type": "stat"
+      }
+    ],
+    "refresh": "5s",
+    "schemaVersion": 41,
+    "tags": [
+      "cmtc",
+      "observe"
+    ],
+    "templating": {
+      "list": [
+        {
+          "current": {
+            "text": "CMTC Prometheus",
+            "value": "cmtc-prom"
+          },
+          "name": "DS_PROMETHEUS",
+          "query": "prometheus",
+          "type": "datasource"
+        },
+        {
+          "allValue": ".*",
+          "current": {
+            "text": "All",
+            "value": "$__all"
+          },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "includeAll": true,
+          "label": "Cluster",
+          "multi": true,
+          "name": "cluster",
+          "query": {
+            "query": "label_values(cmtc_enforcement_available{job=\"cmtc\",component=\"cmtc-controller\"},cluster)",
+            "refId": "ClusterVariable"
+          },
+          "refresh": 1,
+          "type": "query"
+        }
+      ]
+    },
+    "time": {
+      "from": "now-15m",
+      "to": "now"
+    },
+    "timezone": "utc",
+    "title": "CMTC | Operations",
+    "uid": "cmtc-observe-lab",
+    "version": 3
+  },
+  "workload-security.json": {
+    "annotations": {
+      "list": []
+    },
+    "description": "Native two-node mTLS trial plus retained TLS, trust, transport and violation panels. Planned instrumentation is explicitly unavailable; TCP starts are not TLS handshakes.",
+    "editable": false,
+    "id": 3,
+    "panels": [
+      {
+        "description": "Experimental scope, demonstrated paths and explicit remaining security gates.",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "unit": "short"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 7,
+          "w": 24,
+          "x": 0,
+          "y": 0
+        },
+        "id": 1,
+        "options": {
+          "content": "**Native panels: isolated cmtc-mtls fixture only.** The Cluster selector affects planned CMTC panels below. **Planned panels: not implemented; No data is expected until their stories land.**\n\n**Two nodes \u00b7 no application sidecars \u00b7 no CNP / CCNP / KNP.** Native authentication checks reject an absent verified TLS principal, without an application-port list.\n\n**Locally tested paths:** mTLS on 80 / 8080 / 9443 and Service 18080 \u2192 8080; unenrolled and host clients receive no HTTP response. Independent request and restart-probe results belong to the recorded run; the panels show the selected time range.\n\n**Open gates:** effective workload authorization, creation/restore capture, platform exceptions, cross-cluster and transport composition. **Complete Protected status is not claimed.**",
+          "mode": "markdown"
+        },
+        "title": "Native authenticated-only trial \u2014 no application-port list",
+        "type": "text"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cmtc-prom"
+        },
+        "description": "Destination-reported TCP opens after peer TLS authentication, with connection_security_policy=mutual_tls. Counter increase over the selected time range, handling resets and extrapolated by Prometheus. Not HTTP requests, successful application responses, or TLS handshakes; authenticated connections can still be denied by authorization policy.",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "fixedColor": "#59a14f",
+              "mode": "fixed"
+            },
+            "decimals": 0,
+            "min": 0,
+            "unit": "short"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 4,
+          "w": 8,
+          "x": 0,
+          "y": 7
+        },
+        "id": 3,
+        "options": {
+          "colorMode": "value",
+          "graphMode": "none",
+          "orientation": "auto",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "text": {
+            "valueSize": 48
+          },
+          "textMode": "auto"
+        },
+        "targets": [
+          {
+            "expr": "(sum(increase(istio_tcp_connections_opened_total{job=\"cmtc-spire-ztunnel\",cluster=\"cmtc-mtls\",reporter=\"destination\",destination_workload_namespace=\"mtls-spike\",connection_security_policy=\"mutual_tls\"}[${__range_ms}ms] @ end())) or on() (0 * sum(increase(istio_tcp_connections_opened_total{job=\"cmtc-spire-ztunnel\",cluster=\"cmtc-mtls\",reporter=\"destination\",destination_workload_namespace=\"mtls-spike\"}[${__range_ms}ms] @ end())))) and on() (sum(up{job=\"cmtc-spire-ztunnel\",cluster=\"cmtc-mtls\"} @ end()) == 2)",
+            "instant": true,
+            "legendFormat": "",
+            "range": false,
+            "refId": "A"
+          }
+        ],
+        "title": "mTLS TCP connections started",
+        "type": "stat"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cmtc-prom"
+        },
+        "description": "Destination-reported TCP opens without a verified mTLS peer. Incremented before authorization, including attempts later rejected. Counter increase over the selected time range, handling resets and extrapolated by Prometheus. Does not establish accepted plaintext or count HTTP requests.",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "fixedColor": "#f28e2b",
+              "mode": "fixed"
+            },
+            "decimals": 0,
+            "min": 0,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "orange",
+                  "value": null
+                }
+              ]
+            },
+            "unit": "short"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 4,
+          "w": 8,
+          "x": 8,
+          "y": 7
+        },
+        "id": 4,
+        "options": {
+          "colorMode": "value",
+          "graphMode": "none",
+          "orientation": "auto",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "text": {
+            "valueSize": 48
+          },
+          "textMode": "auto"
+        },
+        "targets": [
+          {
+            "expr": "(sum(increase(istio_tcp_connections_opened_total{job=\"cmtc-spire-ztunnel\",cluster=\"cmtc-mtls\",reporter=\"destination\",destination_workload_namespace=\"mtls-spike\",connection_security_policy!=\"mutual_tls\"}[${__range_ms}ms] @ end())) or on() (0 * sum(increase(istio_tcp_connections_opened_total{job=\"cmtc-spire-ztunnel\",cluster=\"cmtc-mtls\",reporter=\"destination\",destination_workload_namespace=\"mtls-spike\"}[${__range_ms}ms] @ end())))) and on() (sum(up{job=\"cmtc-spire-ztunnel\",cluster=\"cmtc-mtls\"} @ end()) == 2)",
+            "instant": true,
+            "legendFormat": "",
+            "range": false,
+            "refId": "A"
+          }
+        ],
+        "title": "TCP attempts without verified mTLS",
+        "type": "stat"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cmtc-prom"
+        },
+        "description": "Actual destination-reported native failed TCP counter with response_flags=DENY, regardless of authentication state. These rejections overlap the attempted connection counters; never add this stat to TCP attempts to form a total. Counter increase over the selected time range, handling resets and extrapolated by Prometheus.",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "fixedColor": "#f28e2b",
+              "mode": "fixed"
+            },
+            "decimals": 0,
+            "min": 0,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "orange",
+                  "value": null
+                }
+              ]
+            },
+            "unit": "short"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 4,
+          "w": 8,
+          "x": 16,
+          "y": 7
+        },
+        "id": 10,
+        "options": {
+          "colorMode": "value",
+          "graphMode": "none",
+          "orientation": "auto",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "text": {
+            "valueSize": 48
+          },
+          "textMode": "auto"
+        },
+        "targets": [
+          {
+            "expr": "(sum(increase(istio_tcp_connections_failed_total{job=\"cmtc-spire-ztunnel\",cluster=\"cmtc-mtls\",reporter=\"destination\",destination_workload_namespace=\"mtls-spike\",response_flags=\"DENY\"}[${__range_ms}ms] @ end())) or on() (0 * sum(increase(istio_tcp_connections_opened_total{job=\"cmtc-spire-ztunnel\",cluster=\"cmtc-mtls\",reporter=\"destination\",destination_workload_namespace=\"mtls-spike\"}[${__range_ms}ms] @ end())))) and on() (sum(up{job=\"cmtc-spire-ztunnel\",cluster=\"cmtc-mtls\"} @ end()) == 2)",
+            "instant": true,
+            "legendFormat": "",
+            "range": false,
+            "refId": "A"
+          }
+        ],
+        "title": "Connections rejected by policy \u2014 DENY",
+        "type": "stat"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cmtc-prom"
+        },
+        "description": "Last scrape UP count at the selected range end; expected 2. This measures metrics reachability, not verified workload protection. Missing data is unavailable.",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "decimals": 0,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "#e15759",
+                  "value": null
+                },
+                {
+                  "color": "#f28e2b",
+                  "value": 1
+                },
+                {
+                  "color": "#59a14f",
+                  "value": 2
+                }
+              ]
+            },
+            "unit": "short"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 4,
+          "w": 6,
+          "x": 0,
+          "y": 11
+        },
+        "id": 2,
+        "options": {
+          "colorMode": "value",
+          "graphMode": "none",
+          "orientation": "auto",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "text": {
+            "valueSize": 48
+          },
+          "textMode": "auto"
+        },
+        "targets": [
+          {
+            "expr": "sum(up{job=\"cmtc-spire-ztunnel\",cluster=\"cmtc-mtls\"})",
+            "instant": true,
+            "legendFormat": "",
+            "range": false,
+            "refId": "A"
+          }
+        ],
+        "title": "ztunnel metrics targets UP \u00b7 expected 2",
+        "type": "stat"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cmtc-prom"
+        },
+        "description": "Source-reported mTLS application bytes sent per second at the range end; $__rate_interval adapts to the scrape interval and zoom. Positive load produces a positive rate; zero means no measured payload, missing data is unavailable. Does not count HTTP requests or TLS wire overhead.",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "fixedColor": "#4e79a7",
+              "mode": "fixed"
+            },
+            "unit": "Bps"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 4,
+          "w": 6,
+          "x": 6,
+          "y": 11
+        },
+        "id": 5,
+        "options": {
+          "colorMode": "value",
+          "graphMode": "none",
+          "orientation": "auto",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "text": {
+            "valueSize": 48
+          },
+          "textMode": "auto"
+        },
+        "targets": [
+          {
+            "expr": "sum(rate(istio_tcp_sent_bytes_total{job=\"cmtc-spire-ztunnel\",cluster=\"cmtc-mtls\",connection_security_policy=\"mutual_tls\",destination_workload_namespace=\"mtls-spike\",reporter=\"source\"}[$__rate_interval]))",
+            "instant": true,
+            "legendFormat": "",
+            "range": false,
+            "refId": "A"
+          }
+        ],
+        "title": "mTLS application bytes sent/s \u00b7 source",
+        "type": "stat"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cmtc-prom"
+        },
+        "description": "Percent of destination-reported completed TCP attempts in the selected time range, using increase(istio_tcp_connections_closed_total). Each connection belongs to exactly one category; source reports are excluded to prevent double counting. No failure flag does not prove HTTP success. Excludes in-flight connections and early failures without a completed TCP record. These are TCP connections, not HTTP requests or TLS handshakes. Counter increases handle resets and are extrapolated estimates. Zero categories require observed closed-counter telemetry and both node scrapes UP; missing telemetry remains unavailable. Headline totals use this selected range but count TCP opens or failures; the pie counts completed records. They can differ for in-flight connections.",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "decimals": 1,
+            "min": 0,
+            "unit": "short"
+          },
+          "overrides": [
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "mTLS \u00b7 no failure flag"
+              },
+              "properties": [
+                {
+                  "id": "color",
+                  "value": {
+                    "fixedColor": "#59a14f",
+                    "mode": "fixed"
+                  }
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "Unauthenticated blocked"
+              },
+              "properties": [
+                {
+                  "id": "color",
+                  "value": {
+                    "fixedColor": "#f28e2b",
+                    "mode": "fixed"
+                  }
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "Authenticated denied"
+              },
+              "properties": [
+                {
+                  "id": "color",
+                  "value": {
+                    "fixedColor": "#edc948",
+                    "mode": "fixed"
+                  }
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "Unverified \u00b7 no failure flag"
+              },
+              "properties": [
+                {
+                  "id": "color",
+                  "value": {
+                    "fixedColor": "#e15759",
+                    "mode": "fixed"
+                  }
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "Other failures"
+              },
+              "properties": [
+                {
+                  "id": "color",
+                  "value": {
+                    "fixedColor": "#b07aa1",
+                    "mode": "fixed"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "gridPos": {
+          "h": 14,
+          "w": 12,
+          "x": 12,
+          "y": 11
+        },
+        "id": 11,
+        "options": {
+          "displayLabels": [
+            "percent"
+          ],
+          "legend": {
+            "displayMode": "table",
+            "placement": "bottom",
+            "values": [
+              "value",
+              "percent"
+            ]
+          },
+          "pieType": "pie",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "tooltip": {
+            "mode": "single",
+            "sort": "desc"
+          }
+        },
+        "targets": [
+          {
+            "expr": "(sum(increase(istio_tcp_connections_closed_total{job=\"cmtc-spire-ztunnel\",cluster=\"cmtc-mtls\",reporter=\"destination\",destination_workload_namespace=\"mtls-spike\",connection_security_policy=\"mutual_tls\",response_flags=\"-\"}[${__range_ms}ms] @ end())) or on() (0 * sum(increase(istio_tcp_connections_closed_total{job=\"cmtc-spire-ztunnel\",cluster=\"cmtc-mtls\",reporter=\"destination\",destination_workload_namespace=\"mtls-spike\"}[${__range_ms}ms] @ end())))) and on() (sum(up{job=\"cmtc-spire-ztunnel\",cluster=\"cmtc-mtls\"} @ end()) == 2)",
+            "instant": true,
+            "legendFormat": "mTLS \u00b7 no failure flag",
+            "range": false,
+            "refId": "A"
+          },
+          {
+            "expr": "(sum(increase(istio_tcp_connections_closed_total{job=\"cmtc-spire-ztunnel\",cluster=\"cmtc-mtls\",reporter=\"destination\",destination_workload_namespace=\"mtls-spike\",connection_security_policy!=\"mutual_tls\",response_flags=\"DENY\"}[${__range_ms}ms] @ end())) or on() (0 * sum(increase(istio_tcp_connections_closed_total{job=\"cmtc-spire-ztunnel\",cluster=\"cmtc-mtls\",reporter=\"destination\",destination_workload_namespace=\"mtls-spike\"}[${__range_ms}ms] @ end())))) and on() (sum(up{job=\"cmtc-spire-ztunnel\",cluster=\"cmtc-mtls\"} @ end()) == 2)",
+            "instant": true,
+            "legendFormat": "Unauthenticated blocked",
+            "range": false,
+            "refId": "B"
+          },
+          {
+            "expr": "(sum(increase(istio_tcp_connections_closed_total{job=\"cmtc-spire-ztunnel\",cluster=\"cmtc-mtls\",reporter=\"destination\",destination_workload_namespace=\"mtls-spike\",connection_security_policy=\"mutual_tls\",response_flags=\"DENY\"}[${__range_ms}ms] @ end())) or on() (0 * sum(increase(istio_tcp_connections_closed_total{job=\"cmtc-spire-ztunnel\",cluster=\"cmtc-mtls\",reporter=\"destination\",destination_workload_namespace=\"mtls-spike\"}[${__range_ms}ms] @ end())))) and on() (sum(up{job=\"cmtc-spire-ztunnel\",cluster=\"cmtc-mtls\"} @ end()) == 2)",
+            "instant": true,
+            "legendFormat": "Authenticated denied",
+            "range": false,
+            "refId": "C"
+          },
+          {
+            "expr": "(sum(increase(istio_tcp_connections_closed_total{job=\"cmtc-spire-ztunnel\",cluster=\"cmtc-mtls\",reporter=\"destination\",destination_workload_namespace=\"mtls-spike\",connection_security_policy!=\"mutual_tls\",response_flags=\"-\"}[${__range_ms}ms] @ end())) or on() (0 * sum(increase(istio_tcp_connections_closed_total{job=\"cmtc-spire-ztunnel\",cluster=\"cmtc-mtls\",reporter=\"destination\",destination_workload_namespace=\"mtls-spike\"}[${__range_ms}ms] @ end())))) and on() (sum(up{job=\"cmtc-spire-ztunnel\",cluster=\"cmtc-mtls\"} @ end()) == 2)",
+            "instant": true,
+            "legendFormat": "Unverified \u00b7 no failure flag",
+            "range": false,
+            "refId": "D"
+          },
+          {
+            "expr": "(sum(increase(istio_tcp_connections_closed_total{job=\"cmtc-spire-ztunnel\",cluster=\"cmtc-mtls\",reporter=\"destination\",destination_workload_namespace=\"mtls-spike\",response_flags!=\"-\",response_flags!=\"DENY\"}[${__range_ms}ms] @ end())) or on() (0 * sum(increase(istio_tcp_connections_closed_total{job=\"cmtc-spire-ztunnel\",cluster=\"cmtc-mtls\",reporter=\"destination\",destination_workload_namespace=\"mtls-spike\"}[${__range_ms}ms] @ end())))) and on() (sum(up{job=\"cmtc-spire-ztunnel\",cluster=\"cmtc-mtls\"} @ end()) == 2)",
+            "instant": true,
+            "legendFormat": "Other failures",
+            "range": false,
+            "refId": "E"
+          }
+        ],
+        "title": "Completed TCP attempts \u00b7 share by outcome",
+        "type": "piechart"
+      },
+      {
+        "description": "Independent HTTP, identity, packet and retry checks supplement TCP metrics; links retain the remaining acceptance gates.",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "unit": "short"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 10,
+          "w": 12,
+          "x": 0,
+          "y": 15
+        },
+        "id": 9,
+        "options": {
+          "content": "**Historical baseline \u2014 2026-10-24, agent `f052d1276b`:** 6,000/6,000 HTTP 200 under mTLS load; 900/900 unenrolled attempts rejected. SPIRE outage: six retries, no false ACK, authenticated ACK after recovery. [Baseline outputs and pins](https://github.com/ephico2real2/clustermesh-trust-controller/blob/1c192a5ee84fb5218cb1385fdd9c5bf45ca69e1a/2026-10-24T0509Z-local-authenticated-only-f052d127/README.md).\n\n**Selected range:** the live counter estimates above are separate from that baseline. Check the matching run report for deployed source/image pins, exact HTTP counts and independent identity/packet evidence.\n\n**Native table:** lifetime counters, not range totals. `unknown` = no verified mesh principal; `DENY` = policy rejection; `-` = no failure flag. [Remaining acceptance: issue #8](https://github.com/ephico2real2/clustermesh-trust-controller/issues/8).",
+          "mode": "markdown"
+        },
+        "title": "Scope and independent evidence",
+        "type": "text"
+      },
+      {
+        "description": "Visible counter and percentage definitions; exact source and remaining security gates are below.",
+        "fieldConfig": {
+          "defaults": {},
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 4,
+          "w": 24,
+          "x": 0,
+          "y": 25
+        },
+        "id": 12,
+        "options": {
+          "content": "**Selected range:** the three totals are counter increases, estimated across resets. Attempts without verified mTLS **include later DENY rejections**; never add DENY to attempts.\n\n**Pie:** one destination record per **completed TCP attempt** in this range; five exclusive outcomes total 100%. In-flight connections and early unrecorded failures are excluded. No failure flag does not prove HTTP success. **TCP connections \u2260 HTTP requests \u2260 TLS handshakes.**",
+          "mode": "markdown"
+        },
+        "title": "How to read the connection totals and percentages",
+        "type": "text"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cmtc-prom"
+        },
+        "description": "TCP opens per second, rate over $__rate_interval, separately reported by the source and destination node. The two reports describe the same connections; do not add them. Solid blue is the receiving node, dashed red is the source. Missing data is unavailable; these are not TLS handshake counts.",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "drawStyle": "line",
+              "fillOpacity": 10,
+              "lineWidth": 1,
+              "showPoints": "never",
+              "stacking": {
+                "group": "A",
+                "mode": "none"
+              }
+            },
+            "min": 0,
+            "unit": "cps"
+          },
+          "overrides": [
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "cmtc-mtls-control-plane \u00b7 destination"
+              },
+              "properties": [
+                {
+                  "id": "color",
+                  "value": {
+                    "fixedColor": "#4e79a7",
+                    "mode": "fixed"
+                  }
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "cmtc-mtls-worker \u00b7 source"
+              },
+              "properties": [
+                {
+                  "id": "color",
+                  "value": {
+                    "fixedColor": "#e15759",
+                    "mode": "fixed"
+                  }
+                },
+                {
+                  "id": "custom.lineStyle",
+                  "value": {
+                    "dash": [
+                      6,
+                      4
+                    ],
+                    "fill": "dash"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 29
+        },
+        "id": 6,
+        "options": {
+          "legend": {
+            "displayMode": "list",
+            "placement": "bottom"
+          },
+          "tooltip": {
+            "mode": "multi"
+          }
+        },
+        "targets": [
+          {
+            "expr": "sum by(node,reporter) (rate(istio_tcp_connections_opened_total{job=\"cmtc-spire-ztunnel\",cluster=\"cmtc-mtls\",connection_security_policy=\"mutual_tls\",destination_workload_namespace=\"mtls-spike\"}[$__rate_interval]))",
+            "instant": false,
+            "legendFormat": "{{node}} \u00b7 {{reporter}}",
+            "range": true,
+            "refId": "A"
+          }
+        ],
+        "title": "mTLS TCP opens/s \u00b7 both nodes (not TLS handshakes)",
+        "type": "timeseries"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cmtc-prom"
+        },
+        "description": "Source-reported mTLS bytes sent plus received per second, rate over $__rate_interval. Red identifies cmtc-mtls-worker consistently with the TCP plot. Positive load produces a positive rate; zero means no measured payload, missing data is unavailable.",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "fixedColor": "#e15759",
+              "mode": "fixed"
+            },
+            "custom": {
+              "drawStyle": "line",
+              "fillOpacity": 10,
+              "lineWidth": 1,
+              "showPoints": "never",
+              "stacking": {
+                "group": "A",
+                "mode": "none"
+              }
+            },
+            "min": 0,
+            "unit": "Bps"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 29
+        },
+        "id": 7,
+        "options": {
+          "legend": {
+            "displayMode": "list",
+            "placement": "bottom"
+          },
+          "tooltip": {
+            "mode": "multi"
+          }
+        },
+        "targets": [
+          {
+            "expr": "sum by(node) (rate(istio_tcp_sent_bytes_total{job=\"cmtc-spire-ztunnel\",cluster=\"cmtc-mtls\",connection_security_policy=\"mutual_tls\",destination_workload_namespace=\"mtls-spike\",reporter=\"source\"}[$__rate_interval]) + rate(istio_tcp_received_bytes_total{job=\"cmtc-spire-ztunnel\",cluster=\"cmtc-mtls\",connection_security_policy=\"mutual_tls\",destination_workload_namespace=\"mtls-spike\",reporter=\"source\"}[$__rate_interval]))",
+            "instant": false,
+            "legendFormat": "{{node}}",
+            "range": true,
+            "refId": "A"
+          }
+        ],
+        "title": "mTLS traffic \u00b7 source-reported bytes/s",
+        "type": "timeseries"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cmtc-prom"
+        },
+        "description": "Last native TCP counter readings at the selected range end, split by node, reporter, verified principals and security. These are lifetime counters and can reset. Source and destination rows overlap; do not sum them. DENY means policy rejection, and a dash means no failure flag, not proven HTTP success.",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "unit": "short"
+          },
+          "overrides": [
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "node"
+              },
+              "properties": [
+                {
+                  "id": "custom.width",
+                  "value": 195
+                },
+                {
+                  "id": "mappings",
+                  "value": [
+                    {
+                      "options": {
+                        "cmtc-mtls-control-plane": {
+                          "color": "#4e79a7",
+                          "text": "cmtc-mtls-control-plane"
+                        },
+                        "cmtc-mtls-worker": {
+                          "color": "#e15759",
+                          "text": "cmtc-mtls-worker"
+                        }
+                      },
+                      "type": "value"
+                    }
+                  ]
+                },
+                {
+                  "id": "custom.cellOptions",
+                  "value": {
+                    "type": "color-text"
+                  }
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "reporter"
+              },
+              "properties": [
+                {
+                  "id": "custom.width",
+                  "value": 95
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "source_principal"
+              },
+              "properties": [
+                {
+                  "id": "custom.width",
+                  "value": 420
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "destination_principal"
+              },
+              "properties": [
+                {
+                  "id": "custom.width",
+                  "value": 420
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "Security"
+              },
+              "properties": [
+                {
+                  "id": "custom.width",
+                  "value": 135
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "Verdict"
+              },
+              "properties": [
+                {
+                  "id": "custom.width",
+                  "value": 85
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "Connections"
+              },
+              "properties": [
+                {
+                  "id": "custom.width",
+                  "value": 110
+                }
+              ]
+            }
+          ]
+        },
+        "gridPos": {
+          "h": 7,
+          "w": 24,
+          "x": 0,
+          "y": 37
+        },
+        "id": 8,
+        "options": {},
+        "targets": [
+          {
+            "expr": "sum by(node,reporter,source_principal,destination_principal,connection_security_policy,response_flags) (istio_tcp_connections_closed_total{job=\"cmtc-spire-ztunnel\",cluster=\"cmtc-mtls\",destination_workload_namespace=\"mtls-spike\"})",
+            "format": "table",
+            "instant": true,
+            "legendFormat": "",
+            "range": false,
+            "refId": "A"
+          }
+        ],
+        "title": "Native TCP close verdicts and verified peer identities",
+        "transformations": [
+          {
+            "id": "organize",
+            "options": {
+              "excludeByName": {
+                "Time": true
+              },
+              "indexByName": {
+                "Value": 6,
+                "connection_security_policy": 4,
+                "destination_principal": 3,
+                "node": 0,
+                "reporter": 1,
+                "response_flags": 5,
+                "source_principal": 2
+              },
+              "renameByName": {
+                "Value": "Connections",
+                "connection_security_policy": "Security",
+                "response_flags": "Verdict"
+              }
+            }
+          }
+        ],
+        "type": "table"
+      },
+      {
+        "description": "Visible context and scope; documented status is not a live health metric.",
+        "fieldConfig": {
+          "defaults": {
+            "min": 0,
+            "unit": "short"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 4,
+          "w": 24,
+          "x": 0,
+          "y": 44
+        },
+        "id": 90,
+        "options": {
+          "content": "**The four sections below preserve the original mTLS Performance, CA Trust and Rotation, Network Encryption and Security Violations dashboards.** Peer-identity failures appear once under TLS performance. Native TCP counters above do not replace actual TLS handshake metrics.\n\nPlanned counters use rates, gauges show latest levels/states, and TLS p95 requires actual handshake histogram buckets. Missing instrumentation is unknown, not zero.",
+          "mode": "markdown"
+        },
+        "title": "Future security instrumentation",
+        "type": "text"
+      },
+      {
+        "collapsed": false,
+        "gridPos": {
+          "h": 1,
+          "w": 24,
+          "x": 0,
+          "y": 48
+        },
+        "id": 100,
+        "panels": [],
+        "title": "How do real TLS handshakes and remote identity look? \u00b7 planned",
+        "type": "row"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${DS_PROMETHEUS}"
+        },
+        "description": "Planned instrumentation; missing data means not implemented, never success. Completed actual TLS handshake observations, labeled by bounded result and one reporting boundary. rate() by result; selected-range increase for totals; not TCP starts or HTTP requests. Proposed labels/source must be qualified in the delivering story. Metric contract: cmtc_mtls_handshakes_total",
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "drawStyle": "line",
+              "fillOpacity": 10,
+              "lineWidth": 1,
+              "showPoints": "never"
+            },
+            "min": 0,
+            "unit": "ops"
+          },
+          "overrides": [
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "cmtc-a"
+              },
+              "properties": [
+                {
+                  "id": "color",
+                  "value": {
+                    "fixedColor": "#4e79a7",
+                    "mode": "fixed"
+                  }
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "cmtc-b"
+              },
+              "properties": [
+                {
+                  "id": "color",
+                  "value": {
+                    "fixedColor": "#e15759",
+                    "mode": "fixed"
+                  }
+                },
+                {
+                  "id": "custom.lineStyle",
+                  "value": {
+                    "dash": [
+                      8,
+                      6
+                    ],
+                    "fill": "dash"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "gridPos": {
+          "h": 7,
+          "w": 12,
+          "x": 0,
+          "y": 49
+        },
+        "id": 101,
+        "options": {
+          "legend": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "displayMode": "list",
+            "placement": "bottom"
+          },
+          "tooltip": {
+            "mode": "multi",
+            "sort": "none"
+          }
+        },
+        "targets": [
+          {
+            "expr": "sum by(cluster) (rate(cmtc_mtls_handshakes_total{job=\"cmtc\",cluster=~\"$cluster\",component=~\"cmtc-controller|cmtc-node-agent\"}[$__rate_interval]))",
+            "instant": false,
+            "legendFormat": "{{cluster}}",
+            "range": true,
+            "refId": "A"
+          }
+        ],
+        "title": "TLS handshakes/s \u00b7 planned",
+        "type": "timeseries"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${DS_PROMETHEUS}"
+        },
+        "description": "Planned instrumentation; missing data means not implemented, never success. Currently active verified workload-mTLS connections, counted at one defined endpoint. Latest value and line if it varies; no rate() or source-plus-destination sum. Proposed labels/source must be qualified in the delivering story. Metric contract: cmtc_mtls_active_connections",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "fixedColor": "#4e79a7",
+              "mode": "fixed"
+            },
+            "decimals": 0,
+            "min": 0,
+            "unit": "short"
+          },
+          "overrides": [
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "cmtc-a"
+              },
+              "properties": [
+                {
+                  "id": "color",
+                  "value": {
+                    "fixedColor": "#4e79a7",
+                    "mode": "fixed"
+                  }
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "cmtc-b"
+              },
+              "properties": [
+                {
+                  "id": "color",
+                  "value": {
+                    "fixedColor": "#e15759",
+                    "mode": "fixed"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "gridPos": {
+          "h": 7,
+          "w": 12,
+          "x": 12,
+          "y": 49
+        },
+        "id": 102,
+        "options": {
+          "colorMode": "value",
+          "graphMode": "none",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "text": {
+            "valueSize": 40
+          },
+          "textMode": "value_and_name"
+        },
+        "targets": [
+          {
+            "expr": "sum by(cluster) (cmtc_mtls_active_connections{job=\"cmtc\",cluster=~\"$cluster\",component=~\"cmtc-controller|cmtc-node-agent\"} @ end())",
+            "instant": true,
+            "legendFormat": "{{cluster}}",
+            "range": false,
+            "refId": "A"
+          }
+        ],
+        "title": "Active mTLS connections \u00b7 planned",
+        "type": "stat"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${DS_PROMETHEUS}"
+        },
+        "description": "Planned instrumentation; missing data means not implemented, never success. Failed peer certificate/identity validation events at the verifier. rate() by bounded reason or selected-range increase; not every plaintext attempt. Proposed labels/source must be qualified in the delivering story. Metric contract: cmtc_mtls_identity_validation_failures_total",
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "drawStyle": "line",
+              "fillOpacity": 10,
+              "lineWidth": 1,
+              "showPoints": "never"
+            },
+            "min": 0,
+            "unit": "ops"
+          },
+          "overrides": [
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "cmtc-a"
+              },
+              "properties": [
+                {
+                  "id": "color",
+                  "value": {
+                    "fixedColor": "#4e79a7",
+                    "mode": "fixed"
+                  }
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "cmtc-b"
+              },
+              "properties": [
+                {
+                  "id": "color",
+                  "value": {
+                    "fixedColor": "#e15759",
+                    "mode": "fixed"
+                  }
+                },
+                {
+                  "id": "custom.lineStyle",
+                  "value": {
+                    "dash": [
+                      8,
+                      6
+                    ],
+                    "fill": "dash"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "gridPos": {
+          "h": 7,
+          "w": 12,
+          "x": 0,
+          "y": 56
+        },
+        "id": 103,
+        "options": {
+          "legend": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "displayMode": "list",
+            "placement": "bottom"
+          },
+          "tooltip": {
+            "mode": "multi",
+            "sort": "none"
+          }
+        },
+        "targets": [
+          {
+            "expr": "sum by(cluster) (rate(cmtc_mtls_identity_validation_failures_total{job=\"cmtc\",cluster=~\"$cluster\",component=~\"cmtc-controller|cmtc-node-agent\"}[$__rate_interval]))",
+            "instant": false,
+            "legendFormat": "{{cluster}}",
+            "range": true,
+            "refId": "A"
+          }
+        ],
+        "title": "Peer identity validation failures/s \u00b7 planned",
+        "type": "timeseries"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${DS_PROMETHEUS}"
+        },
+        "description": "Planned instrumentation; missing data means not implemented, never success. Lookup misses in the authenticated remote workload identity cache. Misses/s; a miss alone is neither a rejected request nor a security breach. Proposed labels/source must be qualified in the delivering story. Metric contract: cmtc_remote_identity_cache_misses_total",
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "drawStyle": "line",
+              "fillOpacity": 10,
+              "lineWidth": 1,
+              "showPoints": "never"
+            },
+            "min": 0,
+            "unit": "ops"
+          },
+          "overrides": [
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "cmtc-a"
+              },
+              "properties": [
+                {
+                  "id": "color",
+                  "value": {
+                    "fixedColor": "#4e79a7",
+                    "mode": "fixed"
+                  }
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "cmtc-b"
+              },
+              "properties": [
+                {
+                  "id": "color",
+                  "value": {
+                    "fixedColor": "#e15759",
+                    "mode": "fixed"
+                  }
+                },
+                {
+                  "id": "custom.lineStyle",
+                  "value": {
+                    "dash": [
+                      8,
+                      6
+                    ],
+                    "fill": "dash"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "gridPos": {
+          "h": 7,
+          "w": 12,
+          "x": 12,
+          "y": 56
+        },
+        "id": 104,
+        "options": {
+          "legend": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "displayMode": "list",
+            "placement": "bottom"
+          },
+          "tooltip": {
+            "mode": "multi",
+            "sort": "none"
+          }
+        },
+        "targets": [
+          {
+            "expr": "sum by(cluster) (rate(cmtc_remote_identity_cache_misses_total{job=\"cmtc\",cluster=~\"$cluster\",component=~\"cmtc-controller|cmtc-node-agent\"}[$__rate_interval]))",
+            "instant": false,
+            "legendFormat": "{{cluster}}",
+            "range": true,
+            "refId": "A"
+          }
+        ],
+        "title": "Remote identity cache misses/s \u00b7 planned",
+        "type": "timeseries"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${DS_PROMETHEUS}"
+        },
+        "description": "Planned instrumentation; missing data means not implemented, never success. Actual workload TLS handshake duration in seconds at the TLS boundary. p95/p99 from bucket rates grouped by cluster/le and bounded result; no average or TCP-counter substitute. Proposed labels/source must be qualified in the delivering story. Metric contract: cmtc_mtls_handshake_duration_seconds",
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "drawStyle": "line",
+              "fillOpacity": 10,
+              "lineWidth": 1,
+              "showPoints": "never"
+            },
+            "min": 0,
+            "unit": "s"
+          },
+          "overrides": [
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "cmtc-a"
+              },
+              "properties": [
+                {
+                  "id": "color",
+                  "value": {
+                    "fixedColor": "#4e79a7",
+                    "mode": "fixed"
+                  }
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "cmtc-b"
+              },
+              "properties": [
+                {
+                  "id": "color",
+                  "value": {
+                    "fixedColor": "#e15759",
+                    "mode": "fixed"
+                  }
+                },
+                {
+                  "id": "custom.lineStyle",
+                  "value": {
+                    "dash": [
+                      8,
+                      6
+                    ],
+                    "fill": "dash"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "gridPos": {
+          "h": 7,
+          "w": 12,
+          "x": 0,
+          "y": 63
+        },
+        "id": 105,
+        "options": {
+          "legend": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "displayMode": "list",
+            "placement": "bottom"
+          },
+          "tooltip": {
+            "mode": "multi",
+            "sort": "none"
+          }
+        },
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, sum by(cluster,le) (rate(cmtc_mtls_handshake_duration_seconds_bucket{job=\"cmtc\",cluster=~\"$cluster\",component=~\"cmtc-controller|cmtc-node-agent\"}[$__rate_interval])))",
+            "instant": false,
+            "legendFormat": "{{cluster}}",
+            "range": true,
+            "refId": "A"
+          }
+        ],
+        "title": "TLS handshake p95 \u00b7 planned",
+        "type": "timeseries"
+      },
+      {
+        "collapsed": false,
+        "gridPos": {
+          "h": 1,
+          "w": 24,
+          "x": 0,
+          "y": 70
+        },
+        "id": 106,
+        "panels": [],
+        "title": "Are trust, issuer and rotation healthy? \u00b7 planned",
+        "type": "row"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${DS_PROMETHEUS}"
+        },
+        "description": "Planned instrumentation; missing data means not implemented, never success. Required public bundle observed and consumed at the expected generation/digest with freshness. Mapped state/table; ConfigMap existence alone is insufficient. Proposed labels/source must be qualified in the delivering story. Metric contract: cmtc_trust_bundle_ready",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "fixedColor": "#4e79a7",
+              "mode": "fixed"
+            },
+            "decimals": 0,
+            "mappings": [
+              {
+                "options": {
+                  "0": {
+                    "color": "#f28e2b",
+                    "text": "Not ready"
+                  },
+                  "1": {
+                    "color": "#59a14f",
+                    "text": "Verified"
+                  }
+                },
+                "type": "value"
+              }
+            ],
+            "min": 0,
+            "unit": "short"
+          },
+          "overrides": [
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "cmtc-a"
+              },
+              "properties": [
+                {
+                  "id": "color",
+                  "value": {
+                    "fixedColor": "#4e79a7",
+                    "mode": "fixed"
+                  }
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "cmtc-b"
+              },
+              "properties": [
+                {
+                  "id": "color",
+                  "value": {
+                    "fixedColor": "#e15759",
+                    "mode": "fixed"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "gridPos": {
+          "h": 7,
+          "w": 12,
+          "x": 0,
+          "y": 71
+        },
+        "id": 107,
+        "options": {
+          "colorMode": "value",
+          "graphMode": "none",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "text": {
+            "valueSize": 40
+          },
+          "textMode": "value_and_name"
+        },
+        "targets": [
+          {
+            "expr": "min by(cluster) (cmtc_trust_bundle_ready{job=\"cmtc\",cluster=~\"$cluster\",component=~\"cmtc-controller|cmtc-node-agent\"} @ end())",
+            "instant": true,
+            "legendFormat": "{{cluster}}",
+            "range": false,
+            "refId": "A"
+          }
+        ],
+        "title": "Trust bundle consumed \u00b7 planned",
+        "type": "stat"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${DS_PROMETHEUS}"
+        },
+        "description": "Planned instrumentation; missing data means not implemented, never success. Fresh authenticated SPIRE API readiness acknowledgment at a defined boundary. Mapped state/history; separate API ACK from registration and workload issuance. Proposed labels/source must be qualified in the delivering story. Metric contract: cmtc_spire_ready",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "fixedColor": "#4e79a7",
+              "mode": "fixed"
+            },
+            "decimals": 0,
+            "mappings": [
+              {
+                "options": {
+                  "0": {
+                    "color": "#f28e2b",
+                    "text": "Not ready"
+                  },
+                  "1": {
+                    "color": "#59a14f",
+                    "text": "Verified"
+                  }
+                },
+                "type": "value"
+              }
+            ],
+            "min": 0,
+            "unit": "short"
+          },
+          "overrides": [
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "cmtc-a"
+              },
+              "properties": [
+                {
+                  "id": "color",
+                  "value": {
+                    "fixedColor": "#4e79a7",
+                    "mode": "fixed"
+                  }
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "cmtc-b"
+              },
+              "properties": [
+                {
+                  "id": "color",
+                  "value": {
+                    "fixedColor": "#e15759",
+                    "mode": "fixed"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "gridPos": {
+          "h": 7,
+          "w": 12,
+          "x": 12,
+          "y": 71
+        },
+        "id": 108,
+        "options": {
+          "colorMode": "value",
+          "graphMode": "none",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "text": {
+            "valueSize": 40
+          },
+          "textMode": "value_and_name"
+        },
+        "targets": [
+          {
+            "expr": "min by(cluster) (cmtc_spire_ready{job=\"cmtc\",cluster=~\"$cluster\",component=~\"cmtc-controller|cmtc-node-agent\"} @ end())",
+            "instant": true,
+            "legendFormat": "{{cluster}}",
+            "range": false,
+            "refId": "A"
+          }
+        ],
+        "title": "SPIRE API acknowledged \u00b7 planned",
+        "type": "stat"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${DS_PROMETHEUS}"
+        },
+        "description": "Planned instrumentation; missing data means not implemented, never success. Expected issuer can provide a verifiable chain under a defined freshness/issuance check. Mapped state/history; pod Ready or Issuer object presence is insufficient. Proposed labels/source must be qualified in the delivering story. Metric contract: cmtc_issuer_ready",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "fixedColor": "#4e79a7",
+              "mode": "fixed"
+            },
+            "decimals": 0,
+            "mappings": [
+              {
+                "options": {
+                  "0": {
+                    "color": "#f28e2b",
+                    "text": "Not ready"
+                  },
+                  "1": {
+                    "color": "#59a14f",
+                    "text": "Verified"
+                  }
+                },
+                "type": "value"
+              }
+            ],
+            "min": 0,
+            "unit": "short"
+          },
+          "overrides": [
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "cmtc-a"
+              },
+              "properties": [
+                {
+                  "id": "color",
+                  "value": {
+                    "fixedColor": "#4e79a7",
+                    "mode": "fixed"
+                  }
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "cmtc-b"
+              },
+              "properties": [
+                {
+                  "id": "color",
+                  "value": {
+                    "fixedColor": "#e15759",
+                    "mode": "fixed"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "gridPos": {
+          "h": 7,
+          "w": 12,
+          "x": 0,
+          "y": 78
+        },
+        "id": 109,
+        "options": {
+          "colorMode": "value",
+          "graphMode": "none",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "text": {
+            "valueSize": 40
+          },
+          "textMode": "value_and_name"
+        },
+        "targets": [
+          {
+            "expr": "min by(cluster) (cmtc_issuer_ready{job=\"cmtc\",cluster=~\"$cluster\",component=~\"cmtc-controller|cmtc-node-agent\"} @ end())",
+            "instant": true,
+            "legendFormat": "{{cluster}}",
+            "range": false,
+            "refId": "A"
+          }
+        ],
+        "title": "Issuer chain verified \u00b7 planned",
+        "type": "stat"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${DS_PROMETHEUS}"
+        },
+        "description": "Planned instrumentation; missing data means not implemented, never success. Failed certificate rotation attempts or terminal failures with an agreed retry/event boundary. Failures/s and range increase; retries must not silently multiply terminal failure counts. Proposed labels/source must be qualified in the delivering story. Metric contract: cmtc_certificate_rotation_failures_total",
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "drawStyle": "line",
+              "fillOpacity": 10,
+              "lineWidth": 1,
+              "showPoints": "never"
+            },
+            "min": 0,
+            "unit": "ops"
+          },
+          "overrides": [
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "cmtc-a"
+              },
+              "properties": [
+                {
+                  "id": "color",
+                  "value": {
+                    "fixedColor": "#4e79a7",
+                    "mode": "fixed"
+                  }
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "cmtc-b"
+              },
+              "properties": [
+                {
+                  "id": "color",
+                  "value": {
+                    "fixedColor": "#e15759",
+                    "mode": "fixed"
+                  }
+                },
+                {
+                  "id": "custom.lineStyle",
+                  "value": {
+                    "dash": [
+                      8,
+                      6
+                    ],
+                    "fill": "dash"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "gridPos": {
+          "h": 7,
+          "w": 12,
+          "x": 12,
+          "y": 78
+        },
+        "id": 110,
+        "options": {
+          "legend": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "displayMode": "list",
+            "placement": "bottom"
+          },
+          "tooltip": {
+            "mode": "multi",
+            "sort": "none"
+          }
+        },
+        "targets": [
+          {
+            "expr": "sum by(cluster) (rate(cmtc_certificate_rotation_failures_total{job=\"cmtc\",cluster=~\"$cluster\",component=~\"cmtc-controller|cmtc-node-agent\"}[$__rate_interval]))",
+            "instant": false,
+            "legendFormat": "{{cluster}}",
+            "range": true,
+            "refId": "A"
+          }
+        ],
+        "title": "Certificate rotation failures/s \u00b7 planned",
+        "type": "timeseries"
+      },
+      {
+        "collapsed": false,
+        "gridPos": {
+          "h": 1,
+          "w": 24,
+          "x": 0,
+          "y": 85
+        },
+        "id": 111,
+        "panels": [],
+        "title": "Do workload and node encryption compose? \u00b7 planned",
+        "type": "row"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${DS_PROMETHEUS}"
+        },
+        "description": "Planned instrumentation; missing data means not implemented, never success. Selected Cilium/ClusterMesh/ztunnel/transport profile passes the required compatibility gates. Mapped status/table per profile; not a count of encrypted packets. Proposed labels/source must be qualified in the delivering story. Metric contract: cmtc_transport_compatibility_ready",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "fixedColor": "#4e79a7",
+              "mode": "fixed"
+            },
+            "decimals": 0,
+            "mappings": [
+              {
+                "options": {
+                  "0": {
+                    "color": "#f28e2b",
+                    "text": "Not ready"
+                  },
+                  "1": {
+                    "color": "#59a14f",
+                    "text": "Verified"
+                  }
+                },
+                "type": "value"
+              }
+            ],
+            "min": 0,
+            "unit": "short"
+          },
+          "overrides": [
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "cmtc-a"
+              },
+              "properties": [
+                {
+                  "id": "color",
+                  "value": {
+                    "fixedColor": "#4e79a7",
+                    "mode": "fixed"
+                  }
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "cmtc-b"
+              },
+              "properties": [
+                {
+                  "id": "color",
+                  "value": {
+                    "fixedColor": "#e15759",
+                    "mode": "fixed"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "gridPos": {
+          "h": 7,
+          "w": 12,
+          "x": 0,
+          "y": 86
+        },
+        "id": 112,
+        "options": {
+          "colorMode": "value",
+          "graphMode": "none",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "text": {
+            "valueSize": 40
+          },
+          "textMode": "value_and_name"
+        },
+        "targets": [
+          {
+            "expr": "min by(cluster) (cmtc_transport_compatibility_ready{job=\"cmtc\",cluster=~\"$cluster\",component=~\"cmtc-controller|cmtc-node-agent\"} @ end())",
+            "instant": true,
+            "legendFormat": "{{cluster}}",
+            "range": false,
+            "refId": "A"
+          }
+        ],
+        "title": "Transport profile verified \u00b7 planned",
+        "type": "stat"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${DS_PROMETHEUS}"
+        },
+        "description": "Planned instrumentation; missing data means not implemented, never success. Latest fresh controlled probe verifies both workload mTLS and the configured node encryption layer. Mapped latest probe and state history; absence/staleness is unknown. Proposed labels/source must be qualified in the delivering story. Metric contract: cmtc_dual_encryption_probe_success",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "fixedColor": "#4e79a7",
+              "mode": "fixed"
+            },
+            "decimals": 0,
+            "mappings": [
+              {
+                "options": {
+                  "0": {
+                    "color": "#f28e2b",
+                    "text": "Not ready"
+                  },
+                  "1": {
+                    "color": "#59a14f",
+                    "text": "Verified"
+                  }
+                },
+                "type": "value"
+              }
+            ],
+            "min": 0,
+            "unit": "short"
+          },
+          "overrides": [
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "cmtc-a"
+              },
+              "properties": [
+                {
+                  "id": "color",
+                  "value": {
+                    "fixedColor": "#4e79a7",
+                    "mode": "fixed"
+                  }
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "cmtc-b"
+              },
+              "properties": [
+                {
+                  "id": "color",
+                  "value": {
+                    "fixedColor": "#e15759",
+                    "mode": "fixed"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "gridPos": {
+          "h": 7,
+          "w": 12,
+          "x": 12,
+          "y": 86
+        },
+        "id": 113,
+        "options": {
+          "colorMode": "value",
+          "graphMode": "none",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "text": {
+            "valueSize": 40
+          },
+          "textMode": "value_and_name"
+        },
+        "targets": [
+          {
+            "expr": "min by(cluster) (cmtc_dual_encryption_probe_success{job=\"cmtc\",cluster=~\"$cluster\",component=~\"cmtc-controller|cmtc-node-agent\"} @ end())",
+            "instant": true,
+            "legendFormat": "{{cluster}}",
+            "range": false,
+            "refId": "A"
+          }
+        ],
+        "title": "Dual encryption probe result \u00b7 planned",
+        "type": "stat"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${DS_PROMETHEUS}"
+        },
+        "description": "Planned instrumentation; missing data means not implemented, never success. Observed required node-layer encryption failures at a defined probe/datapath boundary. Failures/s by bounded profile/reason; not an application TLS handshake counter. Proposed labels/source must be qualified in the delivering story. Metric contract: cmtc_transport_encryption_failures_total",
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "drawStyle": "line",
+              "fillOpacity": 10,
+              "lineWidth": 1,
+              "showPoints": "never"
+            },
+            "min": 0,
+            "unit": "ops"
+          },
+          "overrides": [
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "cmtc-a"
+              },
+              "properties": [
+                {
+                  "id": "color",
+                  "value": {
+                    "fixedColor": "#4e79a7",
+                    "mode": "fixed"
+                  }
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "cmtc-b"
+              },
+              "properties": [
+                {
+                  "id": "color",
+                  "value": {
+                    "fixedColor": "#e15759",
+                    "mode": "fixed"
+                  }
+                },
+                {
+                  "id": "custom.lineStyle",
+                  "value": {
+                    "dash": [
+                      8,
+                      6
+                    ],
+                    "fill": "dash"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "gridPos": {
+          "h": 7,
+          "w": 12,
+          "x": 0,
+          "y": 93
+        },
+        "id": 114,
+        "options": {
+          "legend": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "displayMode": "list",
+            "placement": "bottom"
+          },
+          "tooltip": {
+            "mode": "multi",
+            "sort": "none"
+          }
+        },
+        "targets": [
+          {
+            "expr": "sum by(cluster) (rate(cmtc_transport_encryption_failures_total{job=\"cmtc\",cluster=~\"$cluster\",component=~\"cmtc-controller|cmtc-node-agent\"}[$__rate_interval]))",
+            "instant": false,
+            "legendFormat": "{{cluster}}",
+            "range": true,
+            "refId": "A"
+          }
+        ],
+        "title": "Transport encryption failures/s \u00b7 planned",
+        "type": "timeseries"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${DS_PROMETHEUS}"
+        },
+        "description": "Planned instrumentation; missing data means not implemented, never success. Failed controlled MTU/MSS validation attempts for the selected encryption profile. Failures/s or range increase; preserve attempted-probe denominator separately. Proposed labels/source must be qualified in the delivering story. Metric contract: cmtc_mtu_validation_failures_total",
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "drawStyle": "line",
+              "fillOpacity": 10,
+              "lineWidth": 1,
+              "showPoints": "never"
+            },
+            "min": 0,
+            "unit": "ops"
+          },
+          "overrides": [
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "cmtc-a"
+              },
+              "properties": [
+                {
+                  "id": "color",
+                  "value": {
+                    "fixedColor": "#4e79a7",
+                    "mode": "fixed"
+                  }
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "cmtc-b"
+              },
+              "properties": [
+                {
+                  "id": "color",
+                  "value": {
+                    "fixedColor": "#e15759",
+                    "mode": "fixed"
+                  }
+                },
+                {
+                  "id": "custom.lineStyle",
+                  "value": {
+                    "dash": [
+                      8,
+                      6
+                    ],
+                    "fill": "dash"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "gridPos": {
+          "h": 7,
+          "w": 12,
+          "x": 12,
+          "y": 93
+        },
+        "id": 115,
+        "options": {
+          "legend": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "displayMode": "list",
+            "placement": "bottom"
+          },
+          "tooltip": {
+            "mode": "multi",
+            "sort": "none"
+          }
+        },
+        "targets": [
+          {
+            "expr": "sum by(cluster) (rate(cmtc_mtu_validation_failures_total{job=\"cmtc\",cluster=~\"$cluster\",component=~\"cmtc-controller|cmtc-node-agent\"}[$__rate_interval]))",
+            "instant": false,
+            "legendFormat": "{{cluster}}",
+            "range": true,
+            "refId": "A"
+          }
+        ],
+        "title": "MTU validation failures/s \u00b7 planned",
+        "type": "timeseries"
+      },
+      {
+        "collapsed": false,
+        "gridPos": {
+          "h": 1,
+          "w": 24,
+          "x": 0,
+          "y": 100
+        },
+        "id": 116,
+        "panels": [],
+        "title": "Which security violations are observed? \u00b7 planned",
+        "type": "row"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${DS_PROMETHEUS}"
+        },
+        "description": "Planned instrumentation; missing data means not implemented, never success. Destination policy rejections at the authorization boundary. rate() or range increase, split from identity failures and attempts; avoid double counting. Proposed labels/source must be qualified in the delivering story. Metric contract: cmtc_mtls_authorization_denials_total",
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "drawStyle": "line",
+              "fillOpacity": 10,
+              "lineWidth": 1,
+              "showPoints": "never"
+            },
+            "min": 0,
+            "unit": "ops"
+          },
+          "overrides": [
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "cmtc-a"
+              },
+              "properties": [
+                {
+                  "id": "color",
+                  "value": {
+                    "fixedColor": "#4e79a7",
+                    "mode": "fixed"
+                  }
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "cmtc-b"
+              },
+              "properties": [
+                {
+                  "id": "color",
+                  "value": {
+                    "fixedColor": "#e15759",
+                    "mode": "fixed"
+                  }
+                },
+                {
+                  "id": "custom.lineStyle",
+                  "value": {
+                    "dash": [
+                      8,
+                      6
+                    ],
+                    "fill": "dash"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "gridPos": {
+          "h": 7,
+          "w": 12,
+          "x": 0,
+          "y": 101
+        },
+        "id": 117,
+        "options": {
+          "legend": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "displayMode": "list",
+            "placement": "bottom"
+          },
+          "tooltip": {
+            "mode": "multi",
+            "sort": "none"
+          }
+        },
+        "targets": [
+          {
+            "expr": "sum by(cluster) (rate(cmtc_mtls_authorization_denials_total{job=\"cmtc\",cluster=~\"$cluster\",component=~\"cmtc-controller|cmtc-node-agent\"}[$__rate_interval]))",
+            "instant": false,
+            "legendFormat": "{{cluster}}",
+            "range": true,
+            "refId": "A"
+          }
+        ],
+        "title": "Authorization denials/s \u00b7 planned",
+        "type": "timeseries"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${DS_PROMETHEUS}"
+        },
+        "description": "Planned instrumentation; missing data means not implemented, never success. A verifier observes unauthorized plaintext reaching a destination that requires mTLS. Incident rate/count; a plaintext attempt rejected by DENY is not a bypass. Proposed labels/source must be qualified in the delivering story. Metric contract: cmtc_plaintext_bypass_detected_total",
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "drawStyle": "line",
+              "fillOpacity": 10,
+              "lineWidth": 1,
+              "showPoints": "never"
+            },
+            "min": 0,
+            "unit": "ops"
+          },
+          "overrides": [
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "cmtc-a"
+              },
+              "properties": [
+                {
+                  "id": "color",
+                  "value": {
+                    "fixedColor": "#4e79a7",
+                    "mode": "fixed"
+                  }
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "cmtc-b"
+              },
+              "properties": [
+                {
+                  "id": "color",
+                  "value": {
+                    "fixedColor": "#e15759",
+                    "mode": "fixed"
+                  }
+                },
+                {
+                  "id": "custom.lineStyle",
+                  "value": {
+                    "dash": [
+                      8,
+                      6
+                    ],
+                    "fill": "dash"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "gridPos": {
+          "h": 7,
+          "w": 12,
+          "x": 12,
+          "y": 101
+        },
+        "id": 118,
+        "options": {
+          "legend": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "displayMode": "list",
+            "placement": "bottom"
+          },
+          "tooltip": {
+            "mode": "multi",
+            "sort": "none"
+          }
+        },
+        "targets": [
+          {
+            "expr": "sum by(cluster) (rate(cmtc_plaintext_bypass_detected_total{job=\"cmtc\",cluster=~\"$cluster\",component=~\"cmtc-controller|cmtc-node-agent\"}[$__rate_interval]))",
+            "instant": false,
+            "legendFormat": "{{cluster}}",
+            "range": true,
+            "refId": "A"
+          }
+        ],
+        "title": "Plaintext bypass incidents/s \u00b7 planned",
+        "type": "timeseries"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${DS_PROMETHEUS}"
+        },
+        "description": "Planned instrumentation; missing data means not implemented, never success. Detected policy-conflict events under a defined deduplication boundary. Event rate/range increase; current conflict state needs its own gauge/condition. Proposed labels/source must be qualified in the delivering story. Metric contract: cmtc_namespace_policy_conflicts_total",
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "drawStyle": "line",
+              "fillOpacity": 10,
+              "lineWidth": 1,
+              "showPoints": "never"
+            },
+            "min": 0,
+            "unit": "ops"
+          },
+          "overrides": [
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "cmtc-a"
+              },
+              "properties": [
+                {
+                  "id": "color",
+                  "value": {
+                    "fixedColor": "#4e79a7",
+                    "mode": "fixed"
+                  }
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "cmtc-b"
+              },
+              "properties": [
+                {
+                  "id": "color",
+                  "value": {
+                    "fixedColor": "#e15759",
+                    "mode": "fixed"
+                  }
+                },
+                {
+                  "id": "custom.lineStyle",
+                  "value": {
+                    "dash": [
+                      8,
+                      6
+                    ],
+                    "fill": "dash"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "gridPos": {
+          "h": 7,
+          "w": 12,
+          "x": 0,
+          "y": 108
+        },
+        "id": 119,
+        "options": {
+          "legend": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "displayMode": "list",
+            "placement": "bottom"
+          },
+          "tooltip": {
+            "mode": "multi",
+            "sort": "none"
+          }
+        },
+        "targets": [
+          {
+            "expr": "sum by(cluster) (rate(cmtc_namespace_policy_conflicts_total{job=\"cmtc\",cluster=~\"$cluster\",component=~\"cmtc-controller|cmtc-node-agent\"}[$__rate_interval]))",
+            "instant": false,
+            "legendFormat": "{{cluster}}",
+            "range": true,
+            "refId": "A"
+          }
+        ],
+        "title": "Namespace policy conflicts/s \u00b7 planned",
+        "type": "timeseries"
+      }
+    ],
+    "refresh": "5s",
+    "schemaVersion": 41,
+    "tags": [
+      "cmtc",
+      "experimental",
+      "ztunnel",
+      "mtls"
+    ],
+    "templating": {
+      "list": [
+        {
+          "current": {
+            "text": "CMTC Prometheus",
+            "value": "cmtc-prom"
+          },
+          "name": "DS_PROMETHEUS",
+          "query": "prometheus",
+          "type": "datasource"
+        },
+        {
+          "allValue": ".*",
+          "current": {
+            "text": "All",
+            "value": "$__all"
+          },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "includeAll": true,
+          "label": "Cluster",
+          "multi": true,
+          "name": "cluster",
+          "query": {
+            "query": "label_values(cmtc_enforcement_available{job=\"cmtc\",component=\"cmtc-controller\"},cluster)",
+            "refId": "ClusterVariable"
+          },
+          "refresh": 1,
+          "type": "query"
+        }
+      ]
+    },
+    "time": {
+      "from": "now-10m",
+      "to": "now"
+    },
+    "timezone": "utc",
+    "title": "CMTC | Workload Security",
+    "uid": "cmtc-authenticated-only",
+    "version": 2
+  }
+}

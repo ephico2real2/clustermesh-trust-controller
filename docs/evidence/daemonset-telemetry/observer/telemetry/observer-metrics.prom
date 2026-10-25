@@ -1,0 +1,12 @@
+# HELP cmtc_datapath_observer_bytes_total skb bytes at selected TCX hook before Cilium verdict.
+# TYPE cmtc_datapath_observer_bytes_total counter
+cmtc_datapath_observer_bytes_total{cluster="cmtc-a",direction="ingress",node="cmtc-a-worker"} 70
+# HELP cmtc_datapath_observer_packets_total Packets at selected TCX hook before Cilium verdict; not requests or mTLS proof.
+# TYPE cmtc_datapath_observer_packets_total counter
+cmtc_datapath_observer_packets_total{cluster="cmtc-a",direction="ingress",node="cmtc-a-worker"} 1
+# HELP cmtc_datapath_observer_ready Last sample is fresh and attachment matches frozen test interface and baseline chain.
+# TYPE cmtc_datapath_observer_ready gauge
+cmtc_datapath_observer_ready{cluster="cmtc-a",direction="ingress",node="cmtc-a-worker"} 1
+cmtc_datapath_observer_bytes_total{cluster="cmtc-b",direction="ingress",node="cmtc-b-worker"} 0
+cmtc_datapath_observer_packets_total{cluster="cmtc-b",direction="ingress",node="cmtc-b-worker"} 0
+cmtc_datapath_observer_ready{cluster="cmtc-b",direction="ingress",node="cmtc-b-worker"} 1

@@ -38,6 +38,26 @@ Source: the page `fence-metrics.prom`
 
 ## Observer
 
-The three observer collectors are implemented in the image. Qualification of their
-current scrape/reset/query/render path is pending; no live inventory is substituted
-from the family names.
+The following inventory comes from actual GET `/metrics` responses on the two
+selected workers. The observer returns NEXT before Cilium's verdict. Both workers also pass actual map/central counter resets, missing-source and
+cleanup checks in the [qualified run](../docs/evidence/daemonset-telemetry/observer/summary.json).
+An emitted metric name alone is not proof of those gates.
+
+# Metrics inventory
+
+Source: the page `observer-metrics.prom`
+
+3 metric names in 3 families, 6 series.
+
+| Declared type | Families |
+| --- | --- |
+| counter | 2 |
+| gauge | 1 |
+
+## cmtc_datapath (3)
+
+| Metric | Type | Series | Labels | Kind of data |
+| --- | --- | --- | --- | --- |
+| `cmtc_datapath_observer_bytes_total` | counter | 2 | direction (1) | a counter: its rate over time; never the raw number |
+| `cmtc_datapath_observer_packets_total` | counter | 2 | direction (1) | a counter: its rate over time; never the raw number |
+| `cmtc_datapath_observer_ready` | gauge | 2 | direction (1) | a level: a line if it moves, a number or a table if it does not |
