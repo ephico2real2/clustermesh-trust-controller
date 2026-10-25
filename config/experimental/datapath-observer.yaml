@@ -8,7 +8,7 @@ spec:
     matchLabels: {app.kubernetes.io/name: cmtc-bpf-observer}
   template:
     metadata:
-      labels: {app.kubernetes.io/name: cmtc-bpf-observer}
+      labels: {app.kubernetes.io/name: cmtc-bpf-observer, security.cmtc.io/metrics: "true"}
     spec:
       hostNetwork: true
       automountServiceAccountToken: false
@@ -19,10 +19,13 @@ spec:
         - name: observer
           image: IMAGE_WITH_VERIFIED_SHA_DIGEST
           command: [/cmtc-bpf-observer]
-          args: ["--config=/config/$(NODE_NAME).json", "--listen=127.0.0.1:18082"]
+          args: ["--config=/config/$(NODE_NAME).json", "--listen=127.0.0.1:18082", "--metrics-listen=$(NODE_IP):18085"]
+          ports: [{name: metrics, containerPort: 18085, protocol: TCP}]
           env:
             - name: NODE_NAME
               valueFrom: {fieldRef: {fieldPath: spec.nodeName}}
+            - name: NODE_IP
+              valueFrom: {fieldRef: {fieldPath: status.hostIP}}
             - {name: CLUSTER_NAME, value: CLUSTER_NAME}
           securityContext:
             privileged: true

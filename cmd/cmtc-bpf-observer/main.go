@@ -99,12 +99,13 @@ func main() {
 	}
 }
 func run() (retErr error) {
-	var cfgPath, addr, elfPath, healthCheck string
+	var cfgPath, addr, elfPath, healthCheck, metricsAddress string
 	var version bool
 	flag.BoolVar(&version, "version", false, "Print source revision and exit without attaching")
 	flag.StringVar(&cfgPath, "config", "", "Required immutable node-specific JSON config")
 	flag.StringVar(&elfPath, "elf", "/usr/share/cmtc/observer_bpfel.o", "Immutable packaged BPF ELF")
 	flag.StringVar(&addr, "listen", "127.0.0.1:18082", "Node-local observer metric/health listener")
+	flag.StringVar(&metricsAddress, "metrics-listen", "", "Opt-in metrics-only NODE_IP:18085 endpoint; empty disables exposure")
 	flag.StringVar(&healthCheck, "health-check", "", "Probe only: ready or live")
 	opts := zap.Options{Development: false}
 	opts.BindFlags(flag.CommandLine)
@@ -157,6 +158,16 @@ func run() (retErr error) {
 		return fmt.Errorf("reserve observer listener: %w", err)
 	}
 	defer listener.Close()
+	// Validate and reserve the separate metrics-only listener before BPF Open.
+	metricsStarted := time.Now()
+	metricsListener, err := openMetricsListener(metricsAddress, os.Getenv("NODE_IP"), net.Listen)
+	if err != nil {
+		ctrl.Log.Error(err, "metrics listener rejected", "stage", "metrics-listen", "attempt", 1, "elapsed", time.Since(metricsStarted), "component", "datapath-observer", "sourceRevision", sourceRevision, "cluster", c.Cluster, "node", c.Node, "enforcementAvailable", false)
+		return err
+	}
+	if metricsListener != nil {
+		defer metricsListener.Close()
+	}
 
 	log := ctrl.Log.WithName("datapath-observer")
 	log.Info("starting observe-only datapath", "cluster", c.Cluster, "node", c.Node,
@@ -186,7 +197,7 @@ func run() (retErr error) {
 	mux.HandleFunc("/readyz", state.serveReadiness)
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(http.StatusOK) })
 	srv := &http.Server{Addr: addr, Handler: mux, ReadHeaderTimeout: 5 * time.Second}
-	errs := make(chan error, 1)
+	errs := make(chan error, 2)
 	go func() {
 		err := srv.Serve(listener)
 		if !errors.Is(err, http.ErrServerClosed) {
@@ -201,6 +212,19 @@ func run() (retErr error) {
 		defer cancel()
 		retErr = errors.Join(retErr, srv.Shutdown(ctx))
 	}()
+	if metricsListener != nil {
+		metricsServer := metricsHTTPServer(reg)
+		go func() {
+			if err := metricsServer.Serve(metricsListener); err != nil && !errors.Is(err, http.ErrServerClosed) {
+				errs <- err
+			}
+		}()
+		defer func() {
+			ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+			defer cancel()
+			retErr = errors.Join(retErr, metricsServer.Shutdown(ctx))
+		}()
+	}
 	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGTERM, syscall.SIGINT)
 	defer cancel()
 	ticker := time.NewTicker(time.Second)

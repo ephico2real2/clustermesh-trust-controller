@@ -24,6 +24,7 @@ spec = importlib.util.spec_from_file_location("owned_observer_harness", LIB / "t
 observer = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(observer)
 from observer_log_capture import ObserverLogFollower
+from fence_manifest_contract import validate_fence_template
 
 require, digest = observer.require, observer.digest
 SYSTEM, DS, CLIENT = "cmtc-system", "cmtc-bpf-fence", "fence-client"
@@ -42,14 +43,24 @@ class FenceHarness(observer.Harness):
         self.env = {**os.environ, "KUBECONFIG": args.kubeconfig}
         self.ns = "cmtc-fence-lab-" + self.run_id
         self.owned, self.monitors, self.followers = {}, {}, {}
-        self.template = yaml.safe_load(Path(args.template).read_text())
-        require(self.template["metadata"] == {"name": DS, "namespace": SYSTEM}, "unexpected fence template metadata")
+        self.template = validate_fence_template(yaml.safe_load(Path(args.template).read_text()), fanout=getattr(args, "fanout", False))
         self.report = {"run": self.run_id, "status": "running", "scope": "deny-only-persistent-quarantine",
             "enforcementAvailable": False, "mtlsProven": False, "firstPacketAdmissionProven": False, "destinationIngressProven": False,
             "nativeTailCallCoverageProven": False, "requestedTCXDirections": args.directions,
             "image": args.image, "expectedImageID": args.image_id, "expectedRevision": args.expected_revision,
             "started": datetime.datetime.now(datetime.timezone.utc).isoformat(), "clusters": {}, "commands": [], "cleanupErrors": []}
         self.flush()
+
+    def node_name(self, cluster):
+        """Physical node route; subclasses must retain the actual cluster ID."""
+        return cluster + "-worker"
+
+    def backend(self, cluster):
+        return self.report["clusters"][cluster]["backend"]
+
+    def node(self, cluster, *arguments, **kwargs):
+        return self.command(["colima", "ssh", "--profile", "cmtc-cilium", "--", "docker", "exec",
+            self.node_name(cluster), *arguments], **kwargs)
 
     def create(self, cluster, body):
         body.setdefault("metadata", {}).setdefault("labels", {})[OWNER] = self.run_id
@@ -77,7 +88,7 @@ class FenceHarness(observer.Harness):
 
     def new_client(self, cluster):
         self.create(cluster, {"apiVersion": "v1", "kind": "Pod", "metadata": {"name": CLIENT, "namespace": self.ns,
-            "labels": {"app": "cmtc-fence-client"}}, "spec": {"nodeName": cluster + "-worker", "restartPolicy": "Never", "terminationGracePeriodSeconds": 5,
+            "labels": {"app": "cmtc-fence-client"}}, "spec": {"nodeName": self.node_name(cluster), "restartPolicy": "Never", "terminationGracePeriodSeconds": 5,
             "automountServiceAccountToken": False, "securityContext": {"runAsNonRoot": True, "runAsUser": 100, "runAsGroup": 100},
             "containers": [{"name": "curl", "image": self.args.client_image, "imagePullPolicy": "Never",
                 "command": ["sh", "-c", "sleep 86400"], "securityContext": {"allowPrivilegeEscalation": False,
@@ -88,10 +99,10 @@ class FenceHarness(observer.Harness):
         for cluster in CLUSTERS:
             require(self.get(cluster, "namespace", self.ns, absent=True) is None, "run namespace already exists")
             require(self.get(cluster, "daemonset", DS, SYSTEM, absent=True) is None, "existing fence DS")
-            node = self.get(cluster, "node", cluster + "-worker")
+            node = self.get(cluster, "node", self.node_name(cluster))
             require(OPTIN not in node["metadata"].get("labels", {}) and OWNER not in node["metadata"].get("annotations", {}), "foreign fence opt-in")
             agents = json.loads(self.kubectl(cluster, "-n", "kube-system", "get", "pods", "-l", "k8s-app=cilium",
-                "--field-selector", "spec.nodeName=" + cluster + "-worker", "-o", "json").stdout)["items"]
+                "--field-selector", "spec.nodeName=" + self.node_name(cluster), "-o", "json").stdout)["items"]
             require(len(agents) == 1 and all(s.get("ready") for s in agents[0]["status"]["containerStatuses"]), "worker agent not uniquely Ready")
             self.report["clusters"][cluster] = {"nodeUID": node["metadata"]["uid"], "agent": {"name": agents[0]["metadata"]["name"],
                 "uid": agents[0]["metadata"]["uid"]}, "phases": [], "roots": {}, "cases": []}
@@ -113,7 +124,7 @@ class FenceHarness(observer.Harness):
 
     def node_optin(self, cluster, acquire):
         state = self.report["clusters"][cluster]
-        node = self.get(cluster, "node", cluster + "-worker")
+        node = self.get(cluster, "node", self.node_name(cluster))
         require(node["metadata"]["uid"] == state["nodeUID"], "node incarnation changed")
         meta = node["metadata"]; labels, annotations = meta.get("labels", {}), meta.get("annotations", {})
         pointer = lambda v: v.replace("~", "~0").replace("/", "~1")
@@ -132,7 +143,7 @@ class FenceHarness(observer.Harness):
                 {"op": "test", "path": "/metadata/labels/" + pointer(OPTIN), "value": "true"},
                 {"op": "remove", "path": "/metadata/labels/" + pointer(OPTIN)},
                 {"op": "remove", "path": "/metadata/annotations/" + pointer(OWNER)}]
-        self.kubectl(cluster, "patch", "node", cluster + "-worker", "--type=json", "-p", json.dumps(patch), label="atomic-fence-node-optin")
+        self.kubectl(cluster, "patch", "node", self.node_name(cluster), "--type=json", "-p", json.dumps(patch), label="atomic-fence-node-optin")
         state["nodeOwned"] = acquire
 
     def root_stat(self, cluster, path):
@@ -190,7 +201,7 @@ class FenceHarness(observer.Harness):
             filters = json.loads(self.node(cluster, "tc", "-j", "filter", "show", "dev", dev, hook).stdout or "[]")
             require(not filters, "legacy TC filter present")
         inode = int(self.node(cluster, "stat", "-Lc", "%i", "/proc/self/ns/net").stdout)
-        cfg = {"cluster": cluster, "node": cluster + "-worker", "namespaceUID": state["namespaceUID"], "podUID": pod["metadata"]["uid"],
+        cfg = {"cluster": cluster, "node": self.node_name(cluster), "namespaceUID": state["namespaceUID"], "podUID": pod["metadata"]["uid"],
             "netNSInode": inode, "ifIndex": host["ifindex"], "ifName": dev, "mac": host["address"], "peerIfIndex": inner["ifindex"],
             "direction": direction, "ciliumLinkID": baseline[0]["link"], "ciliumProgramID": baseline[0]["program"],
             "pinRoot": "/cmtc-pins", "lockRoot": "/cmtc-locks"}
@@ -209,7 +220,7 @@ class FenceHarness(observer.Harness):
     def traffic(self, cluster, phase, deny):
         before = self.counter_map(cluster, phase) if deny else None
         for destination in CLUSTERS:
-            backend = self.report["clusters"][destination]["backend"]
+            backend = self.backend(destination)
             current = self.get(destination, "pod", backend["name"], "mesh-example")
             require(current["metadata"]["uid"] == backend["uid"] and current["status"]["podIP"] == backend["ip"], "backend incarnation changed")
             for port in (80, 8080, 31337):
@@ -300,11 +311,11 @@ class FenceHarness(observer.Harness):
         phase["configMap"] = cm
         bad = copy.deepcopy(phase["config"]); bad["ciliumProgramID"] += 1  # Same key, wrong immutable ownership; never a new install key.
         self.create(cluster, {"apiVersion": "v1", "kind": "ConfigMap", "metadata": {"name": cm, "namespace": SYSTEM}, "immutable": True,
-            "data": {cluster + "-worker.json": json.dumps(phase["config"]), "bad.json": json.dumps(bad)}})
+            "data": {self.node_name(cluster) + ".json": json.dumps(phase["config"]), "bad.json": json.dumps(bad)}})
         body = copy.deepcopy(self.template)
         spec = body["spec"]["template"]["spec"]
         body["spec"]["template"]["metadata"]["labels"].update({OWNER: self.run_id, LEGACY_OWNER: self.run_id})
-        spec["nodeSelector"]["kubernetes.io/hostname"] = cluster + "-worker"
+        spec["nodeSelector"]["kubernetes.io/hostname"] = self.node_name(cluster)
         spec["containers"][0]["image"] = self.args.image
         for env in spec["containers"][0]["env"]:
             if env["name"] == "CLUSTER_NAME": env["value"] = cluster
@@ -358,7 +369,8 @@ class FenceHarness(observer.Harness):
         body = {"apiVersion": "v1", "kind": "Pod", "metadata": {"name": name, "namespace": SYSTEM}, "spec": {
             "nodeName": cfg["node"], "hostNetwork": True, "automountServiceAccountToken": False, "restartPolicy": "Never",
             "containers": [{"name": "fence", "image": self.args.image, "imagePullPolicy": "Never", "command": ["/cmtc-bpf-fence"], "args": args,
-                "env": [{"name": "NODE_NAME", "value": cfg["node"]}, {"name": "CLUSTER_NAME", "value": cluster}],
+                "env": [{"name": "NODE_NAME", "value": cfg["node"]}, {"name": "CLUSTER_NAME", "value": cluster},
+                    {"name": "CMTC_FENCE_POD_UID", "valueFrom": {"fieldRef": {"fieldPath": "metadata.uid"}}}],
                 "securityContext": {"privileged": True, "runAsUser": 0, "readOnlyRootFilesystem": True}, "volumeMounts": mounts}],
             "volumes": [{"name": "config", "configMap": {"name": phase["configMap"]}},
                 {"name": "pins", "hostPath": {"path": phase["hostPinRoot"], "type": "Directory"}},
