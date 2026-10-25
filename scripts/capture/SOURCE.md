@@ -1,5 +1,9 @@
 # Browser walk provenance and CMTC adaptation
 
+<!-- CMTC_DOC_CONTEXT -->
+Guide scope: check current runtime and feature gates before using these instructions. Read [current delivery status](../../docs/agile/DELIVERY_STATUS.md) and [documentation terms](../../DOCUMENTATION_GUIDE.md).
+<!-- /CMTC_DOC_CONTEXT -->
+
 The user requested the behavior of the existing PoC browser-walk action and demo55 capture workflow. Sources are pinned to `ephico2real2/cilium-implementation-poc` commit `22fb6e14c0cca8c78af1f072d1e89ebaea6a916b`:
 
 - [Composite action](https://github.com/ephico2real2/cilium-implementation-poc/blob/22fb6e14c0cca8c78af1f072d1e89ebaea6a916b/.github/actions/browser-walk/action.yml).

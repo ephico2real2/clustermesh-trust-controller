@@ -1,12 +1,24 @@
 # Istio and Linkerd lessons for the Cilium integration
 
-Reviewed 2026-10-23. This is a source comparison and a proposed adaptation, not a claim that CMTC implements either mesh or that cross-cluster workload mTLS works. Deployment remains Cilium + CMTC + SPIRE/cert-manager; studying the other meshes does not add their control planes. Exact revisions and reviewed paths are in [mesh-comparison.lock.json](mesh-comparison.lock.json).
+<!-- CMTC_DOC_CONTEXT -->
+Research scope: findings apply to the source version named in this document. Read [current delivery status](../agile/DELIVERY_STATUS.md) and [documentation terms](../../DOCUMENTATION_GUIDE.md).
+<!-- /CMTC_DOC_CONTEXT -->
+
+Reviewed 2026-10-24. This is a source comparison and a proposed adaptation, not a claim that CMTC implements either mesh or that cross-cluster workload mTLS works. Deployment remains Cilium + CMTC + SPIRE/cert-manager; studying the other meshes does not add their control planes. Exact revisions and reviewed paths are in [mesh-comparison.lock.json](mesh-comparison.lock.json).
 
 ## What the limitation means
 
 The limitation belongs to the pinned **Cilium control-plane integration**, not to the general capabilities of ztunnel. Cilium builds workload records from local CEP/CES resources and local namespace enrollment. Its mapper leaves network, trust domain, cluster ID and policy references unset, and its authorization handler returns an empty response with a static nonce. [Endpoint mapper](https://github.com/cilium/cilium/blob/beb276d2f38d4aadfda14710acf8d14a0f1ba723/pkg/ztunnel/xds/endpoint_event.go#L154-L164), [authorization handler](https://github.com/cilium/cilium/blob/beb276d2f38d4aadfda14710acf8d14a0f1ba723/pkg/ztunnel/xds/stream_processor.go#L347-L359).
 
 The Cilium ztunnel source already subscribes to `istio.security.Authorization`. Its inbound HBONE handler replaces tunnel port 15008 with the resolved application target before constructing its authorization context; its matcher checks authenticated principals and destination ports. This gives us an existing L4 engine to integrate. Image-to-source provenance still needs verification. [Subscription](https://github.com/cilium/ztunnel/blob/5bb9cf256b10a209ae9bc0624ddfbf27dbc439de/src/state.rs#L1105-L1114), [application target](https://github.com/cilium/ztunnel/blob/5bb9cf256b10a209ae9bc0624ddfbf27dbc439de/src/proxy/inbound.rs#L361-L400), [matcher](https://github.com/cilium/ztunnel/blob/5bb9cf256b10a209ae9bc0624ddfbf27dbc439de/src/rbac.rs#L85-L155).
+
+## AKS reference: two different products
+
+The user-provided [AKS ACNS Cilium mTLS concept](https://learn.microsoft.com/en-us/azure/aks/container-network-security-cilium-mutual-tls-concepts) is the closest implementation reference for Cilium plus ztunnel: SPIRE issues workload SVIDs, ztunnel runs per node, and Cilium installs namespace-driven TCP redirection into ztunnel. It confirms the sidecar-free node-proxy pattern. It does **not** implement the current CMTC target: Microsoft explicitly lists cross-cluster mTLS as unsupported, says L4/L7 policy enforcement is unsupported with this profile, disallows combining it with WireGuard, and documents plaintext for enrolled/non-enrolled pairs. Treat it as a single-cluster reference, not proof of Cilium ClusterMesh mTLS.
+
+AKS also documents a distinct [Azure Kubernetes Application Network](https://learn.microsoft.com/en-us/azure/application-network/architecture) preview. That product uses managed Istio Ambient, node ztunnel, a shared CA hierarchy with per-cluster intermediates, and east-west gateways; its architecture page describes end-to-end cross-cluster mTLS. It is not the ACNS Cilium integration and does not remove Cilium's ClusterMesh/ztunnel guard. Microsoft's [overview](https://learn.microsoft.com/en-us/azure/application-network/overview) currently describes supported scenarios as single-cluster, while the architecture page describes multiple member clusters, so treat the multi-cluster availability statement as a documentation inconsistency to verify before relying on the managed product's current support status.
+
+Design consequence: reuse the separation of node interception, workload identity, xDS discovery, and cross-cluster transport, while preserving our stronger target gates: authenticated cluster-qualified remote workload records, effective authorization, strict plaintext rejection, and independent WireGuard/IPsec composition. The AKS ACNS page's documented gaps are acceptance tests for CMTC, not behavior to copy.
 
 ## Patterns to adopt
 

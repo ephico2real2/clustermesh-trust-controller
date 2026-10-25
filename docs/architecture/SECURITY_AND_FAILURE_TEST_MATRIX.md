@@ -1,5 +1,9 @@
 # Security, encryption and failure test matrix
 
+<!-- CMTC_DOC_CONTEXT -->
+Design scope: proposed behavior requires the stated acceptance tests. Read [current delivery status](../agile/DELIVERY_STATUS.md) and [documentation terms](../../DOCUMENTATION_GUIDE.md).
+<!-- /CMTC_DOC_CONTEXT -->
+
 **Acceptance targets; none executed in the initial source audit.** Use the [pinned baseline and gaps](../research/SOURCE_AUDIT.md), [threat model](THREAT_MODEL.md) and [implementation gates](IMPLEMENTATION_PLAN.md). A test result must record exact versions, topology, identity/policy expectations and independent packet/transport evidence before a row can pass.
 
 The primary profile requires workload mTLS plus WG or IPsec transport on the same cross-cluster flow. The [existing lab review](../research/EXISTING_LAB_REVIEW.md) identifies topology/evidence patterns and historical failures to reproduce. A demo report that exits zero while printing trouble is not a passing assertion; required negative checks and the multi-cluster suite must fail the qualification job on failure.

@@ -1,5 +1,9 @@
 # Local SPIRE PKI preparation
 
+<!-- CMTC_DOC_CONTEXT -->
+Evidence scope: results apply to the recorded source, image and fixture. Read [current delivery status](docs/agile/DELIVERY_STATUS.md) and [documentation terms](DOCUMENTATION_GUIDE.md).
+<!-- /CMTC_DOC_CONTEXT -->
+
 CMTC uses this certificate hierarchy:
 
 Organization root → cluster CA → exact SPIRE CA → workload SVID.
@@ -8,6 +12,8 @@ The organization root key stays on the MacBook in a private directory outside th
 Each cluster creates its own cluster CA key inside Kubernetes.
 SPIRE creates its own signing key.
 Public certificates move between these components. Private keys do not move with the evidence.
+
+Read [the illustrated PKI flow](PKI_TRUST_FLOW.md) for issuance and verification. Read [the image build steps](LOCAL_IMAGE_BUILD.md) before reproducing the helper or SPIRE builds.
 
 ## Preserve ClusterMesh
 
@@ -115,7 +121,7 @@ No selected test fails or is skipped.
 
 The real issuer-profile producer is now enabled in both clusters.
 [Its guide](LOCAL_ISSUER_PROFILE.md) and [live ledger](docs/evidence/live-issuer-publication/summary.json) record the activation.
-Node Workload/Admin socket access is now enabled. Exact workload registration, native credential qualification and native consumers remain unfinished.
+Node Workload/Admin socket access is now enabled. Native credential qualification has separate passing evidence in [the credential guide](LOCAL_NATIVE_CREDENTIALS.md). Complete registrar withdrawal, production proxy access and native consumers remain unfinished.
 A public bundle, node readiness or publication ACK is not evidence of workload protection.
 
 Native remote identity, effective policy, durable admission and connection recovery remain required.

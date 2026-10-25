@@ -1,5 +1,9 @@
 # Local native workload credentials
 
+<!-- CMTC_DOC_CONTEXT -->
+Evidence scope: results apply to the recorded source, image and fixture. Read [current delivery status](docs/agile/DELIVERY_STATUS.md) and [documentation terms](DOCUMENTATION_GUIDE.md).
+<!-- /CMTC_DOC_CONTEXT -->
+
 The native credential path now works on all four nodes in `cmtc-a` and `cmtc-b`.
 A trusted node probe fetches a workload SVID through the real ztunnel CRI and SPIRE client.
 The application has no sidecar, node socket mount or private-key file.

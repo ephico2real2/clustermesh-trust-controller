@@ -1,5 +1,9 @@
 # Metrics inventory
 
+<!-- CMTC_DOC_CONTEXT -->
+Guide scope: check current runtime and feature gates before using these instructions. Read [current delivery status](../../../docs/agile/DELIVERY_STATUS.md) and [documentation terms](../../../DOCUMENTATION_GUIDE.md).
+<!-- /CMTC_DOC_CONTEXT -->
+
 Source: `{job="cmtc-spire-ztunnel",cluster="cmtc-mtls"}`; query end 2026-10-24T04:50:52Z; measured 2026-10-24
 
 21 metric names in 21 families, 51 series.

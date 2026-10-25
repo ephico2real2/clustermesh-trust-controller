@@ -1,5 +1,9 @@
 # Completeness audit — 2026-10-23
 
+<!-- CMTC_DOC_CONTEXT -->
+Evidence scope: results apply to the recorded source, image and fixture. Read [current delivery status](../agile/DELIVERY_STATUS.md) and [documentation terms](../../DOCUMENTATION_GUIDE.md).
+<!-- /CMTC_DOC_CONTEXT -->
+
 Implementation continuation: [OBSERVE_LAB.md](../development/OBSERVE_LAB.md) supersedes the historical design-only inventory below for the experimental observation API/controller/agent/CI slice. No encrypted-path capability follows from that implementation; use actual CI evidence for deployment claims.
 
 ## Continuation source review

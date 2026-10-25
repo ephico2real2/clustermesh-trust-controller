@@ -1,5 +1,9 @@
 # Verification queue — 2026-10-23
 
+<!-- CMTC_DOC_CONTEXT -->
+Research scope: findings apply to the source version named in this document. Read [current delivery status](../agile/DELIVERY_STATUS.md) and [documentation terms](../../DOCUMENTATION_GUIDE.md).
+<!-- /CMTC_DOC_CONTEXT -->
+
 Baseline: [Cilium v1.20.4 source audit](SOURCE_AUDIT.md), [immutable pins](sources.lock.json). “Static reviewed” is not runtime validation. The [implementation plan](../architecture/IMPLEMENTATION_PLAN.md) defines acceptance and dependencies.
 
 | Topic | Evidence collected | Remaining verification | Owner component / stories |

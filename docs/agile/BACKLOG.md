@@ -1,5 +1,9 @@
 # Agile delivery backlog
 
+<!-- CMTC_DOC_CONTEXT -->
+Guide scope: check current runtime and feature gates before using these instructions. Read [current delivery status](DELIVERY_STATUS.md) and [documentation terms](../../DOCUMENTATION_GUIDE.md).
+<!-- /CMTC_DOC_CONTEXT -->
+
 **9 features, 9 delivery epics, 46 delivery stories, plus investigative epic spike EP10.** See `stories.csv` for importable rows, subtasks, acceptance and DoD.
 
 The [pinned source audit](../research/SOURCE_AUDIT.md) supplies initial static evidence for CMTC-001/002; neither is runtime complete and CMTC-003 is unapproved. Follow the [incremental PR plan](../architecture/IMPLEMENTATION_PLAN.md) for dependencies and explicit acceptance gates. This file and `stories.csv` define canonical IDs; the older architecture and observability package numbering is superseded.
@@ -42,7 +46,7 @@ The [pinned source audit](../research/SOURCE_AUDIT.md) supplies initial static e
 **EP03: Hub, cluster controller, DaemonSet**
 
 - **CMTC-201 — Hub cluster registry and status** (P0/P1 per CSV). Subtasks: Registration; auth; cluster conditions; reconcilers. Acceptance: automated success, failure and security scenarios with documented metrics.
-- **CMTC-202 — Node-agent DaemonSet prototype** (P0/P1 per CSV). Subtasks: Per-node pod inventory; config digest; local readiness. Acceptance: automated success, failure and security scenarios with documented metrics.
+- **CMTC-202 — Node-agent DaemonSet prototype** (P0/P1 per CSV). Subtasks: Per-node pod inventory; config digest; local readiness; a separately gated Go DaemonSet prototype that loads a narrowly scoped eBPF observer/deny gate and is later ported into the enhanced Cilium agent. The existing Observe DaemonSet stays unprivileged. Acceptance: tests prove intended-workload attachment, fail-closed missing/stale state, Cilium policy/service coexistence, safe detach/restart and accurate readiness; a load/attach or ACK alone never means Protected. The prototype is not a permanent second datapath.
 - **CMTC-203 — Versioned configuration acknowledgments** (P0/P1 per CSV). Subtasks: ObservedGeneration; digest; drift and lag metrics. Acceptance: automated success, failure and security scenarios with documented metrics.
 - **CMTC-204 — HA and partition tolerance** (P0/P1 per CSV). Subtasks: Leader election; cached trust; cluster disconnection tests. Acceptance: automated success, failure and security scenarios with documented metrics.
 

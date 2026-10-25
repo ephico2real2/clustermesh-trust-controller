@@ -1,5 +1,11 @@
 # Local exact SPIRE registrar
 
+<!-- CMTC_DOC_CONTEXT -->
+Evidence scope: results apply to the recorded source, image and fixture. Read [current delivery status](docs/agile/DELIVERY_STATUS.md) and [documentation terms](DOCUMENTATION_GUIDE.md).
+<!-- /CMTC_DOC_CONTEXT -->
+
+The separate registrar image is a later experimental design choice. The original plan reused Cilium enrollment. Read [the ownership review](SPIRE_REGISTRATION_DESIGN.md) before selecting a production owner.
+
 The registrar manages workload registration inside the SPIRE server Pod. It does not capture or encrypt application traffic. Ztunnel performs workload TLS. Cilium owns the native workload and policy path.
 
 The registrar reads the Kubernetes API over verified HTTPS. An administrator pins the cluster UID, namespace and service-account UIDs, agent and delegate DaemonSet UIDs, and exact daemon images. An enrollment label alone cannot authorize a registration.
@@ -12,7 +18,7 @@ flowchart LR
   R --> U[Private server Admin socket]
   U --> S[SPIRE registration store]
   S --> A[SPIRE node agent]
-  Z[Node ztunnel] --> D[Separate agent Admin socket]
+  Z[Node ztunnel: activation pending] -. proposed delegate access .-> D[Separate agent Admin socket]
   D --> A
 ```
 
@@ -43,4 +49,6 @@ The current local checks pass 15 registrar/command top-level tests and 27 subtes
 
 The fork's opt-in `encryption.ztunnel.ca.externalExactRegistrar` setting disables its old namespace registrar and management client. Helm rejects that setting unless ztunnel and its SPIRE CA are selected. Positive rendering, three invalid-mode checks, 24 operator top-level race tests, 58 subtests, vet and required lint pass.
 
-Image and runtime qualification are still in progress. Do not select the new mode in the shared clusters until the exact registrar image and ownership/recovery checks pass. The ClusterMesh/ztunnel startup guard stays closed. None of these registration results establishes `Protected` or cross-cluster mTLS.
+The exact registrar image is built and imported on all four nodes. Runtime trials passed initial registration and native SVID fetches. The latest trial failed credential-withdrawal qualification. An explicit empty SVID response must remain distinct from caller permission failure and timeout. The next test needs a still-authorized control workload. See [the current finding](SPIRE_REGISTRATION_DESIGN.md#current-withdrawal-finding).
+
+The automated runner is `scripts/lab/spire/qualify_registrar.py`. It owns fixture setup, assertions, restart, evidence and cleanup. A failed assertion or cleanup returns a nonzero exit code. Do not rerun the old withdrawal assertion as acceptance evidence before the control and corrected diagnostic image are qualified. Do not select the new mode permanently until ownership and recovery gates pass. The ClusterMesh/ztunnel startup guard stays closed. None of these registration results establishes `Protected` or cross-cluster mTLS.

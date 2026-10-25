@@ -1,5 +1,9 @@
 # Story background and executable acceptance scenarios
 
+<!-- CMTC_DOC_CONTEXT -->
+Guide scope: check current runtime and feature gates before using these instructions. Read [current delivery status](DELIVERY_STATUS.md) and [documentation terms](../../DOCUMENTATION_GUIDE.md).
+<!-- /CMTC_DOC_CONTEXT -->
+
 ## CMTC-501 / 505 — Metadata-driven namespace enrollment
 **As a** platform engineer, **I want** CMTC to use existing LOB/mnemonic namespace labels, **so that** groups of application namespaces automatically enroll without per-namespace work.
 

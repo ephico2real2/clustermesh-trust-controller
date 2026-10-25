@@ -1,5 +1,9 @@
 # Cilium agent metrics scraping in the local ClusterMesh lab
 
+<!-- CMTC_DOC_CONTEXT -->
+Research scope: findings apply to the source version named in this document. Read [current delivery status](../agile/DELIVERY_STATUS.md) and [documentation terms](../../DOCUMENTATION_GUIDE.md).
+<!-- /CMTC_DOC_CONTEXT -->
+
 This note records the fifth work item, [issue #17](https://github.com/ephico2real2/clustermesh-trust-controller/issues/17), and the submitted ServiceMonitor proposal. It connects the remote xDS mapping in [issue #16](https://github.com/ephico2real2/clustermesh-trust-controller/issues/16) to the existing metric contract in [issue #15](https://github.com/ephico2real2/clustermesh-trust-controller/issues/15). The related xDS test probe is [issue #14](https://github.com/ephico2real2/clustermesh-trust-controller/issues/14).
 
 This is a qualification plan, not evidence that a custom CMTC collector currently exists or that dashboards are receiving its series.

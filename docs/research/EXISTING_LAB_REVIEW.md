@@ -1,5 +1,9 @@
 # Existing Cilium lab review — 2026-10-23
 
+<!-- CMTC_DOC_CONTEXT -->
+Research scope: findings apply to the source version named in this document. Read [current delivery status](../agile/DELIVERY_STATUS.md) and [documentation terms](../../DOCUMENTATION_GUIDE.md).
+<!-- /CMTC_DOC_CONTEXT -->
+
 ## Confirmed target and review boundary
 
 The user confirmed the primary CMTC target: **ztunnel provides workload mTLS; WireGuard or IPsec provides the node transport encryption underneath; acceptance proves the complete cross-cluster path.** Neither layer substitutes for the other. No-transport and mTLS-off profiles remain useful controls, not the production target. Whether arbitrary host/control-plane traffic is encrypted must be separately specified and tested; enabling pod transport encryption is not a universal host-traffic guarantee.

@@ -1,5 +1,9 @@
 # Metrics inventory
 
+<!-- CMTC_DOC_CONTEXT -->
+Guide scope: check current runtime and feature gates before using these instructions. Read [current delivery status](../docs/agile/DELIVERY_STATUS.md) and [documentation terms](../DOCUMENTATION_GUIDE.md).
+<!-- /CMTC_DOC_CONTEXT -->
+
 Source: CMTC collectors and their runtime; measured October 24, 2026 America/Chicago; {job="cmtc",component=~"cmtc-controller|cmtc-node-agent"}
 
 207 metric names in 183 families, 1689 series.

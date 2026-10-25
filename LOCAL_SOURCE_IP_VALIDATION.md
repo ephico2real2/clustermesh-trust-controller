@@ -1,5 +1,9 @@
 # Local Cilium source-IP validation
 
+<!-- CMTC_DOC_CONTEXT -->
+Evidence scope: results apply to the recorded source, image and fixture. Read [current delivery status](docs/agile/DELIVERY_STATUS.md) and [documentation terms](DOCUMENTATION_GUIDE.md).
+<!-- /CMTC_DOC_CONTEXT -->
+
 The Cilium fork now verifies the source-IP check in the actual loaded endpoint program. Source commit: `df2a6c1ec88f0358c52e95229dd8fe21c2b56201`.
 
 This is a prerequisite for workload identity binding. It does not encrypt traffic or prove that traffic passed through ztunnel. The two ClusterMesh labs still need mandatory capture, effective authorization and recovery qualification before mTLS activation.

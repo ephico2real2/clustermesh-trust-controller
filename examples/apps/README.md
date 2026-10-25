@@ -1,5 +1,9 @@
 # Reused demo applications
 
+<!-- CMTC_DOC_CONTEXT -->
+Guide scope: check current runtime and feature gates before using these instructions. Read [current delivery status](../../docs/agile/DELIVERY_STATUS.md) and [documentation terms](../../DOCUMENTATION_GUIDE.md).
+<!-- /CMTC_DOC_CONTEXT -->
+
 Copied from the user's [cilium-implementation-poc](https://github.com/ephico2real2/cilium-implementation-poc/tree/22fb6e14c0cca8c78af1f072d1e89ebaea6a916b), commit `22fb6e14c0cca8c78af1f072d1e89ebaea6a916b`:
 
 | Local example | Original | Purpose |

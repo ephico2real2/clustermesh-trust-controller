@@ -1,55 +1,78 @@
 # ClusterMesh Trust Controller
 
-**Experimental Observe implementation; cross-cluster workload mTLS is not implemented.** Updated 2026-10-24.
+CMTC is an experimental trust controller for Cilium ClusterMesh. **End-to-end cross-cluster workload mTLS is not ready.**
 
-CMTC proposes a Go operator for namespace enrollment, shared public trust and certificate rotation, with native Cilium enforcement. The primary target is ztunnel workload mTLS layered over WireGuard or IPsec node transport encryption, verified end to end across ClusterMesh. Preserve the protected organizational root, cluster intermediates, SPIRE/cert-manager Option A, trust-manager, platform safety, exclusion precedence, no silent downgrade and all nine observability domains across two consolidated Grafana pages. No Linkerd or Istio deployment is proposed.
+The local labs are `cmtc-a` and `cmtc-b`. ClusterMesh and KVStoreMesh run in both labs. Applications communicate in both directions. Ztunnel remains disabled. WireGuard/IPsec composition is still unqualified.
 
-## Start here
+## Current state
 
-The [local Go and eBPF observer guide](LOCAL_DATAPATH_OBSERVER.md) records the
-custom TCX module, Podman builds, exact deployed images, both-cluster packet and
-native policy tests, structured lifecycle logs and cleanup evidence. It counts
-packets without changing verdicts; persistent fail-closed fencing remains open.
+| Part | What works | What remains open |
+| --- | --- | --- |
+| CMTC controller and node agents | Observe policy, Pod inventory and public issuer-profile publication | Complete enforcement and recovery |
+| CMTC eBPF prototypes | Local observer and deny-fence qualification | Mandatory capture and production integration |
+| SPIRE server and node agents | Retained signers, secure node attestation and native workload SVID delivery | Complete trust rotation and production proxy access |
+| Cilium fork | Routing; source-qualified membership, source-IP receipts and native policy-drain guards | Exact-image activation, policy-map reachability and restore quarantine |
+| Ztunnel fork | Local TLS, identity and flow-drain tests | Combined ClusterMesh runtime qualification |
+| Experimental SPIRE registrar | Local exact registration and SVID trials | Correct withdrawal evidence and a component-ownership decision |
 
-The root-level [workload mTLS guide](MTLS_GUIDE.md) explains the native
-authenticated-only trial, its real load and restart results, retry/ACK logs,
-Grafana counter meanings and both-theme screenshots. It links the complete
-immutable evidence and identifies the remaining fail-closed and ClusterMesh gates.
+The [delivery status](docs/agile/DELIVERY_STATUS.md) owns current source pins, deployed images, test results and blockers. A source test does not prove that its image runs in the lab.
 
-The [dashboard guide](DASHBOARD_GUIDE.md) maps all nine original dashboards into Operations and Workload Security, explains live versus planned panels, and retains the original JSON definitions.
+## Component roles
 
-The [deployed Observe lab runbook](docs/development/OBSERVE_LAB.md) covers the Go controller, node inventory agent, real observation CRD/metrics, two-cluster Cilium/cert-manager CI deployment, reused [demo applications](examples/apps/README.md), test assertions and browser screenshots. Run `make test build` for local Go verification. CI deploys the actual image and preserves evidence before teardown.
+CMTC manages trust intent and observation. Cilium owns routing and native policy. SPIRE attests workloads and issues SVIDs. Ztunnel performs workload TLS.
 
-[Deployed validation](docs/development/VALIDATION.md) records the passing two-cluster run and its eleven published browser captures, with the exact tested commit and remaining encryption limitations.
+The registrar is a separate Go helper in this repository. It runs inside the SPIRE server Pod. It is **not** the CMTC node DaemonSet. The original plan reused Cilium's enrollment logic. The separate registrar is an experimental design change. See the [registration decision](SPIRE_REGISTRATION_DESIGN.md).
 
-1. [Source audit and verified gaps](docs/research/SOURCE_AUDIT.md), pinned to Cilium **v1.20.4**, commit `beb276d2f38d4aadfda14710acf8d14a0f1ba723`.
-2. [Incremental implementation and PR plan](docs/architecture/IMPLEMENTATION_PLAN.md).
-3. [Threat model](docs/architecture/THREAT_MODEL.md) and [nine proposed ADRs](docs/architecture/adr/ADR-001.md).
-4. [Target architecture](docs/architecture/END_TO_END_DESIGN.md), [security test matrix](docs/architecture/SECURITY_AND_FAILURE_TEST_MATRIX.md), [backlog](docs/agile/BACKLOG.md) and [stories](docs/agile/stories.csv).
-5. [Observability audit](observability/docs/SOURCE_AUDIT.md) and [handover](docs/handover/CODEX_START_HERE.md).
+<!-- markdownlint-disable MD033 -->
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/diagrams/component-roles/component-roles.dark.png">
+  <source media="(prefers-color-scheme: light)" srcset="docs/diagrams/component-roles/component-roles.light.png">
+  <img src="docs/diagrams/component-roles/component-roles.light.png" alt="The experimental registrar uses SPIRE's private server API. The CMTC node agent reports inventory. Ztunnel activation remains pending.">
+</picture>
+<!-- markdownlint-enable MD033 -->
 
-Existing test foundation: the [Cilium lab review](docs/research/EXISTING_LAB_REVIEW.md) pins the user's working PoC, identifies reusable topology/cert-manager/observability patterns, and records its separate ztunnel experiment and required PKI/transport adaptations.
+*The registrar handles identity registration. It does not carry application traffic. Dashed means activation is still proposed.*
 
-## Current constraints
+```text
+Control plane: CMTC controller; experimental registrar; SPIRE server.
+Each node: CMTC node agent; Cilium agent; SPIRE agent.
+The registrar uses the private server Admin socket.
+Ztunnel activation is pending in both ClusterMesh labs.
+```
 
-The pinned Cilium source rejects ztunnel with ClusterMesh. Its xDS workload stream uses local endpoint resources and sends no authorization policies. The proxy already has an L4 authorization engine; the missing integration includes remote identity records, real policy delivery and fail-closed admission. The [Istio/Linkerd comparison](docs/research/MESH_MTLS_COMPARISON.md) and [Cilium integration contract](docs/architecture/CILIUM_ZTUNNEL_CONTRACT.md) specify the adaptation and version-specific traps. The chart selects one encryption type; HBONE over WireGuard/IPsec remains a research target.
+## Read the guides
 
-Existing SPIRE enrollment support should be evaluated before adding an adapter. Cilium's ztunnel dependency is Rust and has Istio origins; [ADR-001](docs/architecture/adr/ADR-001.md) records the dependency boundary for review.
+| Task | Guide |
+| --- | --- |
+| Continue implementation | [Handover](docs/handover/CODEX_START_HERE.md) |
+| Understand the design | [Target architecture](docs/architecture/END_TO_END_DESIGN.md) |
+| Check the work plan | [Backlog](docs/agile/BACKLOG.md) and [security test matrix](docs/architecture/SECURITY_AND_FAILURE_TEST_MATRIX.md) |
+| Understand PKI and stale-flow checks | [PKI trust flow](PKI_TRUST_FLOW.md) |
+| Build each image | [Local image build](LOCAL_IMAGE_BUILD.md) |
+| Build and test locally | [Podman workflow](docs/development/PODMAN_LOCAL_VALIDATION.md) |
+| Understand node images | [DaemonSet implementation](CMTC_DAEMONSET_IMPLEMENTATION.md) |
+| Check native credentials | [Credential evidence](LOCAL_NATIVE_CREDENTIALS.md) |
+| Check registration | [Registrar guide](LOCAL_SPIRE_REGISTRAR.md) |
+| Check the actual source-IP program | [Kernel validation](LOCAL_SOURCE_IP_VALIDATION.md) |
+| Check native policy transitions | [Policy transition guide](LOCAL_NATIVE_POLICY_TRANSITIONS.md) |
+| Read Grafana correctly | [Dashboard guide](DASHBOARD_GUIDE.md) |
+| Find all documentation | [Documentation guide](DOCUMENTATION_GUIDE.md) |
 
-Namespace labels and enrollment acknowledgments cannot establish `Protected`. The current API supports `enforcement.mode: Observe` only: it evaluates namespace metadata, reports counts/status and inventories local pods. Namespace RBAC is read-only, Strict is rejected, and enforcement stays Unknown. The [Observe sample](config/samples/namespace-mtls-policy.yaml) is deployable with the CRD; `*.target.yaml` and ClusterMeshTrust remain future API proposals.
+## Delivery rules
 
-All nine domain definitions are retained unchanged. Their panels are consolidated into Operations and Workload Security, with planned instrumentation explicitly unavailable; the browser walk validates real selection/inventory metrics and captures both themes. SPIRE workload issuance, trust rotation, live enrollment and the Cilium cross-cluster/dual-encryption changes remain pending. No private CA keys belong in this repository or in bundle distribution.
+1. Run affected tests locally.
+2. Run the required lint and vet checks.
+3. Build the exact Linux ARM64 image with host Podman.
+4. Load its archive into the existing kind labs.
+5. Verify the running image and binary source.
+6. Run positive, negative and recovery checks.
+7. Collect load, packet, identity and dashboard evidence where applicable.
+8. Commit the qualified increment.
 
-Repository: [ephico2real2/clustermesh-trust-controller](https://github.com/ephico2real2/clustermesh-trust-controller).
+CI, branch pushes and registry publication are deferred. Keep platform traffic safe. Keep private keys out of logs and evidence. Preserve the existing labs and applications.
 
-The kind lab uses [versioned Cilium fork images](docs/development/CILIUM_IMAGES.md) from GHCR, pinned with their matching chart in `config/cilium-images.lock.json`.
+`NamespaceMTLSPolicy` currently supports `Observe`. Target manifests and proposed CRDs do not enable Strict enforcement. A label, SVID or ACK cannot establish `Protected`.
 
-For local-first security work, follow the [Podman build, kind archive import,
-and qualification runbook](docs/development/PODMAN_LOCAL_VALIDATION.md). It keeps
-the MacBook Podman builder separate from the existing Colima/kind runtime and
-shows how to prove which exact image and source are running before load tests or
-Grafana screenshots.
+## Diagram sources
 
-The imported [PoC Hubble dashboard by app](examples/observability/hubble-l7-by-app/README.md) includes the exact demo 37 generator, generated JSON and source hashes. The fork's Hubble-enabled load test exercises it with distinct app/workload names and real Gateway and direct-pod requests.
-
-[Persistent deny-fence experiment](LOCAL_DATAPATH_FENCE.md).
+The [diagram source](docs/diagrams/component-roles/source.html) uses diagram-kit. Render both themes with `diagram-render`. Update the source, images and text twin together. The [documentation guide](DOCUMENTATION_GUIDE.md) gives the command.

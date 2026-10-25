@@ -1,5 +1,9 @@
 # CMTC observability
 
+<!-- CMTC_DOC_CONTEXT -->
+Guide scope: check current runtime and feature gates before using these instructions. Read [current delivery status](../../docs/agile/DELIVERY_STATUS.md) and [documentation terms](../../DOCUMENTATION_GUIDE.md).
+<!-- /CMTC_DOC_CONTEXT -->
+
 The lab provisions **Operations** and **Workload Security**, consolidating all nine original domains. Their original `01-` through `09-` JSON definitions are preserved unchanged in `observability/dashboards/`; they are reference definitions, not nine additional duplicate live pages. [The root dashboard guide](../../DASHBOARD_GUIDE.md) maps every domain, explains chart meanings and shows measured screenshots.
 
 Operations uses real namespace-intent, node-inventory and controller telemetry. Workload Security incorporates the qualified native two-node mTLS view, plus the original planned TLS performance, trust, transport and violation coverage. The baseline Observe CI does not deploy the isolated SPIRE fixture. Planned panels remain visible and labelled `planned`; missing telemetry is unknown, never a successful zero.

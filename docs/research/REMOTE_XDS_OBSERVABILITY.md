@@ -1,5 +1,9 @@
 # Remote Workload xDS Observability Design Note
 
+<!-- CMTC_DOC_CONTEXT -->
+Research scope: findings apply to the source version named in this document. Read [current delivery status](../agile/DELIVERY_STATUS.md) and [documentation terms](../../DOCUMENTATION_GUIDE.md).
+<!-- /CMTC_DOC_CONTEXT -->
+
 This note records the mock-injection telemetry proposal for [issue #15](https://github.com/ephico2real2/clustermesh-trust-controller/issues/15). It is a design review, not an implementation recipe: the pasted Go is illustrative and must not be copied into the Cilium fork as-is. The test-only xDS probe is tracked in [issue #14](https://github.com/ephico2real2/clustermesh-trust-controller/issues/14); the native discovery and federated mTLS work is tracked in [issue #13](https://github.com/ephico2real2/clustermesh-trust-controller/issues/13).
 
 ## Existing observability contract

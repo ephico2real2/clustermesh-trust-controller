@@ -1,5 +1,9 @@
 # Local issuer-profile qualification
 
+<!-- CMTC_DOC_CONTEXT -->
+Evidence scope: results apply to the recorded source, image and fixture. Read [current delivery status](docs/agile/DELIVERY_STATUS.md) and [documentation terms](DOCUMENTATION_GUIDE.md).
+<!-- /CMTC_DOC_CONTEXT -->
+
 The issuer-profile producer is enabled on both existing mesh clusters.
 It publishes verified mappings from the real SPIRE signing authorities.
 Both clusters pass renewal, restricted RBAC, structured logging and five live metric queries.
@@ -31,6 +35,8 @@ It uses the canonical SPIRE manifest digest from [the recovery ledger](docs/evid
 Do not substitute the synthetic Docker archive import digest as a pull reference.
 Do not run the old trial cleanup against this persistent activation.
 A failed activation uses a resourceVersion-changing rollback fence. It does not adopt foreign resources or remove authority state.
+
+Read [the illustrated PKI flow](PKI_TRUST_FLOW.md) for the full certificate and verification path. Read [the build steps](LOCAL_IMAGE_BUILD.md) for component builds.
 
 ## What the producer does
 
@@ -135,7 +141,7 @@ No mTLS or Protected claim follows from these producer tests.
 
 ## Approved cluster-intermediate support
 
-The next producer source increment accepts the intended Option A hierarchy:
+The deployed producer source increment accepts the intended Option A hierarchy:
 organization root → cluster intermediate → explicitly pinned SPIRE CA → workload SVID.
 The existing direct-root form remains supported.
 The cluster intermediate is public approved lineage. It is not a workload signer.

@@ -1,5 +1,9 @@
 # Experimental node mTLS views
 
+<!-- CMTC_DOC_CONTEXT -->
+Guide scope: check current runtime and feature gates before using these instructions. Read [current delivery status](../../../docs/agile/DELIVERY_STATUS.md) and [documentation terms](../../../DOCUMENTATION_GUIDE.md).
+<!-- /CMTC_DOC_CONTEXT -->
+
 `authenticated-only.json` is the qualified 12-panel native source. `observability/build.py` incorporates it into the active Workload Security page alongside the planned TLS, trust, transport and violation sections; Operations is the other active page. All nine original domain JSONs remain unchanged in `observability/dashboards/`. The earlier `dashboard.json` and walk are retained under `historical/` for reproducibility; their duplicate live view is retired. Both active dashboards use the lab's `cmtc-prom` data source. These
 native ztunnel TCP metrics are not CMTC protection or TLS handshake metrics.
 

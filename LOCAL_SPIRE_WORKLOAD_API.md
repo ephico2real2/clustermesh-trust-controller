@@ -1,5 +1,9 @@
 # Local SPIRE node APIs
 
+<!-- CMTC_DOC_CONTEXT -->
+Evidence scope: results apply to the recorded source, image and fixture. Read [current delivery status](docs/agile/DELIVERY_STATUS.md) and [documentation terms](DOCUMENTATION_GUIDE.md).
+<!-- /CMTC_DOC_CONTEXT -->
+
 Both mesh clusters now run the current SPIRE agent fork on all four nodes.
 Each agent exposes a separate Workload API socket and Admin API socket.
 The agent verifies the kubelet certificate against the approved per-node CA and the exact node DNS name.

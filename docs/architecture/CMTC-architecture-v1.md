@@ -1,5 +1,9 @@
 # CMTC Architecture Design v1.1 — Draft
 
+<!-- CMTC_DOC_CONTEXT -->
+Design scope: proposed behavior requires the stated acceptance tests. Read [current delivery status](../agile/DELIVERY_STATUS.md) and [documentation terms](../../DOCUMENTATION_GUIDE.md).
+<!-- /CMTC_DOC_CONTEXT -->
+
 Status: Design proposal; no implementation or upstream Cilium compatibility is implied.
 
 **Historical design input.** Use [END_TO_END_DESIGN.md](END_TO_END_DESIGN.md), the [nine ADR files](adr/ADR-001.md), [canonical backlog](../agile/BACKLOG.md) and [pinned source audit](../research/SOURCE_AUDIT.md) for current work. Story/ADR identifiers in this older draft conflict with the canonical files; its mention of ADR-010 does not create an approved tenth ADR. Native Cilium ztunnel is a Rust dependency; Go applies to CMTC and the Cilium control-plane extensions.
@@ -76,7 +80,7 @@ The Cilium label `io.cilium/mtls-enabled: "true"` is fixed in code, not user-con
 - Deploy one Go agent per eligible node, with bounded cache and least-privilege access.
 - Consume versioned desired state from cluster controller; observe local pods and Cilium/ztunnel readiness using supported interfaces.
 - Report observed generation, applied bundle digest, pod coverage, config lag, probe results, and node health.
-- Do not mint identities, distribute private CA keys, modify eBPF independently, or act as a second TLS proxy.
+- Do not mint identities, distribute private CA keys or act as a second TLS proxy. The current Observe agent has no BPF access. A separately gated CMTC DaemonSet may host the requested eBPF prototype, but the qualified production datapath must move into Cilium's agent; it must not become an independent permanent policy/service datapath.
 - Prefer Cilium Hive integration if upstream APIs allow it; separate DaemonSet remains a design decision pending source review.
 
 ## Trust rotation state machine

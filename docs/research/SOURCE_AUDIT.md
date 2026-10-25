@@ -1,5 +1,9 @@
 # Pinned source audit — 2026-10-23
 
+<!-- CMTC_DOC_CONTEXT -->
+Research scope: findings apply to the source version named in this document. Read [current delivery status](../agile/DELIVERY_STATUS.md) and [documentation terms](../../DOCUMENTATION_GUIDE.md).
+<!-- /CMTC_DOC_CONTEXT -->
+
 This records the initial static design review, before the Observe implementation. See [OBSERVE_LAB.md](../development/OBSERVE_LAB.md) for current code, deployment and test scope; the Cilium enforcement gaps below remain open.
 
 ## Scope and evidence levels

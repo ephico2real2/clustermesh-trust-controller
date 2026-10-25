@@ -1,5 +1,9 @@
 # CMTC metric meanings and presentation
 
+<!-- CMTC_DOC_CONTEXT -->
+Guide scope: check current runtime and feature gates before using these instructions. Read [current delivery status](../docs/agile/DELIVERY_STATUS.md) and [documentation terms](../DOCUMENTATION_GUIDE.md).
+<!-- /CMTC_DOC_CONTEXT -->
+
 This contract separates implemented collectors from planned story outputs. A planned type is a design proposal, not a claim that a live exporter exists. The original nine domains and all 31 proposed metric names remain mapped in [capabilities.json](capabilities.json).
 
 The chart follows the value's meaning: gauges are current levels/states, counters become rates or selected-range increases, and latency percentiles come from real histogram buckets. A pie is used only for mutually exclusive categories that exhaust one denominator. No missing security metric is converted to a successful zero.

@@ -1,5 +1,9 @@
 # Opt-in datapath metric inventory
 
+<!-- CMTC_DOC_CONTEXT -->
+Guide scope: check current runtime and feature gates before using these instructions. Read [current delivery status](../docs/agile/DELIVERY_STATUS.md) and [documentation terms](../DOCUMENTATION_GUIDE.md).
+<!-- /CMTC_DOC_CONTEXT -->
+
 This supplements the existing controller/inventory baseline; it does not replace
 or regenerate that historical inventory. Source revision is
 `5b1bc205fee9c6bc999c7d545e23ac0ff6f29bf2`. Cluster/node identities are retained in

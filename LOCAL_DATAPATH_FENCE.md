@@ -1,5 +1,9 @@
 # Local persistent deny-fence experiment
 
+<!-- CMTC_DOC_CONTEXT -->
+Evidence scope: results apply to the recorded source, image and fixture. Read [current delivery status](docs/agile/DELIVERY_STATUS.md) and [documentation terms](DOCUMENTATION_GUIDE.md).
+<!-- /CMTC_DOC_CONTEXT -->
+
 Cursor Grok 4.7 Extra High delivered the [original full proposal](docs/research/cursor/RESTORE_FENCE_IMPLEMENTATION.md). Independent review and primary qualification produced a smaller implementation: [the C program](internal/datapath/bpf/fence.c), [Go lifecycle](internal/datapath/fence_linux.go), and [node CLI](cmd/cmtc-bpf-fence/main.go). The [review](docs/research/cursor/RESTORE_FENCE_PRIMARY_REVIEW.md) records the unsafe paths rejected from the proposal. The existing [packet observer](LOCAL_DATAPATH_OBSERVER.md) is separate and never drops traffic.
 
 This experiment always drops at its explicitly selected workload TCX hook. It has no allow, grant or lease map. It counts packets and skb bytes; those counters are neither HTTP requests nor TLS handshakes. It does not establish workload mTLS, authenticated identity or `Protected` status. It is outside default deployment.

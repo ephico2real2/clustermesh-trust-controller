@@ -1,5 +1,9 @@
 # Bidirectional ClusterMesh sample
 
+<!-- CMTC_DOC_CONTEXT -->
+Guide scope: check current runtime and feature gates before using these instructions. Read [current delivery status](../../../docs/agile/DELIVERY_STATUS.md) and [documentation terms](../../../DOCUMENTATION_GUIDE.md).
+<!-- /CMTC_DOC_CONTEXT -->
+
 The sample runs the same `rebel-base` application in both clusters. Each
 backend returns its cluster name, and each global Service selects exactly one
 cluster's backend. This makes the direction of a cross-cluster request visible
@@ -18,8 +22,15 @@ calls on all three ports:
 | `cmtc-b` | `rebel-base-cmtc-b` | `cmtc-b` |
 | `cmtc-b` | `rebel-base-cmtc-a` | `cmtc-a` |
 
-`scripts/lab/test.sh` checks the serving-cluster response for every path before
-the load phase. Port 31337 is an arbitrary high-port probe, not a required port
+For the persistent MacBook labs, run the owned-client test:
+
+```sh
+python3 scripts/lab/spire/check_app_paths.py --out /private/tmp/cmtc-app-paths-new-run
+```
+
+Use a Python environment with `cryptography` installed. The output directory must be new. The runner checks all 36 Service and Pod-IP paths. It verifies HTTP status, serving cluster and Pod identity. It then removes only its two clients and checks existing application continuity. Any assertion or cleanup failure returns a nonzero exit code.
+
+The disposable harness uses `scripts/lab/test.sh`. That script replaces its baseline clients. Do not use it against the preserved MacBook clients. Port 31337 is an arbitrary high-port probe, not a required port
 list for mTLS enforcement.
 `scripts/lab/load.sh start` runs six-minute local shop loads and cross-cluster
 service loads in both directions on TCP/80, 8080 and 31337. Every run gets

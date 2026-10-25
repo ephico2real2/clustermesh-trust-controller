@@ -1,17 +1,23 @@
 # Deployed CMTC Observe lab
 
-Status: experimental first implementation. This builds real Go components and deploys them to two disposable Cilium clusters. It does not yet enable workload mTLS or required WireGuard/IPsec composition. Follow [the implementation plan](../architecture/IMPLEMENTATION_PLAN.md) for those security gates.
+<!-- CMTC_DOC_CONTEXT -->
+Guide scope: check current runtime and feature gates before using these instructions. Read [current delivery status](../agile/DELIVERY_STATUS.md) and [documentation terms](../../DOCUMENTATION_GUIDE.md).
+<!-- /CMTC_DOC_CONTEXT -->
+
+Status: experimental Observe implementation. The MacBook uses the persistent `cmtc-a` and `cmtc-b` clusters in the `cmtc-cilium` Colima VM. Preserve these clusters and their applications. It does not yet enable workload mTLS or required WireGuard/IPsec composition. Follow [the implementation plan](../architecture/IMPLEMENTATION_PLAN.md) for those security gates.
 
 ## Implemented behavior
 
 - Cluster-scoped `NamespaceMTLSPolicy` API and structural CRD with CEL validation. Explicit AllEligible/MatchSelectors; OR between selectors and AND within them; platform protection before exclusions before inclusion. Empty/ambiguous selectors are rejected. Only Observe is accepted; Strict is rejected by the API and evaluator.
 - Controller-runtime reconciler watches policies/namespaces, writes its own policy status, and reports current counts/observed generation. Multiple policies block evaluation until only one remains. Existing Cilium labels are counted as intent and left untouched. `EnforcementVerified` is Unknown with a reason. The controller's RBAC cannot patch namespaces or read signing Secrets.
-- Lightweight Go DaemonSet inventories only its node's pods using a server-side field selector. It distinguishes pod-network and host-network inventory and reports observation availability. It has no host mounts, proxy, eBPF access or CA-key permissions. Inventory readiness is not enforcement readiness. Version/digest ACKs are future work.
+- The current lightweight Go DaemonSet inventories only its node's pods using a server-side field selector. It distinguishes pod-network and host-network inventory and reports observation availability. It has no host mounts, proxy, eBPF access or CA-key permissions. Inventory readiness is not enforcement readiness. The optional eBPF observer and fence use separate DaemonSet profiles. They passed local qualification and their fixtures were removed. The existing Observe deployment does not gain BPF privileges. The prototype must later move into Cilium's agent before the datapath is treated as native or ClusterMesh-capable. Version/digest ACKs are future work.
 - Real bounded-label Prometheus metrics: `cmtc_namespace_decisions{cluster,decision}`, `cmtc_namespaces_eligible`, `cmtc_namespaces_selected`, `cmtc_namespaces_enrolled` (labels only), `cmtc_enforcement_available` (0), `cmtc_policy_evaluations_total`, `cmtc_node_agent_ready{cluster,node}`, `cmtc_pods_observed{cluster,node,network}`. No protected-pod or successful-mTLS metrics are invented.
 
 Namespace classification is a conservative initial inventory rule: reserved system/OpenShift/Cilium/CMTC names, declared protected metadata and additional protected names. This is not a qualified OpenShift platform detector and cannot authorize live enrollment.
 
-## CI flow
+## Recorded CI flow
+
+CI is deferred during the active local qualification mandate. This section describes the harness. It does not authorize dispatching a workflow or replacing the persistent MacBook clusters.
 
 [ci.yaml](../../.github/workflows/ci.yaml) runs on main/feature pushes. Unit/race tests, vet, binary compilation, generated-schema freshness, formatting and Kustomize/shell checks precede the deployed job.
 
@@ -25,7 +31,7 @@ The test step verifies selection/exclusion/platform precedence, relabeling and n
 
 The Strict check is deliberately a **negative test**, using server-side dry run. Its expected API validation response is saved in each cluster's `*-strict-rejection.txt`; the main log prints an explicit expected-rejection PASS. An unrelated API/network failure does not count as success. A response saying only Observe is supported confirms this implementation's enforcement-mode restriction; it is not a missing CRD dependency. The deployable sample stays in Observe.
 
-A small Prometheus runs in each cluster; the spoke remote-writes to the hub. Grafana provisions two consolidated pages: Operations (28 panels) and Workload Security (29 panels). All nine original JSON definitions are preserved unchanged, and every original metric has a panel or documented equivalent in these pages. Playwright verifies both clusters' actual metrics, requires the enforcement-unavailable value, captures both themes of both pages plus the imported remote app (five cases), and writes a screenshot index. Missing future mTLS/trust/transport panels remain No data/unknown. Import and screenshots do not validate those future metrics.
+A small Prometheus runs in each cluster; the spoke remote-writes to the hub. Grafana provisions two consolidated pages: Operations and Workload Security. Panel counts depend on the recorded revision. Use [the dashboard guide](../../DASHBOARD_GUIDE.md) and its evidence for the selected revision. All nine original JSON definitions are preserved unchanged, and every original metric has a panel or documented equivalent in these pages. Playwright verifies both clusters' actual metrics, requires the enforcement-unavailable value, captures both themes of both pages plus the imported remote app (five cases), and writes a screenshot index. Missing future mTLS/trust/transport panels remain No data/unknown. Import and screenshots do not validate those future metrics.
 
 The [capture Dockerfile](../../scripts/capture/Dockerfile) uses the official Ubuntu 24.04 Noble Playwright v1.63.0 image pinned by its manifest digest, matching the user's reference action. Chromium and browser system libraries are already installed in that base; the matching npm package is installed at image build time. A real Chromium launch/close check and browser tests of passing/failing panel/text expectations must pass. CI runs captures inside this prepared image, mounting only evidence output (plus a read-only spec when provided) and reaching loopback port forwards through Linux host networking. Browser/OS dependencies are not downloaded onto the runner during lab setup. This follows the [official Playwright Docker guidance](https://playwright.dev/docs/docker).
 
@@ -41,19 +47,18 @@ See [CILIUM_IMAGES.md](CILIUM_IMAGES.md) for local fork builds, GHCR publication
 
 Requires Go >=1.26, Podman for MacBook image builds, the existing kind runtime, kubectl, Helm, Cilium CLI, OpenSSL and Python. The bootstrap and containerized capture paths target Linux CI; local cluster runs use installed tools. Node/Playwright run inside the Ubuntu capture image. The MacBook uses the dedicated Ubuntu Colima guest's host networking for the existing capture image and local port-forwards. This does not change the Podman image-build requirement.
 
+For the existing clusters, use the owned application runner:
+
 ```sh
-make test build
-make image
-make capture-image
-make lab-up
-make lab-test
-make lab-evidence
-make lab-capture
-make lab-down
+python3 scripts/lab/spire/check_app_paths.py --out /private/tmp/cmtc-app-paths-new-run
 ```
+
+Use a Python environment with `cryptography` installed. The output directory must not exist. The runner creates its own clients, checks 36 paths, saves evidence and removes only those clients. A failed assertion or cleanup returns a nonzero exit code.
+
+The `lab-up`, `lab-test` and `lab-down` Make targets belong to the disposable harness. Do not run them against the persistent labs. Follow [the Podman local runbook](PODMAN_LOCAL_VALIDATION.md) for builds and exact-image deployment.
 
 Install only the observation components into an existing development cluster with `kubectl kustomize config/default`, replacing `CLUSTER_NAME` and the image with the intended values before applying. The controller image is non-root, has a read-only filesystem and drops capabilities; metrics HTTP access is restricted by a NetworkPolicy. The Grafana/Prometheus fixtures intentionally use disposable lab settings and are not production monitoring manifests.
 
 ## Remaining work
 
-No live enrollment, Protected status, SPIRE credential delivery, consumer trust reload/rotation, remote workload discovery, application authorization inside HBONE, first-packet gate or layered encryption claim is made. The hub/trust coordinator and versioned node ACK protocol remain future implementation. Complete those Cilium/CMTC contracts and positive/negative evidence before enabling the primary encrypted profile. Existing source audits describe their original static-review baseline; this runbook describes the current implementation.
+Observe itself does not establish live protection. Separate native SPIRE credential tests have passed; see [the credential guide](../../LOCAL_NATIVE_CREDENTIALS.md). Protected status, complete remote authorization, first-packet admission, recovery and layered encryption remain open. The hub/trust coordinator and versioned node ACK protocol remain future implementation. Complete those Cilium/CMTC contracts and positive/negative evidence before enabling the primary encrypted profile. Existing source audits describe their original static-review baseline; this runbook describes the current implementation.

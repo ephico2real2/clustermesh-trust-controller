@@ -1,10 +1,16 @@
 # Cilium fork image development
 
-The CMTC kind lab now consumes agent, generic operator and ClusterMesh API server images from **our fork**, with immutable digests in [the development lock](../../config/cilium-images.lock.json). The chart and its CRDs are fetched from that exact `source_sha`, rather than combining current-main binaries with a release chart. The original v1.20.4 source audit remains a historical research baseline.
+<!-- CMTC_DOC_CONTEXT -->
+Guide scope: check current runtime and feature gates before using these instructions. Read [current delivery status](../agile/DELIVERY_STATUS.md) and [documentation terms](../../DOCUMENTATION_GUIDE.md).
+<!-- /CMTC_DOC_CONTEXT -->
 
-The current selected source is `42f89f83aa5a03ea80f7a2b8cece56b27f87385a`, which adds the Authorization transport lifecycle. [Publisher CI 40053175683](https://github.com/ephico2real2/cilium/actions/runs/40053175683) passed after reusing the ARM64 images built locally on this MacBook and building native AMD64 images in GitHub. It verified source/platform labels and actual agent binary versions before assembling the two-platform indices. [Wire CI 40052995200](https://github.com/ephico2real2/cilium/actions/runs/40052995200) and local Linux ARM64 each passed 150 race-enabled tests/subtests. This source enables no policy producer or protected profile; deployed-image baseline qualifications are tracked in [VALIDATION.md](VALIDATION.md).
+The recorded published bundle contains agent, generic operator and ClusterMesh API server images from **our fork**, with immutable digests in [the development lock](../../config/cilium-images.lock.json). The chart and its CRDs are fetched from that exact `source_sha`, rather than combining current-main binaries with a release chart. The original v1.20.4 source audit remains a historical research baseline.
+
+The historical published source is `42f89f83aa5a03ea80f7a2b8cece56b27f87385a`, which adds the Authorization transport lifecycle. [Publisher CI 40053175683](https://github.com/ephico2real2/cilium/actions/runs/40053175683) passed after reusing the ARM64 images built locally on this MacBook and building native AMD64 images in GitHub. It verified source/platform labels and actual agent binary versions before assembling the two-platform indices. [Wire CI 40052995200](https://github.com/ephico2real2/cilium/actions/runs/40052995200) and local Linux ARM64 each passed 150 race-enabled tests/subtests. This source enables no policy producer or protected profile; deployed-image baseline qualifications are tracked in [VALIDATION.md](VALIDATION.md).
 
 The public package is `ghcr.io/ephico2real2/cilium-dev`. Each component uses a distinct `sha-<full-source-commit>-<component>` tag and a two-platform image index (Linux AMD64 and ARM64). Native tags append the architecture. Digest pins, not mutable tags, select the tested version. This keeps the existing public package accessible to kind without registry Secrets.
+
+The persistent local clusters currently run Cilium `4459d58ed3`. Newer qualified source is not automatically deployed. See [delivery status](../agile/DELIVERY_STATUS.md) for the exact candidate and runtime pins. Local archive overrides take precedence over the historical publication lock. CI and publication remain deferred.
 
 ## Develop, build and select a version
 

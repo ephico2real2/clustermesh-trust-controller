@@ -1,5 +1,9 @@
 # ClusterMeshTrust API and reconciler design
 
+<!-- CMTC_DOC_CONTEXT -->
+Research scope: findings apply to the source version named in this document. Read [current delivery status](../agile/DELIVERY_STATUS.md) and [documentation terms](../../DOCUMENTATION_GUIDE.md).
+<!-- /CMTC_DOC_CONTEXT -->
+
 This note refines the proposed `ClusterMeshTrust` controller and manager
 registration sketch into a source-backed implementation contract. It is a
 design and issue companion, not a claim that the trust controller already

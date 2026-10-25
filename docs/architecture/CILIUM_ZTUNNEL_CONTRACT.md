@@ -1,8 +1,26 @@
 # Proposed Cilium remote workload and authorization contract
 
+<!-- CMTC_DOC_CONTEXT -->
+Design scope: proposed behavior requires the stated acceptance tests. Read [current delivery status](../agile/DELIVERY_STATUS.md) and [documentation terms](../../DOCUMENTATION_GUIDE.md).
+<!-- /CMTC_DOC_CONTEXT -->
+
 Status: proposed engineering contract, 2026-10-23. Based on the [pinned mesh comparison](../research/MESH_MTLS_COMPARISON.md) and [Cilium audit](../research/SOURCE_AUDIT.md). This is the next implementation boundary; no new production API or enforcement capability is implied.
 
+## Implementation snapshot
+
+The original protocol and transport PRs are historical groundwork. Current candidate Cilium source is `8bb97137fcc92b935171d60e59d7fb8a93714bd8`. The deployed agent remains `4459d58ed3`.
+
+The source now has authenticated membership work, native map observations, source-IP loader receipts and policy-withdrawal drain guards. These increments do not finish this contract. Policy-map reachability, restore quarantine, complete capture and exact-image traffic remain open. See [delivery status](../agile/DELIVERY_STATUS.md) and [policy transition evidence](../../LOCAL_NATIVE_POLICY_TRANSITIONS.md).
+
+The first two PRs did not implement effective policy admission. Their results remain useful protocol tests. They cannot qualify the newer native security candidate.
+
+<details>
+<summary>Historical protocol and transport groundwork</summary>
+
 Implementation tracking: [Cilium fork PR #1](https://github.com/ephico2real2/cilium/pull/1) starts the protocol portion with the exact `cilium/ztunnel` v1.0.0 Authorization schema, a separate Go security package, independent wire fixture and reproducible generation tests. [Focused CI passed](https://github.com/ephico2real2/cilium/actions/runs/40022647528) at `636e441044379d48db0686eb21becf9351f782f6`. This is partial groundwork for slices 1 and 3 below; neither remote discovery nor authorization delivery/admission is implemented by that patch. [Cilium PR #6](https://github.com/ephico2real2/cilium/pull/6) subsequently implements the agent-local Authorization transport lifecycle through the existing delta engine and a typed Hive cache, with immutable atomic batches, subscriptions, ACK/NACK isolation, removals and reconnect cleanup. [CI 40052995200](https://github.com/ephico2real2/cilium/actions/runs/40052995200) and local Linux ARM64 each passed 150 race-enabled tests/subtests. These call the actual Go ADS handler over in-memory gRPC with fake policies; no effective-policy producer or admission gate is enabled. Keep every runtime acceptance gate open.
+
+
+</details>
 
 ## Ownership
 
@@ -57,6 +75,36 @@ Protected admission needs all of the following for the **same workload UID/incar
 Independent xDS type ACKs cannot create a transactional admission barrier by themselves. The proxy or datapath must hold new protected traffic until the complete generation is active. Restart, reconnect, NACK, missing-reference, removal and stale-policy paths must preserve that hold. Initial implementation must not rely on a transient bootstrap DENY that can disappear during resync.
 
 Observations exposed to CMTC should include node/proxy identity, workload and namespace UID, software/protocol versions, intent generation, trust/policy digests, local interception state, active admission state, observation time and reason. Bind them to an authenticated observer. CMTC can then report Unknown/Blocked for absent or stale evidence. Successful ACKs and namespace labels remain insufficient for Protected; runtime positive and negative canaries validate the claimed path.
+
+## Temporary CMTC DaemonSet eBPF prototype
+
+The requested CMTC-first stage is a development prototype, not a change to the
+production ownership contract above. In the audited fork, `cil_from_container`
+is attached to the pod veth TCX ingress path and `cil_to_container` is attached
+for selected reverse paths by `pkg/datapath/loader/endpoint.go`. Cilium uses
+tail-anchored TCX links, with legacy TC fallback and a separate netkit path.
+An external TCX program is not a stable Cilium extension API. The prototype
+must explicitly reject unqualified legacy-TC, netkit and no-TCX modes, use its
+own map/pin namespace, and never replace or reorder Cilium's links.
+
+Start with an observe-only hook, then a deny-only gate for disposable test
+workloads. Allowed packets must continue into Cilium's existing pipeline so
+socket-LB, service translation, policy, conntrack/NAT, routing and transport
+encryption remain authoritative. A Pod informer cannot close the first-packet
+race: CNI ADD must synchronously establish Required state through an
+authenticated local CMTC-agent handshake before the workload can start. A
+missing agent/response, wrong workload incarnation, map or attach error, stale
+lease, or unsupported hook mode must fail CNI admission or drop protected test
+traffic. Restart restores intent only and requires fresh evidence before the
+gate opens. This prototype does not inspect TLS or prove workload identity.
+
+The final gate belongs in Cilium's endpoint loader and BPF programs, keyed to
+the Cilium endpoint and Pod/Namespace incarnation. Only Cilium can integrate
+the gate atomically with its endpoint lifecycle and preserve native policy and
+service semantics. ztunnel must supply verifiable peer-authentication and
+authorization evidence; a label, packet mark or xDS ACK alone cannot set
+Protected. The ClusterMesh+ztunnel compatibility guard stays closed until the
+native path passes the full negative and recovery matrix.
 
 ## Reviewable fork slices
 

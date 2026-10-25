@@ -1,5 +1,9 @@
 # Local admission and issuer verification increment
 
+<!-- CMTC_DOC_CONTEXT -->
+Evidence scope: results apply to the recorded source, image and fixture. Read [current delivery status](docs/agile/DELIVERY_STATUS.md) and [documentation terms](DOCUMENTATION_GUIDE.md).
+<!-- /CMTC_DOC_CONTEXT -->
+
 On October 24, 2026, the MacBook's Podman builder qualified the admission changes and rebuilt the enhanced Cilium agent. Both retained ClusterMesh clusters now run that image. The sample apps remain installed with one backend per node. **This run proves source behavior and Observe-mode reachability; it does not prove cross-cluster workload mTLS.** Ztunnel interception and node encryption remain disabled, and the compatibility guard is unchanged.
 
 | Component | Source and local image | Verified scope |

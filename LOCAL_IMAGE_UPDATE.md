@@ -1,5 +1,9 @@
 # Local image rebuild and ClusterMesh update
 
+<!-- CMTC_DOC_CONTEXT -->
+Evidence scope: results apply to the recorded source, image and fixture. Read [current delivery status](docs/agile/DELIVERY_STATUS.md) and [documentation terms](DOCUMENTATION_GUIDE.md).
+<!-- /CMTC_DOC_CONTEXT -->
+
 The later [admission increment](LOCAL_ADMISSION_VALIDATION.md) records the current Cilium agent pin; the table below preserves the earlier rebuild baseline.
 
 On October 24, 2026, the MacBook Podman builder rebuilt Linux ARM64 images and

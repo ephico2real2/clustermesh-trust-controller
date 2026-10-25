@@ -1,5 +1,9 @@
 # ClusterMeshTrust sample and local validation
 
+<!-- CMTC_DOC_CONTEXT -->
+Research scope: findings apply to the source version named in this document. Read [current delivery status](../agile/DELIVERY_STATUS.md) and [documentation terms](../../DOCUMENTATION_GUIDE.md).
+<!-- /CMTC_DOC_CONTEXT -->
+
 **Status: design-only.** This note refines the proposed sample, application
 commands, log output, dashboard assertion, and Cilium pull-request text. It does
 not claim that a `ClusterMeshTrust` API, reconciler, mock bridge, or trust metric

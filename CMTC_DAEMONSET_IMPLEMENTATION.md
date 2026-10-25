@@ -1,5 +1,9 @@
 # CMTC DaemonSet implementation
 
+<!-- CMTC_DOC_CONTEXT -->
+Guide scope: check current runtime and feature gates before using these instructions. Read [current delivery status](docs/agile/DELIVERY_STATUS.md) and [documentation terms](DOCUMENTATION_GUIDE.md).
+<!-- /CMTC_DOC_CONTEXT -->
+
 The CMTC DaemonSet is part of the planned workload mTLS system.
 The present eBPF programs count packets or block packets.
 They do not encrypt traffic.
@@ -51,8 +55,11 @@ Cross-cluster workload mTLS remains incomplete.
 | CMTC node agent | Report local Pod inventory without kernel privileges. |
 | eBPF observer | Count packets at the selected hook. |
 | eBPF fence | Block packets at the selected hook. |
+| Experimental SPIRE registrar | Manage exact registration entries from inside the SPIRE server Pod. |
 | Cilium fork | Supply the current network routing and Cilium policy. |
 | Ztunnel | Perform workload TLS when the remaining integration is complete. |
+
+The registrar is a separate Go helper and image. It is not the CMTC node agent. This helper is a later experiment. The original design reused Cilium enrollment. Read [the registration design decision](SPIRE_REGISTRATION_DESIGN.md).
 
 The observer and fence use separate images.
 The default installation does not install these optional eBPF DaemonSets.

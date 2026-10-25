@@ -1,5 +1,9 @@
 # CMTC dashboard guide
 
+<!-- CMTC_DOC_CONTEXT -->
+Guide scope: check current runtime and feature gates before using these instructions. Read [current delivery status](docs/agile/DELIVERY_STATUS.md) and [documentation terms](DOCUMENTATION_GUIDE.md).
+<!-- /CMTC_DOC_CONTEXT -->
+
 Updated October 24, 2026. **All nine original dashboard definitions are preserved unchanged.** Their coverage is combined into two Grafana pages, with repeated metrics shown once and future instrumentation retained as visible planned panels.
 
 | Page | Local Grafana | Source |

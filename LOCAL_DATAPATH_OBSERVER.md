@@ -1,5 +1,9 @@
 # Local CMTC datapath observer
 
+<!-- CMTC_DOC_CONTEXT -->
+Evidence scope: results apply to the recorded source, image and fixture. Read [current delivery status](docs/agile/DELIVERY_STATUS.md) and [documentation terms](DOCUMENTATION_GUIDE.md).
+<!-- /CMTC_DOC_CONTEXT -->
+
 This is the first custom CMTC Go plus eBPF prototype. It counts packets and skb bytes on an explicitly selected disposable workload's host-veth TCX hook, then returns `TCX_NEXT`. It never changes packet data or a Cilium policy verdict. It does not enforce mTLS, admit workloads or establish `Protected` status.
 
 The production destination remains native integration in the enhanced Cilium agent. The existing CMTC Observe DaemonSet stays unprivileged. The experimental manifest is outside default provisioning in [config/experimental/datapath-observer.yaml](config/experimental/datapath-observer.yaml).

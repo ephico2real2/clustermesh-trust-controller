@@ -1,5 +1,9 @@
 # Workload mTLS guide
 
+<!-- CMTC_DOC_CONTEXT -->
+Evidence scope: results apply to the recorded source, image and fixture. Read [current delivery status](docs/agile/DELIVERY_STATUS.md) and [documentation terms](DOCUMENTATION_GUIDE.md).
+<!-- /CMTC_DOC_CONTEXT -->
+
 Updated October 24, 2026. This guide explains the local authenticated-only
 ztunnel trial, its measured results, the Grafana panels and the remaining work.
 The [original evidence report][report] preserves every command, exit status,

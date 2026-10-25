@@ -1,5 +1,9 @@
 # Recreate and recover the persistent Kind ClusterMesh
 
+<!-- CMTC_DOC_CONTEXT -->
+Guide scope: check current runtime and feature gates before using these instructions. Read [current delivery status](../agile/DELIVERY_STATUS.md) and [documentation terms](../../DOCUMENTATION_GUIDE.md).
+<!-- /CMTC_DOC_CONTEXT -->
+
 `cmtc-a` and `cmtc-b` are the only persistent local Kind clusters. Recreate
 these two when their state is damaged or when the user explicitly requests a
 fresh lab. Use another temporary cluster only for a test that requires a

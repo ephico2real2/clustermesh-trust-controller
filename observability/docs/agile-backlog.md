@@ -1,5 +1,9 @@
 # Observability backlog mapping
 
+<!-- CMTC_DOC_CONTEXT -->
+Guide scope: check current runtime and feature gates before using these instructions. Read [current delivery status](../../docs/agile/DELIVERY_STATUS.md) and [documentation terms](../../DOCUMENTATION_GUIDE.md).
+<!-- /CMTC_DOC_CONTEXT -->
+
 Status: Planned. The canonical hierarchy is F08 → EP08 → CMTC-701..706 in [the main backlog](../../docs/agile/BACKLOG.md) and [stories.csv](../../docs/agile/stories.csv). This mapping supersedes the package-local numbering in the input archive, which collided with delivery stories.
 
 | Story | Scope | Acceptance gate |

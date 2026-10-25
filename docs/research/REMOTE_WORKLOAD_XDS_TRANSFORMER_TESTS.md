@@ -1,5 +1,9 @@
 # Regression tests for remote Workload xDS mapping
 
+<!-- CMTC_DOC_CONTEXT -->
+Research scope: findings apply to the source version named in this document. Read [current delivery status](../agile/DELIVERY_STATUS.md) and [documentation terms](../../DOCUMENTATION_GUIDE.md).
+<!-- /CMTC_DOC_CONTEXT -->
+
 This note refines the submitted `transformer_test.go` proposal for [issue #18](https://github.com/ephico2real2/clustermesh-trust-controller/issues/18). It is linked to the implementation design in [issue #16](https://github.com/ephico2real2/clustermesh-trust-controller/issues/16), scrape qualification in [issue #17](https://github.com/ephico2real2/clustermesh-trust-controller/issues/17), and observability contract in [issue #15](https://github.com/ephico2real2/clustermesh-trust-controller/issues/15).
 
 The code sample in the request is not a compilable suite for the pinned Cilium tree. This document records the corrected contract and placement. The actual type and function signatures must be finalized beside the mapper when issue #16 implements the real extension point.

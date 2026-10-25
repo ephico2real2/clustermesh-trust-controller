@@ -1,18 +1,53 @@
 # Incremental implementation and design PR plan
 
-Status: **Proposed**, 2026-10-23. Baseline: [source audit](../research/SOURCE_AUDIT.md). Each PR is independently reviewable; none is a delivery-date commitment. Security-dependent milestones cannot be closed by operator-only work.
+<!-- CMTC_DOC_CONTEXT -->
+Design scope: proposed behavior requires the stated acceptance tests. Read [current delivery status](../agile/DELIVERY_STATUS.md) and [documentation terms](../../DOCUMENTATION_GUIDE.md).
+<!-- /CMTC_DOC_CONTEXT -->
 
-User clarification: the primary result is ztunnel workload mTLS over required WireGuard or IPsec node transport, working end to end across ClusterMesh. [Existing lab review](../research/EXISTING_LAB_REVIEW.md) pins the reusable PoC and the adaptations below. This direction does not mark all implementation contracts/ADRs approved.
+This page preserves the original PR plan from 2026-10-23.
+Its PR numbers describe the planning sequence; they do not report current completion.
+Security acceptance criteria remain binding where their implementation is incomplete.
+Use [delivery status](../agile/DELIVERY_STATUS.md) and the backlog for the first unfinished dependency.
 
-The user subsequently authorized a first deployable Observe build with CI, copied demo applications and screenshots. That implementation may proceed while enforcement contracts remain under review; the earlier hold on Go/CI/observation-schema scaffolding is superseded for this experimental slice. Live enrollment, Protected status and the encrypted profile retain their security gates. [OBSERVE_LAB.md](../development/OBSERVE_LAB.md) records actual scope and remaining work.
+The primary target remains ztunnel workload mTLS over WireGuard or IPsec across ClusterMesh.
+The [lab review](../research/EXISTING_LAB_REVIEW.md) records the historical PoC baseline.
+Architecture and security approval remain separate from source tests and runtime evidence.
+
+The user authorized Observe builds, Go/API scaffolding, deployment, applications, and screenshots after the initial planning phase.
+That initial scaffolding hold is superseded.
+The active mandate authorizes continued end-to-end implementation with local qualification.
+Current instructions defer CI, branch pushes, and image publication.
+Do not restart an initial authorization gate for work already authorized.
+Production enrollment and `Protected` claims still require their security acceptance tests.
+
+## Current implementation snapshot — 2026-10-25
+
+| Item | State |
+| --- | --- |
+| Cilium source | `8bb97137fcc92b935171d60e59d7fb8a93714bd8` |
+| Cilium runtime | `4459d58ed3d98805f15c74298076025fc97dd540`; later source increments need exact-image qualification. |
+| Ztunnel source | `75843515d549f7928d080801ac3f7e4344f572eb`. |
+| Latest ztunnel source qualification | 568 full-suite tests and 2 diagnostic tests pass. Formatting and strict Clippy pass. |
+| Runtime activation | The candidate is not activated. Ztunnel stays disabled, KVStoreMesh stays enabled, and the compatibility guard stays closed. |
+| SPIRE registrar decision | Cilium reuse remains the baseline. The later separate CMTC image is experimental; production ownership is undecided. |
+| Dashboard delivery | Two consolidated pages preserve nine domains, original JSON definitions, and planned signals. |
+
+See [SPIRE registration design](../../SPIRE_REGISTRATION_DESIGN.md) for the registrar alternatives and exact authority boundaries.
+Source test success does not close runtime registration, credential withdrawal, traffic, policy, or existing-flow revocation gates.
+
+## Original PR sequence
+
+The sections below retain the original design trace.
+Historical setup tasks do not imply an empty repository or a current deployment instruction.
+Do not dispatch CI or publish from this plan while the current deferral applies.
 
 ## PR 0 — Import handover and pin the design baseline
 
-Suggested title: `docs: import CMTC handover and audit pinned Cilium interfaces`.
+Historical suggested title: `docs: import CMTC handover and audit pinned Cilium interfaces`.
 
-Scope: import the design archive, exact Cilium pin, source-versus-runtime evidence, nine reviewed but unaccepted ADRs, initial threat model, observability gaps and this gated plan. A README-only initial commit provides a base in the empty repository; all design content goes on `design/cilium-source-audit`. Commits use the configured human Git identity and SSH remote.
+Historical scope: import the design archive, exact Cilium pin, source/runtime evidence, proposed ADRs, threat model, and plan. The initial README and design branch provided the original repository base. Preserve that history. Use the configured human Git identity for qualified increments.
 
-Acceptance: all archive files accounted for; JSON and internal links checked; manifest refreshed; source citations resolve to the pinned revision and valid line ranges; no CRD/metrics/mTLS implementation claim. Open a draft PR. No deployment, generated CRD, Go scaffold or CI is included. External architecture/security review remains pending.
+Historical acceptance: account for archive files and validate JSON, links, manifests, and pinned source citations. The documentation import did not establish an implemented CRD, metrics, or mTLS capability. Its original PR step does not authorize a new publication. Architecture and security disposition remain explicit.
 
 ## PR 1 — Agree the enforcement and identity contracts
 
@@ -26,13 +61,13 @@ Subtasks:
 4. Specify external SPIRE attestation/CA endpoint, consumer reload ACK, stale-state behavior and a bounded observation API for CMTC.
 5. Define non-enrolled platform paths and a Cilium-enabled OpenShift test profile. Resolve the Cilium ztunnel dependency boundary in ADR-001.
 
-Acceptance: reviewers can follow each security claim to pinned source or a named missing interface; every gap has an owner/component and positive/negative test; all nine ADRs receive explicit architecture/security disposition. Until this gate passes, live enrollment, Go module, CRD generation, CI and enforcement patches stay pending. Approving documentation alone does not prove the datapath.
+Acceptance: trace each security claim to pinned source or a named missing interface. Give each gap an owner and positive/negative tests. Record explicit ADR dispositions. The original Go/API scaffolding hold is superseded by later implementation authorization. Live production enrollment and protection claims retain their specific security gates. Documentation approval does not prove the datapath.
 
 ## PR 2 — Policy evaluation and API contract
 
 F02 / EP02: CMTC-501,502,505,506,507,508; F09 / EP09: CMTC-801. Depends on PR 1 architecture disposition.
 
-Subtasks: choose Go/controller-runtime versions; scaffold module and required CI; design/generate structural CRD schemas; implement a pure selector/classification evaluator and dry-run controller. Require an explicit `AllEligible` or `MatchSelectors` choice; AND inside selectors, OR across selectors, platform protection before exclusions before inclusion. Define singleton/conflicting-policy behavior, empty/invalid selectors, reserved-label RBAC, UID recreation and GitOps field ownership.
+Original subtasks: choose Go/controller-runtime versions; create the module, CI, CRD schemas, evaluator, and dry-run controller. These are historical setup tasks; inspect existing implementation before planning changes. Current CI execution remains deferred. Require an explicit `AllEligible` or `MatchSelectors` choice; AND inside selectors, OR across selectors, platform protection before exclusions before inclusion. Define singleton/conflicting-policy behavior, empty/invalid selectors, reserved-label RBAC, UID recreation and GitOps field ownership.
 
 Acceptance: table-driven unit/envtest cases cover inclusion, exclusion, platform names/metadata, relabeling, deletion/recreation, conflicting ownership, unauthorized policy/exemption writes and absent platform inventory. Unsupported enforcement returns `Unknown`/`Blocked` with a reason and cannot apply live enrollment labels. `Protected` has no label-only path. Schema validation rejects ambiguous policy modes. A test of desired labels alone cannot close CMTC-503.
 
@@ -40,15 +75,27 @@ Acceptance: table-driven unit/envtest cases cover inclusion, exclusion, platform
 
 F03 / EP03: CMTC-201..204; F02 / EP02: CMTC-503,504. Depends on approved observation and packet-gate contracts.
 
-Subtasks: controller-runtime cluster controller; lightweight Go DaemonSet for inventory, signed/authenticated generation+digest ACKs and bounded probes. Reuse Cilium's Hive enrollment and ZDS inventory, keeping datapath ownership in Cilium. Compare cost/privilege of a separate agent with a minimal Hive observer; do not copy the reconciler into CMTC. Fresh evidence is bound to node/pod/namespace UID, version, generation and observation time.
+Subtasks: maintain the controller-runtime cluster controller and Go DaemonSet inventory, authenticated generation/digest ACKs, and bounded probes. The user-requested first datapath stage is a separately gated CMTC DaemonSet eBPF observer/deny prototype; after hook behavior and failure recovery are proven, port the production gate into the enhanced Cilium agent. Keep this transitional hook narrow, preserve Cilium policy/service translation, and do not build a permanent parallel datapath. Reuse Cilium's Hive enrollment and ZDS inventory; do not copy the reconciler into CMTC. Fresh evidence is bound to node/pod/namespace UID, version, generation and observation time.
 
-Acceptance: missing/stale observations, restart, namespace reuse, node disconnection and mismatched digests never yield `Protected`. A supported single-cluster canary may write labels only after platform interoperability and the first-packet gate pass. No cross-cluster support is advertised. Baseline API/DNS/webhook traffic and existing policy denials survive enable/disable and recovery. If no supported observation interface exists, retain dry-run behavior.
+Acceptance: missing/stale observations, restart, namespace reuse, node disconnection and mismatched digests never yield `Protected`. The prototype has explicit hook-mode compatibility, first-packet admission, map/interface ownership, attach/detach, Cilium reload and recovery evidence before any canary. A supported single-cluster canary may write labels only after platform interoperability and the first-packet gate pass. No cross-cluster support is advertised. Baseline API/DNS/webhook traffic and existing policy denials survive enable/disable and recovery. Port the production gate to Cilium before claiming native or ClusterMesh support. If the external hook cannot be made safe, retain dry-run behavior and implement the gate directly in Cilium.
 
 ## PR 4 — Option A trust lifecycle spike
 
 F04 / EP04: CMTC-101..105; F03 / EP03: CMTC-203,204. Can follow PR 1 independently of remote datapath work.
 
-Subtasks: pin SPIRE/cert-manager/trust-manager and issuer implementation; reuse Cilium SPIRE namespace/service-account enrollment; prove ztunnel credential delivery; define intermediate hierarchy and cluster identity constraints; distribute only public bundles; implement staged rotation with actual SPIRE/ztunnel reload evidence. Distinguish routine rotation from emergency compromise.
+Subtasks: pin SPIRE, cert-manager, trust-manager, and the issuer implementation.
+Reuse Cilium SPIRE namespace/service-account enrollment.
+Prove ztunnel credential delivery.
+Define the intermediate hierarchy and cluster identity constraints.
+Distribute only public bundles.
+Test staged rotation with actual SPIRE and ztunnel reload evidence.
+Keep routine rotation separate from emergency compromise.
+
+Later experimental change: a separate CMTC registrar now tests exact, expiring registrations inside the SPIRE server Pod.
+That image is not an approved replacement for the original Cilium reuse baseline.
+Record the production owner decision and migration tests before adopting it.
+Keep server Admin access separate from the pending node agent Admin permission change.
+See [SPIRE registration design](../../SPIRE_REGISTRATION_DESIGN.md).
 
 Acceptance: protected root key never enters cluster/node/namespace secrets; unauthorized cluster identity CSRs fail even with a common root; old+new bundles are consumed everywhere before issuance changes; partitions/stale ACKs block retirement; drain includes live connections and old SVID expiry; restart and compromise playbooks are exercised. Secret/ConfigMap existence cannot count as consumer ACK.
 
@@ -66,7 +113,7 @@ F06 / EP06: CMTC-301..305. Depends on the secure HBONE baseline; trace spikes ma
 
 Subtasks: separate workload-authentication and transport settings; capability negotiation rejects unsupported/mixed combinations. Trace WireGuard/XFRM/eBPF marks and identity through overlay/direct routing, MTU/MSS, service translation and key rotation.
 
-Start composition qualification with WireGuard using the existing lab's measured WG exercise; then add IPsec as a separate profile. Preserve the user's existing Cilium Hubble patch on its own branch. The lab uses a 1.20.2-derived agent; review/cherry-pick applicable changes into an isolated branch against the selected CMTC pin rather than replacing the existing lab branch.
+Start composition qualification with WireGuard using the existing lab's measured WG exercise; then add IPsec as a separate profile. Preserve the user's existing Cilium Hubble patch on its own branch. The original PoC used a 1.20.2-derived agent. That pin is historical. Use the current source/runtime pins above and preserve the user's existing lab and Hubble work.
 
 Acceptance: for none/WireGuard/IPsec with mTLS off, baseline ClusterMesh regression tests pass on supported profiles. With mTLS on, TLS peer identity/policy evidence and independent WG/XFRM state plus packet captures establish both required layers. Missing keys, stale XFRM, node reboot and MTU failure produce no required-layer downgrade. No unsupported combination silently coerces to another mode.
 
@@ -74,12 +121,18 @@ Acceptance: for none/WireGuard/IPsec with mTLS off, baseline ClusterMesh regress
 
 F07 / EP07: CMTC-601..606; F08 / EP08: CMTC-701..706; F09 / EP09: CMTC-802..805. Metrics contracts start earlier; release claims wait for full evidence.
 
-Subtasks: Kubernetes/OpenShift/hosted-control-plane inventory and SCC/RBAC profile; progressive rollout and verified rollback; real exporters, metric fixtures, recording/alert rules, nine dashboard imports, packaging and runbooks. Reuse native collectors only after actual scrape verification.
+Subtasks: maintain Kubernetes, OpenShift, and hosted-control-plane inventory and permission profiles.
+Test progressive rollout and rollback.
+Implement real exporters, metric fixtures, and recording and alert rules.
+Maintain two consolidated dashboard pages, packaging, and runbooks.
+Preserve all nine original domains and JSON definitions.
+Keep planned signals visible until their owning implementation and tests pass.
+Verify actual scrapes before reusing native collectors.
 
-CMTC-802 should derive its small two-cluster topology and evidence-before-teardown pattern from the pinned PoC. Adapt the root-copy bootstrap to protected root/cluster intermediates, pin agent/proxy/CRD inputs immutably, make required connectivity/security checks mandatory and convert evidence-printing checks into failing assertions. Establish the core encrypted path before adding the full observability stack.
+CMTC-802 retains the small two-cluster topology and evidence-before-teardown pattern from the pinned PoC. Adapt the root-copy bootstrap to protected root/cluster intermediates, pin agent/proxy/CRD inputs immutably, make required connectivity/security checks mandatory and convert evidence-printing checks into failing assertions. Establish the core encrypted path before adding the full observability stack.
 
 Acceptance: API, DNS UDP/TCP, webhooks, kubelet, ingress, OAuth, operators, etcd, bootstrap/recovery and upgrades remain healthy. Failure stops rollout; rollback requires datapath and platform recovery, not label removal. Promtool rule checks/tests and Grafana imports cover success, denial, zero traffic, absent exporter and missing cluster series. Security-negative, resilience and performance suites pass the pinned version matrix before production support is stated.
 
 ## Tracking and completion
 
-Canonical hierarchy: initiative → F01..F09 → EP01..EP09 → CMTC story → listed subtasks. [stories.csv](../agile/stories.csv) retains the existing 46 story IDs. PR 0 records static review only; CMTC-001 stays in review while deep datapath traces remain, CMTC-002 is an initial threat-model draft, and CMTC-003 awaits explicit approval. Stories are closed by their acceptance evidence, not by a dashboard or desired label.
+Canonical hierarchy: initiative → F01..F09 → EP01..EP09 → CMTC story → listed subtasks. [stories.csv](../agile/stories.csv) retains the existing 46 story IDs. PR 0 records the original static review. Current story states belong in the backlog and delivery status. Explicit architecture approval remains separate from implementation progress. Stories are closed by their acceptance evidence, not by a dashboard or desired label.

@@ -1,22 +1,67 @@
 # End-to-end local delivery status
 
-## Active local qualification
+Updated 2026-10-25. Continue the active end-to-end mandate through the existing agile stories. Complete side requests, then return to the first unfinished security dependency. CI, branch pushes and registry publication remain deferred.
 
-Current deployed dependency: both SPIRE servers run the locally qualified recovery fork `28f6b8d84ade21c6accb32ba9689a3bdf64877ec`, based directly on upstream main `0d589ad07d7b7e7a244f5b5548bf9d2d21e9fbba`. Exact ARM64 canonical image: `localhost/cmtc-spire-server@sha256:f57e537d42e5a8cc94fbae110b4f67a70481f391fef70171143d9a1b81cf0288`, config `70f8fbde787b46479d8bd22aed9005d36caa7c597fcff7108cee9bf122a6edd0`. Both retained signers/PVCs pass two actual restart rounds. All four node agents pass fresh PSAT against current Pod/Node UIDs. Private backups remain only inside the original PVCs. ARM64 manager/x509 race passes89top/96sub; actual SQLite migrations4top/29sub; vet and change-only lint pass. [Recovery/source/runtime evidence](../evidence/spire-recovery/summary.json). The original failed1.15.5 retention test is historical and corrected; do not export or recreate keys/PVCs.
+## Current runtime
 
-The real issuer-profile producer is now ENABLED persistently in both clusters using the existing exact CMTC `f5fe9992da` image. Both clusters publish and renew their approved actual SPIRE signer mappings; effective RBAC, runtime pins, structured logs and five fresh metric queries pass. All41 host helper tests pass. Generation1 immutable approval expires `2026-10-26T03:55:11Z`; output leases are at most30seconds. Preserve the host live-a-b ledger and exact source/output UIDs. Approval rotation must retain monotonic floors and remains a followup before expiry. [Live publication evidence](../evidence/live-issuer-publication/summary.json). This is public issuer publication without native consumer acceptance; workload mTLS remains disabled.
+Use only the persistent `cmtc-a` and `cmtc-b` labs in Colima `cmtc-cilium`. Preserve ClusterMesh, KVStoreMesh, applications, signers, PVCs and port forwards.
 
-Native credential delivery now passes on all four nodes. The exact diagnostic is clean ztunnel source `3b1a6a9e8fa3fcc9d3de499835feeafc0e735d39`, ARM64 image `localhost/cmtc-spire-workload-check@sha256:081b2dabeef4548673e9d8a68e98dfd1aec19ccc55c8a60f182af2fc660b7394`, config `6f4f445e01d3f06d003a94f5904a33c11bce25dd29fd219f474e8035b1b8f87c`. Real native CRI→held pidfd/cgroup→delegated SPIRE→bundle→final CRI checks return exact current-signer workload SVIDs, without private output. Four-node wrong-identity/domain/missing/cross-node UID checks pass20 cases. Both clusters also pass unregistered delegates/workloads, same-name PodUID replacement and exact workload/delegate registration removal/recovery. All four node-agent restarts recover fresh SVIDs. The actual wrong-kubelet-CA test rejects attestation and recovers after exact template restoration; its owned ConfigMap is removed. The failed initial cwd, registration propagation and short retry-budget runs remain diagnostics. Capped retries and actual structured recovery logs are retained. The fixture is cleaned:14 exact SPIRE entries,14 UID-bound namespace/SA/Pod/client objects and the separate wrong-CA ConfigMap are verified absent;36 app paths and10 fresh issuer metric queries pass. [Native credential guide](../../LOCAL_NATIVE_CREDENTIALS.md). This is credential proof, not workload encryption or policy proof.
+| Component | Deployed state |
+| --- | --- |
+| Cilium | `4459d58ed3`; routing and native baseline policy. Newer candidate source is not deployed. |
+| CMTC | `f5fe9992da855a22660c07b141e19feee50310ba`; six Observe processes. The issuer-profile producer is enabled in both clusters. |
+| SPIRE server and agents | `28f6b8d84ade21c6accb32ba9689a3bdf64877ec`; retained signer/PVC restart and secure node attestation passed. |
+| Native credential diagnostic | `3b1a6a9e8fa3fcc9d3de499835feeafc0e735d39`; exact image imported on four nodes and real native SVID checks passed. |
+| Experimental registrar | `e39928bc4f79ad6da134e77583945c8e5e9d52bf`; image built/imported. Owned runtime trial remains unqualified. |
+| Ztunnel, WireGuard and IPsec | Combined workload-mTLS profile disabled. No end-to-end Protected claim. |
 
-All four SPIRE agents run current fork28f6, canonical ARM64 image `localhost/cmtc-spire-agent@sha256:bf2286fb7a93084ebd17128d629e1b12715722c30d37e430ac922b0503219078`, config `707fcee4feff6cfc29478b7fbb86b4ad2a592784659b2b77c67b07fec53d0ff6`. Secure kubelet verification uses each node's approved public CA and exact node DNS. Separate UID1000 Workload/Admin sockets are enabled; applications receive no socket mounts or sidecars. Agent race170top/373sub, vet and76 host fixture/TLS/retry tests pass. [Node API deployment](../evidence/spire-workload-api/summary.json). Production root/GID1337 proxy access to the private UID1000 socket directory is still unqualified; do not auto-add DAC capabilities or widen permissions.
+The live producer approval expires at `2026-10-26T03:55:11Z`. Its output leases are at most 30 seconds. Preserve `~/.local/share/cmtc-issuer-profile/live-a-b/ledger.json` and its monotonic floors. Rotate approval before expiry; never reset authority state to extend it.
 
-Cilium typed original-owner drain receipts and bounded direct-origin supervisor are committed at `bd1685ca92` and `ccbec970b38b0bab04ab8498bcb854aef45827eb`; SPIRE hostPID chart prerequisite is committed at `1a84f9279df4fa295edcf4b9a49c2dc5f51e476b`. The prior complete affected privileged ARM64 race profile passes270top/322sub, zero failed/skipped, with vet and required lint0issues. These sources are not deployed. Current source-membership candidate adds short lock-fenced etcd leases, paired authenticated direct-origin joins and reconnect floors, with independent review fixes for missed epoch-reset recovery, registry I/O locking and ambiguous late writes using persistent etcd write heads. Source is committed at `79c521646c94946d7a0f3817ce54902e6baa60c6`. Final affected race/vet passes304top/328sub, zero failed/skipped; the three actual-etcd regressions pass three repetitions each with no skips. Required lint reports0issues. [Exact source/tests](../evidence/native-issuer-profile/source-membership/summary.json). Positive authorization remains quarantined.
+## Latest source qualification
 
-Ztunnel receipt/reconnect, native SVID leaf de-duplication, held-process binding and diagnostic commits through3b1 pass548 full tests (498library/20direct/30namespace), plus2 diagnostic tests, fmt and strictClippy. The former outbound CRL fixture failure is fixed narrowly and passes ten repetitions plus the full profile; production verification was not relaxed. A new native source witness candidate joins kernel peer IP, verified TLS URI and a unique native workload observation, then cancels stale idle/active H2 flows on source mutation. It is committed at `1609bfd38abdf4be671ad0d8144fecfa0b6d94b0`. Final full profile passes513library/20direct/30namespace, plus2 diagnostic cases, no failed/ignored/filtered; fmt and strictClippy including benches/examples pass. The constructor denial regression also passes after keeping the source witness private. The original six namespace failures were sequential live scrape-length comparisons; the correction verifies exact frozen-body codec roundtrips, corruption negatives and live Prometheus schema. [Exact source/tests](../evidence/native-issuer-profile/source-binding/summary.json). The original future-size failures are retained; the expanded body is boxed with the original upper size ceiling unchanged. No new activation image is qualified.
+| Increment | Result and limit |
+| --- | --- |
+| Cilium source-IP receipt `df2a6c1ec88f0358c52e95229dd8fe21c2b56201` | Actual loaded program, sole TCX link and frozen configuration checks. Functional race: 102 top-level / 177 subtests. Lockdebug: 20 / 44. Vet and lint pass. Separate verifier-complexity benchmark excluded. [Evidence](../../LOCAL_SOURCE_IP_VALIDATION.md). |
+| Cilium native policy transition `8bb97137fcc92b935171d60e59d7fb8a93714bd8` | Functional race: 403 / 1691. Lockdebug: 27 / 52. Zero failures or selected skips. Vet and lint pass. No new image. [Evidence](../evidence/native-policy-transition/summary.json). |
+| Ztunnel source witness `1609bfd38abdf4be671ad0d8144fecfa0b6d94b0` | 513 library, 20 direct and 30 namespace tests, plus two diagnostic cases. Format and strict Clippy pass. [Evidence](../evidence/native-issuer-profile/source-binding/summary.json). |
+| Ztunnel SPIRE stream correction over `1609bfd` | Committed at `75843515d549f7928d080801ac3f7e4344f572eb`. First error now ends the request. Full profile: 518 library + 20 direct + 30 namespace tests, plus two diagnostic cases. No failures or ignored cases. Format and strict Clippy pass. The corrected diagnostic image is built but not yet imported. [Raw source evidence](../evidence/spire-stream-errors/summary.json). [Exact image build](../evidence/spire-stream-errors/image/build.sh) completed with config `sha256:4bf82edb89ad5b03a2ff1bebe9c29c4c5881024f447e3d62fcbebf2111948430`. No replacement runtime qualification yet. |
+| SPIRE host helper suite | 107 tests pass automatically with the qualified Python and loopback TLS enabled. Missing dependency and sandbox failures are retained. This does not qualify the runtime withdrawal assertion. |
 
-Native policy wire/map observation is committed locally at `2576f94d903266bfae41e1f6880607141bbc65d2`. Full actual-etcd policy/endpoint race passes235top/1511sub, zero failures/skips; vet, four debug-lock cases and required lint0issues pass. The new11 top-level cases use real native policy computation with map I/O fault injection. Initial integration fixture races and the invalid debug-lock contention fixture are corrected and retained as diagnostics. [Source and raw results](../evidence/native-policy-map/summary.json). This is current map observation, not kernel map reachability, capture or mTLS proof. No new image is deployed.
+Tests execute their assertions automatically after one runner invocation. The primary inspects failures, corrects the cause and reruns the affected profile. Manual inspection cannot convert a failed case into a pass. Setup, evidence and owned cleanup are part of the lab runner.
 
-Next concrete dependencies: qualify the native policy wire/map-observation candidate and actual native kernel source-IP/capture receipts and exact policy-map observations, then wire authenticated remote policy/workload delivery and durable admission/recovery. Preserve native source egress AND destination ingress; do not infer realized SIP from desired options or use a CMTC-to-ztunnel mock shortcut. A current receipt alone cannot permit later SIP/capture weakening while Required. Build/deploy only qualified exact sources. Current Cilium remains4459d58ed3, KVStoreMesh stays enabled and ztunnel remains disabled. The combined startup guard stays closed. CI/push/publication remain deferred. The user's enable/deploy request remains open until actual cross-cluster workload mTLS and negative/recovery traffic pass.
+## Registrar finding and ownership
+
+The registrar is a separate Go helper inside the SPIRE server Pod. It is not the CMTC node DaemonSet. This is a later experiment; the original production direction reused Cilium enrollment. Read [the ownership review](../../SPIRE_REGISTRATION_DESIGN.md).
+
+Its ARM64 imported manifest is `sha256:f1493a0145d6485d27e668c447c6addbbdafd8179ac7bdc9ee0ea8f000e2e7eb`. Its configuration is `sha256:1454f25c3d16c77cb9c2618b2cc34878d2e916d60f226cdc90d91259cd017524`.
+
+The seventh trial obtained valid SVIDs and withdrew exact server entries. It later timed out while checking target credential absence. That is a failed qualification, not a denial. Delegate `PermissionDenied` also cannot prove target withdrawal. The next test needs a still-authorized control workload and the corrected diagnostic image. Record empty/unusable responses, caller denial and availability errors separately.
+
+## Next concrete actions
+
+1. Commit the requested documentation, diagrams and build procedures.
+2. Preserve the source-tested SPIRE stream correction and its raw evidence.
+3. Build its exact diagnostic image with host Podman.
+4. Verify that image on all four nodes.
+5. Correct the automatic withdrawal fixture with an authorized control and one bounded deadline.
+6. Run registration, withdrawal, reenrollment, replacement, restart and exact cleanup checks in both clusters.
+7. Run the owned 36-path application continuity suite.
+8. Review and qualify the kernel policy-map reachability proposal against Cilium `8bb97137fc`.
+9. Complete lost-ADD-ACK drain recovery, persistent restore quarantine, mandatory capture and authenticated policy integration.
+
+The policy-map proposal is not compiled or tested yet. A point-in-time map/program reference cannot prove full traffic coverage. Keep the combined startup guard closed. Never add a blanket port-15008 allowance.
+
+## Approval boundary
+
+Automatic approval review rejected the persistent four-node agent Admin group-permission migration. Explicit user approval is still pending. No migration occurred. Preserve agent UID1000/GID1000 and its private directory permissions.
+
+The registrar fixture's server-only empty-directory restriction from mode2777 to0770 is a different change. It does not grant the production proxy access to the node agent Admin socket.
+
+## Guides and retained history
+
+Read [the PKI flow](../../PKI_TRUST_FLOW.md), [image build steps](../../LOCAL_IMAGE_BUILD.md), [handover](../handover/CODEX_START_HERE.md), [backlog](BACKLOG.md) and [security matrix](../architecture/SECURITY_AND_FAILURE_TEST_MATRIX.md).
+
+[Earlier native checkpoints](../handover/NATIVE_SECURITY_PROGRESS_HISTORY.md) retain the detailed source and image history. The older increments below remain historical wherever superseded.
 
 ## Historical increments — superseded where stated above
 

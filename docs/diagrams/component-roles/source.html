@@ -1,0 +1,82 @@
+<!-- SPDX-License-Identifier: MIT-0. Started from the diagram-kit template, https://github.com/ephico2real2/diagram-kit -->
+<title>CMTC Component Roles</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+:root {
+  --ground: #f5f6f8; --surface: #ffffff; --ink: #18212c; --muted: #58636f; --rule: #d7dce3;
+  --host: #a55a0b; --host-wash: #fbf1e4; --remote: #0e6f68; --remote-wash: #e3f3f1;
+  --gap: #b3261e; --gap-wash: #fbe9e7; --none: #5f6a77; --none-wash: #eef0f3;
+  --font-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --ground: #0e131a; --surface: #151c25; --ink: #e5e9ef; --muted: #9aa5b3; --rule: #2a3440;
+    --host: #f0a53c; --host-wash: #2a2014; --remote: #3fcfc0; --remote-wash: #122a28;
+    --gap: #f2857c; --gap-wash: #2d1614; --none: #9aa5b3; --none-wash: #1b232d;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --ground: #0e131a; --surface: #151c25; --ink: #e5e9ef; --muted: #9aa5b3; --rule: #2a3440;
+  --host: #f0a53c; --host-wash: #2a2014; --remote: #3fcfc0; --remote-wash: #122a28;
+  --gap: #f2857c; --gap-wash: #2d1614; --none: #9aa5b3; --none-wash: #1b232d;
+}
+* { box-sizing: border-box; }
+body { background: var(--ground); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.55; margin: 0; }
+.page { max-width: 1060px; margin: 0 auto; padding-inline: 16px; padding-block: 40px 72px; display: grid; gap: 44px; }
+header { display: grid; gap: 10px; }
+.eyebrow { font-family: var(--font-mono); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+h1 { font-size: clamp(26px, 4vw, 36px); line-height: 1.15; margin: 0; font-weight: 700; text-wrap: balance; }
+h2 { font-size: 20px; margin: 0 0 6px; font-weight: 600; text-wrap: balance; }
+p { margin: 0; max-width: 72ch; }
+.lede { font-size: 17px; max-width: 70ch; }
+.muted { color: var(--muted); }
+code { font-family: var(--font-mono); font-size: .9em; }
+section { display: grid; gap: 14px; }
+figure { margin: 0; display: grid; gap: 10px; }
+.fig-scroll { overflow-x: auto; background: var(--surface); border: 1px solid var(--rule); border-radius: 10px; padding: 12px; }
+.fig-scroll svg { display: block; width: 100%; min-width: 760px; height: auto; color: var(--ink); }
+figcaption { font-size: 13.5px; color: var(--muted); max-width: 80ch; }
+.tbl { overflow-x: auto; background: var(--surface); border: 1px solid var(--rule); border-radius: 10px; }
+table { width: 100%; border-collapse: collapse; font-size: 14px; }
+th, td { text-align: left; vertical-align: top; padding: 10px 14px; border-bottom: 1px solid var(--rule); }
+th { font-size: 12px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); background: var(--ground); }
+tr:last-child td { border-bottom: 0; }
+.yes { color: var(--remote); font-weight: 600; } .no { color: var(--gap); font-weight: 600; }
+.cell-gap { background: var(--gap-wash); }
+.decisions { display: grid; gap: 12px; }
+.decision { background: var(--surface); border: 1px solid var(--rule); border-radius: 10px; padding: 16px 20px; display: grid; gap: 8px; }
+.decision .id { font-family: var(--font-mono); font-size: 12px; color: var(--muted); }
+.decision .q { font-weight: 600; }
+.decision .rec { font-size: 14px; border-left: 3px solid var(--remote); padding-left: 10px; }
+.decision .rec.warn { border-left-color: var(--host); }
+a { color: var(--remote); }
+:focus-visible { outline: 2px solid var(--remote); outline-offset: 2px; }
+</style>
+
+<div class="page">
+<header><div class="eyebrow">CMTC · component roles · 2026-10-25</div><h1>Separate identity registration from node enforcement</h1><p class="lede">The experimental registrar runs with SPIRE. The CMTC node agent reports inventory. Ztunnel activation remains pending.</p></header>
+<section><figure><div class="fig-scroll">
+<svg viewBox="0 0 980 620" role="img" aria-label="The experimental registrar uses the private SPIRE server API. The CMTC node agent reports inventory. Ztunnel activation remains pending.">
+<defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="context-stroke"/></marker></defs>
+<g font-family="IBM Plex Mono, monospace" font-size="13" font-weight="600">
+<rect x="20" y="16" width="450" height="32" rx="6" fill="var(--host-wash)" stroke="var(--host)"/><text x="245" y="37" text-anchor="middle" fill="var(--host)">CONTROL PLANE</text>
+<rect x="510" y="16" width="450" height="32" rx="6" fill="var(--remote-wash)" stroke="var(--remote)"/><text x="735" y="37" text-anchor="middle" fill="var(--remote)">EACH SELECTED NODE</text></g>
+<line x1="490" y1="16" x2="490" y2="535" stroke="var(--rule)" stroke-width="1.5" stroke-dasharray="6 5"/>
+<g font-family="IBM Plex Sans, sans-serif" font-size="12.5" fill="currentColor">
+<rect x="30" y="76" width="430" height="70" rx="8" fill="var(--host-wash)" stroke="var(--host)"/><text x="46" y="98" font-weight="600">CMTC controller</text><text x="46" y="117">Reads namespace intent and publishes issuer profiles.</text><text x="46" y="135" fill="var(--muted)">Current policy mode: Observe.</text>
+<rect x="530" y="76" width="420" height="70" rx="8" fill="var(--remote-wash)" stroke="var(--remote)"/><text x="546" y="98" font-weight="600">CMTC node agent</text><text x="546" y="117">Reports local Pod inventory and node status.</text><text x="546" y="135" fill="var(--muted)">Separate opt-in images test eBPF observation and fencing.</text>
+<rect x="30" y="202" width="430" height="70" rx="8" fill="var(--host-wash)" stroke="var(--host)"/><text x="46" y="224" font-weight="600">Experimental SPIRE registrar</text><text x="46" y="243">Creates, renews and removes exact Pod registrations.</text><text x="46" y="261" fill="var(--muted)">Local trial; permanent component ownership is undecided.</text>
+<rect x="530" y="202" width="420" height="70" rx="8" fill="var(--remote-wash)" stroke="var(--remote)"/><text x="546" y="224" font-weight="600">Cilium fork</text><text x="546" y="243">Runs network routing and native Cilium policy.</text><text x="546" y="261" fill="var(--muted)">New security source checks are not full runtime proof.</text>
+<line x1="245" y1="272" x2="245" y2="330" stroke="var(--host)" stroke-width="1.5" marker-end="url(#ah)"/><text x="255" y="306" fill="var(--host)">private server Admin socket</text>
+<rect x="30" y="334" width="430" height="70" rx="8" fill="var(--host-wash)" stroke="var(--host)"/><text x="46" y="356" font-weight="600">SPIRE server</text><text x="46" y="375">Stores registrations and signs workload certificates.</text><text x="46" y="393" fill="var(--muted)">The registrar shares this Pod's private API volume.</text>
+<rect x="530" y="334" width="420" height="70" rx="8" fill="var(--remote-wash)" stroke="var(--remote)"/><text x="546" y="356" font-weight="600">SPIRE node agent</text><text x="546" y="375">Attests local processes and returns workload SVIDs.</text><text x="546" y="393" fill="var(--muted)">Its agent Admin socket is a separate access boundary.</text>
+<path d="M245,404 L245,432 L735,432 L735,408" fill="none" stroke="var(--remote)" stroke-width="1.5" marker-end="url(#ah)"/><text x="370" y="425" fill="var(--remote)">SPIRE node synchronization</text>
+<rect x="530" y="468" width="420" height="70" rx="8" fill="var(--none-wash)" stroke="var(--none)" stroke-width="1.5" stroke-dasharray="5 4"/><text x="546" y="490" font-weight="600">Node ztunnel — activation pending</text><text x="546" y="509">The target workload TLS and authorization process.</text><text x="546" y="527" fill="var(--muted)">Disabled in cmtc-a and cmtc-b.</text>
+<text x="30" y="572" fill="var(--muted)">Solid boxes: built components. Each box states its current scope.</text><text x="30" y="594" fill="var(--host)">Dashed box: proposed activation. The ztunnel source already exists.</text>
+</g></svg></div><figcaption>The registrar manages identity registration. It does not carry application traffic. Ztunnel activation in both ClusterMesh labs remains unqualified.</figcaption></figure></section>
+</div>

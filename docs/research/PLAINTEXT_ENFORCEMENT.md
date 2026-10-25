@@ -1,5 +1,9 @@
 # Plaintext admission: Linkerd, Istio ambient and CMTC
 
+<!-- CMTC_DOC_CONTEXT -->
+Research scope: findings apply to the source version named in this document. Read [current delivery status](../agile/DELIVERY_STATUS.md) and [documentation terms](../../DOCUMENTATION_GUIDE.md).
+<!-- /CMTC_DOC_CONTEXT -->
+
 Reviewed 2026-10-23 against the sources below. This follows the reproduced
 [plaintext bypass, issue #8](https://github.com/ephico2real2/clustermesh-trust-controller/issues/8)
 and supplements [the pinned mesh comparison](MESH_MTLS_COMPARISON.md).

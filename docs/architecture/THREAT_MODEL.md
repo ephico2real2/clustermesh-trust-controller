@@ -1,5 +1,9 @@
 # Initial threat model
 
+<!-- CMTC_DOC_CONTEXT -->
+Design scope: proposed behavior requires the stated acceptance tests. Read [current delivery status](../agile/DELIVERY_STATUS.md) and [documentation terms](../../DOCUMENTATION_GUIDE.md).
+<!-- /CMTC_DOC_CONTEXT -->
+
 Status: Proposed; architecture/security review and runtime evidence pending. Date: 2026-10-23. Inputs: [source audit](../research/SOURCE_AUDIT.md), [failure test matrix](SECURITY_AND_FAILURE_TEST_MATRIX.md).
 
 ## Assets and trust boundaries
@@ -20,6 +24,16 @@ CMTC owns desired policy and trust coordination. Cilium owns packet enforcement.
 | Disable required WireGuard/IPsec while HBONE still works | Independent transport capability/state evidence and enforcement; reject unsupported compositions. | Lost WG key or XFRM state cannot produce required-layer plaintext. TLS success does not satisfy the transport check. |
 | Break platform dependencies through broad default enrollment | Protect system/control-plane/hostNetwork inventory and design narrow non-enrolled endpoint paths. Do not use blanket security bypass. | API/DNS/webhook/upgrade/recovery probes pass while unauthorized platform-adjacent application flows remain denied. |
 | Hide an outage behind missing metrics or excessive cardinality | Unknown for missing/stale samples, bounded aggregate labels, authenticated scrape configuration and logs for detailed identity. | Exporter disappearance and missing cluster series alert; arbitrary namespace labels/identity strings cannot grow aggregate series without bound. |
+
+## Current implementation findings
+
+The [PKI flow](../../PKI_TRUST_FLOW.md) documents the approved cluster intermediate and exact SPIRE signer. A common root does not authorize an alternate peer signer.
+
+The experimental registrar has server Admin access inside the SPIRE server Pod. That is a distinct authority from the node agent Admin API. A read-only socket mount still permits RPCs. Keep filesystem permission, UNIX peer verification and API caller authorization as separate checks. [The registration review](../../SPIRE_REGISTRATION_DESIGN.md) records the residual single-writer and administrator trust assumptions.
+
+Proxy source tests reproduced buffered-plaintext and delayed-CONNECT bypasses under stale authority. The corrected source checks both I/O layers and rechecks admission after awaited work. [The local evidence](../evidence/native-issuer-profile/live-provider/summary.json) does not qualify an undeployed proxy.
+
+A delegate permission error identifies a caller problem. A target credential test requires an authorized control. A timeout cannot establish policy denial. Registration deletion does not revoke issued certificates or close active flows.
 
 ## Recovery and approval gates
 

@@ -1,0 +1,175 @@
+test_agent_admin_group (unittest.loader._FailedTest.test_agent_admin_group) ... ERROR
+test_actual_api_omits_false_host_flags_but_true_is_still_refused (test_check_app_paths.PurePlan.test_actual_api_omits_false_host_flags_but_true_is_still_refused) ... ok
+test_actual_client_admission_cannot_widen_profile (test_check_app_paths.PurePlan.test_actual_client_admission_cannot_widen_profile) ... ok
+test_ambiguous_create_is_preserved_and_never_deleted (test_check_app_paths.PurePlan.test_ambiguous_create_is_preserved_and_never_deleted) ... ok
+test_backend_placement_missing_readiness_and_address_reuse_refused (test_check_app_paths.PurePlan.test_backend_placement_missing_readiness_and_address_reuse_refused) ... ok
+test_cleanup_attempts_second_owned_client_after_first_replacement (test_check_app_paths.PurePlan.test_cleanup_attempts_second_owned_client_after_first_replacement) ... ok
+test_delete_requires_exact_uid_owner_name_namespace_and_current_rv (test_check_app_paths.PurePlan.test_delete_requires_exact_uid_owner_name_namespace_and_current_rv) ... ok
+test_exact_least_privilege_two_client_template (test_check_app_paths.PurePlan.test_exact_least_privilege_two_client_template) ... ok
+test_matrix_has_twelve_service_and_twenty_four_direct_paths (test_check_app_paths.PurePlan.test_matrix_has_twelve_service_and_twenty_four_direct_paths) ... ok
+test_response_requires_exact_cluster_and_pod_on_real_http200 (test_check_app_paths.PurePlan.test_response_requires_exact_cluster_and_pod_on_real_http200) ... ok
+test_service_response_must_name_one_of_current_exact_backends (test_check_app_paths.PurePlan.test_service_response_must_name_one_of_current_exact_backends) ... ok
+test_unknown_worker_and_owner_rejected (test_check_app_paths.PurePlan.test_unknown_worker_and_owner_rejected) ... ok
+test_kubelet_tls (unittest.loader._FailedTest.test_kubelet_tls) ... ERROR
+test_public_proof (unittest.loader._FailedTest.test_public_proof) ... ERROR
+test_qualify_workload (unittest.loader._FailedTest.test_qualify_workload) ... ERROR
+test_registrar_proof (unittest.loader._FailedTest.test_registrar_proof) ... ERROR
+test_registrar_runtime_plan (unittest.loader._FailedTest.test_registrar_runtime_plan) ... ERROR
+test_foreign_cluster_exits_without_objects (test_render_spire.CliTests.test_foreign_cluster_exits_without_objects) ... ok
+test_json_list_matches_the_renderer (test_render_spire.CliTests.test_json_list_matches_the_renderer) ... ok
+test_yaml_documents_or_missing_pyyaml (test_render_spire.CliTests.test_yaml_documents_or_missing_pyyaml) ... ok
+test_both_clusters_parse_and_stay_separate (test_render_spire.ManifestTests.test_both_clusters_parse_and_stay_separate) ... ok
+test_mutation_does_not_change_the_next_render (test_render_spire.ManifestTests.test_mutation_does_not_change_the_next_render) ... ok
+test_foreign_cluster_domain_and_images_are_refused (test_render_spire.RefusalTests.test_foreign_cluster_domain_and_images_are_refused) ... ok
+test_renderer_source_has_no_cluster_client (test_render_spire.RefusalTests.test_renderer_source_has_no_cluster_client) ... ok
+test_entry_id_query_must_match (test_render_spire.RegistrationTests.test_entry_id_query_must_match) ... ok
+test_registration_confirms_exact_entry_once_per_cluster (test_render_spire.RegistrationTests.test_registration_confirms_exact_entry_once_per_cluster) ... ok
+test_show_failure_is_bounded_and_logs_retry_fields (test_render_spire.RegistrationTests.test_show_failure_is_bounded_and_logs_retry_fields) ... ok
+test_wait_script_succeeds_and_stops_at_attempt_limit (test_render_spire.RegistrationTests.test_wait_script_succeeds_and_stops_at_attempt_limit) ... ok
+test_wrong_selectors_do_not_create (test_render_spire.RegistrationTests.test_wrong_selectors_do_not_create) ... ok
+test_actual_hanging_cli_is_killed_by_remaining_deadline (test_render_spire.SecurityRegressionTests.test_actual_hanging_cli_is_killed_by_remaining_deadline) ... ok
+test_failure_with_hold_enabled_exits_and_clears_stale_ack (test_render_spire.SecurityRegressionTests.test_failure_with_hold_enabled_exits_and_clears_stale_ack) ... ok
+test_live_readiness_refuses_missing_changed_parent_or_selector (test_render_spire.SecurityRegressionTests.test_live_readiness_refuses_missing_changed_parent_or_selector) ... ok
+test_real_rbac_schema_and_owned_writable_data (test_render_spire.SecurityRegressionTests.test_real_rbac_schema_and_owned_writable_data) ... ok
+test_suffix_selector_forgery_never_receives_startup_ack (test_render_spire.SecurityRegressionTests.test_suffix_selector_forgery_never_receives_startup_ack) ... ok
+test_server_image_pin (unittest.loader._FailedTest.test_server_image_pin) ... ERROR
+test_workload_api (unittest.loader._FailedTest.test_workload_api) ... ERROR
+
+======================================================================
+ERROR: test_agent_admin_group (unittest.loader._FailedTest.test_agent_admin_group)
+----------------------------------------------------------------------
+ImportError: Failed to import test module: test_agent_admin_group
+Traceback (most recent call last):
+  File "/opt/homebrew/Cellar/python@3.15/3.15.0/Frameworks/Python.framework/Versions/3.15/lib/python3.15/unittest/loader.py", line 433, in _find_test_path
+    module = self._get_module_from_name(name)
+  File "/opt/homebrew/Cellar/python@3.15/3.15.0/Frameworks/Python.framework/Versions/3.15/lib/python3.15/unittest/loader.py", line 374, in _get_module_from_name
+    __import__(name)
+    ~~~~~~~~~~^^^^^^
+  File "/Users/olasumbo/gitRepos/clustermest-trust-controller/scripts/lab/spire/test_agent_admin_group.py", line 7, in <module>
+    w=p._workload_api()
+  File "/Users/olasumbo/gitRepos/clustermest-trust-controller/scripts/lab/spire/agent_admin_group.py", line 19, in _workload_api
+    module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
+                                                 ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^
+  File "/Users/olasumbo/gitRepos/clustermest-trust-controller/scripts/lab/spire/workload_api.py", line 17, in <module>
+    from cryptography import x509
+ModuleNotFoundError: No module named 'cryptography'
+
+
+======================================================================
+ERROR: test_kubelet_tls (unittest.loader._FailedTest.test_kubelet_tls)
+----------------------------------------------------------------------
+ImportError: Failed to import test module: test_kubelet_tls
+Traceback (most recent call last):
+  File "/opt/homebrew/Cellar/python@3.15/3.15.0/Frameworks/Python.framework/Versions/3.15/lib/python3.15/unittest/loader.py", line 433, in _find_test_path
+    module = self._get_module_from_name(name)
+  File "/opt/homebrew/Cellar/python@3.15/3.15.0/Frameworks/Python.framework/Versions/3.15/lib/python3.15/unittest/loader.py", line 374, in _get_module_from_name
+    __import__(name)
+    ~~~~~~~~~~^^^^^^
+  File "/Users/olasumbo/gitRepos/clustermest-trust-controller/scripts/lab/spire/test_kubelet_tls.py", line 8, in <module>
+    from cryptography.hazmat.primitives import serialization
+ModuleNotFoundError: No module named 'cryptography'
+
+
+======================================================================
+ERROR: test_public_proof (unittest.loader._FailedTest.test_public_proof)
+----------------------------------------------------------------------
+ImportError: Failed to import test module: test_public_proof
+Traceback (most recent call last):
+  File "/opt/homebrew/Cellar/python@3.15/3.15.0/Frameworks/Python.framework/Versions/3.15/lib/python3.15/unittest/loader.py", line 433, in _find_test_path
+    module = self._get_module_from_name(name)
+  File "/opt/homebrew/Cellar/python@3.15/3.15.0/Frameworks/Python.framework/Versions/3.15/lib/python3.15/unittest/loader.py", line 374, in _get_module_from_name
+    __import__(name)
+    ~~~~~~~~~~^^^^^^
+  File "/Users/olasumbo/gitRepos/clustermest-trust-controller/scripts/lab/spire/test_public_proof.py", line 12, in <module>
+    from cryptography import x509
+ModuleNotFoundError: No module named 'cryptography'
+
+
+======================================================================
+ERROR: test_qualify_workload (unittest.loader._FailedTest.test_qualify_workload)
+----------------------------------------------------------------------
+ImportError: Failed to import test module: test_qualify_workload
+Traceback (most recent call last):
+  File "/opt/homebrew/Cellar/python@3.15/3.15.0/Frameworks/Python.framework/Versions/3.15/lib/python3.15/unittest/loader.py", line 433, in _find_test_path
+    module = self._get_module_from_name(name)
+  File "/opt/homebrew/Cellar/python@3.15/3.15.0/Frameworks/Python.framework/Versions/3.15/lib/python3.15/unittest/loader.py", line 374, in _get_module_from_name
+    __import__(name)
+    ~~~~~~~~~~^^^^^^
+  File "/Users/olasumbo/gitRepos/clustermest-trust-controller/scripts/lab/spire/test_qualify_workload.py", line 6, in <module>
+    from cryptography import x509
+ModuleNotFoundError: No module named 'cryptography'
+
+
+======================================================================
+ERROR: test_registrar_proof (unittest.loader._FailedTest.test_registrar_proof)
+----------------------------------------------------------------------
+ImportError: Failed to import test module: test_registrar_proof
+Traceback (most recent call last):
+  File "/opt/homebrew/Cellar/python@3.15/3.15.0/Frameworks/Python.framework/Versions/3.15/lib/python3.15/unittest/loader.py", line 433, in _find_test_path
+    module = self._get_module_from_name(name)
+  File "/opt/homebrew/Cellar/python@3.15/3.15.0/Frameworks/Python.framework/Versions/3.15/lib/python3.15/unittest/loader.py", line 374, in _get_module_from_name
+    __import__(name)
+    ~~~~~~~~~~^^^^^^
+  File "/Users/olasumbo/gitRepos/clustermest-trust-controller/scripts/lab/spire/test_registrar_proof.py", line 4, in <module>
+    import public_proof as p
+  File "/Users/olasumbo/gitRepos/clustermest-trust-controller/scripts/lab/spire/public_proof.py", line 17, in <module>
+    from cryptography import x509
+ModuleNotFoundError: No module named 'cryptography'
+
+
+======================================================================
+ERROR: test_registrar_runtime_plan (unittest.loader._FailedTest.test_registrar_runtime_plan)
+----------------------------------------------------------------------
+ImportError: Failed to import test module: test_registrar_runtime_plan
+Traceback (most recent call last):
+  File "/opt/homebrew/Cellar/python@3.15/3.15.0/Frameworks/Python.framework/Versions/3.15/lib/python3.15/unittest/loader.py", line 433, in _find_test_path
+    module = self._get_module_from_name(name)
+  File "/opt/homebrew/Cellar/python@3.15/3.15.0/Frameworks/Python.framework/Versions/3.15/lib/python3.15/unittest/loader.py", line 374, in _get_module_from_name
+    __import__(name)
+    ~~~~~~~~~~^^^^^^
+  File "/Users/olasumbo/gitRepos/clustermest-trust-controller/scripts/lab/spire/test_registrar_runtime_plan.py", line 12, in <module>
+    r=importlib.util.module_from_spec(spec);spec.loader.exec_module(r)
+                                            ~~~~~~~~~~~~~~~~~~~~~~~^^^
+  File "/Users/olasumbo/gitRepos/clustermest-trust-controller/scripts/lab/spire/qualify_registrar.py", line 24, in <module>
+    import workload_api as w
+  File "/Users/olasumbo/gitRepos/clustermest-trust-controller/scripts/lab/spire/workload_api.py", line 17, in <module>
+    from cryptography import x509
+ModuleNotFoundError: No module named 'cryptography'
+
+
+======================================================================
+ERROR: test_server_image_pin (unittest.loader._FailedTest.test_server_image_pin)
+----------------------------------------------------------------------
+ImportError: Failed to import test module: test_server_image_pin
+Traceback (most recent call last):
+  File "/opt/homebrew/Cellar/python@3.15/3.15.0/Frameworks/Python.framework/Versions/3.15/lib/python3.15/unittest/loader.py", line 433, in _find_test_path
+    module = self._get_module_from_name(name)
+  File "/opt/homebrew/Cellar/python@3.15/3.15.0/Frameworks/Python.framework/Versions/3.15/lib/python3.15/unittest/loader.py", line 374, in _get_module_from_name
+    __import__(name)
+    ~~~~~~~~~~^^^^^^
+  File "/Users/olasumbo/gitRepos/clustermest-trust-controller/scripts/lab/spire/test_server_image_pin.py", line 7, in <module>
+    import public_proof as q
+  File "/Users/olasumbo/gitRepos/clustermest-trust-controller/scripts/lab/spire/public_proof.py", line 17, in <module>
+    from cryptography import x509
+ModuleNotFoundError: No module named 'cryptography'
+
+
+======================================================================
+ERROR: test_workload_api (unittest.loader._FailedTest.test_workload_api)
+----------------------------------------------------------------------
+ImportError: Failed to import test module: test_workload_api
+Traceback (most recent call last):
+  File "/opt/homebrew/Cellar/python@3.15/3.15.0/Frameworks/Python.framework/Versions/3.15/lib/python3.15/unittest/loader.py", line 433, in _find_test_path
+    module = self._get_module_from_name(name)
+  File "/opt/homebrew/Cellar/python@3.15/3.15.0/Frameworks/Python.framework/Versions/3.15/lib/python3.15/unittest/loader.py", line 374, in _get_module_from_name
+    __import__(name)
+    ~~~~~~~~~~^^^^^^
+  File "/Users/olasumbo/gitRepos/clustermest-trust-controller/scripts/lab/spire/test_workload_api.py", line 3, in <module>
+    from cryptography import x509
+ModuleNotFoundError: No module named 'cryptography'
+
+
+----------------------------------------------------------------------
+Ran 36 tests in 5.415s
+
+FAILED (errors=8)

@@ -1,33 +1,86 @@
 # CMTC background and decisions
 
-This is the reconstructed project history and stakeholder motivation from the design conversation, not verbatim chat logs.
+<!-- CMTC_DOC_CONTEXT -->
+Decision history: distinguish accepted requirements from later experimental implementation choices. Read [current delivery status](../agile/DELIVERY_STATUS.md) and [documentation terms](../../DOCUMENTATION_GUIDE.md).
+<!-- /CMTC_DOC_CONTEXT -->
+
+This page records project requirements and decision history.
+It reconstructs the design conversation; it is not a verbatim transcript.
+Later experiments do not replace the original design decisions automatically.
 
 ## Original problem
-Cilium native workload mutual authentication and ztunnel were understood not to support ClusterMesh together in the researched release. The user wants native Cilium cross-cluster workload mTLS, **without Linkerd or Istio**, and an upstream-friendly implementation. Verify current version-specific limitations against pinned source before coding.
 
-## Decisions made in conversation
-1. Build **ClusterMesh Trust Controller** (CMTC) as Go Kubernetes operator for cross-cluster trust, policy and rotation, plus upstream Cilium ztunnel/ClusterMesh integration. Operator alone cannot enable unsupported datapath functionality.
-2. Choose **Option A**: SPIRE X.509-SVID issuance, cert-manager upstream certificate authority, trust-manager public bundle distribution. One protected organizational root and cluster-specific intermediates. Never copy root private key to nodes/namespaces.
-3. Use hub/spoke management and a lightweight **DaemonSet** for node-level namespace/pod inventory, configuration digest acknowledgment, health and latency; evaluate duplication with existing Cilium DaemonSet/Hive.
+The researched release did not support the required ClusterMesh and ztunnel combination.
+The user wants native Cilium cross-cluster workload mTLS without Linkerd or Istio.
+The implementation must fit Cilium's architecture and support upstream review.
+Verify version-specific limitations against pinned source before implementation.
+
+## Requirements and original design decisions
+
+1. Build CMTC as a Go Kubernetes operator for cross-cluster trust, policy, and rotation. Extend Cilium's native ztunnel integration. An operator cannot enable an unsupported datapath alone.
+2. Use Option A: SPIRE X.509-SVID issuance, cert-manager as the upstream certificate authority, and trust-manager for public bundles. Keep one protected root and cluster-specific intermediates. Keep the root private key outside nodes and application namespaces.
+3. Use hub/spoke management and a lightweight node DaemonSet for inventory, acknowledgments, health, and bounded probes. Reuse Cilium's enrollment and ZDS inventory. Avoid duplicate authority.
+4. Let `NamespaceMTLSPolicy` manage `io.cilium/mtls-enabled: "true"`. `AllEligible` selects eligible application namespaces. `MatchSelectors` uses existing organizational metadata. AND applies within a selector; OR applies across selectors. Exclusions take precedence.
+5. Preserve Kubernetes and OpenShift platform traffic. Protect system, control-plane, infrastructure, hosted-control-plane, and hostNetwork components from automatic enrollment. Define narrow interoperability rules; do not add a blanket bypass.
+6. Keep node transport and workload mTLS as separate settings. Support none, WireGuard, or IPsec only where the pinned profile passes its tests. The primary target requires workload mTLS over WireGuard or IPsec. Reject unsupported combinations and silent downgrade.
+7. Rotate trust in stages. Publish old and new public bundles before switching issuance. Verify real consumer acknowledgments and drain before retirement. Test emergency compromise separately.
+8. Preserve all nine observability domains and original dashboard definitions. Present them through two consolidated Grafana pages: Operations and Workload Security. Keep planned signals visible until their metrics and acceptance tests exist. Instrument measured results; do not infer protection from labels.
+9. Keep architecture, ADRs, source evidence, backlog, and security tests current as implementation proceeds. The original architecture-first planning phase is historical. It does not impose a new hold on authorized implementation.
+10. Use the user's forks and qualified local increments. Build and test locally before publication. Current instructions defer CI, branch pushes, and image publication.
 
 ## Cross-cluster mTLS test-design decision — 2026-10-24
 
-The user's principal-engineer blueprint is retained as a test-design reference, with its technical claims checked against the active fork before implementation. Keep CMTC responsible for trust lifecycle and intent, Cilium responsible for native remote endpoint discovery, policy and xDS, and node ztunnel responsible for workload TLS. A remote Workload record by itself does not prove trust or authorization. Mocks may diagnose serialization, stream lifecycle or telemetry in isolated tests; never feed them through a production side channel or treat them as end-to-end proof.
+The user's blueprint remains a test-design reference.
+Check its technical claims against the active fork before implementation.
+CMTC owns trust lifecycle and intent.
+Cilium owns native remote discovery, policy, and xDS delivery.
+Node ztunnel owns workload TLS.
+A remote Workload record does not prove trust or authorization.
+Mocks can test isolated serialization, streams, and telemetry.
+They cannot replace native production delivery or end-to-end evidence.
 
-The end-to-end fixture must deploy the same application identity and a client in each cluster, distinguish backend responses by serving cluster, and assert local baseline plus cross-cluster communication in both directions. Test both Service and Pod-IP paths, including a non-80 application TCP port. Negative and recovery tests cover unenrolled/invalid SVIDs, unauthorized cluster binding, forbidden port, absent/stale/NACKed policy, trust mismatch, disconnect and restart. Correlate the actual image/source in both clusters, authenticated peer identities, effective policy verdicts, xDS state, request results and HBONE/TLS packet evidence. Keep WG/IPsec evidence separate. These are acceptance targets, not completed gates.
+Deploy the same application identity and a client in each cluster.
+Identify each response by its serving cluster.
+Test local paths and both cross-cluster directions.
+Test Service and Pod-IP paths on TCP/80, TCP/8080, and an arbitrary high port.
+Negative tests cover unenrolled or invalid SVIDs, unauthorized cluster binding, and forbidden ports.
+They also cover missing, stale, or NACKed policy, trust mismatch, disconnect, and restart.
+Record exact images, peer identities, policy verdicts, xDS state, request results, and TLS packets.
+Keep WireGuard and IPsec evidence separate.
+These are acceptance targets, not completed gates.
 
-The source pin quoted by the blueprint (`beb276d2...`, Cilium v1.20.4) is historical for the active work; verify code against each recorded current source SHA. Do not assume SPIFFE URI equality or a common root identifies the originating cluster. Do not claim `Protected` from labels, certificate issuance, an xDS ACK, a screenshot or a mock result.
+The blueprint's `beb276d2...` source pin and Cilium v1.20.4 reference are historical.
+Use the current source SHA for each increment.
+SPIFFE URI equality or a shared root does not prove the originating cluster.
+Labels, issuance, xDS ACKs, screenshots, and mocks cannot establish `Protected` alone.
 
-The active target is the user's enhanced `ephico2real2/cilium` fork; stock Cilium is not a substitute. However, the fork's current dirty xDS candidate still retains the ClusterMesh/ztunnel compatibility guard and only has local workload discovery. Its authorization stream accepts compiled resources and reports ACK metrics; it does not compile effective Cilium policy or gate admission on an acknowledged policy set. The paired ztunnel candidate can pass unresolved outbound connections through as raw TCP and treats an empty effective ALLOW set as allow. These observed gaps define implementation work; the existing Observe image is an older fork build and demonstrates reachability only. See the current source pins and next action in [CODEX_START_HERE.md](CODEX_START_HERE.md) and the detailed gates in [SECURITY_AND_FAILURE_TEST_MATRIX.md](../architecture/SECURITY_AND_FAILURE_TEST_MATRIX.md#current-enhanced-fork-implementation-gates).
-4. **NamespaceMTLSPolicy** automatically manages `io.cilium/mtls-enabled: "true"`. All eligible application namespaces default-on via `AllEligible`; `MatchSelectors` supports existing `company.net/lob=alpha` OR `company.net/mnemonic=delta` metadata. AND within a selector; OR across selectors. Exclusions override inclusions.
-5. Protect Kubernetes/OpenShift system/control-plane/infrastructure namespaces from auto-enrollment. Preserve API, etcd, kubelet, DNS (UDP/TCP), webhook, ingress, OAuth, CNI, operators, hosted control-plane and hostNetwork traffic. No blanket bypass.
-6. Network modes: no transport encryption, WireGuard or IPsec; mTLS enabled or disabled. Need proof of double encryption composition, policy preservation, MTU/MSS, fail-closed behavior and remote identity resolution. Mixed unsupported modes rejected.
-7. CA rotation: staged old+new trust bundle, real SPIRE/ztunnel acknowledgment, issuance switch, drain, old-root retirement. Emergency revocation separate.
-8. Observability: nine Grafana dashboards; Prometheus/Alertmanager, OpenShift User Workload Monitoring, Hubble/logs, namespace/pod coverage, latency, CA, transport, security, platform and operator metrics. Metrics must be instrumented, not inferred from labels.
-9. Architecture first: high-level/inner coordination diagrams, sequence flows, ADRs, feature/epic/story/subtask backlog, DoR/DoD, test matrix and security reviews before coding.
-10. Repository `ephico2real2/clustermesh-trust-controller` exists; prior GitHub write attempts returned 403. No files were committed via that connection. Codex handover via ZIP was chosen.
+The implementation target remains the user's enhanced `ephico2real2/cilium` fork.
+The original audit found local-only workload discovery, missing effective policy, permissive fallback, and compatibility restrictions.
+These are historical source findings and acceptance requirements.
+Later source changes require their own tests and exact-image runtime qualification.
+Use [delivery status](../agile/DELIVERY_STATUS.md) and the [security test matrix](../architecture/SECURITY_AND_FAILURE_TEST_MATRIX.md) for their current disposition.
+
+## Current source and runtime snapshot — 2026-10-25
+
+| Item | State |
+| --- | --- |
+| Cilium source | `8bb97137fcc92b935171d60e59d7fb8a93714bd8` in the active fork checkout. |
+| Cilium runtime | `4459d58ed3d98805f15c74298076025fc97dd540` in the retained two-cluster lab. Source changes after this SHA are not runtime proof. |
+| Ztunnel source | `1609bfd38abdf4be671ad0d8144fecfa0b6d94b0`, plus an uncommitted terminal SPIRE stream-error correction. |
+| Latest local ztunnel tests | The source and correction pass 568 full-suite tests and 2 diagnostic tests, formatting, and strict Clippy. |
+| Activation | No runtime activation follows from those source tests. KVStoreMesh remains enabled; ztunnel remains disabled. |
+| Delivery boundary | Local qualification continues. CI, pushes, and publication remain deferred. |
+
+The original SPIRE design reuses Cilium's namespace/service-account registration path.
+A separate CMTC registrar image was introduced later as an experiment inside the SPIRE server Pod.
+That experiment does not establish an approved permanent registration owner.
+[SPIRE registration design](../../SPIRE_REGISTRATION_DESIGN.md) records the difference and the required decision.
+It also separates server Admin access, pending agent Admin permissions, credential delivery, and traffic protection.
+A stream timeout does not prove target withdrawal or authorization denial.
+Existing certificates and established flows require separate revocation tests.
 
 ## User stories behind the requirements
+
 - Platform engineer: automatically enroll related namespaces based on existing organizational metadata and fix label drift.
 - Security owner: grant explicit auditable namespace exclusions without silently permitting plaintext to protected destinations.
 - PKI operator: common trust across clusters with no root key replication and safe CA rotation.
@@ -36,4 +89,9 @@ The active target is the user's enhanced `ephico2real2/cilium` fork; stock Ciliu
 - Upstream maintainer: keep changes native to Cilium's Go/Hive architecture, small, tested and reviewable.
 
 ## Scope boundaries
-Initial workload-level exceptions deferred; TCP mTLS only until UDP/QUIC explicitly designed; hostNetwork and platform namespaces not auto-enrolled; no separate proxy; no production claim until Cilium integration and negative tests pass.
+
+Defer workload-level exceptions until their design is explicit.
+Limit the workload mTLS target to TCP until UDP and QUIC are designed.
+Do not auto-enroll hostNetwork or platform namespaces.
+Do not add a second traffic proxy.
+Production claims require Cilium integration and passing negative tests.

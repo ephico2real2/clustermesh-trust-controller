@@ -1,5 +1,9 @@
 # Remote workload mapping into ztunnel xDS
 
+<!-- CMTC_DOC_CONTEXT -->
+Research scope: findings apply to the source version named in this document. Read [current delivery status](../agile/DELIVERY_STATUS.md) and [documentation terms](../../DOCUMENTATION_GUIDE.md).
+<!-- /CMTC_DOC_CONTEXT -->
+
 This design note records the fourth work item, [issue #16](https://github.com/ephico2real2/clustermesh-trust-controller/issues/16), and the mapping proposal supplied for the CMTC-105 remote workload path. It follows the observability contract in [issue #15](https://github.com/ephico2real2/clustermesh-trust-controller/issues/15) and the test-only injection probe in [issue #14](https://github.com/ephico2real2/clustermesh-trust-controller/issues/14). The production federation objective remains [issue #13](https://github.com/ephico2real2/clustermesh-trust-controller/issues/13).
 
 This document is a source-grounded design and test boundary, not a claim that remote Workload xDS discovery is implemented or that a mock resource establishes mTLS.

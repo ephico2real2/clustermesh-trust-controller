@@ -1,5 +1,9 @@
 # PoC Hubble L7 dashboard by app
 
+<!-- CMTC_DOC_CONTEXT -->
+Guide scope: check current runtime and feature gates before using these instructions. Read [current delivery status](../../../docs/agile/DELIVERY_STATUS.md) and [documentation terms](../../../DOCUMENTATION_GUIDE.md).
+<!-- /CMTC_DOC_CONTEXT -->
+
 This imports the user's [demo 37 generator](https://github.com/ephico2real2/cilium-implementation-poc/blob/22fb6e14c0cca8c78af1f072d1e89ebaea6a916b/demos/37-two-gateways/l7-by-app-dashboard.py) byte for byte. `dashboard.json` is its lab-mode output, formatted for review, using the chart from our pinned Cilium source `42f89f83aa5a03ea80f7a2b8cece56b27f87385a`. [source.json](source.json) records both source revisions and the generator, input and output hashes.
 
 The dashboard has UID `hubble-l7-http-by-app` and groups HTTP metrics by `source_app` / `destination_app`. The generator removes the two CPU panels because app labels do not identify a Kubernetes workload. Its historical explanation of remote workload limitations predates upstream Cilium #48563; current main already includes that fix. This example retains app-based grouping and the Gateway-compatible All filters.

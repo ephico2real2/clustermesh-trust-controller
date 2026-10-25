@@ -1,5 +1,9 @@
 # Local Podman image build, kind import, and security qualification
 
+<!-- CMTC_DOC_CONTEXT -->
+Guide scope: check current runtime and feature gates before using these instructions. Read [current delivery status](../agile/DELIVERY_STATUS.md) and [documentation terms](../../DOCUMENTATION_GUIDE.md).
+<!-- /CMTC_DOC_CONTEXT -->
+
 This is the repeatable local-first path for CMTC and the Cilium fork. It keeps
 image building and the existing Kubernetes runtime separate:
 

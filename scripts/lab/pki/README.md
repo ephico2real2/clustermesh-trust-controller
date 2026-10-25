@@ -1,5 +1,9 @@
 # Owned SPIRE cluster-parent PKI orchestrator
 
+<!-- CMTC_DOC_CONTEXT -->
+Guide scope: check current runtime and feature gates before using these instructions. Read [current delivery status](../../../docs/agile/DELIVERY_STATUS.md) and [documentation terms](../../../DOCUMENTATION_GUIDE.md).
+<!-- /CMTC_DOC_CONTEXT -->
+
 `pki.py` is runnable Python3.11+ with cryptography>=44, host
 OpenSSL3, kubectl, Colima and Docker inside the retained cmtc-cilium VM. The
 bundled Codex Python has cryptography50.0.2; no package installation is needed to

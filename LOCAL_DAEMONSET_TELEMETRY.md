@@ -1,5 +1,9 @@
 # Local CMTC eBPF DaemonSet and telemetry qualification
 
+<!-- CMTC_DOC_CONTEXT -->
+Evidence scope: results apply to the recorded source, image and fixture. Read [current delivery status](docs/agile/DELIVERY_STATUS.md) and [documentation terms](DOCUMENTATION_GUIDE.md).
+<!-- /CMTC_DOC_CONTEXT -->
+
 For a plain-language explanation, read [the DaemonSet implementation guide](CMTC_DAEMONSET_IMPLEMENTATION.md).
 
 The opt-in CMTC image contains the compiled eBPF object and its Go loader. The

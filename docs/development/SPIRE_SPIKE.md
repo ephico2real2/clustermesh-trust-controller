@@ -1,5 +1,9 @@
 # Isolated SPIRE workload mTLS spike
 
+<!-- CMTC_DOC_CONTEXT -->
+Guide scope: check current runtime and feature gates before using these instructions. Read [current delivery status](../agile/DELIVERY_STATUS.md) and [documentation terms](../../DOCUMENTATION_GUIDE.md).
+<!-- /CMTC_DOC_CONTEXT -->
+
 This is CMTC-101's single-cluster, cross-node credential/traffic fixture. It does
 not establish ClusterMesh compatibility, authorization, fail-closed protection,
 WireGuard/IPsec composition or a `Protected` status. The normal Observe lab and
