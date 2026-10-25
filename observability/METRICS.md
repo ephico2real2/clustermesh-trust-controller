@@ -8,6 +8,8 @@ This contract separates implemented collectors from planned story outputs. A pla
 
 The chart follows the value's meaning: gauges are current levels/states, counters become rates or selected-range increases, and latency percentiles come from real histogram buckets. A pie is used only for mutually exclusive categories that exhaust one denominator. No missing security metric is converted to a successful zero.
 
+Read [the instrumentation plan](INSTRUMENTATION.md) for component ownership, source-tested TLS collectors and the live collection gates. A collector can pass source tests while its dashboard contract remains planned.
+
 ## Implemented collectors
 
 | Metric | Type | Meaning | Presentation / owner |
@@ -51,11 +53,11 @@ The optional fence and observer listeners expose only GET `/metrics` on the exac
 | `cmtc_cluster_ready` | gauge | All required verified cluster gates satisfied for the current generation and freshness window. | Mapped status/table; no sum that hides one failed or missing required gate. Owner: CMTC cluster controller. |
 | `cmtc_dual_encryption_probe_success` | gauge | Latest fresh controlled probe verifies both workload mTLS and the configured node encryption layer. | Mapped latest probe and state history; absence/staleness is unknown. Owner: CMTC transport probe. |
 | `cmtc_issuer_ready` | gauge | Expected issuer can provide a verifiable chain under a defined freshness/issuance check. | Mapped state/history; pod Ready or Issuer object presence is insufficient. Owner: CMTC issuer verifier. |
-| `cmtc_mtls_active_connections` | gauge | Currently active verified workload-mTLS connections, counted at one defined endpoint. | Latest value and line if it varies; no rate() or source-plus-destination sum. Owner: Cilium/ztunnel connection lifecycle. |
+| `cmtc_mtls_active_connections` | gauge | Live verified TLS sessions owned by the destination proxy; a pooled transport is one session. | Uses istio_tls_connections_active{reporter="destination"}; latest value, no rate() or source-plus-destination sum. Source-tested; live collection pending. Owner: ztunnel TLS stream lifecycle. |
 | `cmtc_mtls_authorization_denials_total` | counter | Destination policy rejections at the authorization boundary. | rate() or range increase, split from identity failures and attempts; avoid double counting. Owner: Cilium/ztunnel authorization. |
-| `cmtc_mtls_handshake_duration_seconds` | histogram | Actual workload TLS handshake duration in seconds at the TLS boundary. | p95/p99 from bucket rates grouped by cluster/le and bounded result; no average or TCP-counter substitute. Owner: Cilium/ztunnel TLS boundary. |
-| `cmtc_mtls_handshakes_total` | counter | Completed actual TLS handshake observations, labeled by bounded result and one reporting boundary. | rate() by result; selected-range increase for totals; not TCP starts or HTTP requests. Owner: Cilium/ztunnel TLS boundary. |
-| `cmtc_mtls_identity_validation_failures_total` | counter | Failed peer certificate/identity validation events at the verifier. | rate() by bounded reason or selected-range increase; not every plaintext attempt. Owner: Cilium/ztunnel peer verifier. |
+| `cmtc_mtls_handshake_duration_seconds` | histogram | Duration of successful verified workload TLS handshakes at the destination. | Uses destination-reported istio_tls_handshake_duration_seconds buckets; p95/p99 by cluster/le. Failed handshakes are excluded. Source-tested; live collection pending. Owner: ztunnel TLS boundary. |
+| `cmtc_mtls_handshakes_total` | counter | Completed TLS handshake observations at the destination, split by a closed result set. | Uses destination-reported istio_tls_handshakes_total; rate() or selected-range increase. Source-tested; live collection pending. Owner: ztunnel TLS boundary. |
+| `cmtc_mtls_identity_validation_failures_total` | counter | Local peer-verification rejections at either TLS verifier, grouped by its cluster. | Uses istio_tls_handshakes_total{result="peer_verification_failed"}; verifier events, not a unique-connection denominator. Source-tested; live collection pending. Owner: ztunnel peer verifier. |
 | `cmtc_mtu_validation_failures_total` | counter | Failed controlled MTU/MSS validation attempts for the selected encryption profile. | Failures/s or range increase; preserve attempted-probe denominator separately. Owner: CMTC transport probe. |
 | `cmtc_namespace_label_drift_total` | counter | Detected enrollment-label drift episodes under a defined deduplication boundary. | Event rate/range increase; not the number of namespaces currently drifting. Owner: CMTC enrollment controller. |
 | `cmtc_namespace_policy_conflicts_total` | counter | Detected policy-conflict events under a defined deduplication boundary. | Event rate/range increase; current conflict state needs its own gauge/condition. Owner: CMTC policy controller. |

@@ -26,6 +26,25 @@ class CompactLayoutTests(unittest.TestCase):
         self.assertTrue({7,8,9,18,21}<=covered)
         self.assertIn('None reporting',str(next(p for p in security['panels'] if p['id']==3)))
         self.assertEqual(next(v for v in security['templating']['list'] if v['name']=='namespace')['allValue'],'.*')
+    def test_tls_contracts_use_real_owner_and_one_connection_boundary(self):
+        contracts=validate.contract()
+        active=contracts['cmtc_mtls_active_connections']
+        self.assertEqual(active['family'],'istio_tls_connections_active')
+        query=build.planned_expr('cmtc_mtls_active_connections',active)
+        self.assertIn('reporter="destination"',query)
+        self.assertNotIn('rate(',query)
+        for name in ('cmtc_mtls_handshakes_total','cmtc_mtls_handshake_duration_seconds'):
+            self.assertIn('reporter="destination"',build.planned_expr(name,contracts[name]))
+        for family in ('istio_tls_handshakes_total','istio_tls_handshake_duration_seconds','istio_tls_connections_active'):
+            self.assertEqual(contracts[family]['status'],'planned')
+            self.assertEqual(contracts[family]['source_status'],'implemented-and-source-tested')
+        security=build.security()
+        active_panel=next(p for p in build.all_panels(security) if p.get('description','').endswith('Metric contract: cmtc_mtls_active_connections'))
+        self.assertIn('· planned',active_panel['title'])
+        self.assertIn('scrape qualification pending',active_panel['description'])
+        self.assertNotIn('vector(0)',active_panel['targets'][0]['expr'])
+        validate.domain_coverage(build.build(),security)
+
     def test_top_level_rows_do_not_overlap_after_collapse(self):
         for dashboard in build.dashboards().values():
             rectangles=[p['gridPos'] for p in dashboard['panels']]

@@ -1,0 +1,234 @@
+{
+  "observedAtUTC": "2026-10-25T12:38:49.347289+00:00",
+  "queries": {
+    "metric_names": {
+      "expr": "count(count by (__name__) ({job=\"cmtc\",component=~\"cmtc-controller|cmtc-node-agent\"}))",
+      "status": "success",
+      "result": [
+        {
+          "metric": {},
+          "value": [
+            1792931929.424,
+            "205"
+          ]
+        }
+      ]
+    },
+    "series": {
+      "expr": "count({job=\"cmtc\",component=~\"cmtc-controller|cmtc-node-agent\"})",
+      "status": "success",
+      "result": [
+        {
+          "metric": {},
+          "value": [
+            1792931929.433,
+            "1658"
+          ]
+        }
+      ]
+    },
+    "targets": {
+      "expr": "up{job=\"cmtc\"}",
+      "status": "success",
+      "result": [
+        {
+          "metric": {
+            "__name__": "up",
+            "cluster": "cmtc-a",
+            "component": "cmtc-node-agent",
+            "instance": "10.10.0.236:8080",
+            "job": "cmtc",
+            "node": "cmtc-a-control-plane"
+          },
+          "value": [
+            1792931929.441,
+            "1"
+          ]
+        },
+        {
+          "metric": {
+            "__name__": "up",
+            "cluster": "cmtc-a",
+            "component": "cmtc-node-agent",
+            "instance": "10.10.1.201:8080",
+            "job": "cmtc",
+            "node": "cmtc-a-worker"
+          },
+          "value": [
+            1792931929.441,
+            "1"
+          ]
+        },
+        {
+          "metric": {
+            "__name__": "up",
+            "cluster": "cmtc-b",
+            "component": "cmtc-node-agent",
+            "instance": "10.20.1.246:8080",
+            "job": "cmtc",
+            "node": "cmtc-b-worker"
+          },
+          "value": [
+            1792931929.441,
+            "1"
+          ]
+        },
+        {
+          "metric": {
+            "__name__": "up",
+            "cluster": "cmtc-b",
+            "component": "cmtc-node-agent",
+            "instance": "10.20.0.86:8080",
+            "job": "cmtc",
+            "node": "cmtc-b-control-plane"
+          },
+          "value": [
+            1792931929.441,
+            "1"
+          ]
+        },
+        {
+          "metric": {
+            "__name__": "up",
+            "cluster": "cmtc-b",
+            "component": "cmtc-controller",
+            "instance": "10.20.1.101:8080",
+            "job": "cmtc",
+            "node": "cmtc-b-worker"
+          },
+          "value": [
+            1792931929.441,
+            "1"
+          ]
+        },
+        {
+          "metric": {
+            "__name__": "up",
+            "cluster": "cmtc-a",
+            "component": "cmtc-controller",
+            "instance": "10.10.1.158:8080",
+            "job": "cmtc",
+            "node": "cmtc-a-worker"
+          },
+          "value": [
+            1792931929.441,
+            "1"
+          ]
+        }
+      ]
+    },
+    "ztunnel_targets": {
+      "expr": "up{job=\"ztunnel\"}",
+      "status": "success",
+      "result": []
+    },
+    "tls_handshakes": {
+      "expr": "istio_tls_handshakes_total",
+      "status": "success",
+      "result": []
+    },
+    "tls_active_sessions": {
+      "expr": "istio_tls_connections_active",
+      "status": "success",
+      "result": []
+    },
+    "tls_duration": {
+      "expr": "istio_tls_handshake_duration_seconds_count",
+      "status": "success",
+      "result": []
+    },
+    "issuer_source_checked": {
+      "expr": "cmtc_issuer_profile_source_checked_timestamp_seconds",
+      "status": "success",
+      "result": [
+        {
+          "metric": {
+            "__name__": "cmtc_issuer_profile_source_checked_timestamp_seconds",
+            "cluster": "cmtc-b",
+            "component": "cmtc-controller",
+            "exported_cluster": "cmtc-b",
+            "instance": "10.20.1.101:8080",
+            "job": "cmtc",
+            "node": "cmtc-b-worker"
+          },
+          "value": [
+            1792931929.462,
+            "1792931919"
+          ]
+        },
+        {
+          "metric": {
+            "__name__": "cmtc_issuer_profile_source_checked_timestamp_seconds",
+            "cluster": "cmtc-a",
+            "component": "cmtc-controller",
+            "exported_cluster": "cmtc-a",
+            "instance": "10.10.1.158:8080",
+            "job": "cmtc",
+            "node": "cmtc-a-worker"
+          },
+          "value": [
+            1792931929.462,
+            "1792931924"
+          ]
+        }
+      ]
+    }
+  },
+  "dashboards": [
+    {
+      "uid": "cmtc-observe-lab",
+      "title": "CMTC | Operations",
+      "url": "http://127.0.0.1:13000/d/cmtc-observe-lab/cmtc-7c-operations",
+      "visiblePanels": 18,
+      "allPanels": 39,
+      "collapsedRows": 5
+    },
+    {
+      "uid": "cmtc-authenticated-only",
+      "title": "CMTC | Workload Security",
+      "url": "http://127.0.0.1:13000/d/cmtc-authenticated-only/cmtc-7c-workload-security",
+      "visiblePanels": 6,
+      "allPanels": 35,
+      "collapsedRows": 9
+    }
+  ],
+  "contractStatusCounts": {
+    "planned": 29,
+    "implemented": 28,
+    "proposed-rename": 1,
+    "native-replacement": 1
+  },
+  "TLSContracts": {
+    "istio_tls_handshake_duration_seconds": {
+      "kind": "histogram",
+      "status": "planned",
+      "emitter": "ztunnel",
+      "meaning": "Duration of successful workload TLS handshakes at the ztunnel TLS boundary, by reporter.",
+      "presentation": "p95 from bucket rates by cluster and le; no average.",
+      "owner": "node ztunnel TLS boundary (fork collector)",
+      "labels": [
+        "cluster",
+        "node",
+        "reporter",
+        "le"
+      ],
+      "qualification": "Collector implementation and local failure/recovery tests are pending; no live scrape evidence yet."
+    },
+    "istio_tls_handshakes_total": {
+      "kind": "counter",
+      "status": "planned",
+      "emitter": "ztunnel",
+      "meaning": "Completed workload TLS handshakes at the ztunnel TLS boundary, by reporter (source client / destination server) and closed result success, peer_verification_failed, protocol_error or timeout.",
+      "presentation": "rate() by cluster and result; peer_verification_failed answers the identity-validation contract. Not TCP opens or HTTP requests.",
+      "owner": "node ztunnel TLS boundary (fork collector)",
+      "labels": [
+        "cluster",
+        "node",
+        "reporter",
+        "result"
+      ],
+      "qualification": "Collector implementation and local failure/recovery tests are pending; no live scrape evidence yet."
+    }
+  },
+  "legacyDomains": 9
+}

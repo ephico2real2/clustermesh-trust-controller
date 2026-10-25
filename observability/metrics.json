@@ -215,13 +215,24 @@
     "cmtc_mtls_active_connections": {
       "kind": "gauge",
       "status": "planned",
-      "meaning": "Currently active verified workload-mTLS connections, counted at one defined endpoint.",
-      "presentation": "Latest value and line if it varies; no rate() or source-plus-destination sum.",
+      "meaning": "Live verified workload TLS sessions owned by the destination proxy. A pooled transport is one session, not one application request or HBONE stream.",
+      "presentation": "Latest destination-reported gauge by cluster/node; never rate() it or add source and destination.",
       "owner": "Cilium/ztunnel connection lifecycle",
       "emitter": "ztunnel",
       "labels": [
-        "cluster"
-      ]
+        "cluster",
+        "node",
+        "reporter"
+      ],
+      "matchers": "reporter=\"destination\"",
+      "source_status": "implemented-and-source-tested",
+      "source_qualification": {
+        "commit": "35a6c9403eb5c00b1b79aafe2851f423cd195540",
+        "ownerFile": "src/tls/profile_provider.rs",
+        "tests": "533 library +20 direct +30 namespace +2 diagnostic; zero failures/ignored; fmt and strict Clippy",
+        "liveScrape": "Absent in cmtc-a/cmtc-b at 2026-10-25T12:38:49Z; qualification still pending"
+      },
+      "family": "istio_tls_connections_active"
     },
     "cmtc_mtls_authorization_denials_total": {
       "kind": "counter",
@@ -239,14 +250,25 @@
     "cmtc_mtls_handshake_duration_seconds": {
       "kind": "histogram",
       "status": "planned",
-      "meaning": "Actual workload TLS handshake duration in seconds at the TLS boundary.",
-      "presentation": "p95/p99 from bucket rates grouped by cluster/le and bounded result; no average or TCP-counter substitute.",
+      "meaning": "Duration of successful verified workload TLS handshakes, measured once at the destination TLS boundary.",
+      "presentation": "p95/p99 from destination-reported bucket rates grouped by cluster/le; successful handshakes only.",
       "owner": "Cilium/ztunnel TLS boundary",
       "emitter": "ztunnel",
       "family": "istio_tls_handshake_duration_seconds",
       "labels": [
-        "cluster"
-      ]
+        "cluster",
+        "node",
+        "reporter",
+        "le"
+      ],
+      "matchers": "reporter=\"destination\"",
+      "source_status": "implemented-and-source-tested",
+      "source_qualification": {
+        "commit": "35a6c9403eb5c00b1b79aafe2851f423cd195540",
+        "ownerFile": "src/tls/profile_provider.rs",
+        "tests": "533 library +20 direct +30 namespace +2 diagnostic; zero failures/ignored; fmt and strict Clippy",
+        "liveScrape": "Absent in cmtc-a/cmtc-b at 2026-10-25T12:38:49Z; qualification still pending"
+      }
     },
     "cmtc_mtls_handshakes_total": {
       "kind": "counter",
@@ -259,22 +281,41 @@
       "by_result": true,
       "labels": [
         "cluster",
+        "node",
+        "reporter",
         "result"
-      ]
+      ],
+      "matchers": "reporter=\"destination\"",
+      "source_status": "implemented-and-source-tested",
+      "source_qualification": {
+        "commit": "35a6c9403eb5c00b1b79aafe2851f423cd195540",
+        "ownerFile": "src/tls/profile_provider.rs",
+        "tests": "533 library +20 direct +30 namespace +2 diagnostic; zero failures/ignored; fmt and strict Clippy",
+        "liveScrape": "Absent in cmtc-a/cmtc-b at 2026-10-25T12:38:49Z; qualification still pending"
+      }
     },
     "cmtc_mtls_identity_validation_failures_total": {
       "kind": "counter",
       "status": "planned",
-      "meaning": "Failed peer certificate/identity validation events at the verifier.",
-      "presentation": "rate() by bounded reason or selected-range increase; not every plaintext attempt.",
+      "meaning": "Local peer-verification rejections at either TLS verifier, counted as verifier events by its owning cluster. Source and destination are separate verification boundaries.",
+      "presentation": "rate() of peer_verification_failed; these are verifier events, not a unique-connection denominator.",
       "owner": "Cilium/ztunnel peer verifier",
       "emitter": "ztunnel",
       "family": "istio_tls_handshakes_total",
       "matchers": "result=\"peer_verification_failed\"",
       "labels": [
         "cluster",
-        "reason"
-      ]
+        "node",
+        "reporter",
+        "result"
+      ],
+      "source_status": "implemented-and-source-tested",
+      "source_qualification": {
+        "commit": "35a6c9403eb5c00b1b79aafe2851f423cd195540",
+        "ownerFile": "src/tls/profile_provider.rs",
+        "tests": "533 library +20 direct +30 namespace +2 diagnostic; zero failures/ignored; fmt and strict Clippy",
+        "liveScrape": "Absent in cmtc-a/cmtc-b at 2026-10-25T12:38:49Z; qualification still pending"
+      }
     },
     "cmtc_mtu_validation_failures_total": {
       "kind": "counter",
@@ -654,6 +695,27 @@
       ],
       "qualification": "Native ztunnel family measured with real authenticated/denied load in the retired isolated cmtc-mtls two-node fixture on 2026-10-24 (examples/observability/ztunnel-spike/METRICS_INVENTORY.md). Not yet scraped from cmtc-a/cmtc-b: ztunnel is OFF in the combined profile. The lab scrape job ztunnel is added in scripts/lab/monitoring.py; qualify it on the existing clusters before relying on these panels."
     },
+    "istio_tls_connections_active": {
+      "kind": "gauge",
+      "status": "planned",
+      "emitter": "ztunnel",
+      "meaning": "Live verified workload TLS sessions owned by the proxy. The destination reporter counts each server-side session once; invalidation and stream release decrement it.",
+      "presentation": "Latest destination-reported value by cluster/node; do not rate() a gauge or add source and destination.",
+      "owner": "node ztunnel verified TLS stream lifecycle",
+      "labels": [
+        "cluster",
+        "node",
+        "reporter"
+      ],
+      "source_status": "implemented-and-source-tested",
+      "source_qualification": {
+        "commit": "35a6c9403eb5c00b1b79aafe2851f423cd195540",
+        "ownerFile": "src/tls/profile_provider.rs",
+        "tests": "533 library +20 direct +30 namespace +2 diagnostic; zero failures/ignored; fmt and strict Clippy",
+        "liveScrape": "Absent in cmtc-a/cmtc-b at 2026-10-25T12:38:49Z; qualification still pending"
+      },
+      "qualification": "Source-tested collector; not yet exposed by a running ztunnel in cmtc-a/cmtc-b."
+    },
     "istio_tls_handshake_duration_seconds": {
       "kind": "histogram",
       "status": "planned",
@@ -667,7 +729,14 @@
         "reporter",
         "le"
       ],
-      "qualification": "Collector implementation and local failure/recovery tests are pending; no live scrape evidence yet."
+      "qualification": "Collector code and local TLS failure/recovery tests pass. Exact-image deployment, real two-cluster traffic and live scrape qualification remain pending; panel stays planned.",
+      "source_status": "implemented-and-source-tested",
+      "source_qualification": {
+        "commit": "35a6c9403eb5c00b1b79aafe2851f423cd195540",
+        "ownerFile": "src/tls/profile_provider.rs",
+        "tests": "533 library +20 direct +30 namespace +2 diagnostic; zero failures/ignored; fmt and strict Clippy",
+        "liveScrape": "Absent in cmtc-a/cmtc-b at 2026-10-25T12:38:49Z; qualification still pending"
+      }
     },
     "istio_tls_handshakes_total": {
       "kind": "counter",
@@ -682,7 +751,14 @@
         "reporter",
         "result"
       ],
-      "qualification": "Collector implementation and local failure/recovery tests are pending; no live scrape evidence yet."
+      "qualification": "Collector code and local TLS failure/recovery tests pass. Exact-image deployment, real two-cluster traffic and live scrape qualification remain pending; panel stays planned.",
+      "source_status": "implemented-and-source-tested",
+      "source_qualification": {
+        "commit": "35a6c9403eb5c00b1b79aafe2851f423cd195540",
+        "ownerFile": "src/tls/profile_provider.rs",
+        "tests": "533 library +20 direct +30 namespace +2 diagnostic; zero failures/ignored; fmt and strict Clippy",
+        "liveScrape": "Absent in cmtc-a/cmtc-b at 2026-10-25T12:38:49Z; qualification still pending"
+      }
     },
     "istio_xds_connection_terminations_total": {
       "kind": "counter",

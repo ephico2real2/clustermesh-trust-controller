@@ -1,0 +1,16 @@
+Observed local run 2026-10-25
+$ python3 observability/build.py --check
+PASS both consolidated pages are reproducible; original nine definitions remain intact
+$ python3 -m unittest discover -s observability -p 'test_*.py'
+Ran 20 tests in 0.023s
+OK
+$ python3 observability/validate.py
+PASS two consolidated pages, all nine unchanged originals, owner-scoped queries, full metric coverage and typed planned panels
+All three commands exited 0. The semantic description was subsequently clarified to say pooled TLS sessions; the regenerated source is checked in the next receipt.
+
+After clarifying active gauge semantics and regenerating source:
+$ python3 observability/build.py --check
+PASS both consolidated pages are reproducible; original nine definitions remain intact
+$ python3 observability/validate.py
+PASS two consolidated pages, all nine unchanged originals, owner-scoped queries, full metric coverage and typed planned panels
+Both commands exited 0.

@@ -216,7 +216,8 @@ def add_planned(dashboard,page,y,next_id=100):
             c=contract[name];kind=c['kind'];height=7
             pos=((index%2)*12,y+(index//2)*height,12,height)
             owner=c.get('family',name)
-            desc='Planned instrumentation; missing data means not implemented, never success. '+c['meaning']+' '+c['presentation']+' Owner: '+c['owner']+'.'+(' Expected emitted family: '+owner+(' {'+c['matchers']+'}' if c.get('matchers') else '')+'.' if owner!=name else '')+' Proposed labels/source must be qualified in the delivering story.'
+            scope=('Collector implemented and source-tested; deployment and scrape qualification pending. Missing data is unavailable, never success. ' if c.get('source_status')=='implemented-and-source-tested' else 'Planned instrumentation; missing data means not implemented, never success. ')
+            desc=scope+c['meaning']+' '+c['presentation']+' Owner: '+c['owner']+'.'+(' Expected emitted family: '+owner+(' {'+c['matchers']+'}' if c.get('matchers') else '')+'.' if owner!=name else '')+' Proposed labels/source must be qualified in the delivering story.'
             expr=planned_expr(name,c)
             if kind=='counter':
                 if c.get('by_result'):
