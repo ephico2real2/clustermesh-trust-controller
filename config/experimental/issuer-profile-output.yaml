@@ -1,0 +1,10 @@
+# Administrator creates this empty object, then pins the API-assigned UID.
+# The producer has no create/delete permission and will not repair corruption.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cmtc-issuer-publication
+  namespace: cmtc-system
+  labels:
+    security.cmtc.io/issuer-profile-output: "true"
+data: {}

@@ -4,14 +4,17 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"strings"
 
 	api "github.com/ephico2real2/clustermesh-trust-controller/api/v1alpha1"
 	"github.com/ephico2real2/clustermesh-trust-controller/internal/agent"
 	"github.com/ephico2real2/clustermesh-trust-controller/internal/controller"
 	"github.com/ephico2real2/clustermesh-trust-controller/internal/telemetry"
+	"github.com/ephico2real2/clustermesh-trust-controller/internal/trustprofile"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -23,6 +26,17 @@ import (
 
 func main() {
 	var cluster, mode, node, metricsAddress, healthAddress string
+	var issuerEnabled bool
+	var issuerNamespace, issuerSource, issuerOutput, issuerSourceUID, issuerOutputUID, issuerRoots string
+	var issuerGeneration uint64
+	flag.BoolVar(&issuerEnabled, "issuer-profile-producer", false, "Opt-in public issuer approval producer; never enables workload enforcement")
+	flag.StringVar(&issuerNamespace, "issuer-profile-namespace", "cmtc-system", "Explicit source/output namespace")
+	flag.StringVar(&issuerSource, "issuer-profile-source", "cmtc-issuer-approval", "Immutable administrator-approved public source ConfigMap")
+	flag.StringVar(&issuerOutput, "issuer-profile-output", "cmtc-issuer-publication", "Pre-created producer-owned public output ConfigMap")
+	flag.StringVar(&issuerSourceUID, "issuer-profile-source-uid", "", "Required source object UID pin")
+	flag.StringVar(&issuerOutputUID, "issuer-profile-output-uid", "", "Required pre-created output object UID pin")
+	flag.StringVar(&issuerRoots, "issuer-profile-root-sha256", "", "Comma-separated installation-approved root certificate SHA256 pins")
+	flag.Uint64Var(&issuerGeneration, "issuer-profile-minimum-generation", 1, "Minimum administered approval generation")
 	flag.StringVar(&cluster, "cluster-name", "", "Required stable cluster name for bounded metric labels")
 	flag.StringVar(&mode, "mode", "controller", "controller or node")
 	flag.StringVar(&node, "node-name", os.Getenv("NODE_NAME"), "Node for inventory mode")
@@ -36,6 +50,28 @@ func main() {
 		fmt.Fprintln(os.Stderr, "cluster-name and a valid mode are required; node mode also requires node-name")
 		os.Exit(2)
 	}
+	profileOptions := controller.IssuerProfileOptions{Source: client.ObjectKey{Namespace: issuerNamespace, Name: issuerSource}, Output: client.ObjectKey{Namespace: issuerNamespace, Name: issuerOutput}, SourceUID: types.UID(issuerSourceUID), OutputUID: types.UID(issuerOutputUID), MinimumGeneration: issuerGeneration, LocalCluster: cluster}
+	configured := false
+	flag.Visit(func(f *flag.Flag) {
+		if strings.HasPrefix(f.Name, "issuer-profile-") && f.Name != "issuer-profile-producer" {
+			configured = true
+		}
+	})
+	if !issuerEnabled && configured {
+		fmt.Fprintln(os.Stderr, "issuer profile flags require explicit issuer-profile-producer opt-in")
+		os.Exit(2)
+	}
+	if issuerEnabled {
+		if mode != "controller" {
+			fmt.Fprintln(os.Stderr, "issuer profile producer is controller-mode only")
+			os.Exit(2)
+		}
+		profileOptions.RootPins = strings.Split(issuerRoots, ",")
+		if err := profileOptions.Validate(); err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(2)
+		}
+	}
 	scheme := runtime.NewScheme()
 	must(corev1.AddToScheme(scheme))
 	must(api.AddToScheme(scheme))
@@ -43,17 +79,26 @@ func main() {
 	if mode == "node" {
 		options.Cache.ByObject = map[client.Object]cache.ByObject{&corev1.Pod{}: {Field: fields.OneTermEqualSelector("spec.nodeName", node)}}
 	}
-	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), options)
+	kubeConfig := ctrl.GetConfigOrDie()
+	if issuerEnabled {
+		must(validateIssuerAPITransport(kubeConfig))
+	}
+	mgr, err := ctrl.NewManager(kubeConfig, options)
 	must(err)
 	m := telemetry.New(metrics.Registry, cluster, node)
 	if mode == "controller" {
 		must((&controller.PolicyReconciler{Client: mgr.GetClient(), Metrics: m}).SetupWithManager(mgr))
+		if issuerEnabled {
+			profileMetrics, err := trustprofile.NewMetrics(metrics.Registry, cluster)
+			must(err)
+			must((&controller.IssuerProfileReconciler{Client: mgr.GetClient(), Reader: mgr.GetAPIReader(), Options: profileOptions, Metrics: profileMetrics}).SetupWithManager(mgr))
+		}
 	} else {
 		must(mgr.Add(&agent.Inventory{Client: mgr.GetAPIReader(), Node: node, Metrics: m}))
 	}
 	must(mgr.AddHealthzCheck("ping", healthz.Ping))
 	must(mgr.AddReadyzCheck("ping", healthz.Ping))
-	ctrl.Log.Info("starting experimental observation only CMTC", "cluster", cluster, "mode", mode, "enforcementAvailable", false)
+	ctrl.Log.Info("starting experimental CMTC", "cluster", cluster, "mode", mode, "issuerProfileProducer", issuerEnabled, "enforcementAvailable", false)
 	must(mgr.Start(ctrl.SetupSignalHandler()))
 }
 
