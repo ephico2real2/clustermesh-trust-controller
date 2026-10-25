@@ -10,16 +10,17 @@ All agents use **edit → run against cmtc-a/cmtc-b → test traffic, failures a
 
 ## Active external agents
 
-Claude Code uses canonical `claude-opus-5-5`, effort `xhigh`, normal automatic permission review, session `c03d57db-e2bf-4848-ab73-3f2696a27d2f`.
+Claude Code uses canonical `claude-opus-5-5`, effort `max`, normal automatic permission review, session `c03d57db-e2bf-4848-ab73-3f2696a27d2f`.
 
-- Current runner: `/private/tmp/cmtc-claude-opus-20261025/run-live-owner.py`.
-- Exec session: `95252`; read `live-owner-pid` and verify the actual process.
-- Transcript: `live-owner-session.jsonl`; errors: `live-owner-stderr.log`; eventual completion: `live-owner-exit`.
-- This runner uses documented streamed input. Append one complete user-message JSON record to `live-input-queue.jsonl` to deliver steering without interrupting tests. `live-input-offset` records sent bytes. Check the replay and Opus acknowledgment before claiming delivery. Never start a concurrent session writer.
-- Latest message: `USER_ALL_CODE_TO_OPUS.md`. Actual CLI metadata confirms `claude-opus-5-5`; Opus explicitly acknowledged ALL source ownership and read the tested registrar bundle/leases.
-- `live-owner-model-block.json`, if present, records that the guard stopped a provider model substitution. Do not accept a fallback as requested-model work.
+- Current runner: `/private/tmp/cmtc-claude-opus-20261025/run-live-max-owner.py`.
+- Exec session: `79321`; read `live-max-owner-pid` and verify the actual process.
+- Transcript: `live-max-owner-session.jsonl`; errors: `live-max-owner-stderr.log`; eventual completion: `live-max-owner-exit`.
+- This runner uses documented streamed input. Append one complete user-message JSON record to `live-max-input-queue.jsonl` to deliver steering without interrupting tests. `live-max-input-offset` records sent bytes. Check the replay and Opus acknowledgment before claiming delivery. Never start a concurrent session writer.
+- Latest message: `USER_OPUS_MAX.md`, followed by the max continuation in the input queue. Actual process arguments confirm `--model claude-opus-5-5 --effort max`; CLI/API metadata confirms Opus5.5 and Opus acknowledged max-effort sole implementation ownership. Use max for central changes across layers.
+- The previous live-owner runner exited0 after an idle tool boundary: zero pending tool calls and zero active owned compiler containers. Preserve its transcript; no in-progress rollout was interrupted.
+- `live-max-owner-model-block.json`, if present, records that the guard stopped a provider model substitution. Do not accept a fallback as requested-model work.
 - Older `run-concurrency-registrar.py` completed exit0 after Go3/4 test containers ended. It is not active. Older logs remain diagnostics/evidence.
-- Full registrar handoff: `review/REGISTRAR_METRICS_PRIMARY_TESTED.patch` and `REGISTRAR_METRICS_TEST_RESULT.json`. Seven root source files are dirty, hash-matched to27 top-level/58 total Linux ARM64 race passes plus vet0. No image or live scrape yet. Preserve and let Opus commit/integrate them. Primary makes no further implementation edits.
+- Full registrar handoff: `review/REGISTRAR_METRICS_PRIMARY_TESTED.patch` and `REGISTRAR_METRICS_TEST_RESULT.json`. Opus reviewed and committed the seven source files at primary18c47cc, hash-matched to27 top-level/58 total Linux ARM64 race passes plus vet0. No registrar image or live scrape is qualified yet. Primary makes no implementation edits.
 
 Cursor Grok's read-only remediation completed with exit0. Full report: `/private/tmp/cmtc-opus-final-20261025/review/GROK_REMEDIATION.md`. It contains complete production snippets, technical rationale and negative/recovery tests against Cilium `dbd2d32`. These proposals are not executed evidence. Opus is adapting the quarantine failure fix. Reuse the existing retained-node fix; do not reapply stale address-only binding code.
 
@@ -70,8 +71,8 @@ Use kubeconfig `/private/tmp/cmtc-a-b-20261024.kubeconfig` with explicit `kind-c
 - A kube-system UID: `bb7182c7-de95-4e70-816a-a1400d755794`.
 - B kube-system UID: `f2687af6-bd96-45a3-98a2-d1397a3ee244`.
 - Colima `cmtc-cilium`: Ubuntu ARM64,8CPU/16GiB/90GiB; preserve provider/apps.
-- Both A nodes run development overlay `localhost/cilium:dev-overlay-d040a4bc9a`, configuration7bc95e502afc697bdf9ae25b8c8aa1ac92c9eb30cdc00f75a051a8d557684850, imported manifestd5cb0cf39d625bde09e5551103ea7ddcffb8066b55be460b8b39cc138c1bd310. Agent binary/version verified. Operator/ClusterMesh server/chart were not rebuilt.
-- B remains baseline4459d58ed3. Later dbd2 is not live. A canary attempt1 was a caught no-op; keep its diagnostics.
+- A now runs C3 development overlay `localhost/cilium:dev-overlay-a74f13a688` on both nodes; the canary logs verify both running agent revisions and the actual imported configuration prefixfc4a5a342b4f. The post-canary36-path baseline passes. Live loaded-program inspection remains incomplete after a parser error; no program conclusion follows from that failed probe.
+- B runs the earlier d040 development overlay on both nodes, as later Opus version verification corrected. C3 is not yet qualified there. The original A canary attempt1 was a caught no-op; preserve its diagnostics. Agent overlays do not rebuild the operator/ClusterMesh server/chart.
 - KVStoreMesh is ON. Ztunnel proxies, WireGuard and IPsec remain OFF. No workload-mTLS or Protected claim.
 - Post-canary36-path traffic and exact loaded-BPF checks remain open unless newer logs prove completion.
 
