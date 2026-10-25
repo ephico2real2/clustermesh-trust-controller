@@ -1,0 +1,48 @@
+{
+  "result": "PASS: producer enabled persistently on cmtc-a and cmtc-b",
+  "scope": "verified public issuer mapping publication; no native consumer or workload mTLS",
+  "producerSource": "f5fe9992da855a22660c07b141e19feee50310ba",
+  "image": "localhost/cmtc:lineage-f5fe9992da",
+  "imageConfig": "sha256:3f5839e26f82395d820cd2fc4439648a7e9fa3957544c705b53092031d7c9be7",
+  "approvalGeneration": 1,
+  "approvalExpiresAt": "2026-10-26T03:55:11Z",
+  "clusters": {
+    "cmtc-a": {
+      "phase": "publication-qualified-no-consumer",
+      "ownedUIDs": {
+        "ConfigMap/cmtc-issuer-approval-g1": "902e1117-142f-4c91-ada7-65e57b0863e6",
+        "ConfigMap/cmtc-issuer-publication": "fbc7b3c2-00f1-4787-a149-fca76e274c4e",
+        "Role/cmtc-issuer-profile-access": "f0b404e1-2537-486d-815f-60fc68f94238",
+        "RoleBinding/cmtc-issuer-profile-access": "e0a48392-a545-49d2-aa0f-a3a9f9cdf5dd"
+      },
+      "renewal": {
+        "firstSequence": 1,
+        "renewedSequence": 2,
+        "firstValidUntil": "2026-10-25T04:42:36Z",
+        "renewedValidUntil": "2026-10-25T04:42:51Z"
+      },
+      "rbacAssertions": 21,
+      "metricQueries": 5
+    },
+    "cmtc-b": {
+      "phase": "publication-qualified-no-consumer",
+      "ownedUIDs": {
+        "ConfigMap/cmtc-issuer-approval-g1": "ba07d872-3ccb-4396-bd60-828f615a9cde",
+        "ConfigMap/cmtc-issuer-publication": "cb6e0317-d887-49be-b265-d24d896c35ef",
+        "Role/cmtc-issuer-profile-access": "40c87f4b-ec96-47e9-a497-eed94dab57d6",
+        "RoleBinding/cmtc-issuer-profile-access": "5d77adb1-6870-4631-9711-d11c8b2144a2"
+      },
+      "renewal": {
+        "firstSequence": 1,
+        "renewedSequence": 2,
+        "firstValidUntil": "2026-10-25T04:43:15Z",
+        "renewedValidUntil": "2026-10-25T04:43:30Z"
+      },
+      "rbacAssertions": 21,
+      "metricQueries": 5
+    }
+  },
+  "localTests": 41,
+  "stateOwnership": "Keep host live-a-b ledger and existing source/output UIDs; do not reset floors or adopt replacements",
+  "next": "native consumer and workload attestation integration; rotate immutable approval before expiry"
+}

@@ -1,0 +1,833 @@
+{
+  "metadata": {
+    "name": "spire-agent-m442g",
+    "generateName": "spire-agent-",
+    "namespace": "cilium-spire",
+    "uid": "8529829b-4521-4497-a537-4951843ca9b0",
+    "resourceVersion": "92205",
+    "generation": 1,
+    "creationTimestamp": "2026-10-25T04:38:38Z",
+    "labels": {
+      "app": "spire-agent",
+      "controller-revision-hash": "67fd75d",
+      "pod-template-generation": "1",
+      "security.cmtc.io/pki-cluster": "cmtc-b",
+      "security.cmtc.io/pki-owner": "cmtc-lab-pki",
+      "security.cmtc.io/pki-role": "spire-agent"
+    },
+    "ownerReferences": [
+      {
+        "apiVersion": "apps/v1",
+        "kind": "DaemonSet",
+        "name": "spire-agent",
+        "uid": "bbb248dc-fa87-4f78-a40e-aa23fc4a7530",
+        "controller": true,
+        "blockOwnerDeletion": true
+      }
+    ],
+    "managedFields": [
+      {
+        "manager": "kube-controller-manager",
+        "operation": "Update",
+        "apiVersion": "v1",
+        "time": "2026-10-25T04:38:38Z",
+        "fieldsType": "FieldsV1",
+        "fieldsV1": {
+          "f:metadata": {
+            "f:generateName": {},
+            "f:labels": {
+              ".": {},
+              "f:app": {},
+              "f:controller-revision-hash": {},
+              "f:pod-template-generation": {},
+              "f:security.cmtc.io/pki-cluster": {},
+              "f:security.cmtc.io/pki-owner": {},
+              "f:security.cmtc.io/pki-role": {}
+            },
+            "f:ownerReferences": {
+              ".": {},
+              "k:{\"uid\":\"bbb248dc-fa87-4f78-a40e-aa23fc4a7530\"}": {}
+            }
+          },
+          "f:spec": {
+            "f:affinity": {
+              ".": {},
+              "f:nodeAffinity": {
+                ".": {},
+                "f:requiredDuringSchedulingIgnoredDuringExecution": {}
+              }
+            },
+            "f:containers": {
+              "k:{\"name\":\"spire-agent\"}": {
+                ".": {},
+                "f:args": {},
+                "f:image": {},
+                "f:imagePullPolicy": {},
+                "f:livenessProbe": {
+                  ".": {},
+                  "f:failureThreshold": {},
+                  "f:httpGet": {
+                    ".": {},
+                    "f:path": {},
+                    "f:port": {},
+                    "f:scheme": {}
+                  },
+                  "f:initialDelaySeconds": {},
+                  "f:periodSeconds": {},
+                  "f:successThreshold": {},
+                  "f:timeoutSeconds": {}
+                },
+                "f:name": {},
+                "f:ports": {
+                  ".": {},
+                  "k:{\"containerPort\":4251,\"protocol\":\"TCP\"}": {
+                    ".": {},
+                    "f:containerPort": {},
+                    "f:hostPort": {},
+                    "f:name": {},
+                    "f:protocol": {}
+                  }
+                },
+                "f:readinessProbe": {
+                  ".": {},
+                  "f:failureThreshold": {},
+                  "f:httpGet": {
+                    ".": {},
+                    "f:path": {},
+                    "f:port": {},
+                    "f:scheme": {}
+                  },
+                  "f:initialDelaySeconds": {},
+                  "f:periodSeconds": {},
+                  "f:successThreshold": {},
+                  "f:timeoutSeconds": {}
+                },
+                "f:resources": {},
+                "f:startupProbe": {
+                  ".": {},
+                  "f:failureThreshold": {},
+                  "f:httpGet": {
+                    ".": {},
+                    "f:path": {},
+                    "f:port": {},
+                    "f:scheme": {}
+                  },
+                  "f:periodSeconds": {},
+                  "f:successThreshold": {},
+                  "f:timeoutSeconds": {}
+                },
+                "f:terminationMessagePath": {},
+                "f:terminationMessagePolicy": {},
+                "f:volumeMounts": {
+                  ".": {},
+                  "k:{\"mountPath\":\"/run/spire/bundle\"}": {
+                    ".": {},
+                    "f:mountPath": {},
+                    "f:name": {},
+                    "f:readOnly": {}
+                  },
+                  "k:{\"mountPath\":\"/run/spire/config\"}": {
+                    ".": {},
+                    "f:mountPath": {},
+                    "f:name": {},
+                    "f:readOnly": {}
+                  },
+                  "k:{\"mountPath\":\"/run/spire/data\"}": {
+                    ".": {},
+                    "f:mountPath": {},
+                    "f:name": {}
+                  },
+                  "k:{\"mountPath\":\"/run/spire/sockets\"}": {
+                    ".": {},
+                    "f:mountPath": {},
+                    "f:name": {}
+                  },
+                  "k:{\"mountPath\":\"/var/run/secrets/tokens\"}": {
+                    ".": {},
+                    "f:mountPath": {},
+                    "f:name": {},
+                    "f:readOnly": {}
+                  }
+                }
+              }
+            },
+            "f:dnsPolicy": {},
+            "f:enableServiceLinks": {},
+            "f:hostNetwork": {},
+            "f:hostPID": {},
+            "f:hostUsers": {},
+            "f:initContainers": {
+              ".": {},
+              "k:{\"name\":\"wait-for-server\"}": {
+                ".": {},
+                "f:command": {},
+                "f:env": {
+                  ".": {},
+                  "k:{\"name\":\"SPIRE_SERVER_HOST\"}": {
+                    ".": {},
+                    "f:name": {},
+                    "f:value": {}
+                  },
+                  "k:{\"name\":\"SPIRE_SERVER_PORT\"}": {
+                    ".": {},
+                    "f:name": {},
+                    "f:value": {}
+                  },
+                  "k:{\"name\":\"SPIRE_WAIT_ATTEMPTS\"}": {
+                    ".": {},
+                    "f:name": {},
+                    "f:value": {}
+                  },
+                  "k:{\"name\":\"SPIRE_WAIT_BACKOFF\"}": {
+                    ".": {},
+                    "f:name": {},
+                    "f:value": {}
+                  },
+                  "k:{\"name\":\"SPIRE_WAIT_DEADLINE\"}": {
+                    ".": {},
+                    "f:name": {},
+                    "f:value": {}
+                  }
+                },
+                "f:image": {},
+                "f:imagePullPolicy": {},
+                "f:name": {},
+                "f:resources": {},
+                "f:terminationMessagePath": {},
+                "f:terminationMessagePolicy": {},
+                "f:volumeMounts": {
+                  ".": {},
+                  "k:{\"mountPath\":\"/opt/cmtc\"}": {
+                    ".": {},
+                    "f:mountPath": {},
+                    "f:name": {},
+                    "f:readOnly": {}
+                  }
+                }
+              }
+            },
+            "f:priorityClassName": {},
+            "f:restartPolicy": {},
+            "f:schedulerName": {},
+            "f:securityContext": {
+              ".": {},
+              "f:fsGroup": {},
+              "f:fsGroupChangePolicy": {},
+              "f:runAsGroup": {},
+              "f:runAsNonRoot": {},
+              "f:runAsUser": {}
+            },
+            "f:serviceAccount": {},
+            "f:serviceAccountName": {},
+            "f:terminationGracePeriodSeconds": {},
+            "f:tolerations": {},
+            "f:volumes": {
+              ".": {},
+              "k:{\"name\":\"spire-agent-data\"}": {
+                ".": {},
+                "f:emptyDir": {
+                  ".": {},
+                  "f:sizeLimit": {}
+                },
+                "f:name": {}
+              },
+              "k:{\"name\":\"spire-agent-socket\"}": {
+                ".": {},
+                "f:emptyDir": {},
+                "f:name": {}
+              },
+              "k:{\"name\":\"spire-bundle\"}": {
+                ".": {},
+                "f:configMap": {
+                  ".": {},
+                  "f:defaultMode": {},
+                  "f:name": {}
+                },
+                "f:name": {}
+              },
+              "k:{\"name\":\"spire-config\"}": {
+                ".": {},
+                "f:configMap": {
+                  ".": {},
+                  "f:defaultMode": {},
+                  "f:name": {}
+                },
+                "f:name": {}
+              },
+              "k:{\"name\":\"spire-helpers\"}": {
+                ".": {},
+                "f:configMap": {
+                  ".": {},
+                  "f:defaultMode": {},
+                  "f:name": {}
+                },
+                "f:name": {}
+              },
+              "k:{\"name\":\"spire-token\"}": {
+                ".": {},
+                "f:name": {},
+                "f:projected": {
+                  ".": {},
+                  "f:defaultMode": {},
+                  "f:sources": {}
+                }
+              }
+            }
+          }
+        }
+      },
+      {
+        "manager": "kubelet",
+        "operation": "Update",
+        "apiVersion": "v1",
+        "time": "2026-10-25T04:38:44Z",
+        "fieldsType": "FieldsV1",
+        "fieldsV1": {
+          "f:status": {
+            "f:conditions": {
+              "k:{\"type\":\"ContainersReady\"}": {
+                ".": {},
+                "f:lastProbeTime": {},
+                "f:lastTransitionTime": {},
+                "f:observedGeneration": {},
+                "f:status": {},
+                "f:type": {}
+              },
+              "k:{\"type\":\"Initialized\"}": {
+                ".": {},
+                "f:lastProbeTime": {},
+                "f:lastTransitionTime": {},
+                "f:observedGeneration": {},
+                "f:status": {},
+                "f:type": {}
+              },
+              "k:{\"type\":\"PodReadyToStartContainers\"}": {
+                ".": {},
+                "f:lastProbeTime": {},
+                "f:lastTransitionTime": {},
+                "f:observedGeneration": {},
+                "f:status": {},
+                "f:type": {}
+              },
+              "k:{\"type\":\"PodScheduled\"}": {
+                "f:observedGeneration": {}
+              },
+              "k:{\"type\":\"Ready\"}": {
+                ".": {},
+                "f:lastProbeTime": {},
+                "f:lastTransitionTime": {},
+                "f:observedGeneration": {},
+                "f:status": {},
+                "f:type": {}
+              }
+            },
+            "f:containerStatuses": {},
+            "f:hostIP": {},
+            "f:hostIPs": {},
+            "f:initContainerStatuses": {},
+            "f:observedGeneration": {},
+            "f:phase": {},
+            "f:podIP": {},
+            "f:podIPs": {
+              ".": {},
+              "k:{\"ip\":\"172.18.0.4\"}": {
+                ".": {},
+                "f:ip": {}
+              }
+            },
+            "f:resources": {},
+            "f:startTime": {}
+          }
+        },
+        "subresource": "status"
+      }
+    ]
+  },
+  "spec": {
+    "volumes": [
+      {
+        "name": "spire-config",
+        "configMap": {
+          "name": "spire-agent",
+          "defaultMode": 420
+        }
+      },
+      {
+        "name": "spire-bundle",
+        "configMap": {
+          "name": "spire-bundle",
+          "defaultMode": 420
+        }
+      },
+      {
+        "name": "spire-agent-socket",
+        "emptyDir": {}
+      },
+      {
+        "name": "spire-agent-data",
+        "emptyDir": {
+          "sizeLimit": "64Mi"
+        }
+      },
+      {
+        "name": "spire-helpers",
+        "configMap": {
+          "name": "spire-helpers",
+          "defaultMode": 292
+        }
+      },
+      {
+        "name": "spire-token",
+        "projected": {
+          "sources": [
+            {
+              "serviceAccountToken": {
+                "audience": "spire-server",
+                "expirationSeconds": 600,
+                "path": "spire-agent"
+              }
+            }
+          ],
+          "defaultMode": 420
+        }
+      },
+      {
+        "name": "kube-api-access-rks6b",
+        "projected": {
+          "sources": [
+            {
+              "serviceAccountToken": {
+                "expirationSeconds": 3607,
+                "path": "token"
+              }
+            },
+            {
+              "configMap": {
+                "name": "kube-root-ca.crt",
+                "items": [
+                  {
+                    "key": "ca.crt",
+                    "path": "ca.crt"
+                  }
+                ]
+              }
+            },
+            {
+              "downwardAPI": {
+                "items": [
+                  {
+                    "path": "namespace",
+                    "fieldRef": {
+                      "apiVersion": "v1",
+                      "fieldPath": "metadata.namespace"
+                    }
+                  }
+                ]
+              }
+            }
+          ],
+          "defaultMode": 420
+        }
+      }
+    ],
+    "initContainers": [
+      {
+        "name": "wait-for-server",
+        "image": "docker.io/library/busybox:1.38.0@sha256:fd7dc98638c8e305f4dc34e979f1c0fdfdcaeb0fbf8fcff77ae834b6da3d7e6e",
+        "command": [
+          "/bin/sh",
+          "/opt/cmtc/wait-for-server.sh"
+        ],
+        "env": [
+          {
+            "name": "SPIRE_WAIT_ATTEMPTS",
+            "value": "60"
+          },
+          {
+            "name": "SPIRE_WAIT_DEADLINE",
+            "value": "60"
+          },
+          {
+            "name": "SPIRE_WAIT_BACKOFF",
+            "value": "1"
+          },
+          {
+            "name": "SPIRE_SERVER_HOST",
+            "value": "spire-server.cilium-spire.svc"
+          },
+          {
+            "name": "SPIRE_SERVER_PORT",
+            "value": "8081"
+          }
+        ],
+        "resources": {},
+        "volumeMounts": [
+          {
+            "name": "spire-helpers",
+            "readOnly": true,
+            "mountPath": "/opt/cmtc"
+          },
+          {
+            "name": "kube-api-access-rks6b",
+            "readOnly": true,
+            "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount"
+          }
+        ],
+        "terminationMessagePath": "/dev/termination-log",
+        "terminationMessagePolicy": "File",
+        "imagePullPolicy": "IfNotPresent"
+      }
+    ],
+    "containers": [
+      {
+        "name": "spire-agent",
+        "image": "ghcr.io/spiffe/spire-agent:1.15.5@sha256:3652c732b0f0d36f4dd78394230a1b1cd0ddcc29548a46c67a996b1a78c14481",
+        "args": [
+          "-config",
+          "/run/spire/config/agent.conf"
+        ],
+        "ports": [
+          {
+            "name": "http",
+            "hostPort": 4251,
+            "containerPort": 4251,
+            "protocol": "TCP"
+          }
+        ],
+        "resources": {},
+        "volumeMounts": [
+          {
+            "name": "spire-config",
+            "readOnly": true,
+            "mountPath": "/run/spire/config"
+          },
+          {
+            "name": "spire-bundle",
+            "readOnly": true,
+            "mountPath": "/run/spire/bundle"
+          },
+          {
+            "name": "spire-agent-data",
+            "mountPath": "/run/spire/data"
+          },
+          {
+            "name": "spire-agent-socket",
+            "mountPath": "/run/spire/sockets"
+          },
+          {
+            "name": "spire-token",
+            "readOnly": true,
+            "mountPath": "/var/run/secrets/tokens"
+          },
+          {
+            "name": "kube-api-access-rks6b",
+            "readOnly": true,
+            "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount"
+          }
+        ],
+        "livenessProbe": {
+          "httpGet": {
+            "path": "/live",
+            "port": "http",
+            "scheme": "HTTP"
+          },
+          "initialDelaySeconds": 15,
+          "timeoutSeconds": 3,
+          "periodSeconds": 60,
+          "successThreshold": 1,
+          "failureThreshold": 2
+        },
+        "readinessProbe": {
+          "httpGet": {
+            "path": "/ready",
+            "port": "http",
+            "scheme": "HTTP"
+          },
+          "initialDelaySeconds": 5,
+          "timeoutSeconds": 1,
+          "periodSeconds": 5,
+          "successThreshold": 1,
+          "failureThreshold": 3
+        },
+        "startupProbe": {
+          "httpGet": {
+            "path": "/live",
+            "port": "http",
+            "scheme": "HTTP"
+          },
+          "timeoutSeconds": 3,
+          "periodSeconds": 5,
+          "successThreshold": 1,
+          "failureThreshold": 30
+        },
+        "terminationMessagePath": "/dev/termination-log",
+        "terminationMessagePolicy": "File",
+        "imagePullPolicy": "IfNotPresent"
+      }
+    ],
+    "restartPolicy": "Always",
+    "terminationGracePeriodSeconds": 30,
+    "dnsPolicy": "ClusterFirstWithHostNet",
+    "serviceAccountName": "spire-agent",
+    "serviceAccount": "spire-agent",
+    "nodeName": "cmtc-b-control-plane",
+    "hostNetwork": true,
+    "hostPID": true,
+    "securityContext": {
+      "runAsUser": 1000,
+      "runAsGroup": 1000,
+      "runAsNonRoot": true,
+      "fsGroup": 1000,
+      "fsGroupChangePolicy": "OnRootMismatch"
+    },
+    "affinity": {
+      "nodeAffinity": {
+        "requiredDuringSchedulingIgnoredDuringExecution": {
+          "nodeSelectorTerms": [
+            {
+              "matchFields": [
+                {
+                  "key": "metadata.name",
+                  "operator": "In",
+                  "values": [
+                    "cmtc-b-control-plane"
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "schedulerName": "default-scheduler",
+    "tolerations": [
+      {
+        "key": "node.kubernetes.io/not-ready",
+        "effect": "NoSchedule"
+      },
+      {
+        "key": "node-role.kubernetes.io/master",
+        "effect": "NoSchedule"
+      },
+      {
+        "key": "node-role.kubernetes.io/control-plane",
+        "effect": "NoSchedule"
+      },
+      {
+        "key": "node.cloudprovider.kubernetes.io/uninitialized",
+        "value": "true",
+        "effect": "NoSchedule"
+      },
+      {
+        "key": "CriticalAddonsOnly",
+        "operator": "Exists"
+      },
+      {
+        "key": "node.cilium.io/agent-not-ready",
+        "effect": "NoSchedule"
+      },
+      {
+        "key": "node.kubernetes.io/not-ready",
+        "operator": "Exists",
+        "effect": "NoExecute"
+      },
+      {
+        "key": "node.kubernetes.io/unreachable",
+        "operator": "Exists",
+        "effect": "NoExecute"
+      },
+      {
+        "key": "node.kubernetes.io/disk-pressure",
+        "operator": "Exists",
+        "effect": "NoSchedule"
+      },
+      {
+        "key": "node.kubernetes.io/memory-pressure",
+        "operator": "Exists",
+        "effect": "NoSchedule"
+      },
+      {
+        "key": "node.kubernetes.io/pid-pressure",
+        "operator": "Exists",
+        "effect": "NoSchedule"
+      },
+      {
+        "key": "node.kubernetes.io/unschedulable",
+        "operator": "Exists",
+        "effect": "NoSchedule"
+      },
+      {
+        "key": "node.kubernetes.io/network-unavailable",
+        "operator": "Exists",
+        "effect": "NoSchedule"
+      }
+    ],
+    "priorityClassName": "system-node-critical",
+    "priority": 2000001000,
+    "enableServiceLinks": true,
+    "preemptionPolicy": "PreemptLowerPriority",
+    "hostUsers": true
+  },
+  "status": {
+    "observedGeneration": 1,
+    "phase": "Running",
+    "conditions": [
+      {
+        "type": "PodReadyToStartContainers",
+        "observedGeneration": 1,
+        "status": "True",
+        "lastProbeTime": null,
+        "lastTransitionTime": "2026-10-25T04:38:39Z"
+      },
+      {
+        "type": "Initialized",
+        "observedGeneration": 1,
+        "status": "True",
+        "lastProbeTime": null,
+        "lastTransitionTime": "2026-10-25T04:38:39Z"
+      },
+      {
+        "type": "Ready",
+        "observedGeneration": 1,
+        "status": "True",
+        "lastProbeTime": null,
+        "lastTransitionTime": "2026-10-25T04:38:44Z"
+      },
+      {
+        "type": "ContainersReady",
+        "observedGeneration": 1,
+        "status": "True",
+        "lastProbeTime": null,
+        "lastTransitionTime": "2026-10-25T04:38:44Z"
+      },
+      {
+        "type": "PodScheduled",
+        "observedGeneration": 1,
+        "status": "True",
+        "lastProbeTime": null,
+        "lastTransitionTime": "2026-10-25T04:38:38Z"
+      }
+    ],
+    "hostIP": "172.18.0.4",
+    "hostIPs": [
+      {
+        "ip": "172.18.0.4"
+      }
+    ],
+    "podIP": "172.18.0.4",
+    "podIPs": [
+      {
+        "ip": "172.18.0.4"
+      }
+    ],
+    "startTime": "2026-10-25T04:38:38Z",
+    "initContainerStatuses": [
+      {
+        "name": "wait-for-server",
+        "state": {
+          "terminated": {
+            "exitCode": 0,
+            "reason": "Completed",
+            "startedAt": "2026-10-25T04:38:39Z",
+            "finishedAt": "2026-10-25T04:38:39Z",
+            "containerID": "containerd://a12d761ae173d7ba413e8f4414a5a504a41f20430c53f14a59c9dec37c2f7c0c"
+          }
+        },
+        "lastState": {},
+        "ready": true,
+        "restartCount": 0,
+        "image": "sha256:d2482869a6b838d3b4c9cad0c8085c06277909482771eb525d298fc3a7d07927",
+        "imageID": "docker.io/library/busybox@sha256:fd7dc98638c8e305f4dc34e979f1c0fdfdcaeb0fbf8fcff77ae834b6da3d7e6e",
+        "containerID": "containerd://a12d761ae173d7ba413e8f4414a5a504a41f20430c53f14a59c9dec37c2f7c0c",
+        "started": false,
+        "resources": {},
+        "volumeMounts": [
+          {
+            "name": "spire-helpers",
+            "mountPath": "/opt/cmtc",
+            "readOnly": true,
+            "recursiveReadOnly": "Disabled"
+          },
+          {
+            "name": "kube-api-access-rks6b",
+            "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount",
+            "readOnly": true,
+            "recursiveReadOnly": "Disabled"
+          }
+        ],
+        "user": {
+          "linux": {
+            "uid": 1000,
+            "gid": 1000,
+            "supplementalGroups": [
+              1000
+            ]
+          }
+        }
+      }
+    ],
+    "containerStatuses": [
+      {
+        "name": "spire-agent",
+        "state": {
+          "running": {
+            "startedAt": "2026-10-25T04:38:39Z"
+          }
+        },
+        "lastState": {},
+        "ready": true,
+        "restartCount": 0,
+        "image": "sha256:98a32bbbf826665ec6a0c8ada221d32ca16f13da6a3772c2a7c7ff7c41f0fce9",
+        "imageID": "ghcr.io/spiffe/spire-agent@sha256:3652c732b0f0d36f4dd78394230a1b1cd0ddcc29548a46c67a996b1a78c14481",
+        "containerID": "containerd://c3130b9daeafbb802b40c49afa6641a54ae2e0fa60176e030270754fca535aef",
+        "started": true,
+        "resources": {},
+        "volumeMounts": [
+          {
+            "name": "spire-config",
+            "mountPath": "/run/spire/config",
+            "readOnly": true,
+            "recursiveReadOnly": "Disabled"
+          },
+          {
+            "name": "spire-bundle",
+            "mountPath": "/run/spire/bundle",
+            "readOnly": true,
+            "recursiveReadOnly": "Disabled"
+          },
+          {
+            "name": "spire-agent-data",
+            "mountPath": "/run/spire/data"
+          },
+          {
+            "name": "spire-agent-socket",
+            "mountPath": "/run/spire/sockets"
+          },
+          {
+            "name": "spire-token",
+            "mountPath": "/var/run/secrets/tokens",
+            "readOnly": true,
+            "recursiveReadOnly": "Disabled"
+          },
+          {
+            "name": "kube-api-access-rks6b",
+            "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount",
+            "readOnly": true,
+            "recursiveReadOnly": "Disabled"
+          }
+        ],
+        "user": {
+          "linux": {
+            "uid": 1000,
+            "gid": 1000,
+            "supplementalGroups": [
+              1000
+            ]
+          }
+        }
+      }
+    ],
+    "qosClass": "BestEffort",
+    "resources": {}
+  }
+}

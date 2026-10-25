@@ -1,0 +1,1513 @@
+{
+  "identity": {
+    "spireServerImage": "localhost/cmtc-spire-server@sha256:f57e537d42e5a8cc94fbae110b4f67a70481f391fef70171143d9a1b81cf0288",
+    "schemaVersion": 1,
+    "rootSHA256": "0c28af9e59fbb91745b731762201f3f618a25841c222fdf49f02714de6164b7c",
+    "generation": 1,
+    "clusterPins": {
+      "cmtc-a": "bb7182c7-de95-4e70-816a-a1400d755794",
+      "cmtc-b": "f2687af6-bd96-45a3-98a2-d1397a3ee244"
+    },
+    "approvalPins": {
+      "cmtc-a": "750c4bb5-2f0e-4fb7-b34e-2132567edea7",
+      "cmtc-b": "5198f47d-4a0e-47da-b623-58e278be8887"
+    },
+    "deploymentPins": {
+      "cmtc-a": "5b76125e-219b-464b-bde0-039291a3f186",
+      "cmtc-b": "11993d73-e3c9-4d3c-a1ff-4040ff528f9e"
+    },
+    "nodePins": {
+      "cmtc-a/cmtc-a-control-plane": "1e707131-badc-45d7-b543-758f6267f1d6",
+      "cmtc-a/cmtc-a-worker": "35a6f095-90e9-41ff-a713-216cde5596f0",
+      "cmtc-b/cmtc-b-control-plane": "aa856ae0-f1e6-4ece-bca7-266a9d7a03d2",
+      "cmtc-b/cmtc-b-worker": "fcbbc49e-268c-411b-9083-1346f53bbb88"
+    },
+    "image": "localhost/cmtc:lineage-f5fe9992da",
+    "imageConfig": "sha256:3f5839e26f82395d820cd2fc4439648a7e9fa3957544c705b53092031d7c9be7",
+    "sourceRevision": "f5fe9992da855a22660c07b141e19feee50310ba"
+  },
+  "owner": "2da2ac158fa44e1e9767002afcbc9aba",
+  "clusters": {
+    "cmtc-a": {
+      "uids": {
+        "ConfigMap/cmtc-issuer-approval-g1": "902e1117-142f-4c91-ada7-65e57b0863e6",
+        "ConfigMap/cmtc-issuer-publication": "fbc7b3c2-00f1-4787-a149-fca76e274c4e",
+        "Role/cmtc-issuer-profile-access": "f0b404e1-2537-486d-815f-60fc68f94238",
+        "RoleBinding/cmtc-issuer-profile-access": "e0a48392-a545-49d2-aa0f-a3a9f9cdf5dd"
+      },
+      "saUID": "41831ff4-4fdd-412e-b930-7d409bd30903",
+      "baseline": {
+        "metadata": {
+          "labels": {
+            "app.kubernetes.io/name": "cmtc-controller",
+            "security.cmtc.io/metrics": "true"
+          }
+        },
+        "spec": {
+          "containers": [
+            {
+              "name": "controller",
+              "image": "localhost/cmtc:lineage-f5fe9992da",
+              "args": [
+                "--mode=controller",
+                "--cluster-name=cmtc-a"
+              ],
+              "ports": [
+                {
+                  "name": "metrics",
+                  "containerPort": 8080,
+                  "protocol": "TCP"
+                },
+                {
+                  "name": "health",
+                  "containerPort": 8081,
+                  "protocol": "TCP"
+                }
+              ],
+              "resources": {
+                "limits": {
+                  "memory": "256Mi"
+                },
+                "requests": {
+                  "cpu": "25m",
+                  "memory": "64Mi"
+                }
+              },
+              "livenessProbe": {
+                "httpGet": {
+                  "path": "/healthz",
+                  "port": "health",
+                  "scheme": "HTTP"
+                },
+                "timeoutSeconds": 1,
+                "periodSeconds": 10,
+                "successThreshold": 1,
+                "failureThreshold": 3
+              },
+              "readinessProbe": {
+                "httpGet": {
+                  "path": "/readyz",
+                  "port": "health",
+                  "scheme": "HTTP"
+                },
+                "timeoutSeconds": 1,
+                "periodSeconds": 10,
+                "successThreshold": 1,
+                "failureThreshold": 3
+              },
+              "terminationMessagePath": "/dev/termination-log",
+              "terminationMessagePolicy": "File",
+              "imagePullPolicy": "IfNotPresent",
+              "securityContext": {
+                "capabilities": {
+                  "drop": [
+                    "ALL"
+                  ]
+                },
+                "readOnlyRootFilesystem": true,
+                "allowPrivilegeEscalation": false
+              }
+            }
+          ],
+          "restartPolicy": "Always",
+          "terminationGracePeriodSeconds": 30,
+          "dnsPolicy": "ClusterFirst",
+          "serviceAccountName": "cmtc-controller",
+          "serviceAccount": "cmtc-controller",
+          "securityContext": {
+            "runAsUser": 65532,
+            "runAsNonRoot": true,
+            "seccompProfile": {
+              "type": "RuntimeDefault"
+            }
+          },
+          "schedulerName": "default-scheduler"
+        }
+      },
+      "deploymentUID": "5b76125e-219b-464b-bde0-039291a3f186",
+      "rbac": [
+        {
+          "verb": "get",
+          "resource": "configmap/cmtc-issuer-approval-g1",
+          "allowed": true
+        },
+        {
+          "verb": "get",
+          "resource": "configmap/cmtc-issuer-publication",
+          "allowed": true
+        },
+        {
+          "verb": "update",
+          "resource": "configmap/cmtc-issuer-publication",
+          "allowed": true
+        },
+        {
+          "verb": "update",
+          "resource": "configmap/cmtc-issuer-approval-g1",
+          "allowed": false
+        },
+        {
+          "verb": "update",
+          "resource": "configmap/cmtc-live-issuer-foreign",
+          "allowed": false
+        },
+        {
+          "verb": "list",
+          "resource": "configmaps",
+          "allowed": false
+        },
+        {
+          "verb": "watch",
+          "resource": "configmaps",
+          "allowed": false
+        },
+        {
+          "verb": "create",
+          "resource": "configmaps",
+          "allowed": false
+        },
+        {
+          "verb": "delete",
+          "resource": "configmap/cmtc-issuer-publication",
+          "allowed": false
+        },
+        {
+          "verb": "patch",
+          "resource": "configmap/cmtc-issuer-approval-g1",
+          "allowed": false
+        },
+        {
+          "verb": "patch",
+          "resource": "configmap/cmtc-issuer-publication",
+          "allowed": false
+        },
+        {
+          "verb": "patch",
+          "resource": "configmap/cmtc-live-issuer-foreign",
+          "allowed": false
+        },
+        {
+          "verb": "deletecollection",
+          "resource": "configmaps",
+          "allowed": false
+        },
+        {
+          "verb": "get",
+          "resource": "secret/cmtc-live-issuer-never-created",
+          "allowed": false
+        },
+        {
+          "verb": "list",
+          "resource": "secrets",
+          "allowed": false
+        },
+        {
+          "verb": "watch",
+          "resource": "secrets",
+          "allowed": false
+        },
+        {
+          "verb": "create",
+          "resource": "secrets",
+          "allowed": false
+        },
+        {
+          "verb": "update",
+          "resource": "secret/cmtc-live-issuer-never-created",
+          "allowed": false
+        },
+        {
+          "verb": "patch",
+          "resource": "secret/cmtc-live-issuer-never-created",
+          "allowed": false
+        },
+        {
+          "verb": "delete",
+          "resource": "secret/cmtc-live-issuer-never-created",
+          "allowed": false
+        },
+        {
+          "verb": "deletecollection",
+          "resource": "secrets",
+          "allowed": false
+        }
+      ],
+      "active": {
+        "metadata": {
+          "labels": {
+            "app.kubernetes.io/name": "cmtc-controller",
+            "security.cmtc.io/metrics": "true"
+          },
+          "annotations": {
+            "security.cmtc.io/live-issuer-owner": "2da2ac158fa44e1e9767002afcbc9aba"
+          }
+        },
+        "spec": {
+          "containers": [
+            {
+              "name": "controller",
+              "image": "localhost/cmtc:lineage-f5fe9992da",
+              "args": [
+                "--mode=controller",
+                "--cluster-name=cmtc-a",
+                "--issuer-profile-producer=true",
+                "--issuer-profile-namespace=cmtc-system",
+                "--issuer-profile-source=cmtc-issuer-approval-g1",
+                "--issuer-profile-output=cmtc-issuer-publication",
+                "--issuer-profile-source-uid=902e1117-142f-4c91-ada7-65e57b0863e6",
+                "--issuer-profile-output-uid=fbc7b3c2-00f1-4787-a149-fca76e274c4e",
+                "--issuer-profile-root-sha256=0c28af9e59fbb91745b731762201f3f618a25841c222fdf49f02714de6164b7c",
+                "--issuer-profile-minimum-generation=1"
+              ],
+              "ports": [
+                {
+                  "name": "metrics",
+                  "containerPort": 8080,
+                  "protocol": "TCP"
+                },
+                {
+                  "name": "health",
+                  "containerPort": 8081,
+                  "protocol": "TCP"
+                }
+              ],
+              "resources": {
+                "limits": {
+                  "memory": "256Mi"
+                },
+                "requests": {
+                  "cpu": "25m",
+                  "memory": "64Mi"
+                }
+              },
+              "livenessProbe": {
+                "httpGet": {
+                  "path": "/healthz",
+                  "port": "health",
+                  "scheme": "HTTP"
+                },
+                "timeoutSeconds": 1,
+                "periodSeconds": 10,
+                "successThreshold": 1,
+                "failureThreshold": 3
+              },
+              "readinessProbe": {
+                "httpGet": {
+                  "path": "/readyz",
+                  "port": "health",
+                  "scheme": "HTTP"
+                },
+                "timeoutSeconds": 1,
+                "periodSeconds": 10,
+                "successThreshold": 1,
+                "failureThreshold": 3
+              },
+              "terminationMessagePath": "/dev/termination-log",
+              "terminationMessagePolicy": "File",
+              "imagePullPolicy": "IfNotPresent",
+              "securityContext": {
+                "capabilities": {
+                  "drop": [
+                    "ALL"
+                  ]
+                },
+                "readOnlyRootFilesystem": true,
+                "allowPrivilegeEscalation": false
+              }
+            }
+          ],
+          "restartPolicy": "Always",
+          "terminationGracePeriodSeconds": 30,
+          "dnsPolicy": "ClusterFirst",
+          "serviceAccountName": "cmtc-controller",
+          "serviceAccount": "cmtc-controller",
+          "securityContext": {
+            "runAsUser": 65532,
+            "runAsNonRoot": true,
+            "seccompProfile": {
+              "type": "RuntimeDefault"
+            }
+          },
+          "schedulerName": "default-scheduler"
+        }
+      },
+      "phase": "publication-qualified-no-consumer",
+      "runtime": {
+        "podUID": "f4d320e4-fe97-4a5d-85a5-9829fa02cc21",
+        "podName": "cmtc-controller-58789544dc-r7l88",
+        "podIP": "10.10.1.158",
+        "containerID": "containerd://29b1c25f67dd15db57f2a6ea04f42e63c79fdb3394c6afb354eb05d72d8d0c1e",
+        "imageID": "docker.io/library/import-2026-10-25@sha256:966e2a982eac251d310e9d05bb3e3a81f93de42e0a724b4ccfb8d96cc9f5bb44",
+        "imageConfig": "sha256:3f5839e26f82395d820cd2fc4439648a7e9fa3957544c705b53092031d7c9be7",
+        "sourceRevision": "f5fe9992da855a22660c07b141e19feee50310ba",
+        "nodeUID": "35a6f095-90e9-41ff-a713-216cde5596f0"
+      },
+      "lastPublication": {
+        "schemaVersion": 1,
+        "sequence": 2,
+        "state": "published",
+        "reason": "Validated",
+        "producerCluster": "cmtc-a",
+        "outputUID": "fbc7b3c2-00f1-4787-a149-fca76e274c4e",
+        "expectedSourceUID": "902e1117-142f-4c91-ada7-65e57b0863e6",
+        "source": {
+          "namespace": "cmtc-system",
+          "name": "cmtc-issuer-approval-g1",
+          "uid": "902e1117-142f-4c91-ada7-65e57b0863e6",
+          "resourceVersion": "93889",
+          "generation": 1
+        },
+        "acceptedGeneration": 1,
+        "acceptedSourceUID": "902e1117-142f-4c91-ada7-65e57b0863e6",
+        "acceptedApprovalDigest": "3ee827dd1f39ff42dd113b2a87f7538ec6ca73af7c5cc0fe0abf136f81b20baf",
+        "approvalDigest": "3ee827dd1f39ff42dd113b2a87f7538ec6ca73af7c5cc0fe0abf136f81b20baf",
+        "approval": {
+          "schemaVersion": 1,
+          "generation": 1,
+          "expiresAt": "2026-10-26T03:55:11Z",
+          "roots": [
+            {
+              "certificatePEM": "-----BEGIN CERTIFICATE-----\nMIIBkTCCATegAwIBAgIUS1+X2rkxnJj5euDUL93pzW8zCnwwCgYIKoZIzj0EAwIw\nJTEjMCEGA1UEAwwaQ01UQyBMYWIgT3JnYW5pemF0aW9uIFJvb3QwHhcNMjYxMDI1\nMDMyNDI2WhcNMzExMDI0MDMyNDI2WjAlMSMwIQYDVQQDDBpDTVRDIExhYiBPcmdh\nbml6YXRpb24gUm9vdDBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABIZeomIfk2EA\n4d2ixJvROa/Qqzpb1VCKz3dYU1ZwXANvJgGZTCOVSBXeTc8lGt2btQ47+3THYeXm\ngxfQEfwwSvWjRTBDMBIGA1UdEwEB/wQIMAYBAf8CAQIwDgYDVR0PAQH/BAQDAgEG\nMB0GA1UdDgQWBBSSCQX0BlY612dIEP1yqLRmZ6ZtDjAKBggqhkjOPQQDAgNIADBF\nAiBEFOQKfO1g3d1W2ShXzpzALChOj6+CO0nnk7IK3E+whAIhAKkIAJlRwH910A9b\nXJbSUTFO6403VBHrxq0RA3yfHtA8\n-----END CERTIFICATE-----\n",
+              "sha256": "0c28af9e59fbb91745b731762201f3f618a25841c222fdf49f02714de6164b7c"
+            }
+          ],
+          "clusters": [
+            {
+              "clusterID": "cmtc-a",
+              "trustDomain": "cmtc-a.mesh.example",
+              "issuers": [
+                {
+                  "certificatePEM": "-----BEGIN CERTIFICATE-----\nMIID5TCCA4ygAwIBAgIUegh6GczuJryWGLycK6aoICNrEdMwCgYIKoZIzj0EAwIw\nIjEgMB4GA1UEAxMXY210Yy1hIFNQSVJFIGNsdXN0ZXIgQ0EwHhcNMjYxMDI1MDM1\nNTExWhcNMjYxMDI2MDM1NTExWjBpMQswCQYDVQQGEwJVUzEOMAwGA1UEChMFU1BJ\nUkUxGDAWBgNVBAMTD2NtdGMtYSBTUElSRSBDQTEwMC4GA1UEBRMnMjc5OTM5Njk5\nNjIyNTU4Njg3NjIyNTYyNzU3MTUxNjQzNjE1MTQ2MIICIjANBgkqhkiG9w0BAQEF\nAAOCAg8AMIICCgKCAgEAzBaD4nW8UjnroCvXDgsK78JhlkwlXOJr/e9ocOf0Acpi\nhPvVnusbjEA8CN17hVnUCfUkpTETKnq/WpPjidibFpgz0va8uka+dxxIY8Mf3UgL\niEXAKbY+Xgh8K4zt1EfjTU1xCKUEWbW7hQlrlAXPTZUf8CHj/uD46vlmRfwulXEi\n+fXmJ6pIm5lb6yCAQS9b8wvV5cJlo8N3fXZhLdccfnPT1220w0GxLCzdj0rUjfEF\nOcw9EcbiFaYFEvS5Bg0La2IHgBhM7qUK3CrSY+QhuvUHyGm06Vktwbv17NsieYau\n/2SIx5PQKJAblDvKVF7Inu7XrKIi6YC5AblG310w9/JVjgW7a5pSqV0+B5q+uKho\nrsAPDc2JWMzFJo/31nMpy6HU2hj3b0LF4V33+mzoYI/+j1qMS8vU6lXiBxG4nt37\nKbYwOqfTfZEw4VRH7pW6udLTmf0qAX5avrKvT6SmYLGYbqqy8VcIg5a1no8JvkiQ\nrG8/8dnQjyN6vlEKIKtYbh5S3fvvgtX2oZlMp0iwqPHCz+KlO9i3GO1p/hXCRxPT\nLsHDVhsoTjV6h7DFyQSDxvB2C4pYsxnMeLeFMOPvCziEpokk3XKPzHcdqxCb5kSn\nan9w9iA37koHOhu/9YPbKG8NnAp6ehdzom158lM/7Pv5aDrnIUKN4ORMalCM3IUC\nAwEAAaOBjTCBijAOBgNVHQ8BAf8EBAMCAQYwDwYDVR0TAQH/BAUwAwEB/zAdBgNV\nHQ4EFgQUiOALjnFVdTYcfdTIQlpq4yDwa4AwHwYDVR0jBBgwFoAUnDrwqkWCphCB\nqFFImBQ32rmGsl0wJwYDVR0RBCAwHoYcc3BpZmZlOi8vY210Yy1hLm1lc2guZXhh\nbXBsZTAKBggqhkjOPQQDAgNHADBEAiASoozOi0zBxu7xBoPQFwXYjFcLE69CcBZK\nqw6ACzNEYwIgX76hoLQfRAkQ3Q9LomhQi33kt8kCAmr9Mo01qJ6c0IU=\n-----END CERTIFICATE-----\n",
+                  "chainPEM": "-----BEGIN CERTIFICATE-----\nMIIBrjCCAVWgAwIBAgIUMTwGstpHG03qV4GIQrhxEUqLhZcwCgYIKoZIzj0EAwIw\nJTEjMCEGA1UEAwwaQ01UQyBMYWIgT3JnYW5pemF0aW9uIFJvb3QwHhcNMjYxMDI1\nMDMyNDMwWhcNMjcxMDI1MDMyNDMwWjAiMSAwHgYDVQQDExdjbXRjLWEgU1BJUkUg\nY2x1c3RlciBDQTBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABGbE7o2cQKggXIt3\nISmvKqyP0CookDmbAATcZO9rs1FX+ZrsGnkIPfA6nsVL49jD4//TlFGFTnzpPD8s\n/kktn0ujZjBkMBIGA1UdEwEB/wQIMAYBAf8CAQEwDgYDVR0PAQH/BAQDAgEGMB0G\nA1UdDgQWBBScOvCqRYKmEIGoUUiYFDfauYayXTAfBgNVHSMEGDAWgBSSCQX0BlY6\n12dIEP1yqLRmZ6ZtDjAKBggqhkjOPQQDAgNHADBEAiARInyQvK90pBvYcNZMojXk\nQBTFF9DEqDLPKLzR4UenEgIgVYs8XQa8Nk5uYc+0KUsdheSr7mxxOG7pb0IUlupA\nmEs=\n-----END CERTIFICATE-----\n",
+                  "spkiSHA256": "d78e77ae91c3f043acac18d7d1932f55c77682d19602fa57cdf85f0cc2ccc27c",
+                  "rootSHA256": "0c28af9e59fbb91745b731762201f3f618a25841c222fdf49f02714de6164b7c"
+                }
+              ]
+            },
+            {
+              "clusterID": "cmtc-b",
+              "trustDomain": "cmtc-b.mesh.example",
+              "issuers": [
+                {
+                  "certificatePEM": "-----BEGIN CERTIFICATE-----\nMIID5TCCA4ygAwIBAgIUBh/CbRLoAvQAEf3fNZQ1dIU2k2cwCgYIKoZIzj0EAwIw\nIjEgMB4GA1UEAxMXY210Yy1iIFNQSVJFIGNsdXN0ZXIgQ0EwHhcNMjYxMDI1MDM1\nNTM4WhcNMjYxMDI2MDM1NTM4WjBpMQswCQYDVQQGEwJVUzEOMAwGA1UEChMFU1BJ\nUkUxGDAWBgNVBAMTD2NtdGMtYiBTUElSRSBDQTEwMC4GA1UEBRMnMTQyMjQxMDA1\nNTgxMTg4NzY5NjEyNjMxODg2OTQ2OTIxNDM1Mzk2MIICIjANBgkqhkiG9w0BAQEF\nAAOCAg8AMIICCgKCAgEAqxsZUsYK+9kZiDLDFmdi9aB/1znEVS2JR0TXfQnBtncV\ndPm5A+1iAxE2JVf0yQ+GB9vL3UBCtok5RUfdiP4KWlnIhFg4PKS6zFlY4JRaEt1V\nr8Jr5tdH1H1+M+7T+l9nTmV8ONuOpDX2V1xSNZPYFU6aXNxFy5dQx0p2qeP/770O\n+p3+AshKKTBKHnXOzlOrGUUEjJr1i3CfTjeiAiezgAqNfkMlMlwTbcmF/cRXB1zg\nKjKw8ZQ+raa9ki9q2CnnwtW0w3Djfo3SELqqyd52sQ3dQCkSz4Whd/w8SkqlkkpY\nmlYMGf4Gsr6hNZZ+thxVgTssUaa6CoszBjrJBgcuXP9FReQ1s9B3f4q5TCqffpiq\nPVFGB7D75YvOJleR/76E5qvrPLxcU0gwp29fPpBDbkLmmRFVKxYVo9mQFm+Qrxhi\nXjdW5UW3dzb9rf5SeXzgHU1WhEytBbqtWcMCn0UsyXFaBNfNJ4CC+Zj1q5tXNsIu\nx5xScJPvU/6sR28l0X5kaPaICLyj7l0hsjKSh38z2vLFnv0QDRj6J5IPdlwCLqQn\no0ejdfLh8YtdyMLgZk42U2RBlrsT7TT8ytPWenNXLZcKNfZg4clIdoGN0oR+xcPd\nKL3IGtu2Jwnxt0nt7RqY2SOfcj/YfKP+fXhf2G33WHmrG1nYWqYGLCUxVfovWTkC\nAwEAAaOBjTCBijAOBgNVHQ8BAf8EBAMCAQYwDwYDVR0TAQH/BAUwAwEB/zAdBgNV\nHQ4EFgQUobOdTS7r9q1ZFHMgQM3ZIeVoKoQwHwYDVR0jBBgwFoAUFNY23EtgtOwE\n+78qMDt+jz/B420wJwYDVR0RBCAwHoYcc3BpZmZlOi8vY210Yy1iLm1lc2guZXhh\nbXBsZTAKBggqhkjOPQQDAgNHADBEAiAJusrBjpMH9OobkWkYlwOdKwigJNUJPidZ\n3zxVmQFQAQIgPWM8fb/MENewrvOSsXQ8etSN+wIOwIdDi1mYF9ybsHY=\n-----END CERTIFICATE-----\n",
+                  "chainPEM": "-----BEGIN CERTIFICATE-----\nMIIBsDCCAVWgAwIBAgIUJ7JlgnI1+IGyJc8WkkhmyqJAQf4wCgYIKoZIzj0EAwIw\nJTEjMCEGA1UEAwwaQ01UQyBMYWIgT3JnYW5pemF0aW9uIFJvb3QwHhcNMjYxMDI1\nMDMzMzU4WhcNMjcxMDI1MDMzMzU4WjAiMSAwHgYDVQQDExdjbXRjLWIgU1BJUkUg\nY2x1c3RlciBDQTBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABLu6ZmCRLM0zzcyg\nAYQWXmU1fFkyD95qAl9CoHXdu5UVFPZ+NmDilmhQjbPEuunmcbP1Vphuryik0/nE\njy1mMHejZjBkMBIGA1UdEwEB/wQIMAYBAf8CAQEwDgYDVR0PAQH/BAQDAgEGMB0G\nA1UdDgQWBBQU1jbcS2C07AT7vyowO36PP8HjbTAfBgNVHSMEGDAWgBSSCQX0BlY6\n12dIEP1yqLRmZ6ZtDjAKBggqhkjOPQQDAgNJADBGAiEAvJ27cfqBFF9Qqhkrc87o\nV2TCB9+V4kaZKLVktc6y0GsCIQDR5qUESkD065rjh+a1dCAEdSQYr7OAl9kqWS8m\nwIoGpQ==\n-----END CERTIFICATE-----\n",
+                  "spkiSHA256": "5135ed8c7fb2c0adc4af7a324ed8d48675cce7b5f7310d4d6537d9061ca5be39",
+                  "rootSHA256": "0c28af9e59fbb91745b731762201f3f618a25841c222fdf49f02714de6164b7c"
+                }
+              ]
+            }
+          ]
+        },
+        "publishedAt": "2026-10-25T04:42:21Z",
+        "validUntil": "2026-10-25T04:42:51Z",
+        "digest": "08d50054635978f2a57fe50e8df1f99191fc669ebb72b26952487e9db36099cd"
+      },
+      "lastOutputRV": "94027",
+      "renewal": {
+        "firstSequence": 1,
+        "renewedSequence": 2,
+        "firstValidUntil": "2026-10-25T04:42:36Z",
+        "renewedValidUntil": "2026-10-25T04:42:51Z"
+      },
+      "metrics": [
+        {
+          "query": "cmtc_issuer_profile_validation_attempts_total{job=\"cmtc\",component=\"cmtc-controller\",cluster=\"cmtc-a\",instance=\"10.10.1.158:8080\"}",
+          "response": {
+            "status": "success",
+            "data": {
+              "resultType": "vector",
+              "result": [
+                {
+                  "metric": {
+                    "__name__": "cmtc_issuer_profile_validation_attempts_total",
+                    "cluster": "cmtc-a",
+                    "component": "cmtc-controller",
+                    "exported_cluster": "cmtc-a",
+                    "instance": "10.10.1.158:8080",
+                    "job": "cmtc",
+                    "node": "cmtc-a-worker",
+                    "result": "accepted"
+                  },
+                  "value": [
+                    1792903344.206,
+                    "4"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "query": "cmtc_issuer_profile_publication_writes_total{job=\"cmtc\",component=\"cmtc-controller\",cluster=\"cmtc-a\",instance=\"10.10.1.158:8080\"}",
+          "response": {
+            "status": "success",
+            "data": {
+              "resultType": "vector",
+              "result": [
+                {
+                  "metric": {
+                    "__name__": "cmtc_issuer_profile_publication_writes_total",
+                    "cluster": "cmtc-a",
+                    "component": "cmtc-controller",
+                    "exported_cluster": "cmtc-a",
+                    "instance": "10.10.1.158:8080",
+                    "job": "cmtc",
+                    "node": "cmtc-a-worker",
+                    "result": "acknowledged",
+                    "state": "published"
+                  },
+                  "value": [
+                    1792903344.212,
+                    "2"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "query": "cmtc_issuer_profile_source_checked_timestamp_seconds{job=\"cmtc\",component=\"cmtc-controller\",cluster=\"cmtc-a\",instance=\"10.10.1.158:8080\"}",
+          "response": {
+            "status": "success",
+            "data": {
+              "resultType": "vector",
+              "result": [
+                {
+                  "metric": {
+                    "__name__": "cmtc_issuer_profile_source_checked_timestamp_seconds",
+                    "cluster": "cmtc-a",
+                    "component": "cmtc-controller",
+                    "exported_cluster": "cmtc-a",
+                    "instance": "10.10.1.158:8080",
+                    "job": "cmtc",
+                    "node": "cmtc-a-worker"
+                  },
+                  "value": [
+                    1792903344.217,
+                    "1792903341"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "query": "cmtc_issuer_profile_acknowledged_valid_until_timestamp_seconds{job=\"cmtc\",component=\"cmtc-controller\",cluster=\"cmtc-a\",instance=\"10.10.1.158:8080\"}",
+          "response": {
+            "status": "success",
+            "data": {
+              "resultType": "vector",
+              "result": [
+                {
+                  "metric": {
+                    "__name__": "cmtc_issuer_profile_acknowledged_valid_until_timestamp_seconds",
+                    "cluster": "cmtc-a",
+                    "component": "cmtc-controller",
+                    "exported_cluster": "cmtc-a",
+                    "instance": "10.10.1.158:8080",
+                    "job": "cmtc",
+                    "node": "cmtc-a-worker"
+                  },
+                  "value": [
+                    1792903344.222,
+                    "1792903371"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "query": "cmtc_enforcement_available{job=\"cmtc\",component=\"cmtc-controller\",cluster=\"cmtc-a\",instance=\"10.10.1.158:8080\"}",
+          "response": {
+            "status": "success",
+            "data": {
+              "resultType": "vector",
+              "result": [
+                {
+                  "metric": {
+                    "__name__": "cmtc_enforcement_available",
+                    "cluster": "cmtc-a",
+                    "component": "cmtc-controller",
+                    "exported_cluster": "cmtc-a",
+                    "instance": "10.10.1.158:8080",
+                    "job": "cmtc",
+                    "node": "cmtc-a-worker"
+                  },
+                  "value": [
+                    1792903344.228,
+                    "0"
+                  ]
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "producerLogs": [
+        {
+          "level": "info",
+          "ts": "2026-10-25T04:42:06Z",
+          "msg": "public issuer approval evaluated",
+          "component": "issuer-profile-producer",
+          "attempt": 1,
+          "source": {
+            "name": "cmtc-issuer-approval-g1",
+            "namespace": "cmtc-system"
+          },
+          "output": {
+            "name": "cmtc-issuer-publication",
+            "namespace": "cmtc-system"
+          },
+          "enforcementAvailable": false,
+          "deadline": "2026-10-25T04:42:10Z",
+          "stage": "validate",
+          "result": "accepted",
+          "state": "published",
+          "reason": "Validated",
+          "generation": 1,
+          "sourceUID": "902e1117-142f-4c91-ada7-65e57b0863e6",
+          "elapsed": 0.005514977,
+          "nextRetry": 5
+        },
+        {
+          "level": "info",
+          "ts": "2026-10-25T04:42:06Z",
+          "msg": "public issuer mapping publication acknowledged; consumption unverified",
+          "component": "issuer-profile-producer",
+          "attempt": 1,
+          "source": {
+            "name": "cmtc-issuer-approval-g1",
+            "namespace": "cmtc-system"
+          },
+          "output": {
+            "name": "cmtc-issuer-publication",
+            "namespace": "cmtc-system"
+          },
+          "enforcementAvailable": false,
+          "deadline": "2026-10-25T04:42:10Z",
+          "stage": "publish",
+          "state": "published",
+          "reason": "Validated",
+          "sequence": 1,
+          "generation": 1,
+          "publicationBytesSHA256": "49015c2f2c0985730eb098143f0aaedfcafbd71a5c5723653fd5de023ab64c20",
+          "approvalDigest": "3ee827dd1f39ff42dd113b2a87f7538ec6ca73af7c5cc0fe0abf136f81b20baf",
+          "elapsed": 0.007612644,
+          "nextRetry": 5
+        },
+        {
+          "level": "info",
+          "ts": "2026-10-25T04:42:11Z",
+          "msg": "public issuer approval evaluated",
+          "component": "issuer-profile-producer",
+          "attempt": 2,
+          "source": {
+            "name": "cmtc-issuer-approval-g1",
+            "namespace": "cmtc-system"
+          },
+          "output": {
+            "name": "cmtc-issuer-publication",
+            "namespace": "cmtc-system"
+          },
+          "enforcementAvailable": false,
+          "deadline": "2026-10-25T04:42:15Z",
+          "stage": "validate",
+          "result": "accepted",
+          "state": "published",
+          "reason": "Validated",
+          "generation": 1,
+          "sourceUID": "902e1117-142f-4c91-ada7-65e57b0863e6",
+          "elapsed": 0.007033344,
+          "nextRetry": 5
+        },
+        {
+          "level": "info",
+          "ts": "2026-10-25T04:42:16Z",
+          "msg": "public issuer approval evaluated",
+          "component": "issuer-profile-producer",
+          "attempt": 3,
+          "source": {
+            "name": "cmtc-issuer-approval-g1",
+            "namespace": "cmtc-system"
+          },
+          "output": {
+            "name": "cmtc-issuer-publication",
+            "namespace": "cmtc-system"
+          },
+          "enforcementAvailable": false,
+          "deadline": "2026-10-25T04:42:20Z",
+          "stage": "validate",
+          "result": "accepted",
+          "state": "published",
+          "reason": "Validated",
+          "generation": 1,
+          "sourceUID": "902e1117-142f-4c91-ada7-65e57b0863e6",
+          "elapsed": 0.003486441,
+          "nextRetry": 5
+        },
+        {
+          "level": "info",
+          "ts": "2026-10-25T04:42:21Z",
+          "msg": "public issuer approval evaluated",
+          "component": "issuer-profile-producer",
+          "attempt": 4,
+          "source": {
+            "name": "cmtc-issuer-approval-g1",
+            "namespace": "cmtc-system"
+          },
+          "output": {
+            "name": "cmtc-issuer-publication",
+            "namespace": "cmtc-system"
+          },
+          "enforcementAvailable": false,
+          "deadline": "2026-10-25T04:42:25Z",
+          "stage": "validate",
+          "result": "accepted",
+          "state": "published",
+          "reason": "Validated",
+          "generation": 1,
+          "sourceUID": "902e1117-142f-4c91-ada7-65e57b0863e6",
+          "elapsed": 0.003496385,
+          "nextRetry": 5
+        },
+        {
+          "level": "info",
+          "ts": "2026-10-25T04:42:21Z",
+          "msg": "public issuer mapping publication acknowledged; consumption unverified",
+          "component": "issuer-profile-producer",
+          "attempt": 4,
+          "source": {
+            "name": "cmtc-issuer-approval-g1",
+            "namespace": "cmtc-system"
+          },
+          "output": {
+            "name": "cmtc-issuer-publication",
+            "namespace": "cmtc-system"
+          },
+          "enforcementAvailable": false,
+          "deadline": "2026-10-25T04:42:25Z",
+          "stage": "publish",
+          "state": "published",
+          "reason": "Validated",
+          "sequence": 2,
+          "generation": 1,
+          "publicationBytesSHA256": "bc5ed0ca13bc5303362ba68953eb92751d9ffde7038a322d181d773a384b1859",
+          "approvalDigest": "3ee827dd1f39ff42dd113b2a87f7538ec6ca73af7c5cc0fe0abf136f81b20baf",
+          "elapsed": 0.005839348,
+          "nextRetry": 5
+        }
+      ]
+    },
+    "cmtc-b": {
+      "uids": {
+        "ConfigMap/cmtc-issuer-approval-g1": "ba07d872-3ccb-4396-bd60-828f615a9cde",
+        "ConfigMap/cmtc-issuer-publication": "cb6e0317-d887-49be-b265-d24d896c35ef",
+        "Role/cmtc-issuer-profile-access": "40c87f4b-ec96-47e9-a497-eed94dab57d6",
+        "RoleBinding/cmtc-issuer-profile-access": "5d77adb1-6870-4631-9711-d11c8b2144a2"
+      },
+      "saUID": "83c97ff5-c6db-4b61-8d59-f74cdf4c164b",
+      "baseline": {
+        "metadata": {
+          "labels": {
+            "app.kubernetes.io/name": "cmtc-controller",
+            "security.cmtc.io/metrics": "true"
+          }
+        },
+        "spec": {
+          "containers": [
+            {
+              "name": "controller",
+              "image": "localhost/cmtc:lineage-f5fe9992da",
+              "args": [
+                "--mode=controller",
+                "--cluster-name=cmtc-b"
+              ],
+              "ports": [
+                {
+                  "name": "metrics",
+                  "containerPort": 8080,
+                  "protocol": "TCP"
+                },
+                {
+                  "name": "health",
+                  "containerPort": 8081,
+                  "protocol": "TCP"
+                }
+              ],
+              "resources": {
+                "limits": {
+                  "memory": "256Mi"
+                },
+                "requests": {
+                  "cpu": "25m",
+                  "memory": "64Mi"
+                }
+              },
+              "livenessProbe": {
+                "httpGet": {
+                  "path": "/healthz",
+                  "port": "health",
+                  "scheme": "HTTP"
+                },
+                "timeoutSeconds": 1,
+                "periodSeconds": 10,
+                "successThreshold": 1,
+                "failureThreshold": 3
+              },
+              "readinessProbe": {
+                "httpGet": {
+                  "path": "/readyz",
+                  "port": "health",
+                  "scheme": "HTTP"
+                },
+                "timeoutSeconds": 1,
+                "periodSeconds": 10,
+                "successThreshold": 1,
+                "failureThreshold": 3
+              },
+              "terminationMessagePath": "/dev/termination-log",
+              "terminationMessagePolicy": "File",
+              "imagePullPolicy": "IfNotPresent",
+              "securityContext": {
+                "capabilities": {
+                  "drop": [
+                    "ALL"
+                  ]
+                },
+                "readOnlyRootFilesystem": true,
+                "allowPrivilegeEscalation": false
+              }
+            }
+          ],
+          "restartPolicy": "Always",
+          "terminationGracePeriodSeconds": 30,
+          "dnsPolicy": "ClusterFirst",
+          "serviceAccountName": "cmtc-controller",
+          "serviceAccount": "cmtc-controller",
+          "securityContext": {
+            "runAsUser": 65532,
+            "runAsNonRoot": true,
+            "seccompProfile": {
+              "type": "RuntimeDefault"
+            }
+          },
+          "schedulerName": "default-scheduler"
+        }
+      },
+      "deploymentUID": "11993d73-e3c9-4d3c-a1ff-4040ff528f9e",
+      "rbac": [
+        {
+          "verb": "get",
+          "resource": "configmap/cmtc-issuer-approval-g1",
+          "allowed": true
+        },
+        {
+          "verb": "get",
+          "resource": "configmap/cmtc-issuer-publication",
+          "allowed": true
+        },
+        {
+          "verb": "update",
+          "resource": "configmap/cmtc-issuer-publication",
+          "allowed": true
+        },
+        {
+          "verb": "update",
+          "resource": "configmap/cmtc-issuer-approval-g1",
+          "allowed": false
+        },
+        {
+          "verb": "update",
+          "resource": "configmap/cmtc-live-issuer-foreign",
+          "allowed": false
+        },
+        {
+          "verb": "list",
+          "resource": "configmaps",
+          "allowed": false
+        },
+        {
+          "verb": "watch",
+          "resource": "configmaps",
+          "allowed": false
+        },
+        {
+          "verb": "create",
+          "resource": "configmaps",
+          "allowed": false
+        },
+        {
+          "verb": "delete",
+          "resource": "configmap/cmtc-issuer-publication",
+          "allowed": false
+        },
+        {
+          "verb": "patch",
+          "resource": "configmap/cmtc-issuer-approval-g1",
+          "allowed": false
+        },
+        {
+          "verb": "patch",
+          "resource": "configmap/cmtc-issuer-publication",
+          "allowed": false
+        },
+        {
+          "verb": "patch",
+          "resource": "configmap/cmtc-live-issuer-foreign",
+          "allowed": false
+        },
+        {
+          "verb": "deletecollection",
+          "resource": "configmaps",
+          "allowed": false
+        },
+        {
+          "verb": "get",
+          "resource": "secret/cmtc-live-issuer-never-created",
+          "allowed": false
+        },
+        {
+          "verb": "list",
+          "resource": "secrets",
+          "allowed": false
+        },
+        {
+          "verb": "watch",
+          "resource": "secrets",
+          "allowed": false
+        },
+        {
+          "verb": "create",
+          "resource": "secrets",
+          "allowed": false
+        },
+        {
+          "verb": "update",
+          "resource": "secret/cmtc-live-issuer-never-created",
+          "allowed": false
+        },
+        {
+          "verb": "patch",
+          "resource": "secret/cmtc-live-issuer-never-created",
+          "allowed": false
+        },
+        {
+          "verb": "delete",
+          "resource": "secret/cmtc-live-issuer-never-created",
+          "allowed": false
+        },
+        {
+          "verb": "deletecollection",
+          "resource": "secrets",
+          "allowed": false
+        }
+      ],
+      "active": {
+        "metadata": {
+          "labels": {
+            "app.kubernetes.io/name": "cmtc-controller",
+            "security.cmtc.io/metrics": "true"
+          },
+          "annotations": {
+            "security.cmtc.io/live-issuer-owner": "2da2ac158fa44e1e9767002afcbc9aba"
+          }
+        },
+        "spec": {
+          "containers": [
+            {
+              "name": "controller",
+              "image": "localhost/cmtc:lineage-f5fe9992da",
+              "args": [
+                "--mode=controller",
+                "--cluster-name=cmtc-b",
+                "--issuer-profile-producer=true",
+                "--issuer-profile-namespace=cmtc-system",
+                "--issuer-profile-source=cmtc-issuer-approval-g1",
+                "--issuer-profile-output=cmtc-issuer-publication",
+                "--issuer-profile-source-uid=ba07d872-3ccb-4396-bd60-828f615a9cde",
+                "--issuer-profile-output-uid=cb6e0317-d887-49be-b265-d24d896c35ef",
+                "--issuer-profile-root-sha256=0c28af9e59fbb91745b731762201f3f618a25841c222fdf49f02714de6164b7c",
+                "--issuer-profile-minimum-generation=1"
+              ],
+              "ports": [
+                {
+                  "name": "metrics",
+                  "containerPort": 8080,
+                  "protocol": "TCP"
+                },
+                {
+                  "name": "health",
+                  "containerPort": 8081,
+                  "protocol": "TCP"
+                }
+              ],
+              "resources": {
+                "limits": {
+                  "memory": "256Mi"
+                },
+                "requests": {
+                  "cpu": "25m",
+                  "memory": "64Mi"
+                }
+              },
+              "livenessProbe": {
+                "httpGet": {
+                  "path": "/healthz",
+                  "port": "health",
+                  "scheme": "HTTP"
+                },
+                "timeoutSeconds": 1,
+                "periodSeconds": 10,
+                "successThreshold": 1,
+                "failureThreshold": 3
+              },
+              "readinessProbe": {
+                "httpGet": {
+                  "path": "/readyz",
+                  "port": "health",
+                  "scheme": "HTTP"
+                },
+                "timeoutSeconds": 1,
+                "periodSeconds": 10,
+                "successThreshold": 1,
+                "failureThreshold": 3
+              },
+              "terminationMessagePath": "/dev/termination-log",
+              "terminationMessagePolicy": "File",
+              "imagePullPolicy": "IfNotPresent",
+              "securityContext": {
+                "capabilities": {
+                  "drop": [
+                    "ALL"
+                  ]
+                },
+                "readOnlyRootFilesystem": true,
+                "allowPrivilegeEscalation": false
+              }
+            }
+          ],
+          "restartPolicy": "Always",
+          "terminationGracePeriodSeconds": 30,
+          "dnsPolicy": "ClusterFirst",
+          "serviceAccountName": "cmtc-controller",
+          "serviceAccount": "cmtc-controller",
+          "securityContext": {
+            "runAsUser": 65532,
+            "runAsNonRoot": true,
+            "seccompProfile": {
+              "type": "RuntimeDefault"
+            }
+          },
+          "schedulerName": "default-scheduler"
+        }
+      },
+      "phase": "publication-qualified-no-consumer",
+      "runtime": {
+        "podUID": "5d5ee681-86e9-4c22-92c5-d56c93a638db",
+        "podName": "cmtc-controller-5d74799cd8-xnzhr",
+        "podIP": "10.20.1.101",
+        "containerID": "containerd://3d43c4c5b3639661df2fb5f1b405f7a92c78a126912c04d6efe39b790a4c4e4a",
+        "imageID": "docker.io/library/import-2026-10-25@sha256:966e2a982eac251d310e9d05bb3e3a81f93de42e0a724b4ccfb8d96cc9f5bb44",
+        "imageConfig": "sha256:3f5839e26f82395d820cd2fc4439648a7e9fa3957544c705b53092031d7c9be7",
+        "sourceRevision": "f5fe9992da855a22660c07b141e19feee50310ba",
+        "nodeUID": "fcbbc49e-268c-411b-9083-1346f53bbb88"
+      },
+      "lastPublication": {
+        "schemaVersion": 1,
+        "sequence": 2,
+        "state": "published",
+        "reason": "Validated",
+        "producerCluster": "cmtc-b",
+        "outputUID": "cb6e0317-d887-49be-b265-d24d896c35ef",
+        "expectedSourceUID": "ba07d872-3ccb-4396-bd60-828f615a9cde",
+        "source": {
+          "namespace": "cmtc-system",
+          "name": "cmtc-issuer-approval-g1",
+          "uid": "ba07d872-3ccb-4396-bd60-828f615a9cde",
+          "resourceVersion": "92814",
+          "generation": 1
+        },
+        "acceptedGeneration": 1,
+        "acceptedSourceUID": "ba07d872-3ccb-4396-bd60-828f615a9cde",
+        "acceptedApprovalDigest": "3ee827dd1f39ff42dd113b2a87f7538ec6ca73af7c5cc0fe0abf136f81b20baf",
+        "approvalDigest": "3ee827dd1f39ff42dd113b2a87f7538ec6ca73af7c5cc0fe0abf136f81b20baf",
+        "approval": {
+          "schemaVersion": 1,
+          "generation": 1,
+          "expiresAt": "2026-10-26T03:55:11Z",
+          "roots": [
+            {
+              "certificatePEM": "-----BEGIN CERTIFICATE-----\nMIIBkTCCATegAwIBAgIUS1+X2rkxnJj5euDUL93pzW8zCnwwCgYIKoZIzj0EAwIw\nJTEjMCEGA1UEAwwaQ01UQyBMYWIgT3JnYW5pemF0aW9uIFJvb3QwHhcNMjYxMDI1\nMDMyNDI2WhcNMzExMDI0MDMyNDI2WjAlMSMwIQYDVQQDDBpDTVRDIExhYiBPcmdh\nbml6YXRpb24gUm9vdDBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABIZeomIfk2EA\n4d2ixJvROa/Qqzpb1VCKz3dYU1ZwXANvJgGZTCOVSBXeTc8lGt2btQ47+3THYeXm\ngxfQEfwwSvWjRTBDMBIGA1UdEwEB/wQIMAYBAf8CAQIwDgYDVR0PAQH/BAQDAgEG\nMB0GA1UdDgQWBBSSCQX0BlY612dIEP1yqLRmZ6ZtDjAKBggqhkjOPQQDAgNIADBF\nAiBEFOQKfO1g3d1W2ShXzpzALChOj6+CO0nnk7IK3E+whAIhAKkIAJlRwH910A9b\nXJbSUTFO6403VBHrxq0RA3yfHtA8\n-----END CERTIFICATE-----\n",
+              "sha256": "0c28af9e59fbb91745b731762201f3f618a25841c222fdf49f02714de6164b7c"
+            }
+          ],
+          "clusters": [
+            {
+              "clusterID": "cmtc-a",
+              "trustDomain": "cmtc-a.mesh.example",
+              "issuers": [
+                {
+                  "certificatePEM": "-----BEGIN CERTIFICATE-----\nMIID5TCCA4ygAwIBAgIUegh6GczuJryWGLycK6aoICNrEdMwCgYIKoZIzj0EAwIw\nIjEgMB4GA1UEAxMXY210Yy1hIFNQSVJFIGNsdXN0ZXIgQ0EwHhcNMjYxMDI1MDM1\nNTExWhcNMjYxMDI2MDM1NTExWjBpMQswCQYDVQQGEwJVUzEOMAwGA1UEChMFU1BJ\nUkUxGDAWBgNVBAMTD2NtdGMtYSBTUElSRSBDQTEwMC4GA1UEBRMnMjc5OTM5Njk5\nNjIyNTU4Njg3NjIyNTYyNzU3MTUxNjQzNjE1MTQ2MIICIjANBgkqhkiG9w0BAQEF\nAAOCAg8AMIICCgKCAgEAzBaD4nW8UjnroCvXDgsK78JhlkwlXOJr/e9ocOf0Acpi\nhPvVnusbjEA8CN17hVnUCfUkpTETKnq/WpPjidibFpgz0va8uka+dxxIY8Mf3UgL\niEXAKbY+Xgh8K4zt1EfjTU1xCKUEWbW7hQlrlAXPTZUf8CHj/uD46vlmRfwulXEi\n+fXmJ6pIm5lb6yCAQS9b8wvV5cJlo8N3fXZhLdccfnPT1220w0GxLCzdj0rUjfEF\nOcw9EcbiFaYFEvS5Bg0La2IHgBhM7qUK3CrSY+QhuvUHyGm06Vktwbv17NsieYau\n/2SIx5PQKJAblDvKVF7Inu7XrKIi6YC5AblG310w9/JVjgW7a5pSqV0+B5q+uKho\nrsAPDc2JWMzFJo/31nMpy6HU2hj3b0LF4V33+mzoYI/+j1qMS8vU6lXiBxG4nt37\nKbYwOqfTfZEw4VRH7pW6udLTmf0qAX5avrKvT6SmYLGYbqqy8VcIg5a1no8JvkiQ\nrG8/8dnQjyN6vlEKIKtYbh5S3fvvgtX2oZlMp0iwqPHCz+KlO9i3GO1p/hXCRxPT\nLsHDVhsoTjV6h7DFyQSDxvB2C4pYsxnMeLeFMOPvCziEpokk3XKPzHcdqxCb5kSn\nan9w9iA37koHOhu/9YPbKG8NnAp6ehdzom158lM/7Pv5aDrnIUKN4ORMalCM3IUC\nAwEAAaOBjTCBijAOBgNVHQ8BAf8EBAMCAQYwDwYDVR0TAQH/BAUwAwEB/zAdBgNV\nHQ4EFgQUiOALjnFVdTYcfdTIQlpq4yDwa4AwHwYDVR0jBBgwFoAUnDrwqkWCphCB\nqFFImBQ32rmGsl0wJwYDVR0RBCAwHoYcc3BpZmZlOi8vY210Yy1hLm1lc2guZXhh\nbXBsZTAKBggqhkjOPQQDAgNHADBEAiASoozOi0zBxu7xBoPQFwXYjFcLE69CcBZK\nqw6ACzNEYwIgX76hoLQfRAkQ3Q9LomhQi33kt8kCAmr9Mo01qJ6c0IU=\n-----END CERTIFICATE-----\n",
+                  "chainPEM": "-----BEGIN CERTIFICATE-----\nMIIBrjCCAVWgAwIBAgIUMTwGstpHG03qV4GIQrhxEUqLhZcwCgYIKoZIzj0EAwIw\nJTEjMCEGA1UEAwwaQ01UQyBMYWIgT3JnYW5pemF0aW9uIFJvb3QwHhcNMjYxMDI1\nMDMyNDMwWhcNMjcxMDI1MDMyNDMwWjAiMSAwHgYDVQQDExdjbXRjLWEgU1BJUkUg\nY2x1c3RlciBDQTBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABGbE7o2cQKggXIt3\nISmvKqyP0CookDmbAATcZO9rs1FX+ZrsGnkIPfA6nsVL49jD4//TlFGFTnzpPD8s\n/kktn0ujZjBkMBIGA1UdEwEB/wQIMAYBAf8CAQEwDgYDVR0PAQH/BAQDAgEGMB0G\nA1UdDgQWBBScOvCqRYKmEIGoUUiYFDfauYayXTAfBgNVHSMEGDAWgBSSCQX0BlY6\n12dIEP1yqLRmZ6ZtDjAKBggqhkjOPQQDAgNHADBEAiARInyQvK90pBvYcNZMojXk\nQBTFF9DEqDLPKLzR4UenEgIgVYs8XQa8Nk5uYc+0KUsdheSr7mxxOG7pb0IUlupA\nmEs=\n-----END CERTIFICATE-----\n",
+                  "spkiSHA256": "d78e77ae91c3f043acac18d7d1932f55c77682d19602fa57cdf85f0cc2ccc27c",
+                  "rootSHA256": "0c28af9e59fbb91745b731762201f3f618a25841c222fdf49f02714de6164b7c"
+                }
+              ]
+            },
+            {
+              "clusterID": "cmtc-b",
+              "trustDomain": "cmtc-b.mesh.example",
+              "issuers": [
+                {
+                  "certificatePEM": "-----BEGIN CERTIFICATE-----\nMIID5TCCA4ygAwIBAgIUBh/CbRLoAvQAEf3fNZQ1dIU2k2cwCgYIKoZIzj0EAwIw\nIjEgMB4GA1UEAxMXY210Yy1iIFNQSVJFIGNsdXN0ZXIgQ0EwHhcNMjYxMDI1MDM1\nNTM4WhcNMjYxMDI2MDM1NTM4WjBpMQswCQYDVQQGEwJVUzEOMAwGA1UEChMFU1BJ\nUkUxGDAWBgNVBAMTD2NtdGMtYiBTUElSRSBDQTEwMC4GA1UEBRMnMTQyMjQxMDA1\nNTgxMTg4NzY5NjEyNjMxODg2OTQ2OTIxNDM1Mzk2MIICIjANBgkqhkiG9w0BAQEF\nAAOCAg8AMIICCgKCAgEAqxsZUsYK+9kZiDLDFmdi9aB/1znEVS2JR0TXfQnBtncV\ndPm5A+1iAxE2JVf0yQ+GB9vL3UBCtok5RUfdiP4KWlnIhFg4PKS6zFlY4JRaEt1V\nr8Jr5tdH1H1+M+7T+l9nTmV8ONuOpDX2V1xSNZPYFU6aXNxFy5dQx0p2qeP/770O\n+p3+AshKKTBKHnXOzlOrGUUEjJr1i3CfTjeiAiezgAqNfkMlMlwTbcmF/cRXB1zg\nKjKw8ZQ+raa9ki9q2CnnwtW0w3Djfo3SELqqyd52sQ3dQCkSz4Whd/w8SkqlkkpY\nmlYMGf4Gsr6hNZZ+thxVgTssUaa6CoszBjrJBgcuXP9FReQ1s9B3f4q5TCqffpiq\nPVFGB7D75YvOJleR/76E5qvrPLxcU0gwp29fPpBDbkLmmRFVKxYVo9mQFm+Qrxhi\nXjdW5UW3dzb9rf5SeXzgHU1WhEytBbqtWcMCn0UsyXFaBNfNJ4CC+Zj1q5tXNsIu\nx5xScJPvU/6sR28l0X5kaPaICLyj7l0hsjKSh38z2vLFnv0QDRj6J5IPdlwCLqQn\no0ejdfLh8YtdyMLgZk42U2RBlrsT7TT8ytPWenNXLZcKNfZg4clIdoGN0oR+xcPd\nKL3IGtu2Jwnxt0nt7RqY2SOfcj/YfKP+fXhf2G33WHmrG1nYWqYGLCUxVfovWTkC\nAwEAAaOBjTCBijAOBgNVHQ8BAf8EBAMCAQYwDwYDVR0TAQH/BAUwAwEB/zAdBgNV\nHQ4EFgQUobOdTS7r9q1ZFHMgQM3ZIeVoKoQwHwYDVR0jBBgwFoAUFNY23EtgtOwE\n+78qMDt+jz/B420wJwYDVR0RBCAwHoYcc3BpZmZlOi8vY210Yy1iLm1lc2guZXhh\nbXBsZTAKBggqhkjOPQQDAgNHADBEAiAJusrBjpMH9OobkWkYlwOdKwigJNUJPidZ\n3zxVmQFQAQIgPWM8fb/MENewrvOSsXQ8etSN+wIOwIdDi1mYF9ybsHY=\n-----END CERTIFICATE-----\n",
+                  "chainPEM": "-----BEGIN CERTIFICATE-----\nMIIBsDCCAVWgAwIBAgIUJ7JlgnI1+IGyJc8WkkhmyqJAQf4wCgYIKoZIzj0EAwIw\nJTEjMCEGA1UEAwwaQ01UQyBMYWIgT3JnYW5pemF0aW9uIFJvb3QwHhcNMjYxMDI1\nMDMzMzU4WhcNMjcxMDI1MDMzMzU4WjAiMSAwHgYDVQQDExdjbXRjLWIgU1BJUkUg\nY2x1c3RlciBDQTBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABLu6ZmCRLM0zzcyg\nAYQWXmU1fFkyD95qAl9CoHXdu5UVFPZ+NmDilmhQjbPEuunmcbP1Vphuryik0/nE\njy1mMHejZjBkMBIGA1UdEwEB/wQIMAYBAf8CAQEwDgYDVR0PAQH/BAQDAgEGMB0G\nA1UdDgQWBBQU1jbcS2C07AT7vyowO36PP8HjbTAfBgNVHSMEGDAWgBSSCQX0BlY6\n12dIEP1yqLRmZ6ZtDjAKBggqhkjOPQQDAgNJADBGAiEAvJ27cfqBFF9Qqhkrc87o\nV2TCB9+V4kaZKLVktc6y0GsCIQDR5qUESkD065rjh+a1dCAEdSQYr7OAl9kqWS8m\nwIoGpQ==\n-----END CERTIFICATE-----\n",
+                  "spkiSHA256": "5135ed8c7fb2c0adc4af7a324ed8d48675cce7b5f7310d4d6537d9061ca5be39",
+                  "rootSHA256": "0c28af9e59fbb91745b731762201f3f618a25841c222fdf49f02714de6164b7c"
+                }
+              ]
+            }
+          ]
+        },
+        "publishedAt": "2026-10-25T04:43:00Z",
+        "validUntil": "2026-10-25T04:43:30Z",
+        "digest": "380031aba59731dfa4e9adb01f02d39c72583696d54afe15fef6b1b6ca7e1ff3"
+      },
+      "lastOutputRV": "92955",
+      "renewal": {
+        "firstSequence": 1,
+        "renewedSequence": 2,
+        "firstValidUntil": "2026-10-25T04:43:15Z",
+        "renewedValidUntil": "2026-10-25T04:43:30Z"
+      },
+      "metrics": [
+        {
+          "query": "cmtc_issuer_profile_validation_attempts_total{job=\"cmtc\",component=\"cmtc-controller\",cluster=\"cmtc-b\",instance=\"10.20.1.101:8080\"}",
+          "response": {
+            "status": "success",
+            "data": {
+              "resultType": "vector",
+              "result": [
+                {
+                  "metric": {
+                    "__name__": "cmtc_issuer_profile_validation_attempts_total",
+                    "cluster": "cmtc-b",
+                    "component": "cmtc-controller",
+                    "exported_cluster": "cmtc-b",
+                    "instance": "10.20.1.101:8080",
+                    "job": "cmtc",
+                    "node": "cmtc-b-worker",
+                    "result": "accepted"
+                  },
+                  "value": [
+                    1792903384.091,
+                    "4"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "query": "cmtc_issuer_profile_publication_writes_total{job=\"cmtc\",component=\"cmtc-controller\",cluster=\"cmtc-b\",instance=\"10.20.1.101:8080\"}",
+          "response": {
+            "status": "success",
+            "data": {
+              "resultType": "vector",
+              "result": [
+                {
+                  "metric": {
+                    "__name__": "cmtc_issuer_profile_publication_writes_total",
+                    "cluster": "cmtc-b",
+                    "component": "cmtc-controller",
+                    "exported_cluster": "cmtc-b",
+                    "instance": "10.20.1.101:8080",
+                    "job": "cmtc",
+                    "node": "cmtc-b-worker",
+                    "result": "acknowledged",
+                    "state": "published"
+                  },
+                  "value": [
+                    1792903384.095,
+                    "2"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "query": "cmtc_issuer_profile_source_checked_timestamp_seconds{job=\"cmtc\",component=\"cmtc-controller\",cluster=\"cmtc-b\",instance=\"10.20.1.101:8080\"}",
+          "response": {
+            "status": "success",
+            "data": {
+              "resultType": "vector",
+              "result": [
+                {
+                  "metric": {
+                    "__name__": "cmtc_issuer_profile_source_checked_timestamp_seconds",
+                    "cluster": "cmtc-b",
+                    "component": "cmtc-controller",
+                    "exported_cluster": "cmtc-b",
+                    "instance": "10.20.1.101:8080",
+                    "job": "cmtc",
+                    "node": "cmtc-b-worker"
+                  },
+                  "value": [
+                    1792903384.1,
+                    "1792903380"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "query": "cmtc_issuer_profile_acknowledged_valid_until_timestamp_seconds{job=\"cmtc\",component=\"cmtc-controller\",cluster=\"cmtc-b\",instance=\"10.20.1.101:8080\"}",
+          "response": {
+            "status": "success",
+            "data": {
+              "resultType": "vector",
+              "result": [
+                {
+                  "metric": {
+                    "__name__": "cmtc_issuer_profile_acknowledged_valid_until_timestamp_seconds",
+                    "cluster": "cmtc-b",
+                    "component": "cmtc-controller",
+                    "exported_cluster": "cmtc-b",
+                    "instance": "10.20.1.101:8080",
+                    "job": "cmtc",
+                    "node": "cmtc-b-worker"
+                  },
+                  "value": [
+                    1792903384.105,
+                    "1792903410"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "query": "cmtc_enforcement_available{job=\"cmtc\",component=\"cmtc-controller\",cluster=\"cmtc-b\",instance=\"10.20.1.101:8080\"}",
+          "response": {
+            "status": "success",
+            "data": {
+              "resultType": "vector",
+              "result": [
+                {
+                  "metric": {
+                    "__name__": "cmtc_enforcement_available",
+                    "cluster": "cmtc-b",
+                    "component": "cmtc-controller",
+                    "exported_cluster": "cmtc-b",
+                    "instance": "10.20.1.101:8080",
+                    "job": "cmtc",
+                    "node": "cmtc-b-worker"
+                  },
+                  "value": [
+                    1792903384.109,
+                    "0"
+                  ]
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "producerLogs": [
+        {
+          "level": "info",
+          "ts": "2026-10-25T04:42:45Z",
+          "msg": "public issuer approval evaluated",
+          "component": "issuer-profile-producer",
+          "attempt": 1,
+          "source": {
+            "name": "cmtc-issuer-approval-g1",
+            "namespace": "cmtc-system"
+          },
+          "output": {
+            "name": "cmtc-issuer-publication",
+            "namespace": "cmtc-system"
+          },
+          "enforcementAvailable": false,
+          "deadline": "2026-10-25T04:42:49Z",
+          "stage": "validate",
+          "result": "accepted",
+          "state": "published",
+          "reason": "Validated",
+          "generation": 1,
+          "sourceUID": "ba07d872-3ccb-4396-bd60-828f615a9cde",
+          "elapsed": 0.008398011,
+          "nextRetry": 5
+        },
+        {
+          "level": "info",
+          "ts": "2026-10-25T04:42:45Z",
+          "msg": "public issuer mapping publication acknowledged; consumption unverified",
+          "component": "issuer-profile-producer",
+          "attempt": 1,
+          "source": {
+            "name": "cmtc-issuer-approval-g1",
+            "namespace": "cmtc-system"
+          },
+          "output": {
+            "name": "cmtc-issuer-publication",
+            "namespace": "cmtc-system"
+          },
+          "enforcementAvailable": false,
+          "deadline": "2026-10-25T04:42:49Z",
+          "stage": "publish",
+          "state": "published",
+          "reason": "Validated",
+          "sequence": 1,
+          "generation": 1,
+          "publicationBytesSHA256": "4fa4f90306835cbd945cd4084b6f4be2dc4220cdfc1d8fc15992c47f2ba8cfaa",
+          "approvalDigest": "3ee827dd1f39ff42dd113b2a87f7538ec6ca73af7c5cc0fe0abf136f81b20baf",
+          "elapsed": 0.011722914,
+          "nextRetry": 5
+        },
+        {
+          "level": "info",
+          "ts": "2026-10-25T04:42:50Z",
+          "msg": "public issuer approval evaluated",
+          "component": "issuer-profile-producer",
+          "attempt": 2,
+          "source": {
+            "name": "cmtc-issuer-approval-g1",
+            "namespace": "cmtc-system"
+          },
+          "output": {
+            "name": "cmtc-issuer-publication",
+            "namespace": "cmtc-system"
+          },
+          "enforcementAvailable": false,
+          "deadline": "2026-10-25T04:42:54Z",
+          "stage": "validate",
+          "result": "accepted",
+          "state": "published",
+          "reason": "Validated",
+          "generation": 1,
+          "sourceUID": "ba07d872-3ccb-4396-bd60-828f615a9cde",
+          "elapsed": 0.084379761,
+          "nextRetry": 5
+        },
+        {
+          "level": "info",
+          "ts": "2026-10-25T04:42:55Z",
+          "msg": "public issuer approval evaluated",
+          "component": "issuer-profile-producer",
+          "attempt": 3,
+          "source": {
+            "name": "cmtc-issuer-approval-g1",
+            "namespace": "cmtc-system"
+          },
+          "output": {
+            "name": "cmtc-issuer-publication",
+            "namespace": "cmtc-system"
+          },
+          "enforcementAvailable": false,
+          "deadline": "2026-10-25T04:42:59Z",
+          "stage": "validate",
+          "result": "accepted",
+          "state": "published",
+          "reason": "Validated",
+          "generation": 1,
+          "sourceUID": "ba07d872-3ccb-4396-bd60-828f615a9cde",
+          "elapsed": 0.018826688,
+          "nextRetry": 5
+        },
+        {
+          "level": "info",
+          "ts": "2026-10-25T04:43:00Z",
+          "msg": "public issuer approval evaluated",
+          "component": "issuer-profile-producer",
+          "attempt": 4,
+          "source": {
+            "name": "cmtc-issuer-approval-g1",
+            "namespace": "cmtc-system"
+          },
+          "output": {
+            "name": "cmtc-issuer-publication",
+            "namespace": "cmtc-system"
+          },
+          "enforcementAvailable": false,
+          "deadline": "2026-10-25T04:43:04Z",
+          "stage": "validate",
+          "result": "accepted",
+          "state": "published",
+          "reason": "Validated",
+          "generation": 1,
+          "sourceUID": "ba07d872-3ccb-4396-bd60-828f615a9cde",
+          "elapsed": 0.006437388,
+          "nextRetry": 5
+        },
+        {
+          "level": "info",
+          "ts": "2026-10-25T04:43:00Z",
+          "msg": "public issuer mapping publication acknowledged; consumption unverified",
+          "component": "issuer-profile-producer",
+          "attempt": 4,
+          "source": {
+            "name": "cmtc-issuer-approval-g1",
+            "namespace": "cmtc-system"
+          },
+          "output": {
+            "name": "cmtc-issuer-publication",
+            "namespace": "cmtc-system"
+          },
+          "enforcementAvailable": false,
+          "deadline": "2026-10-25T04:43:04Z",
+          "stage": "publish",
+          "state": "published",
+          "reason": "Validated",
+          "sequence": 2,
+          "generation": 1,
+          "publicationBytesSHA256": "c7865b14e5f63921a1d85b5312e6a9447916e579accc391acd6203e6d91aabef",
+          "approvalDigest": "3ee827dd1f39ff42dd113b2a87f7538ec6ca73af7c5cc0fe0abf136f81b20baf",
+          "elapsed": 0.01269446,
+          "nextRetry": 5
+        }
+      ]
+    }
+  },
+  "success": true,
+  "approval": {
+    "schemaVersion": 1,
+    "generation": 1,
+    "expiresAt": "2026-10-26T03:55:11Z",
+    "roots": [
+      {
+        "certificatePEM": "-----BEGIN CERTIFICATE-----\nMIIBkTCCATegAwIBAgIUS1+X2rkxnJj5euDUL93pzW8zCnwwCgYIKoZIzj0EAwIw\nJTEjMCEGA1UEAwwaQ01UQyBMYWIgT3JnYW5pemF0aW9uIFJvb3QwHhcNMjYxMDI1\nMDMyNDI2WhcNMzExMDI0MDMyNDI2WjAlMSMwIQYDVQQDDBpDTVRDIExhYiBPcmdh\nbml6YXRpb24gUm9vdDBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABIZeomIfk2EA\n4d2ixJvROa/Qqzpb1VCKz3dYU1ZwXANvJgGZTCOVSBXeTc8lGt2btQ47+3THYeXm\ngxfQEfwwSvWjRTBDMBIGA1UdEwEB/wQIMAYBAf8CAQIwDgYDVR0PAQH/BAQDAgEG\nMB0GA1UdDgQWBBSSCQX0BlY612dIEP1yqLRmZ6ZtDjAKBggqhkjOPQQDAgNIADBF\nAiBEFOQKfO1g3d1W2ShXzpzALChOj6+CO0nnk7IK3E+whAIhAKkIAJlRwH910A9b\nXJbSUTFO6403VBHrxq0RA3yfHtA8\n-----END CERTIFICATE-----\n",
+        "sha256": "0c28af9e59fbb91745b731762201f3f618a25841c222fdf49f02714de6164b7c"
+      }
+    ],
+    "clusters": [
+      {
+        "clusterID": "cmtc-a",
+        "trustDomain": "cmtc-a.mesh.example",
+        "issuers": [
+          {
+            "certificatePEM": "-----BEGIN CERTIFICATE-----\nMIID5TCCA4ygAwIBAgIUegh6GczuJryWGLycK6aoICNrEdMwCgYIKoZIzj0EAwIw\nIjEgMB4GA1UEAxMXY210Yy1hIFNQSVJFIGNsdXN0ZXIgQ0EwHhcNMjYxMDI1MDM1\nNTExWhcNMjYxMDI2MDM1NTExWjBpMQswCQYDVQQGEwJVUzEOMAwGA1UEChMFU1BJ\nUkUxGDAWBgNVBAMTD2NtdGMtYSBTUElSRSBDQTEwMC4GA1UEBRMnMjc5OTM5Njk5\nNjIyNTU4Njg3NjIyNTYyNzU3MTUxNjQzNjE1MTQ2MIICIjANBgkqhkiG9w0BAQEF\nAAOCAg8AMIICCgKCAgEAzBaD4nW8UjnroCvXDgsK78JhlkwlXOJr/e9ocOf0Acpi\nhPvVnusbjEA8CN17hVnUCfUkpTETKnq/WpPjidibFpgz0va8uka+dxxIY8Mf3UgL\niEXAKbY+Xgh8K4zt1EfjTU1xCKUEWbW7hQlrlAXPTZUf8CHj/uD46vlmRfwulXEi\n+fXmJ6pIm5lb6yCAQS9b8wvV5cJlo8N3fXZhLdccfnPT1220w0GxLCzdj0rUjfEF\nOcw9EcbiFaYFEvS5Bg0La2IHgBhM7qUK3CrSY+QhuvUHyGm06Vktwbv17NsieYau\n/2SIx5PQKJAblDvKVF7Inu7XrKIi6YC5AblG310w9/JVjgW7a5pSqV0+B5q+uKho\nrsAPDc2JWMzFJo/31nMpy6HU2hj3b0LF4V33+mzoYI/+j1qMS8vU6lXiBxG4nt37\nKbYwOqfTfZEw4VRH7pW6udLTmf0qAX5avrKvT6SmYLGYbqqy8VcIg5a1no8JvkiQ\nrG8/8dnQjyN6vlEKIKtYbh5S3fvvgtX2oZlMp0iwqPHCz+KlO9i3GO1p/hXCRxPT\nLsHDVhsoTjV6h7DFyQSDxvB2C4pYsxnMeLeFMOPvCziEpokk3XKPzHcdqxCb5kSn\nan9w9iA37koHOhu/9YPbKG8NnAp6ehdzom158lM/7Pv5aDrnIUKN4ORMalCM3IUC\nAwEAAaOBjTCBijAOBgNVHQ8BAf8EBAMCAQYwDwYDVR0TAQH/BAUwAwEB/zAdBgNV\nHQ4EFgQUiOALjnFVdTYcfdTIQlpq4yDwa4AwHwYDVR0jBBgwFoAUnDrwqkWCphCB\nqFFImBQ32rmGsl0wJwYDVR0RBCAwHoYcc3BpZmZlOi8vY210Yy1hLm1lc2guZXhh\nbXBsZTAKBggqhkjOPQQDAgNHADBEAiASoozOi0zBxu7xBoPQFwXYjFcLE69CcBZK\nqw6ACzNEYwIgX76hoLQfRAkQ3Q9LomhQi33kt8kCAmr9Mo01qJ6c0IU=\n-----END CERTIFICATE-----\n",
+            "chainPEM": "-----BEGIN CERTIFICATE-----\nMIIBrjCCAVWgAwIBAgIUMTwGstpHG03qV4GIQrhxEUqLhZcwCgYIKoZIzj0EAwIw\nJTEjMCEGA1UEAwwaQ01UQyBMYWIgT3JnYW5pemF0aW9uIFJvb3QwHhcNMjYxMDI1\nMDMyNDMwWhcNMjcxMDI1MDMyNDMwWjAiMSAwHgYDVQQDExdjbXRjLWEgU1BJUkUg\nY2x1c3RlciBDQTBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABGbE7o2cQKggXIt3\nISmvKqyP0CookDmbAATcZO9rs1FX+ZrsGnkIPfA6nsVL49jD4//TlFGFTnzpPD8s\n/kktn0ujZjBkMBIGA1UdEwEB/wQIMAYBAf8CAQEwDgYDVR0PAQH/BAQDAgEGMB0G\nA1UdDgQWBBScOvCqRYKmEIGoUUiYFDfauYayXTAfBgNVHSMEGDAWgBSSCQX0BlY6\n12dIEP1yqLRmZ6ZtDjAKBggqhkjOPQQDAgNHADBEAiARInyQvK90pBvYcNZMojXk\nQBTFF9DEqDLPKLzR4UenEgIgVYs8XQa8Nk5uYc+0KUsdheSr7mxxOG7pb0IUlupA\nmEs=\n-----END CERTIFICATE-----\n",
+            "spkiSHA256": "d78e77ae91c3f043acac18d7d1932f55c77682d19602fa57cdf85f0cc2ccc27c",
+            "rootSHA256": "0c28af9e59fbb91745b731762201f3f618a25841c222fdf49f02714de6164b7c"
+          }
+        ]
+      },
+      {
+        "clusterID": "cmtc-b",
+        "trustDomain": "cmtc-b.mesh.example",
+        "issuers": [
+          {
+            "certificatePEM": "-----BEGIN CERTIFICATE-----\nMIID5TCCA4ygAwIBAgIUBh/CbRLoAvQAEf3fNZQ1dIU2k2cwCgYIKoZIzj0EAwIw\nIjEgMB4GA1UEAxMXY210Yy1iIFNQSVJFIGNsdXN0ZXIgQ0EwHhcNMjYxMDI1MDM1\nNTM4WhcNMjYxMDI2MDM1NTM4WjBpMQswCQYDVQQGEwJVUzEOMAwGA1UEChMFU1BJ\nUkUxGDAWBgNVBAMTD2NtdGMtYiBTUElSRSBDQTEwMC4GA1UEBRMnMTQyMjQxMDA1\nNTgxMTg4NzY5NjEyNjMxODg2OTQ2OTIxNDM1Mzk2MIICIjANBgkqhkiG9w0BAQEF\nAAOCAg8AMIICCgKCAgEAqxsZUsYK+9kZiDLDFmdi9aB/1znEVS2JR0TXfQnBtncV\ndPm5A+1iAxE2JVf0yQ+GB9vL3UBCtok5RUfdiP4KWlnIhFg4PKS6zFlY4JRaEt1V\nr8Jr5tdH1H1+M+7T+l9nTmV8ONuOpDX2V1xSNZPYFU6aXNxFy5dQx0p2qeP/770O\n+p3+AshKKTBKHnXOzlOrGUUEjJr1i3CfTjeiAiezgAqNfkMlMlwTbcmF/cRXB1zg\nKjKw8ZQ+raa9ki9q2CnnwtW0w3Djfo3SELqqyd52sQ3dQCkSz4Whd/w8SkqlkkpY\nmlYMGf4Gsr6hNZZ+thxVgTssUaa6CoszBjrJBgcuXP9FReQ1s9B3f4q5TCqffpiq\nPVFGB7D75YvOJleR/76E5qvrPLxcU0gwp29fPpBDbkLmmRFVKxYVo9mQFm+Qrxhi\nXjdW5UW3dzb9rf5SeXzgHU1WhEytBbqtWcMCn0UsyXFaBNfNJ4CC+Zj1q5tXNsIu\nx5xScJPvU/6sR28l0X5kaPaICLyj7l0hsjKSh38z2vLFnv0QDRj6J5IPdlwCLqQn\no0ejdfLh8YtdyMLgZk42U2RBlrsT7TT8ytPWenNXLZcKNfZg4clIdoGN0oR+xcPd\nKL3IGtu2Jwnxt0nt7RqY2SOfcj/YfKP+fXhf2G33WHmrG1nYWqYGLCUxVfovWTkC\nAwEAAaOBjTCBijAOBgNVHQ8BAf8EBAMCAQYwDwYDVR0TAQH/BAUwAwEB/zAdBgNV\nHQ4EFgQUobOdTS7r9q1ZFHMgQM3ZIeVoKoQwHwYDVR0jBBgwFoAUFNY23EtgtOwE\n+78qMDt+jz/B420wJwYDVR0RBCAwHoYcc3BpZmZlOi8vY210Yy1iLm1lc2guZXhh\nbXBsZTAKBggqhkjOPQQDAgNHADBEAiAJusrBjpMH9OobkWkYlwOdKwigJNUJPidZ\n3zxVmQFQAQIgPWM8fb/MENewrvOSsXQ8etSN+wIOwIdDi1mYF9ybsHY=\n-----END CERTIFICATE-----\n",
+            "chainPEM": "-----BEGIN CERTIFICATE-----\nMIIBsDCCAVWgAwIBAgIUJ7JlgnI1+IGyJc8WkkhmyqJAQf4wCgYIKoZIzj0EAwIw\nJTEjMCEGA1UEAwwaQ01UQyBMYWIgT3JnYW5pemF0aW9uIFJvb3QwHhcNMjYxMDI1\nMDMzMzU4WhcNMjcxMDI1MDMzMzU4WjAiMSAwHgYDVQQDExdjbXRjLWIgU1BJUkUg\nY2x1c3RlciBDQTBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABLu6ZmCRLM0zzcyg\nAYQWXmU1fFkyD95qAl9CoHXdu5UVFPZ+NmDilmhQjbPEuunmcbP1Vphuryik0/nE\njy1mMHejZjBkMBIGA1UdEwEB/wQIMAYBAf8CAQEwDgYDVR0PAQH/BAQDAgEGMB0G\nA1UdDgQWBBQU1jbcS2C07AT7vyowO36PP8HjbTAfBgNVHSMEGDAWgBSSCQX0BlY6\n12dIEP1yqLRmZ6ZtDjAKBggqhkjOPQQDAgNJADBGAiEAvJ27cfqBFF9Qqhkrc87o\nV2TCB9+V4kaZKLVktc6y0GsCIQDR5qUESkD065rjh+a1dCAEdSQYr7OAl9kqWS8m\nwIoGpQ==\n-----END CERTIFICATE-----\n",
+            "spkiSHA256": "5135ed8c7fb2c0adc4af7a324ed8d48675cce7b5f7310d4d6537d9061ca5be39",
+            "rootSHA256": "0c28af9e59fbb91745b731762201f3f618a25841c222fdf49f02714de6164b7c"
+          }
+        ]
+      }
+    ]
+  },
+  "freshProofs": {
+    "cmtc-a": {
+      "schemaVersion": 1,
+      "source": "authenticated-kubernetes-exec-local-SPIRE-admin-API-nonce-mint",
+      "qualifiedFor": "current direct signing key and approved public lineage only",
+      "workloadAttestation": false,
+      "protected": false,
+      "domain": "cmtc-a.mesh.example",
+      "challenge": "spiffe://cmtc-a.mesh.example/cmtc/issuer-proof/72451810b61c53763e53c20d6f6193c78ce136a4ec07b66b5fbea85ea85554a5",
+      "challengeLeafSHA256": "7eb2fc8c6b8ca4a3f1e81a991486fc8cc76e0d45c8fb3001afe88fdb696c2fe9",
+      "directIssuerSHA256": "9ab32899b0f0b0b0799f95b5ae6f2e5054317f90e742215c8d7e2653ed953ef0",
+      "directIssuerPEM": "-----BEGIN CERTIFICATE-----\nMIID5TCCA4ygAwIBAgIUegh6GczuJryWGLycK6aoICNrEdMwCgYIKoZIzj0EAwIw\nIjEgMB4GA1UEAxMXY210Yy1hIFNQSVJFIGNsdXN0ZXIgQ0EwHhcNMjYxMDI1MDM1\nNTExWhcNMjYxMDI2MDM1NTExWjBpMQswCQYDVQQGEwJVUzEOMAwGA1UEChMFU1BJ\nUkUxGDAWBgNVBAMTD2NtdGMtYSBTUElSRSBDQTEwMC4GA1UEBRMnMjc5OTM5Njk5\nNjIyNTU4Njg3NjIyNTYyNzU3MTUxNjQzNjE1MTQ2MIICIjANBgkqhkiG9w0BAQEF\nAAOCAg8AMIICCgKCAgEAzBaD4nW8UjnroCvXDgsK78JhlkwlXOJr/e9ocOf0Acpi\nhPvVnusbjEA8CN17hVnUCfUkpTETKnq/WpPjidibFpgz0va8uka+dxxIY8Mf3UgL\niEXAKbY+Xgh8K4zt1EfjTU1xCKUEWbW7hQlrlAXPTZUf8CHj/uD46vlmRfwulXEi\n+fXmJ6pIm5lb6yCAQS9b8wvV5cJlo8N3fXZhLdccfnPT1220w0GxLCzdj0rUjfEF\nOcw9EcbiFaYFEvS5Bg0La2IHgBhM7qUK3CrSY+QhuvUHyGm06Vktwbv17NsieYau\n/2SIx5PQKJAblDvKVF7Inu7XrKIi6YC5AblG310w9/JVjgW7a5pSqV0+B5q+uKho\nrsAPDc2JWMzFJo/31nMpy6HU2hj3b0LF4V33+mzoYI/+j1qMS8vU6lXiBxG4nt37\nKbYwOqfTfZEw4VRH7pW6udLTmf0qAX5avrKvT6SmYLGYbqqy8VcIg5a1no8JvkiQ\nrG8/8dnQjyN6vlEKIKtYbh5S3fvvgtX2oZlMp0iwqPHCz+KlO9i3GO1p/hXCRxPT\nLsHDVhsoTjV6h7DFyQSDxvB2C4pYsxnMeLeFMOPvCziEpokk3XKPzHcdqxCb5kSn\nan9w9iA37koHOhu/9YPbKG8NnAp6ehdzom158lM/7Pv5aDrnIUKN4ORMalCM3IUC\nAwEAAaOBjTCBijAOBgNVHQ8BAf8EBAMCAQYwDwYDVR0TAQH/BAUwAwEB/zAdBgNV\nHQ4EFgQUiOALjnFVdTYcfdTIQlpq4yDwa4AwHwYDVR0jBBgwFoAUnDrwqkWCphCB\nqFFImBQ32rmGsl0wJwYDVR0RBCAwHoYcc3BpZmZlOi8vY210Yy1hLm1lc2guZXhh\nbXBsZTAKBggqhkjOPQQDAgNHADBEAiASoozOi0zBxu7xBoPQFwXYjFcLE69CcBZK\nqw6ACzNEYwIgX76hoLQfRAkQ3Q9LomhQi33kt8kCAmr9Mo01qJ6c0IU=\n-----END CERTIFICATE-----\n",
+      "parentPEM": "-----BEGIN CERTIFICATE-----\nMIIBrjCCAVWgAwIBAgIUMTwGstpHG03qV4GIQrhxEUqLhZcwCgYIKoZIzj0EAwIw\nJTEjMCEGA1UEAwwaQ01UQyBMYWIgT3JnYW5pemF0aW9uIFJvb3QwHhcNMjYxMDI1\nMDMyNDMwWhcNMjcxMDI1MDMyNDMwWjAiMSAwHgYDVQQDExdjbXRjLWEgU1BJUkUg\nY2x1c3RlciBDQTBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABGbE7o2cQKggXIt3\nISmvKqyP0CookDmbAATcZO9rs1FX+ZrsGnkIPfA6nsVL49jD4//TlFGFTnzpPD8s\n/kktn0ujZjBkMBIGA1UdEwEB/wQIMAYBAf8CAQEwDgYDVR0PAQH/BAQDAgEGMB0G\nA1UdDgQWBBScOvCqRYKmEIGoUUiYFDfauYayXTAfBgNVHSMEGDAWgBSSCQX0BlY6\n12dIEP1yqLRmZ6ZtDjAKBggqhkjOPQQDAgNHADBEAiARInyQvK90pBvYcNZMojXk\nQBTFF9DEqDLPKLzR4UenEgIgVYs8XQa8Nk5uYc+0KUsdheSr7mxxOG7pb0IUlupA\nmEs=\n-----END CERTIFICATE-----\n",
+      "rootSHA256": "0c28af9e59fbb91745b731762201f3f618a25841c222fdf49f02714de6164b7c",
+      "activeAuthority": {
+        "authority_id": "88e00b8e715575361c7dd4c8425a6ae320f06b80",
+        "expires_at": "1792986911",
+        "upstream_authority_subject_key_id": "9c3af0aa4582a61081a85148981437dab986b25d"
+      },
+      "observedAt": "2026-10-25T04:43:05.134546+00:00",
+      "validUntil": "2026-10-26T03:55:11+00:00",
+      "approvedServerImage": "localhost/cmtc-spire-server@sha256:f57e537d42e5a8cc94fbae110b4f67a70481f391fef70171143d9a1b81cf0288",
+      "cluster": "cmtc-a",
+      "clusterUID": "bb7182c7-de95-4e70-816a-a1400d755794",
+      "pod": {
+        "uid": "ca893d9a-0c97-4b1e-bd23-9536d5d94ca1",
+        "nodeName": "cmtc-a-worker",
+        "containers": [
+          [
+            "register-agent-node",
+            "containerd://bf0f21211d8e1aebae94401ecf40965ec4484e9072fe1b4d6c1acd515f80e331",
+            "docker.io/library/busybox@sha256:fd7dc98638c8e305f4dc34e979f1c0fdfdcaeb0fbf8fcff77ae834b6da3d7e6e",
+            0,
+            "2026-10-25T04:37:51Z"
+          ],
+          [
+            "spire-server",
+            "containerd://331fc97c98b1bbbd1bac7cca679cca6287ebaa9820bd012f976a69a45123e524",
+            "docker.io/library/import-2026-10-25@sha256:bb1a311da5491d5335aa824ca078a20e2a6c980c9f7db9b4059924d841454b35",
+            0,
+            "2026-10-25T04:37:51Z"
+          ]
+        ],
+        "specSHA256": "f50550e14c7a25e4289193d4ee417d5a3276f071f4a7545657048ec946db3681"
+      },
+      "nodeUID": "35a6f095-90e9-41ff-a713-216cde5596f0",
+      "approvalUID": "750c4bb5-2f0e-4fb7-b34e-2132567edea7",
+      "approvalResourceVersion": "80845",
+      "challengeLeafPEM": "-----BEGIN CERTIFICATE-----\nMIIEQjCCAiqgAwIBAgIQK7hsGh/frZ45H4VvvezcSDANBgkqhkiG9w0BAQsFADBp\nMQswCQYDVQQGEwJVUzEOMAwGA1UEChMFU1BJUkUxGDAWBgNVBAMTD2NtdGMtYSBT\nUElSRSBDQTEwMC4GA1UEBRMnMjc5OTM5Njk5NjIyNTU4Njg3NjIyNTYyNzU3MTUx\nNjQzNjE1MTQ2MB4XDTI2MTAyNTA0NDI1NVoXDTI2MTAyNTA0NDMzNVowHTELMAkG\nA1UEBhMCVVMxDjAMBgNVBAoTBVNQSVJFMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcD\nQgAEivhky41z1HnL3j9n05ve9S1wB4HfcPIkQWEIZp7f3aZzM+w9zT3FPNPA7F43\nECVy2hJPdyqYT0+tlagT0Hxn4KOB/DCB+TAOBgNVHQ8BAf8EBAMCA6gwHQYDVR0l\nBBYwFAYIKwYBBQUHAwEGCCsGAQUFBwMCMAwGA1UdEwEB/wQCMAAwHQYDVR0OBBYE\nFF04hU6xpC7yTBG/K0NXRelYg1rzMB8GA1UdIwQYMBaAFIjgC45xVXU2HH3UyEJa\nauMg8GuAMHoGA1UdEQRzMHGGb3NwaWZmZTovL2NtdGMtYS5tZXNoLmV4YW1wbGUv\nY210Yy9pc3N1ZXItcHJvb2YvNzI0NTE4MTBiNjFjNTM3NjNlNTNjMjBkNmY2MTkz\nYzc4Y2UxMzZhNGVjMDdiNjZiNWZiZWE4NWVhODU1NTRhNTANBgkqhkiG9w0BAQsF\nAAOCAgEAQMGA3CGY/rsHZhmo5qNCyxzlcbXn6TMNYujLfGRAKlbYqUVFhEiTX0NV\nRcpOWdNhyOSVK0IOnGVQkrX52uExfb6hnUhJS9fbVvpjZ/arogTnyOB/BTFGpZWh\nTo6t+PE6XRGTnXj/xYGhU732fylBBySwzZKnWkORZdJ9DgNqMbOnyIo8HY7l9iFK\nLXQkAVNLSXHF4j2SxiJKzAmu0bTNiKFymFcU04d0nX0y2SBNj/7d5GEmvJs5Cykm\nWVUnuWPmCnuyBrNZ1kCReO9nUYyMiJZfmBxFEM76YkHd+phrvWdhjUfDvhfS9Qqt\nJhgjnTKzmUwrH4Sa4WvWCF2A06jJ9vv9P3AFdS+WX3HI/nDFTQGY4T4Df3uM0kbG\n1AedEbmtqAl3SbCuQu33RzWZAGAHrbvFReuJtxkJTOXt+Hcl7KYCkpNoF3ey9Cf8\nJMbVbpWG7U5d5qiM/kYrykJm+vXkRufJ648Hr4FAA07uJ/mY/HF2iMwcZ50Tixnb\nZr/Hi151kEZiluQfcjfIxIUfJ3pL0auNCpabS+re2Jw65qE+fkzGedZUEQFP6Nky\nSSZSN0zPKdg+nPjBRNGKiM9Lqiwq1h56hST5/itgHFAfTSFQLUKXNN8lVJ9Rx+5W\nBCGt+r8IVkDG9dFw1G+k+kVQMd4JKKTAyCPHBB1FhsBY1v2tltw=\n-----END CERTIFICATE-----\n"
+    },
+    "cmtc-b": {
+      "schemaVersion": 1,
+      "source": "authenticated-kubernetes-exec-local-SPIRE-admin-API-nonce-mint",
+      "qualifiedFor": "current direct signing key and approved public lineage only",
+      "workloadAttestation": false,
+      "protected": false,
+      "domain": "cmtc-b.mesh.example",
+      "challenge": "spiffe://cmtc-b.mesh.example/cmtc/issuer-proof/8a20eb00105edb06ce99b44c4978ddbc074ca34be356af7f336b24865643ae0e",
+      "challengeLeafSHA256": "16eac4d0384d92eab2407a55de0c11ed21841ec7c5949e424943c0043b635e2b",
+      "directIssuerSHA256": "c5be88b52a130dc883f31689dfb343e2b5f9898069d2dae96fb71422356fe855",
+      "directIssuerPEM": "-----BEGIN CERTIFICATE-----\nMIID5TCCA4ygAwIBAgIUBh/CbRLoAvQAEf3fNZQ1dIU2k2cwCgYIKoZIzj0EAwIw\nIjEgMB4GA1UEAxMXY210Yy1iIFNQSVJFIGNsdXN0ZXIgQ0EwHhcNMjYxMDI1MDM1\nNTM4WhcNMjYxMDI2MDM1NTM4WjBpMQswCQYDVQQGEwJVUzEOMAwGA1UEChMFU1BJ\nUkUxGDAWBgNVBAMTD2NtdGMtYiBTUElSRSBDQTEwMC4GA1UEBRMnMTQyMjQxMDA1\nNTgxMTg4NzY5NjEyNjMxODg2OTQ2OTIxNDM1Mzk2MIICIjANBgkqhkiG9w0BAQEF\nAAOCAg8AMIICCgKCAgEAqxsZUsYK+9kZiDLDFmdi9aB/1znEVS2JR0TXfQnBtncV\ndPm5A+1iAxE2JVf0yQ+GB9vL3UBCtok5RUfdiP4KWlnIhFg4PKS6zFlY4JRaEt1V\nr8Jr5tdH1H1+M+7T+l9nTmV8ONuOpDX2V1xSNZPYFU6aXNxFy5dQx0p2qeP/770O\n+p3+AshKKTBKHnXOzlOrGUUEjJr1i3CfTjeiAiezgAqNfkMlMlwTbcmF/cRXB1zg\nKjKw8ZQ+raa9ki9q2CnnwtW0w3Djfo3SELqqyd52sQ3dQCkSz4Whd/w8SkqlkkpY\nmlYMGf4Gsr6hNZZ+thxVgTssUaa6CoszBjrJBgcuXP9FReQ1s9B3f4q5TCqffpiq\nPVFGB7D75YvOJleR/76E5qvrPLxcU0gwp29fPpBDbkLmmRFVKxYVo9mQFm+Qrxhi\nXjdW5UW3dzb9rf5SeXzgHU1WhEytBbqtWcMCn0UsyXFaBNfNJ4CC+Zj1q5tXNsIu\nx5xScJPvU/6sR28l0X5kaPaICLyj7l0hsjKSh38z2vLFnv0QDRj6J5IPdlwCLqQn\no0ejdfLh8YtdyMLgZk42U2RBlrsT7TT8ytPWenNXLZcKNfZg4clIdoGN0oR+xcPd\nKL3IGtu2Jwnxt0nt7RqY2SOfcj/YfKP+fXhf2G33WHmrG1nYWqYGLCUxVfovWTkC\nAwEAAaOBjTCBijAOBgNVHQ8BAf8EBAMCAQYwDwYDVR0TAQH/BAUwAwEB/zAdBgNV\nHQ4EFgQUobOdTS7r9q1ZFHMgQM3ZIeVoKoQwHwYDVR0jBBgwFoAUFNY23EtgtOwE\n+78qMDt+jz/B420wJwYDVR0RBCAwHoYcc3BpZmZlOi8vY210Yy1iLm1lc2guZXhh\nbXBsZTAKBggqhkjOPQQDAgNHADBEAiAJusrBjpMH9OobkWkYlwOdKwigJNUJPidZ\n3zxVmQFQAQIgPWM8fb/MENewrvOSsXQ8etSN+wIOwIdDi1mYF9ybsHY=\n-----END CERTIFICATE-----\n",
+      "parentPEM": "-----BEGIN CERTIFICATE-----\nMIIBsDCCAVWgAwIBAgIUJ7JlgnI1+IGyJc8WkkhmyqJAQf4wCgYIKoZIzj0EAwIw\nJTEjMCEGA1UEAwwaQ01UQyBMYWIgT3JnYW5pemF0aW9uIFJvb3QwHhcNMjYxMDI1\nMDMzMzU4WhcNMjcxMDI1MDMzMzU4WjAiMSAwHgYDVQQDExdjbXRjLWIgU1BJUkUg\nY2x1c3RlciBDQTBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABLu6ZmCRLM0zzcyg\nAYQWXmU1fFkyD95qAl9CoHXdu5UVFPZ+NmDilmhQjbPEuunmcbP1Vphuryik0/nE\njy1mMHejZjBkMBIGA1UdEwEB/wQIMAYBAf8CAQEwDgYDVR0PAQH/BAQDAgEGMB0G\nA1UdDgQWBBQU1jbcS2C07AT7vyowO36PP8HjbTAfBgNVHSMEGDAWgBSSCQX0BlY6\n12dIEP1yqLRmZ6ZtDjAKBggqhkjOPQQDAgNJADBGAiEAvJ27cfqBFF9Qqhkrc87o\nV2TCB9+V4kaZKLVktc6y0GsCIQDR5qUESkD065rjh+a1dCAEdSQYr7OAl9kqWS8m\nwIoGpQ==\n-----END CERTIFICATE-----\n",
+      "rootSHA256": "0c28af9e59fbb91745b731762201f3f618a25841c222fdf49f02714de6164b7c",
+      "activeAuthority": {
+        "authority_id": "a1b39d4d2eebf6ad5914732040cdd921e5682a84",
+        "expires_at": "1792986938",
+        "upstream_authority_subject_key_id": "14d636dc4b60b4ec04fbbf2a303b7e8f3fc1e36d"
+      },
+      "observedAt": "2026-10-25T04:43:06.108756+00:00",
+      "validUntil": "2026-10-26T03:55:38+00:00",
+      "approvedServerImage": "localhost/cmtc-spire-server@sha256:f57e537d42e5a8cc94fbae110b4f67a70481f391fef70171143d9a1b81cf0288",
+      "cluster": "cmtc-b",
+      "clusterUID": "f2687af6-bd96-45a3-98a2-d1397a3ee244",
+      "pod": {
+        "uid": "2b638b96-7c92-4d08-bb25-71481814f3c0",
+        "nodeName": "cmtc-b-worker",
+        "containers": [
+          [
+            "register-agent-node",
+            "containerd://f2644ef25a86442c683778b0dd9c141688c909d4c6370f017899ab567feb9a87",
+            "docker.io/library/busybox@sha256:fd7dc98638c8e305f4dc34e979f1c0fdfdcaeb0fbf8fcff77ae834b6da3d7e6e",
+            0,
+            "2026-10-25T04:38:19Z"
+          ],
+          [
+            "spire-server",
+            "containerd://270038671f073c5bffba6be672d3ffbeb409f7453e8e78b3302ae465be1a31c2",
+            "docker.io/library/import-2026-10-25@sha256:bb1a311da5491d5335aa824ca078a20e2a6c980c9f7db9b4059924d841454b35",
+            0,
+            "2026-10-25T04:38:19Z"
+          ]
+        ],
+        "specSHA256": "c042bdfe3374b85c98136965d151c5b6f8256b886292a3bcc1e344031bde0b22"
+      },
+      "nodeUID": "fcbbc49e-268c-411b-9083-1346f53bbb88",
+      "approvalUID": "5198f47d-4a0e-47da-b623-58e278be8887",
+      "approvalResourceVersion": "81228",
+      "challengeLeafPEM": "-----BEGIN CERTIFICATE-----\nMIIEQzCCAiugAwIBAgIRANWTpoeuD9TzZJqqiXi94iMwDQYJKoZIhvcNAQELBQAw\naTELMAkGA1UEBhMCVVMxDjAMBgNVBAoTBVNQSVJFMRgwFgYDVQQDEw9jbXRjLWIg\nU1BJUkUgQ0ExMDAuBgNVBAUTJzE0MjI0MTAwNTU4MTE4ODc2OTYxMjYzMTg4Njk0\nNjkyMTQzNTM5NjAeFw0yNjEwMjUwNDQyNTZaFw0yNjEwMjUwNDQzMzZaMB0xCzAJ\nBgNVBAYTAlVTMQ4wDAYDVQQKEwVTUElSRTBZMBMGByqGSM49AgEGCCqGSM49AwEH\nA0IABCqd1d5B6jbiCp89ShiBX4lCer61mCHaZVaP4raC8ukhjkey5zJ3GDAdT3b1\n4oiJng5eCOn2oR4hpiYfCcoQYgSjgfwwgfkwDgYDVR0PAQH/BAQDAgOoMB0GA1Ud\nJQQWMBQGCCsGAQUFBwMBBggrBgEFBQcDAjAMBgNVHRMBAf8EAjAAMB0GA1UdDgQW\nBBRWw1NMx5EeeXz3z9pbGqDNeibTWTAfBgNVHSMEGDAWgBShs51NLuv2rVkUcyBA\nzdkh5WgqhDB6BgNVHREEczBxhm9zcGlmZmU6Ly9jbXRjLWIubWVzaC5leGFtcGxl\nL2NtdGMvaXNzdWVyLXByb29mLzhhMjBlYjAwMTA1ZWRiMDZjZTk5YjQ0YzQ5Nzhk\nZGJjMDc0Y2EzNGJlMzU2YWY3ZjMzNmIyNDg2NTY0M2FlMGUwDQYJKoZIhvcNAQEL\nBQADggIBAH4oq50+LNRdk41uzK351W5cVX809Yu0MgonJA0tcy+/9xbkGDfXivXa\njiprLL5zBNELISrL6XJFIXKy4Yn6gYKT+m9/+P0x6mr3watjWhCwrv5/mL36yMfw\n8vgFX8tlGlE2iCuG7quBbSnUj1RKDOzKTk3qVOHJCQDK+XKIHTl8v/XrsX3QmxPy\nqaozLYxH8Sssq4CwLN76rKHwSd8OIDQ1qcSpiT5DZYBHf+HMT8PAeCfFjsubk0A/\ngzhB314nc2x9WpyiaEaJ/iX8vngMKViN+pwhLM/xnZB9mTa+Rd5kwOMXFn1SH1pE\nMVF5K6+kNKZJRCLOz4QB2fzTK09TBOigI6ePdYEdpzP55k8l8puDEZ0wWZZebXyb\nzcDZn1Zi21bcecsFzDS2djRpZWi+ekkzv7RcHhGxyfiOUTfDQnRL+UIAhlqHWjDx\nSEfjg/z0a3EYNa30mNMx0qdr5TKHI18cs9Y9w8Q865NmxNOgGHw+6mrg0YuidJ4g\nOYSBWBag6REirXZgikfUsEj0U00EUaXfifc7oZ/roCgdpV4cdJs2v5q9jJlADDaZ\nCM8HXAi1FutOTcuzJALBf5Uj3Sb1IDI5D+uPO3dJyOOKhYIql4ApQE7biiT54B+3\nFIpeyEmjHmd6cDzW634dgHzI1ZDeCRNdaB7tCyX/FUXr5GvZE2B5\n-----END CERTIFICATE-----\n"
+    }
+  },
+  "scope": "public issuer mapping publication only; native consumer disabled; no TLS/Protected"
+}

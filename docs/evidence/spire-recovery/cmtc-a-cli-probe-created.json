@@ -1,0 +1,102 @@
+{
+  "apiVersion": "batch/v1",
+  "kind": "Job",
+  "metadata": {
+    "creationTimestamp": "2026-10-25T04:31:50Z",
+    "generation": 1,
+    "labels": {
+      "app.kubernetes.io/managed-by": "cmtc-local-validation"
+    },
+    "name": "spire-cli-digest-28f6b8d84a",
+    "namespace": "cilium-spire",
+    "resourceVersion": "92014",
+    "uid": "d60f7e37-6d4d-4c78-bff7-0eb4f367c5cf"
+  },
+  "spec": {
+    "activeDeadlineSeconds": 90,
+    "backoffLimit": 0,
+    "completionMode": "NonIndexed",
+    "completions": 1,
+    "manualSelector": false,
+    "parallelism": 1,
+    "podReplacementPolicy": "TerminatingOrFailed",
+    "selector": {
+      "matchLabels": {
+        "batch.kubernetes.io/controller-uid": "d60f7e37-6d4d-4c78-bff7-0eb4f367c5cf"
+      }
+    },
+    "suspend": false,
+    "template": {
+      "metadata": {
+        "labels": {
+          "batch.kubernetes.io/controller-uid": "d60f7e37-6d4d-4c78-bff7-0eb4f367c5cf",
+          "batch.kubernetes.io/job-name": "spire-cli-digest-28f6b8d84a",
+          "controller-uid": "d60f7e37-6d4d-4c78-bff7-0eb4f367c5cf",
+          "job-name": "spire-cli-digest-28f6b8d84a"
+        }
+      },
+      "spec": {
+        "automountServiceAccountToken": false,
+        "containers": [
+          {
+            "command": [
+              "/bin/sh",
+              "-ec",
+              "exec /spire/opt/spire/bin/spire-server --version"
+            ],
+            "image": "docker.io/library/busybox:1.38.0@sha256:fd7dc98638c8e305f4dc34e979f1c0fdfdcaeb0fbf8fcff77ae834b6da3d7e6e",
+            "imagePullPolicy": "IfNotPresent",
+            "name": "cli",
+            "resources": {
+              "limits": {
+                "cpu": "200m",
+                "memory": "64Mi"
+              }
+            },
+            "securityContext": {
+              "allowPrivilegeEscalation": false,
+              "capabilities": {
+                "drop": [
+                  "ALL"
+                ]
+              },
+              "readOnlyRootFilesystem": true
+            },
+            "terminationMessagePath": "/dev/termination-log",
+            "terminationMessagePolicy": "File",
+            "volumeMounts": [
+              {
+                "mountPath": "/spire",
+                "name": "cli",
+                "readOnly": true
+              }
+            ]
+          }
+        ],
+        "dnsPolicy": "ClusterFirst",
+        "nodeName": "cmtc-a-worker",
+        "restartPolicy": "Never",
+        "schedulerName": "default-scheduler",
+        "securityContext": {
+          "runAsGroup": 1000,
+          "runAsNonRoot": true,
+          "runAsUser": 1000,
+          "seccompProfile": {
+            "type": "RuntimeDefault"
+          }
+        },
+        "terminationGracePeriodSeconds": 30,
+        "volumes": [
+          {
+            "image": {
+              "pullPolicy": "IfNotPresent",
+              "reference": "localhost/cmtc-spire-server@sha256:f57e537d42e5a8cc94fbae110b4f67a70481f391fef70171143d9a1b81cf0288"
+            },
+            "name": "cli"
+          }
+        ]
+      }
+    }
+  },
+  "status": {}
+}

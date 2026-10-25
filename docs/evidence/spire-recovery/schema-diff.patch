@@ -1,0 +1,400 @@
+diff --git a/pkg/server/datastore/sqlstore/migration.go b/pkg/server/datastore/sqlstore/migration.go
+index eb421a56..7fe970de 100644
+--- a/pkg/server/datastore/sqlstore/migration.go
++++ b/pkg/server/datastore/sqlstore/migration.go
+@@ -273,24 +273,27 @@ import (
+ // | v1.14.0 |        |                                                                           |
+ // | v1.14.1 |        |                                                                           |
+ // | v1.14.2 |        |                                                                           |
+-// | v1.14.3 |        |                                                                           |
++// | v1.14.3 | 24     | Added agent_version column to attested_node_entries                       |
+ // | v1.14.4 |        |                                                                           |
+ // | v1.14.5 |        |                                                                           |
+ // | v1.14.6 |        |                                                                           |
+ // | v1.14.7 |        |                                                                           |
+ // | v1.14.8 |        |                                                                           |
+ // |*********|********|***************************************************************************|
+-// | v1.15.0 |        |                                                                           |
++// | v1.15.0 | 25     | Added additional_attributes column to registered_entries                  |
+ // | v1.15.1 |        |                                                                           |
+ // | v1.15.2 |        |                                                                           |
+ // | v1.15.3 |        |                                                                           |
+ // | v1.15.4 |        |                                                                           |
+-// | v1.15.5 |        |                                                                           |
++// |*********|********|***************************************************************************|
++// | v1.16.0 | 26     | Added journal_id column to ca_journals                                    |
++// |         |--------|---------------------------------------------------------------------------|
++// |         | 27     | Added wit_svid_ttl column to registered_entries                           |
+ // ================================================================================================
+ 
+ const (
+ 	// the latest schema version of the database in the code
+-	latestSchemaVersion = 25
++	latestSchemaVersion = 27
+ 
+ 	// lastMinorReleaseSchemaVersion is the schema version supported by the
+ 	// last minor release. When the migrations are opportunistically pruned
+@@ -480,7 +483,7 @@ func tableOptionsForDialect(tx *gorm.DB, dbType string) *gorm.DB {
+ 	// This allows for setting table options for a particular DB type.
+ 	// For MySQL, (for compatibility reasons) we want to make sure that
+ 	// we can support indexes on strings (varchar(255) in the DB).
+-	if isMySQLDbType(dbType) {
++	if sqlcommon.IsMySQLDbType(dbType) {
+ 		return tx.Set("gorm:table_options", "ENGINE=InnoDB  ROW_FORMAT=DYNAMIC DEFAULT CHARSET=utf8")
+ 	}
+ 	return tx
+@@ -525,6 +528,10 @@ func migrateVersion(tx *gorm.DB, currVersion int, log logrus.FieldLogger) (versi
+ 		err = migrateToV24(tx)
+ 	case 24:
+ 		err = migrateToV25(tx)
++	case 25:
++		err = migrateToV26(tx)
++	case 26:
++		err = migrateToV27(tx)
+ 	default:
+ 		err = sqlcommon.NewSQLError("no migration support for unknown schema version %d", currVersion)
+ 	}
+@@ -551,6 +558,22 @@ func migrateToV25(tx *gorm.DB) error {
+ 	return nil
+ }
+ 
++func migrateToV26(tx *gorm.DB) error {
++	// Add journal_id column to ca_journals table.
++	if err := tx.AutoMigrate(&CAJournal{}).Error; err != nil {
++		return sqlcommon.NewWrappedSQLError(err)
++	}
++	return nil
++}
++
++func migrateToV27(tx *gorm.DB) error {
++	// Add wit_svid_ttl column to registered_entries table
++	if err := tx.AutoMigrate(&RegisteredEntry{}).Error; err != nil {
++		return sqlcommon.NewWrappedSQLError(err)
++	}
++	return nil
++}
++
+ func addFederatedRegistrationEntriesRegisteredEntryIDIndex(tx *gorm.DB) error {
+ 	// GORM creates the federated_registration_entries implicitly with a primary
+ 	// key tuple (bundle_id, registered_entry_id). Unfortunately, MySQL5 does
+diff --git a/pkg/server/datastore/sqlstore/models.go b/pkg/server/datastore/sqlstore/models.go
+index cb38637b..e3976bc4 100644
+--- a/pkg/server/datastore/sqlstore/models.go
++++ b/pkg/server/datastore/sqlstore/models.go
+@@ -101,6 +101,9 @@ type RegisteredEntry struct {
+ 	// TTL of JWT identities derived from this entry
+ 	JWTSvidTTL int32 `gorm:"column:jwt_svid_ttl"`
+ 
++	// TTL of WIT identities derived from this entry
++	WITSvidTTL int32 `gorm:"column:wit_svid_ttl"`
++
+ 	// AdditionalAttributes may contain a number of optional fields controlling
+ 	// the various aspects of the agent's behaviour with respect to a given
+ 	// registration entry
+@@ -185,6 +188,10 @@ func (FederatedTrustDomain) TableName() string {
+ type CAJournal struct {
+ 	Model
+ 
++	// JournalID is reserved for a future externally exposed journal identifier.
++	// It is not used by the current datastore implementation.
++	JournalID string `gorm:"unique_index"`
++
+ 	// Information about X509 and JWT authorities of a single server.
+ 	Data []byte `gorm:"size:16777215"` // Make MySQL to use MEDIUMBLOB(max 16MB) - doesn't affect PostgreSQL/SQLite
+ 
+diff --git a/pkg/server/datastore/sqlstorev2/sqlstore.go b/pkg/server/datastore/sqlstorev2/sqlstore.go
+new file mode 100644
+index 00000000..b6d444f5
+--- /dev/null
++++ b/pkg/server/datastore/sqlstorev2/sqlstore.go
+@@ -0,0 +1,290 @@
++package sqlstorev2
++
++import (
++	"context"
++	"database/sql"
++	"errors"
++	"fmt"
++	"sync"
++	"time"
++
++	"github.com/sirupsen/logrus"
++	"github.com/spiffe/spire/pkg/common/telemetry"
++	"github.com/spiffe/spire/pkg/server/datastore/sqlcommon"
++	"gorm.io/gorm"
++	gormlogger "gorm.io/gorm/logger"
++)
++
++// PluginName is the catalog name of the GORM v2 SQL datastore.
++const PluginName = "sql_v2"
++
++// Plugin is a SQL datastore backed by GORM v2. It holds a read-write
++// connection and, when ro_connection_string is set, a read-only one.
++type Plugin struct {
++	log logrus.FieldLogger
++
++	// dialectFor selects the dialect for a database type. Tests replace it
++	// to inject connection failures.
++	dialectFor func(databaseType string, log logrus.FieldLogger) (dialect, error)
++
++	mu   sync.Mutex
++	db   *sqlDB
++	roDb *sqlDB
++}
++
++type sqlDB struct {
++	*gorm.DB
++	raw              *sql.DB
++	databaseType     string
++	connectionString string
++	supportsCTE      bool
++	dialect          dialect
++}
++
++// New returns an unconfigured Plugin. Configure must be called before use.
++func New(log logrus.FieldLogger) *Plugin {
++	return &Plugin{log: log, dialectFor: newDialect}
++}
++
++// Close closes the read-write and read-only connections if open. It is safe
++// to call multiple times.
++func (ds *Plugin) Close() error {
++	ds.mu.Lock()
++	defer ds.mu.Unlock()
++
++	var errs error
++	if ds.db != nil {
++		errs = errors.Join(errs, ds.db.raw.Close())
++		ds.db = nil
++	}
++	if ds.roDb != nil {
++		errs = errors.Join(errs, ds.roDb.raw.Close())
++		ds.roDb = nil
++	}
++	return errs
++}
++
++// RawScan runs a raw query on the read-write connection and scans the result
++// into dest. It holds ds.mu for the whole query so a concurrent Configure or
++// Close cannot swap or close the connection mid-scan. It is intended for
++// tests, so blocking a reconfigure for the duration is acceptable.
++func (ds *Plugin) RawScan(dest any, query string) error {
++	ds.mu.Lock()
++	defer ds.mu.Unlock()
++	if ds.db == nil {
++		return sqlcommon.NewSQLError("datastore is not configured")
++	}
++	return ds.db.Raw(query).Scan(dest).Error
++}
++
++// Configure parses the HCL config, validates it, and opens the connection(s).
++func (ds *Plugin) Configure(ctx context.Context, hclConfiguration string) error {
++	config, err := sqlcommon.BuildConfig(hclConfiguration)
++	if err != nil {
++		return err
++	}
++	if err := sqlcommon.ConfigValidate(config); err != nil {
++		return err
++	}
++	return ds.openConnections(ctx, config)
++}
++
++// openConnections prepares the read-write and, when configured, read-only
++// connections for config, and swaps them in only once both succeed, so a
++// failed Configure leaves the current connections untouched.
++func (ds *Plugin) openConnections(ctx context.Context, config *sqlcommon.Configuration) error {
++	ds.mu.Lock()
++	defer ds.mu.Unlock()
++
++	db, err := ds.prepareConnection(ctx, config, ds.db, false)
++	if err != nil {
++		return err
++	}
++
++	var roDb *sqlDB
++	if config.RoConnectionString != "" {
++		roDb, err = ds.prepareConnection(ctx, config, ds.roDb, true)
++		if err != nil {
++			ds.closeUnlessReused(db, ds.db)
++			return err
++		}
++	}
++
++	ds.closeUnlessReused(ds.db, db)
++	ds.closeUnlessReused(ds.roDb, roDb)
++	ds.db = db
++	ds.roDb = roDb
++	return nil
++}
++
++// prepareConnection returns the connection to use for config. When neither
++// the connection string nor the database type differs from current, it
++// reuses current's pool with the configured log_sql setting applied;
++// otherwise it opens a new pool. It does not modify current.
++func (ds *Plugin) prepareConnection(ctx context.Context, config *sqlcommon.Configuration, current *sqlDB, isReadOnly bool) (*sqlDB, error) {
++	connectionString := sqlcommon.GetConnectionString(config, isReadOnly)
++
++	if current != nil && current.connectionString == connectionString &&
++		current.databaseType == config.DBTypeConfig.DatabaseType {
++		reused := *current
++		reused.DB = withSQLLogging(current.DB, config.LogSQL, ds.log)
++		return &reused, nil
++	}
++
++	var connMaxLifetime time.Duration
++	if config.ConnMaxLifetime != nil {
++		d, err := time.ParseDuration(*config.ConnMaxLifetime)
++		if err != nil {
++			return nil, fmt.Errorf("failed to parse conn_max_lifetime %q: %w", *config.ConnMaxLifetime, err)
++		}
++		connMaxLifetime = d
++	}
++
++	dia, err := ds.dialectFor(config.DBTypeConfig.DatabaseType, ds.log)
++	if err != nil {
++		return nil, err
++	}
++
++	gdb, version, supportsCTE, err := dia.connect(ctx, config, isReadOnly)
++	if err != nil {
++		return nil, sqlcommon.NewWrappedSQLError(err)
++	}
++
++	raw, err := gdb.DB()
++	if err != nil {
++		return nil, sqlcommon.NewWrappedSQLError(err)
++	}
++
++	const maxOpenConns = 100
++	raw.SetMaxOpenConns(maxOpenConns)
++	if config.MaxOpenConns != nil {
++		raw.SetMaxOpenConns(*config.MaxOpenConns)
++	}
++	const maxIdleConns = 100
++	raw.SetMaxIdleConns(maxIdleConns)
++	if config.MaxIdleConns != nil {
++		raw.SetMaxIdleConns(*config.MaxIdleConns)
++	}
++	const connMaxIdleTime = time.Second * 30
++	raw.SetConnMaxIdleTime(connMaxIdleTime)
++	if config.ConnMaxLifetime != nil {
++		raw.SetConnMaxLifetime(connMaxLifetime)
++	}
++
++	ds.log.WithFields(logrus.Fields{
++		telemetry.Type:     config.DBTypeConfig.DatabaseType,
++		telemetry.Version:  version,
++		telemetry.ReadOnly: isReadOnly,
++	}).Info("Connected to SQL database")
++
++	return &sqlDB{
++		DB:               withSQLLogging(gdb, config.LogSQL, ds.log),
++		raw:              raw,
++		databaseType:     config.DBTypeConfig.DatabaseType,
++		dialect:          dia,
++		connectionString: connectionString,
++		supportsCTE:      supportsCTE,
++	}, nil
++}
++
++// closeUnlessReused closes db's pool unless other shares it. A close failure
++// is logged rather than returned, since the connections that replace db are
++// already in effect.
++func (ds *Plugin) closeUnlessReused(db, other *sqlDB) {
++	if db == nil || (other != nil && other.raw == db.raw) {
++		return
++	}
++	if err := db.raw.Close(); err != nil {
++		ds.log.WithError(err).Warn("Failed to close SQL database connection")
++	}
++}
++
++func newDialect(databaseType string, log logrus.FieldLogger) (dialect, error) {
++	switch {
++	case sqlcommon.IsSQLiteDbType(databaseType):
++		return sqliteDB{log: log}, nil
++	case sqlcommon.IsPostgresDbType(databaseType):
++		return postgresDB{}, nil
++	case sqlcommon.IsMySQLDbType(databaseType):
++		return mysqlDB{log: log}, nil
++	default:
++		return nil, sqlcommon.NewSQLError("unsupported database_type: %s", databaseType)
++	}
++}
++
++// gormConfig is the config every dialect opens its connection with. SQL
++// logging starts disabled so the connection probes run during connect are
++// not logged; withSQLLogging applies log_sql once the connection is set up.
++func gormConfig() *gorm.Config {
++	return &gorm.Config{Logger: gormlogger.Discard}
++}
++
++// withSQLLogging returns a handle on db's connection pool that logs SQL
++// statements through log, with a subsystem_name=gorm field, when logSQL is
++// true, and discards them otherwise.
++func withSQLLogging(db *gorm.DB, logSQL bool, log logrus.FieldLogger) *gorm.DB {
++	lg := gormlogger.Discard
++	if logSQL {
++		lg = newLogrusGormLogger(log.WithField(telemetry.SubsystemName, "gorm"))
++	}
++	return db.Session(&gorm.Session{NewDB: true, Logger: lg})
++}
++
++// closeOnError closes db's connection pool and returns err joined with any
++// error from closing. Dialects call it when connect fails after the pool is
++// open.
++func closeOnError(db *gorm.DB, err error) error {
++	raw, rawErr := db.DB()
++	if rawErr != nil {
++		return errors.Join(err, rawErr)
++	}
++	return errors.Join(err, raw.Close())
++}
++
++// queryVersion runs the dialect version query on the raw *sql.DB.
++func queryVersion(ctx context.Context, db *gorm.DB, query string) (string, error) {
++	raw, err := db.DB()
++	if err != nil {
++		return "", err
++	}
++	var version string
++	if err := raw.QueryRowContext(ctx, query).Scan(&version); err != nil {
++		return "", err
++	}
++	return version, nil
++}
++
++// logrusGormLogger implements gorm.io/gorm/logger.Interface on top of logrus.
++// SQL statements (Trace) and informational messages are logged at Debug;
++// warnings and errors keep their level.
++type logrusGormLogger struct {
++	log logrus.FieldLogger
++}
++
++func newLogrusGormLogger(log logrus.FieldLogger) gormlogger.Interface {
++	return logrusGormLogger{log: log}
++}
++
++func (l logrusGormLogger) LogMode(gormlogger.LogLevel) gormlogger.Interface { return l }
++
++func (l logrusGormLogger) Info(_ context.Context, msg string, data ...any) {
++	l.log.Debugf(msg, data...)
++}
++
++func (l logrusGormLogger) Warn(_ context.Context, msg string, data ...any) {
++	l.log.Warnf(msg, data...)
++}
++
++func (l logrusGormLogger) Error(_ context.Context, msg string, data ...any) {
++	l.log.Errorf(msg, data...)
++}
++
++func (l logrusGormLogger) Trace(_ context.Context, _ time.Time, fc func() (string, int64), err error) {
++	sql, rows := fc()
++	entry := l.log.WithField("rows", rows)
++	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
++		entry.WithError(err).Debug(sql)
++		return
++	}
++	entry.Debug(sql)
++}

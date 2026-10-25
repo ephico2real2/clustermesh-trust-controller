@@ -1,0 +1,128 @@
+[
+     {
+          "Id": "70f8fbde787b46479d8bd22aed9005d36caa7c597fcff7108cee9bf122a6edd0",
+          "Digest": "sha256:e71ba86671e2ab509f81cc4c8607c4dcd4a3eeb5ba4aeae2c955d8f25aee22ba",
+          "RepoTags": [
+               "localhost/cmtc-spire-server:journal-28f6b8d84a"
+          ],
+          "RepoDigests": [
+               "localhost/cmtc-spire-server@sha256:e71ba86671e2ab509f81cc4c8607c4dcd4a3eeb5ba4aeae2c955d8f25aee22ba"
+          ],
+          "Parent": "a4874d5bd3ff12d8e9c5d17c9e5f13b5e574c2f00f7f48fbe53bc69bd88c4b5e",
+          "Comment": "buildkit.dockerfile.v0",
+          "Created": "2026-10-25T04:24:57.874798283Z",
+          "Config": {
+               "User": "1000:1000",
+               "Env": [
+                    "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+               ],
+               "Entrypoint": [
+                    "/opt/spire/bin/spire-server",
+                    "run"
+               ],
+               "WorkingDir": "/opt/spire",
+               "Labels": {
+                    "io.buildah.version": "1.33.7",
+                    "org.opencontainers.image.revision": "28f6b8d84ade21c6accb32ba9689a3bdf64877ec",
+                    "org.opencontainers.image.source": "https://github.com/ephico2real2/spire",
+                    "org.opencontainers.image.version": "1.16.0-dev-28f6b8d84ade21c6accb32ba9689a3bdf64877ec"
+               }
+          },
+          "Version": "",
+          "Author": "",
+          "Architecture": "arm64",
+          "Os": "linux",
+          "Size": 313654982,
+          "VirtualSize": 313654982,
+          "GraphDriver": {
+               "Name": "overlay",
+               "Data": {
+                    "LowerDir": "/home/olasumbo.guest/.local/share/containers/storage/overlay/445f68f42bf52e15183110acc0b1d7b5bf352da54be54b2eb1c32becc1e75cbf/diff:/home/olasumbo.guest/.local/share/containers/storage/overlay/2b2ca3f6b474387732c2ac3942781102b2827f2fb2e1d9805790cf13b90618ec/diff:/home/olasumbo.guest/.local/share/containers/storage/overlay/a885fb822874711f4509771ab94076d4b98e68b7f13029f5033c7fc6f42b0bd4/diff:/home/olasumbo.guest/.local/share/containers/storage/overlay/6f1009738b94a618175119bf19f85c6a2ba6bf2376c1f9dd44b92837a86ba0e5/diff",
+                    "UpperDir": "/home/olasumbo.guest/.local/share/containers/storage/overlay/4a5e0a955bb551e188d9c37993cd405c20c6dd9f504be854f3169c02b3af9a56/diff",
+                    "WorkDir": "/home/olasumbo.guest/.local/share/containers/storage/overlay/4a5e0a955bb551e188d9c37993cd405c20c6dd9f504be854f3169c02b3af9a56/work"
+               }
+          },
+          "RootFS": {
+               "Type": "layers",
+               "Layers": [
+                    "sha256:6f1009738b94a618175119bf19f85c6a2ba6bf2376c1f9dd44b92837a86ba0e5",
+                    "sha256:30eb918d481230a6e268643cacd802d161364c9ba1a74229ab487f8ebebfb389",
+                    "sha256:c927f162c5fa3b338d8cf06d55bdd4395081f403e9226cab50edb778f3f30695",
+                    "sha256:027ab3af333486ac6bdc42529c7253cd8a678c89a65b043de6dcc3e9e7682302",
+                    "sha256:9341bd5d6ec6a61e274de6ed6f256176ef463ffaba9f9608422af3dbcb60219c"
+               ]
+          },
+          "Labels": {
+               "io.buildah.version": "1.33.7",
+               "org.opencontainers.image.revision": "28f6b8d84ade21c6accb32ba9689a3bdf64877ec",
+               "org.opencontainers.image.source": "https://github.com/ephico2real2/spire",
+               "org.opencontainers.image.version": "1.16.0-dev-28f6b8d84ade21c6accb32ba9689a3bdf64877ec"
+          },
+          "Annotations": {
+               "org.opencontainers.image.base.digest": "sha256:567e088a6995705d540a126bc8fdab64a0e3df2dc43153b6d30d97216e2ec259",
+               "org.opencontainers.image.base.name": "ghcr.io/spiffe/spire-server@sha256:584a9c5cc95b9457f5033e7e4488d603fffe5ec48a80c4dba14b05c5e1c2c384"
+          },
+          "ManifestType": "application/vnd.oci.image.manifest.v1+json",
+          "User": "1000:1000",
+          "History": [
+               {
+                    "created": "2026-10-20T18:07:23.353027662Z",
+                    "created_by": "COPY /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ # buildkit",
+                    "comment": "buildkit.dockerfile.v0"
+               },
+               {
+                    "created": "2026-10-20T18:07:23.369604149Z",
+                    "created_by": "WORKDIR /opt/spire",
+                    "comment": "buildkit.dockerfile.v0"
+               },
+               {
+                    "created": "2026-10-20T18:07:23.383903739Z",
+                    "created_by": "ARG spireuid=1000",
+                    "comment": "buildkit.dockerfile.v0",
+                    "empty_layer": true
+               },
+               {
+                    "created": "2026-10-20T18:07:23.383903739Z",
+                    "created_by": "ARG spiregid=1000",
+                    "comment": "buildkit.dockerfile.v0",
+                    "empty_layer": true
+               },
+               {
+                    "created": "2026-10-20T18:07:23.383903739Z",
+                    "created_by": "USER 1000:1000",
+                    "comment": "buildkit.dockerfile.v0",
+                    "empty_layer": true
+               },
+               {
+                    "created": "2026-10-20T18:07:23.383903739Z",
+                    "created_by": "ENTRYPOINT [\"/opt/spire/bin/spire-server\" \"run\"]",
+                    "comment": "buildkit.dockerfile.v0",
+                    "empty_layer": true
+               },
+               {
+                    "created": "2026-10-20T18:07:23.383903739Z",
+                    "created_by": "COPY /spireroot / # buildkit",
+                    "comment": "buildkit.dockerfile.v0"
+               },
+               {
+                    "created": "2026-10-20T18:07:27.55478529Z",
+                    "created_by": "COPY /spire/bin/static/spire-server /opt/spire/bin/ # buildkit",
+                    "comment": "buildkit.dockerfile.v0"
+               },
+               {
+                    "created": "2026-10-25T04:24:57.411646629Z",
+                    "created_by": "/bin/sh -c #(nop) COPY file:06dbd39a54ea4bc0e7b85a5656ff1bd0da8e5dedb71039ffe2fcf25f896b8316 in /opt/spire/bin/spire-server ",
+                    "comment": "FROM ghcr.io/spiffe/spire-server@sha256:584a9c5cc95b9457f5033e7e4488d603fffe5ec48a80c4dba14b05c5e1c2c384"
+               },
+               {
+                    "created": "2026-10-25T04:24:57.874888539Z",
+                    "created_by": "/bin/sh -c #(nop) LABEL org.opencontainers.image.source=\"https://github.com/ephico2real2/spire\" org.opencontainers.image.revision=\"28f6b8d84ade21c6accb32ba9689a3bdf64877ec\" org.opencontainers.image.version=\"1.16.0-dev-28f6b8d84ade21c6accb32ba9689a3bdf64877ec\"",
+                    "comment": "FROM a4874d5bd3ff",
+                    "empty_layer": true
+               }
+          ],
+          "NamesHistory": [
+               "localhost/cmtc-spire-server:journal-28f6b8d84a"
+          ]
+     }
+]

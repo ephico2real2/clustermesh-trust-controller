@@ -69,42 +69,58 @@ Both separate `cmtc-spire-issuer` ClusterIssuers are Ready.
 
 ## SPIRE deployment and recovery test
 
-SPIRE 1.15.5 now runs in `cilium-spire` on both clusters.
-Each server uses a retained PVC for its database and disk KeyManager.
-All four node agents pass PSAT attestation with their actual Pod UID and Node UID.
-Registration uses bounded retries, exact selector confirmation and an explicit readiness acknowledgment.
+SPIRE server source `28f6b8d84ade21c6accb32ba9689a3bdf64877ec` runs in `cilium-spire` on both clusters.
+It starts directly from current upstream `main` at `0d589ad07d7b7e7a244f5b5548bf9d2d21e9fbba` in [the personal SPIRE fork](https://github.com/ephico2real2/spire).
+The local branch is `fix/ca-journal-subject-key-id`. No branch or image was published.
 
-The renderer is [render_spire.py](scripts/lab/spire/render_spire.py).
-The active-key check is [public_proof.py](scripts/lab/spire/public_proof.py).
-The check creates a fresh nonce identity and asks the running server to mint a short-lived certificate.
-Only its public certificate leaves the Pod.
-The check verifies the direct signer, approved cluster parent and organization root.
-This administrator check proves active signing-key possession. It does not prove workload attestation.
+The original1.15.5 restart test exposed a real CA journal lookup failure.
+Cert-manager uses an RFC7093 SHA256 subject-key identifier; non-FIPS SPIRE uses SHA1 for its native lookup.
+The fix checks the supported identifiers and rejects an ambiguous fallback.
+Fallback recovery also verifies the exact CA, signing key and upstream authority.
+[The original failed test](docs/evidence/spire-runtime/summary.json) remains historical evidence.
+[The recovery source patch and evidence](docs/evidence/spire-recovery/summary.json) record the correction.
 
-Both clusters pass the nonce check before and after a real server restart.
-However, the restart test fails signing-authority retention.
-The servers recover the same PVCs and databases but select new direct signers.
-Cert-manager returns RFC7093 SHA256 subject-key identifiers; non-FIPS SPIRE uses SHA1 to find its CA journal.
-The identifiers differ for the same public key.
-The disk key path is correct.
-Do not delete keys, journals or PVCs to bypass this failure.
+The exact ARM64 image is `localhost/cmtc-spire-server@sha256:f57e537d42e5a8cc94fbae110b4f67a70481f391fef70171143d9a1b81cf0288`.
+Its configuration ID is `sha256:70f8fbde787b46479d8bd22aed9005d36caa7c597fcff7108cee9bf122a6edd0`.
+The server reports `1.16.0-dev-28f6b8d84ade21c6accb32ba9689a3bdf64877ec`.
+The node agents remain on the pinned1.15.5 image.
 
-The native recovery fix starts from current upstream in [the SPIRE fork](https://github.com/ephico2real2/spire).
-It remains under local qualification.
-The issuer producer stays disabled until the exact fix image passes retained-signer recovery.
-[Public deployment logs, nonce proofs and the failed assertion](docs/evidence/spire-runtime/summary.json) are retained.
-The existing 36 application paths still pass on TCP ports 80, 8080 and 31337.
-These are reachability checks, not mTLS evidence.
+Host Podman builds a static ARM64 server with the pinned musl builder.
+[The build script](docs/evidence/spire-recovery/build-server.sh) records the toolchain, base image, explicit platform, resource limits and source label.
+The archive is imported into the existing Colima kind nodes.
+The importer verifies the actual containerd manifest, configuration, architecture and binary on all four nodes.
+It creates a canonical manifest reference without replacing an existing tag.
+The synthetic CRI archive digest is not a usable pull reference.
+Both worker image-volume CLI checks pass with the canonical reference.
+
+Before upgrade, each server stops and takes a private database/key backup inside its existing PVC.
+The backup stays in `.cmtc-preupgrade-28f6b8d84a/` with directory mode0700 and archive mode0600.
+The archive audit checks exact regular files and copy equivalence. No backup or key leaves the PVC.
+SQLite migration tests cover the actual schema25→27 transition.
+Do not start the old binary on the migrated database as an automatic rollback.
+
+Both servers pass two real restart rounds with the same signer and PVC UID.
+All four agents then pass fresh PSAT attestation with new Pod UIDs and the independently pinned Node UIDs.
+The public nonce check also proves possession of each exact retained signing key and its approved chain.
+This administrator check is not workload attestation.
+The new server's source version appears in the raw restart log; early per-round version files are empty because the CLI writes to stderr.
+
+Local ARM64 race tests pass89 top-level tests and96 subtests.
+SQLite migration tests pass4 top-level tests and29 subtests.
+Vet passes. Change-only lint reports0 issues.
+The first broad lint run retains one warning in unchanged upstream `manager_test.go:620`.
+No selected test fails or is skipped.
 
 ## Remaining gates
 
-This increment prepares the cluster CA. It does not install or activate workload mTLS.
-SPIRE still needs a passing retained-signer restart test with the exact fix image.
-Workload registration and the real issuer producer are not active yet.
-A bundle's first certificate is not sufficient evidence.
+The real issuer-profile producer is now enabled in both clusters.
+[Its guide](LOCAL_ISSUER_PROFILE.md) and [live ledger](docs/evidence/live-issuer-publication/summary.json) record the activation.
+Workload socket access, exact workload registration and native consumers remain unfinished.
+A public bundle, node readiness or publication ACK is not evidence of workload protection.
 
 Native remote identity, effective policy, durable admission and connection recovery remain required.
 Keep the combined ClusterMesh/ztunnel guard closed until those tests pass.
+The application regression checks cover TCP80,8080 and31337. They prove reachability only.
 
 ## Live API correction
 

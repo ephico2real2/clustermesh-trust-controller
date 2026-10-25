@@ -1,0 +1,111 @@
+{
+  "apiVersion": "batch/v1",
+  "kind": "Job",
+  "metadata": {
+    "creationTimestamp": "2026-10-25T04:35:10Z",
+    "generation": 1,
+    "labels": {
+      "app.kubernetes.io/managed-by": "cmtc-local-validation",
+      "security.cmtc.io/trial": "spire-journal-28f6b8d84a"
+    },
+    "name": "spire-snapshot-28f6b8d84a",
+    "namespace": "cilium-spire",
+    "resourceVersion": "91421",
+    "uid": "fb089662-aa83-4859-8d3e-68d10f312b2c"
+  },
+  "spec": {
+    "activeDeadlineSeconds": 90,
+    "backoffLimit": 0,
+    "completionMode": "NonIndexed",
+    "completions": 1,
+    "manualSelector": false,
+    "parallelism": 1,
+    "podReplacementPolicy": "TerminatingOrFailed",
+    "selector": {
+      "matchLabels": {
+        "batch.kubernetes.io/controller-uid": "fb089662-aa83-4859-8d3e-68d10f312b2c"
+      }
+    },
+    "suspend": false,
+    "template": {
+      "metadata": {
+        "labels": {
+          "batch.kubernetes.io/controller-uid": "fb089662-aa83-4859-8d3e-68d10f312b2c",
+          "batch.kubernetes.io/job-name": "spire-snapshot-28f6b8d84a",
+          "controller-uid": "fb089662-aa83-4859-8d3e-68d10f312b2c",
+          "job-name": "spire-snapshot-28f6b8d84a"
+        }
+      },
+      "spec": {
+        "automountServiceAccountToken": false,
+        "containers": [
+          {
+            "command": [
+              "/bin/sh",
+              "-ec",
+              "set -eu\numask 077\ncd /data\nif [ ! -f keys.json ] || [ -L keys.json ] || [ ! -s keys.json ]; then exit 31; fi\nif [ ! -f datastore.sqlite3 ] || [ -L datastore.sqlite3 ] || [ ! -s datastore.sqlite3 ]; then exit 32; fi\nbackup=.cmtc-preupgrade-28f6b8d84a\nif [ -e \"$backup\" ] || [ -L \"$backup\" ]; then exit 33; fi\nmkdir -m 700 \"$backup\"\nset -- keys.json datastore.sqlite3\nfor name in datastore.sqlite3-wal datastore.sqlite3-shm datastore.sqlite3-journal; do\n if [ -e \"$name\" ] || [ -L \"$name\" ]; then\n  if [ ! -f \"$name\" ] || [ -L \"$name\" ]; then exit 34; fi\n  set -- \"$@\" \"$name\"\n fi\ndone\ntar -cf \"$backup/state.tar\" \"$@\"\nchmod 600 \"$backup/state.tar\"\nmkdir -m 700 \"$backup/verify\"\ntar -xf \"$backup/state.tar\" -C \"$backup/verify\"\nfor name in \"$@\"; do cmp -s \"$name\" \"$backup/verify/$name\"; done\n# Keep both the archive and the checked copy on this existing PVC.\n# Never emit or move a private key outside it.\nprintf 'complete\\n' > \"$backup/COMPLETE\"\nsync\nprintf '{\"snapshotComplete\":true,\"archive\":\".cmtc-preupgrade-28f6b8d84a/state.tar\",\"keysExported\":false}\\n'\n"
+            ],
+            "image": "docker.io/library/busybox:1.38.0@sha256:fd7dc98638c8e305f4dc34e979f1c0fdfdcaeb0fbf8fcff77ae834b6da3d7e6e",
+            "imagePullPolicy": "IfNotPresent",
+            "name": "snapshot",
+            "resources": {
+              "limits": {
+                "cpu": "200m",
+                "memory": "64Mi"
+              },
+              "requests": {
+                "cpu": "10m",
+                "memory": "16Mi"
+              }
+            },
+            "securityContext": {
+              "allowPrivilegeEscalation": false,
+              "capabilities": {
+                "drop": [
+                  "ALL"
+                ]
+              },
+              "readOnlyRootFilesystem": true
+            },
+            "terminationMessagePath": "/dev/termination-log",
+            "terminationMessagePolicy": "File",
+            "volumeMounts": [
+              {
+                "mountPath": "/data",
+                "name": "data"
+              }
+            ]
+          }
+        ],
+        "dnsPolicy": "ClusterFirst",
+        "nodeName": "cmtc-b-worker",
+        "restartPolicy": "Never",
+        "schedulerName": "default-scheduler",
+        "securityContext": {
+          "fsGroup": 1000,
+          "runAsGroup": 1000,
+          "runAsNonRoot": true,
+          "runAsUser": 1000,
+          "seccompProfile": {
+            "type": "RuntimeDefault"
+          }
+        },
+        "terminationGracePeriodSeconds": 30,
+        "tolerations": [
+          {
+            "operator": "Exists"
+          }
+        ],
+        "volumes": [
+          {
+            "name": "data",
+            "persistentVolumeClaim": {
+              "claimName": "spire-data-spire-server-0"
+            }
+          }
+        ]
+      }
+    }
+  },
+  "status": {}
+}

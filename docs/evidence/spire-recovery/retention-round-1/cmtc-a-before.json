@@ -1,0 +1,933 @@
+{
+  "pod": {
+    "kind": "Pod",
+    "apiVersion": "v1",
+    "metadata": {
+      "name": "spire-server-0",
+      "generateName": "spire-server-",
+      "namespace": "cilium-spire",
+      "uid": "14d1e69d-7a02-4fdc-b9fd-0910b4a4510f",
+      "resourceVersion": "92561",
+      "generation": 1,
+      "creationTimestamp": "2026-10-25T04:34:32Z",
+      "labels": {
+        "app": "spire-server",
+        "apps.kubernetes.io/pod-index": "0",
+        "controller-revision-hash": "spire-server-57c484fbb6",
+        "security.cmtc.io/pki-cluster": "cmtc-a",
+        "security.cmtc.io/pki-owner": "cmtc-lab-pki",
+        "security.cmtc.io/pki-role": "spire-server",
+        "statefulset.kubernetes.io/pod-name": "spire-server-0"
+      },
+      "ownerReferences": [
+        {
+          "apiVersion": "apps/v1",
+          "kind": "StatefulSet",
+          "name": "spire-server",
+          "uid": "38a3116a-b5db-43b6-b12f-c821816a44f0",
+          "controller": true,
+          "blockOwnerDeletion": true
+        }
+      ],
+      "managedFields": [
+        {
+          "manager": "kube-controller-manager",
+          "operation": "Update",
+          "apiVersion": "v1",
+          "time": "2026-10-25T04:34:32Z",
+          "fieldsType": "FieldsV1",
+          "fieldsV1": {
+            "f:metadata": {
+              "f:generateName": {},
+              "f:labels": {
+                ".": {},
+                "f:app": {},
+                "f:apps.kubernetes.io/pod-index": {},
+                "f:controller-revision-hash": {},
+                "f:security.cmtc.io/pki-cluster": {},
+                "f:security.cmtc.io/pki-owner": {},
+                "f:security.cmtc.io/pki-role": {},
+                "f:statefulset.kubernetes.io/pod-name": {}
+              },
+              "f:ownerReferences": {
+                ".": {},
+                "k:{\"uid\":\"38a3116a-b5db-43b6-b12f-c821816a44f0\"}": {}
+              }
+            },
+            "f:spec": {
+              "f:containers": {
+                "k:{\"name\":\"register-agent-node\"}": {
+                  ".": {},
+                  "f:command": {},
+                  "f:env": {
+                    ".": {},
+                    "k:{\"name\":\"SPIRE_ACK_FILE\"}": {
+                      ".": {},
+                      "f:name": {},
+                      "f:value": {}
+                    },
+                    "k:{\"name\":\"SPIRE_BACKOFF_CAP\"}": {
+                      ".": {},
+                      "f:name": {},
+                      "f:value": {}
+                    },
+                    "k:{\"name\":\"SPIRE_BACKOFF_START\"}": {
+                      ".": {},
+                      "f:name": {},
+                      "f:value": {}
+                    },
+                    "k:{\"name\":\"SPIRE_DEADLINE\"}": {
+                      ".": {},
+                      "f:name": {},
+                      "f:value": {}
+                    },
+                    "k:{\"name\":\"SPIRE_HOLD\"}": {
+                      ".": {},
+                      "f:name": {},
+                      "f:value": {}
+                    },
+                    "k:{\"name\":\"SPIRE_MAX_ATTEMPTS\"}": {
+                      ".": {},
+                      "f:name": {},
+                      "f:value": {}
+                    },
+                    "k:{\"name\":\"SPIRE_SERVER_BIN\"}": {
+                      ".": {},
+                      "f:name": {},
+                      "f:value": {}
+                    },
+                    "k:{\"name\":\"SPIRE_SOCKET\"}": {
+                      ".": {},
+                      "f:name": {},
+                      "f:value": {}
+                    }
+                  },
+                  "f:image": {},
+                  "f:imagePullPolicy": {},
+                  "f:name": {},
+                  "f:readinessProbe": {
+                    ".": {},
+                    "f:exec": {
+                      ".": {},
+                      "f:command": {}
+                    },
+                    "f:failureThreshold": {},
+                    "f:initialDelaySeconds": {},
+                    "f:periodSeconds": {},
+                    "f:successThreshold": {},
+                    "f:timeoutSeconds": {}
+                  },
+                  "f:resources": {},
+                  "f:terminationMessagePath": {},
+                  "f:terminationMessagePolicy": {},
+                  "f:volumeMounts": {
+                    ".": {},
+                    "k:{\"mountPath\":\"/opt/cmtc\"}": {
+                      ".": {},
+                      "f:mountPath": {},
+                      "f:name": {},
+                      "f:readOnly": {}
+                    },
+                    "k:{\"mountPath\":\"/run/cmtc-registration\"}": {
+                      ".": {},
+                      "f:mountPath": {},
+                      "f:name": {}
+                    },
+                    "k:{\"mountPath\":\"/spire-cli\"}": {
+                      ".": {},
+                      "f:mountPath": {},
+                      "f:name": {},
+                      "f:readOnly": {}
+                    },
+                    "k:{\"mountPath\":\"/tmp/spire-server/private\"}": {
+                      ".": {},
+                      "f:mountPath": {},
+                      "f:name": {}
+                    }
+                  }
+                },
+                "k:{\"name\":\"spire-server\"}": {
+                  ".": {},
+                  "f:args": {},
+                  "f:image": {},
+                  "f:imagePullPolicy": {},
+                  "f:livenessProbe": {
+                    ".": {},
+                    "f:failureThreshold": {},
+                    "f:httpGet": {
+                      ".": {},
+                      "f:path": {},
+                      "f:port": {},
+                      "f:scheme": {}
+                    },
+                    "f:initialDelaySeconds": {},
+                    "f:periodSeconds": {},
+                    "f:successThreshold": {},
+                    "f:timeoutSeconds": {}
+                  },
+                  "f:name": {},
+                  "f:ports": {
+                    ".": {},
+                    "k:{\"containerPort\":8080,\"protocol\":\"TCP\"}": {
+                      ".": {},
+                      "f:containerPort": {},
+                      "f:name": {},
+                      "f:protocol": {}
+                    },
+                    "k:{\"containerPort\":8081,\"protocol\":\"TCP\"}": {
+                      ".": {},
+                      "f:containerPort": {},
+                      "f:name": {},
+                      "f:protocol": {}
+                    }
+                  },
+                  "f:readinessProbe": {
+                    ".": {},
+                    "f:failureThreshold": {},
+                    "f:httpGet": {
+                      ".": {},
+                      "f:path": {},
+                      "f:port": {},
+                      "f:scheme": {}
+                    },
+                    "f:initialDelaySeconds": {},
+                    "f:periodSeconds": {},
+                    "f:successThreshold": {},
+                    "f:timeoutSeconds": {}
+                  },
+                  "f:resources": {},
+                  "f:startupProbe": {
+                    ".": {},
+                    "f:failureThreshold": {},
+                    "f:httpGet": {
+                      ".": {},
+                      "f:path": {},
+                      "f:port": {},
+                      "f:scheme": {}
+                    },
+                    "f:periodSeconds": {},
+                    "f:successThreshold": {},
+                    "f:timeoutSeconds": {}
+                  },
+                  "f:terminationMessagePath": {},
+                  "f:terminationMessagePolicy": {},
+                  "f:volumeMounts": {
+                    ".": {},
+                    "k:{\"mountPath\":\"/run/spire/config\"}": {
+                      ".": {},
+                      "f:mountPath": {},
+                      "f:name": {},
+                      "f:readOnly": {}
+                    },
+                    "k:{\"mountPath\":\"/run/spire/data\"}": {
+                      ".": {},
+                      "f:mountPath": {},
+                      "f:name": {}
+                    },
+                    "k:{\"mountPath\":\"/tmp/spire-server/private\"}": {
+                      ".": {},
+                      "f:mountPath": {},
+                      "f:name": {}
+                    }
+                  }
+                }
+              },
+              "f:dnsPolicy": {},
+              "f:enableServiceLinks": {},
+              "f:hostUsers": {},
+              "f:hostname": {},
+              "f:priorityClassName": {},
+              "f:restartPolicy": {},
+              "f:schedulerName": {},
+              "f:securityContext": {
+                ".": {},
+                "f:fsGroup": {},
+                "f:fsGroupChangePolicy": {},
+                "f:runAsGroup": {},
+                "f:runAsNonRoot": {},
+                "f:runAsUser": {}
+              },
+              "f:serviceAccount": {},
+              "f:serviceAccountName": {},
+              "f:subdomain": {},
+              "f:terminationGracePeriodSeconds": {},
+              "f:volumes": {
+                ".": {},
+                "k:{\"name\":\"spire-config\"}": {
+                  ".": {},
+                  "f:configMap": {
+                    ".": {},
+                    "f:defaultMode": {},
+                    "f:name": {}
+                  },
+                  "f:name": {}
+                },
+                "k:{\"name\":\"spire-data\"}": {
+                  ".": {},
+                  "f:name": {},
+                  "f:persistentVolumeClaim": {
+                    ".": {},
+                    "f:claimName": {}
+                  }
+                },
+                "k:{\"name\":\"spire-helpers\"}": {
+                  ".": {},
+                  "f:configMap": {
+                    ".": {},
+                    "f:defaultMode": {},
+                    "f:name": {}
+                  },
+                  "f:name": {}
+                },
+                "k:{\"name\":\"spire-registration\"}": {
+                  ".": {},
+                  "f:emptyDir": {
+                    ".": {},
+                    "f:sizeLimit": {}
+                  },
+                  "f:name": {}
+                },
+                "k:{\"name\":\"spire-server-cli\"}": {
+                  ".": {},
+                  "f:image": {
+                    ".": {},
+                    "f:pullPolicy": {},
+                    "f:reference": {}
+                  },
+                  "f:name": {}
+                },
+                "k:{\"name\":\"spire-server-socket\"}": {
+                  ".": {},
+                  "f:emptyDir": {},
+                  "f:name": {}
+                }
+              }
+            }
+          }
+        },
+        {
+          "manager": "kubelet",
+          "operation": "Update",
+          "apiVersion": "v1",
+          "time": "2026-10-25T04:34:38Z",
+          "fieldsType": "FieldsV1",
+          "fieldsV1": {
+            "f:status": {
+              "f:conditions": {
+                "k:{\"type\":\"ContainersReady\"}": {
+                  ".": {},
+                  "f:lastProbeTime": {},
+                  "f:lastTransitionTime": {},
+                  "f:observedGeneration": {},
+                  "f:status": {},
+                  "f:type": {}
+                },
+                "k:{\"type\":\"Initialized\"}": {
+                  ".": {},
+                  "f:lastProbeTime": {},
+                  "f:lastTransitionTime": {},
+                  "f:observedGeneration": {},
+                  "f:status": {},
+                  "f:type": {}
+                },
+                "k:{\"type\":\"PodReadyToStartContainers\"}": {
+                  ".": {},
+                  "f:lastProbeTime": {},
+                  "f:lastTransitionTime": {},
+                  "f:observedGeneration": {},
+                  "f:status": {},
+                  "f:type": {}
+                },
+                "k:{\"type\":\"PodScheduled\"}": {
+                  "f:observedGeneration": {}
+                },
+                "k:{\"type\":\"Ready\"}": {
+                  ".": {},
+                  "f:lastProbeTime": {},
+                  "f:lastTransitionTime": {},
+                  "f:observedGeneration": {},
+                  "f:status": {},
+                  "f:type": {}
+                }
+              },
+              "f:containerStatuses": {},
+              "f:hostIP": {},
+              "f:hostIPs": {},
+              "f:observedGeneration": {},
+              "f:phase": {},
+              "f:podIP": {},
+              "f:podIPs": {
+                ".": {},
+                "k:{\"ip\":\"10.10.1.104\"}": {
+                  ".": {},
+                  "f:ip": {}
+                }
+              },
+              "f:resources": {},
+              "f:startTime": {}
+            }
+          },
+          "subresource": "status"
+        }
+      ]
+    },
+    "spec": {
+      "volumes": [
+        {
+          "name": "spire-data",
+          "persistentVolumeClaim": {
+            "claimName": "spire-data-spire-server-0"
+          }
+        },
+        {
+          "name": "spire-config",
+          "configMap": {
+            "name": "spire-server",
+            "defaultMode": 420
+          }
+        },
+        {
+          "name": "spire-server-socket",
+          "emptyDir": {}
+        },
+        {
+          "name": "spire-registration",
+          "emptyDir": {
+            "sizeLimit": "16Ki"
+          }
+        },
+        {
+          "name": "spire-server-cli",
+          "image": {
+            "reference": "localhost/cmtc-spire-server@sha256:f57e537d42e5a8cc94fbae110b4f67a70481f391fef70171143d9a1b81cf0288",
+            "pullPolicy": "IfNotPresent"
+          }
+        },
+        {
+          "name": "spire-helpers",
+          "configMap": {
+            "name": "spire-helpers",
+            "defaultMode": 292
+          }
+        },
+        {
+          "name": "kube-api-access-qgpnl",
+          "projected": {
+            "sources": [
+              {
+                "serviceAccountToken": {
+                  "expirationSeconds": 3607,
+                  "path": "token"
+                }
+              },
+              {
+                "configMap": {
+                  "name": "kube-root-ca.crt",
+                  "items": [
+                    {
+                      "key": "ca.crt",
+                      "path": "ca.crt"
+                    }
+                  ]
+                }
+              },
+              {
+                "downwardAPI": {
+                  "items": [
+                    {
+                      "path": "namespace",
+                      "fieldRef": {
+                        "apiVersion": "v1",
+                        "fieldPath": "metadata.namespace"
+                      }
+                    }
+                  ]
+                }
+              }
+            ],
+            "defaultMode": 420
+          }
+        }
+      ],
+      "containers": [
+        {
+          "name": "spire-server",
+          "image": "localhost/cmtc-spire-server@sha256:f57e537d42e5a8cc94fbae110b4f67a70481f391fef70171143d9a1b81cf0288",
+          "args": [
+            "-config",
+            "/run/spire/config/server.conf"
+          ],
+          "ports": [
+            {
+              "name": "grpc",
+              "containerPort": 8081,
+              "protocol": "TCP"
+            },
+            {
+              "name": "http",
+              "containerPort": 8080,
+              "protocol": "TCP"
+            }
+          ],
+          "resources": {},
+          "volumeMounts": [
+            {
+              "name": "spire-config",
+              "readOnly": true,
+              "mountPath": "/run/spire/config"
+            },
+            {
+              "name": "spire-data",
+              "mountPath": "/run/spire/data"
+            },
+            {
+              "name": "spire-server-socket",
+              "mountPath": "/tmp/spire-server/private"
+            },
+            {
+              "name": "kube-api-access-qgpnl",
+              "readOnly": true,
+              "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount"
+            }
+          ],
+          "livenessProbe": {
+            "httpGet": {
+              "path": "/live",
+              "port": "http",
+              "scheme": "HTTP"
+            },
+            "initialDelaySeconds": 15,
+            "timeoutSeconds": 3,
+            "periodSeconds": 60,
+            "successThreshold": 1,
+            "failureThreshold": 2
+          },
+          "readinessProbe": {
+            "httpGet": {
+              "path": "/ready",
+              "port": "http",
+              "scheme": "HTTP"
+            },
+            "initialDelaySeconds": 5,
+            "timeoutSeconds": 1,
+            "periodSeconds": 5,
+            "successThreshold": 1,
+            "failureThreshold": 3
+          },
+          "startupProbe": {
+            "httpGet": {
+              "path": "/live",
+              "port": "http",
+              "scheme": "HTTP"
+            },
+            "timeoutSeconds": 3,
+            "periodSeconds": 5,
+            "successThreshold": 1,
+            "failureThreshold": 30
+          },
+          "terminationMessagePath": "/dev/termination-log",
+          "terminationMessagePolicy": "File",
+          "imagePullPolicy": "IfNotPresent"
+        },
+        {
+          "name": "register-agent-node",
+          "image": "docker.io/library/busybox:1.38.0@sha256:fd7dc98638c8e305f4dc34e979f1c0fdfdcaeb0fbf8fcff77ae834b6da3d7e6e",
+          "command": [
+            "/bin/sh",
+            "/opt/cmtc/register-agent-node.sh"
+          ],
+          "env": [
+            {
+              "name": "SPIRE_SERVER_BIN",
+              "value": "/spire-cli/opt/spire/bin/spire-server"
+            },
+            {
+              "name": "SPIRE_SOCKET",
+              "value": "/tmp/spire-server/private/api.sock"
+            },
+            {
+              "name": "SPIRE_DEADLINE",
+              "value": "90"
+            },
+            {
+              "name": "SPIRE_MAX_ATTEMPTS",
+              "value": "8"
+            },
+            {
+              "name": "SPIRE_BACKOFF_START",
+              "value": "1"
+            },
+            {
+              "name": "SPIRE_BACKOFF_CAP",
+              "value": "8"
+            },
+            {
+              "name": "SPIRE_HOLD",
+              "value": "1"
+            },
+            {
+              "name": "SPIRE_ACK_FILE",
+              "value": "/run/cmtc-registration/entry"
+            }
+          ],
+          "resources": {},
+          "volumeMounts": [
+            {
+              "name": "spire-registration",
+              "mountPath": "/run/cmtc-registration"
+            },
+            {
+              "name": "spire-helpers",
+              "readOnly": true,
+              "mountPath": "/opt/cmtc"
+            },
+            {
+              "name": "spire-server-socket",
+              "mountPath": "/tmp/spire-server/private"
+            },
+            {
+              "name": "spire-server-cli",
+              "readOnly": true,
+              "mountPath": "/spire-cli"
+            },
+            {
+              "name": "kube-api-access-qgpnl",
+              "readOnly": true,
+              "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount"
+            }
+          ],
+          "readinessProbe": {
+            "exec": {
+              "command": [
+                "/bin/sh",
+                "-ec",
+                "SPIRE_CHECK_ONLY=1 SPIRE_HOLD=0 SPIRE_DEADLINE=3 exec /bin/sh /opt/cmtc/register-agent-node.sh"
+              ]
+            },
+            "initialDelaySeconds": 1,
+            "timeoutSeconds": 4,
+            "periodSeconds": 5,
+            "successThreshold": 1,
+            "failureThreshold": 1
+          },
+          "terminationMessagePath": "/dev/termination-log",
+          "terminationMessagePolicy": "File",
+          "imagePullPolicy": "IfNotPresent"
+        }
+      ],
+      "restartPolicy": "Always",
+      "terminationGracePeriodSeconds": 30,
+      "dnsPolicy": "ClusterFirst",
+      "serviceAccountName": "spire-server",
+      "serviceAccount": "spire-server",
+      "nodeName": "cmtc-a-worker",
+      "securityContext": {
+        "runAsUser": 1000,
+        "runAsGroup": 1000,
+        "runAsNonRoot": true,
+        "fsGroup": 1000,
+        "fsGroupChangePolicy": "OnRootMismatch"
+      },
+      "hostname": "spire-server-0",
+      "subdomain": "spire-server",
+      "schedulerName": "default-scheduler",
+      "tolerations": [
+        {
+          "key": "node.kubernetes.io/not-ready",
+          "operator": "Exists",
+          "effect": "NoExecute",
+          "tolerationSeconds": 300
+        },
+        {
+          "key": "node.kubernetes.io/unreachable",
+          "operator": "Exists",
+          "effect": "NoExecute",
+          "tolerationSeconds": 300
+        }
+      ],
+      "priorityClassName": "system-node-critical",
+      "priority": 2000001000,
+      "enableServiceLinks": true,
+      "preemptionPolicy": "PreemptLowerPriority",
+      "hostUsers": true
+    },
+    "status": {
+      "observedGeneration": 1,
+      "phase": "Running",
+      "conditions": [
+        {
+          "type": "PodReadyToStartContainers",
+          "observedGeneration": 1,
+          "status": "True",
+          "lastProbeTime": null,
+          "lastTransitionTime": "2026-10-25T04:34:33Z"
+        },
+        {
+          "type": "Initialized",
+          "observedGeneration": 1,
+          "status": "True",
+          "lastProbeTime": null,
+          "lastTransitionTime": "2026-10-25T04:34:32Z"
+        },
+        {
+          "type": "Ready",
+          "observedGeneration": 1,
+          "status": "True",
+          "lastProbeTime": null,
+          "lastTransitionTime": "2026-10-25T04:34:38Z"
+        },
+        {
+          "type": "ContainersReady",
+          "observedGeneration": 1,
+          "status": "True",
+          "lastProbeTime": null,
+          "lastTransitionTime": "2026-10-25T04:34:38Z"
+        },
+        {
+          "type": "PodScheduled",
+          "observedGeneration": 1,
+          "status": "True",
+          "lastProbeTime": null,
+          "lastTransitionTime": "2026-10-25T04:34:32Z"
+        }
+      ],
+      "hostIP": "172.18.0.2",
+      "hostIPs": [
+        {
+          "ip": "172.18.0.2"
+        }
+      ],
+      "podIP": "10.10.1.104",
+      "podIPs": [
+        {
+          "ip": "10.10.1.104"
+        }
+      ],
+      "startTime": "2026-10-25T04:34:32Z",
+      "containerStatuses": [
+        {
+          "name": "register-agent-node",
+          "state": {
+            "running": {
+              "startedAt": "2026-10-25T04:34:33Z"
+            }
+          },
+          "lastState": {},
+          "ready": true,
+          "restartCount": 0,
+          "image": "sha256:d2482869a6b838d3b4c9cad0c8085c06277909482771eb525d298fc3a7d07927",
+          "imageID": "docker.io/library/busybox@sha256:fd7dc98638c8e305f4dc34e979f1c0fdfdcaeb0fbf8fcff77ae834b6da3d7e6e",
+          "containerID": "containerd://65faaf72c664cb21b32869b8ebda195b233533fcf19c745fc8fd6cf02736f3b8",
+          "started": true,
+          "resources": {},
+          "volumeMounts": [
+            {
+              "name": "spire-registration",
+              "mountPath": "/run/cmtc-registration"
+            },
+            {
+              "name": "spire-helpers",
+              "mountPath": "/opt/cmtc",
+              "readOnly": true,
+              "recursiveReadOnly": "Disabled"
+            },
+            {
+              "name": "spire-server-socket",
+              "mountPath": "/tmp/spire-server/private"
+            },
+            {
+              "name": "spire-server-cli",
+              "mountPath": "/spire-cli",
+              "readOnly": true,
+              "recursiveReadOnly": "Disabled"
+            },
+            {
+              "name": "kube-api-access-qgpnl",
+              "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount",
+              "readOnly": true,
+              "recursiveReadOnly": "Disabled"
+            }
+          ],
+          "user": {
+            "linux": {
+              "uid": 1000,
+              "gid": 1000,
+              "supplementalGroups": [
+                1000
+              ]
+            }
+          }
+        },
+        {
+          "name": "spire-server",
+          "state": {
+            "running": {
+              "startedAt": "2026-10-25T04:34:33Z"
+            }
+          },
+          "lastState": {},
+          "ready": true,
+          "restartCount": 0,
+          "image": "localhost/cmtc-spire-server:journal-28f6b8d84a",
+          "imageID": "docker.io/library/import-2026-10-25@sha256:bb1a311da5491d5335aa824ca078a20e2a6c980c9f7db9b4059924d841454b35",
+          "containerID": "containerd://7cb0b9f4d160f69826463e8df4a1bb80f7f5d319139477be63bba9bd5ad64ed8",
+          "started": true,
+          "resources": {},
+          "volumeMounts": [
+            {
+              "name": "spire-config",
+              "mountPath": "/run/spire/config",
+              "readOnly": true,
+              "recursiveReadOnly": "Disabled"
+            },
+            {
+              "name": "spire-data",
+              "mountPath": "/run/spire/data"
+            },
+            {
+              "name": "spire-server-socket",
+              "mountPath": "/tmp/spire-server/private"
+            },
+            {
+              "name": "kube-api-access-qgpnl",
+              "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount",
+              "readOnly": true,
+              "recursiveReadOnly": "Disabled"
+            }
+          ],
+          "user": {
+            "linux": {
+              "uid": 1000,
+              "gid": 1000,
+              "supplementalGroups": [
+                1000
+              ]
+            }
+          }
+        }
+      ],
+      "qosClass": "BestEffort",
+      "resources": {}
+    }
+  },
+  "pvc": {
+    "kind": "PersistentVolumeClaim",
+    "apiVersion": "v1",
+    "metadata": {
+      "name": "spire-data-spire-server-0",
+      "namespace": "cilium-spire",
+      "uid": "36526386-dac0-4c6c-83bb-519b5d27dd92",
+      "resourceVersion": "84247",
+      "creationTimestamp": "2026-10-25T03:44:45Z",
+      "labels": {
+        "app": "spire-server",
+        "security.cmtc.io/pki-cluster": "cmtc-a",
+        "security.cmtc.io/pki-owner": "cmtc-lab-pki",
+        "security.cmtc.io/pki-role": "spire-data"
+      },
+      "annotations": {
+        "pv.kubernetes.io/bind-completed": "yes",
+        "pv.kubernetes.io/bound-by-controller": "yes",
+        "volume.beta.kubernetes.io/storage-provisioner": "rancher.io/local-path",
+        "volume.kubernetes.io/selected-node": "cmtc-a-worker",
+        "volume.kubernetes.io/storage-provisioner": "rancher.io/local-path"
+      },
+      "finalizers": [
+        "kubernetes.io/pvc-protection"
+      ],
+      "managedFields": [
+        {
+          "manager": "kube-scheduler",
+          "operation": "Update",
+          "apiVersion": "v1",
+          "time": "2026-10-25T03:44:45Z",
+          "fieldsType": "FieldsV1",
+          "fieldsV1": {
+            "f:metadata": {
+              "f:annotations": {
+                ".": {},
+                "f:volume.kubernetes.io/selected-node": {}
+              }
+            }
+          }
+        },
+        {
+          "manager": "kube-controller-manager",
+          "operation": "Update",
+          "apiVersion": "v1",
+          "time": "2026-10-25T03:44:48Z",
+          "fieldsType": "FieldsV1",
+          "fieldsV1": {
+            "f:metadata": {
+              "f:annotations": {
+                "f:pv.kubernetes.io/bind-completed": {},
+                "f:pv.kubernetes.io/bound-by-controller": {},
+                "f:volume.beta.kubernetes.io/storage-provisioner": {},
+                "f:volume.kubernetes.io/storage-provisioner": {}
+              },
+              "f:labels": {
+                ".": {},
+                "f:app": {},
+                "f:security.cmtc.io/pki-cluster": {},
+                "f:security.cmtc.io/pki-owner": {},
+                "f:security.cmtc.io/pki-role": {}
+              }
+            },
+            "f:spec": {
+              "f:accessModes": {},
+              "f:resources": {
+                "f:requests": {
+                  ".": {},
+                  "f:storage": {}
+                }
+              },
+              "f:storageClassName": {},
+              "f:volumeMode": {},
+              "f:volumeName": {}
+            }
+          }
+        },
+        {
+          "manager": "kube-controller-manager",
+          "operation": "Update",
+          "apiVersion": "v1",
+          "time": "2026-10-25T03:44:48Z",
+          "fieldsType": "FieldsV1",
+          "fieldsV1": {
+            "f:status": {
+              "f:accessModes": {},
+              "f:capacity": {
+                ".": {},
+                "f:storage": {}
+              },
+              "f:phase": {}
+            }
+          },
+          "subresource": "status"
+        }
+      ]
+    },
+    "spec": {
+      "accessModes": [
+        "ReadWriteOnce"
+      ],
+      "resources": {
+        "requests": {
+          "storage": "1Gi"
+        }
+      },
+      "volumeName": "pvc-36526386-dac0-4c6c-83bb-519b5d27dd92",
+      "storageClassName": "standard",
+      "volumeMode": "Filesystem"
+    },
+    "status": {
+      "phase": "Bound",
+      "accessModes": [
+        "ReadWriteOnce"
+      ],
+      "capacity": {
+        "storage": "1Gi"
+      }
+    }
+  }
+}

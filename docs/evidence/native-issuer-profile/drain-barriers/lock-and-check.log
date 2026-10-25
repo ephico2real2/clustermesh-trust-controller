@@ -1,0 +1,57 @@
+    Checking tokio-util v0.7.19
+    Checking zerocopy v0.8.27
+    Checking h2 v0.4.19
+    Checking ppv-lite86 v0.2.21
+    Checking aws-lc-rs v1.18.2
+    Checking tower v0.5.3
+    Checking hyper v1.11.0
+    Checking axum v0.8.9
+    Checking hyper-util v0.1.20
+    Checking hyper-timeout v0.5.2
+    Checking rustls-webpki v0.103.16
+    Checking rustls v0.23.43
+    Checking tonic v0.14.6
+    Checking tonic-prost v0.14.6
+    Checking rand_chacha v0.3.1
+    Checking x509-parser v0.18.1
+    Checking rand_chacha v0.2.2
+    Checking rand_chacha v0.9.0
+    Checking spiffe v0.7.4
+    Checking ahash v0.8.12
+    Checking rand v0.7.3
+    Checking tokio-rustls v0.26.4
+    Checking rand v0.8.5
+    Checking textnonce v1.0.0
+    Checking flurry v0.5.2
+    Checking rcgen v0.14.9
+    Checking backoff v0.4.0
+    Checking tower-http v0.7.0
+    Checking spire-api v0.3.9
+    Checking hyper-rustls v0.27.9
+    Checking rand v0.9.2
+    Checking hickory-server v0.26.2
+    Checking ztunnel v0.0.0 (/private/tmp/cmtc-ztunnel-upstream)
+error[E0382]: borrow of moved value: `drain`
+   --> src/proxy/h2/server.rs:179:37
+    |
+156 |         let drain = drain.clone();
+    |             ----- move occurs because `drain` has type `Watch`, which does not implement the `Copy` trait
+...
+179 |                 let stream_lifetime=drain.clone();
+    |                                     ^^^^^ value borrowed here after move
+...
+197 |             _shutdown = drain.wait_for_drain() => {
+    |                               ---------------- `drain` moved due to this method call
+    |
+note: `Watch::wait_for_drain` takes ownership of the receiver `self`, which moves `drain`
+   --> src/drain.rs:164:41
+    |
+164 |         pub async fn wait_for_drain(mut self) -> ReleaseShutdown {
+    |                                         ^^^^
+help: you can `clone` the value and consume it, but this might not be your desired behavior
+    |
+197 |             _shutdown = drain.clone().wait_for_drain() => {
+    |                              ++++++++
+
+For more information about this error, try `rustc --explain E0382`.
+error: could not compile `ztunnel` (lib) due to 1 previous error

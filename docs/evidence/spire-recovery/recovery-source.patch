@@ -1,0 +1,438 @@
+diff --git a/pkg/server/ca/manager/journal.go b/pkg/server/ca/manager/journal.go
+index 6f8e8a36..5b04ed75 100644
+--- a/pkg/server/ca/manager/journal.go
++++ b/pkg/server/ca/manager/journal.go
+@@ -273,31 +273,42 @@ func (j *Journal) findCAJournal(ctx context.Context) (*datastore.CAJournal, erro
+ 		return nil, fmt.Errorf("failed to get keys from key manager: %w", err)
+ 	}
+ 
++	var found *datastore.CAJournal
+ 	for _, k := range kmKeys {
+-		subjectKeyID, err := x509util.GetSubjectKeyID(k.Public())
++		ids, err := journalAuthorityIDs(k.Public())
+ 		if err != nil {
+-			return nil, fmt.Errorf("failed to calculate the subject key identifier for public key with ID %q", k.ID())
++			return nil, fmt.Errorf("failed to calculate authority identifiers for managed public key %q: %w", k.ID(), err)
+ 		}
+-
+-		authorityID := x509util.SubjectKeyIDToString(subjectKeyID)
+-		caJournal, err := ds.FetchCAJournal(ctx, authorityID)
+-		if err != nil {
+-			return nil, fmt.Errorf("failed to fetch CA journal from datastore: %w", err)
+-		}
+-		if caJournal != nil {
+-			// There is a CA journal record that has an active X509 authority
+-			// ID that matches with one of the public keys of this server. This
+-			// means that this record belongs to this server.
+-			j.config.log.WithFields(logrus.Fields{
+-				telemetry.CAJournalID:      caJournal.ID,
+-				telemetry.LocalAuthorityID: authorityID,
+-			}).Debug("Found a CA journal record that matches with a local X509 authority ID")
+-
+-			return caJournal, nil
++		for idIndex, authorityID := range ids {
++			candidate, err := ds.FetchCAJournal(ctx, authorityID)
++			if err != nil {
++				return nil, fmt.Errorf("failed to fetch CA journal from datastore: %w", err)
++			}
++			if candidate == nil {
++				continue
++			}
++			// Preserve native-ID lookup compatibility. The existing SlotLoader
++			// validates the managed slot key, expiry and status before use.
++			// Only the newly introduced RFC7093 fallback needs this additional
++			// authority-certificate/SPKI binding before journal selection.
++			if idIndex > 0 {
++				if err := verifyJournalManagedKey(candidate, authorityID, k.Public()); err != nil {
++					return nil, fmt.Errorf("CA journal public-key binding failed: %w", err)
++				}
++			}
++			if found != nil && found.ID != candidate.ID {
++				return nil, fmt.Errorf("multiple CA journals match managed public keys; explicit recovery required")
++			}
++			found = candidate
+ 		}
+ 	}
+-
+-	return nil, nil
++	if found != nil {
++		j.config.log.WithFields(logrus.Fields{
++			telemetry.CAJournalID:      found.ID,
++			telemetry.LocalAuthorityID: found.ActiveX509AuthorityID,
++		}).Debug("Found a CA journal record matching managed authority identifiers")
++	}
++	return found, nil
+ }
+ 
+ // save saves the CA journal in the datastore.
+diff --git a/pkg/server/ca/manager/journal_compat.go b/pkg/server/ca/manager/journal_compat.go
+new file mode 100644
+index 00000000..5486fe98
+--- /dev/null
++++ b/pkg/server/ca/manager/journal_compat.go
+@@ -0,0 +1,82 @@
++package manager
++
++import (
++	"bytes"
++	"crypto"
++	"crypto/sha256"
++	"crypto/x509"
++	"crypto/x509/pkix"
++	"encoding/asn1"
++	"fmt"
++
++	"github.com/spiffe/spire/pkg/common/x509util"
++	"github.com/spiffe/spire/pkg/server/datastore"
++	"github.com/spiffe/spire/proto/private/server/journal"
++	"google.golang.org/protobuf/proto"
++)
++
++// journalAuthorityIDs is a bounded compatibility lookup, not a change to the
++// SKID generated for new SPIRE certificates. Go 1.25+ upstream signers can issue
++// RFC7093 IDs even when SPIRE's current runtime uses RFC5280 IDs.
++// The native ID remains first. SHA1 is never called here in FIPS-only mode.
++func journalAuthorityIDs(public crypto.PublicKey) ([]string, error) {
++	native, err := x509util.GetSubjectKeyID(public)
++	if err != nil {
++		return nil, err
++	}
++	spki, err := x509.MarshalPKIXPublicKey(public)
++	if err != nil {
++		return nil, err
++	}
++	var info struct {
++		Algorithm        pkix.AlgorithmIdentifier
++		SubjectPublicKey asn1.BitString
++	}
++	rest, err := asn1.Unmarshal(spki, &info)
++	if err != nil || len(rest) != 0 {
++		return nil, fmt.Errorf("decode managed public key")
++	}
++	sum := sha256.Sum256(info.SubjectPublicKey.Bytes)
++	ids := []string{x509util.SubjectKeyIDToString(native)}
++	other := x509util.SubjectKeyIDToString(sum[:20])
++	if ids[0] != other {
++		ids = append(ids, other)
++	}
++	return ids, nil
++}
++
++// verifyJournalManagedKey does not authorize an arbitrary hash-selected record.
++// The exact active certificate, authority ID and complete SPKI must match the
++// managed public key. Existing SlotLoader retains its slot/key, bundle, expiry
++// and preparation checks; this helper does not import or mutate any key.
++func verifyJournalManagedKey(record *datastore.CAJournal, authorityID string, public crypto.PublicKey) error {
++	if record == nil || record.ID == 0 || record.ActiveX509AuthorityID != authorityID || len(record.Data) == 0 || len(record.Data) > 1024*1024 {
++		return fmt.Errorf("invalid CA journal identity or size")
++	}
++	entries := new(journal.Entries)
++	if err := proto.Unmarshal(record.Data, entries); err != nil {
++		return fmt.Errorf("unable to unmarshal entries from CA journal record: %w", err)
++	}
++	expected, err := x509.MarshalPKIXPublicKey(public)
++	if err != nil {
++		return err
++	}
++	matched := 0
++	for _, entry := range entries.X509CAs {
++		if entry.AuthorityId != authorityID {
++			continue
++		}
++		cert, err := x509.ParseCertificate(entry.Certificate)
++		if err != nil {
++			return fmt.Errorf("unable to parse active journal CA certificate: %w", err)
++		}
++		if !cert.BasicConstraintsValid || !cert.IsCA || cert.KeyUsage&x509.KeyUsageCertSign == 0 || len(cert.UnhandledCriticalExtensions) != 0 || len(cert.SubjectKeyId) == 0 || x509util.SubjectKeyIDToString(cert.SubjectKeyId) != authorityID || !bytes.Equal(cert.RawSubjectPublicKeyInfo, expected) {
++			return fmt.Errorf("journal active authority does not match managed public key and CA certificate")
++		}
++		matched++
++	}
++	if matched != 1 {
++		return fmt.Errorf("journal must contain exactly one matching active CA certificate")
++	}
++	return nil
++}
+diff --git a/pkg/server/ca/manager/journal_compat_lifecycle_test.go b/pkg/server/ca/manager/journal_compat_lifecycle_test.go
+new file mode 100644
+index 00000000..eb2b32ed
+--- /dev/null
++++ b/pkg/server/ca/manager/journal_compat_lifecycle_test.go
+@@ -0,0 +1,74 @@
++package manager
++
++import (
++	"context"
++	"testing"
++
++	logtest "github.com/sirupsen/logrus/hooks/test"
++	"github.com/spiffe/spire/pkg/common/x509util"
++	"github.com/spiffe/spire/pkg/server/plugin/keymanager"
++	"github.com/spiffe/spire/proto/private/server/journal"
++	"github.com/spiffe/spire/test/fakes/fakedatastore"
++	"github.com/spiffe/spire/test/fakes/fakeservercatalog"
++	"github.com/spiffe/spire/test/fakes/fakeserverkeymanager"
++	"github.com/stretchr/testify/require"
++)
++
++// Journal lookup binds identity; existing SlotLoader owns status eligibility.
++// Do not require ACTIVE here: crashes during rotation and pre-status journals
++// must retain their exact certificate/history rather than silently start fresh.
++func TestJournalCompatibilityPreservesRotationAndLegacyStatuses(t *testing.T) {
++	for _, status := range []journal.Status{journal.Status_UNKNOWN, journal.Status_PREPARED, journal.Status_ACTIVE, journal.Status_OLD} {
++		t.Run(status.String(), func(t *testing.T) {
++			config, ds, k := regressionJournalFixture(t, keymanager.ECP256)
++			cert := regressionJournalCertificate(t, k, regressionRFC7093ID(t, k.Public()))
++			id := x509util.SubjectKeyIDToString(cert.SubjectKeyId)
++			record := regressionSaveJournal(t, ds, cert, &journal.X509CAEntry{SlotId: "A", NotAfter: cert.NotAfter.Unix(), Certificate: cert.Raw, Status: status, AuthorityId: id})
++			loaded, err := LoadJournal(context.Background(), config)
++			require.NoError(t, err)
++			require.Equal(t, record.ID, loaded.caJournalID)
++			require.Len(t, loaded.getEntries().X509CAs, 1)
++			require.Equal(t, status, loaded.getEntries().X509CAs[0].Status)
++		})
++	}
++}
++
++// Two HA servers use one datastore but separate KeyManager key ownership. Equal
++// slot names must not allow either server to adopt the other's journal.
++func TestJournalCompatibilitySharedDatastoreSeparateHAKeyManagers(t *testing.T) {
++	ds := fakedatastore.New(t)
++	configs := make([]*journalConfig, 2)
++	ids := make([]uint, 2)
++	keys := make([]keymanager.Key, 2)
++	for i := range 2 {
++		km := fakeserverkeymanager.New(t)
++		// Each fake KeyManager starts the same deterministic key stream.
++		// Advance the second stream by overwriting the SAME fixture slot;
++		// adding a discard slot would expose the first server's key in GetKeys.
++		var k keymanager.Key
++		for generation := 0; generation <= i; generation++ {
++			var err error
++			k, err = km.GenerateKey(context.Background(), "x509-CA-A", keymanager.ECP256)
++			require.NoError(t, err)
++		}
++		keys[i] = k
++		cat := fakeservercatalog.New()
++		cat.SetKeyManager(km)
++		cat.SetDataStore(ds)
++		log, _ := logtest.NewNullLogger()
++		configs[i] = &journalConfig{cat: cat, log: log}
++		cert := regressionJournalCertificate(t, k, regressionRFC7093ID(t, k.Public()))
++		ids[i] = regressionSaveJournal(t, ds, cert).ID
++	}
++	require.NotEqual(t, ids[0], ids[1])
++	require.False(t, publicKeyEqual(keys[0].Public(), keys[1].Public()), "HA fixtures must own different full public keys")
++	for i, config := range configs {
++		loaded, err := LoadJournal(context.Background(), config)
++		require.NoError(t, err)
++		require.Equal(t, ids[i], loaded.caJournalID)
++		require.Len(t, loaded.getEntries().X509CAs, 1)
++	}
++	all, err := ds.ListCAJournalsForTesting(context.Background())
++	require.NoError(t, err)
++	require.Len(t, all, 2)
++}
+diff --git a/pkg/server/ca/manager/journal_subjectkeyid_regression_test.go b/pkg/server/ca/manager/journal_subjectkeyid_regression_test.go
+new file mode 100644
+index 00000000..f35cdb04
+--- /dev/null
++++ b/pkg/server/ca/manager/journal_subjectkeyid_regression_test.go
+@@ -0,0 +1,197 @@
++package manager
++
++import (
++	"context"
++	"crypto"
++	"crypto/rand"
++	"crypto/sha256"
++	"crypto/x509"
++	"crypto/x509/pkix"
++	"encoding/asn1"
++	"math/big"
++	"testing"
++	"time"
++
++	logtest "github.com/sirupsen/logrus/hooks/test"
++	"github.com/spiffe/spire/pkg/common/x509util"
++	"github.com/spiffe/spire/pkg/server/datastore"
++	"github.com/spiffe/spire/pkg/server/plugin/keymanager"
++	"github.com/spiffe/spire/proto/private/server/journal"
++	"github.com/spiffe/spire/test/fakes/fakedatastore"
++	"github.com/spiffe/spire/test/fakes/fakeservercatalog"
++	"github.com/spiffe/spire/test/fakes/fakeserverkeymanager"
++	"github.com/stretchr/testify/require"
++	"google.golang.org/protobuf/proto"
++)
++
++func regressionRFC7093ID(t *testing.T, pub crypto.PublicKey) []byte {
++	t.Helper()
++	der, err := x509.MarshalPKIXPublicKey(pub)
++	require.NoError(t, err)
++	var s struct {
++		Algorithm pkix.AlgorithmIdentifier
++		Public    asn1.BitString
++	}
++	rest, err := asn1.Unmarshal(der, &s)
++	require.NoError(t, err)
++	require.Empty(t, rest)
++	sum := sha256.Sum256(s.Public.Bytes)
++	return sum[:20]
++}
++
++func regressionJournalCertificate(t *testing.T, signer crypto.Signer, skid []byte) *x509.Certificate {
++	t.Helper()
++	now := time.Now()
++	template := &x509.Certificate{SerialNumber: big.NewInt(17), Subject: pkix.Name{CommonName: "SPIRE retained CA"}, NotBefore: now.Add(-time.Minute), NotAfter: now.Add(time.Hour), BasicConstraintsValid: true, IsCA: true, MaxPathLenZero: true, KeyUsage: x509.KeyUsageCertSign | x509.KeyUsageCRLSign, SubjectKeyId: skid}
++	raw, err := x509.CreateCertificate(rand.Reader, template, template, signer.Public(), signer)
++	require.NoError(t, err)
++	cert, err := x509.ParseCertificate(raw)
++	require.NoError(t, err)
++	return cert
++}
++
++func regressionJournalFixture(t *testing.T, kind keymanager.KeyType) (*journalConfig, *fakedatastore.DataStore, keymanager.Key) {
++	t.Helper()
++	km := fakeserverkeymanager.New(t)
++	k, err := km.GenerateKey(context.Background(), "x509-CA-A", kind)
++	require.NoError(t, err)
++	ds := fakedatastore.New(t)
++	cat := fakeservercatalog.New()
++	cat.SetKeyManager(km)
++	cat.SetDataStore(ds)
++	log, _ := logtest.NewNullLogger()
++	return &journalConfig{cat: cat, log: log}, ds, k
++}
++
++func regressionSaveJournal(t *testing.T, ds *fakedatastore.DataStore, cert *x509.Certificate, entries ...*journal.X509CAEntry) *datastore.CAJournal {
++	t.Helper()
++	id := x509util.SubjectKeyIDToString(cert.SubjectKeyId)
++	if entries == nil {
++		entries = []*journal.X509CAEntry{{SlotId: "A", IssuedAt: time.Now().Add(-time.Minute).Unix(), NotAfter: cert.NotAfter.Unix(), Certificate: cert.Raw, Status: journal.Status_ACTIVE, AuthorityId: id}}
++	}
++	raw, err := proto.Marshal(&journal.Entries{X509CAs: entries})
++	require.NoError(t, err)
++	record, err := ds.SetCAJournal(context.Background(), &datastore.CAJournal{Data: raw, ActiveX509AuthorityID: id})
++	require.NoError(t, err)
++	return record
++}
++
++// This test uses only existing upstream interfaces and compiles before the fix.
++// Under ordinary non-FIPS SPIRE it fails before the patch with zero recovered CAs.
++func TestJournalRFC7093SubjectKeyIDRecovery(t *testing.T) {
++	for _, kind := range []keymanager.KeyType{keymanager.ECP256, keymanager.RSA2048} {
++		t.Run(kind.String(), func(t *testing.T) {
++			config, ds, k := regressionJournalFixture(t, kind)
++			cert := regressionJournalCertificate(t, k, regressionRFC7093ID(t, k.Public()))
++			record := regressionSaveJournal(t, ds, cert)
++			loaded, err := LoadJournal(context.Background(), config)
++			require.NoError(t, err)
++			require.Len(t, loaded.getEntries().X509CAs, 1, "must recover the existing CA rather than prepare a replacement")
++			require.Equal(t, cert.Raw, loaded.getEntries().X509CAs[0].Certificate)
++			require.Equal(t, record.ID, loaded.caJournalID)
++			// Repeated startup does not create a replacement journal or key.
++			again, err := LoadJournal(context.Background(), config)
++			require.NoError(t, err)
++			require.Equal(t, record.ID, again.caJournalID)
++			all, err := ds.ListCAJournalsForTesting(context.Background())
++			require.NoError(t, err)
++			require.Len(t, all, 1)
++			keys, err := config.cat.GetKeyManager().GetKeys(context.Background())
++			require.NoError(t, err)
++			require.Len(t, keys, 1)
++			require.True(t, publicKeyEqual(k.Public(), keys[0].Public()))
++		})
++	}
++}
++
++func TestJournalNativeSubjectKeyIDRemainsRecoverable(t *testing.T) {
++	config, ds, k := regressionJournalFixture(t, keymanager.ECP256)
++	skid, err := x509util.GetSubjectKeyID(k.Public())
++	require.NoError(t, err)
++	cert := regressionJournalCertificate(t, k, skid)
++	record := regressionSaveJournal(t, ds, cert)
++	got, err := LoadJournal(context.Background(), config)
++	require.NoError(t, err)
++	require.Equal(t, record.ID, got.caJournalID)
++	require.Len(t, got.getEntries().X509CAs, 1)
++}
++
++func TestJournalHashCollisionDoesNotAdoptDifferentPublicKey(t *testing.T) {
++	config, ds, k := regressionJournalFixture(t, keymanager.ECP256)
++	other, err := keymanager.ECP256.GenerateSigner()
++	require.NoError(t, err)
++	// Synthetically collide the stored identifier while retaining a different SPKI.
++	cert := regressionJournalCertificate(t, other, regressionRFC7093ID(t, k.Public()))
++	regressionSaveJournal(t, ds, cert)
++	got, err := LoadJournal(context.Background(), config)
++	require.ErrorContains(t, err, "does not match managed public key")
++	require.Nil(t, got)
++	all, err := ds.ListCAJournalsForTesting(context.Background())
++	require.NoError(t, err)
++	require.Len(t, all, 1, "failure must not rewrite or remove existing journals")
++}
++
++func TestJournalDuplicateActiveCertificateIsRefused(t *testing.T) {
++	config, ds, k := regressionJournalFixture(t, keymanager.ECP256)
++	cert := regressionJournalCertificate(t, k, regressionRFC7093ID(t, k.Public()))
++	id := x509util.SubjectKeyIDToString(cert.SubjectKeyId)
++	entry := &journal.X509CAEntry{SlotId: "A", NotAfter: cert.NotAfter.Unix(), Certificate: cert.Raw, Status: journal.Status_ACTIVE, AuthorityId: id}
++	regressionSaveJournal(t, ds, cert, entry, entry)
++	got, err := LoadJournal(context.Background(), config)
++	require.ErrorContains(t, err, "exactly one")
++	require.Nil(t, got)
++}
++
++func TestJournalMissingActiveCertificateIsRefused(t *testing.T) {
++	config, ds, k := regressionJournalFixture(t, keymanager.ECP256)
++	cert := regressionJournalCertificate(t, k, regressionRFC7093ID(t, k.Public()))
++	regressionSaveJournal(t, ds, cert, &journal.X509CAEntry{SlotId: "A", Certificate: cert.Raw, AuthorityId: "unrelated"})
++	got, err := LoadJournal(context.Background(), config)
++	require.ErrorContains(t, err, "exactly one")
++	require.Nil(t, got)
++}
++
++func TestJournalNonCAAndMalformedCertificateAreRefused(t *testing.T) {
++	for _, raw := range [][]byte{[]byte("malformed"), nil} {
++		t.Run(string(raw), func(t *testing.T) {
++			config, ds, k := regressionJournalFixture(t, keymanager.ECP256)
++			cert := regressionJournalCertificate(t, k, regressionRFC7093ID(t, k.Public()))
++			id := x509util.SubjectKeyIDToString(cert.SubjectKeyId)
++			regressionSaveJournal(t, ds, cert, &journal.X509CAEntry{SlotId: "A", Certificate: raw, AuthorityId: id})
++			got, err := LoadJournal(context.Background(), config)
++			require.ErrorContains(t, err, "unable to parse active journal CA")
++			require.Nil(t, got)
++		})
++	}
++}
++
++func TestJournalMultipleManagedAuthoritiesDoNotSelectArbitraryHistory(t *testing.T) {
++	config, ds, a := regressionJournalFixture(t, keymanager.ECP256)
++	b, err := config.cat.GetKeyManager().GenerateKey(context.Background(), "x509-CA-B", keymanager.ECP256)
++	require.NoError(t, err)
++	for _, k := range []keymanager.Key{a, b} {
++		cert := regressionJournalCertificate(t, k, regressionRFC7093ID(t, k.Public()))
++		regressionSaveJournal(t, ds, cert)
++	}
++	got, err := LoadJournal(context.Background(), config)
++	require.ErrorContains(t, err, "multiple CA journals")
++	require.Nil(t, got)
++	all, err := ds.ListCAJournalsForTesting(context.Background())
++	require.NoError(t, err)
++	require.Len(t, all, 2)
++}
++
++func TestJournalValidLeafCannotServeAsRetainedCA(t *testing.T) {
++	config, ds, k := regressionJournalFixture(t, keymanager.ECP256)
++	skid := regressionRFC7093ID(t, k.Public())
++	now := time.Now()
++	template := &x509.Certificate{SerialNumber: big.NewInt(19), Subject: pkix.Name{CommonName: "not a CA"}, NotBefore: now.Add(-time.Minute), NotAfter: now.Add(time.Hour), BasicConstraintsValid: true, IsCA: false, KeyUsage: x509.KeyUsageDigitalSignature, SubjectKeyId: skid}
++	raw, err := x509.CreateCertificate(rand.Reader, template, template, k.Public(), k)
++	require.NoError(t, err)
++	cert, err := x509.ParseCertificate(raw)
++	require.NoError(t, err)
++	regressionSaveJournal(t, ds, cert)
++	got, err := LoadJournal(context.Background(), config)
++	require.ErrorContains(t, err, "does not match managed public key and CA certificate")
++	require.Nil(t, got)
++}

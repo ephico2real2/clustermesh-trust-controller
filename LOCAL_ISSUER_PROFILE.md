@@ -1,15 +1,36 @@
 # Local issuer-profile qualification
 
-The issuer-profile producer is deployed on both mesh clusters.
-The earlier direct-root producer passed both live cluster trials.
-The updated approved-parent producer also passed both live cluster trials.
-It does not establish workload mTLS.
+The issuer-profile producer is enabled on both existing mesh clusters.
+It publishes verified mappings from the real SPIRE signing authorities.
+Both clusters pass renewal, restricted RBAC, structured logging and five live metric queries.
+The controller image remains the qualified `f5fe9992da` image below.
+CMTC remains in Observe mode. Workload mTLS is not enabled.
 
-The tested image is now the baseline for both controllers and all four node agents.
-Baseline mode remains Observe. The producer is an explicit opt-in feature.
-The completed direct-root trial enabled the producer, then restored its configuration and removed its test resources.
-The approved-parent trial also restored both controller templates and removed its owned resources.
-The baseline remains Observe with the producer disabled after cleanup.
+[The live publication ledger](docs/evidence/live-issuer-publication/summary.json) records the exact resource UIDs, image pins and renewal sequences.
+Generation1 approval expires at `2026-10-26T03:55:11Z`.
+Rotate the immutable approval before expiry. Do not extend it by resetting the ledger or version floors.
+The mutable publication has a lease of at most30 seconds.
+A publication acknowledgment does not prove native consumer acceptance or traffic protection.
+
+The earlier direct-root and approved-parent trials restored their templates and removed their trial resources.
+The current activation is persistent. Preserve its source, output, RBAC and private host ownership ledger at `~/.local/share/cmtc-issuer-profile/live-a-b/`.
+The ledger contains public proof and ownership state. It does not contain CA private keys.
+
+## Persistent activation helper
+
+Use [publish_issuers.py](scripts/lab/issuer-profile/publish_issuers.py) for the persistent activation.
+It pins both cluster UIDs, controller UIDs, node UIDs, cluster-parent approval UIDs and the root fingerprint.
+It obtains fresh nonce proofs from both exact SPIRE server images before each activation and at final confirmation.
+It creates an immutable approval and a mutable output with exact ownership checks.
+It validates effective RBAC and verifies the same producer image before it enables the controller arguments.
+It confirms publication renewal, current metrics and structured logs.
+Its41 local tests, including the existing helper tests, pass.
+
+[The actual invocation](docs/evidence/live-issuer-publication/publisher-command.json) records all public pins.
+It uses the canonical SPIRE manifest digest from [the recovery ledger](docs/evidence/spire-recovery/image-pin.json).
+Do not substitute the synthetic Docker archive import digest as a pull reference.
+Do not run the old trial cleanup against this persistent activation.
+A failed activation uses a resourceVersion-changing rollback fence. It does not adopt foreign resources or remove authority state.
 
 ## What the producer does
 
