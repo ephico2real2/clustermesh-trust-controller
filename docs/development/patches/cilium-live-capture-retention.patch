@@ -1,0 +1,244 @@
+From f142e58d06a458b72cf7ea27999c093ca87c9c2b Mon Sep 17 00:00:00 2001
+From: ephico2real2 <ephico2real@gmail.com>
+Date: Sat, 24 Oct 2026 09:09:50 -0500
+Subject: [PATCH] ztunnel: retain live strict capture until endpoint recreation
+
+Reject live strict unenrollment before touching rules or queuing DEL. Defer namespace-wide removal while live endpoints remain; exact endpoint deletion still owns sandbox retirement. This is a conservative hold while desired and active per-Pod membership are separated.
+
+Local Podman ARM64 validation: 127 affected unit, race and actual privileged cases with zero skips, vet and configured lint. Exact-image namespace transition/restart qualification follows; hot unenrollment and availability across relabel remain open.
+
+Signed-off-by: ephico2real2 <ephico2real@gmail.com>
+---
+ pkg/ztunnel/reconciler/reconciler.go          | 19 +++++++++
+ .../reconciler/strict_unenrollment_test.go    | 38 +++++++++++++++++
+ pkg/ztunnel/zds/deleted_endpoint.go           |  5 +++
+ pkg/ztunnel/zds/deleted_endpoint_test.go      | 41 +++++++++++++++++++
+ pkg/ztunnel/zds/server.go                     | 40 ++++--------------
+ 5 files changed, 112 insertions(+), 31 deletions(-)
+ create mode 100644 pkg/ztunnel/reconciler/strict_unenrollment_test.go
+
+diff --git a/pkg/ztunnel/reconciler/reconciler.go b/pkg/ztunnel/reconciler/reconciler.go
+index 2f4f1e6338..9c262e5ba0 100644
+--- a/pkg/ztunnel/reconciler/reconciler.go
++++ b/pkg/ztunnel/reconciler/reconciler.go
+@@ -30,6 +30,11 @@ import (
+ 	"github.com/cilium/statedb/reconciler"
+ )
+ 
++const (
++	logTransitionStage = "stage"
++	logDesiredRevision = "desiredRevision"
++)
++
+ type params struct {
+ 	cell.In
+ 
+@@ -162,6 +167,20 @@ func (ops *EnrollmentReconciler) Update(ctx context.Context, txn statedb.ReadTxn
+ }
+ 
+ func (ops *EnrollmentReconciler) Delete(ctx context.Context, txn statedb.ReadTxn, rev statedb.Revision, ns *table.EnrolledNamespace) error {
++	if ops.strictCreationAdmission {
++		endpoints := ops.endpointManager.GetEndpointsByNamespace(ns.Name)
++		if len(endpoints) != 0 {
++			ops.logger.Warn("Strict namespace unenrollment deferred until endpoints are recreated",
++				logTransitionStage, "namespace-intent-transition",
++				logfields.K8sNamespace, ns.Name,
++				logDesiredRevision, rev,
++				logfields.LenEndpoints, len(endpoints),
++			)
++			return zds.ErrStrictLiveUnenrollment
++		}
++		// Exact sandbox deletion owns retirement, never namespace-name release.
++		return nil
++	}
+ 	endpoints := ops.endpointManager.GetEndpointsByNamespace(ns.Name)
+ 	for _, ep := range endpoints {
+ 		if ep.GetContainerNetnsPath() == "" || isZtunnelPod(ep) {
+diff --git a/pkg/ztunnel/reconciler/strict_unenrollment_test.go b/pkg/ztunnel/reconciler/strict_unenrollment_test.go
+new file mode 100644
+index 0000000000..3a32db49ea
+--- /dev/null
++++ b/pkg/ztunnel/reconciler/strict_unenrollment_test.go
+@@ -0,0 +1,38 @@
++// SPDX-License-Identifier: Apache-2.0
++// Copyright Authors of Cilium
++
++package reconciler
++
++import (
++	"context"
++	"testing"
++
++	"github.com/stretchr/testify/require"
++
++	"github.com/cilium/cilium/pkg/endpoint"
++	"github.com/cilium/cilium/pkg/ztunnel/table"
++	"github.com/cilium/cilium/pkg/ztunnel/zds"
++)
++
++func TestStrictNamespaceDeleteDefersLiveEndpointsWithoutDELOrXDSRemoval(t *testing.T) {
++	db, _, manager, enroller, ops, events := setupTest(t)
++	ops.strictCreationAdmission = true
++	// No namespace intent table insertion: the desired record is already gone.
++	// The guard must not depend on a stale name-only table entry or app labels.
++	manager.Endpoints = []*endpoint.Endpoint{
++		createTestEndpoint(91, "apps", "protected", "/owned/netns/protected"),
++	}
++	err := ops.Delete(context.Background(), db.ReadTxn(), 1, &table.EnrolledNamespace{Name: "apps"})
++	require.ErrorIs(t, err, zds.ErrStrictLiveUnenrollment)
++	require.Empty(t, enroller.disenrolledIDs)
++	require.Empty(t, events, "no namespace-wide xDS REMOVED before active membership has drained")
++}
++
++func TestStrictNamespaceDeleteWithNoEndpointsCompletesWithoutNamespaceRemovalEvent(t *testing.T) {
++	db, _, manager, enroller, ops, events := setupTest(t)
++	ops.strictCreationAdmission = true
++	manager.Endpoints = nil
++	require.NoError(t, ops.Delete(context.Background(), db.ReadTxn(), 1, &table.EnrolledNamespace{Name: "apps"}))
++	require.Empty(t, enroller.disenrolledIDs)
++	require.Empty(t, events)
++}
+diff --git a/pkg/ztunnel/zds/deleted_endpoint.go b/pkg/ztunnel/zds/deleted_endpoint.go
+index fc36a382f5..868b271130 100644
+--- a/pkg/ztunnel/zds/deleted_endpoint.go
++++ b/pkg/ztunnel/zds/deleted_endpoint.go
+@@ -5,6 +5,7 @@ package zds
+ 
+ import (
+ 	"context"
++	"errors"
+ 	"fmt"
+ 
+ 	"k8s.io/apimachinery/pkg/types"
+@@ -19,6 +20,10 @@ import (
+ 
+ const logCleanupDeadline = "deadline"
+ 
++// ErrStrictLiveUnenrollment keeps an acknowledged live sandbox captured until
++// endpoint recreation; hot release needs generation-aware active membership.
++var ErrStrictLiveUnenrollment = errors.New("strict live unenrollment requires endpoint recreation; capture retained")
++
+ // EndpointDeletionCleaner is deliberately separate from namespace
+ // unenrollment. A deleted CNI endpoint must retain its fail-closed capture.
+ // The managed endpoint has already passed through Endpoint.Delete.
+diff --git a/pkg/ztunnel/zds/deleted_endpoint_test.go b/pkg/ztunnel/zds/deleted_endpoint_test.go
+index 51d0681434..1917441a7d 100644
+--- a/pkg/ztunnel/zds/deleted_endpoint_test.go
++++ b/pkg/ztunnel/zds/deleted_endpoint_test.go
+@@ -552,3 +552,44 @@ func TestPrivilegedStrictManagedMissingUIDRetainsCaptureWithoutADD(t *testing.T)
+ 	require.Empty(t, s.updates)
+ 	require.Empty(t, s.endpointCache)
+ }
++
++func TestStrictLiveUnenrollmentNeverTouchesMissingNetnsOrQueue(t *testing.T) {
++	s := strictCleanupServer(t)
++	ep := acknowledgedView(81, "live-namespace-uid", "/missing-live-netns")
++	s.endpointCache[81] = ep
++	ctx, cancel := context.WithTimeout(t.Context(), time.Second)
++	defer cancel()
++	require.ErrorIs(t, s.DisenrollEndpointContext(ctx, ep), ErrStrictLiveUnenrollment)
++	require.Same(t, ep, s.endpointCache[81], "unsupported live transition must preserve acknowledged desired state")
++	require.Empty(t, s.updates, "strict live unenrollment cannot issue wire DEL")
++}
++
++func TestPrivilegedStrictLiveUnenrollmentRetainsCaptureAndCanRefreshEnrollment(t *testing.T) {
++	testutils.PrivilegedTest(t)
++	s := strictCleanupServer(t)
++	ep, cleanup := createTestEndpoint(t, "strict-unenroll-retained", 82)
++	defer cleanup()
++	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
++	defer cancel()
++	result := make(chan error, 1)
++	go func() { result <- s.EnrollEndpointContext(ctx, ep) }()
++	add := receiveCleanupUpdate(t, s)
++	_, err := exchangeCleanupUpdate(t, s, add, []byte{0x0a, 0x00})
++	require.NoError(t, err)
++	require.NoError(t, <-result)
++	s.endpointCacheMutex.Lock()
++	cached := s.endpointCache[ep.GetID16()]
++	s.endpointCacheMutex.Unlock()
++	require.ErrorIs(t, s.DisenrollEndpointContext(ctx, ep), ErrStrictLiveUnenrollment)
++	require.True(t, strictCapturePresent(t, ep.GetContainerNetnsPath()))
++	require.Same(t, cached, s.endpointCache[ep.GetID16()])
++	require.Empty(t, s.updates)
++	// A true -> false -> true label sequence cannot leave a stale DEL queued
++	// behind the fresh ADD. Each refresh still requires a fresh explicit ACK.
++	go func() { result <- s.EnrollEndpointContext(ctx, ep) }()
++	add = receiveCleanupUpdate(t, s)
++	_, err = exchangeCleanupUpdate(t, s, add, []byte{0x0a, 0x00})
++	require.NoError(t, err)
++	require.NoError(t, <-result)
++	require.True(t, strictCapturePresent(t, ep.GetContainerNetnsPath()))
++}
+diff --git a/pkg/ztunnel/zds/server.go b/pkg/ztunnel/zds/server.go
+index 9f4ebeb6c9..dd1c4e3af5 100644
+--- a/pkg/ztunnel/zds/server.go
++++ b/pkg/ztunnel/zds/server.go
+@@ -580,25 +580,15 @@ func (s *Server) DisenrollEndpoint(ep *endpoint.Endpoint) error {
+ 	return s.DisenrollEndpointContext(ctx, ep)
+ }
+ 
+-// Live namespace unenrollment remains an unqualified lifecycle transition:
+-// this preserves its existing remove-capture-before-ACK behavior. Do not use
+-// this path for failed strict CNI creation or strict endpoint deletion.
++// DisenrollEndpointContext only removes live capture in compatibility mode.
++// Strict endpoints keep their capture until exact sandbox deletion; a namespace
++// label change alone cannot authorize an unsafe partial release.
+ func (s *Server) DisenrollEndpointContext(ctx context.Context, ep *endpoint.Endpoint) error {
+ 	if err := ctx.Err(); err != nil {
+ 		return err
+ 	}
+-	var key endpointIncarnation
+ 	if s.strictDeletedEndpointCleanup {
+-		var err error
+-		key, err = incarnation(ep)
+-		if err != nil {
+-			return err
+-		}
+-		release, err := s.acquireEndpointOperation(ctx)
+-		if err != nil {
+-			return err
+-		}
+-		defer release()
++		return ErrStrictLiveUnenrollment
+ 	}
+ 	s.logger.Info("disenrolling endpoint from ztunnel", logfields.EndpointID, ep.GetID16())
+ 	ns, err := netns.OpenPinned(ep.GetContainerNetnsPath())
+@@ -614,29 +604,17 @@ func (s *Server) DisenrollEndpointContext(ctx context.Context, ep *endpoint.Endp
+ 	}); err != nil {
+ 		return fmt.Errorf("unable to remove iptable rules for ztunnel inpod mode: %w", err)
+ 	}
+-	var uid string
+-	if s.strictDeletedEndpointCleanup {
+-		uid = key.uid
+-	} else {
+-		pod := ep.GetPod()
+-		if pod == nil {
+-			return fmt.Errorf("endpoint %d has no pod metadata", ep.GetID16())
+-		}
+-		uid = string(pod.GetUID())
++	pod := ep.GetPod()
++	if pod == nil {
++		return fmt.Errorf("endpoint %d has no pod metadata", ep.GetID16())
+ 	}
+ 	update := zdsUpdate{
+-		request: &pb.WorkloadRequest{Payload: &pb.WorkloadRequest_Del{Del: &pb.DelWorkload{Uid: uid}}},
++		request: &pb.WorkloadRequest{Payload: &pb.WorkloadRequest_Del{Del: &pb.DelWorkload{Uid: string(pod.GetUID())}}},
+ 		errCh:   make(chan error, 1),
+ 		onAck: func() {
+ 			s.endpointCacheMutex.Lock()
+ 			defer s.endpointCacheMutex.Unlock()
+-			if s.strictDeletedEndpointCleanup {
+-				if ctx.Err() == nil && sameIncarnation(s.endpointCache[key.id], key) {
+-					delete(s.endpointCache, key.id)
+-				}
+-			} else {
+-				delete(s.endpointCache, ep.GetID16())
+-			}
++			delete(s.endpointCache, ep.GetID16())
+ 		},
+ 	}
+ 	if err := s.sendUpdateAndWaitForAck(ctx, update); err != nil {
+-- 
+2.55.0
+

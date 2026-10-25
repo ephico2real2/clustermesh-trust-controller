@@ -1,6 +1,6 @@
 # End-to-end local delivery status
 
-Updated 2026-10-25. Continue the active end-to-end mandate through the existing agile stories. Complete side requests, then return to the first unfinished security dependency. CI, branch pushes and registry publication remain deferred.
+Updated 2026-10-25. Continue the active end-to-end mandate through the existing agile stories. Complete side requests, then return to the first unfinished security dependency. The user authorized pushing all work on 2026-10-25. Push reviewed commits to the personal feature branches. Keep local qualification first; do not merge incomplete security work. Manual CI dispatch and registry publication remain deferred.
 
 ## Current runtime
 
@@ -11,8 +11,8 @@ Use only the persistent `cmtc-a` and `cmtc-b` labs in Colima `cmtc-cilium`. Pres
 | Cilium | `4459d58ed3`; routing and native baseline policy. Newer candidate source is not deployed. |
 | CMTC | `f5fe9992da855a22660c07b141e19feee50310ba`; six Observe processes. The issuer-profile producer is enabled in both clusters. |
 | SPIRE server and agents | `28f6b8d84ade21c6accb32ba9689a3bdf64877ec`; retained signer/PVC restart and secure node attestation passed. |
-| Native credential diagnostic | The earlier `3b1a6a9e8f` passed real SVID checks. Corrected `75843515d5` is now imported and version-verified on all four nodes; new withdrawal qualification remains open. |
-| Experimental registrar | `e39928bc4f79ad6da134e77583945c8e5e9d52bf`; image built/imported. Owned runtime trial remains unqualified. |
+| Native credential diagnostic | The earlier `3b1a6a9e8f` passed real SVID checks. Corrected `75843515d5` is now imported and version-verified on all four nodes; the corrected withdrawal trial passed in both clusters. |
+| Experimental registrar | `e39928bc4f79ad6da134e77583945c8e5e9d52bf`; image built/imported. The corrected owned runtime trial passed both clusters; the original two-container server templates are restored. |
 | Ztunnel, WireGuard and IPsec | Combined workload-mTLS profile disabled. No end-to-end Protected claim. |
 
 The live producer approval expires at `2026-10-26T03:55:11Z`. Its output leases are at most 30 seconds. Preserve `~/.local/share/cmtc-issuer-profile/live-a-b/ledger.json` and its monotonic floors. Rotate approval before expiry; never reset authority state to extend it.
@@ -25,7 +25,7 @@ The live producer approval expires at `2026-10-26T03:55:11Z`. Its output leases 
 | Cilium native policy transition `8bb97137fcc92b935171d60e59d7fb8a93714bd8` | Functional race: 403 / 1691. Lockdebug: 27 / 52. Zero failures or selected skips. Vet and lint pass. No new image. [Evidence](../evidence/native-policy-transition/summary.json). |
 | Ztunnel source witness `1609bfd38abdf4be671ad0d8144fecfa0b6d94b0` | 513 library, 20 direct and 30 namespace tests, plus two diagnostic cases. Format and strict Clippy pass. [Evidence](../evidence/native-issuer-profile/source-binding/summary.json). |
 | Ztunnel SPIRE stream correction over `1609bfd` | Committed at `75843515d549f7928d080801ac3f7e4344f572eb`. First error now ends the request. Full profile: 518 library + 20 direct + 30 namespace tests, plus two diagnostic cases. No failures or ignored cases. Format and strict Clippy pass. The corrected diagnostic image is built, imported and version-verified on all four nodes. [Raw source evidence](../evidence/spire-stream-errors/summary.json). [Exact image build](../evidence/spire-stream-errors/image/build.sh) completed with config `sha256:4bf82edb89ad5b03a2ff1bebe9c29c4c5881024f447e3d62fcbebf2111948430`. All four temporary version Jobs passed and were UID-safely removed. One unchanged OCI manifest was then verified on all nodes. The automatic 36-path application continuity test passed with zero cleanup errors. These checks do not qualify credential withdrawal. |
-| SPIRE host helper suite | 107 tests pass automatically with the qualified Python and loopback TLS enabled. Missing dependency and sandbox failures are retained. This does not qualify the runtime withdrawal assertion. |
+| SPIRE host helper suite | 124 tests pass automatically with the qualified Python and loopback TLS enabled. Missing dependency and sandbox failures are retained. This does not qualify the runtime withdrawal assertion. |
 
 Tests execute their assertions automatically after one runner invocation. The primary inspects failures, corrects the cause and reruns the affected profile. Manual inspection cannot convert a failed case into a pass. Setup, evidence and owned cleanup are part of the lab runner.
 
@@ -52,7 +52,11 @@ The illustrated [registration workflow](../../SPIRE_REGISTRATION_WORKFLOW.md) co
 
 The corrected owned runtime fixture PASSED from `/private/tmp/cmtc-exact-registrar-20261025/runtime-snapshot-eighth/`. All 124 host helper tests pass. Both clusters observed explicit empty target SVID responses with valid same-node controls before and after. Reenrollment, Pod replacement and server restart passed. Exact templates, signers, PVCs, foreign entries and the producer ledger were preserved. All owned fixtures were removed with zero cleanup errors. Final 36-path application continuity passes with zero cleanup errors. This is registration and credential evidence, not TLS or policy proof.
 
-The policy-map reachability proposal is now applied but uncommitted in the Cilium checkout. Primary fixed a ProgramID comparison compile error. The focused ordinary tests pass, but the first actual kernel path test fails because its source-IP fixture compiles out the policy maps. The separate actual KernelMapID case passes. The next fixture generated an IPv4 node header but still lacked policy maps; that second actual-kernel failure is retained. An agent is tracing the remaining template/profile setup before another run. Do not fabricate maps or count package-only/zero-selected results as kernel proof. Logs: `/private/tmp/cmtc-policy-reachability-20261025/`.
+The policy-map reachability proposal is applied but uncommitted in the Cilium checkout. The first two kernel failures traced to the static test header shadowing the generated node header. The include order is corrected. The third run exposed missing map-size defines normally supplied through Hive. The fourth compiles the IPv4 path but fails loading a zero-capacity load-balancer map. The separate actual KernelMapID case passes. Complete fixture initialization and broad loader regression remain required. Logs: `/private/tmp/cmtc-policy-reachability-20261025/`. No failed kernel run counts as security evidence.
+
+The lost-ADD-ACK and queued-send candidate passes 416 top-level tests and 1,713 subtests with race detection, plus vet, in the actual-etcd isolated ARM64 profile. Broader lockdebug stops in unchanged `TestEgressCIDRTCPPort` on a recursive repository read lock. Its failure is retained; affected recovery lockdebug, lint and Rust owner checks are in progress. No new Cilium image is built or deployed.
+
+The previously committed CMTC `31dc57d`, Cilium `8bb97137fc` and ztunnel `75843515d5` increments are pushed to the personal feature branches. Both Cilium and ztunnel branches were zero commits behind the fetched upstream tip. Pending source candidates remain separate until local checks pass.
 
 ## Approval boundary
 

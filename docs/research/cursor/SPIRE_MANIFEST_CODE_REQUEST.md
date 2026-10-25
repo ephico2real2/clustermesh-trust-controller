@@ -1,0 +1,19 @@
+# Complete SPIRE dependency manifest code — bounded implementation
+
+> Historical design input. This document is not an accepted implementation or a current runbook. Use [delivery status](../../agile/DELIVERY_STATUS.md) for measured results and open gates.
+
+Your last two PKI proposals still omit complete function and test bodies in their second halves. Stop writing another plan. You now have scoped write ownership ONLY under /private/tmp/cmtc-spire-manifest-proposal. Produce actual runnable render_spire.py and test_render_spire.py plus README.md in that folder. No actual repo edits, no build, no cluster/API calls, no credential/Secret reads. Read real Cilium source templates and return a COMPLETE small renderer and actual unit tests. The primary reviews/copies/tests/deploys.
+
+Same requested model grok-4.7-xhigh. Exact sources: Cilium /private/tmp/cilium-ztunnel-authorization-runtime HEAD53c65b478e, rootf5fe999 deployed bothclusters. Legacy labPKI rootpathLen1+parentpathLen0 cannot issueSPIRE, preserve it completely. Another agent supplies isolated clusterCAinitializer/completer. Your scope ONLY standalone SPIRE server+agent dependencies on cmtc-a and cmtc-b. cert-manager alreadyv1.21.1 bothclusters. Reference isolated ClusterIssuer cmtc-spire-issuer (Secretcmtc-spire-cluster-ca). Domain cmtc-a.mesh.example /cmtc-b.mesh.example.
+
+Required actual code:
+- Pure renderer returns list of Kubernetes dictionaries; CLI emits JSON List or PyYAML docs. Resource schema/role labels correct. No cluster invocation inrenderer. Actual parsed data assertions in unittest.
+- Pinned real SPIRE1.15.5 server/agent and busyboxdigests from existing chart/proposal; verify sourcepaths rather than invent version.
+- Server config native UpstreamAuthoritycert-manager, PSAT matchingactualclustername, actualdomain, SQL/diskkey state on validatedPVC via existinglocal-path storage. No emptyDirfor keys/DB. Volumeclaimlabels+ownerexact. UNIXapi dirs correctuid1000 writable, healthProbeactualpaths/startup.
+- Agent exactdomain != cluster! Passboth explicitly. DaemonSet requires controlplane toleration so2nodes eachcluster. Agentreadyprobe4251 ready, health/live. PSAT token projected with actualcorrectaudience/mount and SA namespace. Validate existingchart source. MinimalRBAC forservercertificaterequests+bundlenotifier+PSATreview+agentsworkloadattestation. Do not silentlyskipkubeletverificationif actualchartusesTLSverification; document sameexistinglabsetting if unavoidable.
+- Nodealiasregistration only ifrequired nativechart. Avoid pgrep/procfsrootconduit and unboundedwhile. Can use nativeSPIRE supportedinitjob/pod sidecarhelpers with sharedsocket+exactCLIbinary. Need bounded retries, queryexactentryID/selectors andlogs stage attempt elapsed deadlinebackoff error. NEVER createCilium/ztunnelworkloadentries atthisslice, no proxyworkloadcapture/noProtected.
+- Every resource includes consistent owner=cmtc-lab-pki, cluster and rolelabels, including namespace/SA/service/role/RB/CM/STS/DS/PVCtemplate/Jobs as applicable. No preexistingClusterMesh objectsnamed; no CiliumHelmupgrade, no encryptionflags. Existing source templates mayrequire ClusterRoles, useuniquenames percluster (eachclusterseparateAPI).
+- Actualtests parse bothclusters resources/config, verify domainPSAT/nodecoverage/configdurability/imagepins/RBACnamesandverbs, forbiddenlegacyresource collisions, noexperimentalactivation, bounds andforeigninputrefusal. Include meaningful wrongdomain/cluster/nameimages configvalidation tests. Do not claim testsran ifnot.
+- SPIRECAdefaultpathLen mayunconstrained andURIspiffe://td; do notrequirepathLen0. Verifierexactpin deniesdelegatedleafsigners independently. No relianceonbundleorder.
+
+Use direct STE-style README; explain onlyremainingacceptancegates. Writecomplete files now, finalresponsejustpathsandwhichchecksran. Do notpropose futurefunctions.

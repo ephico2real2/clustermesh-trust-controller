@@ -1,0 +1,21 @@
+# PKI proposal revision — exact review findings
+
+> Historical design input. This document is not an accepted implementation or a current runbook. Use [delivery status](../../agile/DELIVERY_STATUS.md) for measured results and open gates.
+
+User asked enable/deploy full feature on existing cmtc-a/b. Continue same proposal-only scope/model. Read your previous MESH_PKI_IMPLEMENTATION.md and exact sources. Return COMPLETE corrected file contents/patches with meaningful tests, not optional corrections interleaved with bad code. Do not run clusters/builds/read Secrets.
+
+Primary facts now: cert-manager v1.21.1 ALREADY installed both. Existing cmtc-lab-intermediate ClusterIssuer serves all ClusterMesh certificates. It references cert-manager/cluster-intermediate created by old init. NEVER adopt/overwrite/relabel/reissue that Secret or issuer or root. Your proposed cluster-ca mode uses that same cluster-intermediate so it will correctly refuse foreign ownership; this blocks deployment. Use isolated names cmtc-spire-cluster-ca Secret and cmtc-spire-issuer ClusterIssuer. Preserve existing ClusterMesh PKI. New organization root host-only under explicitly private external directory and no broad clusterroot key.
+
+Primary has applied actual approved one-parent CA lineage patches to root internal/trustprofile, Cilium issuerprofile and Rust. CMTC race+vet passes. Cilium fix compile error now passing projector. SPIRE CA may have exactly spiffe://<approved-domain> SAN; explicit SPIRE signer remains only direct leaf signer. Do NOT change design to directroot.
+
+Critical corrections required:
+1. DO NOT persist whole Secret JSON, even temporarily in artifacts. Use API output projection metadata+public CSR only; never transport tls.key to host. Signing patch uses fixed expected cluster + UID/RV preconditions. Avoid printing base64 private material (assert_public on encoded text cannot identify it).
+2. Check ownership of EVERY existing object before any apply, not just namespace. Include SA/Roles/RBs/Service/CM/StatefulSet/DaemonSet/Jobs/PVC/Secret/ClusterIssuer. Use non-adoption create or precise UID/RV patch. Plain SSA silently adopting preexisting resources is not acceptable. UID-safe rollback of only created resources on failed initialization; preserve owned reusable dependency resources.
+3. Initializer Go must isolate new Secret name, verify stored CSR canonical DER/signature/subject/exact key with bounded parse/no trailingPEM, get-or-create handles AlreadyExists, retry sameCSR no new key. Tests actual reactors race and foreign ownership/mismatchedCSR/unknownfields, output no private key.
+4. Root filesystem safe: no symlink dirs/files, private modes/owner, rootcert/key publickeymatch and pathlen/current validity, lock to avoid concurrency, atomic key/cert creation and durable reuse, halfinitialized refusing repair explicit. No rm -rf broad cleanup. Rootkey outside repo/artifacts.
+5. Retry registration loop bounded with structured logs identifying stage attempt elapsed deadline backoff/error; NOT infinite pgrep/sleep. ACK actual entry query exact matching ID/selectors beforeready. Test native registration exitcodes/idempotence/restart.
+6. Current kubectl --context config current-context doesn't select config current-context and can falsely fail. Validate explicit selected context cluster identity from known kubeconfig and expected nodes/UID notglobalcontext mutation. sha256sum may not exist onmac use Python hashlib.
+7. Real tests: parse/render schema with PyYAML and representative fixture API server mocked processcalls, exercise failedapply rollback/currentuid replacement/idempotency/rbac boundaries. Existing tests simply check strings and cannot prove bootstrap safe.
+8. Preserve actual Cilium ds/config/Helm release snapshots and app connectivity beforeafter, encryptionfalse no guard removal. Add bounded SPIRE server/agent readiness and cert public chain verification. Derive public SPIRE bundle direct signer, never infer active signer by bundle order.
+
+Return a bounded, deployable dependency increment with exact public evidence and remaining admission gates. No pretend complete/protected. No more than necessary: can use Python orchestrator instead of complex shell. Complete code for chosen path plus tests required.

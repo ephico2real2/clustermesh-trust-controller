@@ -25,7 +25,7 @@ Use `cmtc-a` and `cmtc-b`. Keep KVStoreMesh enabled. Preserve the existing Colim
 
 Complete each increment locally. Run tests, lint and vet. Build the exact Linux ARM64 image with host Podman. Import it by archive. Verify the running image. Collect real traffic and recovery evidence. Commit qualified work under the user's configured identity.
 
-CI, branch pushes and registry publication are deferred. Do not relax the compatibility guard or claim `Protected` from a label, registration, SVID or ACK.
+Feature-branch pushes are authorized by the user on 2026-10-25. Keep local qualification first. Manual CI dispatch and registry publication remain deferred. Do not relax the compatibility guard or claim `Protected` from a label, registration, SVID or ACK.
 
 Use agents to unblock research, design and review. Give each agent the actual source, failure and ownership context. Require complete code and negative/recovery tests. The primary agent must implement and validate the chosen fix.
 

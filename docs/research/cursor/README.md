@@ -25,3 +25,15 @@ A fourth, focused Extra High run completed for [the persistent restore/first-pac
 The next guided run follows the user’s explicit request to advance actual cross-cluster workload mTLS. [WORKLOAD_MTLS_DELIVERY_REQUEST.md](WORKLOAD_MTLS_DELIVERY_REQUEST.md) records source/runtime pins, missing authenticated remote identity/authorization/recovery gates and complete-code/test requirements. Cursor initialization confirms Grok4.7 Extra High in the same session. The [first response](WORKLOAD_MTLS_DELIVERY_PROPOSAL.md) was rejected for placeholders, incorrect interfaces and skipped CRL checks; the [primary review](WORKLOAD_MTLS_PRIMARY_REVIEW.md) requested concrete corrections. The [complete revised proposal](WORKLOAD_MTLS_DELIVERY_REVISED.md) is retained but not applied or qualified. It needs additional inbound/negative certificate tests and actual source/policy/lifecycle wiring before acceptance. The standalone DaemonSet remains first in the delivery sequence; the native Cilium enforcement port stays parked for a later separate branch.
 
 The user's [Prometheus aggregation instruction](PROMETHEUS_AGGREGATION_ADDENDUM.md) was also delivered to that same session. Grok's [response](PROMETHEUS_AGGREGATION_RESPONSE.md) reuses per-cluster Prometheus plus B→A remote-write, with cluster/node labels and one defined reporting boundary for connection totals. No separate counter/gauge aggregator is proposed; raw flow logs require a separate pipeline. This is an acknowledged design constraint, not evidence that planned security collectors are implemented.
+
+## Retained PKI proposals
+
+These files preserve design inputs. They are not executable runbooks or evidence of completed security gates.
+
+- [Initial request](MESH_PKI_REQUEST.md).
+- [Initial proposal](MESH_PKI_IMPLEMENTATION.md).
+- [Primary review request](MESH_PKI_REVIEW_REQUEST.md).
+- [Revised proposal](MESH_PKI_REVISED_IMPLEMENTATION.md).
+- [SPIRE manifest request](SPIRE_MANIFEST_CODE_REQUEST.md).
+
+The two retired `cmtc-mtls` Python runners stop before argument parsing, file writes or API calls. Preserve their bodies as historical source. Use the current two-cluster runners linked from delivery status.
