@@ -2,7 +2,7 @@
 
 CMTC is an experimental trust controller for Cilium ClusterMesh. **End-to-end cross-cluster workload mTLS is not ready.**
 
-The local labs are `cmtc-a` and `cmtc-b`. ClusterMesh and KVStoreMesh run in both labs. Applications communicate in both directions. Ztunnel remains disabled. WireGuard/IPsec composition is still unqualified.
+The local labs are `cmtc-a` and `cmtc-b`. ClusterMesh and KVStoreMesh run in both labs. Ztunnel is deployed and Ready on all four nodes. The strict ZDS startup fault was corrected with the required shared PID namespace. End-to-end workload-mTLS traffic and WireGuard/IPsec composition remain unqualified.
 
 ## Current state
 
@@ -35,7 +35,7 @@ The registrar is a separate Go helper in this repository. It runs inside the SPI
 Control plane: CMTC controller; experimental registrar; SPIRE server.
 Each node: CMTC node agent; Cilium agent; SPIRE agent.
 The registrar uses the private server Admin socket.
-Ztunnel activation is pending in both ClusterMesh labs.
+Ztunnel runs on all four nodes. Cross-cluster workload mTLS remains unqualified.
 ```
 
 ## Read the guides
@@ -43,6 +43,8 @@ Ztunnel activation is pending in both ClusterMesh labs.
 | Task | Guide |
 | --- | --- |
 | Continue implementation | [Handover](docs/handover/CODEX_START_HERE.md) |
+| Continue in another AI window | [Current handover](handover.md), [resume steps](resume.md) and [console prompt](docs/handover/CONTINUE_PROMPT.txt) |
+| Install the strict ZDS node profile | [Installation requirements](INSTALLATION_REQUIREMENTS.md) |
 | Review the latest architectural changes | [Architecture update](ARCHITECTURE_UPDATE.md) |
 | Understand the design | [Target architecture](docs/architecture/END_TO_END_DESIGN.md) |
 | Check the work plan | [Backlog](docs/agile/BACKLOG.md) and [security test matrix](docs/architecture/SECURITY_AND_FAILURE_TEST_MATRIX.md) |

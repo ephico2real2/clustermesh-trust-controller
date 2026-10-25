@@ -14,6 +14,13 @@ The persistent local clusters currently run Cilium `4459d58ed3`. Newer qualified
 
 ## Develop, build and select a version
 
+The strict ZDS profile requires a shared node PID namespace for the Cilium agent
+and SPIRE-backed ztunnel. Follow [installation requirements](../../INSTALLATION_REQUIREMENTS.md)
+before deployment and after every chart upgrade. At source `51170b1239`, the
+chart needs the documented agent manifest patch; `--set hostPID=true` has no
+effect. Verify both DaemonSet templates and all replacement Pods. Keep the
+root-owned peer check enabled.
+
 For local-first CMTC/Cilium security work, use the [Podman build, kind archive
 import, and qualification runbook](PODMAN_LOCAL_VALIDATION.md). It documents
 the MacBook's explicit Podman connection, pinned Linux ARM64 build inputs,

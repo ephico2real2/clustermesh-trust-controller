@@ -1,0 +1,76 @@
+{
+  "cilium": {
+    "templateHostPID": true,
+    "pods": [
+      {
+        "name": "cilium-qzql6",
+        "uid": "38563813-87b3-4601-ad4e-4166e750e749",
+        "node": "cmtc-a-control-plane",
+        "hostPID": true,
+        "ready": true,
+        "images": [
+          {
+            "name": "cilium-agent",
+            "image": "localhost/cilium:dev-overlay-51170b1239",
+            "imageID": "docker.io/library/import-2026-10-25@sha256:d9ccaa9120f5b75169d5bfca5cc7f92ced9e385771328810f71b8e33fea02f5c",
+            "ready": true,
+            "restartCount": 0
+          }
+        ]
+      },
+      {
+        "name": "cilium-ttnl9",
+        "uid": "16df53e9-f7db-4f58-be49-5aeb50c04f76",
+        "node": "cmtc-a-worker",
+        "hostPID": true,
+        "ready": true,
+        "images": [
+          {
+            "name": "cilium-agent",
+            "image": "localhost/cilium:dev-overlay-51170b1239",
+            "imageID": "docker.io/library/import-2026-10-25@sha256:d9ccaa9120f5b75169d5bfca5cc7f92ced9e385771328810f71b8e33fea02f5c",
+            "ready": true,
+            "restartCount": 0
+          }
+        ]
+      }
+    ]
+  },
+  "ztunnel-cilium": {
+    "templateHostPID": true,
+    "pods": [
+      {
+        "name": "ztunnel-cilium-5z5zv",
+        "uid": "f0cd438e-fca4-4a2f-bf1b-6b850e4ef3df",
+        "node": "cmtc-a-control-plane",
+        "hostPID": true,
+        "ready": true,
+        "images": [
+          {
+            "name": "istio-proxy",
+            "image": "localhost/cmtc-ztunnel:native-35a6c9403e",
+            "imageID": "docker.io/library/import-2026-10-25@sha256:ba597ed54e2d3dead7bb428db6f82e2fbffce153420ab9d8ea41033daeada3c7",
+            "ready": true,
+            "restartCount": 0
+          }
+        ]
+      },
+      {
+        "name": "ztunnel-cilium-p7hr6",
+        "uid": "e830021d-d3db-4e69-a79a-0bc045bfd93c",
+        "node": "cmtc-a-worker",
+        "hostPID": true,
+        "ready": true,
+        "images": [
+          {
+            "name": "istio-proxy",
+            "image": "localhost/cmtc-ztunnel:native-35a6c9403e",
+            "imageID": "docker.io/library/import-2026-10-25@sha256:51b43245e3d95836de22d99d430e89b032be2a9010f5b74f2cd819891601a956",
+            "ready": true,
+            "restartCount": 0
+          }
+        ]
+      }
+    ]
+  }
+}

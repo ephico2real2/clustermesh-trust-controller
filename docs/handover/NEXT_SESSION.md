@@ -1,5 +1,56 @@
 # Current continuation checkpoint
 
+## User-requested AI handoff — 2026-10-25T16:40Z
+
+Read root [handover.md](../../handover.md) and [resume.md](../../resume.md) first. Both test
+namespaces are now enrolled. Baseline requests passed36/36 from each cluster.
+The first enrolled request failed in each cluster with curl56 and no HTTP200.
+Strict xDS Address full-resync loops and connection draining are now captured.
+B logs identify the HBONE path but do not establish completed mTLS traffic.
+The temporary Opus writer was stopped for handoff; the new AI must claim the
+single compiler/live lease before mutation. Preserve all existing branches,
+Pod registrations, signer state and durable checkpoints. This supersedes older
+runtime/ownership paragraphs below. The user's instruction to complete cmtc-b
+was carried through enrollment, first traffic and evidence capture; its actual
+positive-path failure remains open. See the full handover for exact next work.
+
+
+## Live checkpoint — 2026-10-25T16:35Z
+
+This checkpoint supersedes older runtime and ownership statements below.
+
+- All four Cilium agents and all four node ztunnel Pods are Ready. Exact current
+  agents/operators/API servers use Cilium51170b1239; proxies use ztunnel35a6c94.
+  CMTC controller and node-agent images were rebuilt from96cbc9e and deployed in
+  both clusters. The registrar image is built; its persistent helper is not yet deployed.
+- The user explicitly approved hostPID on both Cilium agents. Shared host PID
+  namespaces resolved the strict root-owned-proxy ZDS rejection. The UID/PID
+  checks remain enforced. See [installation requirements](../../INSTALLATION_REQUIREMENTS.md) and
+  [runtime evidence](../evidence/strict-zds-hostpid/README.md).
+- ClusterMesh is **not fully healthy**: all agent status reads show0/1 remote
+  clusters Ready, despite connected etcd and synchronized nodes/endpoints/
+  identities/services. Membership lock timeouts and native ZDS ownership-busy
+  endpoint regeneration errors remain open. Ready Pods do not qualify mTLS.
+- Test apps now run on both nodes in cmtc-a; cmtc-b setup and real baseline/
+  enrollment tests continue. Signers, private keys, checkpoints and existing apps
+  are preserved. One-time proxy checkpoint bootstrap is disabled in both
+  OnDelete templates after verified durable commits; existing proxies were not restarted.
+- All four personal repository defaults were fast-forwarded to our current work:
+  Cilium51170b1239, SPIRE0f8fe4d681, ztunnel35a6c94, CMTC96cbc9e.
+  Every working branch/worktree remains. No canonical upstream merge occurred.
+- Codex retains the sole operational compiler/live lease. Opus source resumption
+  uses fresh retained logs and explicit ownership. No compiler or live writes
+  transfer until the lease says so. The original runner must not be restarted.
+- Read-only heartbeat `cmtc-logs-and-network-monitor` checks every five minutes.
+  It reports meaningful failures/recovery and makes no cluster changes.
+
+Next: fix actual membership/ZDS runtime errors, complete exact workload
+registration and enrollment, test same-node then cross-node and both cross-cluster
+directions on80/8080/31337. Preserve all security gates and record genuine
+failures. Complete R7 effective source-egress and other open source gates; do not
+replace them with permissive policy. Full cross-cluster workload mTLS is unproven.
+
+
 Updated 2026-10-25. This checkpoint supersedes older current-state paragraphs in delivery history. The full end-to-end workload-mTLS mandate is active. A question, review, document or commit does not pause it. Read [the master prompt](CODEX_MASTER_PROMPT.md), [delivery status](../agile/DELIVERY_STATUS.md), [recovery receipt](OPUS_RECOVERY.md) and the security acceptance matrix.
 
 ## Actual quota and operational continuation

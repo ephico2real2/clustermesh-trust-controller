@@ -45,6 +45,12 @@ profile can be qualified independently of the fixture.
 
 ## Build and run locally
 
+This section preserves the older isolated fixture. Current work uses `cmtc-a`
+and `cmtc-b`. For the current strict ZDS profile, follow
+[installation requirements](../../INSTALLATION_REQUIREMENTS.md): both Cilium
+and the SPIRE-backed node proxy need the host PID namespace. Keep the root-owned
+proxy check and the restricted delegated API socket.
+
 Run `scripts/lab/mtls/build.sh` from the MacBook. It uses Podman, an explicit Linux
 architecture, bounded build resources, the committed image source and a Docker
 archive for transfer. `CMTC_GO_CACHE` and `CMTC_GO_MOD_CACHE` optionally reuse

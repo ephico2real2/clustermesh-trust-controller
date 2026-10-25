@@ -70,6 +70,11 @@ traffic; it refreshes both Helm releases only if those addresses changed. See
 
 ## 2. Build a Cilium agent image with Podman
 
+Before deploying the strict ZDS profile, check [installation requirements](../../INSTALLATION_REQUIREMENTS.md).
+Both Cilium and its SPIRE-backed ztunnel need `hostPID: true`. Verify the rendered
+manifest and every replacement Pod. An image rebuild does not set this field.
+The agent must observe the proxy's UID 0 and positive PID through `SO_PEERCRED`.
+
 For the current Cilium agent-only work, compile the agent in the pinned Go
 builder and overlay that binary on the digest-pinned fork runtime image. This is
 the local method used for the CNI/ZDS changes. It does not rebuild Cilium's BPF

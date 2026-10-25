@@ -4,6 +4,9 @@ Use this guide to find the correct document and read its evidence level. Updated
 
 ## Start with current state
 
+For the latest AI transfer, read [handover.md](handover.md) and [resume.md](resume.md).
+Installation requirements are in [the strict ZDS installation guide](INSTALLATION_REQUIREMENTS.md).
+
 Read [README](README.md) for the component roles. Read [delivery status](docs/agile/DELIVERY_STATUS.md) for exact source, image and test pins.
 
 | Document group | Meaning |
