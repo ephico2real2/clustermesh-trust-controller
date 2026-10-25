@@ -1,0 +1,32 @@
+// UNRUN proposal primitives for package endpoint; not a production integration.
+package endpoint
+
+import (
+	"fmt"
+	"golang.org/x/sys/unix"
+)
+
+const ztunnelAdmissionMaxLeaseNS uint64 = 5_000_000_000
+
+func ztunnelAdmissionDeadline(now uint64) (uint64, error) {
+	if now == 0 || now > ^uint64(0)-ztunnelAdmissionMaxLeaseNS {
+		return 0, fmt.Errorf("invalid monotonic lease clock")
+	}
+	return now + ztunnelAdmissionMaxLeaseNS, nil
+}
+
+func ztunnelAdmissionMonotonicNS() (uint64, error) {
+	var ts unix.Timespec
+	if err := unix.ClockGettime(unix.CLOCK_MONOTONIC, &ts); err != nil {
+		return 0, fmt.Errorf("read ztunnel admission clock: %w", err)
+	}
+	if ts.Sec < 0 || ts.Nsec < 0 || ts.Nsec >= 1_000_000_000 {
+		return 0, fmt.Errorf("invalid ztunnel admission clock result")
+	}
+	// Practical Linux uptime is far below uint64 overflow; reject rather than wrap.
+	sec := uint64(ts.Sec)
+	if sec > (^uint64(0)-uint64(ts.Nsec))/1_000_000_000 {
+		return 0, fmt.Errorf("ztunnel admission clock overflow")
+	}
+	return sec*1_000_000_000 + uint64(ts.Nsec), nil
+}

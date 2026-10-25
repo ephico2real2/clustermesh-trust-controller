@@ -1,0 +1,23 @@
+/* UNRUN design primitive. Include from lib/ztunnel_admission.h after eps.h.
+ * This does NOT by itself wire a production renewal owner or packet gate.
+ * Reuse endpoint_info.pad[2] without changing its 48-byte map-value ABI.
+ * Both user space and BPF use Linux CLOCK_MONOTONIC/ktime_get_ns, not wall time.
+ */
+#define ZTUNNEL_ADMISSION_MAX_LEASE_NS (5ULL * 1000 * 1000 * 1000)
+static __always_inline __u64
+ztunnel_entry_admission_until(const struct endpoint_info *ep)
+{
+	return ((__u64)ep->pad[1] << 32) | ep->pad[0];
+}
+static __always_inline bool
+ztunnel_admission_lease_live(__u64 until, __u64 now)
+{
+	/* Zero, equality, expiry and an implausibly long lease all fail closed.
+	 * Compare before subtracting to avoid unsigned underflow. */
+	return until > now && until - now <= ZTUNNEL_ADMISSION_MAX_LEASE_NS;
+}
+static __always_inline bool
+ztunnel_entry_admission_live(const struct endpoint_info *ep, __u64 now)
+{
+	return ep && ztunnel_admission_lease_live(ztunnel_entry_admission_until(ep), now);
+}

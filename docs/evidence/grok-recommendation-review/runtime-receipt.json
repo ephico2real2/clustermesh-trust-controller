@@ -1,0 +1,21 @@
+{
+  "observedAt": "2026-10-25T15:21:41.497426+00:00",
+  "method": "Primary kubectl get daemonsets,deployments -n kube-system -o json in explicit owned contexts",
+  "clusters": {
+    "cmtc-a": {
+      "ciliumImage": "localhost/cilium:dev-overlay-51170b1239",
+      "ciliumReady": 2,
+      "clusterMeshAPIServerImage": "localhost/cilium-clustermesh-apiserver:dev-overlay-51170b1239",
+      "clusterMeshAPIServerReady": 1,
+      "ztunnelDaemonSetInKubeSystem": false
+    },
+    "cmtc-b": {
+      "ciliumImage": "localhost/cilium:dev-overlay-51170b1239",
+      "ciliumReady": 2,
+      "clusterMeshAPIServerImage": "localhost/cilium-clustermesh-apiserver:dev-overlay-51170b1239",
+      "clusterMeshAPIServerReady": 1,
+      "ztunnelDaemonSetInKubeSystem": false
+    }
+  },
+  "limits": "Readiness and image tags only; no new traffic test or digest qualification. Does not establish mTLS."
+}

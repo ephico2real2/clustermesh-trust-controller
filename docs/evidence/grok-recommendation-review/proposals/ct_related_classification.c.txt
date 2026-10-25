@@ -1,0 +1,130 @@
+/* SPDX-License-Identifier: (GPL-2.0-only OR BSD-2-Clause) */
+/* Copyright Authors of Cilium */
+/* UNRUN proposal: real packet/extractor/ct_lookup classification, not a stub
+ * that forces TCP into an unreachable CT_RELATED case. */
+#include <bpf/ctx/skb.h>
+#include "common.h"
+#include "pktgen.h"
+#define ENABLE_IPV4 1
+#define ENABLE_IPV6 1
+#include "lib/bpf_lxc.h"
+
+static volatile int classified;
+static volatile __u8 classified_flags;
+static volatile __u8 classified_protocol;
+
+static __always_inline int make4(struct __ctx_buff *ctx, bool error)
+{
+	struct pktgen b;
+	void *l4;
+	pktgen__init(&b, ctx);
+	if (error)
+		l4 = pktgen__push_ipv4_icmp_packet(&b, (__u8 *)mac_one, (__u8 *)mac_two,
+			v4_pod_one, v4_pod_two, ICMP_DEST_UNREACH);
+	else
+		l4 = pktgen__push_ipv4_tcp_packet(&b, (__u8 *)mac_one, (__u8 *)mac_two,
+			v4_pod_one, v4_pod_two, __bpf_htons(40001), __bpf_htons(8080));
+	if (!l4 || !pktgen__push_data(&b, default_data, sizeof(default_data)))
+		return TEST_ERROR;
+	pktgen__finish(&b);
+	return 0;
+}
+static __always_inline int make6(struct __ctx_buff *ctx, bool error)
+{
+	struct pktgen b;
+	void *l4;
+	pktgen__init(&b, ctx);
+	if (error)
+		l4 = pktgen__push_ipv6_icmp6_packet(&b, (__u8 *)mac_one, (__u8 *)mac_two,
+			(__u8 *)v6_pod_one, (__u8 *)v6_pod_two, ICMPV6_PKT_TOOBIG);
+	else
+		l4 = pktgen__push_ipv6_tcp_packet(&b, (__u8 *)mac_one, (__u8 *)mac_two,
+			(__u8 *)v6_pod_one, (__u8 *)v6_pod_two,
+			__bpf_htons(40002), __bpf_htons(8080));
+	if (!l4 || !pktgen__push_data(&b, default_data, sizeof(default_data)))
+		return TEST_ERROR;
+	pktgen__finish(&b);
+	return 0;
+}
+static __always_inline int classify4(struct __ctx_buff *ctx)
+{
+	struct ct_entry entry = {};
+	struct ipv4_ct_tuple tuple = {};
+	struct ct_state state = {};
+	__u32 monitor = 0;
+	struct iphdr *ip;
+	void *data, *end;
+	int off, ret;
+	if (!revalidate_data(ctx, &data, &end, &ip))
+		return TEST_ERROR;
+	tuple.nexthdr = ip->protocol;
+	tuple.saddr = ip->saddr;
+	tuple.daddr = ip->daddr;
+	tuple.flags = ct_lookup_select_tuple_type(CT_EGRESS, SCOPE_BIDIR);
+	off = ETH_HLEN + ipv4_hdrlen(ip);
+	ret = ct_extract_ports4(ctx, ip, ipfrag_encode_ipv4(ip), off, CT_EGRESS, &tuple);
+	if (ret < 0)
+		return TEST_ERROR;
+	entry.lifetime = bpf_mono_now() + bpf_sec_to_mono(60);
+	if (map_update_elem(get_ct_map4(&tuple), &tuple, &entry, BPF_ANY))
+		return TEST_ERROR;
+	/* Deliberately leave an old RELATED bit in the caller's tuple. The public
+	 * lookup must reset it before parsing the actual TCP/ICMP packet. */
+	tuple.flags |= TUPLE_F_RELATED;
+	classified = ct_lookup4(get_ct_map4(&tuple), &tuple, ctx, ip, off,
+		CT_EGRESS, SCOPE_BIDIR, &state, &monitor);
+	classified_flags = tuple.flags;
+	classified_protocol = tuple.nexthdr;
+	return 0;
+}
+static __always_inline int classify6(struct __ctx_buff *ctx)
+{
+	struct ct_entry entry = {};
+	struct ipv6_ct_tuple tuple = {};
+	struct ct_state state = {};
+	__u32 monitor = 0;
+	struct ipv6hdr *ip;
+	void *data, *end;
+	fraginfo_t fraginfo;
+	int off, ret;
+	if (!revalidate_data(ctx, &data, &end, &ip))
+		return TEST_ERROR;
+	tuple.nexthdr = ip->nexthdr;
+	ipv6_addr_copy(&tuple.saddr, (union v6addr *)&ip->saddr);
+	ipv6_addr_copy(&tuple.daddr, (union v6addr *)&ip->daddr);
+	off = ipv6_hdrlen_with_fraginfo(ctx, &tuple.nexthdr, &fraginfo);
+	if (off < 0)
+		return TEST_ERROR;
+	off += ETH_HLEN;
+	tuple.flags = ct_lookup_select_tuple_type(CT_EGRESS, SCOPE_BIDIR);
+	ret = ct_extract_ports6(ctx, ip, fraginfo, off, CT_EGRESS, &tuple);
+	if (ret < 0)
+		return TEST_ERROR;
+	entry.lifetime = bpf_mono_now() + bpf_sec_to_mono(60);
+	if (map_update_elem(get_ct_map6(&tuple), &tuple, &entry, BPF_ANY))
+		return TEST_ERROR;
+	tuple.flags |= TUPLE_F_RELATED;
+	classified = ct_lookup6(get_ct_map6(&tuple), &tuple, ctx, ip, fraginfo, off,
+		CT_EGRESS, SCOPE_BIDIR, &state, &monitor);
+	classified_flags = tuple.flags;
+	classified_protocol = tuple.nexthdr;
+	return 0;
+}
+#define CT_CASE(name, family, error, expected, protocol, related) \
+PKTGEN("tc", name) \
+int name##_packet(struct __ctx_buff *ctx) { return make##family(ctx, error); } \
+SETUP("tc", name) \
+int name##_setup(struct __ctx_buff *ctx) { return classify##family(ctx); } \
+CHECK("tc", name) \
+int name##_check(__maybe_unused const struct __ctx_buff *ctx) \
+{ \
+	test_init(); \
+	assert(classified == expected); \
+	assert(classified_protocol == protocol); \
+	assert(!!(classified_flags & TUPLE_F_RELATED) == related); \
+	test_finish(); \
+}
+CT_CASE(ct_related_tcp4_is_reply, 4, false, CT_REPLY, IPPROTO_TCP, false)
+CT_CASE(ct_related_icmp4_is_control, 4, true, CT_RELATED, IPPROTO_ICMP, true)
+CT_CASE(ct_related_tcp6_is_reply, 6, false, CT_REPLY, IPPROTO_TCP, false)
+CT_CASE(ct_related_icmp6_is_control, 6, true, CT_RELATED, IPPROTO_ICMPV6, true)
