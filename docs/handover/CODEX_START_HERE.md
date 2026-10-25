@@ -4,7 +4,7 @@ The active mandate is end-to-end CMTC security delivery. Questions and documenta
 
 ## Read in this order
 
-1. Read [README](../../README.md).
+1. Read [README](../../README.md) and [the architecture update](../../ARCHITECTURE_UPDATE.md).
 2. Read [delivery status](../agile/DELIVERY_STATUS.md).
 3. Read [the backlog](../agile/BACKLOG.md).
 4. Read [the security test matrix](../architecture/SECURITY_AND_FAILURE_TEST_MATRIX.md).

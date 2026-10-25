@@ -37,3 +37,5 @@ These files preserve design inputs. They are not executable runbooks or evidence
 - [SPIRE manifest request](SPIRE_MANIFEST_CODE_REQUEST.md).
 
 The two retired `cmtc-mtls` Python runners stop before argument parsing, file writes or API calls. Preserve their bodies as historical source. Use the current two-cluster runners linked from delivery status.
+
+The user requested [kernel fixture review](KERNEL_POLICY_FIXTURE_OPUS_REQUEST.md) with Claude Opus 5.5 High. Cursor initialization confirms `Claude Opus 5.5 300K High`, session `014a474d-566d-4f58-8588-baa744ffc456`. The request includes exact source, all retained failures and full patch/test requirements. The run is proposal-only; primary qualification remains required.

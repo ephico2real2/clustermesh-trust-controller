@@ -43,6 +43,7 @@ Ztunnel activation is pending in both ClusterMesh labs.
 | Task | Guide |
 | --- | --- |
 | Continue implementation | [Handover](docs/handover/CODEX_START_HERE.md) |
+| Review the latest architectural changes | [Architecture update](ARCHITECTURE_UPDATE.md) |
 | Understand the design | [Target architecture](docs/architecture/END_TO_END_DESIGN.md) |
 | Check the work plan | [Backlog](docs/agile/BACKLOG.md) and [security test matrix](docs/architecture/SECURITY_AND_FAILURE_TEST_MATRIX.md) |
 | Understand PKI and stale-flow checks | [PKI trust flow](PKI_TRUST_FLOW.md) |
@@ -68,7 +69,7 @@ Ztunnel activation is pending in both ClusterMesh labs.
 7. Collect load, packet, identity and dashboard evidence where applicable.
 8. Commit the qualified increment.
 
-CI, branch pushes and registry publication are deferred. Keep platform traffic safe. Keep private keys out of logs and evidence. Preserve the existing labs and applications.
+Feature-branch pushes are authorized. Manual CI dispatch and registry publication remain deferred. Keep platform traffic safe. Keep private keys out of logs and evidence. Preserve the existing labs and applications.
 
 `NamespaceMTLSPolicy` currently supports `Observe`. Target manifests and proposed CRDs do not enable Strict enforcement. A label, SVID or ACK cannot establish `Protected`.
 

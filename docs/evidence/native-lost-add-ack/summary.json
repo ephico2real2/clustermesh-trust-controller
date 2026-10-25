@@ -1,0 +1,36 @@
+{
+  "race": {
+    "passTopLevel": 416,
+    "passSubtests": 1713
+  },
+  "lockdebugAffected": {
+    "passTopLevel": 40,
+    "passSubtests": 74
+  },
+  "ciliumBase": "8bb97137fcc92b935171d60e59d7fb8a93714bd8",
+  "candidateState": "source increment committed; image and runtime qualification pending",
+  "architecture": "linux/arm64",
+  "raceVetExitCode": 0,
+  "affectedLockdebugExitCode": 0,
+  "lintIssues": 0,
+  "broaderLockdebug": "FAIL unchanged TestEgressCIDRTCPPort recursive repository read lock; retained, not qualified",
+  "rustSource": "75843515d549f7928d080801ac3f7e4344f572eb",
+  "rust": "518 library + 20 direct + 30 namespace + 2 diagnostic; fmt and strict Clippy pass",
+  "limits": [
+    "Source qualification only; no new image or deployment.",
+    "No persistent restore quarantine or mandatory capture qualification.",
+    "Process-local ADD history is not durable admission state.",
+    "Unrelated kernel-reachability candidate remains unqualified."
+  ],
+  "ciliumSource": "3985cc135a",
+  "exactCommittedCheckout": {
+    "source": "3985cc135a",
+    "path": "/private/tmp/cmtc-cilium-lost-ack-clean-20261025",
+    "race": {
+      "passTopLevel": 416,
+      "passSubtests": 1713
+    },
+    "vetExitCode": 0,
+    "dirtyFiles": []
+  }
+}

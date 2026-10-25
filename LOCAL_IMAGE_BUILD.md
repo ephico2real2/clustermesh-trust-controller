@@ -2,7 +2,7 @@
 
 Build images with **Podman from the MacBook host**. Target `linux/arm64`. Transfer each image to the existing Colima kind runtime by archive.
 
-Building an image, importing an image and deploying an image are separate actions. Verify each result. CI, branch pushes and registry publication remain deferred.
+Building an image, importing an image and deploying an image are separate actions. Verify each result. Feature-branch pushes are authorized. Manual CI dispatch and registry publication remain deferred.
 
 ## Select the component
 

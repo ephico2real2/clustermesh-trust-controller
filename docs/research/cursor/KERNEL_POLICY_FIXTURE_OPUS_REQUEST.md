@@ -1,0 +1,28 @@
+# Cilium kernel fixture review — Opus 5.5 High
+
+User explicitly requested Cursor with Claude Opus 5.5 High. Return an implementation-ready unified patch and complete tests in your final response. This is a read-only proposal: do not edit repositories, build, run tests, access credentials, read kubeconfigs/Secrets, change labs, push, dispatch CI or relax security guards. Primary owns implementation and actual tests.
+
+Repository: /private/tmp/cilium-ztunnel-authorization-runtime, branch feat/ztunnel-spire-credentials, HEAD 8bb97137fcc92b935171d60e59d7fb8a93714bd8. Personal origin ephico2real2/cilium; upstream cilium/cilium. HEAD was zero behind fetched upstream today. Dirty files and exact relevant source hashes are in /private/tmp/cmtc-cursor-opus-kernel-20261025/dirty-state.txt and source-manifest.json; selected source snapshots under inputs/. Read actual interfaces and cite path/line, do not infer names. The dirty tree contains TWO independent candidates: policy-map reachability (loader/endpoint/policymap), and lost ADD ACK / queued-send recovery (admission/ZDS). Do not change the latter.
+
+Goal: qualify actual kernel policy-map/program-array reachability for an endpoint, not just a source-IP bit or in-memory policy. No hand-created maps to satisfy expected IDs. Attach actual Cilium endpoint programs inside an isolated Podman network namespace and private bpffs. No lab workload changes. Actual existing labs are cmtc-a/cmtc-b in Colima cmtc-cilium, KVStoreMesh ON, Cilium runtime4459, ztunnel and node encryption OFF. The combined compatibility guard remains CLOSED. No Protected claim. Restore quarantine and mandatory capture remain separate unfinished work. Production image changes require host Podman linux/arm64 build, exact archive import, actual traffic/security checks.
+
+Failing test: TestPrivilegedZtunnelPolicyMapReachabilityReadsAndRejectsKernelPathChanges in pkg/datapath/loader/ztunnel_policy_reachability_test.go. Separate TestPrivilegedPolicyMapKernelIDReturnsLiveKernelID passes. We need no-IP-family profile rejected because real ELF omits policy map; then generated IPv4 profile loads actual native policy path; then LPM pin replacement, tail-call slot changes, extra TCX rejection, restoration/recovery tested.
+
+Failure sequence (full logs /private/tmp/cmtc-policy-reachability-20261025/):
+1. kernel-first/second.jsonl: no cilium_policy map. Static test bpf/node_config.h shadowed generated runtime globals/node_config.h.
+2. Changed compile.go include order: generated runtime globals precedes testIncludes. Production has testIncludes nil. Need broad loader regression for this global test change.
+3. kernel-third.jsonl: generated feature header selected, but missing POLICY_STATS_MAP_SIZE, POLICY_MAP_SIZE, SRV6_VRF_MAP_SIZE, SRV6_POLICY_MAP_SIZE, SRV6_SID_MAP_SIZE, EGRESS_POLICY_MAP_SIZE and Maglev LUT=0. newTestLoader uses bare configWriterForTest lacking production Hive header-node-defines providers. Applied explicit SIX map-size fallback macros read from checked-in node_config.h, and maglev.DefaultConfig. Preserve generated family macros.
+4. kernel-fourth.jsonl: no-IP negative works; real IPv4 load fails: cilium_lb4_backends_v3 MaxEntries=0 at testline248. localNodeConfig LBConfig is empty. loadbalancer.DefaultConfig alone leaves submaps zero; production loadbalancer.NewConfig(DefaultUserConfig, daemon, KPR) normalizes. Other global CT/NAT/neigh/fragments settings need complete fixture initialization.
+5. An attempted config-only patch was corrupt and did NOT apply; kernel-fifth merely reran same source (not new evidence).
+
+Independent proposal /private/tmp/cmtc-policy-reachability-fixture-review/full-defaults-fixture.patch is UNAPPLIED. It normalizes LB via NewConfig, sets/restores CT/NAT/neighbour/fragment defaults, but replaces explicit six-size fallback with generic flattening of all static #defines. Primary rejects broad flattening: absent generated boolean means intentionally disabled, not unspecified; conditional defines could change the test profile. Prefer actual production providers, or explicit narrowly scoped size defaults. Do not disable compiler warnings or weaken expected rejects.
+
+Other source work: actual-etcd full race passed416 top-level/1713subtests plus vet. Affected lockdebug40/74 passed. Full lockdebug found unchanged upstream TestEgressCIDRTCPPort recursive read lock; retained, unrelated. Required lint now0. Rust realowner regression running. These do not qualify kernel reachability.
+
+Request:
+1. Explain the exact include-search failure and all fixture initialization gaps from real production/test code. Distinguish fixture faults from production defects.
+2. Recommend a complete small patch against CURRENT dirty files, including all required defaults or real provider dependencies with cleanup restoration. Explain safer scope for compile.go include-order change and possible effects on existing tests.
+3. Provide complete implementation-ready unified diff, with tests for intended no-family negative, actual IPv4 success, missing/wrong map/tailcall/extra TCX, recovery and configuration cleanup. No placeholder bodies, skipped cases, mocked maps or direct counter substitutions.
+4. Give exact local ARM64 Podman test/race/vet/lint commands and measurable acceptance criteria. Identify remaining unknowns; no claims of mTLS/capture from reference checks alone.
+
+Use direct sentences and consistent terms, the spirit of ASD-STE100. If a diagram helps, use diagram-kit light theme only. Do not spend time creating diagrams for this focused source fix. Return code in final reply; the primary saves it as a proposal file and reviews/tests.

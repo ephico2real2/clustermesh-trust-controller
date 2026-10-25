@@ -48,15 +48,19 @@ The applied policy-map candidate is not yet qualified. A point-in-time map/progr
 
 ## Documentation and current qualification
 
+The new [architecture update](../../ARCHITECTURE_UPDATE.md) connects retained PKI proposals to current runtime, the qualified registrar experiment and the proposed enforcement path. Its two diagram-kit figures are light-only.
+
 The illustrated [registration workflow](../../SPIRE_REGISTRATION_WORKFLOW.md) compares Cilium enrollment with the exact helper. The user requires diagram-kit and light-only PNG generation for this guide. This preference is saved in repository instructions, handover and the validated personal explanation skill.
 
 The corrected owned runtime fixture PASSED from `/private/tmp/cmtc-exact-registrar-20261025/runtime-snapshot-eighth/`. All 124 host helper tests pass. Both clusters observed explicit empty target SVID responses with valid same-node controls before and after. Reenrollment, Pod replacement and server restart passed. Exact templates, signers, PVCs, foreign entries and the producer ledger were preserved. All owned fixtures were removed with zero cleanup errors. Final 36-path application continuity passes with zero cleanup errors. This is registration and credential evidence, not TLS or policy proof.
 
 The policy-map reachability proposal is applied but uncommitted in the Cilium checkout. The first two kernel failures traced to the static test header shadowing the generated node header. The include order is corrected. The third run exposed missing map-size defines normally supplied through Hive. The fourth compiles the IPv4 path but fails loading a zero-capacity load-balancer map. The separate actual KernelMapID case passes. Complete fixture initialization and broad loader regression remain required. Logs: `/private/tmp/cmtc-policy-reachability-20261025/`. No failed kernel run counts as security evidence.
 
-The lost-ADD-ACK and queued-send candidate passes 416 top-level tests and 1,713 subtests with race detection, plus vet, in the actual-etcd isolated ARM64 profile. Broader lockdebug stops in unchanged `TestEgressCIDRTCPPort` on a recursive repository read lock. Its failure is retained; affected recovery lockdebug, lint and Rust owner checks are in progress. No new Cilium image is built or deployed.
+The lost-ADD-ACK and queued-send candidate passes 416 top-level tests and 1,713 subtests with race detection, plus vet, in the actual-etcd isolated ARM64 profile. Broader lockdebug stops in unchanged `TestEgressCIDRTCPPort` on a recursive repository read lock. Its failure is retained; the affected recovery lockdebug run passes 40 top-level tests and 74 subtests, lint reports 0 issues, and the real Rust owner profile passes 518 library, 20 direct, 30 namespace and 2 diagnostic cases with format and strict Clippy. [Evidence](../evidence/native-lost-add-ack/summary.json). The source increment is committed and pushed as Cilium `3985cc135a`. No new Cilium image is built or deployed.
 
-The previously committed CMTC `31dc57d`, Cilium `8bb97137fc` and ztunnel `75843515d5` increments are pushed to the personal feature branches. Both Cilium and ztunnel branches were zero commits behind the fetched upstream tip. Pending source candidates remain separate until local checks pass.
+The previously committed CMTC `31dc57d`, Cilium `8bb97137fc` and ztunnel `75843515d5` increments are pushed to the personal feature branches. Both Cilium and ztunnel branches were zero commits behind the fetched upstream tip. SPIRE CA-journal fix `28f6b8d8` is also pushed to its personal feature branch, zero behind upstream. Pending source candidates remain separate until local checks pass.
+
+Cursor is reviewing the kernel fixture with the user-requested Claude Opus 5.5 High, confirmed session `014a474d-566d-4f58-8588-baa744ffc456`. See [the exact request](../research/cursor/KERNEL_POLICY_FIXTURE_OPUS_REQUEST.md). No edits or lab access are delegated.
 
 ## Approval boundary
 

@@ -98,3 +98,5 @@ Unit tests and real lab tests have separate results. A helper-unit pass cannot q
 8. Commit the document and its evidence together.
 
 Keep dated run records and raw evidence intact. Add a current-state link to an old guide when its recorded scope still matters.
+
+The [architecture update](ARCHITECTURE_UPDATE.md) connects retained proposals to measured runtime and open security gates. Generate only light-theme images for that guide.
