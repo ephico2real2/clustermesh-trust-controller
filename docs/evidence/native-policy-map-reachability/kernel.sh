@@ -1,0 +1,5 @@
+#!/bin/bash
+set -euo pipefail
+rootful=(podman --url ssh://olasumbo@127.0.0.1:49691/tmp/cmtc-observer-rootful/podman.sock --identity /Users/olasumbo/.colima/_lima/_config/user)
+"${rootful[@]}" info --format 'rootless={{.Host.Security.Rootless}} arch={{.Host.Arch}}' > /private/tmp/cmtc-policy-reachability-20261025/kernel-preflight.log
+"${rootful[@]}" run --rm --platform linux/arm64 --privileged --network none --cpus 2 --memory 4g --security-opt label=disable -e PRIVILEGED_TESTS=1 -e GOMAXPROCS=2 -e GOMEMLIMIT=2GiB -e GOFLAGS=-p=2 -e GOCACHE=/cache -v /private/tmp/cilium-ztunnel-authorization-runtime:/src -v /private/tmp/cilium-ztunnel-linux-go-cache:/cache -w /src f0093acd3f0ab3a1966ebe348eaa3c78ac706f94839f52209ae7120508cf2529 sh -ec 'mount --make-rprivate /; mkdir -p /sys/fs/bpf; mount -t bpf bpffs /sys/fs/bpf; go test -race -count=1 -timeout=6m -json -run "^(TestPrivilegedZtunnelPolicyMapReachabilityReadsAndRejectsKernelPathChanges|TestPrivilegedPolicyMapKernelIDReturnsLiveKernelID)$" ./pkg/datapath/loader ./pkg/maps/policymap' > /private/tmp/cmtc-policy-reachability-20261025/kernel-seventh.jsonl 2>&1

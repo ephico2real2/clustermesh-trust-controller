@@ -1,15 +1,19 @@
 #!/usr/bin/env bash
 # Per-run ci-captures folders and race-safe retries, adapted from demo55-ci.
-# Only PNGs and the browser evidence log are published; see SOURCE.md.
+# Publish PNGs and an explicit public evidence allowlist; see SOURCE.md.
 set -euo pipefail
 out=${CAPTURE_OUT:-artifacts/screenshots}
 branch=${CAPTURE_BRANCH:-ci-captures}
 case "$out" in artifacts/*) ;; *) echo 'Publication must read artifacts/' >&2;exit 1;; esac
 case "$out" in *..*) exit 1;; esac
-shopt -s nullglob
-pngs=("$out"/*.png)
-if [ "${#pngs[@]}" = 0 ]; then
-  echo 'No browser captures to publish' | tee -a "${GITHUB_STEP_SUMMARY:-/dev/null}"
+public_files=$(python3 - "$out" <<'PY'
+import json,sys
+from scripts.capture.load_timeline import publication_files
+print(json.dumps(publication_files(sys.argv[1])))
+PY
+)
+if [ "$public_files" = '[]' ]; then
+  echo 'No browser evidence to publish' | tee -a "${GITHUB_STEP_SUMMARY:-/dev/null}"
   exit 0
 fi
 : "${GITHUB_REPOSITORY:?}" "${GITHUB_RUN_ID:?}" "${GITHUB_RUN_ATTEMPT:?}" "${GH_TOKEN:?}"
@@ -37,8 +41,12 @@ for attempt in 1 2 3 4 5; do
     git -C "$stage" checkout -q --orphan "captures-$attempt"
   fi
   mkdir -p "$stage/$dir"
-  cp "${pngs[@]}" "$stage/$dir/"
-  if [ -f "$out/walk.log" ]; then cp "$out/walk.log" "$stage/$dir/"; fi
+  PUBLIC_CAPTURE_FILES="$public_files" python3 - "$stage/$dir" <<'PY'
+import json,os,pathlib,shutil,sys
+destination=pathlib.Path(sys.argv[1])
+for source,name in json.loads(os.environ['PUBLIC_CAPTURE_FILES']):
+    shutil.copyfile(source,destination/name)
+PY
   git -C "$stage" add -- "$dir"
   if ! git -C "$stage" diff --cached --quiet; then git -C "$stage" commit -qm "captures: $dir"; fi
   if git -C "$stage" "${auth[@]}" push -q origin "HEAD:refs/heads/$branch"; then pushed=yes;break;fi
@@ -54,6 +62,20 @@ root=pathlib.Path(out)
 url=f'https://github.com/{repo}/tree/{revision}/{directory}'
 lines=[f'## Browser captures — [{directory}]({url})','',
        'Pages as the Ubuntu browser saw them. Render checks are enforced after publication; missing security evidence remains BLOCKED.','']
+timeline=root/'timeline-results.json'
+if timeline.exists():
+    report=json.loads(timeline.read_text())
+    lines += ['| Round | Offset (s) | Capture start → finish (UTC) | Query range (UTC) | Verdict |','| --- | ---: | --- | --- | --- |']
+    def stamp(value):
+        if value is None:return 'unavailable'
+        import datetime
+        return datetime.datetime.fromtimestamp(value/1000,datetime.timezone.utc).isoformat()
+    for row in report.get('rounds',[]):
+        interval=f"{stamp(row.get('fromMilliseconds'))} → {stamp(row.get('toMilliseconds'))}"
+        capture=f"{stamp(row.get('startedAtMs'))} → {stamp(row.get('finishedAtMs'))}"
+        lines.append(f"| {row['round']} | {row['scheduledOffsetSeconds']} | {capture} | {interval} | {'passed' if row.get('passed') else 'failed'} |")
+    lines += ['',f"During-load capture: {'passed' if report.get('qualifiedDuringLoad') else 'failed'}. Final Fortio results are checked separately. These captures do not establish workload mTLS.",'']
+    if report.get('error'):lines.append('Timeline error: '+str(report['error']).replace('`',"'")+'\n')
 log=root/'walk.log'
 if log.exists():
     for line in log.read_text().splitlines():

@@ -15,7 +15,8 @@ if [[ "${1:-}" == start ]]; then
   run_id=${run_id:-$(date -u +%y%m%d%H%M%S)}
   [[ "$run_id" =~ ^[a-z0-9-]+$ ]] || { echo "invalid CMTC_LOAD_RUN_ID: $run_id" >&2; exit 2; }
   run_dir="artifacts/load/$run_id"
-  mkdir -p "$run_dir"
+  [ ! -e "$run_dir" ] || { echo "Refusing to overwrite load evidence: $run_dir" >&2; exit 1; }
+  mkdir "$run_dir"
   printf '%s\n' "$run_id" > artifacts/load/current-run
 else
   run_id=${run_id:-$(cat artifacts/load/current-run)}
@@ -39,7 +40,7 @@ start)
       cmtc-b-mesh-31337) cluster=cmtc-b; target=http://rebel-base-cmtc-a.mesh-example:31337/; ns=mesh-example; qps=5 ;;
     esac
     job=$(job_name "$stream")
-    kubectl --context "kind-$cluster" -n "$ns" apply -f - <<EOF
+    kubectl --context "kind-$cluster" -n "$ns" create -f - -o json > "$run_dir/$stream.job-created.json" <<EOF
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -72,6 +73,13 @@ spec:
             requests: {cpu: 10m, memory: 16Mi}
             limits: {memory: 32Mi}
 EOF
+    printf '%s\t%s\t%s\t%s\n' "$stream" "$cluster" "$ns" "$target" >> "$run_dir/streams.tsv"
+    echo "Created $stream: $target (job=$job, qps=$qps, run=$run_id)"
+  done
+  # Create all streams before waiting. Image pulls must not consume the first
+  # stream's six-minute load while later Jobs have not even been submitted.
+  while IFS=$'\t' read -r stream cluster ns target; do
+    job=$(job_name "$stream")
     pod=''
     for _ in $(seq 1 30); do
       pod=$(kubectl --context "kind-$cluster" -n "$ns" get pods -l "job-name=$job" -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || true)
@@ -80,26 +88,39 @@ EOF
     done
     [ -n "$pod" ] || { echo "load pod was not created: $stream ($job)" >&2; exit 1; }
     kubectl --context "kind-$cluster" -n "$ns" wait "pod/$pod" --for=jsonpath='{.status.initContainerStatuses[0].state.running.startedAt}' --timeout=3m
-    printf '%s\t%s\t%s\t%s\n' "$stream" "$cluster" "$ns" "$target" >> "$run_dir/streams.tsv"
-    echo "Started $stream: $target (job=$job, qps=$qps, run=$run_id)"
-  done
+    expected_uid=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["metadata"]["uid"])' "$run_dir/$stream.job-created.json")
+    actual_uid=$(kubectl --context "kind-$cluster" -n "$ns" get "job/$job" -o jsonpath='{.metadata.uid}')
+    [ "$expected_uid" = "$actual_uid" ] || { echo "Load Job was replaced: $stream" >&2; exit 1; }
+    echo "Running $stream: $target (job=$job, run=$run_id)"
+  done < "$run_dir/streams.tsv"
   ;;
 collect)
-  for stream in "${streams[@]}"; do
-    case "$stream" in
-      cmtc-a-shop|cmtc-a-mesh-*) cluster=cmtc-a ;;
-      cmtc-b-shop|cmtc-b-mesh-*) cluster=cmtc-b ;;
-    esac
-    case "$stream" in
-      *-shop) ns=cf2cnp-lab; qps=20 ;;
-      *-mesh-80) ns=mesh-example; qps=10 ;;
-      *) ns=mesh-example; qps=5 ;;
-    esac
-    job=$(job_name "$stream")
-    kubectl --context "kind-$cluster" -n "$ns" wait "job/$job" --for=condition=Complete --timeout=7m
-    kubectl --context "kind-$cluster" -n "$ns" logs "job/$job" -c fortio > "$run_dir/$stream.log"
-    kubectl --context "kind-$cluster" -n "$ns" logs "job/$job" -c results > "$run_dir/$stream.json"
-  done
+  frozen_manifest=${CMTC_LOAD_MANIFEST:-$run_dir/load-manifest.json}
+  if [ -z "${CMTC_LOAD_MANIFEST:-}" ] && [ ! -e "$frozen_manifest" ]; then
+    frozen_manifest="${CMTC_CAPTURE_OUT:-artifacts/screenshots}/load-manifest.json"
+  fi
+  if [ -n "${CMTC_LOAD_MANIFEST:-}" ] || [ -e "$frozen_manifest" ]; then
+    python3 scripts/capture/collect_frozen_load.py --run-dir "$run_dir" --manifest "$frozen_manifest"
+  else
+    for stream in "${streams[@]}"; do
+      case "$stream" in
+        cmtc-a-shop|cmtc-a-mesh-*) cluster=cmtc-a ;;
+        cmtc-b-shop|cmtc-b-mesh-*) cluster=cmtc-b ;;
+      esac
+      case "$stream" in
+        *-shop) ns=cf2cnp-lab; qps=20 ;;
+        *-mesh-80) ns=mesh-example; qps=10 ;;
+        *) ns=mesh-example; qps=5 ;;
+      esac
+      job=$(job_name "$stream")
+      kubectl --context "kind-$cluster" -n "$ns" wait "job/$job" --for=condition=Complete --timeout=7m
+      expected_uid=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["metadata"]["uid"])' "$run_dir/$stream.job-created.json")
+      actual_uid=$(kubectl --context "kind-$cluster" -n "$ns" get "job/$job" -o jsonpath='{.metadata.uid}')
+      [ "$expected_uid" = "$actual_uid" ] || { echo "Load Job was replaced before collection: $stream" >&2; exit 1; }
+      kubectl --context "kind-$cluster" -n "$ns" logs "job/$job" -c fortio > "$run_dir/$stream.log"
+      kubectl --context "kind-$cluster" -n "$ns" logs "job/$job" -c results > "$run_dir/$stream.json"
+    done
+  fi
   python3 - "$run_dir" <<'PY'
 import json
 import pathlib
@@ -129,6 +150,7 @@ for stream, qps in streams.items():
         'durationSeconds': data['ActualDuration'] / 1e9,
     })
 (run_dir / 'load-results.json').write_text(json.dumps(results, indent=2) + '\n')
+pathlib.Path('artifacts/load-results.json').write_text(json.dumps(results, indent=2) + '\n')
 print(f'PASS: measured eight unique local and cross-cluster streams; evidence={run_dir}')
 PY
   ;;

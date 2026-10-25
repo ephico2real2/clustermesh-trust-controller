@@ -1,0 +1,39 @@
+{"ts":1792920606.569309,"level":"info","r":1,"file":"scli.go","line":124,"msg":"Starting","command":"Φορτίο","version":"1.75.3 h1:2et+WGrx6FHBEyQb2kYz07q+/AXzHIio7amwuDDn6vM= go1.25.14 arm64 linux","go-max-procs":8}
+Fortio 1.75.3 running at 5 queries per second, 8->8 procs, for 6m0s: http://rebel-base-cmtc-b.mesh-example:8080/
+{"ts":1792920606.570157,"level":"info","r":1,"file":"httprunner.go","line":121,"msg":"Starting http test","run":0,"url":"http://rebel-base-cmtc-b.mesh-example:8080/","threads":2,"qps":"5.0","warmup":"parallel","conn-reuse":""}
+Starting at 5 qps with 2 thread(s) [gomax 8] for 6m0s : 900 calls each (total 1800)
+{"ts":1792920965.963731,"level":"info","r":56,"file":"periodic.go","line":882,"msg":"T000 ended after 6m0.000533579s : 900 calls. qps=2.49999629459577"}
+{"ts":1792920966.164231,"level":"info","r":57,"file":"periodic.go","line":882,"msg":"T001 ended after 6m0.001034774s : 900 calls. qps=2.4999928140900995"}
+Ended after 6m0.201070358s : 1800 calls. qps=4.9972
+{"ts":1792920966.164279,"level":"info","r":1,"file":"periodic.go","line":598,"msg":"Run ended","run":0,"elapsed":360201070358,"calls":1800,"qps":4.997208915040145}
+Sleep times : count 1798 avg 0.39960312 +/- 0.0003511 min 0.397204335 max 0.400341779 sum 718.486406
+Aggregated Function Time : count 1800 avg 0.00023558932 +/- 0.0001046 min 8.1111e-05 max 0.002690595 sum 0.42406077
+# range, mid point, percentile, count
+>= 8.1111e-05 <= 0.001 , 0.000540556 , 99.89, 1798
+> 0.002 <= 0.0026906 , 0.0023453 , 100.00, 2
+# target 50% 0.000540811
+# target 75% 0.000770917
+# target 90% 0.00090898
+# target 99% 0.000991818
+# target 99.9% 0.00206906
+Error cases : no data
+# Socket and IP used for each connection:
+[0]   1 socket used, resolved to 10.11.75.15:8080, connection timing : count 1 avg 0.000370679 +/- 0 min 0.000370679 max 0.000370679 sum 0.000370679
+[1]   1 socket used, resolved to 10.11.75.15:8080, connection timing : count 1 avg 0.000178192 +/- 0 min 0.000178192 max 0.000178192 sum 0.000178192
+Connection time histogram (s) : count 2 avg 0.0002744355 +/- 9.624e-05 min 0.000178192 max 0.000370679 sum 0.000548871
+# range, mid point, percentile, count
+>= 0.000178192 <= 0.000370679 , 0.000274436 , 100.00, 2
+# target 50% 0.000178192
+# target 75% 0.000274436
+# target 90% 0.000332182
+# target 99% 0.000366829
+# target 99.9% 0.000370294
+Sockets used: 2 (for perfect keepalive, would be 2)
+Uniform: true, Jitter: false, Catchup allowed: false
+IP addresses distribution:
+10.11.75.15:8080: 2
+Code 200 : 1800 (100.0 %)
+Response Header Sizes : count 1800 avg 300 +/- 0 min 300 max 300 sum 540000
+Response Body/Total Sizes : count 1800 avg 368 +/- 0 min 368 max 368 sum 662400
+All done 1800 calls (plus 2 warmup) 0.236 ms avg, 5.0 qps
+Successfully wrote 3623 bytes of Json data to /results/fortio.json

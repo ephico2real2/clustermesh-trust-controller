@@ -15,6 +15,9 @@ inputs:
   image:
     description: Prepared Ubuntu image built from scripts/capture/Dockerfile
     default: cmtc-capture:dev
+  load-timeline:
+    description: Capture three bounded rounds during the current eight-stream load
+    default: 'false'
   publish-branch:
     description: Screenshot publication branch; empty disables publication
     default: ci-captures
@@ -28,13 +31,25 @@ runs:
         CMTC_CAPTURE_OUT: ${{ inputs.out }}
         CMTC_CAPTURE_IMAGE: ${{ inputs.image }}
         CMTC_WALK_ENV_JSON: ${{ inputs.env-json }}
+        CMTC_LOAD_TIMELINE: ${{ inputs.load-timeline }}
       run: |
         set -euo pipefail
         case "$CMTC_CAPTURE_OUT" in artifacts/*) ;; *) exit 1;; esac
         case "$CMTC_CAPTURE_OUT" in *..*) exit 1;; esac
         mkdir -p "$CMTC_CAPTURE_OUT"
+        walk() {
+          case "$CMTC_LOAD_TIMELINE" in
+            true)
+              local run_id
+              run_id=$(cat artifacts/load/current-run) || return
+              python3 scripts/capture/load_timeline.py --run-dir "artifacts/load/$run_id" --out "$CMTC_CAPTURE_OUT"
+              ;;
+            false) bash scripts/lab/capture.sh ;;
+            *) echo 'load-timeline must be true or false' >&2; return 2 ;;
+          esac
+        }
         set +e
-        bash scripts/lab/capture.sh 2>&1 | tee "$CMTC_CAPTURE_OUT/walk.log"
+        walk 2>&1 | tee "$CMTC_CAPTURE_OUT/walk.log"
         rc=${PIPESTATUS[0]}
         set -e
         echo "$rc" > "$CMTC_CAPTURE_OUT/walk.rc"

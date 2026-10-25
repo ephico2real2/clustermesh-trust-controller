@@ -1,0 +1,36 @@
+{
+  "runID": "timeline-261025092833",
+  "capture": "artifacts/timeline-261025092833-screenshots",
+  "steps": [
+    {
+      "name": "load-start",
+      "command": [
+        "bash",
+        "scripts/lab/load.sh",
+        "start"
+      ],
+      "exit": 0
+    },
+    {
+      "name": "timeline",
+      "command": [
+        "python3",
+        "scripts/capture/load_timeline.py",
+        "--run-dir",
+        "artifacts/load/timeline-261025092833",
+        "--out",
+        "artifacts/timeline-261025092833-screenshots"
+      ],
+      "exit": 1
+    },
+    {
+      "name": "load-collect",
+      "command": [
+        "bash",
+        "scripts/lab/load.sh",
+        "collect"
+      ],
+      "exit": 0
+    }
+  ]
+}

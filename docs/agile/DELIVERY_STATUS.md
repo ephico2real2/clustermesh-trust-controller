@@ -1,6 +1,6 @@
 # End-to-end local delivery status
 
-Updated 2026-10-25. Continue the active end-to-end mandate through the existing agile stories. Complete side requests, then return to the first unfinished security dependency. The user authorized pushing all work on 2026-10-25. Push reviewed commits to the personal feature branches. Keep local qualification first; do not merge incomplete security work. Manual CI dispatch and registry publication remain deferred.
+Updated 2026-10-25. Continue the active end-to-end mandate through the existing agile stories. Complete side requests, then return to the first unfinished security dependency. The user authorized pushing all work on 2026-10-25. Push reviewed commits to the personal feature branches. Keep local qualification first; do not merge incomplete security work. Manual CI dispatch and registry publication remain deferred. The push-triggered CMTC [Observe lab run40177163792](https://github.com/ephico2real2/clustermesh-trust-controller/actions/runs/40177163792) passed unit/build, deployed lab, measured six-minute load and screenshots. This is baseline Observe qualification, not combined ztunnel mTLS evidence.
 
 ## Current runtime
 
@@ -39,16 +39,23 @@ The seventh trial failed credential withdrawal and remains a diagnostic. The cor
 
 ## Next concrete actions
 
-1. Qualify the actual kernel policy-map reachability fixture against Cilium `8bb97137fc`.
-2. Review and implement lost-ADD-ACK drain recovery, including queued-send races.
-3. Complete persistent restore quarantine, mandatory capture and authenticated policy integration.
+1. Complete persistent restore quarantine, mandatory capture and authenticated policy integration.
+2. Review and locally qualify Opus's implementation on the four isolated `feat/opus-mesh-mtls-finalization` branches.
+3. Redesign the actual CMTC dashboard sources and generators with meaningful data, metrics ownership and both-theme load evidence.
 4. Keep production registrar ownership, source-failure/expiry fault injection and agent Admin permissions as explicit gates.
 
-The applied policy-map candidate is not yet qualified. A point-in-time map/program reference cannot prove full traffic coverage. Keep the combined startup guard closed. Never add a blanket port-15008 allowance.
+Cilium `07722a595a` passes the actual IPv4 kernel policy-map fixture (2 top-level tests and 1 subtest), the broad functional/race/vet profile (475 / 1814), and the affected lockdebug profile (416 / 1713). Lint reports zero issues. One unrelated standalone verifier complexity benchmark remains skipped in the general profile; no targeted kernel or lockdebug case is skipped. Read [the retained logs](../evidence/native-policy-map-reachability/README.md). Lost-ADD-ACK recovery is committed at `3985cc135a`; test-only lock scopes and logger setup are at `c17af5304e`. IPv6 and dual-stack runtime qualification remain open. A point-in-time map/program reference cannot prove full traffic coverage. Keep the combined startup guard closed. Never add a blanket port-15008 allowance.
+
+
+## Opus implementation and CI capture work — 2026-10-25
+
+The user explicitly requested pushing the present branch and inspecting image builds and screenshot generation in GitHub Actions. Keep local qualification first. The corrected [Opus implementation assignment](../research/cursor/MESH_MTLS_FINALIZATION_OPUS_REQUEST.md) requires working native ClusterMesh mTLS code, full negative/recovery tests and changes to the actual proposed CMTC dashboards. Reviewing dashboard rules alone does not meet the request. The four isolated branches are `feat/opus-mesh-mtls-finalization`; the corrected Cursor session `ea8922cc-9816-4b1b-9699-de44cf58516b` confirms Claude Opus 5.5 High. The primary owns live rollout and independent acceptance.
+
+The CI capture increment adds three bounded screenshot rounds at 45, 135 and 225 seconds after all eight exact Fortio processes are frozen. Each round captures both dashboards in both themes, with the same fixed query window and pre/mid/post process-incarnation checks. Final measured Fortio collection remains required. The local timeline suite passes 23 tests with no skips, including bounded cleanup and cancellation cases. Nine collector tests pass; an actual replay verifies the same eight successfully terminated processes before and after exact-Pod log reads. The Playwright ARM64 image builds and passes its embedded browser tests. The real local repeat passes all three capture rounds and all eight measured streams: 28,800 HTTP 200 responses over six minutes. All 12 PNGs were inspected. [The local evidence](../evidence/local-load-timeline/README.md) retains timestamps, raw queries, load results and failures. The first attempt found that Colima does not mount the repository root. Its failure is retained. The successful repeat uses identical scripts on the existing shared `/private/tmp` mount. Actual forced cleanup passes after explicitly overriding Podman’s ten-second stop delay; the first failure is retained. No workload-mTLS claim follows from these Observe screenshots.
 
 ## Documentation and current qualification
 
-The new [architecture update](../../ARCHITECTURE_UPDATE.md) connects retained PKI proposals to current runtime, the qualified registrar experiment and the proposed enforcement path. Its two diagram-kit figures are light-only.
+The new [architecture update](../../ARCHITECTURE_UPDATE.md) connects retained PKI proposals to current runtime, the qualified registrar experiment and the proposed enforcement path. Its two diagram-kit figures are light-only. Documentation commit `4a93ca3` is pushed; kit checks and visual inspection pass.
 
 The illustrated [registration workflow](../../SPIRE_REGISTRATION_WORKFLOW.md) compares Cilium enrollment with the exact helper. The user requires diagram-kit and light-only PNG generation for this guide. This preference is saved in repository instructions, handover and the validated personal explanation skill.
 

@@ -40,6 +40,8 @@ jobs:
           bash -n scripts/capture/publish.sh
           node --check scripts/capture/walk.cjs
           node --check scripts/capture/capture.mjs
+          PYTHONDONTWRITEBYTECODE=1 python3 scripts/capture/test_load_timeline.py
+          PYTHONDONTWRITEBYTECODE=1 python3 scripts/capture/test_collect_frozen_load.py
   deployed-lab:
     needs: unit
     runs-on: ubuntu-24.04
@@ -56,6 +58,22 @@ jobs:
         run: docker build -f scripts/capture/Dockerfile -t cmtc-capture:dev .
       - name: Build the actual CMTC image
         run: docker build -t cmtc:dev .
+      - name: Record the built capture and CMTC image identities
+        run: |
+          mkdir -p artifacts
+          python3 - <<'PYIMAGES'
+          import json, os, subprocess
+          images = []
+          for tag in ('cmtc-capture:dev', 'cmtc:dev'):
+              image = json.loads(subprocess.check_output(['docker', 'image', 'inspect', tag], text=True))[0]
+              assert image['Os'] == 'linux' and image['Architecture'] == 'amd64', image
+              images.append({'tag': tag, 'id': image['Id'], 'os': image['Os'], 'architecture': image['Architecture']})
+          record = {'source': os.environ['GITHUB_SHA'], 'images': images}
+          with open('artifacts/built-images.json', 'w') as output:
+              json.dump(record, output, indent=2)
+              output.write('\n')
+          print(json.dumps(record, indent=2))
+          PYIMAGES
       - name: Select an explicit development image bundle
         if: inputs.cilium_image_lock_url != ''
         env:
@@ -82,23 +100,25 @@ jobs:
       - name: Start six-minute shop and cross-cluster HTTP loads
         id: load
         run: bash scripts/lab/load.sh start
-      - name: Preserve cluster evidence
-        if: always()
-        run: bash scripts/lab/evidence.sh
       - name: Real dashboard and example application screenshots
         if: always()
         timeout-minutes: 10
         uses: ./.github/actions/browser-walk
+        with:
+          load-timeline: ${{ steps.load.outcome == 'success' }}
       - name: Require measured HTTP load results
         if: always() && steps.load.outcome == 'success'
         run: bash scripts/lab/load.sh collect
+      - name: Preserve cluster evidence
+        if: always()
+        run: bash scripts/lab/evidence.sh
       - name: Test summary
         if: always()
         run: |
           {
             echo '## CMTC deployed Observe lab'
             echo 'Policy/inventory, imported application policy, baseline ClusterMesh and screenshots are tested here. Workload mTLS and layered encryption are BLOCKED pending Cilium integration.'
-            for report in artifacts/cilium-images.lock.json artifacts/cilium-image-verification.json artifacts/load-results.json artifacts/results.json; do
+            for report in artifacts/built-images.json artifacts/cilium-images.lock.json artifacts/cilium-image-verification.json artifacts/load-results.json artifacts/results.json; do
               if [ -f "$report" ]; then
                 echo '```json'
                 cat "$report"

@@ -28,7 +28,7 @@ The Cilium fork has source-qualified source-IP receipts and native policy-drain 
 
 The registrar trial found a real ztunnel client defect. The client swallowed SPIRE stream errors and later reported a deadline. The corrected source passed 568 full-profile tests plus two diagnostic cases, format and strict Clippy. Its exact diagnostic image is imported and version-verified on all four nodes. The corrected withdrawal fixture passes in both clusters with authorized controls, recovery and exact cleanup. The final 36-path application check also passes. Production integration remains open. Keep target credential absence distinct from delegate denial in future tests.
 
-The restore path still lacks complete persistent quarantine before regeneration. Kernel policy-map reachability, mandatory capture and active transport-grant closure remain open. Keep the ClusterMesh/ztunnel guard closed.
+The restore path still lacks complete persistent quarantine before regeneration. IPv4 kernel policy-map reachability passes at Cilium `07722a595a`. IPv6/dual-stack qualification, mandatory capture and active transport-grant closure remain open. Keep the ClusterMesh/ztunnel guard closed.
 
 ## Documentation preference
 

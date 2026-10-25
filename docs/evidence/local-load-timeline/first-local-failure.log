@@ -1,0 +1,16 @@
+Error: statfs /Users/olasumbo/gitRepos/clustermest-trust-controller/artifacts/timeline-261025092833-screenshots/round-01: no such file or directory
+
+Traceback (most recent call last):
+  File "/Users/olasumbo/gitRepos/clustermest-trust-controller/scripts/capture/load_timeline.py", line 272, in <module>
+    if __name__=='__main__':main()
+                            ~~~~^^
+  File "/Users/olasumbo/gitRepos/clustermest-trust-controller/scripts/capture/load_timeline.py", line 271, in main
+    Timeline(repo,local(args.run_dir),local(args.out)).run()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/Users/olasumbo/gitRepos/clustermest-trust-controller/scripts/capture/load_timeline.py", line 239, in run
+    need(process.poll()==0,'browser capture returned failure')
+    ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/olasumbo/gitRepos/clustermest-trust-controller/scripts/capture/load_timeline.py", line 30, in need
+    if not ok:raise Rejected(message)
+              ^^^^^^^^^^^^^^^^^^^^^^^
+Rejected: browser capture returned failure

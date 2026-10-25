@@ -107,7 +107,7 @@ function check(page, ev) { // the page's expectations against its evidence; the 
       const ev = await (evidence[page.evidence || 'title'])(p);
       const why = check(page, ev);
       const blocked = page.blockedSignalsOnNoData ? (ev.empty || []) : [];
-      results.push({name:page.name,render:why.length?'failed':'passed',featureEvidence:why.length?'failed':blocked.length?'blocked':'passed',blockedSignals:blocked,failures:why});
+      results.push({name:page.name,capturedAt:new Date().toISOString(),url:page.url,render:why.length?'failed':'passed',featureEvidence:why.length?'failed':blocked.length?'blocked':'passed',blockedSignals:blocked,failures:why});
       if (why.length) { failures++; console.log(`${page.name}: settled ${waited}s; ${ev.line}`); console.log(`${page.name}: FAILED — ${why.join('; ')}`); }
       else if (blocked.length) console.log(`${page.name}: settled ${waited}s; ${ev.line} — render passed; feature evidence BLOCKED: ${blocked.join(' | ')}`);
       else console.log(`${page.name}: settled ${waited}s; ${ev.line}${page.expect ? ' — expectations met' : ''}`);
