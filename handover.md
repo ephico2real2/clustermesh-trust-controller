@@ -4,6 +4,56 @@ Checkpoint: **2026-10-25, approximately 16:40 UTC / 11:40 America/Chicago**.
 Read [resume.md](resume.md) for the next actions. This document supersedes older
 statements that ztunnel is disabled. The end-to-end security work is unfinished.
 
+## Ultimate goal and acceptance
+
+Deliver **working, fail-closed workload mTLS across Cilium ClusterMesh** using
+our enhanced forks. Complete the existing agile stories and security gates.
+The target is a maintained implementation with repeatable tests and evidence.
+Starting the components is an intermediate step.
+
+Applications keep ordinary TCP/HTTP interfaces. They have no per-Pod proxy
+sidecars. Cilium captures traffic and supplies native workload discovery and
+effective authorization through xDS. Node ztunnel performs workload TLS.
+SPIRE attests workloads and issues cluster-bound identities. CMTC coordinates
+trust intent, issuer approval and lifecycle observations. The experimental
+registrar manages exact live workload registrations.
+
+The required result includes these behaviors:
+
+- Same-node, cross-node and cross-cluster workloads communicate with verified
+  identities and effective authorization. Test A→B and B→A through Global
+  Services and direct Pod IPs. Test80/8080/31337 without treating that sample as
+  proof for every possible port.
+- Required traffic cannot bypass capture or fall back to plaintext. Missing,
+  unauthorized, stale or revoked identity/policy blocks admission. Active
+  connections drain when their authority is withdrawn.
+- Cluster-specific trust domains and approved certificate chains bind identity
+  to the correct cluster. A matching SPIFFE string alone is insufficient.
+- Replacement, namespace exclusion, certificate rotation, xDS disconnect/NACK,
+  process restart and recovery preserve the security boundary.
+- WireGuard or IPsec supplies the separately selected node transport layer.
+  Workload TLS and transport encryption require separate evidence and a tested
+  combined path. Ztunnel does not replace that transport requirement.
+- The opt-in CMTC Go/eBPF DaemonSet is a staged enforcement experiment. Its
+  packet counters and quarantine do not encrypt traffic. Qualify that path,
+  then port the appropriate enforcement into the Cilium fork on a separate
+  branch so Cilium's existing DaemonSet can become its production owner.
+- Real collectors fulfill the planned metric contracts. Operations and Workload
+  Security dashboards show meaningful measured data. Preserve the nine original
+  dashboard domains. Generate load before query checks and screenshots.
+
+Acceptance requires the exact deployed fork images, verified peer identities,
+effective allow/deny decisions, packet evidence, and deterministic failure and
+recovery results. Preserve platform/API/DNS traffic and excluded workloads.
+Never report `Protected` from a label, Pod readiness, certificate or ACK.
+The public Observe-only API does not become Strict merely because this
+experimental native path is enabled.
+
+Use the [backlog](docs/agile/BACKLOG.md),
+[target design](docs/architecture/END_TO_END_DESIGN.md) and
+[security matrix](docs/architecture/SECURITY_AND_FAILURE_TEST_MATRIX.md).
+The current resync failure is the first repair, not the ultimate objective.
+
 ## Result at handover
 
 Both clusters have the rebuilt Cilium agent, operator, ClusterMesh API server,
@@ -33,6 +83,29 @@ failed request; the remaining ports and remote encrypted paths have not passed.
 
 ## Repositories and source
 
+These are our active personal repositories. Reuse their existing enhancements;
+do not substitute stock upstream images or start again from an old release.
+
+| Personal repository | Canonical upstream | Current working branch |
+| --- | --- | --- |
+| [CMTC](https://github.com/ephico2real2/clustermesh-trust-controller) | Our project | `feat/end-to-end-enforcement` |
+| [Cilium fork](https://github.com/ephico2real2/cilium) | `cilium/cilium`, default `main` | `feat/opus-mesh-mtls-finalization` |
+| [ztunnel fork](https://github.com/ephico2real2/ztunnel) | **`cilium/ztunnel`**, default `master` | `feat/opus-mesh-mtls-finalization` |
+| [SPIRE fork](https://github.com/ephico2real2/spire) | `spiffe/spire`, default `main` | `feat/opus-mesh-mtls-finalization` |
+
+`origin` uses the configured `ephico2real2` SSH identity. The verified fork URLs
+are `git@github.com:ephico2real2/{cilium,ztunnel,spire}.git`. CMTC's remote is
+`git@github.com:ephico2real2/clustermesh-trust-controller.git`. The local root
+directory is spelled **`clustermest-trust-controller`**; the remote is spelled
+**`clustermesh-trust-controller`**. Keep this distinction when locating files.
+
+Use the existing SSH configuration and human Git author. Do not copy private
+keys, replace credentials or point `origin` at a canonical upstream repository.
+Inspect each checkout with `git remote -v`, `git branch --show-current`,
+`git rev-parse HEAD` and `git status --short`. Verify current upstream ancestry
+before any later authorized publication. Preserve old branches during a rebase
+or port. No separate Hubble fork is needed for files owned by the Cilium chart.
+
 | Repository | Active checkout | Source |
 | --- | --- | --- |
 | CMTC | `/Users/olasumbo/gitRepos/clustermest-trust-controller` | Branch `feat/end-to-end-enforcement`; this handover commit follows96cbc9e |
@@ -51,6 +124,9 @@ main96cbc9e were pushed by fast-forward. **All working branches and worktrees
 were retained.** No canonical upstream repository was merged or force-pushed.
 This handover commit need not already be on those default branches: inspect Git.
 Registry publication and manual workflow dispatch remain separate and deferred.
+The latest user-provided AGENTS instructions also defer new CI-triggering pushes.
+The default-branch pushes above are completed history, not permission to bypass
+the current local qualification boundary.
 
 ## Owned environment
 
@@ -73,6 +149,129 @@ has `<cluster>-control-plane` and `<cluster>-worker`. Do not assume their IPs
 survive runtime changes. Host tools are `/opt/homebrew/bin/kind` and
 `/opt/homebrew/bin/kubectl`. Neither command was on the Colima guest's PATH in
 the last check. Preserve the existing runtime, applications and signer state.
+
+## Reach and test the cluster APIs from the MacBook
+
+Use the host shell. Existing credentials in the owned kubeconfig already
+provide API access. Do not print that file or export its credentials.
+
+1. Enter the working repository.
+
+```bash
+cd /Users/olasumbo/gitRepos/clustermest-trust-controller
+```
+
+2. Select the existing kubeconfig for this shell.
+
+```bash
+export KUBECONFIG=/private/tmp/cmtc-a-b-20261024.kubeconfig
+```
+
+3. Verify cluster A's API.
+
+```bash
+kubectl --context kind-cmtc-a cluster-info
+kubectl --context kind-cmtc-a get --raw=/readyz
+kubectl --context kind-cmtc-a get namespace kube-system -o jsonpath='{.metadata.uid}'
+```
+
+4. Verify cluster B's API.
+
+```bash
+kubectl --context kind-cmtc-b cluster-info
+kubectl --context kind-cmtc-b get --raw=/readyz
+kubectl --context kind-cmtc-b get namespace kube-system -o jsonpath='{.metadata.uid}'
+```
+
+Require `ok` and the exact UIDs in the environment table. Stop mutations on a
+UID mismatch. Use explicit contexts; do not change a shared current-context.
+
+The read-only host access check on2026-10-25, recorded at17:10UTC, returned
+the following. Its [receipt](docs/evidence/local-activation-20261025/raw/api-access-check.json) contains no credentials:
+
+| Context | Current API endpoint | Result |
+| --- | --- | --- |
+| `kind-cmtc-a` | `https://127.0.0.1:54193` | readyz `ok`, expected UID, two Ready nodes |
+| `kind-cmtc-b` | `https://127.0.0.1:54247` | readyz `ok`, expected UID, two Ready nodes |
+
+These ports are a snapshot. Discover them again with `cluster-info`; do not
+hard-code them into product source. API readiness does not prove ClusterMesh
+or workload-mTLS health.
+
+5. Discover node names and addresses through each API.
+
+```bash
+kubectl --context kind-cmtc-a get nodes -o wide
+kubectl --context kind-cmtc-b get nodes -o wide
+```
+
+Use returned names in test placement and registration. The application runner
+currently expects the recorded two-node fixture names. Validate that assumption
+before running it; generalize discovery before reusing it on another topology.
+
+6. Inspect the existing application fixture.
+
+```bash
+kubectl --context kind-cmtc-a -n cmtc-live-mtls get pods -o wide
+kubectl --context kind-cmtc-b -n cmtc-live-mtls get pods -o wide
+```
+
+### Develop against these APIs before packaging
+
+Use **edit → run against cmtc-a/cmtc-b → test traffic, failures and recovery →
+package the verified change**. API connectivity above is already available;
+do not build an application image merely to discover a controller integration
+failure. Run suitable Go helpers directly from the MacBook with the explicit
+kubeconfig and context. For client-go, use explicit loading rules and
+`ConfigOverrides.CurrentContext`; do not rely on an ambient default context.
+Check each command's actual flags before use. Setting `KUBECONFIG` does not
+make an ordinary unit test an API integration test.
+
+Do not start a second controller that writes resources already managed by a
+running controller. Claim and coordinate the single writer first. Use the
+existing run ledger for probes and record actual API/traffic results. Linux
+datapath code needs the Ubuntu toolchain and selected owned nodes. A complete
+matching binary/BPF set must be tested; a Mac build cannot qualify Linux BPF.
+After the working path is verified, build with host Podman, import the exact
+image, and repeat the affected tests.
+
+### Reach Colima and the builder
+
+For read-only VM inspection:
+
+```bash
+colima -p cmtc-cilium status
+colima -p cmtc-cilium ssh
+```
+
+The VM runs Docker and the kind nodes. Host tools control it through the
+existing Docker context:
+
+```bash
+docker --context colima-cmtc-cilium ps
+```
+
+Host kind commands must select that runtime explicitly:
+
+```bash
+DOCKER_HOST=unix:///Users/olasumbo/.colima/cmtc-cilium/docker.sock kind get clusters
+```
+
+For the separate build connection:
+
+```bash
+podman system connection list
+podman --connection cmtc-ubuntu-build info
+```
+
+Do not change the default container connection. The MacBook API endpoints use
+host loopback. `127.0.0.1` inside Colima or a build container names that different
+network namespace; it does not automatically reach the MacBook API forward.
+Prefer the verified host API path. If a Linux tool must call an API directly,
+verify its route and certificate-valid endpoint before supplying a separately
+scoped configuration. Never disable TLS verification to make that route work.
+An authenticated API error and a sandbox/socket denial require different
+diagnostics; do not recreate the clusters for either.
 
 ## Exact images built and deployed
 
@@ -236,6 +435,13 @@ datapath state. Preserve the fixture and its exact registrations during handoff.
    provenance, permanent kernel-map-write failure, capture/restore, old programs,
    endpoint/IP reuse, platform exceptions, trust rotation and layered encryption
    remain open. Keep the [security matrix](docs/architecture/SECURITY_AND_FAILURE_TEST_MATRIX.md).
+8. **Clock rejection observed by the monitor.** At16:49UTC, B's worker proxy
+   rejected an issuer profile with `wall clock moved backwards`, closed admission
+   and cancelled existing TLS I/O. At16:50:03UTC, host and VM clocks matched and
+   VM NTP reported synchronized. This does not explain or disprove the prior
+   rejection. Compare the verifier clock floor with profile timing. Do not reset
+   checkpoints. Read the local receipt under
+   `artifacts/local-monitor/20261025T164929Z/`.
 
 Tests from earlier increments remain recorded in delivery status. The latest
 operator build ran66 passing targeted race test events plus vet/build exit0.

@@ -4,6 +4,37 @@ Read [handover.md](handover.md) first. It is the current operational record.
 Then read `AGENTS.md`, `docs/handover/CODEX_MASTER_PROMPT.md` and the security
 matrix. Older checkpoints saying ztunnel is off are superseded.
 
+## Ultimate objective
+
+Finish fail-closed workload mTLS across the two-cluster Cilium mesh. Use our
+enhanced `ephico2real2/cilium`, `ephico2real2/ztunnel` and `ephico2real2/spire`
+forks with this CMTC project. Keep node proxies and no application sidecars.
+Complete native discovery, cluster-bound identity, effective authorization,
+mandatory capture, withdrawal and recovery. Then qualify the selected
+WireGuard/IPsec composition and real dashboard telemetry. Repairing startup or
+one HTTP request is not completion. Read the detailed acceptance in handover.md.
+
+## Reach the existing APIs
+
+Run from the MacBook host:
+
+```bash
+cd /Users/olasumbo/gitRepos/clustermest-trust-controller
+export KUBECONFIG=/private/tmp/cmtc-a-b-20261024.kubeconfig
+kubectl --context kind-cmtc-a get --raw=/readyz
+kubectl --context kind-cmtc-b get --raw=/readyz
+kubectl --context kind-cmtc-a get nodes -o wide
+kubectl --context kind-cmtc-b get nodes -o wide
+```
+
+Verify both kube-system UIDs against handover.md before mutations. Develop
+directly against these explicit APIs where supported. Avoid a second active
+reconciler. Use the Ubuntu toolchain for Linux datapath tests. Package with host
+Podman only after the live path works, then qualify the exact deployed image.
+Read [API access](handover.md#reach-and-test-the-cluster-apis-from-the-macbook)
+for endpoints, VM/build access and loopback limitations. Never print kubeconfig
+credentials or disable API TLS verification.
+
 ## Current state
 
 - Ztunnel runs on all four nodes in `cmtc-a` and `cmtc-b`.

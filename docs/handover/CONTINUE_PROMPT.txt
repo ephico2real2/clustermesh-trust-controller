@@ -4,6 +4,35 @@ Start with handover.md and resume.md, then AGENTS.md and
 docs/handover/CODEX_MASTER_PROMPT.md. Treat handover.md as the current state;
 older statements that ztunnel is disabled are historical.
 
+ULTIMATE GOAL: complete fail-closed, sidecar-free workload mTLS across our
+Cilium ClusterMesh, not just startup or baseline HTTP connectivity. Use native
+Cilium capture/discovery/effective-policy xDS, node ztunnel, SPIRE cluster-bound
+identities and CMTC trust coordination. Finish withdrawal/recovery, selected
+WireGuard/IPsec composition, real telemetry and load-backed Grafana evidence.
+Qualify the opt-in Go/eBPF DaemonSet experiment before porting production
+enforcement into Cilium on a separate branch. Follow the agile acceptance gates.
+
+FORKS: ephico2real2/cilium (upstream cilium/cilium), ephico2real2/ztunnel
+(upstream cilium/ztunnel, master), ephico2real2/spire (upstream spiffe/spire).
+All three working branches are feat/opus-mesh-mtls-finalization under
+/private/tmp/cmtc-opus-final-20261025. CMTC is on feat/end-to-end-enforcement.
+The local root uses clustermest in its spelling; the GitHub repo uses clustermesh.
+Use existing ephico2real2 SSH configuration and preserve every working branch.
+
+API ACCESS FROM MACBOOK: export
+KUBECONFIG=/private/tmp/cmtc-a-b-20261024.kubeconfig, then use explicit
+--context kind-cmtc-a or --context kind-cmtc-b with kubectl. Check /readyz,
+verify the pinned kube-system UIDs in handover.md, and discover node names with
+kubectl get nodes. Current host endpoints are127.0.0.1:54193 and127.0.0.1:54247;
+rediscover with cluster-info rather than hard-coding them. Never print the
+kubeconfig. Host loopback is not the same endpoint inside a VM/build container.
+Read handover.md for Colima and Podman connection commands.
+
+Develop suitable Go helpers/controllers against those real APIs before image
+packaging. Use explicit client-go context selection and a single reconciler.
+Use the Ubuntu toolchain and owned nodes for Linux datapath tests. Local unit
+tests alone do not replace API/traffic/failure/recovery integration tests.
+
 Verify every checkout SHA and dirty state, process state, certificate validity
 and lease before writing. The previous Opus source process was stopped for
 handoff. Compiler and live-writer leases are unassigned. Claim exactly one
@@ -41,6 +70,8 @@ retaining every working branch. No canonical upstream merges, force pushes,
 manual workflow dispatch or registry publication are included. Use the configured
 human author. Complete real load, peer/policy/packet evidence and meaningful
 Grafana data after fixing traffic. Keep all open security gates explicit.
+The latest user-provided AGENTS instructions defer new CI-triggering pushes;
+completed historical default-branch pushes do not override that current boundary.
 
 Begin by reporting the verified current state and the first concrete repair.
 Then continue the implementation autonomously. Keep the handover current.
