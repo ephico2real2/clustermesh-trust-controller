@@ -51,6 +51,8 @@ Ztunnel runs on all four nodes. Cross-cluster workload mTLS remains unqualified.
 | Understand PKI and stale-flow checks | [PKI trust flow](PKI_TRUST_FLOW.md) |
 | Build each image | [Local image build](LOCAL_IMAGE_BUILD.md) |
 | Build and test locally | [Podman workflow](docs/development/PODMAN_LOCAL_VALIDATION.md) |
+| Run the lab scripts in order | [Lab scripts](docs/development/LAB_SCRIPTS.md) |
+| Keep the Colima VM clock stable | [Colima timekeeping](docs/development/COLIMA_TIMEKEEPING.md) |
 | Understand node images | [DaemonSet implementation](CMTC_DAEMONSET_IMPLEMENTATION.md) |
 | Check native credentials | [Credential evidence](LOCAL_NATIVE_CREDENTIALS.md) |
 | Compare registration workflows | [Existing and enhanced flow](SPIRE_REGISTRATION_WORKFLOW.md) |

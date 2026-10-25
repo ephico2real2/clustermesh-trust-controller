@@ -6,6 +6,8 @@ node_image=kindest/node:v1.36.4@sha256:099e049362a1526b2db71494e1947aae99bd16290
 mkdir -p .tmp artifacts
 for tool in docker kind kubectl helm openssl python3; do command -v "$tool" >/dev/null; done
 docker info >/dev/null
+# A Colima guest needs a single wall-clock owner before mesh TLS runs on it; a no-op elsewhere.
+bash scripts/lab/colima-timekeeping.sh --apply
 bash scripts/cilium/prepare.sh
 cilium_chart=$(cat .tmp/cilium-chart-path)
 for cluster in cmtc-a cmtc-b; do
