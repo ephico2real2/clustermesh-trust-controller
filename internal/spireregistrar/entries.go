@@ -18,6 +18,7 @@ import (
 )
 
 type Registrar struct {
+	Metrics *Metrics
 	Source  Source
 	Entries entryv1.EntryClient
 }
@@ -233,7 +234,8 @@ func (r Registrar) removeLegacy(ctx context.Context, entry *types.Entry) error {
 	return r.deleteAcknowledged(ctx, entry.Id)
 }
 
-func (r Registrar) deleteAcknowledged(ctx context.Context, id string) error {
+func (r Registrar) deleteAcknowledged(ctx context.Context, id string) (resultErr error) {
+	defer func() { r.Metrics.deleted(resultErr) }()
 	response, err := r.Entries.BatchDeleteEntry(ctx, &entryv1.BatchDeleteEntryRequest{Ids: []string{id}})
 	if err != nil {
 		return err

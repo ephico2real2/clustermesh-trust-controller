@@ -29,6 +29,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
+	controllermetrics "sigs.k8s.io/controller-runtime/pkg/metrics"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 )
 
@@ -85,15 +86,20 @@ func verifiedAPIConfig() (*rest.Config, error) {
 	return cfg, nil
 }
 func run() error {
-	var path, pin string
+	var path, pin, metricsAddress string
 	flag.StringVar(&path, "config", "/etc/cmtc-registrar/approval.json", "Exact immutable administrator approval")
 	flag.StringVar(&pin, "config-sha256", "", "Independently pinned approval bytes in Pod spec")
+	flag.StringVar(&metricsAddress, "metrics-bind-address", "0", "Opt-in registrar metrics: pod or the exact POD_IP:18087")
 	flag.Parse()
 	options, err := load(path, pin)
 	if err != nil {
 		return err
 	}
 	cfg, err := verifiedAPIConfig()
+	if err != nil {
+		return err
+	}
+	metricsAddress, err = registrarMetricsAddress(metricsAddress, os.Getenv("POD_IP"))
 	if err != nil {
 		return err
 	}
@@ -104,7 +110,7 @@ func run() error {
 	if err := appsv1.AddToScheme(scheme); err != nil {
 		return err
 	}
-	mgr, err := ctrl.NewManager(cfg, ctrl.Options{Scheme: scheme, Metrics: metricsserver.Options{BindAddress: "0"}, HealthProbeBindAddress: ":18086", LeaderElection: false})
+	mgr, err := ctrl.NewManager(cfg, ctrl.Options{Scheme: scheme, Metrics: metricsserver.Options{BindAddress: metricsAddress}, HealthProbeBindAddress: ":18086", LeaderElection: false})
 	if err != nil {
 		return err
 	}
@@ -118,6 +124,12 @@ func run() error {
 	}
 	defer conn.Close()
 	runner := &spireregistrar.Runner{Registrar: spireregistrar.Registrar{Source: spireregistrar.Source{Reader: mgr.GetAPIReader(), Options: options}, Entries: entryv1.NewEntryClient(conn)}, Log: ctrl.Log.WithName("spire-registrar")}
+	registrarMetrics, err := spireregistrar.NewMetrics(controllermetrics.Registry, runner)
+	if err != nil {
+		return err
+	}
+	runner.Metrics = registrarMetrics
+	runner.Registrar.Metrics = registrarMetrics
 	if err := mgr.Add(runner); err != nil {
 		return err
 	}
