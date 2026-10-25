@@ -24,6 +24,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/util/validation/field"
 	"k8s.io/client-go/kubernetes/fake"
 	ktesting "k8s.io/client-go/testing"
 )
@@ -64,6 +65,9 @@ func newClusterCAFixture(t *testing.T) *clusterCAFixture {
 			return true, nil, e
 		}
 		current := old.(*corev1.Secret)
+		if desired.Type != current.Type {
+			return true, nil, apierrors.NewInvalid(schema.GroupKind{Kind: "Secret"}, desired.Name, field.ErrorList{field.Invalid(field.NewPath("type"), desired.Type, "field is immutable")})
+		}
 		if desired.UID != current.UID || desired.ResourceVersion != current.ResourceVersion {
 			return true, nil, apierrors.NewConflict(schema.GroupResource{Resource: "secrets"}, desired.Name, errors.New("UID/RV mismatch"))
 		}
@@ -183,7 +187,7 @@ func TestClusterCACompletionIsPublicApprovedUIDBoundAndIdempotent(t *testing.T) 
 		t.Fatal(e)
 	}
 	s := f.secret(t)
-	if result.Status != "ready" || result.CSRSHA256 != p.CSRSHA256 || s.Type != corev1.SecretTypeTLS || len(s.Data) != 2 || string(s.Data["tls.crt"]) != approval.CertificatePEM || !bytes.Equal(s.Data["tls.key"], key) {
+	if result.Status != "ready" || result.CSRSHA256 != p.CSRSHA256 || s.Type != corev1.SecretTypeOpaque || len(s.Data) != 2 || string(s.Data["tls.crt"]) != approval.CertificatePEM || !bytes.Equal(s.Data["tls.key"], key) {
 		t.Fatal("completion changed key or failed public chain contract")
 	}
 	updates := countClusterCAUpdates(f.client)
@@ -257,7 +261,7 @@ func TestClusterCALostCompletionACKRecoversWithoutReplacingKey(t *testing.T) {
 	lost := &atomic.Bool{}
 	f.client.PrependReactor("update", "secrets", func(action ktesting.Action) (bool, runtime.Object, error) {
 		s := action.(ktesting.UpdateAction).GetObject().(*corev1.Secret)
-		if s.Type != corev1.SecretTypeTLS || !lost.CompareAndSwap(false, true) {
+		if len(s.Data["tls.crt"]) == 0 || !lost.CompareAndSwap(false, true) {
 			return false, nil, nil
 		}
 		s = s.DeepCopy()
@@ -271,7 +275,7 @@ func TestClusterCALostCompletionACKRecoversWithoutReplacingKey(t *testing.T) {
 	if e := runClusterCA(t.Context(), f.client, f.options, true, &out); e != nil {
 		t.Fatal(e)
 	}
-	if !lost.Load() || f.secret(t).Type != corev1.SecretTypeTLS {
+	if !lost.Load() || len(f.secret(t).Data["tls.crt"]) == 0 || f.secret(t).Type != corev1.SecretTypeOpaque {
 		t.Fatal("lost completion was not recovered")
 	}
 }
@@ -579,5 +583,23 @@ func TestClusterCACancelledSuccessfulConfirmationDoesNotAcknowledge(t *testing.T
 	next := f.init(t)
 	if first.ClusterIssuerCSR != next.ClusterIssuerCSR || first.CSRSHA256 != next.CSRSHA256 || countClusterCAUpdates(f.client) != 1 {
 		t.Fatal("confirmation cancellation changed persisted key/CSR")
+	}
+}
+
+func TestClusterCAImmutableTypeAndPermanentWriteFailure(t *testing.T) {
+	f := newClusterCAFixture(t)
+	pending := f.secret(t)
+	pending.Type = corev1.SecretTypeTLS
+	if _, err := f.client.CoreV1().Secrets(clusterCANamespace).Update(t.Context(), pending, metav1.UpdateOptions{}); !apierrors.IsInvalid(err) {
+		t.Fatal("fixture failed to enforce real immutable Secret type", err)
+	}
+	f.client.ClearActions()
+	f.client.PrependReactor("update", "secrets", func(ktesting.Action) (bool, runtime.Object, error) {
+		return true, nil, apierrors.NewInvalid(schema.GroupKind{Kind: "Secret"}, clusterCASecret, field.ErrorList{field.Invalid(field.NewPath("data"), "redacted", "rejected by API")})
+	})
+	var out bytes.Buffer
+	err := runClusterCA(t.Context(), f.client, f.options, false, &out)
+	if !apierrors.IsInvalid(err) || out.Len() != 0 || countClusterCAUpdates(f.client) != 1 {
+		t.Fatal("permanent API rejection retried or acknowledged", err)
 	}
 }

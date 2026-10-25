@@ -212,7 +212,7 @@ func checkClusterCASecret(s *corev1.Secret, o clusterCAOptions) error {
 	if e = clusterCAKeyMatches(s.Data["tls.key"], csr); e != nil {
 		return e
 	}
-	if s.Type == corev1.SecretTypeOpaque && (len(s.Data) != 1 || len(s.Data["tls.crt"]) != 0) {
+	if s.Type == corev1.SecretTypeOpaque && (len(s.Data) != 1 && len(s.Data) != 2 || len(s.Data) == 2 && len(s.Data["tls.crt"]) == 0) {
 		return errors.New("pending Secret has unexpected certificate state")
 	}
 	if s.Type == corev1.SecretTypeTLS && (len(s.Data) != 2 || len(s.Data["tls.crt"]) == 0) {
@@ -347,7 +347,7 @@ func clusterCAResult(s *corev1.Secret, o clusterCAOptions) (clusterCAPublic, err
 		return result, e
 	}
 	result.CSRSHA256 = clusterCAHash(csr.Raw)
-	if s.Type == corev1.SecretTypeTLS {
+	if len(s.Data["tls.crt"]) != 0 {
 		c, e := parseClusterCAChain(string(s.Data["tls.crt"]), csr, o)
 		if e != nil {
 			return result, e
@@ -409,7 +409,7 @@ func runClusterCA(ctx context.Context, k kubernetes.Interface, o clusterCAOption
 					}
 					desired.Annotations[clusterCACSR] = proposedCSR
 					if _, e = k.CoreV1().Secrets(clusterCANamespace).Update(ctx, desired, metav1.UpdateOptions{}); e != nil {
-						retry = true
+						retry = !apierrors.IsInvalid(e) && !apierrors.IsForbidden(e) && !apierrors.IsUnauthorized(e)
 						return clusterCAPublic{}, e
 					}
 				}
@@ -440,24 +440,23 @@ func runClusterCA(ctx context.Context, k kubernetes.Interface, o clusterCAOption
 				if latest.UID != cm.UID || latest.ResourceVersion != cm.ResourceVersion || latest.DeletionTimestamp != nil {
 					return clusterCAPublic{}, errors.New("approval changed during observation")
 				}
-				if secret.Type == corev1.SecretTypeTLS {
+				if len(secret.Data["tls.crt"]) != 0 {
 					if !bytes.Equal(secret.Data["tls.crt"], []byte(approval.CertificatePEM)) {
 						return clusterCAPublic{}, errors.New("existing completed certificate differs; explicit rotation required")
 					}
 				}
-				if secret.Type != corev1.SecretTypeTLS {
+				if len(secret.Data["tls.crt"]) == 0 {
 					if secret.ResourceVersion != approval.SecretResourceVersion {
 						return clusterCAPublic{}, errors.New("pending Secret resourceVersion differs from public approval")
 					}
 					desired := secret.DeepCopy()
-					desired.Type = corev1.SecretTypeTLS
 					desired.Data["tls.crt"] = []byte(approval.CertificatePEM)
 					stage = "complete-certificate"
 					if e = ctx.Err(); e != nil {
 						return clusterCAPublic{}, e
 					}
 					if _, e = k.CoreV1().Secrets(clusterCANamespace).Update(ctx, desired, metav1.UpdateOptions{}); e != nil {
-						retry = true
+						retry = !apierrors.IsInvalid(e) && !apierrors.IsForbidden(e) && !apierrors.IsUnauthorized(e)
 						return clusterCAPublic{}, e
 					}
 				}
@@ -471,7 +470,7 @@ func runClusterCA(ctx context.Context, k kubernetes.Interface, o clusterCAOption
 			if e = checkClusterCASecret(confirmed, o); e != nil {
 				return clusterCAPublic{}, e
 			}
-			if complete && (confirmed.Type != corev1.SecretTypeTLS || !bytes.Equal(confirmed.Data["tls.crt"], []byte(expectedCertificate))) {
+			if complete && (len(confirmed.Data["tls.crt"]) == 0 || !bytes.Equal(confirmed.Data["tls.crt"], []byte(expectedCertificate))) {
 				return clusterCAPublic{}, errors.New("completion was not confirmed on the exact certificate")
 			}
 			return clusterCAResult(confirmed, o)

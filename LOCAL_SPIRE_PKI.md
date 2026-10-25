@@ -32,7 +32,8 @@ The host signs the public CSR.
 The host puts the public certificate chain in an immutable approval ConfigMap.
 The completer pins that ConfigMap's UID.
 It validates the CSR, cluster, Secret UID, pending resourceVersion, certificate key, root and path depth.
-It changes the same Secret to `kubernetes.io/tls` with both required fields in one update.
+It adds the verified certificate to the same Opaque Secret.
+Kubernetes Secret types are immutable. The helper preserves the original type, key and UID.
 It confirms the committed state before it returns a public acknowledgment.
 
 The Job service account needs `get` and `update` on that exact Secret.
@@ -48,10 +49,10 @@ The legacy lab path is retained. It is not used for this SPIRE installation.
 
 ## Local validation
 
-The complete ARM64 race suite passes72 top-level tests and204 subtests.
-The initializer also passes10 repetitions:170 top-level invocations and320 subtest invocations.
+The complete ARM64 race suite passes73 top-level tests and204 subtests.
+The initializer also passes10 repetitions:180 top-level invocations and320 subtest invocations.
 Formatting and vet pass. No selected test fails or is skipped.
-[The source ledger and raw results](docs/evidence/spire-ca-initializer/summary.json) retain the evidence.
+[The source ledger and raw results](docs/evidence/spire-ca-initializer/opaque-correction-summary.json) retain the evidence.
 
 Tests cover concurrent initialization, lost write acknowledgments, retry bounds, structured logs, UID replacement and malformed approvals.
 They also reject wrong roots, wrong keys, CSR attributes and certificate-chain substitution.
@@ -70,3 +71,18 @@ A bundle's first certificate is not sufficient evidence.
 
 Native remote identity, effective policy, durable admission and connection recovery remain required.
 Keep the combined ClusterMesh/ztunnel guard closed until those tests pass.
+
+## Live API correction
+
+The first real initialization Job passed. The completion Job exposed a missing fake-API rule: Secret type is immutable.
+The helper now keeps the Secret Opaque and adds the public certificate in place.
+The regression fixture enforces type immutability. Permanent API rejections return after one attempt.
+Transient failures still use bounded retries and confirmation.
+[The original failure and structured logs](docs/evidence/spire-ca-initializer/initial-real-api-failure.json) are retained.
+The host root, cluster key, pending CSR and public approval were preserved for the corrected retry.
+Temporary Jobs and permissions were removed. Cilium and ClusterMesh configuration stayed intact.
+
+The host orchestrator is [pki.py](scripts/lab/pki/pki.py).
+Its20 local tests pass with real OpenSSL cryptography and API fault fixtures.
+It uses a private UNIX proxy and server-side metadata-only Secret reads.
+It records exact cluster/node/image pins, retains public Job logs and waits for conditional cleanup.
