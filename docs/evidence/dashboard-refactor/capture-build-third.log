@@ -1,0 +1,47 @@
+STEP 1/14: FROM mcr.microsoft.com/playwright:v1.63.0-noble@sha256:eff16c30e6f3f4af0a03fa4b706120d5e9b0891c344a27d64559aff5900a4a27
+STEP 2/14: WORKDIR /opt/cmtc-capture
+--> Using cache c7faba7ee4c604309d037f7c92822147608e3b64e4ba5f275a8702efc3472081
+--> c7faba7ee4c6
+STEP 3/14: COPY scripts/capture/package.json scripts/capture/package-lock.json ./
+--> Using cache 67e3f05937d2ed7911965f9a2e26de8ae2ae58c12ed95e8ed1192b20d6def17f
+--> 67e3f05937d2
+STEP 4/14: RUN npm ci --omit=dev --no-audit --no-fund     && node -e "const {chromium}=require('playwright');(async()=>{const browser=await chromium.launch({headless:true});await browser.close()})().catch(e=>{console.error(e);process.exit(1)})"
+--> Using cache 806b6a4988c66bd064c790a90fb75bd414b8f59a8fddbab1b338f836f1df4f48
+--> 806b6a4988c6
+STEP 5/14: COPY scripts/capture/capture.mjs ./capture.mjs
+--> 4648c2705a83
+STEP 6/14: COPY scripts/capture/walk.cjs ./walk.cjs
+--> b8f7b16da24f
+STEP 7/14: COPY scripts/capture/dashboard-spec.cjs ./dashboard-spec.cjs
+--> 2d61686592e3
+STEP 8/14: COPY scripts/capture/dashboard-spec.test.cjs ./dashboard-spec.test.cjs
+--> c86f0028af8e
+STEP 9/14: COPY scripts/capture/walk-smoke.cjs ./walk-smoke.cjs
+--> 1ddf9c0ccdc8
+STEP 10/14: COPY scripts/capture/grafana-page.cjs ./grafana-page.cjs
+--> 9ff0d8d46e04
+STEP 11/14: COPY scripts/capture/grafana-page.test.cjs ./grafana-page.test.cjs
+--> 1ec62039a0c3
+STEP 12/14: RUN node walk-smoke.cjs && node grafana-page.test.cjs && node dashboard-spec.test.cjs
+time="2026-10-25T05:01:07-05:00" level=warning msg="can't raise ambient capability CAP_CHOWN: operation not permitted"
+time="2026-10-25T05:01:07-05:00" level=warning msg="can't raise ambient capability CAP_DAC_OVERRIDE: operation not permitted"
+time="2026-10-25T05:01:07-05:00" level=warning msg="can't raise ambient capability CAP_FOWNER: operation not permitted"
+time="2026-10-25T05:01:07-05:00" level=warning msg="can't raise ambient capability CAP_FSETID: operation not permitted"
+time="2026-10-25T05:01:07-05:00" level=warning msg="can't raise ambient capability CAP_KILL: operation not permitted"
+time="2026-10-25T05:01:07-05:00" level=warning msg="can't raise ambient capability CAP_NET_BIND_SERVICE: operation not permitted"
+time="2026-10-25T05:01:07-05:00" level=warning msg="can't raise ambient capability CAP_SETFCAP: operation not permitted"
+time="2026-10-25T05:01:07-05:00" level=warning msg="can't raise ambient capability CAP_SETGID: operation not permitted"
+time="2026-10-25T05:01:07-05:00" level=warning msg="can't raise ambient capability CAP_SETPCAP: operation not permitted"
+time="2026-10-25T05:01:07-05:00" level=warning msg="can't raise ambient capability CAP_SETUID: operation not permitted"
+time="2026-10-25T05:01:07-05:00" level=warning msg="can't raise ambient capability CAP_SYS_CHROOT: operation not permitted"
+Browser walk smoke passed: YAML/JSON specs, JSON variables, allowed future panel, unexpected No data denial, missing text denial, retained PNGs
+PASS actual virtualized browser fixture:39 simultaneously visible, nested table overflow ignored, missing panel rejected, oversized page rejected, duplicate title counts retained
+PASS compact/expanded capture plans preserve hidden capability blockers and exact visible panel inventories
+--> ff30209ab0c3
+STEP 13/14: WORKDIR /workspace
+--> a1f96f4a34d0
+STEP 14/14: ENTRYPOINT ["node", "/opt/cmtc-capture/capture.mjs"]
+COMMIT localhost/cmtc-capture:compact-20261025
+--> f8fa226da31a
+Successfully tagged localhost/cmtc-capture:compact-20261025
+f8fa226da31a7293d6ae31846344ac807f515c2679c4d167c8e7c35167e32b7a

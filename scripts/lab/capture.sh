@@ -15,7 +15,7 @@ elif [ "${CMTC_CAPTURE_ENGINE:-docker}" != docker ]; then
   echo 'Expected docker or podman capture engine' >&2; exit 2
 fi
 "${engine[@]}" image inspect "$capture_image" >/dev/null
-docker_args=(--rm --init --network host --shm-size=1g --env S=/captures --env CMTC_WALK_ENV_JSON --env CMTC_REQUIRE_NATIVE_MTLS --env CMTC_REQUIRE_FENCE --env CMTC_REQUIRE_OBSERVER --env CMTC_CAPTURE_FROM_MS --env CMTC_CAPTURE_TO_MS --env CMTC_CAPTURE_DEADLINE_MS --env CMTC_GRAFANA_URL --volume "$PWD/$out:/captures")
+docker_args=(--rm --init --network host --shm-size=1g --env S=/captures --env CMTC_WALK_ENV_JSON --env CMTC_REQUIRE_NATIVE_MTLS --env CMTC_REQUIRE_ISSUER_PROFILE --env CMTC_REQUIRE_FENCE --env CMTC_REQUIRE_OBSERVER --env CMTC_CAPTURE_FROM_MS --env CMTC_CAPTURE_TO_MS --env CMTC_CAPTURE_DEADLINE_MS --env CMTC_GRAFANA_URL --volume "$PWD/$out:/captures")
 docker_args+=(--env "CMTC_APP_URL=$app_url")
 capture_run=${CMTC_CAPTURE_RUN_ID:-$$}
 cidfile="$PWD/$out/container.cid"

@@ -1,26 +1,35 @@
 {
-  "status": "Implemented types verified against source; planned types/meanings are proposed contracts to validate in each delivering story.",
+  "status": "Implemented types verified against source. Native families are owned and emitted by node ztunnel; CMTC never re-exports them. source-implemented means collector code exists but scrape/real-traffic qualification is missing, so its panels stay planned. Planned types/meanings are proposed contracts to validate in each delivering story.",
   "metrics": {
     "cmtc_apiserver_probe_success": {
       "kind": "gauge",
       "status": "planned",
       "meaning": "Latest fresh safe API connectivity/TLS probe result.",
       "presentation": "Mapped latest state/history; not application mTLS or cluster-wide health.",
-      "owner": "CMTC platform probe"
+      "owner": "CMTC platform probe",
+      "labels": [
+        "cluster"
+      ]
     },
     "cmtc_certificate_rotation_failures_total": {
       "kind": "counter",
       "status": "planned",
       "meaning": "Failed certificate rotation attempts or terminal failures with an agreed retry/event boundary.",
       "presentation": "Failures/s and range increase; retries must not silently multiply terminal failure counts.",
-      "owner": "CMTC rotation controller"
+      "owner": "CMTC rotation controller",
+      "labels": [
+        "cluster"
+      ]
     },
     "cmtc_cluster_ready": {
       "kind": "gauge",
       "status": "planned",
       "meaning": "All required verified cluster gates satisfied for the current generation and freshness window.",
       "presentation": "Mapped status/table; no sum that hides one failed or missing required gate.",
-      "owner": "CMTC cluster controller"
+      "owner": "CMTC cluster controller",
+      "labels": [
+        "cluster"
+      ]
     },
     "cmtc_datapath_fence_dropped_bytes_total": {
       "kind": "counter",
@@ -117,21 +126,30 @@
       "status": "planned",
       "meaning": "Latest fresh controlled probe verifies both workload mTLS and the configured node encryption layer.",
       "presentation": "Mapped latest probe and state history; absence/staleness is unknown.",
-      "owner": "CMTC transport probe"
+      "owner": "CMTC transport probe",
+      "labels": [
+        "cluster"
+      ]
     },
     "cmtc_enforcement_available": {
       "kind": "gauge",
       "status": "implemented",
       "meaning": "Whether CMTC can verify required datapath enforcement; always 0 in Observe mode.",
       "presentation": "Mapped Unavailable status for observed zero; missing telemetry stays unavailable.",
-      "owner": "CMTC controller"
+      "owner": "CMTC controller",
+      "labels": [
+        "cluster"
+      ]
     },
     "cmtc_hostnetwork_pods_total": {
       "kind": "gauge",
       "status": "proposed-rename",
       "meaning": "Current hostNetwork pod inventory; the old proposed _total suffix is misleading for a level.",
       "presentation": "Use cmtc_pods_observed{network=\"host\"} now; agree a gauge name before adding another exporter. Never rate() inventory.",
-      "owner": "CMTC node agent"
+      "owner": "CMTC node agent",
+      "labels": [
+        "cluster"
+      ]
     },
     "cmtc_issuer_profile_acknowledged_valid_until_timestamp_seconds": {
       "kind": "gauge",
@@ -139,7 +157,11 @@
       "meaning": "Lease expiry from this producer process's last acknowledged published output write; zero means no acknowledged write in this process or acknowledged withdrawal.",
       "presentation": "Latest timestamp with stated local-process scope; compare clock separately. It is not actual consumer consumption, authorization or trust_bundle_ready. Lost-ack commits can exist while this gauge remains zero.",
       "owner": "CMTC optional public issuer-profile producer",
-      "qualification": "Exact CMTC source7e606195f5/image/API/scrape qualified locally on both mesh clusters; fresh B-to-A remote-write verified. Optional producer only, absent when disabled. docs/evidence/issuer-profile-producer. Does not satisfy trust consumption, TLS or authorization metrics."
+      "qualification": "Exact CMTC source7e606195f5/image/API/scrape qualified locally on both mesh clusters; fresh B-to-A remote-write verified. Optional producer only, absent when disabled. docs/evidence/issuer-profile-producer. Does not satisfy trust consumption, TLS or authorization metrics.",
+      "labels": [
+        "cluster"
+      ],
+      "emitter": "cmtc"
     },
     "cmtc_issuer_profile_publication_writes_total": {
       "kind": "counter",
@@ -147,7 +169,13 @@
       "meaning": "Output API Update responses, by bounded state published/withdrawn and result acknowledged/error. A lost response can count error even when the server committed; no global exactly-once count is claimed.",
       "presentation": "rate/increase by state/result. Unchanged reconcile does not increment. Retry re-reads output and avoids an extra write after an unknown acknowledgment; process restart resets.",
       "owner": "CMTC optional public issuer-profile producer",
-      "qualification": "Exact CMTC source7e606195f5/image/API/scrape qualified locally on both mesh clusters; fresh B-to-A remote-write verified. Optional producer only, absent when disabled. docs/evidence/issuer-profile-producer. Does not satisfy trust consumption, TLS or authorization metrics."
+      "qualification": "Exact CMTC source7e606195f5/image/API/scrape qualified locally on both mesh clusters; fresh B-to-A remote-write verified. Optional producer only, absent when disabled. docs/evidence/issuer-profile-producer. Does not satisfy trust consumption, TLS or authorization metrics.",
+      "labels": [
+        "cluster",
+        "state",
+        "result"
+      ],
+      "emitter": "cmtc"
     },
     "cmtc_issuer_profile_source_checked_timestamp_seconds": {
       "kind": "gauge",
@@ -155,7 +183,11 @@
       "meaning": "Wall-clock timestamp of the last successful uncached configured-source API GET, including invalid or UID-mismatched objects.",
       "presentation": "Latest timestamp/age by producer. It is not approval success, current consumer state or Ready; stale read age is unknown. Process restart starts at zero.",
       "owner": "CMTC optional public issuer-profile producer",
-      "qualification": "Exact CMTC source7e606195f5/image/API/scrape qualified locally on both mesh clusters; fresh B-to-A remote-write verified. Optional producer only, absent when disabled. docs/evidence/issuer-profile-producer. Does not satisfy trust consumption, TLS or authorization metrics."
+      "qualification": "Exact CMTC source7e606195f5/image/API/scrape qualified locally on both mesh clusters; fresh B-to-A remote-write verified. Optional producer only, absent when disabled. docs/evidence/issuer-profile-producer. Does not satisfy trust consumption, TLS or authorization metrics.",
+      "labels": [
+        "cluster"
+      ],
+      "emitter": "cmtc"
     },
     "cmtc_issuer_profile_validation_attempts_total": {
       "kind": "counter",
@@ -163,238 +195,534 @@
       "meaning": "One opted-in producer pass result after exact API source-read, certificate/pin validation and final source-snapshot check. Retries count as attempts, not distinct security incidents.",
       "presentation": "rate/increase by bounded result accepted/rejected/unavailable; process restart resets. Owner is public issuer-profile producer, not TLS verifier.",
       "owner": "CMTC optional public issuer-profile producer",
-      "qualification": "Exact CMTC source7e606195f5/image/API/scrape qualified locally on both mesh clusters; fresh B-to-A remote-write verified. Optional producer only, absent when disabled. docs/evidence/issuer-profile-producer. Does not satisfy trust consumption, TLS or authorization metrics."
+      "qualification": "Exact CMTC source7e606195f5/image/API/scrape qualified locally on both mesh clusters; fresh B-to-A remote-write verified. Optional producer only, absent when disabled. docs/evidence/issuer-profile-producer. Does not satisfy trust consumption, TLS or authorization metrics.",
+      "labels": [
+        "cluster",
+        "result"
+      ],
+      "emitter": "cmtc"
     },
     "cmtc_issuer_ready": {
       "kind": "gauge",
       "status": "planned",
       "meaning": "Expected issuer can provide a verifiable chain under a defined freshness/issuance check.",
       "presentation": "Mapped state/history; pod Ready or Issuer object presence is insufficient.",
-      "owner": "CMTC issuer verifier"
+      "owner": "CMTC issuer verifier",
+      "labels": [
+        "cluster"
+      ]
     },
     "cmtc_mtls_active_connections": {
       "kind": "gauge",
       "status": "planned",
       "meaning": "Currently active verified workload-mTLS connections, counted at one defined endpoint.",
       "presentation": "Latest value and line if it varies; no rate() or source-plus-destination sum.",
-      "owner": "Cilium/ztunnel connection lifecycle"
+      "owner": "Cilium/ztunnel connection lifecycle",
+      "emitter": "ztunnel",
+      "labels": [
+        "cluster"
+      ]
     },
     "cmtc_mtls_authorization_denials_total": {
       "kind": "counter",
-      "status": "planned",
+      "status": "native-replacement",
       "meaning": "Destination policy rejections at the authorization boundary.",
       "presentation": "rate() or range increase, split from identity failures and attempts; avoid double counting.",
-      "owner": "Cilium/ztunnel authorization"
+      "owner": "Cilium/ztunnel authorization",
+      "emitter": "ztunnel",
+      "family": "istio_tcp_connections_failed_total",
+      "matchers": "reporter=\"destination\",response_flags=\"DENY\"",
+      "labels": [
+        "cluster"
+      ]
     },
     "cmtc_mtls_handshake_duration_seconds": {
       "kind": "histogram",
       "status": "planned",
       "meaning": "Actual workload TLS handshake duration in seconds at the TLS boundary.",
       "presentation": "p95/p99 from bucket rates grouped by cluster/le and bounded result; no average or TCP-counter substitute.",
-      "owner": "Cilium/ztunnel TLS boundary"
+      "owner": "Cilium/ztunnel TLS boundary",
+      "emitter": "ztunnel",
+      "family": "istio_tls_handshake_duration_seconds",
+      "labels": [
+        "cluster"
+      ]
     },
     "cmtc_mtls_handshakes_total": {
       "kind": "counter",
       "status": "planned",
       "meaning": "Completed actual TLS handshake observations, labeled by bounded result and one reporting boundary.",
       "presentation": "rate() by result; selected-range increase for totals; not TCP starts or HTTP requests.",
-      "owner": "Cilium/ztunnel TLS boundary"
+      "owner": "Cilium/ztunnel TLS boundary",
+      "emitter": "ztunnel",
+      "family": "istio_tls_handshakes_total",
+      "by_result": true,
+      "labels": [
+        "cluster",
+        "result"
+      ]
     },
     "cmtc_mtls_identity_validation_failures_total": {
       "kind": "counter",
       "status": "planned",
       "meaning": "Failed peer certificate/identity validation events at the verifier.",
       "presentation": "rate() by bounded reason or selected-range increase; not every plaintext attempt.",
-      "owner": "Cilium/ztunnel peer verifier"
+      "owner": "Cilium/ztunnel peer verifier",
+      "emitter": "ztunnel",
+      "family": "istio_tls_handshakes_total",
+      "matchers": "result=\"peer_verification_failed\"",
+      "labels": [
+        "cluster",
+        "reason"
+      ]
     },
     "cmtc_mtu_validation_failures_total": {
       "kind": "counter",
       "status": "planned",
       "meaning": "Failed controlled MTU/MSS validation attempts for the selected encryption profile.",
       "presentation": "Failures/s or range increase; preserve attempted-probe denominator separately.",
-      "owner": "CMTC transport probe"
+      "owner": "CMTC transport probe",
+      "labels": [
+        "cluster"
+      ]
     },
     "cmtc_namespace_decisions": {
       "kind": "gauge",
       "status": "implemented",
       "meaning": "Current mutually exclusive selected/excluded/platform/unselected namespace decisions.",
       "presentation": "Latest table and one pie of all observed namespaces; categories must exhaust one denominator.",
-      "owner": "CMTC controller"
+      "owner": "CMTC controller",
+      "labels": [
+        "cluster",
+        "decision"
+      ]
     },
     "cmtc_namespace_label_drift_total": {
       "kind": "counter",
       "status": "planned",
       "meaning": "Detected enrollment-label drift episodes under a defined deduplication boundary.",
       "presentation": "Event rate/range increase; not the number of namespaces currently drifting.",
-      "owner": "CMTC enrollment controller"
+      "owner": "CMTC enrollment controller",
+      "labels": [
+        "cluster"
+      ]
     },
     "cmtc_namespace_policy_conflicts_total": {
       "kind": "counter",
       "status": "planned",
       "meaning": "Detected policy-conflict events under a defined deduplication boundary.",
       "presentation": "Event rate/range increase; current conflict state needs its own gauge/condition.",
-      "owner": "CMTC policy controller"
+      "owner": "CMTC policy controller",
+      "labels": [
+        "cluster"
+      ]
     },
     "cmtc_namespaces_eligible": {
       "kind": "gauge",
       "status": "implemented",
       "meaning": "Observed non-platform namespaces, including explicit exclusions.",
       "presentation": "Latest count/table; not safe-to-enroll or protection coverage.",
-      "owner": "CMTC controller"
+      "owner": "CMTC controller",
+      "labels": [
+        "cluster"
+      ]
     },
     "cmtc_namespaces_enrolled": {
       "kind": "gauge",
       "status": "implemented",
       "meaning": "Namespaces bearing the enrollment label from any actor.",
       "presentation": "Latest count/table; never label it protected.",
-      "owner": "CMTC controller"
+      "owner": "CMTC controller",
+      "labels": [
+        "cluster"
+      ]
     },
     "cmtc_namespaces_excluded": {
       "kind": "gauge",
       "status": "planned",
       "meaning": "Current explicitly excluded namespaces.",
       "presentation": "Latest count; current view uses namespace_decisions{decision=\"excluded\"}.",
-      "owner": "CMTC controller"
+      "owner": "CMTC controller",
+      "labels": [
+        "cluster"
+      ]
     },
     "cmtc_namespaces_selected": {
       "kind": "gauge",
       "status": "implemented",
       "meaning": "Current namespace policy selection intent; Observe does not mutate labels.",
       "presentation": "Latest count/table; not encrypted or protected namespaces.",
-      "owner": "CMTC controller"
+      "owner": "CMTC controller",
+      "labels": [
+        "cluster"
+      ]
     },
     "cmtc_node_agent_ready": {
       "kind": "gauge",
       "status": "implemented",
       "meaning": "Successful local inventory observation, 0/1 per node.",
       "presentation": "Latest count/table; not enforcement readiness.",
-      "owner": "CMTC node agent"
+      "owner": "CMTC node agent",
+      "labels": [
+        "cluster",
+        "node"
+      ]
     },
     "cmtc_node_config_drift_total": {
       "kind": "counter",
       "status": "planned",
       "meaning": "Detected node desired/applied configuration drift episodes.",
       "presentation": "Event rate/range increase; current drift is a distinct status.",
-      "owner": "CMTC node verifier"
+      "owner": "CMTC node verifier",
+      "labels": [
+        "cluster"
+      ]
     },
     "cmtc_plaintext_bypass_detected_total": {
       "kind": "counter",
       "status": "planned",
       "meaning": "A verifier observes unauthorized plaintext reaching a destination that requires mTLS.",
       "presentation": "Incident rate/count; a plaintext attempt rejected by DENY is not a bypass.",
-      "owner": "CMTC traffic verifier"
+      "owner": "CMTC traffic verifier",
+      "labels": [
+        "cluster"
+      ]
     },
     "cmtc_platform_dependency_healthy": {
       "kind": "gauge",
       "status": "planned",
       "meaning": "Latest fresh platform dependency check, with a bounded dependency label.",
       "presentation": "Mapped table/status history per required dependency; missing dependency cannot pass aggregate readiness.",
-      "owner": "CMTC platform verifier"
+      "owner": "CMTC platform verifier",
+      "labels": [
+        "cluster",
+        "dependency"
+      ]
     },
     "cmtc_pods_enforcement_failed": {
       "kind": "gauge",
       "status": "planned",
       "meaning": "Current eligible pods in a failed enforcement state, not cumulative failure events.",
       "presentation": "Latest state count/table; never rate() this gauge.",
-      "owner": "CMTC enforcement verifier"
+      "owner": "CMTC enforcement verifier",
+      "labels": [
+        "cluster"
+      ]
     },
     "cmtc_pods_observed": {
       "kind": "gauge",
       "status": "implemented",
       "meaning": "Node-local pod inventory split by pod/host network category.",
       "presentation": "Latest table by cluster/node/network; no protection inference.",
-      "owner": "CMTC node agent"
+      "owner": "CMTC node agent",
+      "labels": [
+        "cluster",
+        "node",
+        "network"
+      ]
     },
     "cmtc_pods_pending": {
       "kind": "gauge",
       "status": "planned",
       "meaning": "Eligible current pods awaiting one or more required enforcement gates.",
       "presentation": "Latest state count/table; exclusive with protected/failed states.",
-      "owner": "CMTC enforcement verifier"
+      "owner": "CMTC enforcement verifier",
+      "labels": [
+        "cluster"
+      ]
     },
     "cmtc_pods_protected": {
       "kind": "gauge",
       "status": "planned",
       "meaning": "Eligible current pods with fresh verified mandatory capture, identity and destination enforcement.",
       "presentation": "Latest state count/table; no inference from enrollment or ACK.",
-      "owner": "CMTC enforcement verifier"
+      "owner": "CMTC enforcement verifier",
+      "labels": [
+        "cluster"
+      ]
     },
     "cmtc_policy_evaluations_total": {
       "kind": "counter",
       "status": "implemented",
       "meaning": "Successful namespace policy evaluations.",
       "presentation": "Evaluations/s over $__rate_interval, grouped by cluster.",
-      "owner": "CMTC controller"
+      "owner": "CMTC controller",
+      "labels": [
+        "cluster"
+      ]
     },
     "cmtc_reconcile_errors_total": {
       "kind": "counter",
       "status": "planned",
       "meaning": "CMTC reconcile error events with a defined owner and retry counting boundary.",
       "presentation": "Errors/s; current view uses actual controller_runtime_reconcile_errors_total instead of inventing an alias.",
-      "owner": "CMTC controller"
+      "owner": "CMTC controller",
+      "labels": [
+        "cluster"
+      ]
     },
     "cmtc_remote_identity_cache_misses_total": {
       "kind": "counter",
       "status": "planned",
       "meaning": "Lookup misses in the authenticated remote workload identity cache.",
       "presentation": "Misses/s; a miss alone is neither a rejected request nor a security breach.",
-      "owner": "Cilium remote discovery"
+      "owner": "Cilium remote discovery",
+      "emitter": "cilium",
+      "labels": [
+        "cluster"
+      ]
     },
     "cmtc_rollout_aborted_total": {
       "kind": "counter",
       "status": "planned",
       "meaning": "Aborted rollout events with bounded reason/profile labels.",
       "presentation": "Aborts/s or selected-range increase; distinguish current rollout state.",
-      "owner": "CMTC rollout controller"
+      "owner": "CMTC rollout controller",
+      "labels": [
+        "cluster",
+        "reason",
+        "profile"
+      ]
     },
     "cmtc_spire_ready": {
       "kind": "gauge",
       "status": "planned",
       "meaning": "Fresh authenticated SPIRE API readiness acknowledgment at a defined boundary.",
       "presentation": "Mapped state/history; separate API ACK from registration and workload issuance.",
-      "owner": "CMTC/Cilium SPIRE client"
+      "owner": "CMTC/Cilium SPIRE client",
+      "labels": [
+        "cluster"
+      ]
     },
     "cmtc_transport_compatibility_ready": {
       "kind": "gauge",
       "status": "planned",
       "meaning": "Selected Cilium/ClusterMesh/ztunnel/transport profile passes the required compatibility gates.",
       "presentation": "Mapped status/table per profile; not a count of encrypted packets.",
-      "owner": "CMTC transport verifier"
+      "owner": "CMTC transport verifier",
+      "labels": [
+        "cluster"
+      ]
     },
     "cmtc_transport_encryption_failures_total": {
       "kind": "counter",
       "status": "planned",
       "meaning": "Observed required node-layer encryption failures at a defined probe/datapath boundary.",
       "presentation": "Failures/s by bounded profile/reason; not an application TLS handshake counter.",
-      "owner": "Cilium/CMTC transport verifier"
+      "owner": "Cilium/CMTC transport verifier",
+      "labels": [
+        "cluster",
+        "profile",
+        "reason"
+      ]
     },
     "cmtc_trust_bundle_ready": {
       "kind": "gauge",
       "status": "planned",
       "meaning": "Required public bundle observed and consumed at the expected generation/digest with freshness.",
       "presentation": "Mapped state/table; ConfigMap existence alone is insufficient.",
-      "owner": "CMTC trust verifier"
+      "owner": "CMTC trust verifier",
+      "labels": [
+        "cluster"
+      ]
     },
     "cmtc_ztunnel_ready": {
       "kind": "gauge",
       "status": "planned",
       "meaning": "Fresh proxy-process/configuration readiness at a stated boundary.",
       "presentation": "Mapped table/status history; proxy readiness alone does not establish Protected.",
-      "owner": "Cilium/CMTC proxy verifier"
+      "owner": "Cilium/CMTC proxy verifier",
+      "labels": [
+        "cluster"
+      ]
     },
     "controller_runtime_reconcile_errors_total": {
       "kind": "counter",
       "status": "implemented",
       "meaning": "Actual controller-runtime reconcile error observations.",
       "presentation": "Errors/s over $__rate_interval; observed zero is valid.",
-      "owner": "controller-runtime"
+      "owner": "controller-runtime",
+      "labels": [
+        "cluster",
+        "controller"
+      ]
     },
     "controller_runtime_reconcile_time_seconds": {
       "kind": "histogram",
       "status": "implemented",
       "meaning": "Observed controller reconcile duration in seconds.",
       "presentation": "p95 from bucket rates aggregated by cluster/le; not TLS/network latency.",
-      "owner": "controller-runtime"
+      "owner": "controller-runtime",
+      "labels": [
+        "cluster",
+        "controller",
+        "le"
+      ]
+    },
+    "istio_tcp_connections_closed_total": {
+      "kind": "counter",
+      "status": "implemented",
+      "emitter": "ztunnel",
+      "meaning": "TCP connections closed by node ztunnel with their response flag (- none, DENY policy, others transport/identity).",
+      "presentation": "Destination-reported selected-range increase partitions completed attempts into five exclusive outcomes; reporters must not be added together.",
+      "owner": "node ztunnel (native)",
+      "labels": [
+        "cluster",
+        "node",
+        "reporter",
+        "source_principal",
+        "destination_principal",
+        "destination_workload_namespace",
+        "connection_security_policy",
+        "response_flags"
+      ],
+      "qualification": "Native ztunnel family measured with real authenticated/denied load in the retired isolated cmtc-mtls two-node fixture on 2026-10-24 (examples/observability/ztunnel-spike/METRICS_INVENTORY.md). Not yet scraped from cmtc-a/cmtc-b: ztunnel is OFF in the combined profile. The lab scrape job ztunnel is added in scripts/lab/monitoring.py; qualify it on the existing clusters before relying on these panels."
+    },
+    "istio_tcp_connections_failed_total": {
+      "kind": "counter",
+      "status": "implemented",
+      "emitter": "ztunnel",
+      "meaning": "TCP connections that failed to establish; response_flags=DENY is a ztunnel authorization rejection.",
+      "presentation": "Destination-reported DENY rate/increase is the native authorization-denial signal; it overlaps opens and must not be added to them.",
+      "owner": "node ztunnel (native)",
+      "labels": [
+        "cluster",
+        "node",
+        "reporter",
+        "source_principal",
+        "destination_principal",
+        "destination_workload_namespace",
+        "connection_security_policy",
+        "response_flags"
+      ],
+      "qualification": "Native ztunnel family measured with real authenticated/denied load in the retired isolated cmtc-mtls two-node fixture on 2026-10-24 (examples/observability/ztunnel-spike/METRICS_INVENTORY.md). Not yet scraped from cmtc-a/cmtc-b: ztunnel is OFF in the combined profile. The lab scrape job ztunnel is added in scripts/lab/monitoring.py; qualify it on the existing clusters before relying on these panels."
+    },
+    "istio_tcp_connections_opened_total": {
+      "kind": "counter",
+      "status": "implemented",
+      "emitter": "ztunnel",
+      "meaning": "TCP connections opened through node ztunnel, labelled by reporter and by whether a peer certificate was verified (connection_security_policy=mutual_tls).",
+      "presentation": "Selected-range increase or rate, destination reporter for one count per connection; never TLS handshakes or HTTP requests.",
+      "owner": "node ztunnel (native)",
+      "labels": [
+        "cluster",
+        "node",
+        "reporter",
+        "source_principal",
+        "destination_principal",
+        "destination_workload_namespace",
+        "connection_security_policy",
+        "response_flags"
+      ],
+      "qualification": "Native ztunnel family measured with real authenticated/denied load in the retired isolated cmtc-mtls two-node fixture on 2026-10-24 (examples/observability/ztunnel-spike/METRICS_INVENTORY.md). Not yet scraped from cmtc-a/cmtc-b: ztunnel is OFF in the combined profile. The lab scrape job ztunnel is added in scripts/lab/monitoring.py; qualify it on the existing clusters before relying on these panels."
+    },
+    "istio_tcp_received_bytes_total": {
+      "kind": "counter",
+      "status": "implemented",
+      "emitter": "ztunnel",
+      "meaning": "Application payload bytes received through ztunnel connections.",
+      "presentation": "Source-reported rate inside mutual_tls connections; payload bytes, not packets or encryption proof.",
+      "owner": "node ztunnel (native)",
+      "labels": [
+        "cluster",
+        "node",
+        "reporter",
+        "source_principal",
+        "destination_principal",
+        "destination_workload_namespace",
+        "connection_security_policy",
+        "response_flags"
+      ],
+      "qualification": "Native ztunnel family measured with real authenticated/denied load in the retired isolated cmtc-mtls two-node fixture on 2026-10-24 (examples/observability/ztunnel-spike/METRICS_INVENTORY.md). Not yet scraped from cmtc-a/cmtc-b: ztunnel is OFF in the combined profile. The lab scrape job ztunnel is added in scripts/lab/monitoring.py; qualify it on the existing clusters before relying on these panels."
+    },
+    "istio_tcp_sent_bytes_total": {
+      "kind": "counter",
+      "status": "implemented",
+      "emitter": "ztunnel",
+      "meaning": "Application payload bytes sent through ztunnel connections.",
+      "presentation": "Source-reported rate inside mutual_tls connections; payload bytes, not packets or encryption proof.",
+      "owner": "node ztunnel (native)",
+      "labels": [
+        "cluster",
+        "node",
+        "reporter",
+        "source_principal",
+        "destination_principal",
+        "destination_workload_namespace",
+        "connection_security_policy",
+        "response_flags"
+      ],
+      "qualification": "Native ztunnel family measured with real authenticated/denied load in the retired isolated cmtc-mtls two-node fixture on 2026-10-24 (examples/observability/ztunnel-spike/METRICS_INVENTORY.md). Not yet scraped from cmtc-a/cmtc-b: ztunnel is OFF in the combined profile. The lab scrape job ztunnel is added in scripts/lab/monitoring.py; qualify it on the existing clusters before relying on these panels."
+    },
+    "istio_tls_handshake_duration_seconds": {
+      "kind": "histogram",
+      "status": "planned",
+      "emitter": "ztunnel",
+      "meaning": "Duration of successful workload TLS handshakes at the ztunnel TLS boundary, by reporter.",
+      "presentation": "p95 from bucket rates by cluster and le; no average.",
+      "owner": "node ztunnel TLS boundary (fork collector)",
+      "labels": [
+        "cluster",
+        "node",
+        "reporter",
+        "le"
+      ],
+      "qualification": "Collector implementation and local failure/recovery tests are pending; no live scrape evidence yet."
+    },
+    "istio_tls_handshakes_total": {
+      "kind": "counter",
+      "status": "planned",
+      "emitter": "ztunnel",
+      "meaning": "Completed workload TLS handshakes at the ztunnel TLS boundary, by reporter (source client / destination server) and closed result success, peer_verification_failed, protocol_error or timeout.",
+      "presentation": "rate() by cluster and result; peer_verification_failed answers the identity-validation contract. Not TCP opens or HTTP requests.",
+      "owner": "node ztunnel TLS boundary (fork collector)",
+      "labels": [
+        "cluster",
+        "node",
+        "reporter",
+        "result"
+      ],
+      "qualification": "Collector implementation and local failure/recovery tests are pending; no live scrape evidence yet."
+    },
+    "istio_xds_connection_terminations_total": {
+      "kind": "counter",
+      "status": "implemented",
+      "emitter": "ztunnel",
+      "meaning": "Ended ztunnel ADS streams by reason.",
+      "presentation": "Rate by cluster; a burst marks reconnects or rejected updates, not ACK freshness.",
+      "owner": "node ztunnel (native)",
+      "labels": [
+        "cluster",
+        "node",
+        "reason"
+      ],
+      "qualification": "Native ztunnel family measured with real authenticated/denied load in the retired isolated cmtc-mtls two-node fixture on 2026-10-24 (examples/observability/ztunnel-spike/METRICS_INVENTORY.md). Not yet scraped from cmtc-a/cmtc-b: ztunnel is OFF in the combined profile. The lab scrape job ztunnel is added in scripts/lab/monitoring.py; qualify it on the existing clusters before relying on these panels."
+    },
+    "workload_manager_active_proxy_count": {
+      "kind": "gauge",
+      "status": "implemented",
+      "emitter": "ztunnel",
+      "meaning": "In-pod proxies ztunnel currently holds from ZDS.",
+      "presentation": "Latest per node; not mandatory capture, enrollment or an issued certificate.",
+      "owner": "node ztunnel (native)",
+      "labels": [
+        "cluster",
+        "node"
+      ],
+      "qualification": "Native ztunnel family measured with real authenticated/denied load in the retired isolated cmtc-mtls two-node fixture on 2026-10-24 (examples/observability/ztunnel-spike/METRICS_INVENTORY.md). Not yet scraped from cmtc-a/cmtc-b: ztunnel is OFF in the combined profile. The lab scrape job ztunnel is added in scripts/lab/monitoring.py; qualify it on the existing clusters before relying on these panels."
+    },
+    "workload_manager_pending_proxy_count": {
+      "kind": "gauge",
+      "status": "implemented",
+      "emitter": "ztunnel",
+      "meaning": "In-pod proxies waiting for a ZDS snapshot.",
+      "presentation": "Latest per node; non-zero for long means ZDS delivery is stuck.",
+      "owner": "node ztunnel (native)",
+      "labels": [
+        "cluster",
+        "node"
+      ],
+      "qualification": "Native ztunnel family measured with real authenticated/denied load in the retired isolated cmtc-mtls two-node fixture on 2026-10-24 (examples/observability/ztunnel-spike/METRICS_INVENTORY.md). Not yet scraped from cmtc-a/cmtc-b: ztunnel is OFF in the combined profile. The lab scrape job ztunnel is added in scripts/lab/monitoring.py; qualify it on the existing clusters before relying on these panels."
     }
   }
 }

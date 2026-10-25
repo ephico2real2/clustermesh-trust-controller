@@ -1,22 +1,18 @@
 # Metrics inventory
 
-<!-- CMTC_DOC_CONTEXT -->
-Guide scope: check current runtime and feature gates before using these instructions. Read [current delivery status](../docs/agile/DELIVERY_STATUS.md) and [documentation terms](../DOCUMENTATION_GUIDE.md).
-<!-- /CMTC_DOC_CONTEXT -->
+Measured 2026-10-25 on the local two-cluster CMTC fixture. Source: `{job="cmtc",component=~"cmtc-controller|cmtc-node-agent"}`
 
-Source: CMTC collectors and their runtime; measured October 24, 2026 America/Chicago; {job="cmtc",component=~"cmtc-controller|cmtc-node-agent"}
-
-207 metric names in 183 families, 1689 series.
+205 metric names in 181 families, 1658 series.
 
 | Declared type | Families |
 | --- | --- |
-| counter | 93 |
-| gauge | 73 |
+| counter | 89 |
+| gauge | 75 |
 | histogram | 11 |
 | summary | 1 |
 | unknown | 5 |
 
-107 of the 207 names did not change on any series in the last 1h.
+97 of the 205 names did not change on any series in the last 1h.
 
 ## certwatcher_read (2)
 
@@ -30,6 +26,15 @@ Source: CMTC collectors and their runtime; measured October 24, 2026 America/Chi
 | Metric | Type | Series | Changed | Distinct values | Labels | Kind of data |
 | --- | --- | --- | --- | --- | --- | --- |
 | `cmtc_enforcement_available` | gauge | 2 | 0 | 1 | component (1), exported_cluster (2) | constant, the same on every series: a number or a table row, not a line |
+
+## cmtc_issuer (4)
+
+| Metric | Type | Series | Changed | Distinct values | Labels | Kind of data |
+| --- | --- | --- | --- | --- | --- | --- |
+| `cmtc_issuer_profile_acknowledged_valid_until_timestamp_seconds` | gauge | 2 | 2 | 1 | component (1), exported_cluster (2) | a level that moves: a line over time; a number for now |
+| `cmtc_issuer_profile_publication_writes_total` | counter | 2 | 2 | 2 | component (1), exported_cluster (2), result (1), state (1) | a counter: its rate over time; never the raw number |
+| `cmtc_issuer_profile_source_checked_timestamp_seconds` | gauge | 2 | 2 | 2 | component (1), exported_cluster (2) | a level that moves: a line over time; a number for now |
+| `cmtc_issuer_profile_validation_attempts_total` | counter | 2 | 2 | 2 | component (1), exported_cluster (2), result (1) | a counter: its rate over time; never the raw number |
 
 ## cmtc_namespace (1)
 
@@ -55,7 +60,7 @@ Source: CMTC collectors and their runtime; measured October 24, 2026 America/Chi
 
 | Metric | Type | Series | Changed | Distinct values | Labels | Kind of data |
 | --- | --- | --- | --- | --- | --- | --- |
-| `cmtc_pods_observed` | gauge | 8 | 0 | 5 | component (1), exported_cluster (2), exported_node (4), network (2) | constant, differing by series: a table or sorted bars, not a line |
+| `cmtc_pods_observed` | gauge | 8 | 2 | 5 | component (1), exported_cluster (2), exported_node (4), network (2) | a level that moves: a line over time; a number for now |
 
 ## cmtc_policy (1)
 
@@ -72,11 +77,11 @@ Source: CMTC collectors and their runtime; measured October 24, 2026 America/Chi
 | `controller_runtime_max_concurrent_reconciles` | gauge | 2 | 0 | 1 | component (1), controller (1) | constant, the same on every series: a number or a table row, not a line |
 | `controller_runtime_reconcile_errors_total` | counter | 2 | 0 | 1 | component (1), controller (1) | a counter: its rate over time; never the raw number |
 | `controller_runtime_reconcile_panics_total` | counter | 2 | 0 | 1 | component (1), controller (1) | a counter: its rate over time; never the raw number |
-| `controller_runtime_reconcile_time_seconds_bucket` | histogram | 82 | 82 | 5 | component (1), controller (1), le (41) | a distribution: a percentile from its buckets, across instances |
+| `controller_runtime_reconcile_time_seconds_bucket` | histogram | 82 | 82 | 8 | component (1), controller (1), le (41) | a distribution: a percentile from its buckets, across instances |
 | `controller_runtime_reconcile_time_seconds_count` | histogram | 2 | 2 | 2 | component (1), controller (1) | a distribution: a percentile from its buckets, across instances |
 | `controller_runtime_reconcile_time_seconds_sum` | histogram | 2 | 2 | 2 | component (1), controller (1) | a distribution: a percentile from its buckets, across instances |
 | `controller_runtime_reconcile_timeouts_total` | counter | 2 | 0 | 1 | component (1), controller (1) | a counter: its rate over time; never the raw number |
-| `controller_runtime_reconcile_total` | counter | 8 | 2 | 4 | component (1), controller (1), result (4) | a counter: its rate over time; never the raw number |
+| `controller_runtime_reconcile_total` | counter | 8 | 2 | 3 | component (1), controller (1), result (4) | a counter: its rate over time; never the raw number |
 | `controller_runtime_terminal_reconcile_errors_total` | counter | 2 | 0 | 1 | component (1), controller (1) | a counter: its rate over time; never the raw number |
 | `controller_runtime_webhook_panics_total` | counter | 6 | 0 | 1 | component (2) | a counter: its rate over time; never the raw number |
 
@@ -96,7 +101,7 @@ Source: CMTC collectors and their runtime; measured October 24, 2026 America/Chi
 | `go_cpu_classes_gc_pause_cpu_seconds_total` | counter | 6 | 6 | 6 | component (2) | a counter: its rate over time; never the raw number |
 | `go_cpu_classes_gc_total_cpu_seconds_total` | counter | 6 | 6 | 6 | component (2) | a counter: its rate over time; never the raw number |
 | `go_cpu_classes_idle_cpu_seconds_total` | counter | 6 | 6 | 6 | component (2) | a counter: its rate over time; never the raw number |
-| `go_cpu_classes_scavenge_assist_cpu_seconds_total` | counter | 6 | 0 | 5 | component (2) | a counter: its rate over time; never the raw number |
+| `go_cpu_classes_scavenge_assist_cpu_seconds_total` | counter | 6 | 0 | 6 | component (2) | a counter: its rate over time; never the raw number |
 | `go_cpu_classes_scavenge_background_cpu_seconds_total` | counter | 6 | 6 | 6 | component (2) | a counter: its rate over time; never the raw number |
 | `go_cpu_classes_scavenge_total_cpu_seconds_total` | counter | 6 | 6 | 6 | component (2) | a counter: its rate over time; never the raw number |
 | `go_cpu_classes_total_cpu_seconds_total` | counter | 6 | 6 | 6 | component (2) | a counter: its rate over time; never the raw number |
@@ -111,7 +116,7 @@ Source: CMTC collectors and their runtime; measured October 24, 2026 America/Chi
 | `go_gc_cycles_automatic_gc_cycles_total` | counter | 6 | 6 | 6 | component (2) | a counter: its rate over time; never the raw number |
 | `go_gc_cycles_forced_gc_cycles_total` | counter | 6 | 0 | 1 | component (2) | a counter: its rate over time; never the raw number |
 | `go_gc_cycles_total_gc_cycles_total` | counter | 6 | 6 | 6 | component (2) | a counter: its rate over time; never the raw number |
-| `go_gc_duration_seconds` | summary | 30 | 18 | 30 | component (2), quantile (5) | a summary: an average from _sum over _count; its own quantiles do not combine across instances |
+| `go_gc_duration_seconds` | summary | 30 | 29 | 30 | component (2), quantile (5) | a summary: an average from _sum over _count; its own quantiles do not combine across instances |
 | `go_gc_duration_seconds_count` | summary | 6 | 6 | 6 | component (2) | a summary: an average from _sum over _count; its own quantiles do not combine across instances |
 | `go_gc_duration_seconds_sum` | summary | 6 | 6 | 6 | component (2) | a summary: an average from _sum over _count; its own quantiles do not combine across instances |
 | `go_gc_finalizers_executed_finalizers_total` | counter | 6 | 0 | 1 | component (2) | a counter: its rate over time; never the raw number |
@@ -133,7 +138,7 @@ Source: CMTC collectors and their runtime; measured October 24, 2026 America/Chi
 | `go_gc_heap_objects_objects` | gauge | 6 | 6 | 6 | component (2) | a level that moves: a line over time; a number for now |
 | `go_gc_heap_tiny_allocs_objects_total` | counter | 6 | 6 | 6 | component (2) | a counter: its rate over time; never the raw number |
 | `go_gc_limiter_last_enabled_gc_cycle` | gauge | 6 | 0 | 1 | component (2) | constant, the same on every series: a number or a table row, not a line |
-| `go_gc_pauses_seconds_bucket` | histogram | 48 | 36 | 24 | component (2), le (8) | a distribution: a percentile from its buckets, across instances |
+| `go_gc_pauses_seconds_bucket` | histogram | 48 | 36 | 30 | component (2), le (8) | a distribution: a percentile from its buckets, across instances |
 | `go_gc_pauses_seconds_count` | histogram | 6 | 6 | 6 | component (2) | a distribution: a percentile from its buckets, across instances |
 | `go_gc_pauses_seconds_sum` | histogram | 6 | 6 | 6 | component (2) | a distribution: a percentile from its buckets, across instances |
 | `go_gc_scan_globals_bytes` | gauge | 6 | 0 | 1 | component (2) | constant, the same on every series: a number or a table row, not a line |
@@ -142,12 +147,11 @@ Source: CMTC collectors and their runtime; measured October 24, 2026 America/Chi
 | `go_gc_scan_total_bytes` | gauge | 6 | 6 | 6 | component (2) | a level that moves: a line over time; a number for now |
 | `go_gc_stack_starting_size_bytes` | gauge | 6 | 0 | 1 | component (2) | constant, the same on every series: a number or a table row, not a line |
 
-## go_godebug (48)
+## go_godebug (42)
 
 | Metric | Type | Series | Changed | Distinct values | Labels | Kind of data |
 | --- | --- | --- | --- | --- | --- | --- |
 | `go_godebug_non_default_behavior_allowmultiplevcs_events_total` | counter | 6 | 0 | 1 | component (2) | a counter: its rate over time; never the raw number |
-| `go_godebug_non_default_behavior_asynctimerchan_events_total` | counter | 6 | 0 | 1 | component (2) | a counter: its rate over time; never the raw number |
 | `go_godebug_non_default_behavior_containermaxprocs_events_total` | counter | 6 | 0 | 1 | component (2) | a counter: its rate over time; never the raw number |
 | `go_godebug_non_default_behavior_cryptocustomrand_events_total` | counter | 6 | 0 | 1 | component (2) | a counter: its rate over time; never the raw number |
 | `go_godebug_non_default_behavior_embedfollowsymlinks_events_total` | counter | 6 | 0 | 1 | component (2) | a counter: its rate over time; never the raw number |
@@ -157,7 +161,6 @@ Source: CMTC collectors and their runtime; measured October 24, 2026 America/Chi
 | `go_godebug_non_default_behavior_gocachetest_events_total` | counter | 6 | 0 | 1 | component (2) | a counter: its rate over time; never the raw number |
 | `go_godebug_non_default_behavior_gocacheverify_events_total` | counter | 6 | 0 | 1 | component (2) | a counter: its rate over time; never the raw number |
 | `go_godebug_non_default_behavior_gotestjsonbuildtext_events_total` | counter | 6 | 0 | 1 | component (2) | a counter: its rate over time; never the raw number |
-| `go_godebug_non_default_behavior_gotypesalias_events_total` | counter | 6 | 0 | 1 | component (2) | a counter: its rate over time; never the raw number |
 | `go_godebug_non_default_behavior_htmlmetacontenturlescape_events_total` | counter | 6 | 0 | 1 | component (2) | a counter: its rate over time; never the raw number |
 | `go_godebug_non_default_behavior_http2client_events_total` | counter | 6 | 0 | 1 | component (2) | a counter: its rate over time; never the raw number |
 | `go_godebug_non_default_behavior_http2server_events_total` | counter | 6 | 0 | 1 | component (2) | a counter: its rate over time; never the raw number |
@@ -176,21 +179,17 @@ Source: CMTC collectors and their runtime; measured October 24, 2026 America/Chi
 | `go_godebug_non_default_behavior_randseednop_events_total` | counter | 6 | 0 | 1 | component (2) | a counter: its rate over time; never the raw number |
 | `go_godebug_non_default_behavior_rsa1024min_events_total` | counter | 6 | 0 | 1 | component (2) | a counter: its rate over time; never the raw number |
 | `go_godebug_non_default_behavior_tarinsecurepath_events_total` | counter | 6 | 0 | 1 | component (2) | a counter: its rate over time; never the raw number |
-| `go_godebug_non_default_behavior_tls10server_events_total` | counter | 6 | 0 | 1 | component (2) | a counter: its rate over time; never the raw number |
-| `go_godebug_non_default_behavior_tls3des_events_total` | counter | 6 | 0 | 1 | component (2) | a counter: its rate over time; never the raw number |
 | `go_godebug_non_default_behavior_tlsmaxrsasize_events_total` | counter | 6 | 0 | 1 | component (2) | a counter: its rate over time; never the raw number |
-| `go_godebug_non_default_behavior_tlsrsakex_events_total` | counter | 6 | 0 | 1 | component (2) | a counter: its rate over time; never the raw number |
 | `go_godebug_non_default_behavior_tlssha1_events_total` | counter | 6 | 0 | 1 | component (2) | a counter: its rate over time; never the raw number |
-| `go_godebug_non_default_behavior_tlsunsafeekm_events_total` | counter | 6 | 0 | 1 | component (2) | a counter: its rate over time; never the raw number |
 | `go_godebug_non_default_behavior_updatemaxprocs_events_total` | counter | 6 | 0 | 1 | component (2) | a counter: its rate over time; never the raw number |
 | `go_godebug_non_default_behavior_urlmaxqueryparams_events_total` | counter | 6 | 0 | 1 | component (2) | a counter: its rate over time; never the raw number |
 | `go_godebug_non_default_behavior_urlstrictcolons_events_total` | counter | 6 | 0 | 1 | component (2) | a counter: its rate over time; never the raw number |
 | `go_godebug_non_default_behavior_winreadlinkvolume_events_total` | counter | 6 | 0 | 1 | component (2) | a counter: its rate over time; never the raw number |
 | `go_godebug_non_default_behavior_winsymlink_events_total` | counter | 6 | 0 | 1 | component (2) | a counter: its rate over time; never the raw number |
-| `go_godebug_non_default_behavior_x509keypairleaf_events_total` | counter | 6 | 0 | 1 | component (2) | a counter: its rate over time; never the raw number |
 | `go_godebug_non_default_behavior_x509negativeserial_events_total` | counter | 6 | 0 | 1 | component (2) | a counter: its rate over time; never the raw number |
 | `go_godebug_non_default_behavior_x509rsacrt_events_total` | counter | 6 | 0 | 1 | component (2) | a counter: its rate over time; never the raw number |
 | `go_godebug_non_default_behavior_x509sha256skid_events_total` | counter | 6 | 0 | 1 | component (2) | a counter: its rate over time; never the raw number |
+| `go_godebug_non_default_behavior_x509sslcertoverrideplatform_events_total` | counter | 6 | 0 | 1 | component (2) | a counter: its rate over time; never the raw number |
 | `go_godebug_non_default_behavior_x509usefallbackroots_events_total` | counter | 6 | 0 | 1 | component (2) | a counter: its rate over time; never the raw number |
 | `go_godebug_non_default_behavior_x509usepolicies_events_total` | counter | 6 | 0 | 1 | component (2) | a counter: its rate over time; never the raw number |
 | `go_godebug_non_default_behavior_zipinsecurepath_events_total` | counter | 6 | 0 | 1 | component (2) | a counter: its rate over time; never the raw number |
@@ -214,17 +213,17 @@ Source: CMTC collectors and their runtime; measured October 24, 2026 America/Chi
 | `go_memory_classes_heap_free_bytes` | gauge | 6 | 6 | 6 | component (2) | a level that moves: a line over time; a number for now |
 | `go_memory_classes_heap_objects_bytes` | gauge | 6 | 6 | 6 | component (2) | a level that moves: a line over time; a number for now |
 | `go_memory_classes_heap_released_bytes` | gauge | 6 | 6 | 6 | component (2) | a level that moves: a line over time; a number for now |
-| `go_memory_classes_heap_stacks_bytes` | gauge | 6 | 6 | 4 | component (2) | a level that moves: a line over time; a number for now |
+| `go_memory_classes_heap_stacks_bytes` | gauge | 6 | 6 | 5 | component (2) | a level that moves: a line over time; a number for now |
 | `go_memory_classes_heap_unused_bytes` | gauge | 6 | 6 | 6 | component (2) | a level that moves: a line over time; a number for now |
 | `go_memory_classes_metadata_mcache_free_bytes` | gauge | 6 | 0 | 1 | component (2) | constant, the same on every series: a number or a table row, not a line |
 | `go_memory_classes_metadata_mcache_inuse_bytes` | gauge | 6 | 0 | 1 | component (2) | constant, the same on every series: a number or a table row, not a line |
 | `go_memory_classes_metadata_mspan_free_bytes` | gauge | 6 | 6 | 6 | component (2) | a level that moves: a line over time; a number for now |
 | `go_memory_classes_metadata_mspan_inuse_bytes` | gauge | 6 | 6 | 6 | component (2) | a level that moves: a line over time; a number for now |
-| `go_memory_classes_metadata_other_bytes` | gauge | 6 | 1 | 6 | component (2) | a level that moves: a line over time; a number for now |
+| `go_memory_classes_metadata_other_bytes` | gauge | 6 | 5 | 6 | component (2) | a level that moves: a line over time; a number for now |
 | `go_memory_classes_os_stacks_bytes` | gauge | 6 | 0 | 1 | component (2) | constant, the same on every series: a number or a table row, not a line |
 | `go_memory_classes_other_bytes` | gauge | 6 | 6 | 6 | component (2) | a level that moves: a line over time; a number for now |
 | `go_memory_classes_profiling_buckets_bytes` | gauge | 6 | 6 | 6 | component (2) | a level that moves: a line over time; a number for now |
-| `go_memory_classes_total_bytes` | gauge | 6 | 0 | 5 | component (2) | constant, differing by series: a table or sorted bars, not a line |
+| `go_memory_classes_total_bytes` | gauge | 6 | 1 | 5 | component (2) | a level that moves: a line over time; a number for now |
 
 ## go_memstats (22)
 
@@ -234,7 +233,7 @@ Source: CMTC collectors and their runtime; measured October 24, 2026 America/Chi
 | `go_memstats_alloc_bytes_total` | counter | 6 | 6 | 6 | component (2) | a counter: its rate over time; never the raw number |
 | `go_memstats_buck_hash_sys_bytes` | gauge | 6 | 6 | 6 | component (2) | a level that moves: a line over time; a number for now |
 | `go_memstats_frees_total` | counter | 6 | 6 | 6 | component (2) | a counter: its rate over time; never the raw number |
-| `go_memstats_gc_sys_bytes` | gauge | 6 | 1 | 6 | component (2) | a level that moves: a line over time; a number for now |
+| `go_memstats_gc_sys_bytes` | gauge | 6 | 5 | 6 | component (2) | a level that moves: a line over time; a number for now |
 | `go_memstats_heap_alloc_bytes` | gauge | 6 | 6 | 6 | component (2) | a level that moves: a line over time; a number for now |
 | `go_memstats_heap_idle_bytes` | gauge | 6 | 6 | 6 | component (2) | a level that moves: a line over time; a number for now |
 | `go_memstats_heap_inuse_bytes` | gauge | 6 | 6 | 6 | component (2) | a level that moves: a line over time; a number for now |
@@ -246,12 +245,12 @@ Source: CMTC collectors and their runtime; measured October 24, 2026 America/Chi
 | `go_memstats_mcache_inuse_bytes` | gauge | 6 | 0 | 1 | component (2) | constant, the same on every series: a number or a table row, not a line |
 | `go_memstats_mcache_sys_bytes` | gauge | 6 | 0 | 1 | component (2) | constant, the same on every series: a number or a table row, not a line |
 | `go_memstats_mspan_inuse_bytes` | gauge | 6 | 6 | 6 | component (2) | a level that moves: a line over time; a number for now |
-| `go_memstats_mspan_sys_bytes` | gauge | 6 | 0 | 3 | component (2) | constant, differing by series: a table or sorted bars, not a line |
+| `go_memstats_mspan_sys_bytes` | gauge | 6 | 0 | 2 | component (2) | constant, differing by series: a table or sorted bars, not a line |
 | `go_memstats_next_gc_bytes` | gauge | 6 | 6 | 6 | component (2) | a level that moves: a line over time; a number for now |
 | `go_memstats_other_sys_bytes` | gauge | 6 | 6 | 6 | component (2) | a level that moves: a line over time; a number for now |
-| `go_memstats_stack_inuse_bytes` | gauge | 6 | 6 | 4 | component (2) | a level that moves: a line over time; a number for now |
-| `go_memstats_stack_sys_bytes` | gauge | 6 | 6 | 4 | component (2) | a level that moves: a line over time; a number for now |
-| `go_memstats_sys_bytes` | gauge | 6 | 0 | 5 | component (2) | constant, differing by series: a table or sorted bars, not a line |
+| `go_memstats_stack_inuse_bytes` | gauge | 6 | 6 | 5 | component (2) | a level that moves: a line over time; a number for now |
+| `go_memstats_stack_sys_bytes` | gauge | 6 | 6 | 5 | component (2) | a level that moves: a line over time; a number for now |
+| `go_memstats_sys_bytes` | gauge | 6 | 1 | 5 | component (2) | a level that moves: a line over time; a number for now |
 
 ## go_sched (23)
 
@@ -259,21 +258,21 @@ Source: CMTC collectors and their runtime; measured October 24, 2026 America/Chi
 | --- | --- | --- | --- | --- | --- | --- |
 | `go_sched_gomaxprocs_threads` | gauge | 6 | 0 | 1 | component (2) | constant, the same on every series: a number or a table row, not a line |
 | `go_sched_goroutines_created_goroutines_total` | counter | 6 | 6 | 6 | component (2) | a counter: its rate over time; never the raw number |
-| `go_sched_goroutines_goroutines` | gauge | 6 | 6 | 2 | component (2) | a level that moves: a line over time; a number for now |
-| `go_sched_goroutines_not_in_go_goroutines` | gauge | 6 | 2 | 2 | component (2) | a level that moves: a line over time; a number for now |
+| `go_sched_goroutines_goroutines` | gauge | 6 | 6 | 3 | component (2) | a level that moves: a line over time; a number for now |
+| `go_sched_goroutines_not_in_go_goroutines` | gauge | 6 | 6 | 2 | component (2) | a level that moves: a line over time; a number for now |
 | `go_sched_goroutines_runnable_goroutines` | gauge | 6 | 6 | 4 | component (2) | a level that moves: a line over time; a number for now |
-| `go_sched_goroutines_running_goroutines` | gauge | 6 | 6 | 3 | component (2) | a level that moves: a line over time; a number for now |
+| `go_sched_goroutines_running_goroutines` | gauge | 6 | 6 | 4 | component (2) | a level that moves: a line over time; a number for now |
 | `go_sched_goroutines_waiting_goroutines` | gauge | 6 | 6 | 4 | component (2) | a level that moves: a line over time; a number for now |
-| `go_sched_latencies_seconds_bucket` | histogram | 48 | 48 | 36 | component (2), le (8) | a distribution: a percentile from its buckets, across instances |
+| `go_sched_latencies_seconds_bucket` | histogram | 48 | 48 | 43 | component (2), le (8) | a distribution: a percentile from its buckets, across instances |
 | `go_sched_latencies_seconds_count` | histogram | 6 | 6 | 6 | component (2) | a distribution: a percentile from its buckets, across instances |
 | `go_sched_latencies_seconds_sum` | histogram | 6 | 6 | 6 | component (2) | a distribution: a percentile from its buckets, across instances |
-| `go_sched_pauses_stopping_gc_seconds_bucket` | histogram | 48 | 38 | 29 | component (2), le (8) | a distribution: a percentile from its buckets, across instances |
+| `go_sched_pauses_stopping_gc_seconds_bucket` | histogram | 48 | 42 | 37 | component (2), le (8) | a distribution: a percentile from its buckets, across instances |
 | `go_sched_pauses_stopping_gc_seconds_count` | histogram | 6 | 6 | 6 | component (2) | a distribution: a percentile from its buckets, across instances |
 | `go_sched_pauses_stopping_gc_seconds_sum` | histogram | 6 | 6 | 6 | component (2) | a distribution: a percentile from its buckets, across instances |
 | `go_sched_pauses_stopping_other_seconds_bucket` | histogram | 48 | 0 | 1 | component (2), le (8) | a distribution: a percentile from its buckets, across instances |
 | `go_sched_pauses_stopping_other_seconds_count` | histogram | 6 | 0 | 1 | component (2) | a distribution: a percentile from its buckets, across instances |
 | `go_sched_pauses_stopping_other_seconds_sum` | histogram | 6 | 0 | 1 | component (2) | a distribution: a percentile from its buckets, across instances |
-| `go_sched_pauses_total_gc_seconds_bucket` | histogram | 48 | 36 | 24 | component (2), le (8) | a distribution: a percentile from its buckets, across instances |
+| `go_sched_pauses_total_gc_seconds_bucket` | histogram | 48 | 36 | 30 | component (2), le (8) | a distribution: a percentile from its buckets, across instances |
 | `go_sched_pauses_total_gc_seconds_count` | histogram | 6 | 6 | 6 | component (2) | a distribution: a percentile from its buckets, across instances |
 | `go_sched_pauses_total_gc_seconds_sum` | histogram | 6 | 6 | 6 | component (2) | a distribution: a percentile from its buckets, across instances |
 | `go_sched_pauses_total_other_seconds_bucket` | histogram | 48 | 0 | 1 | component (2), le (8) | a distribution: a percentile from its buckets, across instances |
@@ -322,7 +321,7 @@ Source: CMTC collectors and their runtime; measured October 24, 2026 America/Chi
 
 | Metric | Type | Series | Changed | Distinct values | Labels | Kind of data |
 | --- | --- | --- | --- | --- | --- | --- |
-| `process_open_fds` | gauge | 6 | 6 | 1 | component (2) | a level that moves: a line over time; a number for now |
+| `process_open_fds` | gauge | 6 | 0 | 1 | component (2) | constant, the same on every series: a number or a table row, not a line |
 
 ## process_resident (1)
 
@@ -334,20 +333,20 @@ Source: CMTC collectors and their runtime; measured October 24, 2026 America/Chi
 
 | Metric | Type | Series | Changed | Distinct values | Labels | Kind of data |
 | --- | --- | --- | --- | --- | --- | --- |
-| `process_start_time_seconds` | gauge | 6 | 0 | 4 | component (2) | constant, differing by series: a table or sorted bars, not a line |
+| `process_start_time_seconds` | gauge | 6 | 6 | 6 | component (2) | a level that moves: a line over time; a number for now |
 
 ## process_virtual (2)
 
 | Metric | Type | Series | Changed | Distinct values | Labels | Kind of data |
 | --- | --- | --- | --- | --- | --- | --- |
-| `process_virtual_memory_bytes` | gauge | 6 | 0 | 2 | component (2) | constant, differing by series: a table or sorted bars, not a line |
+| `process_virtual_memory_bytes` | gauge | 6 | 1 | 4 | component (2) | a level that moves: a line over time; a number for now |
 | `process_virtual_memory_max_bytes` | gauge | 6 | 0 | 1 | component (2) | constant, the same on every series: a number or a table row, not a line |
 
 ## rest_client (1)
 
 | Metric | Type | Series | Changed | Distinct values | Labels | Kind of data |
 | --- | --- | --- | --- | --- | --- | --- |
-| `rest_client_requests_total` | counter | 16 | 10 | 11 | code (4), component (2), host (2), method (4) | a counter: its rate over time; never the raw number |
+| `rest_client_requests_total` | counter | 12 | 10 | 11 | code (2), component (2), host (2), method (4) | a counter: its rate over time; never the raw number |
 
 ## scrape_duration (1)
 
@@ -359,8 +358,8 @@ Source: CMTC collectors and their runtime; measured October 24, 2026 America/Chi
 
 | Metric | Type | Series | Changed | Distinct values | Labels | Kind of data |
 | --- | --- | --- | --- | --- | --- | --- |
-| `scrape_samples_post_metric_relabeling` | unknown | 6 | 0 | 3 | component (2) | constant, differing by series: a table or sorted bars, not a line |
-| `scrape_samples_scraped` | unknown | 6 | 0 | 3 | component (2) | constant, differing by series: a table or sorted bars, not a line |
+| `scrape_samples_post_metric_relabeling` | unknown | 6 | 0 | 2 | component (2) | constant, differing by series: a table or sorted bars, not a line |
+| `scrape_samples_scraped` | unknown | 6 | 0 | 2 | component (2) | constant, differing by series: a table or sorted bars, not a line |
 
 ## scrape_series (1)
 
@@ -384,7 +383,7 @@ Source: CMTC collectors and their runtime; measured October 24, 2026 America/Chi
 
 | Metric | Type | Series | Changed | Distinct values | Labels | Kind of data |
 | --- | --- | --- | --- | --- | --- | --- |
-| `workqueue_depth` | gauge | 3 | 0 | 1 | component (1), controller (1), name (1), priority (2) | constant, the same on every series: a number or a table row, not a line |
+| `workqueue_depth` | gauge | 4 | 0 | 1 | component (1), controller (1), name (1), priority (2) | constant, the same on every series: a number or a table row, not a line |
 
 ## workqueue_longest (1)
 
@@ -396,7 +395,7 @@ Source: CMTC collectors and their runtime; measured October 24, 2026 America/Chi
 
 | Metric | Type | Series | Changed | Distinct values | Labels | Kind of data |
 | --- | --- | --- | --- | --- | --- | --- |
-| `workqueue_queue_duration_seconds_bucket` | histogram | 26 | 20 | 10 | component (1), controller (1), le (13), name (1) | a distribution: a percentile from its buckets, across instances |
+| `workqueue_queue_duration_seconds_bucket` | histogram | 26 | 20 | 8 | component (1), controller (1), le (13), name (1) | a distribution: a percentile from its buckets, across instances |
 | `workqueue_queue_duration_seconds_count` | histogram | 2 | 2 | 2 | component (1), controller (1), name (1) | a distribution: a percentile from its buckets, across instances |
 | `workqueue_queue_duration_seconds_sum` | histogram | 2 | 2 | 2 | component (1), controller (1), name (1) | a distribution: a percentile from its buckets, across instances |
 
@@ -419,6 +418,3 @@ Source: CMTC collectors and their runtime; measured October 24, 2026 America/Chi
 | `workqueue_work_duration_seconds_bucket` | histogram | 26 | 14 | 6 | component (1), controller (1), le (13), name (1) | a distribution: a percentile from its buckets, across instances |
 | `workqueue_work_duration_seconds_count` | histogram | 2 | 2 | 2 | component (1), controller (1), name (1) | a distribution: a percentile from its buckets, across instances |
 | `workqueue_work_duration_seconds_sum` | histogram | 2 | 2 | 2 | component (1), controller (1), name (1) | a distribution: a percentile from its buckets, across instances |
-
-
-Generated with diagram-kit metrics-inventory at 26b7c19791159929c76a264ea3d5274bef72e9f6. See [METRICS.md](METRICS.md) for the selected signals and the planned story contracts.

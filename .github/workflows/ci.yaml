@@ -36,12 +36,21 @@ jobs:
           python3 examples/observability/ztunnel-spike/validate.py
           python3 observability/build.py --check
           python3 observability/validate.py
+          PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s observability -p 'test_*.py'
           bash -n scripts/lab/*.sh
           bash -n scripts/capture/publish.sh
           node --check scripts/capture/walk.cjs
           node --check scripts/capture/capture.mjs
+          node scripts/capture/dashboard-spec.test.cjs
           PYTHONDONTWRITEBYTECODE=1 python3 scripts/capture/test_load_timeline.py
           PYTHONDONTWRITEBYTECODE=1 python3 scripts/capture/test_collect_frozen_load.py
+      - name: Prometheus recording and alert semantics
+        run: |
+          docker run --rm --network none --memory 512m --cpus 1 \
+            -v "$PWD/observability/prometheus:/rules:ro" -w /rules \
+            --entrypoint /bin/promtool \
+            prom/prometheus@sha256:0ccc219ac86c5f5dcd20fb1a8d0526f2c78efe012e3ca2f73d66379bab8f667a \
+            test rules dashboard-semantics.test.json
   deployed-lab:
     needs: unit
     runs-on: ubuntu-24.04

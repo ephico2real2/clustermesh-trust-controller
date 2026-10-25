@@ -2,11 +2,13 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
+import dashboardSpec from './dashboard-spec.cjs';
 
 const base=process.env.CMTC_GRAFANA_URL || 'http://127.0.0.1:3000';
 const requireObserver=process.env.CMTC_REQUIRE_OBSERVER==='true';
 const requireFence=process.env.CMTC_REQUIRE_FENCE==='true';
 const requireNative=process.env.CMTC_REQUIRE_NATIVE_MTLS==='true';
+const requireIssuer=process.env.CMTC_REQUIRE_ISSUER_PROFILE==='true';
 const to=Number(process.env.CMTC_CAPTURE_TO_MS || Date.now());
 const from=Number(process.env.CMTC_CAPTURE_FROM_MS || to-15*60*1000);
 if(!Number.isSafeInteger(from)||!Number.isSafeInteger(to)||to<=from)throw Error('Invalid absolute capture range');
@@ -56,6 +58,17 @@ for(let i=0;i<60 && Date.now()<deadline;i++){
         for(const cluster of ['cmtc-a','cmtc-b'])if(data[name][cluster]!==1)throw Error(`Missing two-worker observer telemetry: ${JSON.stringify(data)}`);
       }
     }
+    if(requireIssuer){
+      for(const [name,query] of Object.entries({issuerSourceAge:'time() - max by(cluster) (cmtc_issuer_profile_source_checked_timestamp_seconds{job="cmtc",component="cmtc-controller"} > 0)',issuerLeaseRemaining:'max by(cluster) (cmtc_issuer_profile_acknowledged_valid_until_timestamp_seconds{job="cmtc",component="cmtc-controller"} > 0) - time()'})){
+        const result=await api(`/api/datasources/proxy/uid/cmtc-prom/api/v1/query?query=${encodeURIComponent(query)}&time=${to/1000}`,name);
+        if(result.status!=='success'||result.warnings?.length||result.infos?.length)throw Error(`Issuer query failed ${name}`);
+        data[name]=Object.fromEntries(result.data.result.map(s=>[s.metric.cluster,Number(s.value[1])]));
+        for(const cluster of ['cmtc-a','cmtc-b']){
+          const value=data[name][cluster];
+          if(!Number.isFinite(value)||(name==='issuerSourceAge'?(value<0||value>120):(value<=0||value>30)))throw Error(`Issuer source/lease unavailable: ${JSON.stringify(data)}`);
+        }
+      }
+    }
     await writeFile(path.join(output,'metric-assertions.json'),JSON.stringify(data,null,2)+'\n');
     metricsError=undefined;break;
   }catch(e){metricsError=e;await new Promise(r=>setTimeout(r,Math.min(2000,Math.max(0,deadline-Date.now()))));}
@@ -64,24 +77,25 @@ await writeFile(path.join(output,'metric-queries.json'),JSON.stringify({observed
 const found=await api('/api/search?type=dash-db');
 const dashboards=found.filter(d=>['cmtc-observe-lab','cmtc-authenticated-only'].includes(d.uid));
 if(dashboards.length!==2)throw Error('Expected Operations and Workload Security with all nine original domains consolidated');
-const spec={viewport:{width:1920,height:4800},pages:[]};
+const spec={viewport:{width:1920,height:1200},pages:[]};
 const index=[];
 for(const d of dashboards){
   const detail=await api(`/api/dashboards/uid/${encodeURIComponent(d.uid)}`);
-  const panels=detail.dashboard.panels.filter(p=>p.type!=='row');
+  const plan=dashboardSpec.capturePlan(detail.dashboard,{requireNative,requireFence,requireObserver});
+  const panels=plan.panels;
   for(const theme of ['dark','light']){
     const name=`${d.uid==='cmtc-observe-lab'?'cmtc-operations':'cmtc-workload-security'}-${theme}`;
-    // Planned panels must remain visible. Their missing signals are explicit
-    // blockers, not failed browser rendering or invented successful zeros.
-    const allowed=panels.filter(p=>p.title.endsWith('· planned') || (!requireObserver && d.uid==='cmtc-observe-lab' && p.id>=40 && p.id<=45 && p.targets?.length) || (!requireFence && d.uid==='cmtc-observe-lab' && p.id>=30 && p.id<=36 && p.targets?.length) || (!requireNative && d.uid==='cmtc-authenticated-only' && p.targets?.length)).map(p=>p.title);
-    spec.pages.push({name,url:base+d.url+`?kiosk&theme=${theme}&from=${from}&to=${to}`,evidence:'panels',grafanaFullPage:true,fullPage:true,before:2500,blockedSignalsOnNoData:true,expect:{panelsMin:panels.length,panelTitles:panels.map(p=>p.title),noDataAllowed:allowed},unavailableReasons:Object.fromEntries(allowed.map(title=>[title,title.endsWith('· planned')?'Planned instrumentation; implement and qualify in its assigned agile story.':(d.uid==='cmtc-observe-lab'?'Opt-in audited-veth datapath DaemonSet is not installed in baseline Observe; this does not indicate mTLS.':'Native security signal requires the separate SPIRE fixture, outside baseline Observe CI.')]))});
+    // Planned capability panels remain in source and blocked evidence. Their
+    // compact presentation must not turn unqualified security into a pass.
+    const reasons=Object.fromEntries(panels.map(p=>[p.title,dashboardSpec.emptyReason(p,d.uid,{requireNative,requireFence,requireObserver,requireIssuer})]).filter(([,reason])=>reason));
+    spec.pages.push({name,actions:plan.actions,blockedCapabilities:plan.blockedCapabilities,url:base+d.url+`?kiosk&theme=${theme}&from=${from}&to=${to}`,evidence:'panels',grafanaFullPage:true,fullPage:true,before:2500,blockedSignalsOnNoData:true,expect:{panelsMin:panels.length,panelTitles:panels.map(p=>p.title),noDataAllowed:Object.keys(reasons)},unavailableReasons:reasons});
     index.push({title:`${d.title} (${theme})`,file:`${name}.png`,uid:d.uid});
   }
 }
 spec.pages.push({name:'application-global-service',url:process.env.CMTC_APP_URL || 'http://127.0.0.1:28080',evidence:'text',settle:false,before:500,screenshot:false,expect:{text:['cmtc-b']}});
 const specPath=path.join(output,'walk-spec.json');
 await writeFile(specPath,JSON.stringify(spec,null,2)+'\n');
-await writeFile(path.join(output,'capture-range.json'),JSON.stringify({fromMilliseconds:from,toMilliseconds:to,requireNative,requireFence,requireObserver,captureStartedAt:new Date().toISOString(),deadlineMilliseconds:deadline},null,2)+'\n');
+await writeFile(path.join(output,'capture-range.json'),JSON.stringify({fromMilliseconds:from,toMilliseconds:to,requireNative,requireFence,requireObserver,requireIssuer,captureStartedAt:new Date().toISOString(),deadlineMilliseconds:deadline},null,2)+'\n');
 await writeFile(path.join(output,'index.json'),JSON.stringify(index,null,2)+'\n');
 const walked=spawnSync(process.execPath,[fileURLToPath(new URL('./walk.cjs',import.meta.url)),specPath],{env:{...process.env,S:output},stdio:'inherit'});
 if(metricsError){console.error(metricsError.message);process.exitCode=1;}

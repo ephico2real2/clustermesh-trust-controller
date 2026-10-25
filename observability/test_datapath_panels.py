@@ -7,7 +7,7 @@ class DatapathPanelTests(unittest.TestCase):
     def test_both_sources_keep_separate_meanings_and_existing_pages(self):
         dashboards=build.dashboards()
         self.assertEqual(set(dashboards),{'operations.json','workload-security.json'})
-        panels={p['id']:p for p in dashboards['operations.json']['panels']}
+        panels={p['id']:p for p in build.all_panels(dashboards['operations.json'])}
         self.assertIn('Inventory/controller',panels[14]['title'])
         self.assertEqual({p['id'] for p in panels.values() if p['id']<100 and p['type']!='row'},set(range(1,23))-{2,7,13,21}|{31,32,33,34,35,36,41,42,43,44,45})
         for id in (32,33,34,35,36):

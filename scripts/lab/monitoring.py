@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 import sys
 
+ZTUNNEL_FAMILIES='istio_tcp_connections_(opened|closed|failed)_total|istio_tcp_(sent|received)_bytes_total|istio_xds_connection_terminations_total|istio_tls_handshakes_total|istio_tls_handshake_duration_seconds_(bucket|sum|count)|workload_manager_(active|pending)_proxy_count|istio_build'
 cluster,hub=sys.argv[1:]
 items=[]
 def add(api,kind,name,body=None,namespace='monitoring'):
@@ -22,6 +23,22 @@ prom={'global':{'scrape_interval':'5s','external_labels':{'cluster':cluster}},'s
     {'target_label':'cluster','replacement':cluster},
     {'source_labels':['__meta_kubernetes_pod_label_app_kubernetes_io_name'],'target_label':'component'},
     {'source_labels':['__meta_kubernetes_pod_node_name'],'target_label':'node'},
+]},
+# Node ztunnel (Cilium chart DaemonSet ztunnel-cilium) is hostNetwork and declares no
+# container port; its stats listener binds the wildcard address on 15020. The job finds
+# no target while ztunnel is disabled, so missing data stays unavailable.
+{'job_name':'ztunnel','metrics_path':'/stats/prometheus','kubernetes_sd_configs':[{'role':'pod','namespaces':{'names':['kube-system']}}],'relabel_configs':[
+    {'source_labels':['__meta_kubernetes_pod_label_app_kubernetes_io_name'],'action':'keep','regex':'ztunnel-cilium'},
+    {'source_labels':['__meta_kubernetes_pod_container_name','__meta_kubernetes_pod_container_init'],'action':'keep','regex':'istio-proxy;false'},
+    {'source_labels':['__meta_kubernetes_pod_phase'],'action':'keep','regex':'Running'},
+    {'source_labels':['__meta_kubernetes_pod_ip'],'target_label':'__address__','regex':'(.+)','replacement':'$1:15020'},
+    {'target_label':'cluster','replacement':cluster},
+    {'target_label':'component','replacement':'ztunnel'},
+    {'source_labels':['__meta_kubernetes_pod_node_name'],'target_label':'node'},
+],'metric_relabel_configs':[
+    # Keep only the families the dashboards and rules query; drop the per-locality labels.
+    {'source_labels':['__name__'],'action':'keep','regex':ZTUNNEL_FAMILIES},
+    {'action':'labeldrop','regex':'(source|destination)_(region|zone)'},
 ]}]}
 if cluster=='cmtc-b':prom['remote_write']=[{'url':f'http://{hub}:30900/api/v1/write'}]
 add('v1','ConfigMap','prometheus',{'data':{'prometheus.yml':json.dumps(prom)}})

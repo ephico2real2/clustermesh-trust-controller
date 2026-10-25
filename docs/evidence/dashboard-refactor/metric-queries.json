@@ -1,0 +1,318 @@
+{
+  "observedAt": "2026-10-25T10:15:06.456Z",
+  "queryTimeSeconds": 1792923305.943,
+  "queries": [
+    {
+      "name": "selected",
+      "requestedAt": "2026-10-25T10:15:06.377Z",
+      "query": "sum by (cluster) (cmtc_namespaces_selected{component=\"cmtc-controller\"})",
+      "response": {
+        "status": "success",
+        "data": {
+          "resultType": "vector",
+          "result": [
+            {
+              "metric": {
+                "cluster": "cmtc-b"
+              },
+              "value": [
+                1792923305.943,
+                "4"
+              ]
+            },
+            {
+              "metric": {
+                "cluster": "cmtc-a"
+              },
+              "value": [
+                1792923305.943,
+                "4"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "agents",
+      "requestedAt": "2026-10-25T10:15:06.418Z",
+      "query": "sum by (cluster) (cmtc_node_agent_ready{component=\"cmtc-node-agent\"})",
+      "response": {
+        "status": "success",
+        "data": {
+          "resultType": "vector",
+          "result": [
+            {
+              "metric": {
+                "cluster": "cmtc-a"
+              },
+              "value": [
+                1792923305.943,
+                "2"
+              ]
+            },
+            {
+              "metric": {
+                "cluster": "cmtc-b"
+              },
+              "value": [
+                1792923305.943,
+                "2"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "enforcement",
+      "requestedAt": "2026-10-25T10:15:06.429Z",
+      "query": "max by (cluster) (cmtc_enforcement_available{component=\"cmtc-controller\"})",
+      "response": {
+        "status": "success",
+        "data": {
+          "resultType": "vector",
+          "result": [
+            {
+              "metric": {
+                "cluster": "cmtc-b"
+              },
+              "value": [
+                1792923305.943,
+                "0"
+              ]
+            },
+            {
+              "metric": {
+                "cluster": "cmtc-a"
+              },
+              "value": [
+                1792923305.943,
+                "0"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "issuerSourceAge",
+      "requestedAt": "2026-10-25T10:15:06.437Z",
+      "query": "time() - max by(cluster) (cmtc_issuer_profile_source_checked_timestamp_seconds{job=\"cmtc\",component=\"cmtc-controller\"} > 0)",
+      "response": {
+        "status": "success",
+        "data": {
+          "resultType": "vector",
+          "result": [
+            {
+              "metric": {
+                "cluster": "cmtc-b"
+              },
+              "value": [
+                1792923305.943,
+                "10.943000078201294"
+              ]
+            },
+            {
+              "metric": {
+                "cluster": "cmtc-a"
+              },
+              "value": [
+                1792923305.943,
+                "6.943000078201294"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "issuerLeaseRemaining",
+      "requestedAt": "2026-10-25T10:15:06.446Z",
+      "query": "max by(cluster) (cmtc_issuer_profile_acknowledged_valid_until_timestamp_seconds{job=\"cmtc\",component=\"cmtc-controller\"} > 0) - time()",
+      "response": {
+        "status": "success",
+        "data": {
+          "resultType": "vector",
+          "result": [
+            {
+              "metric": {
+                "cluster": "cmtc-b"
+              },
+              "value": [
+                1792923305.943,
+                "9.056999921798706"
+              ]
+            },
+            {
+              "metric": {
+                "cluster": "cmtc-a"
+              },
+              "value": [
+                1792923305.943,
+                "23.056999921798706"
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "attempts": [
+    {
+      "name": "selected",
+      "requestedAt": "2026-10-25T10:15:06.377Z",
+      "query": "sum by (cluster) (cmtc_namespaces_selected{component=\"cmtc-controller\"})",
+      "response": {
+        "status": "success",
+        "data": {
+          "resultType": "vector",
+          "result": [
+            {
+              "metric": {
+                "cluster": "cmtc-b"
+              },
+              "value": [
+                1792923305.943,
+                "4"
+              ]
+            },
+            {
+              "metric": {
+                "cluster": "cmtc-a"
+              },
+              "value": [
+                1792923305.943,
+                "4"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "agents",
+      "requestedAt": "2026-10-25T10:15:06.418Z",
+      "query": "sum by (cluster) (cmtc_node_agent_ready{component=\"cmtc-node-agent\"})",
+      "response": {
+        "status": "success",
+        "data": {
+          "resultType": "vector",
+          "result": [
+            {
+              "metric": {
+                "cluster": "cmtc-a"
+              },
+              "value": [
+                1792923305.943,
+                "2"
+              ]
+            },
+            {
+              "metric": {
+                "cluster": "cmtc-b"
+              },
+              "value": [
+                1792923305.943,
+                "2"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "enforcement",
+      "requestedAt": "2026-10-25T10:15:06.429Z",
+      "query": "max by (cluster) (cmtc_enforcement_available{component=\"cmtc-controller\"})",
+      "response": {
+        "status": "success",
+        "data": {
+          "resultType": "vector",
+          "result": [
+            {
+              "metric": {
+                "cluster": "cmtc-b"
+              },
+              "value": [
+                1792923305.943,
+                "0"
+              ]
+            },
+            {
+              "metric": {
+                "cluster": "cmtc-a"
+              },
+              "value": [
+                1792923305.943,
+                "0"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "issuerSourceAge",
+      "requestedAt": "2026-10-25T10:15:06.437Z",
+      "query": "time() - max by(cluster) (cmtc_issuer_profile_source_checked_timestamp_seconds{job=\"cmtc\",component=\"cmtc-controller\"} > 0)",
+      "response": {
+        "status": "success",
+        "data": {
+          "resultType": "vector",
+          "result": [
+            {
+              "metric": {
+                "cluster": "cmtc-b"
+              },
+              "value": [
+                1792923305.943,
+                "10.943000078201294"
+              ]
+            },
+            {
+              "metric": {
+                "cluster": "cmtc-a"
+              },
+              "value": [
+                1792923305.943,
+                "6.943000078201294"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "issuerLeaseRemaining",
+      "requestedAt": "2026-10-25T10:15:06.446Z",
+      "query": "max by(cluster) (cmtc_issuer_profile_acknowledged_valid_until_timestamp_seconds{job=\"cmtc\",component=\"cmtc-controller\"} > 0) - time()",
+      "response": {
+        "status": "success",
+        "data": {
+          "resultType": "vector",
+          "result": [
+            {
+              "metric": {
+                "cluster": "cmtc-b"
+              },
+              "value": [
+                1792923305.943,
+                "9.056999921798706"
+              ]
+            },
+            {
+              "metric": {
+                "cluster": "cmtc-a"
+              },
+              "value": [
+                1792923305.943,
+                "23.056999921798706"
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

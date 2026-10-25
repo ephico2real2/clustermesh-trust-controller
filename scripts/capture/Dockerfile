@@ -7,9 +7,11 @@ RUN npm ci --omit=dev --no-audit --no-fund \
     && node -e "const {chromium}=require('playwright');(async()=>{const browser=await chromium.launch({headless:true});await browser.close()})().catch(e=>{console.error(e);process.exit(1)})"
 COPY scripts/capture/capture.mjs ./capture.mjs
 COPY scripts/capture/walk.cjs ./walk.cjs
+COPY scripts/capture/dashboard-spec.cjs ./dashboard-spec.cjs
+COPY scripts/capture/dashboard-spec.test.cjs ./dashboard-spec.test.cjs
 COPY scripts/capture/walk-smoke.cjs ./walk-smoke.cjs
 COPY scripts/capture/grafana-page.cjs ./grafana-page.cjs
 COPY scripts/capture/grafana-page.test.cjs ./grafana-page.test.cjs
-RUN node walk-smoke.cjs && node grafana-page.test.cjs
+RUN node walk-smoke.cjs && node grafana-page.test.cjs && node dashboard-spec.test.cjs
 WORKDIR /workspace
 ENTRYPOINT ["node", "/opt/cmtc-capture/capture.mjs"]

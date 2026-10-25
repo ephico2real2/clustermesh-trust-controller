@@ -2,36 +2,46 @@ groups:
 - name: cmtc.alerts
   rules:
   - alert: CMTCUnprotectedPods
-    expr: sum(cmtc_pods_pending + cmtc_pods_enforcement_failed) > 0
+    expr: sum by (cluster) (cmtc_pods_pending) > 0 or sum by (cluster) (cmtc_pods_enforcement_failed) > 0
     for: 5m
     labels: {severity: critical}
-    annotations: {summary: Eligible pods lack verified mTLS protection}
+    annotations: {summary: "Eligible pods lack verified mTLS protection"}
   - alert: CMTCTrustNotReady
-    expr: cmtc_trust_bundle_ready == 0
+    expr: min by (cluster) (cmtc_trust_bundle_ready) == 0
     for: 5m
     labels: {severity: critical}
-    annotations: {summary: Trust bundle not ready}
-  - alert: CMTCCertificateExpiring
-    expr: cmtc_certificate_expiry_timestamp_seconds - time() < 86400
-    for: 10m
+    annotations: {summary: "Trust bundle not consumed at the expected generation"}
+  - alert: CMTCIssuerProfileLeaseExpired
+    expr: (cmtc_issuer_profile_acknowledged_valid_until_timestamp_seconds{job="cmtc"} > 0) and (cmtc_issuer_profile_acknowledged_valid_until_timestamp_seconds{job="cmtc"} - time() < 0)
+    for: 1m
     labels: {severity: warning}
-    annotations: {summary: Certificate expires within 24 hours}
-  - alert: CMTCNodeAgentDown
-    expr: cmtc_node_agent_ready == 0
+    annotations: {summary: "The last acknowledged public issuer-profile lease has expired; consumers must treat the profile as unavailable"}
+  - alert: CMTCIssuerProfileSourceStale
+    expr: (cmtc_issuer_profile_source_checked_timestamp_seconds{job="cmtc"} > 0) and (time() - cmtc_issuer_profile_source_checked_timestamp_seconds{job="cmtc"} > 120)
+    for: 2m
+    labels: {severity: warning}
+    annotations: {summary: "The issuer-profile producer has not read its approved source for over two minutes"}
+  - alert: CMTCScrapeTargetDown
+    expr: up{job=~"cmtc|ztunnel"} == 0
     for: 5m
     labels: {severity: critical}
-    annotations: {summary: Node agent not ready}
+    annotations: {summary: "A CMTC or node ztunnel metrics target is unreachable; its panels are unavailable, not healthy"}
+  - alert: CMTCNodeAgentDown
+    expr: cmtc_node_agent_ready{job="cmtc"} == 0
+    for: 5m
+    labels: {severity: critical}
+    annotations: {summary: "Node agent inventory observation is failing"}
   - alert: CMTCTransportIncompatible
     expr: cmtc_transport_compatibility_ready == 0
     for: 2m
     labels: {severity: critical}
-    annotations: {summary: Incompatible transport encryption configuration}
+    annotations: {summary: "Incompatible transport encryption configuration"}
   - alert: CMTCControlPlaneProbeFailed
     expr: cmtc_platform_dependency_healthy == 0
     for: 3m
     labels: {severity: critical}
-    annotations: {summary: Critical control-plane dependency probe failed}
+    annotations: {summary: "Critical control-plane dependency probe failed"}
   - alert: CMTCPlaintextBypass
     expr: increase(cmtc_plaintext_bypass_detected_total[5m]) > 0
     labels: {severity: critical}
-    annotations: {summary: Confirmed plaintext bypass detected}
+    annotations: {summary: "Confirmed plaintext bypass detected"}

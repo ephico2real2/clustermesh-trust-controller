@@ -1,0 +1,841 @@
+{
+  "rule_files": [
+    "recording-rules.yaml",
+    "alerts.yaml"
+  ],
+  "evaluation_interval": "1m",
+  "tests": [
+    {
+      "name": "bidirectional traffic: destination-only partition, both cluster pairs, per-cluster DENY zero",
+      "interval": "1m",
+      "input_series": [
+        {
+          "series": "up{job=\"ztunnel\",cluster=\"cmtc-a\",component=\"ztunnel\",node=\"a1\"}",
+          "values": "1x20"
+        },
+        {
+          "series": "up{job=\"ztunnel\",cluster=\"cmtc-b\",component=\"ztunnel\",node=\"b1\"}",
+          "values": "1x20"
+        },
+        {
+          "series": "istio_tcp_connections_closed_total{job=\"ztunnel\",cluster=\"cmtc-a\",component=\"ztunnel\",node=\"a1\",reporter=\"destination\",destination_workload_namespace=\"demo\",connection_security_policy=\"mutual_tls\",response_flags=\"-\",source_principal=\"spiffe://cmtc-b.mesh.example/ns/demo/sa/client\",destination_principal=\"spiffe://cmtc-a.mesh.example/ns/demo/sa/server\"}",
+          "values": "0+2x20"
+        },
+        {
+          "series": "istio_tcp_connections_closed_total{job=\"ztunnel\",cluster=\"cmtc-b\",component=\"ztunnel\",node=\"b1\",reporter=\"destination\",destination_workload_namespace=\"demo\",connection_security_policy=\"mutual_tls\",response_flags=\"-\",source_principal=\"spiffe://cmtc-a.mesh.example/ns/demo/sa/client\",destination_principal=\"spiffe://cmtc-b.mesh.example/ns/demo/sa/server\"}",
+          "values": "0+1x20"
+        },
+        {
+          "series": "istio_tcp_connections_closed_total{job=\"ztunnel\",cluster=\"cmtc-a\",component=\"ztunnel\",node=\"a1\",reporter=\"destination\",destination_workload_namespace=\"demo\",connection_security_policy=\"unknown\",response_flags=\"DENY\",source_principal=\"unknown\",destination_principal=\"spiffe://cmtc-a.mesh.example/ns/demo/sa/server\"}",
+          "values": "0+1x20"
+        },
+        {
+          "series": "istio_tcp_connections_closed_total{job=\"ztunnel\",cluster=\"cmtc-b\",component=\"ztunnel\",node=\"b1\",reporter=\"destination\",destination_workload_namespace=\"demo\",connection_security_policy=\"mutual_tls\",response_flags=\"DENY\",source_principal=\"spiffe://cmtc-a.mesh.example/ns/demo/sa/client\",destination_principal=\"spiffe://cmtc-b.mesh.example/ns/demo/sa/server\"}",
+          "values": "0+1x20"
+        },
+        {
+          "series": "istio_tcp_connections_closed_total{job=\"ztunnel\",cluster=\"cmtc-a\",component=\"ztunnel\",node=\"a1\",reporter=\"destination\",destination_workload_namespace=\"demo\",connection_security_policy=\"unknown\",response_flags=\"TLS_FAILURE\",source_principal=\"unknown\",destination_principal=\"spiffe://cmtc-a.mesh.example/ns/demo/sa/server\"}",
+          "values": "0+1x20"
+        },
+        {
+          "series": "istio_tcp_connections_closed_total{job=\"ztunnel\",cluster=\"cmtc-b\",component=\"ztunnel\",node=\"b1\",reporter=\"source\",destination_workload_namespace=\"demo\",connection_security_policy=\"mutual_tls\",response_flags=\"-\",source_principal=\"spiffe://cmtc-b.mesh.example/ns/demo/sa/client\",destination_principal=\"spiffe://cmtc-a.mesh.example/ns/demo/sa/server\"}",
+          "values": "0+100x20"
+        },
+        {
+          "series": "istio_tcp_connections_opened_total{job=\"ztunnel\",cluster=\"cmtc-a\",component=\"ztunnel\",node=\"a1\",reporter=\"destination\",destination_workload_namespace=\"demo\",connection_security_policy=\"mutual_tls\",response_flags=\"-\",source_principal=\"spiffe://cmtc-b.mesh.example/ns/demo/sa/client\",destination_principal=\"spiffe://cmtc-a.mesh.example/ns/demo/sa/server\"}",
+          "values": "0+2x20"
+        },
+        {
+          "series": "istio_tcp_connections_opened_total{job=\"ztunnel\",cluster=\"cmtc-b\",component=\"ztunnel\",node=\"b1\",reporter=\"destination\",destination_workload_namespace=\"demo\",connection_security_policy=\"mutual_tls\",response_flags=\"-\",source_principal=\"spiffe://cmtc-a.mesh.example/ns/demo/sa/client\",destination_principal=\"spiffe://cmtc-b.mesh.example/ns/demo/sa/server\"}",
+          "values": "0+1x20"
+        },
+        {
+          "series": "istio_tcp_connections_opened_total{job=\"ztunnel\",cluster=\"cmtc-a\",component=\"ztunnel\",node=\"a1\",reporter=\"destination\",destination_workload_namespace=\"demo\",connection_security_policy=\"unknown\",response_flags=\"-\",source_principal=\"unknown\",destination_principal=\"spiffe://cmtc-a.mesh.example/ns/demo/sa/server\"}",
+          "values": "0+1x20"
+        },
+        {
+          "series": "istio_tcp_connections_failed_total{job=\"ztunnel\",cluster=\"cmtc-a\",component=\"ztunnel\",node=\"a1\",reporter=\"destination\",destination_workload_namespace=\"demo\",connection_security_policy=\"unknown\",response_flags=\"DENY\",source_principal=\"unknown\",destination_principal=\"spiffe://cmtc-a.mesh.example/ns/demo/sa/server\"}",
+          "values": "0+1x20"
+        }
+      ],
+      "promql_expr_test": [
+        {
+          "expr": "(sum(increase(istio_tcp_connections_closed_total{job=\"ztunnel\",cluster=~\".+\",component=\"ztunnel\",reporter=\"destination\",destination_workload_namespace=~\".+\",connection_security_policy=\"mutual_tls\",response_flags=\"-\"}[15m] @ end())) or on() (0 * sum(increase(istio_tcp_connections_closed_total{job=\"ztunnel\",cluster=~\".+\",component=\"ztunnel\",reporter=\"destination\",destination_workload_namespace=~\".+\"}[15m] @ end())))) and on() (count(up{job=\"ztunnel\",cluster=~\".+\",component=\"ztunnel\"} @ end()) > 0) unless on() (min(up{job=\"ztunnel\",cluster=~\".+\",component=\"ztunnel\"} @ end()) == 0)",
+          "eval_time": "15m",
+          "exp_samples": [
+            {
+              "labels": "{}",
+              "value": 45
+            }
+          ]
+        },
+        {
+          "expr": "(sum(increase(istio_tcp_connections_closed_total{job=\"ztunnel\",cluster=~\".+\",component=\"ztunnel\",reporter=\"destination\",destination_workload_namespace=~\".+\",connection_security_policy!=\"mutual_tls\",response_flags=\"DENY\"}[15m] @ end())) or on() (0 * sum(increase(istio_tcp_connections_closed_total{job=\"ztunnel\",cluster=~\".+\",component=\"ztunnel\",reporter=\"destination\",destination_workload_namespace=~\".+\"}[15m] @ end())))) and on() (count(up{job=\"ztunnel\",cluster=~\".+\",component=\"ztunnel\"} @ end()) > 0) unless on() (min(up{job=\"ztunnel\",cluster=~\".+\",component=\"ztunnel\"} @ end()) == 0)",
+          "eval_time": "15m",
+          "exp_samples": [
+            {
+              "labels": "{}",
+              "value": 15
+            }
+          ]
+        },
+        {
+          "expr": "(sum(increase(istio_tcp_connections_closed_total{job=\"ztunnel\",cluster=~\".+\",component=\"ztunnel\",reporter=\"destination\",destination_workload_namespace=~\".+\",connection_security_policy=\"mutual_tls\",response_flags=\"DENY\"}[15m] @ end())) or on() (0 * sum(increase(istio_tcp_connections_closed_total{job=\"ztunnel\",cluster=~\".+\",component=\"ztunnel\",reporter=\"destination\",destination_workload_namespace=~\".+\"}[15m] @ end())))) and on() (count(up{job=\"ztunnel\",cluster=~\".+\",component=\"ztunnel\"} @ end()) > 0) unless on() (min(up{job=\"ztunnel\",cluster=~\".+\",component=\"ztunnel\"} @ end()) == 0)",
+          "eval_time": "15m",
+          "exp_samples": [
+            {
+              "labels": "{}",
+              "value": 15
+            }
+          ]
+        },
+        {
+          "expr": "(sum(increase(istio_tcp_connections_closed_total{job=\"ztunnel\",cluster=~\".+\",component=\"ztunnel\",reporter=\"destination\",destination_workload_namespace=~\".+\",connection_security_policy!=\"mutual_tls\",response_flags=\"-\"}[15m] @ end())) or on() (0 * sum(increase(istio_tcp_connections_closed_total{job=\"ztunnel\",cluster=~\".+\",component=\"ztunnel\",reporter=\"destination\",destination_workload_namespace=~\".+\"}[15m] @ end())))) and on() (count(up{job=\"ztunnel\",cluster=~\".+\",component=\"ztunnel\"} @ end()) > 0) unless on() (min(up{job=\"ztunnel\",cluster=~\".+\",component=\"ztunnel\"} @ end()) == 0)",
+          "eval_time": "15m",
+          "exp_samples": [
+            {
+              "labels": "{}",
+              "value": 0
+            }
+          ]
+        },
+        {
+          "expr": "(sum(increase(istio_tcp_connections_closed_total{job=\"ztunnel\",cluster=~\".+\",component=\"ztunnel\",reporter=\"destination\",destination_workload_namespace=~\".+\",response_flags!=\"-\",response_flags!=\"DENY\"}[15m] @ end())) or on() (0 * sum(increase(istio_tcp_connections_closed_total{job=\"ztunnel\",cluster=~\".+\",component=\"ztunnel\",reporter=\"destination\",destination_workload_namespace=~\".+\"}[15m] @ end())))) and on() (count(up{job=\"ztunnel\",cluster=~\".+\",component=\"ztunnel\"} @ end()) > 0) unless on() (min(up{job=\"ztunnel\",cluster=~\".+\",component=\"ztunnel\"} @ end()) == 0)",
+          "eval_time": "15m",
+          "exp_samples": [
+            {
+              "labels": "{}",
+              "value": 15
+            }
+          ]
+        },
+        {
+          "expr": "sum(increase(istio_tcp_connections_closed_total{job=\"ztunnel\",reporter=\"destination\"}[15m] @ end()))",
+          "eval_time": "15m",
+          "exp_samples": [
+            {
+              "labels": "{}",
+              "value": 90
+            }
+          ]
+        },
+        {
+          "expr": "sum by(cluster) (increase(istio_tcp_connections_opened_total{job=\"ztunnel\",cluster=~\".+\",component=\"ztunnel\",reporter=\"destination\",destination_workload_namespace=~\".+\",connection_security_policy=\"mutual_tls\"}[15m] @ end()))",
+          "eval_time": "15m",
+          "exp_samples": [
+            {
+              "labels": "{cluster=\"cmtc-a\"}",
+              "value": 30
+            },
+            {
+              "labels": "{cluster=\"cmtc-b\"}",
+              "value": 15
+            }
+          ]
+        },
+        {
+          "expr": "sum by(cluster) (increase(istio_tcp_connections_opened_total{job=\"ztunnel\",cluster=~\".+\",component=\"ztunnel\",reporter=\"destination\",destination_workload_namespace=~\".+\",connection_security_policy!=\"mutual_tls\"}[15m] @ end()))",
+          "eval_time": "15m",
+          "exp_samples": [
+            {
+              "labels": "{cluster=\"cmtc-a\"}",
+              "value": 15
+            }
+          ]
+        },
+        {
+          "expr": "sum by(cluster) (increase(istio_tcp_connections_failed_total{job=\"ztunnel\",cluster=~\".+\",component=\"ztunnel\",reporter=\"destination\",destination_workload_namespace=~\".+\",response_flags=\"DENY\"}[15m] @ end()))",
+          "eval_time": "15m",
+          "exp_samples": [
+            {
+              "labels": "{cluster=\"cmtc-a\"}",
+              "value": 15
+            }
+          ]
+        },
+        {
+          "expr": "sum by(cluster,source_trust_domain) (label_replace(increase(istio_tcp_connections_opened_total{job=\"ztunnel\",cluster=~\".+\",component=\"ztunnel\",reporter=\"destination\",destination_workload_namespace=~\".+\",connection_security_policy=\"mutual_tls\"}[15m] @ end()), \"source_trust_domain\", \"$1\", \"source_principal\", \"spiffe://([^/]+)/.*\"))",
+          "eval_time": "15m",
+          "exp_samples": [
+            {
+              "labels": "{cluster=\"cmtc-a\",source_trust_domain=\"cmtc-b.mesh.example\"}",
+              "value": 30
+            },
+            {
+              "labels": "{cluster=\"cmtc-b\",source_trust_domain=\"cmtc-a.mesh.example\"}",
+              "value": 15
+            }
+          ]
+        },
+        {
+          "expr": "(sum by(cluster) (rate(istio_tcp_connections_failed_total{job=\"ztunnel\",cluster=~\".+\",component=\"ztunnel\",reporter=\"destination\",destination_workload_namespace=~\".+\",response_flags=\"DENY\"}[5m])) or on(cluster) (0 * sum by(cluster) (rate(istio_tcp_connections_opened_total{job=\"ztunnel\",cluster=~\".+\",component=\"ztunnel\",reporter=\"destination\",destination_workload_namespace=~\".+\"}[5m])))) and on() (count(up{job=\"ztunnel\",cluster=~\".+\",component=\"ztunnel\"}) > 0) unless on() (min(up{job=\"ztunnel\",cluster=~\".+\",component=\"ztunnel\"}) == 0)",
+          "eval_time": "15m",
+          "exp_samples": [
+            {
+              "labels": "{cluster=\"cmtc-a\"}",
+              "value": 0.016666666666666666
+            },
+            {
+              "labels": "{cluster=\"cmtc-b\"}",
+              "value": 0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "cluster filter selects one destination cluster",
+      "interval": "1m",
+      "input_series": [
+        {
+          "series": "up{job=\"ztunnel\",cluster=\"cmtc-a\",component=\"ztunnel\",node=\"a1\"}",
+          "values": "1x20"
+        },
+        {
+          "series": "up{job=\"ztunnel\",cluster=\"cmtc-b\",component=\"ztunnel\",node=\"b1\"}",
+          "values": "1x20"
+        },
+        {
+          "series": "istio_tcp_connections_closed_total{job=\"ztunnel\",cluster=\"cmtc-a\",component=\"ztunnel\",node=\"a1\",reporter=\"destination\",destination_workload_namespace=\"demo\",connection_security_policy=\"mutual_tls\",response_flags=\"-\",source_principal=\"spiffe://cmtc-b.mesh.example/ns/demo/sa/client\",destination_principal=\"spiffe://cmtc-a.mesh.example/ns/demo/sa/server\"}",
+          "values": "0+2x20"
+        },
+        {
+          "series": "istio_tcp_connections_closed_total{job=\"ztunnel\",cluster=\"cmtc-b\",component=\"ztunnel\",node=\"b1\",reporter=\"destination\",destination_workload_namespace=\"demo\",connection_security_policy=\"mutual_tls\",response_flags=\"-\",source_principal=\"spiffe://cmtc-a.mesh.example/ns/demo/sa/client\",destination_principal=\"spiffe://cmtc-b.mesh.example/ns/demo/sa/server\"}",
+          "values": "0+1x20"
+        },
+        {
+          "series": "istio_tcp_connections_closed_total{job=\"ztunnel\",cluster=\"cmtc-a\",component=\"ztunnel\",node=\"a1\",reporter=\"destination\",destination_workload_namespace=\"demo\",connection_security_policy=\"unknown\",response_flags=\"DENY\",source_principal=\"unknown\",destination_principal=\"spiffe://cmtc-a.mesh.example/ns/demo/sa/server\"}",
+          "values": "0+1x20"
+        },
+        {
+          "series": "istio_tcp_connections_closed_total{job=\"ztunnel\",cluster=\"cmtc-b\",component=\"ztunnel\",node=\"b1\",reporter=\"destination\",destination_workload_namespace=\"demo\",connection_security_policy=\"mutual_tls\",response_flags=\"DENY\",source_principal=\"spiffe://cmtc-a.mesh.example/ns/demo/sa/client\",destination_principal=\"spiffe://cmtc-b.mesh.example/ns/demo/sa/server\"}",
+          "values": "0+1x20"
+        },
+        {
+          "series": "istio_tcp_connections_closed_total{job=\"ztunnel\",cluster=\"cmtc-a\",component=\"ztunnel\",node=\"a1\",reporter=\"destination\",destination_workload_namespace=\"demo\",connection_security_policy=\"unknown\",response_flags=\"TLS_FAILURE\",source_principal=\"unknown\",destination_principal=\"spiffe://cmtc-a.mesh.example/ns/demo/sa/server\"}",
+          "values": "0+1x20"
+        },
+        {
+          "series": "istio_tcp_connections_closed_total{job=\"ztunnel\",cluster=\"cmtc-b\",component=\"ztunnel\",node=\"b1\",reporter=\"source\",destination_workload_namespace=\"demo\",connection_security_policy=\"mutual_tls\",response_flags=\"-\",source_principal=\"spiffe://cmtc-b.mesh.example/ns/demo/sa/client\",destination_principal=\"spiffe://cmtc-a.mesh.example/ns/demo/sa/server\"}",
+          "values": "0+100x20"
+        },
+        {
+          "series": "istio_tcp_connections_opened_total{job=\"ztunnel\",cluster=\"cmtc-a\",component=\"ztunnel\",node=\"a1\",reporter=\"destination\",destination_workload_namespace=\"demo\",connection_security_policy=\"mutual_tls\",response_flags=\"-\",source_principal=\"spiffe://cmtc-b.mesh.example/ns/demo/sa/client\",destination_principal=\"spiffe://cmtc-a.mesh.example/ns/demo/sa/server\"}",
+          "values": "0+2x20"
+        },
+        {
+          "series": "istio_tcp_connections_opened_total{job=\"ztunnel\",cluster=\"cmtc-b\",component=\"ztunnel\",node=\"b1\",reporter=\"destination\",destination_workload_namespace=\"demo\",connection_security_policy=\"mutual_tls\",response_flags=\"-\",source_principal=\"spiffe://cmtc-a.mesh.example/ns/demo/sa/client\",destination_principal=\"spiffe://cmtc-b.mesh.example/ns/demo/sa/server\"}",
+          "values": "0+1x20"
+        },
+        {
+          "series": "istio_tcp_connections_opened_total{job=\"ztunnel\",cluster=\"cmtc-a\",component=\"ztunnel\",node=\"a1\",reporter=\"destination\",destination_workload_namespace=\"demo\",connection_security_policy=\"unknown\",response_flags=\"-\",source_principal=\"unknown\",destination_principal=\"spiffe://cmtc-a.mesh.example/ns/demo/sa/server\"}",
+          "values": "0+1x20"
+        },
+        {
+          "series": "istio_tcp_connections_failed_total{job=\"ztunnel\",cluster=\"cmtc-a\",component=\"ztunnel\",node=\"a1\",reporter=\"destination\",destination_workload_namespace=\"demo\",connection_security_policy=\"unknown\",response_flags=\"DENY\",source_principal=\"unknown\",destination_principal=\"spiffe://cmtc-a.mesh.example/ns/demo/sa/server\"}",
+          "values": "0+1x20"
+        }
+      ],
+      "promql_expr_test": [
+        {
+          "expr": "(sum(increase(istio_tcp_connections_closed_total{job=\"ztunnel\",cluster=~\"cmtc-b\",component=\"ztunnel\",reporter=\"destination\",destination_workload_namespace=~\".+\",connection_security_policy=\"mutual_tls\",response_flags=\"-\"}[15m] @ end())) or on() (0 * sum(increase(istio_tcp_connections_closed_total{job=\"ztunnel\",cluster=~\"cmtc-b\",component=\"ztunnel\",reporter=\"destination\",destination_workload_namespace=~\".+\"}[15m] @ end())))) and on() (count(up{job=\"ztunnel\",cluster=~\"cmtc-b\",component=\"ztunnel\"} @ end()) > 0) unless on() (min(up{job=\"ztunnel\",cluster=~\"cmtc-b\",component=\"ztunnel\"} @ end()) == 0)",
+          "eval_time": "15m",
+          "exp_samples": [
+            {
+              "labels": "{}",
+              "value": 15
+            }
+          ]
+        },
+        {
+          "expr": "(sum(increase(istio_tcp_connections_closed_total{job=\"ztunnel\",cluster=~\"cmtc-b\",component=\"ztunnel\",reporter=\"destination\",destination_workload_namespace=~\".+\",connection_security_policy!=\"mutual_tls\",response_flags=\"DENY\"}[15m] @ end())) or on() (0 * sum(increase(istio_tcp_connections_closed_total{job=\"ztunnel\",cluster=~\"cmtc-b\",component=\"ztunnel\",reporter=\"destination\",destination_workload_namespace=~\".+\"}[15m] @ end())))) and on() (count(up{job=\"ztunnel\",cluster=~\"cmtc-b\",component=\"ztunnel\"} @ end()) > 0) unless on() (min(up{job=\"ztunnel\",cluster=~\"cmtc-b\",component=\"ztunnel\"} @ end()) == 0)",
+          "eval_time": "15m",
+          "exp_samples": [
+            {
+              "labels": "{}",
+              "value": 0
+            }
+          ]
+        },
+        {
+          "expr": "(sum(increase(istio_tcp_connections_closed_total{job=\"ztunnel\",cluster=~\"cmtc-b\",component=\"ztunnel\",reporter=\"destination\",destination_workload_namespace=~\".+\",connection_security_policy=\"mutual_tls\",response_flags=\"DENY\"}[15m] @ end())) or on() (0 * sum(increase(istio_tcp_connections_closed_total{job=\"ztunnel\",cluster=~\"cmtc-b\",component=\"ztunnel\",reporter=\"destination\",destination_workload_namespace=~\".+\"}[15m] @ end())))) and on() (count(up{job=\"ztunnel\",cluster=~\"cmtc-b\",component=\"ztunnel\"} @ end()) > 0) unless on() (min(up{job=\"ztunnel\",cluster=~\"cmtc-b\",component=\"ztunnel\"} @ end()) == 0)",
+          "eval_time": "15m",
+          "exp_samples": [
+            {
+              "labels": "{}",
+              "value": 15
+            }
+          ]
+        },
+        {
+          "expr": "(sum(increase(istio_tcp_connections_closed_total{job=\"ztunnel\",cluster=~\"cmtc-b\",component=\"ztunnel\",reporter=\"destination\",destination_workload_namespace=~\".+\",connection_security_policy!=\"mutual_tls\",response_flags=\"-\"}[15m] @ end())) or on() (0 * sum(increase(istio_tcp_connections_closed_total{job=\"ztunnel\",cluster=~\"cmtc-b\",component=\"ztunnel\",reporter=\"destination\",destination_workload_namespace=~\".+\"}[15m] @ end())))) and on() (count(up{job=\"ztunnel\",cluster=~\"cmtc-b\",component=\"ztunnel\"} @ end()) > 0) unless on() (min(up{job=\"ztunnel\",cluster=~\"cmtc-b\",component=\"ztunnel\"} @ end()) == 0)",
+          "eval_time": "15m",
+          "exp_samples": [
+            {
+              "labels": "{}",
+              "value": 0
+            }
+          ]
+        },
+        {
+          "expr": "(sum(increase(istio_tcp_connections_closed_total{job=\"ztunnel\",cluster=~\"cmtc-b\",component=\"ztunnel\",reporter=\"destination\",destination_workload_namespace=~\".+\",response_flags!=\"-\",response_flags!=\"DENY\"}[15m] @ end())) or on() (0 * sum(increase(istio_tcp_connections_closed_total{job=\"ztunnel\",cluster=~\"cmtc-b\",component=\"ztunnel\",reporter=\"destination\",destination_workload_namespace=~\".+\"}[15m] @ end())))) and on() (count(up{job=\"ztunnel\",cluster=~\"cmtc-b\",component=\"ztunnel\"} @ end()) > 0) unless on() (min(up{job=\"ztunnel\",cluster=~\"cmtc-b\",component=\"ztunnel\"} @ end()) == 0)",
+          "eval_time": "15m",
+          "exp_samples": [
+            {
+              "labels": "{}",
+              "value": 0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "no ztunnel telemetry stays unavailable, never zero",
+      "interval": "1m",
+      "input_series": [
+        {
+          "series": "up{job=\"cmtc\",cluster=\"cmtc-a\",component=\"cmtc-controller\",node=\"a1\"}",
+          "values": "1x20"
+        }
+      ],
+      "promql_expr_test": [
+        {
+          "expr": "(sum(increase(istio_tcp_connections_closed_total{job=\"ztunnel\",cluster=~\".+\",component=\"ztunnel\",reporter=\"destination\",destination_workload_namespace=~\".+\",connection_security_policy=\"mutual_tls\",response_flags=\"-\"}[15m] @ end())) or on() (0 * sum(increase(istio_tcp_connections_closed_total{job=\"ztunnel\",cluster=~\".+\",component=\"ztunnel\",reporter=\"destination\",destination_workload_namespace=~\".+\"}[15m] @ end())))) and on() (count(up{job=\"ztunnel\",cluster=~\".+\",component=\"ztunnel\"} @ end()) > 0) unless on() (min(up{job=\"ztunnel\",cluster=~\".+\",component=\"ztunnel\"} @ end()) == 0)",
+          "eval_time": "15m",
+          "exp_samples": []
+        },
+        {
+          "expr": "(sum(increase(istio_tcp_connections_closed_total{job=\"ztunnel\",cluster=~\".+\",component=\"ztunnel\",reporter=\"destination\",destination_workload_namespace=~\".+\",connection_security_policy!=\"mutual_tls\",response_flags=\"DENY\"}[15m] @ end())) or on() (0 * sum(increase(istio_tcp_connections_closed_total{job=\"ztunnel\",cluster=~\".+\",component=\"ztunnel\",reporter=\"destination\",destination_workload_namespace=~\".+\"}[15m] @ end())))) and on() (count(up{job=\"ztunnel\",cluster=~\".+\",component=\"ztunnel\"} @ end()) > 0) unless on() (min(up{job=\"ztunnel\",cluster=~\".+\",component=\"ztunnel\"} @ end()) == 0)",
+          "eval_time": "15m",
+          "exp_samples": []
+        },
+        {
+          "expr": "(sum(increase(istio_tcp_connections_closed_total{job=\"ztunnel\",cluster=~\".+\",component=\"ztunnel\",reporter=\"destination\",destination_workload_namespace=~\".+\",connection_security_policy=\"mutual_tls\",response_flags=\"DENY\"}[15m] @ end())) or on() (0 * sum(increase(istio_tcp_connections_closed_total{job=\"ztunnel\",cluster=~\".+\",component=\"ztunnel\",reporter=\"destination\",destination_workload_namespace=~\".+\"}[15m] @ end())))) and on() (count(up{job=\"ztunnel\",cluster=~\".+\",component=\"ztunnel\"} @ end()) > 0) unless on() (min(up{job=\"ztunnel\",cluster=~\".+\",component=\"ztunnel\"} @ end()) == 0)",
+          "eval_time": "15m",
+          "exp_samples": []
+        },
+        {
+          "expr": "(sum(increase(istio_tcp_connections_closed_total{job=\"ztunnel\",cluster=~\".+\",component=\"ztunnel\",reporter=\"destination\",destination_workload_namespace=~\".+\",connection_security_policy!=\"mutual_tls\",response_flags=\"-\"}[15m] @ end())) or on() (0 * sum(increase(istio_tcp_connections_closed_total{job=\"ztunnel\",cluster=~\".+\",component=\"ztunnel\",reporter=\"destination\",destination_workload_namespace=~\".+\"}[15m] @ end())))) and on() (count(up{job=\"ztunnel\",cluster=~\".+\",component=\"ztunnel\"} @ end()) > 0) unless on() (min(up{job=\"ztunnel\",cluster=~\".+\",component=\"ztunnel\"} @ end()) == 0)",
+          "eval_time": "15m",
+          "exp_samples": []
+        },
+        {
+          "expr": "(sum(increase(istio_tcp_connections_closed_total{job=\"ztunnel\",cluster=~\".+\",component=\"ztunnel\",reporter=\"destination\",destination_workload_namespace=~\".+\",response_flags!=\"-\",response_flags!=\"DENY\"}[15m] @ end())) or on() (0 * sum(increase(istio_tcp_connections_closed_total{job=\"ztunnel\",cluster=~\".+\",component=\"ztunnel\",reporter=\"destination\",destination_workload_namespace=~\".+\"}[15m] @ end())))) and on() (count(up{job=\"ztunnel\",cluster=~\".+\",component=\"ztunnel\"} @ end()) > 0) unless on() (min(up{job=\"ztunnel\",cluster=~\".+\",component=\"ztunnel\"} @ end()) == 0)",
+          "eval_time": "15m",
+          "exp_samples": []
+        },
+        {
+          "expr": "sum by(cluster) (increase(istio_tcp_connections_opened_total{job=\"ztunnel\",cluster=~\".+\",component=\"ztunnel\",reporter=\"destination\",destination_workload_namespace=~\".+\",connection_security_policy=\"mutual_tls\"}[15m] @ end()))",
+          "eval_time": "15m",
+          "exp_samples": []
+        },
+        {
+          "expr": "(sum by(cluster) (rate(istio_tcp_connections_failed_total{job=\"ztunnel\",cluster=~\".+\",component=\"ztunnel\",reporter=\"destination\",destination_workload_namespace=~\".+\",response_flags=\"DENY\"}[5m])) or on(cluster) (0 * sum by(cluster) (rate(istio_tcp_connections_opened_total{job=\"ztunnel\",cluster=~\".+\",component=\"ztunnel\",reporter=\"destination\",destination_workload_namespace=~\".+\"}[5m])))) and on() (count(up{job=\"ztunnel\",cluster=~\".+\",component=\"ztunnel\"}) > 0) unless on() (min(up{job=\"ztunnel\",cluster=~\".+\",component=\"ztunnel\"}) == 0)",
+          "eval_time": "15m",
+          "exp_samples": []
+        }
+      ]
+    },
+    {
+      "name": "one ztunnel target down hides the pie and the DENY rate",
+      "interval": "1m",
+      "input_series": [
+        {
+          "series": "istio_tcp_connections_closed_total{job=\"ztunnel\",cluster=\"cmtc-a\",component=\"ztunnel\",node=\"a1\",reporter=\"destination\",destination_workload_namespace=\"demo\",connection_security_policy=\"mutual_tls\",response_flags=\"-\",source_principal=\"spiffe://cmtc-b.mesh.example/ns/demo/sa/client\",destination_principal=\"spiffe://cmtc-a.mesh.example/ns/demo/sa/server\"}",
+          "values": "0+2x20"
+        },
+        {
+          "series": "istio_tcp_connections_closed_total{job=\"ztunnel\",cluster=\"cmtc-b\",component=\"ztunnel\",node=\"b1\",reporter=\"destination\",destination_workload_namespace=\"demo\",connection_security_policy=\"mutual_tls\",response_flags=\"-\",source_principal=\"spiffe://cmtc-a.mesh.example/ns/demo/sa/client\",destination_principal=\"spiffe://cmtc-b.mesh.example/ns/demo/sa/server\"}",
+          "values": "0+1x20"
+        },
+        {
+          "series": "istio_tcp_connections_closed_total{job=\"ztunnel\",cluster=\"cmtc-a\",component=\"ztunnel\",node=\"a1\",reporter=\"destination\",destination_workload_namespace=\"demo\",connection_security_policy=\"unknown\",response_flags=\"DENY\",source_principal=\"unknown\",destination_principal=\"spiffe://cmtc-a.mesh.example/ns/demo/sa/server\"}",
+          "values": "0+1x20"
+        },
+        {
+          "series": "istio_tcp_connections_closed_total{job=\"ztunnel\",cluster=\"cmtc-b\",component=\"ztunnel\",node=\"b1\",reporter=\"destination\",destination_workload_namespace=\"demo\",connection_security_policy=\"mutual_tls\",response_flags=\"DENY\",source_principal=\"spiffe://cmtc-a.mesh.example/ns/demo/sa/client\",destination_principal=\"spiffe://cmtc-b.mesh.example/ns/demo/sa/server\"}",
+          "values": "0+1x20"
+        },
+        {
+          "series": "istio_tcp_connections_closed_total{job=\"ztunnel\",cluster=\"cmtc-a\",component=\"ztunnel\",node=\"a1\",reporter=\"destination\",destination_workload_namespace=\"demo\",connection_security_policy=\"unknown\",response_flags=\"TLS_FAILURE\",source_principal=\"unknown\",destination_principal=\"spiffe://cmtc-a.mesh.example/ns/demo/sa/server\"}",
+          "values": "0+1x20"
+        },
+        {
+          "series": "istio_tcp_connections_closed_total{job=\"ztunnel\",cluster=\"cmtc-b\",component=\"ztunnel\",node=\"b1\",reporter=\"source\",destination_workload_namespace=\"demo\",connection_security_policy=\"mutual_tls\",response_flags=\"-\",source_principal=\"spiffe://cmtc-b.mesh.example/ns/demo/sa/client\",destination_principal=\"spiffe://cmtc-a.mesh.example/ns/demo/sa/server\"}",
+          "values": "0+100x20"
+        },
+        {
+          "series": "istio_tcp_connections_opened_total{job=\"ztunnel\",cluster=\"cmtc-a\",component=\"ztunnel\",node=\"a1\",reporter=\"destination\",destination_workload_namespace=\"demo\",connection_security_policy=\"mutual_tls\",response_flags=\"-\",source_principal=\"spiffe://cmtc-b.mesh.example/ns/demo/sa/client\",destination_principal=\"spiffe://cmtc-a.mesh.example/ns/demo/sa/server\"}",
+          "values": "0+2x20"
+        },
+        {
+          "series": "istio_tcp_connections_opened_total{job=\"ztunnel\",cluster=\"cmtc-b\",component=\"ztunnel\",node=\"b1\",reporter=\"destination\",destination_workload_namespace=\"demo\",connection_security_policy=\"mutual_tls\",response_flags=\"-\",source_principal=\"spiffe://cmtc-a.mesh.example/ns/demo/sa/client\",destination_principal=\"spiffe://cmtc-b.mesh.example/ns/demo/sa/server\"}",
+          "values": "0+1x20"
+        },
+        {
+          "series": "istio_tcp_connections_opened_total{job=\"ztunnel\",cluster=\"cmtc-a\",component=\"ztunnel\",node=\"a1\",reporter=\"destination\",destination_workload_namespace=\"demo\",connection_security_policy=\"unknown\",response_flags=\"-\",source_principal=\"unknown\",destination_principal=\"spiffe://cmtc-a.mesh.example/ns/demo/sa/server\"}",
+          "values": "0+1x20"
+        },
+        {
+          "series": "istio_tcp_connections_failed_total{job=\"ztunnel\",cluster=\"cmtc-a\",component=\"ztunnel\",node=\"a1\",reporter=\"destination\",destination_workload_namespace=\"demo\",connection_security_policy=\"unknown\",response_flags=\"DENY\",source_principal=\"unknown\",destination_principal=\"spiffe://cmtc-a.mesh.example/ns/demo/sa/server\"}",
+          "values": "0+1x20"
+        },
+        {
+          "series": "up{job=\"ztunnel\",cluster=\"cmtc-a\",component=\"ztunnel\",node=\"a1\"}",
+          "values": "1x20"
+        },
+        {
+          "series": "up{job=\"ztunnel\",cluster=\"cmtc-b\",component=\"ztunnel\",node=\"b1\"}",
+          "values": "1x10 0x10"
+        }
+      ],
+      "promql_expr_test": [
+        {
+          "expr": "(sum(increase(istio_tcp_connections_closed_total{job=\"ztunnel\",cluster=~\".+\",component=\"ztunnel\",reporter=\"destination\",destination_workload_namespace=~\".+\",connection_security_policy=\"mutual_tls\",response_flags=\"-\"}[15m] @ end())) or on() (0 * sum(increase(istio_tcp_connections_closed_total{job=\"ztunnel\",cluster=~\".+\",component=\"ztunnel\",reporter=\"destination\",destination_workload_namespace=~\".+\"}[15m] @ end())))) and on() (count(up{job=\"ztunnel\",cluster=~\".+\",component=\"ztunnel\"} @ end()) > 0) unless on() (min(up{job=\"ztunnel\",cluster=~\".+\",component=\"ztunnel\"} @ end()) == 0)",
+          "eval_time": "15m",
+          "exp_samples": []
+        },
+        {
+          "expr": "(sum(increase(istio_tcp_connections_closed_total{job=\"ztunnel\",cluster=~\".+\",component=\"ztunnel\",reporter=\"destination\",destination_workload_namespace=~\".+\",connection_security_policy!=\"mutual_tls\",response_flags=\"DENY\"}[15m] @ end())) or on() (0 * sum(increase(istio_tcp_connections_closed_total{job=\"ztunnel\",cluster=~\".+\",component=\"ztunnel\",reporter=\"destination\",destination_workload_namespace=~\".+\"}[15m] @ end())))) and on() (count(up{job=\"ztunnel\",cluster=~\".+\",component=\"ztunnel\"} @ end()) > 0) unless on() (min(up{job=\"ztunnel\",cluster=~\".+\",component=\"ztunnel\"} @ end()) == 0)",
+          "eval_time": "15m",
+          "exp_samples": []
+        },
+        {
+          "expr": "(sum(increase(istio_tcp_connections_closed_total{job=\"ztunnel\",cluster=~\".+\",component=\"ztunnel\",reporter=\"destination\",destination_workload_namespace=~\".+\",connection_security_policy=\"mutual_tls\",response_flags=\"DENY\"}[15m] @ end())) or on() (0 * sum(increase(istio_tcp_connections_closed_total{job=\"ztunnel\",cluster=~\".+\",component=\"ztunnel\",reporter=\"destination\",destination_workload_namespace=~\".+\"}[15m] @ end())))) and on() (count(up{job=\"ztunnel\",cluster=~\".+\",component=\"ztunnel\"} @ end()) > 0) unless on() (min(up{job=\"ztunnel\",cluster=~\".+\",component=\"ztunnel\"} @ end()) == 0)",
+          "eval_time": "15m",
+          "exp_samples": []
+        },
+        {
+          "expr": "(sum(increase(istio_tcp_connections_closed_total{job=\"ztunnel\",cluster=~\".+\",component=\"ztunnel\",reporter=\"destination\",destination_workload_namespace=~\".+\",connection_security_policy!=\"mutual_tls\",response_flags=\"-\"}[15m] @ end())) or on() (0 * sum(increase(istio_tcp_connections_closed_total{job=\"ztunnel\",cluster=~\".+\",component=\"ztunnel\",reporter=\"destination\",destination_workload_namespace=~\".+\"}[15m] @ end())))) and on() (count(up{job=\"ztunnel\",cluster=~\".+\",component=\"ztunnel\"} @ end()) > 0) unless on() (min(up{job=\"ztunnel\",cluster=~\".+\",component=\"ztunnel\"} @ end()) == 0)",
+          "eval_time": "15m",
+          "exp_samples": []
+        },
+        {
+          "expr": "(sum(increase(istio_tcp_connections_closed_total{job=\"ztunnel\",cluster=~\".+\",component=\"ztunnel\",reporter=\"destination\",destination_workload_namespace=~\".+\",response_flags!=\"-\",response_flags!=\"DENY\"}[15m] @ end())) or on() (0 * sum(increase(istio_tcp_connections_closed_total{job=\"ztunnel\",cluster=~\".+\",component=\"ztunnel\",reporter=\"destination\",destination_workload_namespace=~\".+\"}[15m] @ end())))) and on() (count(up{job=\"ztunnel\",cluster=~\".+\",component=\"ztunnel\"} @ end()) > 0) unless on() (min(up{job=\"ztunnel\",cluster=~\".+\",component=\"ztunnel\"} @ end()) == 0)",
+          "eval_time": "15m",
+          "exp_samples": []
+        },
+        {
+          "expr": "(sum by(cluster) (rate(istio_tcp_connections_failed_total{job=\"ztunnel\",cluster=~\".+\",component=\"ztunnel\",reporter=\"destination\",destination_workload_namespace=~\".+\",response_flags=\"DENY\"}[5m])) or on(cluster) (0 * sum by(cluster) (rate(istio_tcp_connections_opened_total{job=\"ztunnel\",cluster=~\".+\",component=\"ztunnel\",reporter=\"destination\",destination_workload_namespace=~\".+\"}[5m])))) and on() (count(up{job=\"ztunnel\",cluster=~\".+\",component=\"ztunnel\"}) > 0) unless on() (min(up{job=\"ztunnel\",cluster=~\".+\",component=\"ztunnel\"}) == 0)",
+          "eval_time": "15m",
+          "exp_samples": []
+        }
+      ]
+    },
+    {
+      "name": "idle but reporting ztunnel shows measured zero",
+      "interval": "1m",
+      "input_series": [
+        {
+          "series": "up{job=\"ztunnel\",cluster=\"cmtc-a\",component=\"ztunnel\",node=\"a1\"}",
+          "values": "1x20"
+        },
+        {
+          "series": "istio_tcp_connections_closed_total{job=\"ztunnel\",cluster=\"cmtc-a\",component=\"ztunnel\",node=\"a1\",reporter=\"destination\",destination_workload_namespace=\"demo\",connection_security_policy=\"mutual_tls\",response_flags=\"-\",source_principal=\"spiffe://cmtc-b.mesh.example/ns/demo/sa/client\",destination_principal=\"spiffe://cmtc-a.mesh.example/ns/demo/sa/server\"}",
+          "values": "5x20"
+        }
+      ],
+      "promql_expr_test": [
+        {
+          "expr": "(sum(increase(istio_tcp_connections_closed_total{job=\"ztunnel\",cluster=~\".+\",component=\"ztunnel\",reporter=\"destination\",destination_workload_namespace=~\".+\",connection_security_policy=\"mutual_tls\",response_flags=\"-\"}[15m] @ end())) or on() (0 * sum(increase(istio_tcp_connections_closed_total{job=\"ztunnel\",cluster=~\".+\",component=\"ztunnel\",reporter=\"destination\",destination_workload_namespace=~\".+\"}[15m] @ end())))) and on() (count(up{job=\"ztunnel\",cluster=~\".+\",component=\"ztunnel\"} @ end()) > 0) unless on() (min(up{job=\"ztunnel\",cluster=~\".+\",component=\"ztunnel\"} @ end()) == 0)",
+          "eval_time": "15m",
+          "exp_samples": [
+            {
+              "labels": "{}",
+              "value": 0
+            }
+          ]
+        },
+        {
+          "expr": "(sum(increase(istio_tcp_connections_closed_total{job=\"ztunnel\",cluster=~\".+\",component=\"ztunnel\",reporter=\"destination\",destination_workload_namespace=~\".+\",connection_security_policy!=\"mutual_tls\",response_flags=\"DENY\"}[15m] @ end())) or on() (0 * sum(increase(istio_tcp_connections_closed_total{job=\"ztunnel\",cluster=~\".+\",component=\"ztunnel\",reporter=\"destination\",destination_workload_namespace=~\".+\"}[15m] @ end())))) and on() (count(up{job=\"ztunnel\",cluster=~\".+\",component=\"ztunnel\"} @ end()) > 0) unless on() (min(up{job=\"ztunnel\",cluster=~\".+\",component=\"ztunnel\"} @ end()) == 0)",
+          "eval_time": "15m",
+          "exp_samples": [
+            {
+              "labels": "{}",
+              "value": 0
+            }
+          ]
+        },
+        {
+          "expr": "(sum(increase(istio_tcp_connections_closed_total{job=\"ztunnel\",cluster=~\".+\",component=\"ztunnel\",reporter=\"destination\",destination_workload_namespace=~\".+\",connection_security_policy=\"mutual_tls\",response_flags=\"DENY\"}[15m] @ end())) or on() (0 * sum(increase(istio_tcp_connections_closed_total{job=\"ztunnel\",cluster=~\".+\",component=\"ztunnel\",reporter=\"destination\",destination_workload_namespace=~\".+\"}[15m] @ end())))) and on() (count(up{job=\"ztunnel\",cluster=~\".+\",component=\"ztunnel\"} @ end()) > 0) unless on() (min(up{job=\"ztunnel\",cluster=~\".+\",component=\"ztunnel\"} @ end()) == 0)",
+          "eval_time": "15m",
+          "exp_samples": [
+            {
+              "labels": "{}",
+              "value": 0
+            }
+          ]
+        },
+        {
+          "expr": "(sum(increase(istio_tcp_connections_closed_total{job=\"ztunnel\",cluster=~\".+\",component=\"ztunnel\",reporter=\"destination\",destination_workload_namespace=~\".+\",connection_security_policy!=\"mutual_tls\",response_flags=\"-\"}[15m] @ end())) or on() (0 * sum(increase(istio_tcp_connections_closed_total{job=\"ztunnel\",cluster=~\".+\",component=\"ztunnel\",reporter=\"destination\",destination_workload_namespace=~\".+\"}[15m] @ end())))) and on() (count(up{job=\"ztunnel\",cluster=~\".+\",component=\"ztunnel\"} @ end()) > 0) unless on() (min(up{job=\"ztunnel\",cluster=~\".+\",component=\"ztunnel\"} @ end()) == 0)",
+          "eval_time": "15m",
+          "exp_samples": [
+            {
+              "labels": "{}",
+              "value": 0
+            }
+          ]
+        },
+        {
+          "expr": "(sum(increase(istio_tcp_connections_closed_total{job=\"ztunnel\",cluster=~\".+\",component=\"ztunnel\",reporter=\"destination\",destination_workload_namespace=~\".+\",response_flags!=\"-\",response_flags!=\"DENY\"}[15m] @ end())) or on() (0 * sum(increase(istio_tcp_connections_closed_total{job=\"ztunnel\",cluster=~\".+\",component=\"ztunnel\",reporter=\"destination\",destination_workload_namespace=~\".+\"}[15m] @ end())))) and on() (count(up{job=\"ztunnel\",cluster=~\".+\",component=\"ztunnel\"} @ end()) > 0) unless on() (min(up{job=\"ztunnel\",cluster=~\".+\",component=\"ztunnel\"} @ end()) == 0)",
+          "eval_time": "15m",
+          "exp_samples": [
+            {
+              "labels": "{}",
+              "value": 0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "issuer-profile producer: unset timestamps stay empty",
+      "interval": "1m",
+      "input_series": [
+        {
+          "series": "cmtc_issuer_profile_source_checked_timestamp_seconds{job=\"cmtc\",cluster=\"cmtc-a\",component=\"cmtc-controller\",node=\"a1\"}",
+          "values": "0x20"
+        },
+        {
+          "series": "cmtc_issuer_profile_acknowledged_valid_until_timestamp_seconds{job=\"cmtc\",cluster=\"cmtc-a\",component=\"cmtc-controller\",node=\"a1\"}",
+          "values": "0x20"
+        }
+      ],
+      "promql_expr_test": [
+        {
+          "expr": "(time() - max by(cluster) (cmtc_issuer_profile_source_checked_timestamp_seconds{job=\"cmtc\",cluster=~\".+\",component=\"cmtc-controller\"} @ end())) and on(cluster) (max by(cluster) (cmtc_issuer_profile_source_checked_timestamp_seconds{job=\"cmtc\",cluster=~\".+\",component=\"cmtc-controller\"} @ end()) > 0)",
+          "eval_time": "15m",
+          "exp_samples": []
+        },
+        {
+          "expr": "(max by(cluster) (cmtc_issuer_profile_acknowledged_valid_until_timestamp_seconds{job=\"cmtc\",cluster=~\".+\",component=\"cmtc-controller\"} @ end()) - time()) and on(cluster) (max by(cluster) (cmtc_issuer_profile_acknowledged_valid_until_timestamp_seconds{job=\"cmtc\",cluster=~\".+\",component=\"cmtc-controller\"} @ end()) > 0)",
+          "eval_time": "15m",
+          "exp_samples": []
+        }
+      ],
+      "alert_rule_test": [
+        {
+          "eval_time": "15m",
+          "alertname": "CMTCIssuerProfileLeaseExpired",
+          "exp_alerts": []
+        },
+        {
+          "eval_time": "15m",
+          "alertname": "CMTCIssuerProfileSourceStale",
+          "exp_alerts": []
+        }
+      ]
+    },
+    {
+      "name": "issuer-profile producer: age, lease and expiry",
+      "interval": "1m",
+      "input_series": [
+        {
+          "series": "cmtc_issuer_profile_source_checked_timestamp_seconds{job=\"cmtc\",cluster=\"cmtc-a\",component=\"cmtc-controller\",node=\"a1\"}",
+          "values": "0+60x20"
+        },
+        {
+          "series": "cmtc_issuer_profile_acknowledged_valid_until_timestamp_seconds{job=\"cmtc\",cluster=\"cmtc-a\",component=\"cmtc-controller\",node=\"a1\"}",
+          "values": "30+60x13 810x7"
+        }
+      ],
+      "promql_expr_test": [
+        {
+          "expr": "(time() - max by(cluster) (cmtc_issuer_profile_source_checked_timestamp_seconds{job=\"cmtc\",cluster=~\".+\",component=\"cmtc-controller\"} @ end())) and on(cluster) (max by(cluster) (cmtc_issuer_profile_source_checked_timestamp_seconds{job=\"cmtc\",cluster=~\".+\",component=\"cmtc-controller\"} @ end()) > 0)",
+          "eval_time": "15m",
+          "exp_samples": [
+            {
+              "labels": "{cluster=\"cmtc-a\"}",
+              "value": 0
+            }
+          ]
+        },
+        {
+          "expr": "(max by(cluster) (cmtc_issuer_profile_acknowledged_valid_until_timestamp_seconds{job=\"cmtc\",cluster=~\".+\",component=\"cmtc-controller\"} @ end()) - time()) and on(cluster) (max by(cluster) (cmtc_issuer_profile_acknowledged_valid_until_timestamp_seconds{job=\"cmtc\",cluster=~\".+\",component=\"cmtc-controller\"} @ end()) > 0)",
+          "eval_time": "12m",
+          "exp_samples": [
+            {
+              "labels": "{cluster=\"cmtc-a\"}",
+              "value": 30
+            }
+          ]
+        }
+      ],
+      "alert_rule_test": [
+        {
+          "eval_time": "12m",
+          "alertname": "CMTCIssuerProfileLeaseExpired",
+          "exp_alerts": []
+        },
+        {
+          "eval_time": "15m",
+          "alertname": "CMTCIssuerProfileLeaseExpired",
+          "exp_alerts": [
+            {
+              "exp_labels": {
+                "severity": "warning",
+                "job": "cmtc",
+                "cluster": "cmtc-a",
+                "component": "cmtc-controller",
+                "node": "a1"
+              },
+              "exp_annotations": {
+                "summary": "The last acknowledged public issuer-profile lease has expired; consumers must treat the profile as unavailable"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "handshake success ratio is empty without handshakes and exact with them",
+      "interval": "1m",
+      "input_series": [
+        {
+          "series": "istio_tls_handshakes_total{job=\"ztunnel\",cluster=\"cmtc-a\",component=\"ztunnel\",node=\"a1\",reporter=\"destination\",result=\"success\"}",
+          "values": "0x10 0+3x10"
+        },
+        {
+          "series": "istio_tls_handshakes_total{job=\"ztunnel\",cluster=\"cmtc-a\",component=\"ztunnel\",node=\"a1\",reporter=\"destination\",result=\"peer_verification_failed\"}",
+          "values": "0x10 0+1x10"
+        }
+      ],
+      "promql_expr_test": [
+        {
+          "expr": "cmtc:ztunnel_tls_handshake_success:ratio_rate5m",
+          "eval_time": "8m",
+          "exp_samples": []
+        },
+        {
+          "expr": "cmtc:ztunnel_tls_handshake_success:ratio_rate5m",
+          "eval_time": "18m",
+          "exp_samples": [
+            {
+              "labels": "{__name__=\"cmtc:ztunnel_tls_handshake_success:ratio_rate5m\",cluster=\"cmtc-a\"}",
+              "value": 0.75
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "unreachable ztunnel target alerts",
+      "interval": "1m",
+      "input_series": [
+        {
+          "series": "up{job=\"ztunnel\",cluster=\"cmtc-a\",component=\"ztunnel\",node=\"a1\"}",
+          "values": "1x5 0x15"
+        }
+      ],
+      "alert_rule_test": [
+        {
+          "eval_time": "8m",
+          "alertname": "CMTCScrapeTargetDown",
+          "exp_alerts": []
+        },
+        {
+          "eval_time": "15m",
+          "alertname": "CMTCScrapeTargetDown",
+          "exp_alerts": [
+            {
+              "exp_labels": {
+                "severity": "critical",
+                "job": "ztunnel",
+                "cluster": "cmtc-a",
+                "component": "ztunnel",
+                "node": "a1"
+              },
+              "exp_annotations": {
+                "summary": "A CMTC or node ztunnel metrics target is unreachable; its panels are unavailable, not healthy"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "failure-only TLS attempts are measured zero success; idle histogram stays absent",
+      "interval": "1m",
+      "input_series": [
+        {
+          "series": "istio_tls_handshakes_total{job=\"ztunnel\",cluster=\"cmtc-a\",result=\"peer_verification_failed\"}",
+          "values": "0+1x20"
+        },
+        {
+          "series": "istio_tls_handshake_duration_seconds_bucket{job=\"ztunnel\",cluster=\"cmtc-a\",le=\"1\"}",
+          "values": "0x20"
+        },
+        {
+          "series": "istio_tls_handshake_duration_seconds_bucket{job=\"ztunnel\",cluster=\"cmtc-a\",le=\"+Inf\"}",
+          "values": "0x20"
+        }
+      ],
+      "promql_expr_test": [
+        {
+          "expr": "cmtc:ztunnel_tls_handshake_success:ratio_rate5m",
+          "eval_time": "10m",
+          "exp_samples": [
+            {
+              "labels": "cmtc:ztunnel_tls_handshake_success:ratio_rate5m{cluster=\"cmtc-a\"}",
+              "value": 0
+            }
+          ]
+        },
+        {
+          "expr": "cmtc:ztunnel_tls_handshake_p95_seconds:rate5m",
+          "eval_time": "10m",
+          "exp_samples": []
+        }
+      ]
+    },
+    {
+      "name": "typed coverage denominators preserve zero/no-observation and owner scope",
+      "interval": "1m",
+      "input_series": [
+        {
+          "series": "cmtc_namespaces_enrolled{job=\"cmtc\",component=\"cmtc-controller\",cluster=\"cmtc-a\"}",
+          "values": "2x20"
+        },
+        {
+          "series": "cmtc_namespaces_eligible{job=\"cmtc\",component=\"cmtc-controller\",cluster=\"cmtc-a\"}",
+          "values": "4x20"
+        },
+        {
+          "series": "cmtc_namespaces_enrolled{job=\"cmtc\",component=\"wrong\",cluster=\"cmtc-a\"}",
+          "values": "1000x20"
+        },
+        {
+          "series": "cmtc_namespaces_eligible{job=\"cmtc\",component=\"wrong\",cluster=\"cmtc-a\"}",
+          "values": "1000x20"
+        },
+        {
+          "series": "cmtc_namespaces_enrolled{job=\"cmtc\",component=\"cmtc-controller\",cluster=\"cmtc-b\"}",
+          "values": "0x20"
+        },
+        {
+          "series": "cmtc_namespaces_eligible{job=\"cmtc\",component=\"cmtc-controller\",cluster=\"cmtc-b\"}",
+          "values": "0x20"
+        },
+        {
+          "series": "cmtc_pods_protected{cluster=\"cmtc-a\"}",
+          "values": "2x20"
+        },
+        {
+          "series": "cmtc_pods_pending{cluster=\"cmtc-a\"}",
+          "values": "1x20"
+        },
+        {
+          "series": "cmtc_pods_enforcement_failed{cluster=\"cmtc-a\"}",
+          "values": "1x20"
+        },
+        {
+          "series": "cmtc_pods_protected{cluster=\"cmtc-b\"}",
+          "values": "0x20"
+        },
+        {
+          "series": "cmtc_pods_pending{cluster=\"cmtc-b\"}",
+          "values": "0x20"
+        },
+        {
+          "series": "cmtc_pods_enforcement_failed{cluster=\"cmtc-b\"}",
+          "values": "0x20"
+        }
+      ],
+      "promql_expr_test": [
+        {
+          "expr": "cmtc:namespace_enrollment_label:ratio",
+          "eval_time": "10m",
+          "exp_samples": [
+            {
+              "labels": "cmtc:namespace_enrollment_label:ratio{cluster=\"cmtc-a\"}",
+              "value": 0.5
+            }
+          ]
+        },
+        {
+          "expr": "cmtc:pod_protection_coverage:ratio",
+          "eval_time": "10m",
+          "exp_samples": [
+            {
+              "labels": "cmtc:pod_protection_coverage:ratio{cluster=\"cmtc-a\"}",
+              "value": 0.5
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "TLS latency uses histogram buckets only when observations occur",
+      "interval": "1m",
+      "input_series": [
+        {
+          "series": "istio_tls_handshake_duration_seconds_bucket{job=\"ztunnel\",cluster=\"cmtc-a\",le=\"1\"}",
+          "values": "0+10x20"
+        },
+        {
+          "series": "istio_tls_handshake_duration_seconds_bucket{job=\"ztunnel\",cluster=\"cmtc-a\",le=\"+Inf\"}",
+          "values": "0+10x20"
+        }
+      ],
+      "promql_expr_test": [
+        {
+          "expr": "cmtc:ztunnel_tls_handshake_p95_seconds:rate5m",
+          "eval_time": "10m",
+          "exp_samples": [
+            {
+              "labels": "cmtc:ztunnel_tls_handshake_p95_seconds:rate5m{cluster=\"cmtc-a\"}",
+              "value": 0.95
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "planned protection and trust alerts trigger only on actual failed state",
+      "interval": "1m",
+      "input_series": [
+        {
+          "series": "cmtc_pods_pending{cluster=\"cmtc-a\"}",
+          "values": "1x20"
+        },
+        {
+          "series": "cmtc_trust_bundle_ready{cluster=\"cmtc-a\"}",
+          "values": "0x20"
+        }
+      ],
+      "promql_expr_test": [],
+      "alert_rule_test": [
+        {
+          "eval_time": "10m",
+          "alertname": "CMTCUnprotectedPods",
+          "exp_alerts": [
+            {
+              "exp_labels": {
+                "cluster": "cmtc-a",
+                "severity": "critical"
+              },
+              "exp_annotations": {
+                "summary": "Eligible pods lack verified mTLS protection"
+              }
+            }
+          ]
+        },
+        {
+          "eval_time": "10m",
+          "alertname": "CMTCTrustNotReady",
+          "exp_alerts": [
+            {
+              "exp_labels": {
+                "cluster": "cmtc-a",
+                "severity": "critical"
+              },
+              "exp_annotations": {
+                "summary": "Trust bundle not consumed at the expected generation"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
