@@ -2,7 +2,7 @@
 
 **Reviewed source:** immutable Cilium `37d5fce0f78652cbe6721fedd9e02072daa0765b`. All line numbers below refer to `git show 37d5fce:<path>`, not Opus's dirty R6 files. Historical Grok reports remain unchanged.
 
-**Scope:** read-only source and existing-log review. No source, compiler, Podman, API, permission, signer, image or live resource changes. Code in `../../evidence/grok-recommendation-review/proposals/` is **UNRUN proposal code**, not an accepted patch. Implementation stays with Opus 5.5 XHigh. Follow edit → cmtc-a/cmtc-b → traffic/failure/recovery → exact-image packaging. Preserve the current guard, root keys, Admin DAC=false, signer state and unrelated applications.
+**Scope:** read-only source and existing-log review. No source, compiler, Podman, API, permission, signer, image or live resource changes. Code in `../../evidence/grok-recommendation-review/proposals/` is **UNRUN proposal code**, not an accepted patch. Implementation stays with the existing Opus 5.5 Max owner. The requested Opus 5.5 XHigh handoff is a separate read-only review. Follow edit → cmtc-a/cmtc-b → traffic/failure/recovery → exact-image packaging. Preserve the current guard, root keys, Admin DAC=false, signer state and unrelated applications.
 
 ## Current verdict
 
