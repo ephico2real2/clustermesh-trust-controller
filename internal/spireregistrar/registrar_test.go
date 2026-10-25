@@ -68,10 +68,25 @@ type memoryEntries struct {
 }
 
 func newEntries() *memoryEntries { return &memoryEntries{rows: map[string]*stypes.Entry{}} }
+func entrySelected(e *stypes.Entry, f *entryv1.ListEntriesRequest_Filter) bool {
+	if e == nil || f == nil {
+		return false
+	}
+	if f.ByHint != nil && e.Hint != f.ByHint.Value {
+		return false
+	}
+	if id := f.BySpiffeId; id != nil && (e.SpiffeId == nil || e.SpiffeId.TrustDomain != id.TrustDomain || e.SpiffeId.Path != id.Path) {
+		return false
+	}
+	if id := f.ByParentId; id != nil && (e.ParentId == nil || e.ParentId.TrustDomain != id.TrustDomain || e.ParentId.Path != id.Path) {
+		return false
+	}
+	return true
+}
 func (m *memoryEntries) ListEntries(_ context.Context, in *entryv1.ListEntriesRequest, _ ...grpc.CallOption) (*entryv1.ListEntriesResponse, error) {
 	out := &entryv1.ListEntriesResponse{}
 	for _, e := range m.rows {
-		if e.Hint == in.Filter.ByHint.Value {
+		if entrySelected(e, in.Filter) {
 			out.Entries = append(out.Entries, proto.Clone(e).(*stypes.Entry))
 		}
 	}
@@ -256,6 +271,15 @@ func TestSPIREACKFailuresRestartAndRetainedRows(t *testing.T) {
 					t.Fatal("per-entry renewal denial accepted")
 				}
 				entries.denyUpdate = false
+				recovered := now.Add(3 * time.Second)
+				if _, err := r.Reconcile(context.Background(), recovered); err != nil {
+					t.Fatal("expiry renewal did not recover:", err)
+				}
+				for _, row := range entries.rows {
+					if row.ExpiresAt != recovered.Add(90*time.Second).Unix() {
+						t.Fatalf("recovered expiry = %d, want %d", row.ExpiresAt, recovered.Add(90*time.Second).Unix())
+					}
+				}
 			}
 			if mode == "delete-ack-lost" {
 				entries.lostDeleteACK = true
@@ -408,6 +432,172 @@ func TestDelegateControllerImageAndServiceAccountBinding(t *testing.T) {
 			for _, entry := range snapshot.Entries {
 				if entry.SpiffeId.Path == "/ztunnel-proxy" {
 					t.Fatal("unapproved delegate received a registration")
+				}
+			}
+		})
+	}
+}
+
+func TestSourceOutagePreservesExpiryAndRecoveryRenewsIt(t *testing.T) {
+	o, c, _ := fixture(t)
+	entries := newEntries()
+	r := Registrar{Source: Source{Reader: c, Options: o}, Entries: entries}
+	now := time.Now().UTC().Truncate(time.Second)
+	if _, err := r.Reconcile(context.Background(), now); err != nil {
+		t.Fatal(err)
+	}
+	if len(entries.rows) != 3 {
+		t.Fatalf("rows = %d", len(entries.rows))
+	}
+	for _, row := range entries.rows {
+		if row.ExpiresAt != now.Add(90*time.Second).Unix() {
+			t.Fatalf("initial expiry = %d", row.ExpiresAt)
+		}
+	}
+	r.Source.Reader = failReader{c}
+	if _, err := r.Reconcile(context.Background(), now.Add(time.Minute)); err == nil {
+		t.Fatal("source outage accepted")
+	}
+	for _, row := range entries.rows {
+		if row.ExpiresAt != now.Add(90*time.Second).Unix() {
+			t.Fatal("source outage changed an entry expiry")
+		}
+	}
+	r.Source.Reader = c
+	later := now.Add(2 * time.Minute)
+	if _, err := r.Reconcile(context.Background(), later); err != nil {
+		t.Fatal(err)
+	}
+	if len(entries.rows) != 3 {
+		t.Fatalf("recovery rows = %d", len(entries.rows))
+	}
+	for _, row := range entries.rows {
+		if row.ExpiresAt != later.Add(90*time.Second).Unix() {
+			t.Fatalf("recovered expiry = %d", row.ExpiresAt)
+		}
+	}
+}
+
+func legacyBroad(o Options, path, ns, sa string) *stypes.Entry {
+	return &stypes.Entry{
+		Id:        uuid.NewSHA1(uuid.NameSpaceURL, []byte("legacy:"+path)).String(),
+		SpiffeId:  &stypes.SPIFFEID{TrustDomain: o.TrustDomain, Path: path},
+		ParentId:  &stypes.SPIFFEID{TrustDomain: o.TrustDomain, Path: "/ztunnel"},
+		Selectors: []*stypes.Selector{{Type: "k8s", Value: "sa:" + sa}, {Type: "k8s", Value: "ns:" + ns}},
+	}
+}
+
+type wrongIdentityList struct {
+	*memoryEntries
+	wrong *stypes.Entry
+}
+
+func (m wrongIdentityList) ListEntries(_ context.Context, in *entryv1.ListEntriesRequest, _ ...grpc.CallOption) (*entryv1.ListEntriesResponse, error) {
+	if in.Filter.BySpiffeId != nil {
+		return &entryv1.ListEntriesResponse{Entries: []*stypes.Entry{proto.Clone(m.wrong).(*stypes.Entry)}}, nil
+	}
+	return &entryv1.ListEntriesResponse{}, nil
+}
+
+func TestSingleWriterRejectsMismatchedIdentityFilterBeforeCleanup(t *testing.T) {
+	o, _, _ := fixture(t)
+	o.Namespaces[0].ServiceAccounts["other"] = testUID("other")
+	entries := newEntries()
+	wrong := legacyBroad(o, "/ns/orders/sa/other", "orders", "other")
+	entries.rows[wrong.Id] = proto.Clone(wrong).(*stypes.Entry)
+	r := Registrar{Source: Source{Options: o}, Entries: wrongIdentityList{memoryEntries: entries, wrong: wrong}}
+	if err := r.enforceSingleWriter(context.Background(), nil); err == nil {
+		t.Fatal("SPIRE ignored the identity filter but cleanup continued")
+	}
+	if len(entries.operations) != 0 || !proto.Equal(entries.rows[wrong.Id], wrong) {
+		t.Fatal("mismatched filter response caused registration deletion")
+	}
+}
+
+func TestLegacyBroadEntryRetiredAndForeignWriterKept(t *testing.T) {
+	for _, mode := range []string{"enrolled", "unenrolled", "outside-approval", "foreign"} {
+		t.Run(mode, func(t *testing.T) {
+			o, c, _ := fixture(t)
+			if mode == "unenrolled" {
+				var ns corev1.Namespace
+				if err := c.Get(context.Background(), client.ObjectKey{Name: "orders"}, &ns); err != nil {
+					t.Fatal(err)
+				}
+				ns.Labels = nil
+				if err := c.Update(context.Background(), &ns); err != nil {
+					t.Fatal(err)
+				}
+			}
+			entries := newEntries()
+			r := Registrar{Source: Source{Reader: c, Options: o}, Entries: entries}
+			now := time.Now().UTC().Truncate(time.Second)
+			if mode == "foreign" {
+				if _, err := r.Reconcile(context.Background(), now); err != nil {
+					t.Fatal(err)
+				}
+			}
+			legacy := legacyBroad(o, "/ns/orders/sa/api", "orders", "api")
+			if mode == "outside-approval" {
+				legacy = legacyBroad(o, "/ns/other/sa/api", "other", "api")
+			}
+			if mode == "foreign" {
+				var workload *stypes.Entry
+				for _, row := range entries.rows {
+					if row.SpiffeId.Path == "/ns/orders/sa/api" {
+						workload = proto.Clone(row).(*stypes.Entry)
+					}
+				}
+				if workload == nil {
+					t.Fatal("exact workload missing before foreign collision")
+				}
+				foreign := proto.Clone(workload).(*stypes.Entry)
+				foreign.Id = uuid.NewSHA1(uuid.NameSpaceURL, []byte("foreign-writer")).String()
+				foreign.Hint = "other-writer"
+				foreign.Admin = true
+				entries.rows[foreign.Id] = foreign
+				_, err := r.Reconcile(context.Background(), now)
+				var duplicate *DuplicateWriterError
+				if !errors.As(err, &duplicate) || duplicate.Path != "/ns/orders/sa/api" {
+					t.Fatal(err)
+				}
+				if !proto.Equal(entries.rows[workload.Id], workload) || !proto.Equal(entries.rows[foreign.Id], foreign) {
+					t.Fatal("foreign collision changed an exact row or the foreign row")
+				}
+				return
+			}
+			entries.rows[legacy.Id] = proto.Clone(legacy).(*stypes.Entry)
+			if _, err := r.Reconcile(context.Background(), now); err != nil {
+				t.Fatal(err)
+			}
+			_, legacyRemains := entries.rows[legacy.Id]
+			if mode == "outside-approval" && !legacyRemains {
+				t.Fatal("legacy row outside the approved set was deleted")
+			}
+			if mode != "outside-approval" && legacyRemains {
+				t.Fatal("approved legacy broad row survived")
+			}
+			for _, row := range entries.rows {
+				if row.ParentId.Path == "/ztunnel" && mode != "outside-approval" {
+					t.Fatal("broad parent remains for an approved identity")
+				}
+				if mode == "unenrolled" && row.SpiffeId.Path == "/ns/orders/sa/api" {
+					t.Fatal("unenrolled namespace received a workload registration")
+				}
+			}
+			if mode == "enrolled" {
+				found := false
+				for _, row := range entries.rows {
+					if row.Hint != o.Hint() || row.SpiffeId.Path != "/ns/orders/sa/api" {
+						continue
+					}
+					for _, sel := range row.Selectors {
+						if sel.Value == "pod-uid:"+string(testUID("pod")) {
+							found = true
+						}
+					}
+				}
+				if !found {
+					t.Fatal("exact pod-bound workload row missing after legacy retirement")
 				}
 			}
 		})

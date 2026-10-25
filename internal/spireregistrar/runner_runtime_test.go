@@ -239,3 +239,37 @@ func TestRunnerActualRetryReadbackReadinessAndShutdown(t *testing.T) {
 		t.Fatalf("missing verified startup/shutdown removals: deletes=%d gets=%d", entries.deleteCalls, entries.getCalls)
 	}
 }
+
+func TestDuplicateWriterFailureKeepsExactRowsAndOtherFailuresWithdraw(t *testing.T) {
+	o, c, _ := fixture(t)
+	entries := newEntries()
+	registrar := Registrar{Source: Source{Reader: c, Options: o}, Entries: entries}
+	if _, err := registrar.Reconcile(context.Background(), time.Now()); err != nil {
+		t.Fatal(err)
+	}
+	if len(entries.rows) != 3 {
+		t.Fatalf("rows = %d", len(entries.rows))
+	}
+	logs := &runnerLogCapture{notify: make(chan runnerLogEvent, 4)}
+	runner := &Runner{Registrar: registrar, Log: logr.New(&runnerLogSink{capture: logs})}
+	started := time.Now()
+	runner.noteFailure(&DuplicateWriterError{Path: "/ns/orders/sa/api"}, 4, started)
+	if len(entries.rows) != 3 {
+		t.Fatal("duplicate-writer failure withdrew exact rows")
+	}
+	if runner.Ready(nil) == nil {
+		t.Fatal("duplicate-writer failure left registration readiness open")
+	}
+	failed := <-logs.notify
+	if failed.fields["stage"] != "duplicate-writer" || failed.fields["attempt"] != 4 || failed.fields["component"] != "spire-registrar" {
+		t.Fatalf("duplicate-writer log mismatch: %+v", failed.fields)
+	}
+	runner.noteFailure(errors.New("source unavailable"), 5, started)
+	if len(entries.rows) != 0 {
+		t.Fatal("source failure retained exact rows")
+	}
+	withdrawn := <-logs.notify
+	if withdrawn.fields["stage"] != "reconcile-withdraw" || withdrawn.err == nil {
+		t.Fatalf("source-failure log mismatch: %+v", withdrawn.fields)
+	}
+}

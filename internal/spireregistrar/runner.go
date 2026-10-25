@@ -40,13 +40,7 @@ func (r *Runner) Start(ctx context.Context) error {
 		cancel()
 		delay := 10 * time.Second
 		if err != nil {
-			r.acknowledged.Store(nil)
-			// Use a new bounded context: a failed/canceled API request cannot skip
-			// best-effort removal of already acknowledged or ambiguously created rows.
-			cleanup, stop := context.WithTimeout(context.Background(), 5*time.Second)
-			cleanupErr := r.Registrar.Withdraw(cleanup)
-			stop()
-			r.Log.Error(errors.Join(err, cleanupErr), "SPIRE exact registration pass failed", "component", "spire-registrar", "stage", "reconcile-withdraw", "attempt", attempt, "elapsed", time.Since(start), "nextRetry", delay, "deadline", 20*time.Second)
+			r.noteFailure(err, attempt, start)
 		} else {
 			now := time.Now()
 			r.acknowledged.Store(&now)
@@ -66,4 +60,22 @@ func (r *Runner) Start(ctx context.Context) error {
 		r.Log.Error(err, "SPIRE registrar shutdown withdrawal failed; owned entries retain bounded expiry", "stage", "shutdown-withdraw")
 	}
 	return nil
+}
+
+func (r *Runner) noteFailure(err error, attempt int, started time.Time) {
+	r.acknowledged.Store(nil)
+	delay := 10 * time.Second
+	var duplicate *DuplicateWriterError
+	if errors.As(err, &duplicate) {
+		// Keep the stricter exact rows. Deleting them would leave the foreign
+		// entitlement as the only registration for that SPIFFE ID.
+		r.Log.Error(err, "SPIRE exact registration refused a second writer", "component", "spire-registrar", "stage", "duplicate-writer", "attempt", attempt, "elapsed", time.Since(started), "nextRetry", delay, "deadline", 20*time.Second)
+		return
+	}
+	// Use a new bounded context: a failed/canceled API request cannot skip
+	// best-effort removal of already acknowledged or ambiguously created rows.
+	cleanup, stop := context.WithTimeout(context.Background(), 5*time.Second)
+	cleanupErr := r.Registrar.Withdraw(cleanup)
+	stop()
+	r.Log.Error(errors.Join(err, cleanupErr), "SPIRE exact registration pass failed", "component", "spire-registrar", "stage", "reconcile-withdraw", "attempt", attempt, "elapsed", time.Since(started), "nextRetry", delay, "deadline", 20*time.Second)
 }
