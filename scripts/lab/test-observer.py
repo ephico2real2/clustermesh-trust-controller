@@ -536,7 +536,7 @@ class Harness(ObserverLogCaptureMixin):
         state["finalForeignInventory"] = remaining
         if changes:
             logs = self.kubectl(cluster, "-n", "kube-system", "logs", state["agent"]["name"],
-                                "--since=10m", label="native-cilium-program-updates").stdout
+                                "--since-time=" + self.report["started"], label="native-cilium-program-updates").stdout
             validate_native_program_updates(changes, logs, self.report["started"])
         self.flush()
 

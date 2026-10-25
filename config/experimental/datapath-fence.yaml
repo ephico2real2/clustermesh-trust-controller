@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: cmtc-bpf-fence
+  namespace: cmtc-system
+spec:
+  selector:
+    matchLabels: {app.kubernetes.io/name: cmtc-bpf-fence}
+  template:
+    metadata:
+      labels: {app.kubernetes.io/name: cmtc-bpf-fence}
+    spec:
+      hostNetwork: true
+      automountServiceAccountToken: false
+      nodeSelector: {security.cmtc.io/bpf-fence-lab: "true"}
+      tolerations: [{operator: Exists}]
+      terminationGracePeriodSeconds: 10
+      containers:
+        - name: fence
+          image: IMAGE_NOT_BUILT
+          imagePullPolicy: Never
+          command: [/cmtc-bpf-fence]
+          args: ["--config=/config/$(NODE_NAME).json"]
+          env:
+            - name: NODE_NAME
+              valueFrom: {fieldRef: {fieldPath: spec.nodeName}}
+            - {name: CLUSTER_NAME, value: CLUSTER_NAME}
+          securityContext: {privileged: true, runAsUser: 0, readOnlyRootFilesystem: true}
+          resources:
+            requests: {cpu: 10m, memory: 32Mi}
+            limits: {cpu: 200m, memory: 128Mi}
+          readinessProbe: {exec: {command: [/cmtc-bpf-fence, "--health-check=ready"]}}
+          livenessProbe: {exec: {command: [/cmtc-bpf-fence, "--health-check=live"]}}
+          volumeMounts:
+            - {name: config, mountPath: /config, readOnly: true}
+            - {name: pins, mountPath: /cmtc-pins}
+            - {name: locks, mountPath: /cmtc-locks}
+      volumes:
+        - name: config
+          configMap: {name: cmtc-bpf-fence-RUN}
+        - name: pins
+          hostPath: {path: /sys/fs/bpf/cmtc-fence-RUN, type: Directory}
+        - name: locks
+          hostPath: {path: /run/cmtc-fence-RUN, type: Directory}

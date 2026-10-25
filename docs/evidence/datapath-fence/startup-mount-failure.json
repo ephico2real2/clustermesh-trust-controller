@@ -1,0 +1,353 @@
+{
+    "apiVersion": "v1",
+    "kind": "Pod",
+    "metadata": {
+        "creationTimestamp": "2026-10-24T23:45:59Z",
+        "generateName": "cmtc-bpf-fence-",
+        "generation": 1,
+        "labels": {
+            "app.kubernetes.io/name": "cmtc-bpf-fence",
+            "controller-revision-hash": "6487f665d9",
+            "pod-template-generation": "1",
+            "security.cmtc.io/fence-run": "5a186f5ea57c",
+            "security.cmtc.io/observer-run": "5a186f5ea57c"
+        },
+        "name": "cmtc-bpf-fence-nc5zv",
+        "namespace": "cmtc-system",
+        "ownerReferences": [
+            {
+                "apiVersion": "apps/v1",
+                "blockOwnerDeletion": true,
+                "controller": true,
+                "kind": "DaemonSet",
+                "name": "cmtc-bpf-fence",
+                "uid": "bd87bd65-b27d-4423-8fed-b0e107460fc7"
+            }
+        ],
+        "resourceVersion": "42992",
+        "uid": "31465b97-82bb-4eea-a554-4186eba71115"
+    },
+    "spec": {
+        "affinity": {
+            "nodeAffinity": {
+                "requiredDuringSchedulingIgnoredDuringExecution": {
+                    "nodeSelectorTerms": [
+                        {
+                            "matchFields": [
+                                {
+                                    "key": "metadata.name",
+                                    "operator": "In",
+                                    "values": [
+                                        "cmtc-a-worker"
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            }
+        },
+        "automountServiceAccountToken": false,
+        "containers": [
+            {
+                "args": [
+                    "--config=/config/$(NODE_NAME).json"
+                ],
+                "command": [
+                    "/cmtc-bpf-fence"
+                ],
+                "env": [
+                    {
+                        "name": "NODE_NAME",
+                        "valueFrom": {
+                            "fieldRef": {
+                                "apiVersion": "v1",
+                                "fieldPath": "spec.nodeName"
+                            }
+                        }
+                    },
+                    {
+                        "name": "CLUSTER_NAME",
+                        "value": "cmtc-a"
+                    }
+                ],
+                "image": "localhost/cmtc-bpf-fence:deny-69b8080a19",
+                "imagePullPolicy": "Never",
+                "livenessProbe": {
+                    "exec": {
+                        "command": [
+                            "/cmtc-bpf-fence",
+                            "--health-check=live"
+                        ]
+                    },
+                    "failureThreshold": 3,
+                    "periodSeconds": 10,
+                    "successThreshold": 1,
+                    "timeoutSeconds": 1
+                },
+                "name": "fence",
+                "readinessProbe": {
+                    "exec": {
+                        "command": [
+                            "/cmtc-bpf-fence",
+                            "--health-check=ready"
+                        ]
+                    },
+                    "failureThreshold": 3,
+                    "periodSeconds": 10,
+                    "successThreshold": 1,
+                    "timeoutSeconds": 1
+                },
+                "resources": {
+                    "limits": {
+                        "cpu": "200m",
+                        "memory": "128Mi"
+                    },
+                    "requests": {
+                        "cpu": "10m",
+                        "memory": "32Mi"
+                    }
+                },
+                "securityContext": {
+                    "privileged": true,
+                    "readOnlyRootFilesystem": true,
+                    "runAsUser": 0
+                },
+                "terminationMessagePath": "/dev/termination-log",
+                "terminationMessagePolicy": "File",
+                "volumeMounts": [
+                    {
+                        "mountPath": "/config",
+                        "name": "config",
+                        "readOnly": true
+                    },
+                    {
+                        "mountPath": "/sys/fs/bpf/cmtc-fence-5a186f5ea57c",
+                        "name": "pins"
+                    },
+                    {
+                        "mountPath": "/run/cmtc-fence-5a186f5ea57c",
+                        "name": "locks"
+                    }
+                ]
+            }
+        ],
+        "dnsPolicy": "ClusterFirst",
+        "enableServiceLinks": true,
+        "hostNetwork": true,
+        "nodeName": "cmtc-a-worker",
+        "nodeSelector": {
+            "kubernetes.io/hostname": "cmtc-a-worker",
+            "security.cmtc.io/bpf-fence-lab": "true"
+        },
+        "preemptionPolicy": "PreemptLowerPriority",
+        "priority": 0,
+        "restartPolicy": "Always",
+        "schedulerName": "default-scheduler",
+        "securityContext": {},
+        "serviceAccount": "default",
+        "serviceAccountName": "default",
+        "terminationGracePeriodSeconds": 10,
+        "tolerations": [
+            {
+                "operator": "Exists"
+            },
+            {
+                "effect": "NoExecute",
+                "key": "node.kubernetes.io/not-ready",
+                "operator": "Exists"
+            },
+            {
+                "effect": "NoExecute",
+                "key": "node.kubernetes.io/unreachable",
+                "operator": "Exists"
+            },
+            {
+                "effect": "NoSchedule",
+                "key": "node.kubernetes.io/disk-pressure",
+                "operator": "Exists"
+            },
+            {
+                "effect": "NoSchedule",
+                "key": "node.kubernetes.io/memory-pressure",
+                "operator": "Exists"
+            },
+            {
+                "effect": "NoSchedule",
+                "key": "node.kubernetes.io/pid-pressure",
+                "operator": "Exists"
+            },
+            {
+                "effect": "NoSchedule",
+                "key": "node.kubernetes.io/unschedulable",
+                "operator": "Exists"
+            },
+            {
+                "effect": "NoSchedule",
+                "key": "node.kubernetes.io/network-unavailable",
+                "operator": "Exists"
+            }
+        ],
+        "volumes": [
+            {
+                "configMap": {
+                    "defaultMode": 420,
+                    "name": "cmtc-bpf-fence-5a186f5ea57c-ingress"
+                },
+                "name": "config"
+            },
+            {
+                "hostPath": {
+                    "path": "/sys/fs/bpf/cmtc-fence-5a186f5ea57c",
+                    "type": "Directory"
+                },
+                "name": "pins"
+            },
+            {
+                "hostPath": {
+                    "path": "/run/cmtc-fence-5a186f5ea57c",
+                    "type": "Directory"
+                },
+                "name": "locks"
+            }
+        ]
+    },
+    "status": {
+        "allocatedResources": {
+            "cpu": "10m",
+            "memory": "32Mi"
+        },
+        "conditions": [
+            {
+                "lastProbeTime": null,
+                "lastTransitionTime": "2026-10-24T23:45:59Z",
+                "observedGeneration": 1,
+                "status": "True",
+                "type": "PodReadyToStartContainers"
+            },
+            {
+                "lastProbeTime": null,
+                "lastTransitionTime": "2026-10-24T23:45:59Z",
+                "observedGeneration": 1,
+                "status": "True",
+                "type": "Initialized"
+            },
+            {
+                "lastProbeTime": null,
+                "lastTransitionTime": "2026-10-24T23:45:59Z",
+                "message": "containers with unready status: [fence]",
+                "observedGeneration": 1,
+                "reason": "ContainersNotReady",
+                "status": "False",
+                "type": "Ready"
+            },
+            {
+                "lastProbeTime": null,
+                "lastTransitionTime": "2026-10-24T23:45:59Z",
+                "message": "containers with unready status: [fence]",
+                "observedGeneration": 1,
+                "reason": "ContainersNotReady",
+                "status": "False",
+                "type": "ContainersReady"
+            },
+            {
+                "lastProbeTime": null,
+                "lastTransitionTime": "2026-10-24T23:45:59Z",
+                "observedGeneration": 1,
+                "status": "True",
+                "type": "PodScheduled"
+            }
+        ],
+        "containerStatuses": [
+            {
+                "allocatedResources": {
+                    "cpu": "10m",
+                    "memory": "32Mi"
+                },
+                "containerID": "containerd://c1797a734582ca068083f9b736c0236616fc2471ea49dab1b5f9423cb3b28182",
+                "image": "localhost/cmtc-bpf-fence:deny-69b8080a19",
+                "imageID": "docker.io/library/import-2026-10-24@sha256:39bce143b6030d9965bd0781756ae4df76e835b724cf5b5f60a546d90a584ec2",
+                "lastState": {
+                    "terminated": {
+                        "containerID": "containerd://c1797a734582ca068083f9b736c0236616fc2471ea49dab1b5f9423cb3b28182",
+                        "exitCode": 128,
+                        "finishedAt": "2026-10-24T23:46:11Z",
+                        "message": "failed to create containerd task: failed to create shim task: OCI runtime create failed: runc create failed: unable to start container process: error during container init: error mounting \"/sys/fs/bpf/cmtc-fence-5a186f5ea57c\" to rootfs at \"/sys/fs/bpf/cmtc-fence-5a186f5ea57c\": create mountpoint for /sys/fs/bpf/cmtc-fence-5a186f5ea57c mount: make mountpoint \"/sys/fs/bpf/cmtc-fence-5a186f5ea57c\": mkdirat /run/containerd/io.containerd.runtime.v2.task/k8s.io/c1797a734582ca068083f9b736c0236616fc2471ea49dab1b5f9423cb3b28182/rootfs/sys/fs/bpf/cmtc-fence-5a186f5ea57c: no such file or directory",
+                        "reason": "StartError",
+                        "startedAt": "1970-01-01T00:00:00Z"
+                    }
+                },
+                "name": "fence",
+                "ready": false,
+                "resources": {
+                    "limits": {
+                        "cpu": "200m",
+                        "memory": "128Mi"
+                    },
+                    "requests": {
+                        "cpu": "10m",
+                        "memory": "32Mi"
+                    }
+                },
+                "restartCount": 2,
+                "started": false,
+                "state": {
+                    "waiting": {
+                        "message": "back-off 20s restarting failed container=fence pod=cmtc-bpf-fence-nc5zv_cmtc-system(31465b97-82bb-4eea-a554-4186eba71115)",
+                        "reason": "CrashLoopBackOff"
+                    }
+                },
+                "user": {
+                    "linux": {
+                        "gid": 0,
+                        "supplementalGroups": [
+                            0
+                        ],
+                        "uid": 0
+                    }
+                },
+                "volumeMounts": [
+                    {
+                        "mountPath": "/config",
+                        "name": "config",
+                        "readOnly": true,
+                        "recursiveReadOnly": "Disabled"
+                    },
+                    {
+                        "mountPath": "/sys/fs/bpf/cmtc-fence-5a186f5ea57c",
+                        "name": "pins"
+                    },
+                    {
+                        "mountPath": "/run/cmtc-fence-5a186f5ea57c",
+                        "name": "locks"
+                    }
+                ]
+            }
+        ],
+        "hostIP": "172.18.0.2",
+        "hostIPs": [
+            {
+                "ip": "172.18.0.2"
+            }
+        ],
+        "observedGeneration": 1,
+        "phase": "Running",
+        "podIP": "172.18.0.2",
+        "podIPs": [
+            {
+                "ip": "172.18.0.2"
+            }
+        ],
+        "qosClass": "Burstable",
+        "resources": {
+            "limits": {
+                "cpu": "200m",
+                "memory": "128Mi"
+            },
+            "requests": {
+                "memory": "32Mi"
+            }
+        },
+        "startTime": "2026-10-24T23:45:59Z"
+    }
+}

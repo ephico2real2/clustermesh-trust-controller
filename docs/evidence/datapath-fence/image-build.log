@@ -1,0 +1,80 @@
+[1/2] STEP 1/10: FROM f0093acd3f0ab3a1966ebe348eaa3c78ac706f94839f52209ae7120508cf2529 AS build
+[1/2] STEP 2/10: ENV "GOMAXPROCS"="2" "GOMEMLIMIT"="1536MiB" "GOFLAGS"="-p=2"
+--> Using cache 8517410043938d0f19627297ac774fecfe1d61c25763045fb2b07963e0fa47bd
+--> 851741004393
+[1/2] STEP 3/10: ARG SOURCE_SHA
+--> Using cache 9b3bb7017ccc02633c2921aea745338c96e4d945a41f12e16321fa835c49a17a
+--> 9b3bb7017ccc
+[1/2] STEP 4/10: WORKDIR /workspace
+--> Using cache af153bbeab560b91724161a2dee07cac950768a67f56e532e539804152728231
+--> af153bbeab56
+[1/2] STEP 5/10: COPY go.mod go.sum ./
+--> Using cache 2d7425de83165474813cfa0e9afc96688c6449c9576ee39f983b30a86864a1a9
+--> 2d7425de8316
+[1/2] STEP 6/10: RUN test "${#SOURCE_SHA}" -eq 40 && go mod download
+time="2026-10-24T18:40:51-05:00" level=warning msg="can't raise ambient capability CAP_CHOWN: operation not permitted"
+time="2026-10-24T18:40:51-05:00" level=warning msg="can't raise ambient capability CAP_DAC_OVERRIDE: operation not permitted"
+time="2026-10-24T18:40:51-05:00" level=warning msg="can't raise ambient capability CAP_FOWNER: operation not permitted"
+time="2026-10-24T18:40:51-05:00" level=warning msg="can't raise ambient capability CAP_FSETID: operation not permitted"
+time="2026-10-24T18:40:51-05:00" level=warning msg="can't raise ambient capability CAP_KILL: operation not permitted"
+time="2026-10-24T18:40:51-05:00" level=warning msg="can't raise ambient capability CAP_NET_BIND_SERVICE: operation not permitted"
+time="2026-10-24T18:40:51-05:00" level=warning msg="can't raise ambient capability CAP_SETFCAP: operation not permitted"
+time="2026-10-24T18:40:51-05:00" level=warning msg="can't raise ambient capability CAP_SETGID: operation not permitted"
+time="2026-10-24T18:40:51-05:00" level=warning msg="can't raise ambient capability CAP_SETPCAP: operation not permitted"
+time="2026-10-24T18:40:51-05:00" level=warning msg="can't raise ambient capability CAP_SETUID: operation not permitted"
+time="2026-10-24T18:40:51-05:00" level=warning msg="can't raise ambient capability CAP_SYS_CHROOT: operation not permitted"
+--> 99d3d0bf08f7
+[1/2] STEP 7/10: COPY cmd/cmtc-bpf-fence ./cmd/cmtc-bpf-fence
+--> 80b2613c0f1c
+[1/2] STEP 8/10: COPY internal/datapath ./internal/datapath
+--> 91ce88cf6a2c
+[1/2] STEP 9/10: RUN clang -target bpfel -O2 -g -Wall -Werror -c internal/datapath/bpf/fence.c -o /tmp/fence_bpfel.o
+time="2026-10-24T18:40:56-05:00" level=warning msg="can't raise ambient capability CAP_CHOWN: operation not permitted"
+time="2026-10-24T18:40:56-05:00" level=warning msg="can't raise ambient capability CAP_DAC_OVERRIDE: operation not permitted"
+time="2026-10-24T18:40:56-05:00" level=warning msg="can't raise ambient capability CAP_FOWNER: operation not permitted"
+time="2026-10-24T18:40:56-05:00" level=warning msg="can't raise ambient capability CAP_FSETID: operation not permitted"
+time="2026-10-24T18:40:56-05:00" level=warning msg="can't raise ambient capability CAP_KILL: operation not permitted"
+time="2026-10-24T18:40:56-05:00" level=warning msg="can't raise ambient capability CAP_NET_BIND_SERVICE: operation not permitted"
+time="2026-10-24T18:40:56-05:00" level=warning msg="can't raise ambient capability CAP_SETFCAP: operation not permitted"
+time="2026-10-24T18:40:56-05:00" level=warning msg="can't raise ambient capability CAP_SETGID: operation not permitted"
+time="2026-10-24T18:40:56-05:00" level=warning msg="can't raise ambient capability CAP_SETPCAP: operation not permitted"
+time="2026-10-24T18:40:56-05:00" level=warning msg="can't raise ambient capability CAP_SETUID: operation not permitted"
+time="2026-10-24T18:40:56-05:00" level=warning msg="can't raise ambient capability CAP_SYS_CHROOT: operation not permitted"
+--> 8ab02e0e0fbd
+[1/2] STEP 10/10: RUN CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -trimpath -ldflags="-X main.sourceRevision=${SOURCE_SHA}" -o /tmp/cmtc-bpf-fence ./cmd/cmtc-bpf-fence
+time="2026-10-24T18:40:56-05:00" level=warning msg="can't raise ambient capability CAP_CHOWN: operation not permitted"
+time="2026-10-24T18:40:56-05:00" level=warning msg="can't raise ambient capability CAP_DAC_OVERRIDE: operation not permitted"
+time="2026-10-24T18:40:56-05:00" level=warning msg="can't raise ambient capability CAP_FOWNER: operation not permitted"
+time="2026-10-24T18:40:56-05:00" level=warning msg="can't raise ambient capability CAP_FSETID: operation not permitted"
+time="2026-10-24T18:40:56-05:00" level=warning msg="can't raise ambient capability CAP_KILL: operation not permitted"
+time="2026-10-24T18:40:56-05:00" level=warning msg="can't raise ambient capability CAP_NET_BIND_SERVICE: operation not permitted"
+time="2026-10-24T18:40:56-05:00" level=warning msg="can't raise ambient capability CAP_SETFCAP: operation not permitted"
+time="2026-10-24T18:40:56-05:00" level=warning msg="can't raise ambient capability CAP_SETGID: operation not permitted"
+time="2026-10-24T18:40:56-05:00" level=warning msg="can't raise ambient capability CAP_SETPCAP: operation not permitted"
+time="2026-10-24T18:40:56-05:00" level=warning msg="can't raise ambient capability CAP_SETUID: operation not permitted"
+time="2026-10-24T18:40:56-05:00" level=warning msg="can't raise ambient capability CAP_SYS_CHROOT: operation not permitted"
+--> 900bdd517f0e
+[2/2] STEP 1/9: FROM scratch
+[2/2] STEP 2/9: ENV "GOMAXPROCS"="2" "GOMEMLIMIT"="1536MiB" "GOFLAGS"="-p=2"
+--> Using cache d22516eaf89eff15c77237751b517ca3cb69c3a68148f072e085276733c44196
+--> d22516eaf89e
+[2/2] STEP 3/9: ARG SOURCE_SHA
+--> Using cache f27820d026804f3d0bc333fcdc1fd2d00b1f3ad4f41d639adcec81464f257aaa
+--> f27820d02680
+[2/2] STEP 4/9: LABEL org.opencontainers.image.revision=$SOURCE_SHA
+--> Using cache 10facd49e48930cbec365604d7643bf76a01e4d513937761133ddf53a060453d
+--> 10facd49e489
+[2/2] STEP 5/9: LABEL org.opencontainers.image.source="https://github.com/ephico2real2/clustermesh-trust-controller"
+--> Using cache b401e5994f2f0f4cca53ddb9ad22bf647c965a5339ee5dbc86a8d4bb1927fe10
+--> b401e5994f2f
+[2/2] STEP 6/9: COPY --from=build /tmp/cmtc-bpf-fence /cmtc-bpf-fence
+--> 6d861dd3117e
+[2/2] STEP 7/9: COPY --from=build /tmp/fence_bpfel.o /usr/share/cmtc/fence_bpfel.o
+--> a711095f70a5
+[2/2] STEP 8/9: USER 0
+--> e3f7d98ca410
+[2/2] STEP 9/9: ENTRYPOINT ["/cmtc-bpf-fence"]
+[2/2] COMMIT localhost/cmtc-bpf-fence:deny-69b8080a19
+--> cff9baf4459b
+Successfully tagged localhost/cmtc-bpf-fence:deny-69b8080a19
+cff9baf4459bd56551e794738afb5ecc011974e4cbb1c17dd57928423f66757e

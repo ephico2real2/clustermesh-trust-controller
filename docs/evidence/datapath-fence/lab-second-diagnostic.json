@@ -1,0 +1,1168 @@
+{
+  "run": "d6a1b5f4d38e",
+  "status": "failed",
+  "error": "timeout: exact old kernel link defunct; last=False",
+  "traceback": "Traceback (most recent call last):\n  File \"/Users/olasumbo/gitRepos/clustermest-trust-controller/scripts/lab/test-fence.py\", line 470, in execute\n    for direction in (\"ingress\", \"egress\"): self.run_phase(cluster, direction)\n                                            ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/olasumbo/gitRepos/clustermest-trust-controller/scripts/lab/test-fence.py\", line 424, in run_phase\n    self.retire_phase(cluster, phase, recreate=True)\n    ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/olasumbo/gitRepos/clustermest-trust-controller/scripts/lab/test-fence.py\", line 394, in retire_phase\n    phase[\"defunct\"] = self.poll(\"exact old kernel link defunct\", defunct)\n                       ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/olasumbo/gitRepos/clustermest-trust-controller/scripts/lab/test-observer.py\", line 167, in poll\n    raise RuntimeError(f\"timeout: {description}; last={last!r}\")\nRuntimeError: timeout: exact old kernel link defunct; last=False\n",
+  "cleanupErrors": [
+    "cmtc-a fence retirement: timeout: exact old kernel link defunct; last=False",
+    "cmtc-a retained host roots/foreign audit: remove-empty-owned-root failed (1): rmdir: failed to remove '/sys/fs/bpf/cmtc-fence-d6a1b5f4d38e': Directory not empty\ntime=\"2026-10-24T18:55:05-05:00\" level=fatal msg=\"exit status 1\"\n"
+  ],
+  "started": "2026-10-24T23:50:44.566270+00:00",
+  "finished": "2026-10-24T23:55:12.707826+00:00",
+  "clusters": {
+    "cmtc-a": {
+      "nodeUID": "35a6f095-90e9-41ff-a713-216cde5596f0",
+      "agent": {
+        "name": "cilium-z4l2c",
+        "uid": "eae95f0b-fb53-4c36-b47f-3e1549733bc5"
+      },
+      "phases": [
+        {
+          "direction": "ingress",
+          "config": {
+            "cluster": "cmtc-a",
+            "node": "cmtc-a-worker",
+            "namespaceUID": "ca2d93bb-bd3a-4b97-8e7b-85e9900426de",
+            "podUID": "b0a55919-dc3f-482f-a5cb-3df505b21c12",
+            "netNSInode": 4026532445,
+            "ifIndex": 107,
+            "ifName": "lxc3f8228a9a7bc",
+            "mac": "32:ac:5b:25:e0:cb",
+            "peerIfIndex": 106,
+            "direction": "ingress",
+            "ciliumLinkID": 1126,
+            "ciliumProgramID": 17327,
+            "pinRoot": "/cmtc-pins",
+            "lockRoot": "/cmtc-locks"
+          },
+          "hostPinRoot": "/sys/fs/bpf/cmtc-fence-d6a1b5f4d38e",
+          "hostLockRoot": "/run/cmtc-fence-d6a1b5f4d38e",
+          "baseline": [
+            {
+              "program": 17327,
+              "link": 1126,
+              "name": "cil_from_container"
+            }
+          ],
+          "podUID": "b0a55919-dc3f-482f-a5cb-3df505b21c12",
+          "sandboxID": "411a0e27c17c1a9fa7d4d8370d3580a760e14239ec27b8e900796dc17f3948bb",
+          "sandboxPID": 41041,
+          "sandboxNetNS": "4026534541",
+          "key": "a58e1c53e57f5868d7d920f1503daee319260de798d38316f3522cecb035cea5",
+          "sandboxPIDStarttime": "1657093",
+          "configMap": "cmtc-bpf-fence-d6a1b5f4d38e-ingress",
+          "installed": [
+            {
+              "program": 17344,
+              "link": 1127,
+              "name": "cmtc_fence"
+            },
+            {
+              "program": 17327,
+              "link": 1126,
+              "name": "cil_from_container"
+            }
+          ],
+          "logs": [
+            {
+              "file": "cmtc-a-ingress-0-195caa.jsonl",
+              "podUID": "7767577c-e4ba-45c7-94c8-e7567b918c6c",
+              "containerID": "containerd://5f00c58a70519c6296a96371843a66d8b3662568f83065540e0d82b52743242b",
+              "stage": {
+                "time": "2026-10-24T23:50:54.977862945Z",
+                "level": "INFO",
+                "msg": "committed deny attachment verified",
+                "stage": "install",
+                "attempt": 1,
+                "elapsed": 8339559,
+                "cluster": "cmtc-a",
+                "node": "cmtc-a-worker",
+                "namespaceUID": "ca2d93bb-bd3a-4b97-8e7b-85e9900426de",
+                "podUID": "b0a55919-dc3f-482f-a5cb-3df505b21c12",
+                "enforcementAvailable": false
+              }
+            },
+            {
+              "file": "cmtc-a-ingress-1-987c87.jsonl",
+              "podUID": "7767577c-e4ba-45c7-94c8-e7567b918c6c",
+              "containerID": "containerd://f09f63c9e110ea46f140b36f229c12a0e2403b532d4d52c35d28c6fdbcf7588b",
+              "stage": {
+                "time": "2026-10-24T23:51:11.555802012Z",
+                "level": "INFO",
+                "msg": "committed deny attachment verified",
+                "stage": "adopt",
+                "attempt": 1,
+                "elapsed": 822109,
+                "cluster": "cmtc-a",
+                "node": "cmtc-a-worker",
+                "namespaceUID": "ca2d93bb-bd3a-4b97-8e7b-85e9900426de",
+                "podUID": "b0a55919-dc3f-482f-a5cb-3df505b21c12",
+                "enforcementAvailable": false
+              }
+            }
+          ],
+          "counterSamples": [
+            {
+              "before": {
+                "packets": 0,
+                "bytes": 0
+              },
+              "after": {
+                "packets": 13,
+                "bytes": 958
+              }
+            },
+            {
+              "before": {
+                "packets": 13,
+                "bytes": 958
+              },
+              "after": {
+                "packets": 26,
+                "bytes": 1916
+              }
+            },
+            {
+              "before": {
+                "packets": 26,
+                "bytes": 1916
+              },
+              "after": {
+                "packets": 41,
+                "bytes": 2738
+              }
+            },
+            {
+              "before": {
+                "packets": 41,
+                "bytes": 2738
+              },
+              "after": {
+                "packets": 51,
+                "bytes": 3186
+              }
+            }
+          ],
+          "sigkill": {
+            "pid": 41399,
+            "starttime": "1657611",
+            "termination": {
+              "containerID": "containerd://5f00c58a70519c6296a96371843a66d8b3662568f83065540e0d82b52743242b",
+              "exitCode": 137,
+              "finishedAt": "2026-10-24T23:51:11Z",
+              "reason": "Error",
+              "startedAt": "2026-10-24T23:50:54Z"
+            },
+            "scope": "Kubernetes restart/adopt; before-adopt crash denial is separately proven by private kernel tests"
+          },
+          "badConfigAdopt": [
+            {
+              "time": "2026-10-24T23:51:39.230680247Z",
+              "level": "ERROR",
+              "msg": "quarantine transaction not qualified",
+              "stage": "adopt",
+              "attempt": 1,
+              "elapsed": 439490,
+              "error": "fence incarnation differs from immutable configuration",
+              "enforcementAvailable": false
+            },
+            {
+              "time": "2026-10-24T23:51:39.230784566Z",
+              "level": "ERROR",
+              "msg": "deny-only quarantine process stopped",
+              "error": "fence incarnation differs from immutable configuration",
+              "enforcementAvailable": false
+            }
+          ]
+        }
+      ],
+      "roots": {
+        "pinRoot": {
+          "path": "/sys/fs/bpf/cmtc-fence-d6a1b5f4d38e",
+          "stat": "directory|0|700|240|1833934"
+        },
+        "lockRoot": {
+          "path": "/run/cmtc-fence-d6a1b5f4d38e",
+          "stat": "directory|0|700|78|11724"
+        }
+      },
+      "cases": [
+        {
+          "direction": "ingress",
+          "deny": false,
+          "destination": "cmtc-a",
+          "port": 80,
+          "exit": 0
+        },
+        {
+          "direction": "ingress",
+          "deny": false,
+          "destination": "cmtc-a",
+          "port": 8080,
+          "exit": 0
+        },
+        {
+          "direction": "ingress",
+          "deny": false,
+          "destination": "cmtc-a",
+          "port": 31337,
+          "exit": 0
+        },
+        {
+          "direction": "ingress",
+          "deny": false,
+          "destination": "cmtc-b",
+          "port": 80,
+          "exit": 0
+        },
+        {
+          "direction": "ingress",
+          "deny": false,
+          "destination": "cmtc-b",
+          "port": 8080,
+          "exit": 0
+        },
+        {
+          "direction": "ingress",
+          "deny": false,
+          "destination": "cmtc-b",
+          "port": 31337,
+          "exit": 0
+        },
+        {
+          "direction": "ingress",
+          "deny": true,
+          "destination": "cmtc-a",
+          "port": 80,
+          "exit": 28
+        },
+        {
+          "direction": "ingress",
+          "deny": true,
+          "destination": "cmtc-a",
+          "port": 8080,
+          "exit": 28
+        },
+        {
+          "direction": "ingress",
+          "deny": true,
+          "destination": "cmtc-a",
+          "port": 31337,
+          "exit": 28
+        },
+        {
+          "direction": "ingress",
+          "deny": true,
+          "destination": "cmtc-b",
+          "port": 80,
+          "exit": 28
+        },
+        {
+          "direction": "ingress",
+          "deny": true,
+          "destination": "cmtc-b",
+          "port": 8080,
+          "exit": 28
+        },
+        {
+          "direction": "ingress",
+          "deny": true,
+          "destination": "cmtc-b",
+          "port": 31337,
+          "exit": 28
+        },
+        {
+          "direction": "ingress",
+          "deny": true,
+          "destination": "cmtc-a",
+          "port": 80,
+          "exit": 28
+        },
+        {
+          "direction": "ingress",
+          "deny": true,
+          "destination": "cmtc-a",
+          "port": 8080,
+          "exit": 28
+        },
+        {
+          "direction": "ingress",
+          "deny": true,
+          "destination": "cmtc-a",
+          "port": 31337,
+          "exit": 28
+        },
+        {
+          "direction": "ingress",
+          "deny": true,
+          "destination": "cmtc-b",
+          "port": 80,
+          "exit": 28
+        },
+        {
+          "direction": "ingress",
+          "deny": true,
+          "destination": "cmtc-b",
+          "port": 8080,
+          "exit": 28
+        },
+        {
+          "direction": "ingress",
+          "deny": true,
+          "destination": "cmtc-b",
+          "port": 31337,
+          "exit": 28
+        },
+        {
+          "direction": "ingress",
+          "deny": true,
+          "destination": "cmtc-a",
+          "port": 80,
+          "exit": 28
+        },
+        {
+          "direction": "ingress",
+          "deny": true,
+          "destination": "cmtc-a",
+          "port": 8080,
+          "exit": 28
+        },
+        {
+          "direction": "ingress",
+          "deny": true,
+          "destination": "cmtc-a",
+          "port": 31337,
+          "exit": 28
+        },
+        {
+          "direction": "ingress",
+          "deny": true,
+          "destination": "cmtc-b",
+          "port": 80,
+          "exit": 28
+        },
+        {
+          "direction": "ingress",
+          "deny": true,
+          "destination": "cmtc-b",
+          "port": 8080,
+          "exit": 7
+        },
+        {
+          "direction": "ingress",
+          "deny": true,
+          "destination": "cmtc-b",
+          "port": 31337,
+          "exit": 28
+        },
+        {
+          "direction": "ingress",
+          "deny": true,
+          "destination": "cmtc-a",
+          "port": 80,
+          "exit": 28
+        },
+        {
+          "direction": "ingress",
+          "deny": true,
+          "destination": "cmtc-a",
+          "port": 8080,
+          "exit": 7
+        },
+        {
+          "direction": "ingress",
+          "deny": true,
+          "destination": "cmtc-a",
+          "port": 31337,
+          "exit": 28
+        },
+        {
+          "direction": "ingress",
+          "deny": true,
+          "destination": "cmtc-b",
+          "port": 80,
+          "exit": 7
+        },
+        {
+          "direction": "ingress",
+          "deny": true,
+          "destination": "cmtc-b",
+          "port": 8080,
+          "exit": 28
+        },
+        {
+          "direction": "ingress",
+          "deny": true,
+          "destination": "cmtc-b",
+          "port": 31337,
+          "exit": 7
+        }
+      ],
+      "foreignBaseline": [
+        {
+          "devname": "eth0",
+          "ifindex": 2,
+          "kind": "tcx/ingress",
+          "name": "cil_from_netdev",
+          "prog_id": 17193,
+          "prog_flags": [],
+          "link_id": 461,
+          "link_flags": []
+        },
+        {
+          "devname": "eth0",
+          "ifindex": 2,
+          "kind": "tcx/egress",
+          "name": "cil_to_netdev",
+          "prog_id": 17188,
+          "prog_flags": [],
+          "link_id": 462,
+          "link_flags": []
+        },
+        {
+          "devname": "cilium_net",
+          "ifindex": 3,
+          "kind": "tcx/ingress",
+          "name": "cil_to_host",
+          "prog_id": 17172,
+          "prog_flags": [],
+          "link_id": 460,
+          "link_flags": []
+        },
+        {
+          "devname": "cilium_host",
+          "ifindex": 4,
+          "kind": "tcx/ingress",
+          "name": "cil_to_host",
+          "prog_id": 17170,
+          "prog_flags": [],
+          "link_id": 458,
+          "link_flags": []
+        },
+        {
+          "devname": "cilium_host",
+          "ifindex": 4,
+          "kind": "tcx/egress",
+          "name": "cil_from_host",
+          "prog_id": 17163,
+          "prog_flags": [],
+          "link_id": 459,
+          "link_flags": []
+        },
+        {
+          "devname": "cilium_vxlan",
+          "ifindex": 5,
+          "kind": "tcx/ingress",
+          "name": "cil_from_overlay",
+          "prog_id": 15247,
+          "prog_flags": [],
+          "link_id": 448,
+          "link_flags": []
+        },
+        {
+          "devname": "cilium_vxlan",
+          "ifindex": 5,
+          "kind": "tcx/egress",
+          "name": "cil_to_overlay",
+          "prog_id": 15246,
+          "prog_flags": [],
+          "link_id": 449,
+          "link_flags": []
+        },
+        {
+          "devname": "lxc22fec3500088",
+          "ifindex": 9,
+          "kind": "tcx/ingress",
+          "name": "cil_from_container",
+          "prog_id": 15471,
+          "prog_flags": [],
+          "link_id": 475,
+          "link_flags": []
+        },
+        {
+          "devname": "lxc795cccbe2f9c",
+          "ifindex": 11,
+          "kind": "tcx/ingress",
+          "name": "cil_from_container",
+          "prog_id": 15473,
+          "prog_flags": [],
+          "link_id": 476,
+          "link_flags": []
+        },
+        {
+          "devname": "lxc3f9febdf1b46",
+          "ifindex": 13,
+          "kind": "tcx/ingress",
+          "name": "cil_from_container",
+          "prog_id": 15482,
+          "prog_flags": [],
+          "link_id": 477,
+          "link_flags": []
+        },
+        {
+          "devname": "lxc1545a5ab6e46",
+          "ifindex": 21,
+          "kind": "tcx/ingress",
+          "name": "cil_from_container",
+          "prog_id": 15509,
+          "prog_flags": [],
+          "link_id": 542,
+          "link_flags": []
+        },
+        {
+          "devname": "lxc8251aaba5c2b",
+          "ifindex": 27,
+          "kind": "tcx/ingress",
+          "name": "cil_from_container",
+          "prog_id": 15368,
+          "prog_flags": [],
+          "link_id": 554,
+          "link_flags": []
+        },
+        {
+          "devname": "lxcfe32efdf33d5",
+          "ifindex": 29,
+          "kind": "tcx/ingress",
+          "name": "cil_from_container",
+          "prog_id": 15382,
+          "prog_flags": [],
+          "link_id": 555,
+          "link_flags": []
+        },
+        {
+          "devname": "lxc90b96705114d",
+          "ifindex": 31,
+          "kind": "tcx/ingress",
+          "name": "cil_from_container",
+          "prog_id": 15546,
+          "prog_flags": [],
+          "link_id": 557,
+          "link_flags": []
+        },
+        {
+          "devname": "lxc6792f7fefb54",
+          "ifindex": 33,
+          "kind": "tcx/ingress",
+          "name": "cil_from_container",
+          "prog_id": 15437,
+          "prog_flags": [],
+          "link_id": 559,
+          "link_flags": []
+        },
+        {
+          "devname": "lxc33a7c3f44b6e",
+          "ifindex": 35,
+          "kind": "tcx/ingress",
+          "name": "cil_from_container",
+          "prog_id": 15517,
+          "prog_flags": [],
+          "link_id": 558,
+          "link_flags": []
+        },
+        {
+          "devname": "lxcbc1d509df6e3",
+          "ifindex": 61,
+          "kind": "tcx/ingress",
+          "name": "cil_from_container",
+          "prog_id": 15415,
+          "prog_flags": [],
+          "link_id": 598,
+          "link_flags": []
+        },
+        {
+          "devname": "lxc1ba45a81d4e1",
+          "ifindex": 79,
+          "kind": "tcx/ingress",
+          "name": "cil_from_container",
+          "prog_id": 15333,
+          "prog_flags": [],
+          "link_id": 688,
+          "link_flags": []
+        },
+        {
+          "devname": "lxc217f45969f16",
+          "ifindex": 81,
+          "kind": "tcx/ingress",
+          "name": "cil_from_container",
+          "prog_id": 15489,
+          "prog_flags": [],
+          "link_id": 689,
+          "link_flags": []
+        },
+        {
+          "devname": "lxc_health",
+          "ifindex": 101,
+          "kind": "tcx/ingress",
+          "name": "cil_from_container",
+          "prog_id": 15515,
+          "prog_flags": [],
+          "link_id": 751,
+          "link_flags": []
+        },
+        {
+          "devname": "lxc0ddf5bf5f063",
+          "ifindex": 103,
+          "kind": "tcx/ingress",
+          "name": "cil_from_container",
+          "prog_id": 16575,
+          "prog_flags": [],
+          "link_id": 757,
+          "link_flags": []
+        }
+      ],
+      "backend": {
+        "name": "rebel-base-688ff9949b-7cbrt",
+        "uid": "282c0cab-85fe-4de3-914f-3f3a0c4bab24",
+        "ip": "10.10.0.50"
+      },
+      "namespaceUID": "ca2d93bb-bd3a-4b97-8e7b-85e9900426de",
+      "nodeOptinAttempted": true,
+      "nodeOwned": false
+    },
+    "cmtc-b": {
+      "nodeUID": "fcbbc49e-268c-411b-9083-1346f53bbb88",
+      "agent": {
+        "name": "cilium-l9bcc",
+        "uid": "54a40e05-9214-4770-9d0c-b1298f5446e2"
+      },
+      "phases": [],
+      "roots": {
+        "pinRoot": {
+          "path": "/sys/fs/bpf/cmtc-fence-d6a1b5f4d38e",
+          "stat": "directory|0|700|1048780|1840162"
+        },
+        "lockRoot": {
+          "path": "/run/cmtc-fence-d6a1b5f4d38e",
+          "stat": "directory|0|700|164|10037"
+        }
+      },
+      "cases": [],
+      "foreignBaseline": [
+        {
+          "devname": "eth0",
+          "ifindex": 2,
+          "kind": "tcx/ingress",
+          "name": "cil_from_netdev",
+          "prog_id": 17223,
+          "prog_flags": [],
+          "link_id": 526,
+          "link_flags": []
+        },
+        {
+          "devname": "eth0",
+          "ifindex": 2,
+          "kind": "tcx/egress",
+          "name": "cil_to_netdev",
+          "prog_id": 17220,
+          "prog_flags": [],
+          "link_id": 529,
+          "link_flags": []
+        },
+        {
+          "devname": "cilium_net",
+          "ifindex": 3,
+          "kind": "tcx/ingress",
+          "name": "cil_to_host",
+          "prog_id": 17212,
+          "prog_flags": [],
+          "link_id": 523,
+          "link_flags": []
+        },
+        {
+          "devname": "cilium_host",
+          "ifindex": 4,
+          "kind": "tcx/ingress",
+          "name": "cil_to_host",
+          "prog_id": 17196,
+          "prog_flags": [],
+          "link_id": 521,
+          "link_flags": []
+        },
+        {
+          "devname": "cilium_host",
+          "ifindex": 4,
+          "kind": "tcx/egress",
+          "name": "cil_from_host",
+          "prog_id": 17203,
+          "prog_flags": [],
+          "link_id": 522,
+          "link_flags": []
+        },
+        {
+          "devname": "cilium_vxlan",
+          "ifindex": 5,
+          "kind": "tcx/ingress",
+          "name": "cil_from_overlay",
+          "prog_id": 15987,
+          "prog_flags": [],
+          "link_id": 505,
+          "link_flags": []
+        },
+        {
+          "devname": "cilium_vxlan",
+          "ifindex": 5,
+          "kind": "tcx/egress",
+          "name": "cil_to_overlay",
+          "prog_id": 15988,
+          "prog_flags": [],
+          "link_id": 506,
+          "link_flags": []
+        },
+        {
+          "devname": "lxce520d3c4520a",
+          "ifindex": 9,
+          "kind": "tcx/ingress",
+          "name": "cil_from_container",
+          "prog_id": 16370,
+          "prog_flags": [],
+          "link_id": 532,
+          "link_flags": []
+        },
+        {
+          "devname": "lxc94e5b3e00273",
+          "ifindex": 11,
+          "kind": "tcx/ingress",
+          "name": "cil_from_container",
+          "prog_id": 16330,
+          "prog_flags": [],
+          "link_id": 533,
+          "link_flags": []
+        },
+        {
+          "devname": "lxceb7ac4e4d2b6",
+          "ifindex": 13,
+          "kind": "tcx/ingress",
+          "name": "cil_from_container",
+          "prog_id": 16354,
+          "prog_flags": [],
+          "link_id": 534,
+          "link_flags": []
+        },
+        {
+          "devname": "lxc373e14764106",
+          "ifindex": 19,
+          "kind": "tcx/ingress",
+          "name": "cil_from_container",
+          "prog_id": 16298,
+          "prog_flags": [],
+          "link_id": 546,
+          "link_flags": []
+        },
+        {
+          "devname": "lxc0a2bb8d32d07",
+          "ifindex": 27,
+          "kind": "tcx/ingress",
+          "name": "cil_from_container",
+          "prog_id": 16216,
+          "prog_flags": [],
+          "link_id": 556,
+          "link_flags": []
+        },
+        {
+          "devname": "lxcc66d281d9113",
+          "ifindex": 29,
+          "kind": "tcx/ingress",
+          "name": "cil_from_container",
+          "prog_id": 16250,
+          "prog_flags": [],
+          "link_id": 560,
+          "link_flags": []
+        },
+        {
+          "devname": "lxc2b42197cf20d",
+          "ifindex": 31,
+          "kind": "tcx/ingress",
+          "name": "cil_from_container",
+          "prog_id": 16335,
+          "prog_flags": [],
+          "link_id": 561,
+          "link_flags": []
+        },
+        {
+          "devname": "lxc56bbe9fc351e",
+          "ifindex": 33,
+          "kind": "tcx/ingress",
+          "name": "cil_from_container",
+          "prog_id": 16237,
+          "prog_flags": [],
+          "link_id": 562,
+          "link_flags": []
+        },
+        {
+          "devname": "lxc82a813946fd6",
+          "ifindex": 59,
+          "kind": "tcx/ingress",
+          "name": "cil_from_container",
+          "prog_id": 16555,
+          "prog_flags": [],
+          "link_id": 600,
+          "link_flags": []
+        },
+        {
+          "devname": "lxc282d1167f9a1",
+          "ifindex": 77,
+          "kind": "tcx/ingress",
+          "name": "cil_from_container",
+          "prog_id": 16344,
+          "prog_flags": [],
+          "link_id": 713,
+          "link_flags": []
+        },
+        {
+          "devname": "lxcd398ae7dd473",
+          "ifindex": 79,
+          "kind": "tcx/ingress",
+          "name": "cil_from_container",
+          "prog_id": 16280,
+          "prog_flags": [],
+          "link_id": 715,
+          "link_flags": []
+        },
+        {
+          "devname": "lxc_health",
+          "ifindex": 91,
+          "kind": "tcx/ingress",
+          "name": "cil_from_container",
+          "prog_id": 16270,
+          "prog_flags": [],
+          "link_id": 756,
+          "link_flags": []
+        },
+        {
+          "devname": "lxc48665b80b184",
+          "ifindex": 93,
+          "kind": "tcx/ingress",
+          "name": "cil_from_container",
+          "prog_id": 16736,
+          "prog_flags": [],
+          "link_id": 854,
+          "link_flags": []
+        }
+      ],
+      "backend": {
+        "name": "rebel-base-7cbb476f7-rf9bf",
+        "uid": "15ee1962-2ded-4dca-a797-b314d98e5633",
+        "ip": "10.20.0.48"
+      },
+      "namespaceUID": "9e281cdf-8d5f-463f-b91c-a4aa38a188a6",
+      "nodeOptinAttempted": true,
+      "nodeOwned": false,
+      "foreignProgramUpdates": [
+        [
+          {
+            "before": {
+              "devname": "eth0",
+              "ifindex": 2,
+              "kind": "tcx/ingress",
+              "name": "cil_from_netdev",
+              "prog_id": 17223,
+              "prog_flags": [],
+              "link_id": 526,
+              "link_flags": []
+            },
+            "after": {
+              "devname": "eth0",
+              "ifindex": 2,
+              "kind": "tcx/ingress",
+              "name": "cil_from_netdev",
+              "prog_id": 17415,
+              "prog_flags": [],
+              "link_id": 526,
+              "link_flags": []
+            }
+          },
+          {
+            "before": {
+              "devname": "eth0",
+              "ifindex": 2,
+              "kind": "tcx/egress",
+              "name": "cil_to_netdev",
+              "prog_id": 17220,
+              "prog_flags": [],
+              "link_id": 529,
+              "link_flags": []
+            },
+            "after": {
+              "devname": "eth0",
+              "ifindex": 2,
+              "kind": "tcx/egress",
+              "name": "cil_to_netdev",
+              "prog_id": 17417,
+              "prog_flags": [],
+              "link_id": 529,
+              "link_flags": []
+            }
+          },
+          {
+            "before": {
+              "devname": "cilium_net",
+              "ifindex": 3,
+              "kind": "tcx/ingress",
+              "name": "cil_to_host",
+              "prog_id": 17212,
+              "prog_flags": [],
+              "link_id": 523,
+              "link_flags": []
+            },
+            "after": {
+              "devname": "cilium_net",
+              "ifindex": 3,
+              "kind": "tcx/ingress",
+              "name": "cil_to_host",
+              "prog_id": 17409,
+              "prog_flags": [],
+              "link_id": 523,
+              "link_flags": []
+            }
+          },
+          {
+            "before": {
+              "devname": "cilium_host",
+              "ifindex": 4,
+              "kind": "tcx/ingress",
+              "name": "cil_to_host",
+              "prog_id": 17196,
+              "prog_flags": [],
+              "link_id": 521,
+              "link_flags": []
+            },
+            "after": {
+              "devname": "cilium_host",
+              "ifindex": 4,
+              "kind": "tcx/ingress",
+              "name": "cil_to_host",
+              "prog_id": 17397,
+              "prog_flags": [],
+              "link_id": 521,
+              "link_flags": []
+            }
+          },
+          {
+            "before": {
+              "devname": "cilium_host",
+              "ifindex": 4,
+              "kind": "tcx/egress",
+              "name": "cil_from_host",
+              "prog_id": 17203,
+              "prog_flags": [],
+              "link_id": 522,
+              "link_flags": []
+            },
+            "after": {
+              "devname": "cilium_host",
+              "ifindex": 4,
+              "kind": "tcx/egress",
+              "name": "cil_from_host",
+              "prog_id": 17392,
+              "prog_flags": [],
+              "link_id": 522,
+              "link_flags": []
+            }
+          }
+        ]
+      ],
+      "finalForeignInventory": [
+        {
+          "devname": "eth0",
+          "ifindex": 2,
+          "kind": "tcx/ingress",
+          "name": "cil_from_netdev",
+          "prog_id": 17415,
+          "prog_flags": [],
+          "link_id": 526,
+          "link_flags": []
+        },
+        {
+          "devname": "eth0",
+          "ifindex": 2,
+          "kind": "tcx/egress",
+          "name": "cil_to_netdev",
+          "prog_id": 17417,
+          "prog_flags": [],
+          "link_id": 529,
+          "link_flags": []
+        },
+        {
+          "devname": "cilium_net",
+          "ifindex": 3,
+          "kind": "tcx/ingress",
+          "name": "cil_to_host",
+          "prog_id": 17409,
+          "prog_flags": [],
+          "link_id": 523,
+          "link_flags": []
+        },
+        {
+          "devname": "cilium_host",
+          "ifindex": 4,
+          "kind": "tcx/ingress",
+          "name": "cil_to_host",
+          "prog_id": 17397,
+          "prog_flags": [],
+          "link_id": 521,
+          "link_flags": []
+        },
+        {
+          "devname": "cilium_host",
+          "ifindex": 4,
+          "kind": "tcx/egress",
+          "name": "cil_from_host",
+          "prog_id": 17392,
+          "prog_flags": [],
+          "link_id": 522,
+          "link_flags": []
+        },
+        {
+          "devname": "cilium_vxlan",
+          "ifindex": 5,
+          "kind": "tcx/ingress",
+          "name": "cil_from_overlay",
+          "prog_id": 15987,
+          "prog_flags": [],
+          "link_id": 505,
+          "link_flags": []
+        },
+        {
+          "devname": "cilium_vxlan",
+          "ifindex": 5,
+          "kind": "tcx/egress",
+          "name": "cil_to_overlay",
+          "prog_id": 15988,
+          "prog_flags": [],
+          "link_id": 506,
+          "link_flags": []
+        },
+        {
+          "devname": "lxce520d3c4520a",
+          "ifindex": 9,
+          "kind": "tcx/ingress",
+          "name": "cil_from_container",
+          "prog_id": 16370,
+          "prog_flags": [],
+          "link_id": 532,
+          "link_flags": []
+        },
+        {
+          "devname": "lxc94e5b3e00273",
+          "ifindex": 11,
+          "kind": "tcx/ingress",
+          "name": "cil_from_container",
+          "prog_id": 16330,
+          "prog_flags": [],
+          "link_id": 533,
+          "link_flags": []
+        },
+        {
+          "devname": "lxceb7ac4e4d2b6",
+          "ifindex": 13,
+          "kind": "tcx/ingress",
+          "name": "cil_from_container",
+          "prog_id": 16354,
+          "prog_flags": [],
+          "link_id": 534,
+          "link_flags": []
+        },
+        {
+          "devname": "lxc373e14764106",
+          "ifindex": 19,
+          "kind": "tcx/ingress",
+          "name": "cil_from_container",
+          "prog_id": 16298,
+          "prog_flags": [],
+          "link_id": 546,
+          "link_flags": []
+        },
+        {
+          "devname": "lxc0a2bb8d32d07",
+          "ifindex": 27,
+          "kind": "tcx/ingress",
+          "name": "cil_from_container",
+          "prog_id": 16216,
+          "prog_flags": [],
+          "link_id": 556,
+          "link_flags": []
+        },
+        {
+          "devname": "lxcc66d281d9113",
+          "ifindex": 29,
+          "kind": "tcx/ingress",
+          "name": "cil_from_container",
+          "prog_id": 16250,
+          "prog_flags": [],
+          "link_id": 560,
+          "link_flags": []
+        },
+        {
+          "devname": "lxc2b42197cf20d",
+          "ifindex": 31,
+          "kind": "tcx/ingress",
+          "name": "cil_from_container",
+          "prog_id": 16335,
+          "prog_flags": [],
+          "link_id": 561,
+          "link_flags": []
+        },
+        {
+          "devname": "lxc56bbe9fc351e",
+          "ifindex": 33,
+          "kind": "tcx/ingress",
+          "name": "cil_from_container",
+          "prog_id": 16237,
+          "prog_flags": [],
+          "link_id": 562,
+          "link_flags": []
+        },
+        {
+          "devname": "lxc82a813946fd6",
+          "ifindex": 59,
+          "kind": "tcx/ingress",
+          "name": "cil_from_container",
+          "prog_id": 16555,
+          "prog_flags": [],
+          "link_id": 600,
+          "link_flags": []
+        },
+        {
+          "devname": "lxc282d1167f9a1",
+          "ifindex": 77,
+          "kind": "tcx/ingress",
+          "name": "cil_from_container",
+          "prog_id": 16344,
+          "prog_flags": [],
+          "link_id": 713,
+          "link_flags": []
+        },
+        {
+          "devname": "lxcd398ae7dd473",
+          "ifindex": 79,
+          "kind": "tcx/ingress",
+          "name": "cil_from_container",
+          "prog_id": 16280,
+          "prog_flags": [],
+          "link_id": 715,
+          "link_flags": []
+        },
+        {
+          "devname": "lxc_health",
+          "ifindex": 91,
+          "kind": "tcx/ingress",
+          "name": "cil_from_container",
+          "prog_id": 16270,
+          "prog_flags": [],
+          "link_id": 756,
+          "link_flags": []
+        },
+        {
+          "devname": "lxc48665b80b184",
+          "ifindex": 93,
+          "kind": "tcx/ingress",
+          "name": "cil_from_container",
+          "prog_id": 16736,
+          "prog_flags": [],
+          "link_id": 854,
+          "link_flags": []
+        }
+      ]
+    }
+  }
+}
