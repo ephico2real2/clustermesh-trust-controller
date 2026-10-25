@@ -1,0 +1,194 @@
+{
+  "observedAt": "2026-10-25T10:40:22.433Z",
+  "queryTimeSeconds": 1792924820.058,
+  "queries": [
+    {
+      "name": "selected",
+      "requestedAt": "2026-10-25T10:40:22.293Z",
+      "query": "sum by (cluster) (cmtc_namespaces_selected{component=\"cmtc-controller\"})",
+      "response": {
+        "status": "success",
+        "data": {
+          "resultType": "vector",
+          "result": [
+            {
+              "metric": {
+                "cluster": "cmtc-a"
+              },
+              "value": [
+                1792924820.058,
+                "4"
+              ]
+            },
+            {
+              "metric": {
+                "cluster": "cmtc-b"
+              },
+              "value": [
+                1792924820.058,
+                "4"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "agents",
+      "requestedAt": "2026-10-25T10:40:22.400Z",
+      "query": "sum by (cluster) (cmtc_node_agent_ready{component=\"cmtc-node-agent\"})",
+      "response": {
+        "status": "success",
+        "data": {
+          "resultType": "vector",
+          "result": [
+            {
+              "metric": {
+                "cluster": "cmtc-a"
+              },
+              "value": [
+                1792924820.058,
+                "2"
+              ]
+            },
+            {
+              "metric": {
+                "cluster": "cmtc-b"
+              },
+              "value": [
+                1792924820.058,
+                "2"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "enforcement",
+      "requestedAt": "2026-10-25T10:40:22.417Z",
+      "query": "max by (cluster) (cmtc_enforcement_available{component=\"cmtc-controller\"})",
+      "response": {
+        "status": "success",
+        "data": {
+          "resultType": "vector",
+          "result": [
+            {
+              "metric": {
+                "cluster": "cmtc-a"
+              },
+              "value": [
+                1792924820.058,
+                "0"
+              ]
+            },
+            {
+              "metric": {
+                "cluster": "cmtc-b"
+              },
+              "value": [
+                1792924820.058,
+                "0"
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "attempts": [
+    {
+      "name": "selected",
+      "requestedAt": "2026-10-25T10:40:22.293Z",
+      "query": "sum by (cluster) (cmtc_namespaces_selected{component=\"cmtc-controller\"})",
+      "response": {
+        "status": "success",
+        "data": {
+          "resultType": "vector",
+          "result": [
+            {
+              "metric": {
+                "cluster": "cmtc-a"
+              },
+              "value": [
+                1792924820.058,
+                "4"
+              ]
+            },
+            {
+              "metric": {
+                "cluster": "cmtc-b"
+              },
+              "value": [
+                1792924820.058,
+                "4"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "agents",
+      "requestedAt": "2026-10-25T10:40:22.400Z",
+      "query": "sum by (cluster) (cmtc_node_agent_ready{component=\"cmtc-node-agent\"})",
+      "response": {
+        "status": "success",
+        "data": {
+          "resultType": "vector",
+          "result": [
+            {
+              "metric": {
+                "cluster": "cmtc-a"
+              },
+              "value": [
+                1792924820.058,
+                "2"
+              ]
+            },
+            {
+              "metric": {
+                "cluster": "cmtc-b"
+              },
+              "value": [
+                1792924820.058,
+                "2"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "enforcement",
+      "requestedAt": "2026-10-25T10:40:22.417Z",
+      "query": "max by (cluster) (cmtc_enforcement_available{component=\"cmtc-controller\"})",
+      "response": {
+        "status": "success",
+        "data": {
+          "resultType": "vector",
+          "result": [
+            {
+              "metric": {
+                "cluster": "cmtc-a"
+              },
+              "value": [
+                1792924820.058,
+                "0"
+              ]
+            },
+            {
+              "metric": {
+                "cluster": "cmtc-b"
+              },
+              "value": [
+                1792924820.058,
+                "0"
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ]
+}
