@@ -35,25 +35,24 @@ The registrar is a separate Go helper inside the SPIRE server Pod. It is not the
 
 Its ARM64 imported manifest is `sha256:f1493a0145d6485d27e668c447c6addbbdafd8179ac7bdc9ee0ea8f000e2e7eb`. Its configuration is `sha256:1454f25c3d16c77cb9c2618b2cc34878d2e916d60f226cdc90d91259cd017524`.
 
-The seventh trial obtained valid SVIDs and withdrew exact server entries. It later timed out while checking target credential absence. That is a failed qualification, not a denial. Delegate `PermissionDenied` also cannot prove target withdrawal. The next test needs a still-authorized control workload and the corrected diagnostic image. Record empty/unusable responses, caller denial and availability errors separately.
+The seventh trial failed credential withdrawal and remains a diagnostic. The corrected eighth automatic trial passed both clusters with authorized same-node controls, four explicit target-absence results, reenrollment, Pod replacement, server restart and exact cleanup. [Retained output](../evidence/exact-spire-registration/summary.json). Record empty/unusable responses, caller denial and availability errors separately. Registration removal is not certificate revocation or active-flow drain.
 
 ## Next concrete actions
 
-1. Apply and independently test the corrected automatic withdrawal fixture.
-2. Run registration, withdrawal, reenrollment, replacement, restart and exact cleanup checks in both clusters.
-3. Rerun the owned 36-path application suite after fixture cleanup.
-4. Review and qualify the kernel policy-map reachability proposal against Cilium `8bb97137fc`.
-5. Complete lost-ADD-ACK drain recovery, persistent restore quarantine, mandatory capture and authenticated policy integration.
+1. Qualify the actual kernel policy-map reachability fixture against Cilium `8bb97137fc`.
+2. Review and implement lost-ADD-ACK drain recovery, including queued-send races.
+3. Complete persistent restore quarantine, mandatory capture and authenticated policy integration.
+4. Keep production registrar ownership, source-failure/expiry fault injection and agent Admin permissions as explicit gates.
 
-The policy-map proposal is not compiled or tested yet. A point-in-time map/program reference cannot prove full traffic coverage. Keep the combined startup guard closed. Never add a blanket port-15008 allowance.
+The applied policy-map candidate is not yet qualified. A point-in-time map/program reference cannot prove full traffic coverage. Keep the combined startup guard closed. Never add a blanket port-15008 allowance.
 
 ## Documentation and current qualification
 
 The illustrated [registration workflow](../../SPIRE_REGISTRATION_WORKFLOW.md) compares Cilium enrollment with the exact helper. The user requires diagram-kit and light-only PNG generation for this guide. This preference is saved in repository instructions, handover and the validated personal explanation skill.
 
-The corrected owned runtime fixture is running from `/private/tmp/cmtc-exact-registrar-20261025/runtime-snapshot-eighth/`. All 124 host helper tests pass. Both clusters observed explicit empty target SVID responses with valid same-node controls before and after. Reenrollment, Pod replacement and server restart ran; final cleanup is still pending at this snapshot. No final runtime pass is claimed until cleanup completes.
+The corrected owned runtime fixture PASSED from `/private/tmp/cmtc-exact-registrar-20261025/runtime-snapshot-eighth/`. All 124 host helper tests pass. Both clusters observed explicit empty target SVID responses with valid same-node controls before and after. Reenrollment, Pod replacement and server restart passed. Exact templates, signers, PVCs, foreign entries and the producer ledger were preserved. All owned fixtures were removed with zero cleanup errors. Final 36-path application continuity passes with zero cleanup errors. This is registration and credential evidence, not TLS or policy proof.
 
-The policy-map reachability proposal is now applied but uncommitted in the Cilium checkout. Primary fixed a ProgramID comparison compile error. The focused ordinary tests pass, but the first actual kernel path test fails because its source-IP fixture compiles out the policy maps. The separate actual KernelMapID case passes. An agent is preparing a real policy-enabled fixture correction. Do not fabricate maps or count package-only/zero-selected results as kernel proof. Logs: `/private/tmp/cmtc-policy-reachability-20261025/`.
+The policy-map reachability proposal is now applied but uncommitted in the Cilium checkout. Primary fixed a ProgramID comparison compile error. The focused ordinary tests pass, but the first actual kernel path test fails because its source-IP fixture compiles out the policy maps. The separate actual KernelMapID case passes. The next fixture generated an IPv4 node header but still lacked policy maps; that second actual-kernel failure is retained. An agent is tracing the remaining template/profile setup before another run. Do not fabricate maps or count package-only/zero-selected results as kernel proof. Logs: `/private/tmp/cmtc-policy-reachability-20261025/`.
 
 ## Approval boundary
 

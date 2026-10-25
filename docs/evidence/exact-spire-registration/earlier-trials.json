@@ -1,0 +1,61 @@
+[
+  {
+    "trial": "first",
+    "qualified": false,
+    "error": "unexpected Entry list schema",
+    "cleanupErrors": [],
+    "recovery": null
+  },
+  {
+    "trial": "second",
+    "qualified": false,
+    "error": "unexpected Entry list schema",
+    "cleanupErrors": [],
+    "recovery": null
+  },
+  {
+    "trial": "third",
+    "qualified": false,
+    "error": "public command failed (1): The StatefulSet \"spire-server\" is invalid: spec.template.spec.containers[2].ports[0].name: Invalid value: \"registrar-health\": must be no more than 15 characters\n",
+    "cleanupErrors": [],
+    "recovery": {
+      "reason": "Kubernetes rejected invalid port-name atomically; exact original server UID/template rechecked, no installed sidecar or registrar rows",
+      "originalCleanupErrors": [
+        {
+          "cluster": "cmtc-a",
+          "stage": "restore-and-withdraw",
+          "error": "ambiguous server template write; preserve dependent fixture for explicit recovery"
+        }
+      ],
+      "cleanupPassed": true
+    }
+  },
+  {
+    "trial": "fourth",
+    "qualified": false,
+    "error": "bounded observation timed out",
+    "cleanupErrors": [],
+    "recovery": null
+  },
+  {
+    "trial": "fifth",
+    "qualified": false,
+    "error": "withdrawal failed for an unrelated reason",
+    "cleanupErrors": [],
+    "recovery": null
+  },
+  {
+    "trial": "sixth",
+    "qualified": false,
+    "error": "'nodeName'",
+    "cleanupErrors": [],
+    "recovery": null
+  },
+  {
+    "trial": "seventh",
+    "qualified": false,
+    "error": "withdrawal failed for an unrelated reason",
+    "cleanupErrors": [],
+    "recovery": null
+  }
+]

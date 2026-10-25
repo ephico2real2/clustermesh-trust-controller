@@ -186,16 +186,18 @@ def approved_server_image(value):
     return value
 
 
-def pod_identity(pod,expected_uid,*,server_image=SERVER_IMAGE):
+def pod_identity(pod,expected_uid,*,server_image=SERVER_IMAGE,registrar_image=None):
     server_image=approved_server_image(server_image)
+    if registrar_image is not None: registrar_image=approved_server_image(registrar_image)
     m=live_meta(pod)
     spec=pod.get('spec',{});status=pod.get('status',{})
     if m['uid']!=expected_uid or m.get('name')!='spire-server-0' or spec.get('serviceAccountName')!='spire-server' or not spec.get('nodeName') or status.get('phase')!='Running': raise Refusal('SPIRE Pod identity mismatch')
     expected={'spire-server':server_image,'register-agent-node':SIDECAR_IMAGE}
+    if registrar_image is not None: expected['cmtc-spire-registrar']=registrar_image
     containers=spec.get('containers',[])
-    if len(containers)!=2 or {c['name']:c.get('image') for c in containers}!=expected: raise Refusal('SPIRE Pod image/spec mismatch')
+    if len(containers)!=len(expected) or {c['name']:c.get('image') for c in containers}!=expected: raise Refusal('SPIRE Pod image/spec mismatch')
     statuses=status.get('containerStatuses',[])
-    if len(statuses)!=2 or {s.get('name') for s in statuses}!=set(expected): raise Refusal('SPIRE container status mismatch')
+    if len(statuses)!=len(expected) or {s.get('name') for s in statuses}!=set(expected): raise Refusal('SPIRE container status mismatch')
     observed=[]
     for s in sorted(statuses,key=lambda s:s['name']):
         if not s.get('ready') or not s.get('containerID') or not s.get('imageID') or not s.get('state',{}).get('running',{}).get('startedAt'): raise Refusal('SPIRE container not independently running/ready')
@@ -204,14 +206,15 @@ def pod_identity(pod,expected_uid,*,server_image=SERVER_IMAGE):
     if len(cli_volumes)!=1 or cli_volumes[0].get('image',{}).get('reference')!=server_image: raise Refusal('SPIRE CLI image-volume pin mismatch')
     return {'uid':m['uid'],'nodeName':spec['nodeName'],'containers':observed,'specSHA256':sha(json.dumps(spec,sort_keys=True,separators=(',',':')).encode())}
 
-def execute_proof(api,*,cluster,cluster_uid,pod_uid,approval_uid,root_pin,invoke=None,clock=None,server_image=SERVER_IMAGE):
+def execute_proof(api,*,cluster,cluster_uid,pod_uid,approval_uid,root_pin,invoke=None,clock=None,server_image=SERVER_IMAGE,registrar_image=None):
     server_image=approved_server_image(server_image)
+    if registrar_image is not None: registrar_image=approved_server_image(registrar_image)
     if cluster not in DOMAINS or not re.fullmatch('[0-9a-f]{64}',root_pin): raise Refusal('invalid independent cluster/root approval')
     domain=DOMAINS[cluster]
     podpath='/api/v1/namespaces/cilium-spire/pods/spire-server-0'
     apppath='/api/v1/namespaces/cert-manager/configmaps/cmtc-spire-cluster-ca-approval'
     if live_meta(api.get('/api/v1/namespaces/kube-system'))['uid']!=cluster_uid: raise Refusal('wrong cluster API')
-    pod=pod_identity(api.get(podpath),pod_uid,server_image=server_image)
+    pod=pod_identity(api.get(podpath),pod_uid,server_image=server_image,registrar_image=registrar_image)
     nodepath='/api/v1/nodes/'+pod['nodeName'];nodeuid=live_meta(api.get(nodepath))['uid']
     approval=api.get(apppath);approval_rv=live_meta(approval)['resourceVersion']
     clock=clock or (lambda:dt.datetime.now(dt.timezone.utc))
@@ -229,22 +232,26 @@ def execute_proof(api,*,cluster,cluster_uid,pod_uid,approval_uid,root_pin,invoke
     a,chain,b=split_output(raw)
     result=verify_challenge(chain,domain=domain,nonce=nonce,parent=parent,root=root,before=before,after=after,authority_before=a,authority_after=b)
     # API continuity checks are mandatory after the cryptographic challenge.
-    if pod_identity(api.get(podpath),pod_uid,server_image=server_image)!=pod or live_meta(api.get(nodepath))['uid']!=nodeuid or live_meta(api.get('/api/v1/namespaces/kube-system'))['uid']!=cluster_uid: raise Refusal('SPIRE execution incarnation or cluster changed during proof')
+    if pod_identity(api.get(podpath),pod_uid,server_image=server_image,registrar_image=registrar_image)!=pod or live_meta(api.get(nodepath))['uid']!=nodeuid or live_meta(api.get('/api/v1/namespaces/kube-system'))['uid']!=cluster_uid: raise Refusal('SPIRE execution incarnation or cluster changed during proof')
     last=api.get(apppath)
     if live_meta(last)['uid']!=approval_uid or live_meta(last)['resourceVersion']!=approval_rv or last.get('data')!=approval.get('data') or last.get('immutable') is not True: raise Refusal('approval changed during proof')
     result.update(approvedServerImage=server_image,cluster=cluster,clusterUID=cluster_uid,pod=pod,nodeUID=nodeuid,approvalUID=approval_uid,approvalResourceVersion=approval_rv,challengeLeafPEM=pem(certs(chain)[0]))
+    if registrar_image is not None: result['approvedRegistrarImage']=registrar_image
     return result
 
 def main():
     p=argparse.ArgumentParser(description=__doc__)
     for name in ('kubeconfig','cluster','cluster-uid','pod-uid','approval-uid','root-sha256','pki-module'): p.add_argument('--'+name,required=True)
     p.add_argument("--server-image",default=SERVER_IMAGE,help="Independent approved digest-qualified server/CLI image; verify source/config and all-node CRI imports first")
+    p.add_argument("--registrar-image",default=None,help="Independent optional exact registrar third-container image pin")
     args=p.parse_args()
-    try:approved_server_image(args.server_image)
+    try:
+        approved_server_image(args.server_image)
+        if args.registrar_image is not None:approved_server_image(args.registrar_image)
     except Refusal as error:p.error(str(error))
     if args.cluster not in DOMAINS: p.error('owned cmtc-a/b clusters only')
     spec=importlib.util.spec_from_file_location('reviewed_cmtc_pki',args.pki_module);module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
     with module.Proxy(args.kubeconfig,'kind-'+args.cluster) as api:
-        result=execute_proof(api,cluster=args.cluster,cluster_uid=args.cluster_uid,pod_uid=args.pod_uid,approval_uid=args.approval_uid,root_pin=args.root_sha256,server_image=args.server_image)
+        result=execute_proof(api,cluster=args.cluster,cluster_uid=args.cluster_uid,pod_uid=args.pod_uid,approval_uid=args.approval_uid,root_pin=args.root_sha256,server_image=args.server_image,registrar_image=args.registrar_image)
     print(json.dumps(result,sort_keys=True,indent=2))
 if __name__=='__main__': main()

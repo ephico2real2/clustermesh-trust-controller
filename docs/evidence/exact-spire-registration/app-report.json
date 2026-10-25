@@ -1,0 +1,2376 @@
+{
+  "schema": "cmtc-owned-application-paths/v1",
+  "owner": "f1a3d1bb-387b-48b3-bc18-52dab459b5fe",
+  "status": "passed",
+  "scope": "native-HTTP-application-continuity-only",
+  "mtlsProven": false,
+  "protected": false,
+  "clusters": {
+    "cmtc-a": {
+      "created": {
+        "path": "/api/v1/namespaces/mesh-example/pods/cmtc-app-audit-f1a3d1bb-387",
+        "uid": "f34ee65c-5944-4abd-acd8-329274c54a28",
+        "name": "cmtc-app-audit-f1a3d1bb-387"
+      },
+      "namespace": {
+        "uid": "f8229e0b-4a49-4dab-82bd-38d782a5f245",
+        "labels": {
+          "company.net/lob": "alpha",
+          "kubernetes.io/metadata.name": "mesh-example"
+        }
+      },
+      "originalClient": {
+        "kind": "Pod",
+        "apiVersion": "v1",
+        "metadata": {
+          "name": "mesh-client",
+          "namespace": "mesh-example",
+          "uid": "385f8655-67ca-41ef-97cc-a6b69a38a3c1",
+          "resourceVersion": "97187",
+          "generation": 1,
+          "creationTimestamp": "2026-10-25T03:01:42Z",
+          "labels": {
+            "app": "mesh-client",
+            "app.kubernetes.io/name": "mesh-client"
+          },
+          "annotations": {
+            "kubectl.kubernetes.io/last-applied-configuration": "{\"apiVersion\":\"v1\",\"kind\":\"Pod\",\"metadata\":{\"annotations\":{},\"labels\":{\"app\":\"mesh-client\",\"app.kubernetes.io/name\":\"mesh-client\"},\"name\":\"mesh-client\",\"namespace\":\"mesh-example\"},\"spec\":{\"automountServiceAccountToken\":false,\"containers\":[{\"command\":[\"sh\",\"-c\",\"sleep 7200\"],\"image\":\"curlimages/curl:8.14.1\",\"name\":\"client\",\"resources\":{\"limits\":{\"memory\":\"64Mi\"},\"requests\":{\"cpu\":\"10m\",\"memory\":\"16Mi\"}}}],\"restartPolicy\":\"Never\",\"serviceAccountName\":\"mesh-client\"}}\n"
+          },
+          "managedFields": [
+            {
+              "manager": "kubectl-client-side-apply",
+              "operation": "Update",
+              "apiVersion": "v1",
+              "time": "2026-10-25T03:01:42Z",
+              "fieldsType": "FieldsV1",
+              "fieldsV1": {
+                "f:metadata": {
+                  "f:annotations": {
+                    ".": {},
+                    "f:kubectl.kubernetes.io/last-applied-configuration": {}
+                  },
+                  "f:labels": {
+                    ".": {},
+                    "f:app": {},
+                    "f:app.kubernetes.io/name": {}
+                  }
+                },
+                "f:spec": {
+                  "f:automountServiceAccountToken": {},
+                  "f:containers": {
+                    "k:{\"name\":\"client\"}": {
+                      ".": {},
+                      "f:command": {},
+                      "f:image": {},
+                      "f:imagePullPolicy": {},
+                      "f:name": {},
+                      "f:resources": {
+                        ".": {},
+                        "f:limits": {
+                          ".": {},
+                          "f:memory": {}
+                        },
+                        "f:requests": {
+                          ".": {},
+                          "f:cpu": {},
+                          "f:memory": {}
+                        }
+                      },
+                      "f:terminationMessagePath": {},
+                      "f:terminationMessagePolicy": {}
+                    }
+                  },
+                  "f:dnsPolicy": {},
+                  "f:enableServiceLinks": {},
+                  "f:restartPolicy": {},
+                  "f:schedulerName": {},
+                  "f:securityContext": {},
+                  "f:serviceAccount": {},
+                  "f:serviceAccountName": {},
+                  "f:terminationGracePeriodSeconds": {}
+                }
+              }
+            },
+            {
+              "manager": "kubelet",
+              "operation": "Update",
+              "apiVersion": "v1",
+              "time": "2026-10-25T05:01:27Z",
+              "fieldsType": "FieldsV1",
+              "fieldsV1": {
+                "f:status": {
+                  "f:allocatedResources": {
+                    ".": {},
+                    "f:cpu": {},
+                    "f:memory": {}
+                  },
+                  "f:conditions": {
+                    "k:{\"type\":\"ContainersReady\"}": {
+                      ".": {},
+                      "f:lastProbeTime": {},
+                      "f:lastTransitionTime": {},
+                      "f:observedGeneration": {},
+                      "f:reason": {},
+                      "f:status": {},
+                      "f:type": {}
+                    },
+                    "k:{\"type\":\"Initialized\"}": {
+                      ".": {},
+                      "f:lastProbeTime": {},
+                      "f:lastTransitionTime": {},
+                      "f:observedGeneration": {},
+                      "f:reason": {},
+                      "f:status": {},
+                      "f:type": {}
+                    },
+                    "k:{\"type\":\"PodReadyToStartContainers\"}": {
+                      ".": {},
+                      "f:lastProbeTime": {},
+                      "f:lastTransitionTime": {},
+                      "f:observedGeneration": {},
+                      "f:status": {},
+                      "f:type": {}
+                    },
+                    "k:{\"type\":\"PodScheduled\"}": {
+                      "f:observedGeneration": {}
+                    },
+                    "k:{\"type\":\"Ready\"}": {
+                      ".": {},
+                      "f:lastProbeTime": {},
+                      "f:lastTransitionTime": {},
+                      "f:observedGeneration": {},
+                      "f:reason": {},
+                      "f:status": {},
+                      "f:type": {}
+                    }
+                  },
+                  "f:containerStatuses": {},
+                  "f:hostIP": {},
+                  "f:hostIPs": {},
+                  "f:observedGeneration": {},
+                  "f:phase": {},
+                  "f:podIP": {},
+                  "f:podIPs": {
+                    ".": {},
+                    "k:{\"ip\":\"10.10.1.77\"}": {
+                      ".": {},
+                      "f:ip": {}
+                    }
+                  },
+                  "f:resources": {
+                    ".": {},
+                    "f:limits": {
+                      ".": {},
+                      "f:memory": {}
+                    },
+                    "f:requests": {
+                      ".": {},
+                      "f:memory": {}
+                    }
+                  },
+                  "f:startTime": {}
+                }
+              },
+              "subresource": "status"
+            }
+          ]
+        },
+        "spec": {
+          "containers": [
+            {
+              "name": "client",
+              "image": "curlimages/curl:8.14.1",
+              "command": [
+                "sh",
+                "-c",
+                "sleep 7200"
+              ],
+              "resources": {
+                "limits": {
+                  "memory": "64Mi"
+                },
+                "requests": {
+                  "cpu": "10m",
+                  "memory": "16Mi"
+                }
+              },
+              "terminationMessagePath": "/dev/termination-log",
+              "terminationMessagePolicy": "File",
+              "imagePullPolicy": "IfNotPresent"
+            }
+          ],
+          "restartPolicy": "Never",
+          "terminationGracePeriodSeconds": 30,
+          "dnsPolicy": "ClusterFirst",
+          "serviceAccountName": "mesh-client",
+          "serviceAccount": "mesh-client",
+          "automountServiceAccountToken": false,
+          "nodeName": "cmtc-a-worker",
+          "securityContext": {},
+          "schedulerName": "default-scheduler",
+          "tolerations": [
+            {
+              "key": "node.kubernetes.io/not-ready",
+              "operator": "Exists",
+              "effect": "NoExecute",
+              "tolerationSeconds": 300
+            },
+            {
+              "key": "node.kubernetes.io/unreachable",
+              "operator": "Exists",
+              "effect": "NoExecute",
+              "tolerationSeconds": 300
+            }
+          ],
+          "priority": 0,
+          "enableServiceLinks": true,
+          "preemptionPolicy": "PreemptLowerPriority"
+        },
+        "status": {
+          "observedGeneration": 1,
+          "phase": "Succeeded",
+          "conditions": [
+            {
+              "type": "PodReadyToStartContainers",
+              "observedGeneration": 1,
+              "status": "False",
+              "lastProbeTime": null,
+              "lastTransitionTime": "2026-10-25T05:01:27Z"
+            },
+            {
+              "type": "Initialized",
+              "observedGeneration": 1,
+              "status": "True",
+              "lastProbeTime": null,
+              "lastTransitionTime": "2026-10-25T03:01:42Z",
+              "reason": "PodCompleted"
+            },
+            {
+              "type": "Ready",
+              "observedGeneration": 1,
+              "status": "False",
+              "lastProbeTime": null,
+              "lastTransitionTime": "2026-10-25T05:01:26Z",
+              "reason": "PodCompleted"
+            },
+            {
+              "type": "ContainersReady",
+              "observedGeneration": 1,
+              "status": "False",
+              "lastProbeTime": null,
+              "lastTransitionTime": "2026-10-25T05:01:26Z",
+              "reason": "PodCompleted"
+            },
+            {
+              "type": "PodScheduled",
+              "observedGeneration": 1,
+              "status": "True",
+              "lastProbeTime": null,
+              "lastTransitionTime": "2026-10-25T03:01:42Z"
+            }
+          ],
+          "hostIP": "172.18.0.2",
+          "hostIPs": [
+            {
+              "ip": "172.18.0.2"
+            }
+          ],
+          "podIP": "10.10.1.77",
+          "podIPs": [
+            {
+              "ip": "10.10.1.77"
+            }
+          ],
+          "startTime": "2026-10-25T03:01:42Z",
+          "containerStatuses": [
+            {
+              "name": "client",
+              "state": {
+                "terminated": {
+                  "exitCode": 0,
+                  "reason": "Completed",
+                  "startedAt": "2026-10-25T03:01:42Z",
+                  "finishedAt": "2026-10-25T05:01:26Z",
+                  "containerID": "containerd://76e906ab54be1f587bc986add58aa32416569a323fb3c538ed86ca02a0b4ab8b"
+                }
+              },
+              "lastState": {},
+              "ready": false,
+              "restartCount": 0,
+              "image": "docker.io/curlimages/curl:8.14.1",
+              "imageID": "docker.io/curlimages/curl@sha256:9a1ed35addb45476afa911696297f8e115993df459278ed036182dd2cd22b67b",
+              "containerID": "containerd://76e906ab54be1f587bc986add58aa32416569a323fb3c538ed86ca02a0b4ab8b",
+              "started": false,
+              "allocatedResources": {
+                "cpu": "10m",
+                "memory": "16Mi"
+              },
+              "resources": {
+                "limits": {
+                  "memory": "64Mi"
+                },
+                "requests": {
+                  "cpu": "10m",
+                  "memory": "16Mi"
+                }
+              },
+              "user": {
+                "linux": {
+                  "uid": 100,
+                  "gid": 101,
+                  "supplementalGroups": [
+                    101
+                  ]
+                }
+              }
+            }
+          ],
+          "qosClass": "Burstable",
+          "allocatedResources": {
+            "cpu": "10m",
+            "memory": "16Mi"
+          },
+          "resources": {
+            "limits": {
+              "memory": "64Mi"
+            },
+            "requests": {
+              "memory": "16Mi"
+            }
+          }
+        }
+      },
+      "expectedClientImageDigest": "sha256:9a1ed35addb45476afa911696297f8e115993df459278ed036182dd2cd22b67b",
+      "services": {
+        "cmtc-a": {
+          "uid": "a115d0a6-54d7-4646-954e-4d9f26326ef9",
+          "spec": {
+            "ports": [
+              {
+                "name": "http",
+                "protocol": "TCP",
+                "port": 80,
+                "targetPort": 80
+              },
+              {
+                "name": "app-alt",
+                "protocol": "TCP",
+                "port": 8080,
+                "targetPort": 8080
+              },
+              {
+                "name": "app-high",
+                "protocol": "TCP",
+                "port": 31337,
+                "targetPort": 31337
+              }
+            ],
+            "selector": {
+              "mesh.cmtc.io/cluster": "cmtc-a",
+              "name": "rebel-base"
+            },
+            "clusterIP": "10.11.36.192",
+            "clusterIPs": [
+              "10.11.36.192"
+            ],
+            "type": "ClusterIP",
+            "sessionAffinity": "None",
+            "ipFamilies": [
+              "IPv4"
+            ],
+            "ipFamilyPolicy": "SingleStack",
+            "internalTrafficPolicy": "Cluster"
+          }
+        },
+        "cmtc-b": {
+          "uid": "d3b10c2c-a800-4e55-ad21-3e53eb6c733f",
+          "spec": {
+            "ports": [
+              {
+                "name": "http",
+                "protocol": "TCP",
+                "port": 80,
+                "targetPort": 80
+              },
+              {
+                "name": "app-alt",
+                "protocol": "TCP",
+                "port": 8080,
+                "targetPort": 8080
+              },
+              {
+                "name": "app-high",
+                "protocol": "TCP",
+                "port": 31337,
+                "targetPort": 31337
+              }
+            ],
+            "selector": {
+              "mesh.cmtc.io/cluster": "cmtc-b",
+              "name": "rebel-base"
+            },
+            "clusterIP": "10.11.75.15",
+            "clusterIPs": [
+              "10.11.75.15"
+            ],
+            "type": "ClusterIP",
+            "sessionAffinity": "None",
+            "ipFamilies": [
+              "IPv4"
+            ],
+            "ipFamilyPolicy": "SingleStack",
+            "internalTrafficPolicy": "Cluster"
+          }
+        }
+      },
+      "backends": [
+        {
+          "cluster": "cmtc-a",
+          "node": "cmtc-a-control-plane",
+          "name": "rebel-base-688ff9949b-7cbrt",
+          "ip": "10.10.0.50",
+          "identity": {
+            "uid": "282c0cab-85fe-4de3-914f-3f3a0c4bab24",
+            "spec": {
+              "volumes": [
+                {
+                  "name": "html",
+                  "configMap": {
+                    "name": "rebel-base-response",
+                    "defaultMode": 420
+                  }
+                },
+                {
+                  "name": "nginx-conf",
+                  "configMap": {
+                    "name": "rebel-base-nginx",
+                    "defaultMode": 420
+                  }
+                },
+                {
+                  "name": "kube-api-access-kx4dv",
+                  "projected": {
+                    "sources": [
+                      {
+                        "serviceAccountToken": {
+                          "expirationSeconds": 3607,
+                          "path": "token"
+                        }
+                      },
+                      {
+                        "configMap": {
+                          "name": "kube-root-ca.crt",
+                          "items": [
+                            {
+                              "key": "ca.crt",
+                              "path": "ca.crt"
+                            }
+                          ]
+                        }
+                      },
+                      {
+                        "downwardAPI": {
+                          "items": [
+                            {
+                              "path": "namespace",
+                              "fieldRef": {
+                                "apiVersion": "v1",
+                                "fieldPath": "metadata.namespace"
+                              }
+                            }
+                          ]
+                        }
+                      }
+                    ],
+                    "defaultMode": 420
+                  }
+                }
+              ],
+              "containers": [
+                {
+                  "name": "nginx",
+                  "image": "nginx:1.27-alpine",
+                  "ports": [
+                    {
+                      "name": "http",
+                      "containerPort": 80,
+                      "protocol": "TCP"
+                    },
+                    {
+                      "name": "app-alt",
+                      "containerPort": 8080,
+                      "protocol": "TCP"
+                    },
+                    {
+                      "name": "app-high",
+                      "containerPort": 31337,
+                      "protocol": "TCP"
+                    }
+                  ],
+                  "resources": {},
+                  "volumeMounts": [
+                    {
+                      "name": "html",
+                      "mountPath": "/usr/share/nginx/html"
+                    },
+                    {
+                      "name": "nginx-conf",
+                      "mountPath": "/etc/nginx/conf.d/default.conf",
+                      "subPath": "nginx.conf"
+                    },
+                    {
+                      "name": "kube-api-access-kx4dv",
+                      "readOnly": true,
+                      "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount"
+                    }
+                  ],
+                  "terminationMessagePath": "/dev/termination-log",
+                  "terminationMessagePolicy": "File",
+                  "imagePullPolicy": "IfNotPresent"
+                }
+              ],
+              "restartPolicy": "Always",
+              "terminationGracePeriodSeconds": 30,
+              "dnsPolicy": "ClusterFirst",
+              "serviceAccountName": "rebel-base",
+              "serviceAccount": "rebel-base",
+              "nodeName": "cmtc-a-control-plane",
+              "securityContext": {},
+              "affinity": {
+                "podAntiAffinity": {
+                  "requiredDuringSchedulingIgnoredDuringExecution": [
+                    {
+                      "labelSelector": {
+                        "matchLabels": {
+                          "name": "rebel-base"
+                        }
+                      },
+                      "topologyKey": "kubernetes.io/hostname"
+                    }
+                  ]
+                }
+              },
+              "schedulerName": "default-scheduler",
+              "tolerations": [
+                {
+                  "key": "node-role.kubernetes.io/control-plane",
+                  "operator": "Exists",
+                  "effect": "NoSchedule"
+                },
+                {
+                  "key": "node.kubernetes.io/not-ready",
+                  "operator": "Exists",
+                  "effect": "NoExecute",
+                  "tolerationSeconds": 300
+                },
+                {
+                  "key": "node.kubernetes.io/unreachable",
+                  "operator": "Exists",
+                  "effect": "NoExecute",
+                  "tolerationSeconds": 300
+                }
+              ],
+              "priority": 0,
+              "enableServiceLinks": true,
+              "preemptionPolicy": "PreemptLowerPriority"
+            },
+            "podIP": "10.10.0.50",
+            "containers": [
+              {
+                "name": "nginx",
+                "containerID": "containerd://bdd306609bd0c4207f8db6172d7019fdae4dd6e85c8e605555c658d693f4b1f7",
+                "imageID": "docker.io/library/nginx@sha256:65645c7bb6a0661892a8b03b89d0743208a18dd2f3f17a54ef4b76fb8e2f2a10",
+                "restartCount": 0,
+                "state": {
+                  "running": {
+                    "startedAt": "2026-10-24T21:44:33Z"
+                  }
+                }
+              }
+            ]
+          }
+        },
+        {
+          "cluster": "cmtc-a",
+          "node": "cmtc-a-worker",
+          "name": "rebel-base-688ff9949b-hq6g9",
+          "ip": "10.10.1.33",
+          "identity": {
+            "uid": "ba53ff23-ae44-4747-b2f8-02904b301084",
+            "spec": {
+              "volumes": [
+                {
+                  "name": "html",
+                  "configMap": {
+                    "name": "rebel-base-response",
+                    "defaultMode": 420
+                  }
+                },
+                {
+                  "name": "nginx-conf",
+                  "configMap": {
+                    "name": "rebel-base-nginx",
+                    "defaultMode": 420
+                  }
+                },
+                {
+                  "name": "kube-api-access-98g58",
+                  "projected": {
+                    "sources": [
+                      {
+                        "serviceAccountToken": {
+                          "expirationSeconds": 3607,
+                          "path": "token"
+                        }
+                      },
+                      {
+                        "configMap": {
+                          "name": "kube-root-ca.crt",
+                          "items": [
+                            {
+                              "key": "ca.crt",
+                              "path": "ca.crt"
+                            }
+                          ]
+                        }
+                      },
+                      {
+                        "downwardAPI": {
+                          "items": [
+                            {
+                              "path": "namespace",
+                              "fieldRef": {
+                                "apiVersion": "v1",
+                                "fieldPath": "metadata.namespace"
+                              }
+                            }
+                          ]
+                        }
+                      }
+                    ],
+                    "defaultMode": 420
+                  }
+                }
+              ],
+              "containers": [
+                {
+                  "name": "nginx",
+                  "image": "nginx:1.27-alpine",
+                  "ports": [
+                    {
+                      "name": "http",
+                      "containerPort": 80,
+                      "protocol": "TCP"
+                    },
+                    {
+                      "name": "app-alt",
+                      "containerPort": 8080,
+                      "protocol": "TCP"
+                    },
+                    {
+                      "name": "app-high",
+                      "containerPort": 31337,
+                      "protocol": "TCP"
+                    }
+                  ],
+                  "resources": {},
+                  "volumeMounts": [
+                    {
+                      "name": "html",
+                      "mountPath": "/usr/share/nginx/html"
+                    },
+                    {
+                      "name": "nginx-conf",
+                      "mountPath": "/etc/nginx/conf.d/default.conf",
+                      "subPath": "nginx.conf"
+                    },
+                    {
+                      "name": "kube-api-access-98g58",
+                      "readOnly": true,
+                      "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount"
+                    }
+                  ],
+                  "terminationMessagePath": "/dev/termination-log",
+                  "terminationMessagePolicy": "File",
+                  "imagePullPolicy": "IfNotPresent"
+                }
+              ],
+              "restartPolicy": "Always",
+              "terminationGracePeriodSeconds": 30,
+              "dnsPolicy": "ClusterFirst",
+              "serviceAccountName": "rebel-base",
+              "serviceAccount": "rebel-base",
+              "nodeName": "cmtc-a-worker",
+              "securityContext": {},
+              "affinity": {
+                "podAntiAffinity": {
+                  "requiredDuringSchedulingIgnoredDuringExecution": [
+                    {
+                      "labelSelector": {
+                        "matchLabels": {
+                          "name": "rebel-base"
+                        }
+                      },
+                      "topologyKey": "kubernetes.io/hostname"
+                    }
+                  ]
+                }
+              },
+              "schedulerName": "default-scheduler",
+              "tolerations": [
+                {
+                  "key": "node-role.kubernetes.io/control-plane",
+                  "operator": "Exists",
+                  "effect": "NoSchedule"
+                },
+                {
+                  "key": "node.kubernetes.io/not-ready",
+                  "operator": "Exists",
+                  "effect": "NoExecute",
+                  "tolerationSeconds": 300
+                },
+                {
+                  "key": "node.kubernetes.io/unreachable",
+                  "operator": "Exists",
+                  "effect": "NoExecute",
+                  "tolerationSeconds": 300
+                }
+              ],
+              "priority": 0,
+              "enableServiceLinks": true,
+              "preemptionPolicy": "PreemptLowerPriority"
+            },
+            "podIP": "10.10.1.33",
+            "containers": [
+              {
+                "name": "nginx",
+                "containerID": "containerd://b3063908d76398326d7b5ffef5ae169e8c813d05392fdee340cf73cf33d91d74",
+                "imageID": "docker.io/library/nginx@sha256:65645c7bb6a0661892a8b03b89d0743208a18dd2f3f17a54ef4b76fb8e2f2a10",
+                "restartCount": 0,
+                "state": {
+                  "running": {
+                    "startedAt": "2026-10-24T21:44:34Z"
+                  }
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "clientIdentity": {
+        "uid": "f34ee65c-5944-4abd-acd8-329274c54a28",
+        "spec": {
+          "containers": [
+            {
+              "name": "client",
+              "image": "curlimages/curl:8.14.1",
+              "command": [
+                "/bin/sh",
+                "-ec",
+                "exec sleep 840"
+              ],
+              "workingDir": "/",
+              "resources": {
+                "limits": {
+                  "memory": "64Mi"
+                },
+                "requests": {
+                  "cpu": "10m",
+                  "memory": "16Mi"
+                }
+              },
+              "terminationMessagePath": "/dev/termination-log",
+              "terminationMessagePolicy": "File",
+              "imagePullPolicy": "Never",
+              "securityContext": {
+                "capabilities": {
+                  "drop": [
+                    "ALL"
+                  ]
+                },
+                "readOnlyRootFilesystem": true,
+                "allowPrivilegeEscalation": false
+              }
+            }
+          ],
+          "restartPolicy": "Never",
+          "terminationGracePeriodSeconds": 5,
+          "activeDeadlineSeconds": 900,
+          "dnsPolicy": "ClusterFirst",
+          "serviceAccountName": "default",
+          "serviceAccount": "default",
+          "automountServiceAccountToken": false,
+          "nodeName": "cmtc-a-worker",
+          "securityContext": {
+            "runAsUser": 65532,
+            "runAsGroup": 65532,
+            "runAsNonRoot": true,
+            "seccompProfile": {
+              "type": "RuntimeDefault"
+            }
+          },
+          "schedulerName": "default-scheduler",
+          "tolerations": [
+            {
+              "key": "node.kubernetes.io/not-ready",
+              "operator": "Exists",
+              "effect": "NoExecute",
+              "tolerationSeconds": 300
+            },
+            {
+              "key": "node.kubernetes.io/unreachable",
+              "operator": "Exists",
+              "effect": "NoExecute",
+              "tolerationSeconds": 300
+            }
+          ],
+          "priority": 0,
+          "enableServiceLinks": true,
+          "preemptionPolicy": "PreemptLowerPriority"
+        },
+        "podIP": "10.10.1.44",
+        "containers": [
+          {
+            "name": "client",
+            "containerID": "containerd://237db8f0466353821bb08ff3bd754d43981b5e975f805783b666bfcff0d6e530",
+            "imageID": "docker.io/curlimages/curl@sha256:9a1ed35addb45476afa911696297f8e115993df459278ed036182dd2cd22b67b",
+            "restartCount": 0,
+            "state": {
+              "running": {
+                "startedAt": "2026-10-25T08:16:42Z"
+              }
+            }
+          }
+        ]
+      },
+      "curlVersion": "curl 8.14.1 (aarch64-unknown-linux-musl) libcurl/8.14.1 OpenSSL/3.5.0 zlib/1.3.1 brotli/1.1.0 zstd/1.5.7 libidn2/2.3.7 libpsl/0.21.5 libssh2/1.11.1 nghttp2/1.65.0\nRelease-Date: 2025-06-04\nProtocols: dict file ftp ftps gopher gophers http https imap imaps ipfs ipns mqtt pop3 pop3s rtsp scp sftp smb smbs smtp smtps telnet tftp ws wss\nFeatures: alt-svc AsynchDNS brotli GSS-API HSTS HTTP2 HTTPS-proxy IDN IPv6 Kerberos Largefile libz NTLM PSL SPNEGO SSL threadsafe TLS-SRP UnixSockets zstd\n"
+    },
+    "cmtc-b": {
+      "created": {
+        "path": "/api/v1/namespaces/mesh-example/pods/cmtc-app-audit-f1a3d1bb-387",
+        "uid": "82122118-da9e-45bb-a3b6-4ade42cef9d3",
+        "name": "cmtc-app-audit-f1a3d1bb-387"
+      },
+      "namespace": {
+        "uid": "41dc3475-f7c8-4dfc-b992-44d169e9b2bd",
+        "labels": {
+          "company.net/lob": "alpha",
+          "kubernetes.io/metadata.name": "mesh-example"
+        }
+      },
+      "originalClient": {
+        "kind": "Pod",
+        "apiVersion": "v1",
+        "metadata": {
+          "name": "mesh-client",
+          "namespace": "mesh-example",
+          "uid": "b0a6dc57-dd24-4e16-aa68-0ac9bcba66f9",
+          "resourceVersion": "96100",
+          "generation": 1,
+          "creationTimestamp": "2026-10-25T03:02:13Z",
+          "labels": {
+            "app": "mesh-client",
+            "app.kubernetes.io/name": "mesh-client"
+          },
+          "annotations": {
+            "kubectl.kubernetes.io/last-applied-configuration": "{\"apiVersion\":\"v1\",\"kind\":\"Pod\",\"metadata\":{\"annotations\":{},\"labels\":{\"app\":\"mesh-client\",\"app.kubernetes.io/name\":\"mesh-client\"},\"name\":\"mesh-client\",\"namespace\":\"mesh-example\"},\"spec\":{\"automountServiceAccountToken\":false,\"containers\":[{\"command\":[\"sh\",\"-c\",\"sleep 7200\"],\"image\":\"curlimages/curl:8.14.1\",\"name\":\"client\",\"resources\":{\"limits\":{\"memory\":\"64Mi\"},\"requests\":{\"cpu\":\"10m\",\"memory\":\"16Mi\"}}}],\"restartPolicy\":\"Never\",\"serviceAccountName\":\"mesh-client\"}}\n"
+          },
+          "managedFields": [
+            {
+              "manager": "kubectl-client-side-apply",
+              "operation": "Update",
+              "apiVersion": "v1",
+              "time": "2026-10-25T03:02:13Z",
+              "fieldsType": "FieldsV1",
+              "fieldsV1": {
+                "f:metadata": {
+                  "f:annotations": {
+                    ".": {},
+                    "f:kubectl.kubernetes.io/last-applied-configuration": {}
+                  },
+                  "f:labels": {
+                    ".": {},
+                    "f:app": {},
+                    "f:app.kubernetes.io/name": {}
+                  }
+                },
+                "f:spec": {
+                  "f:automountServiceAccountToken": {},
+                  "f:containers": {
+                    "k:{\"name\":\"client\"}": {
+                      ".": {},
+                      "f:command": {},
+                      "f:image": {},
+                      "f:imagePullPolicy": {},
+                      "f:name": {},
+                      "f:resources": {
+                        ".": {},
+                        "f:limits": {
+                          ".": {},
+                          "f:memory": {}
+                        },
+                        "f:requests": {
+                          ".": {},
+                          "f:cpu": {},
+                          "f:memory": {}
+                        }
+                      },
+                      "f:terminationMessagePath": {},
+                      "f:terminationMessagePolicy": {}
+                    }
+                  },
+                  "f:dnsPolicy": {},
+                  "f:enableServiceLinks": {},
+                  "f:restartPolicy": {},
+                  "f:schedulerName": {},
+                  "f:securityContext": {},
+                  "f:serviceAccount": {},
+                  "f:serviceAccountName": {},
+                  "f:terminationGracePeriodSeconds": {}
+                }
+              }
+            },
+            {
+              "manager": "kubelet",
+              "operation": "Update",
+              "apiVersion": "v1",
+              "time": "2026-10-25T05:02:02Z",
+              "fieldsType": "FieldsV1",
+              "fieldsV1": {
+                "f:status": {
+                  "f:allocatedResources": {
+                    ".": {},
+                    "f:cpu": {},
+                    "f:memory": {}
+                  },
+                  "f:conditions": {
+                    "k:{\"type\":\"ContainersReady\"}": {
+                      ".": {},
+                      "f:lastProbeTime": {},
+                      "f:lastTransitionTime": {},
+                      "f:observedGeneration": {},
+                      "f:reason": {},
+                      "f:status": {},
+                      "f:type": {}
+                    },
+                    "k:{\"type\":\"Initialized\"}": {
+                      ".": {},
+                      "f:lastProbeTime": {},
+                      "f:lastTransitionTime": {},
+                      "f:observedGeneration": {},
+                      "f:reason": {},
+                      "f:status": {},
+                      "f:type": {}
+                    },
+                    "k:{\"type\":\"PodReadyToStartContainers\"}": {
+                      ".": {},
+                      "f:lastProbeTime": {},
+                      "f:lastTransitionTime": {},
+                      "f:observedGeneration": {},
+                      "f:status": {},
+                      "f:type": {}
+                    },
+                    "k:{\"type\":\"PodScheduled\"}": {
+                      "f:observedGeneration": {}
+                    },
+                    "k:{\"type\":\"Ready\"}": {
+                      ".": {},
+                      "f:lastProbeTime": {},
+                      "f:lastTransitionTime": {},
+                      "f:observedGeneration": {},
+                      "f:reason": {},
+                      "f:status": {},
+                      "f:type": {}
+                    }
+                  },
+                  "f:containerStatuses": {},
+                  "f:hostIP": {},
+                  "f:hostIPs": {},
+                  "f:observedGeneration": {},
+                  "f:phase": {},
+                  "f:podIP": {},
+                  "f:podIPs": {
+                    ".": {},
+                    "k:{\"ip\":\"10.20.1.90\"}": {
+                      ".": {},
+                      "f:ip": {}
+                    }
+                  },
+                  "f:resources": {
+                    ".": {},
+                    "f:limits": {
+                      ".": {},
+                      "f:memory": {}
+                    },
+                    "f:requests": {
+                      ".": {},
+                      "f:memory": {}
+                    }
+                  },
+                  "f:startTime": {}
+                }
+              },
+              "subresource": "status"
+            }
+          ]
+        },
+        "spec": {
+          "containers": [
+            {
+              "name": "client",
+              "image": "curlimages/curl:8.14.1",
+              "command": [
+                "sh",
+                "-c",
+                "sleep 7200"
+              ],
+              "resources": {
+                "limits": {
+                  "memory": "64Mi"
+                },
+                "requests": {
+                  "cpu": "10m",
+                  "memory": "16Mi"
+                }
+              },
+              "terminationMessagePath": "/dev/termination-log",
+              "terminationMessagePolicy": "File",
+              "imagePullPolicy": "IfNotPresent"
+            }
+          ],
+          "restartPolicy": "Never",
+          "terminationGracePeriodSeconds": 30,
+          "dnsPolicy": "ClusterFirst",
+          "serviceAccountName": "mesh-client",
+          "serviceAccount": "mesh-client",
+          "automountServiceAccountToken": false,
+          "nodeName": "cmtc-b-worker",
+          "securityContext": {},
+          "schedulerName": "default-scheduler",
+          "tolerations": [
+            {
+              "key": "node.kubernetes.io/not-ready",
+              "operator": "Exists",
+              "effect": "NoExecute",
+              "tolerationSeconds": 300
+            },
+            {
+              "key": "node.kubernetes.io/unreachable",
+              "operator": "Exists",
+              "effect": "NoExecute",
+              "tolerationSeconds": 300
+            }
+          ],
+          "priority": 0,
+          "enableServiceLinks": true,
+          "preemptionPolicy": "PreemptLowerPriority"
+        },
+        "status": {
+          "observedGeneration": 1,
+          "phase": "Succeeded",
+          "conditions": [
+            {
+              "type": "PodReadyToStartContainers",
+              "observedGeneration": 1,
+              "status": "False",
+              "lastProbeTime": null,
+              "lastTransitionTime": "2026-10-25T05:02:02Z"
+            },
+            {
+              "type": "Initialized",
+              "observedGeneration": 1,
+              "status": "True",
+              "lastProbeTime": null,
+              "lastTransitionTime": "2026-10-25T03:02:13Z",
+              "reason": "PodCompleted"
+            },
+            {
+              "type": "Ready",
+              "observedGeneration": 1,
+              "status": "False",
+              "lastProbeTime": null,
+              "lastTransitionTime": "2026-10-25T05:01:59Z",
+              "reason": "PodCompleted"
+            },
+            {
+              "type": "ContainersReady",
+              "observedGeneration": 1,
+              "status": "False",
+              "lastProbeTime": null,
+              "lastTransitionTime": "2026-10-25T05:01:59Z",
+              "reason": "PodCompleted"
+            },
+            {
+              "type": "PodScheduled",
+              "observedGeneration": 1,
+              "status": "True",
+              "lastProbeTime": null,
+              "lastTransitionTime": "2026-10-25T03:02:13Z"
+            }
+          ],
+          "hostIP": "172.18.0.5",
+          "hostIPs": [
+            {
+              "ip": "172.18.0.5"
+            }
+          ],
+          "podIP": "10.20.1.90",
+          "podIPs": [
+            {
+              "ip": "10.20.1.90"
+            }
+          ],
+          "startTime": "2026-10-25T03:02:13Z",
+          "containerStatuses": [
+            {
+              "name": "client",
+              "state": {
+                "terminated": {
+                  "exitCode": 0,
+                  "reason": "Completed",
+                  "startedAt": "2026-10-25T03:02:13Z",
+                  "finishedAt": "2026-10-25T05:01:57Z",
+                  "containerID": "containerd://03ce91a4dacdf41dbede70c7160f1bb833548f05ca0d001afa5cd18d8af91995"
+                }
+              },
+              "lastState": {},
+              "ready": false,
+              "restartCount": 0,
+              "image": "docker.io/curlimages/curl:8.14.1",
+              "imageID": "docker.io/curlimages/curl@sha256:9a1ed35addb45476afa911696297f8e115993df459278ed036182dd2cd22b67b",
+              "containerID": "containerd://03ce91a4dacdf41dbede70c7160f1bb833548f05ca0d001afa5cd18d8af91995",
+              "started": false,
+              "allocatedResources": {
+                "cpu": "10m",
+                "memory": "16Mi"
+              },
+              "resources": {
+                "limits": {
+                  "memory": "64Mi"
+                },
+                "requests": {
+                  "cpu": "10m",
+                  "memory": "16Mi"
+                }
+              },
+              "user": {
+                "linux": {
+                  "uid": 100,
+                  "gid": 101,
+                  "supplementalGroups": [
+                    101
+                  ]
+                }
+              }
+            }
+          ],
+          "qosClass": "Burstable",
+          "allocatedResources": {
+            "cpu": "10m",
+            "memory": "16Mi"
+          },
+          "resources": {
+            "limits": {
+              "memory": "64Mi"
+            },
+            "requests": {
+              "memory": "16Mi"
+            }
+          }
+        }
+      },
+      "expectedClientImageDigest": "sha256:9a1ed35addb45476afa911696297f8e115993df459278ed036182dd2cd22b67b",
+      "services": {
+        "cmtc-a": {
+          "uid": "7e96c56f-5137-4fe2-9c2e-7cf8226fda81",
+          "spec": {
+            "ports": [
+              {
+                "name": "http",
+                "protocol": "TCP",
+                "port": 80,
+                "targetPort": 80
+              },
+              {
+                "name": "app-alt",
+                "protocol": "TCP",
+                "port": 8080,
+                "targetPort": 8080
+              },
+              {
+                "name": "app-high",
+                "protocol": "TCP",
+                "port": 31337,
+                "targetPort": 31337
+              }
+            ],
+            "selector": {
+              "mesh.cmtc.io/cluster": "cmtc-a",
+              "name": "rebel-base"
+            },
+            "clusterIP": "10.21.238.63",
+            "clusterIPs": [
+              "10.21.238.63"
+            ],
+            "type": "ClusterIP",
+            "sessionAffinity": "None",
+            "ipFamilies": [
+              "IPv4"
+            ],
+            "ipFamilyPolicy": "SingleStack",
+            "internalTrafficPolicy": "Cluster"
+          }
+        },
+        "cmtc-b": {
+          "uid": "3df4b0e6-124d-4827-b57c-109d8b4bad2c",
+          "spec": {
+            "ports": [
+              {
+                "name": "http",
+                "protocol": "TCP",
+                "port": 80,
+                "targetPort": 80
+              },
+              {
+                "name": "app-alt",
+                "protocol": "TCP",
+                "port": 8080,
+                "targetPort": 8080
+              },
+              {
+                "name": "app-high",
+                "protocol": "TCP",
+                "port": 31337,
+                "targetPort": 31337
+              }
+            ],
+            "selector": {
+              "mesh.cmtc.io/cluster": "cmtc-b",
+              "name": "rebel-base"
+            },
+            "clusterIP": "10.21.254.17",
+            "clusterIPs": [
+              "10.21.254.17"
+            ],
+            "type": "ClusterIP",
+            "sessionAffinity": "None",
+            "ipFamilies": [
+              "IPv4"
+            ],
+            "ipFamilyPolicy": "SingleStack",
+            "internalTrafficPolicy": "Cluster"
+          }
+        }
+      },
+      "backends": [
+        {
+          "cluster": "cmtc-b",
+          "node": "cmtc-b-control-plane",
+          "name": "rebel-base-7cbb476f7-rf9bf",
+          "ip": "10.20.0.48",
+          "identity": {
+            "uid": "15ee1962-2ded-4dca-a797-b314d98e5633",
+            "spec": {
+              "volumes": [
+                {
+                  "name": "html",
+                  "configMap": {
+                    "name": "rebel-base-response",
+                    "defaultMode": 420
+                  }
+                },
+                {
+                  "name": "nginx-conf",
+                  "configMap": {
+                    "name": "rebel-base-nginx",
+                    "defaultMode": 420
+                  }
+                },
+                {
+                  "name": "kube-api-access-66g92",
+                  "projected": {
+                    "sources": [
+                      {
+                        "serviceAccountToken": {
+                          "expirationSeconds": 3607,
+                          "path": "token"
+                        }
+                      },
+                      {
+                        "configMap": {
+                          "name": "kube-root-ca.crt",
+                          "items": [
+                            {
+                              "key": "ca.crt",
+                              "path": "ca.crt"
+                            }
+                          ]
+                        }
+                      },
+                      {
+                        "downwardAPI": {
+                          "items": [
+                            {
+                              "path": "namespace",
+                              "fieldRef": {
+                                "apiVersion": "v1",
+                                "fieldPath": "metadata.namespace"
+                              }
+                            }
+                          ]
+                        }
+                      }
+                    ],
+                    "defaultMode": 420
+                  }
+                }
+              ],
+              "containers": [
+                {
+                  "name": "nginx",
+                  "image": "nginx:1.27-alpine",
+                  "ports": [
+                    {
+                      "name": "http",
+                      "containerPort": 80,
+                      "protocol": "TCP"
+                    },
+                    {
+                      "name": "app-alt",
+                      "containerPort": 8080,
+                      "protocol": "TCP"
+                    },
+                    {
+                      "name": "app-high",
+                      "containerPort": 31337,
+                      "protocol": "TCP"
+                    }
+                  ],
+                  "resources": {},
+                  "volumeMounts": [
+                    {
+                      "name": "html",
+                      "mountPath": "/usr/share/nginx/html"
+                    },
+                    {
+                      "name": "nginx-conf",
+                      "mountPath": "/etc/nginx/conf.d/default.conf",
+                      "subPath": "nginx.conf"
+                    },
+                    {
+                      "name": "kube-api-access-66g92",
+                      "readOnly": true,
+                      "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount"
+                    }
+                  ],
+                  "terminationMessagePath": "/dev/termination-log",
+                  "terminationMessagePolicy": "File",
+                  "imagePullPolicy": "IfNotPresent"
+                }
+              ],
+              "restartPolicy": "Always",
+              "terminationGracePeriodSeconds": 30,
+              "dnsPolicy": "ClusterFirst",
+              "serviceAccountName": "rebel-base",
+              "serviceAccount": "rebel-base",
+              "nodeName": "cmtc-b-control-plane",
+              "securityContext": {},
+              "affinity": {
+                "podAntiAffinity": {
+                  "requiredDuringSchedulingIgnoredDuringExecution": [
+                    {
+                      "labelSelector": {
+                        "matchLabels": {
+                          "name": "rebel-base"
+                        }
+                      },
+                      "topologyKey": "kubernetes.io/hostname"
+                    }
+                  ]
+                }
+              },
+              "schedulerName": "default-scheduler",
+              "tolerations": [
+                {
+                  "key": "node-role.kubernetes.io/control-plane",
+                  "operator": "Exists",
+                  "effect": "NoSchedule"
+                },
+                {
+                  "key": "node.kubernetes.io/not-ready",
+                  "operator": "Exists",
+                  "effect": "NoExecute",
+                  "tolerationSeconds": 300
+                },
+                {
+                  "key": "node.kubernetes.io/unreachable",
+                  "operator": "Exists",
+                  "effect": "NoExecute",
+                  "tolerationSeconds": 300
+                }
+              ],
+              "priority": 0,
+              "enableServiceLinks": true,
+              "preemptionPolicy": "PreemptLowerPriority"
+            },
+            "podIP": "10.20.0.48",
+            "containers": [
+              {
+                "name": "nginx",
+                "containerID": "containerd://10fbd6b8de32fa617031cb5a2846ccef5ec1170a0200555d214d77db6d38ccaf",
+                "imageID": "docker.io/library/nginx@sha256:65645c7bb6a0661892a8b03b89d0743208a18dd2f3f17a54ef4b76fb8e2f2a10",
+                "restartCount": 0,
+                "state": {
+                  "running": {
+                    "startedAt": "2026-10-24T21:44:37Z"
+                  }
+                }
+              }
+            ]
+          }
+        },
+        {
+          "cluster": "cmtc-b",
+          "node": "cmtc-b-worker",
+          "name": "rebel-base-7cbb476f7-5wkhd",
+          "ip": "10.20.1.211",
+          "identity": {
+            "uid": "e5554444-01dc-409c-a0ec-42a2ff50659a",
+            "spec": {
+              "volumes": [
+                {
+                  "name": "html",
+                  "configMap": {
+                    "name": "rebel-base-response",
+                    "defaultMode": 420
+                  }
+                },
+                {
+                  "name": "nginx-conf",
+                  "configMap": {
+                    "name": "rebel-base-nginx",
+                    "defaultMode": 420
+                  }
+                },
+                {
+                  "name": "kube-api-access-gvtk9",
+                  "projected": {
+                    "sources": [
+                      {
+                        "serviceAccountToken": {
+                          "expirationSeconds": 3607,
+                          "path": "token"
+                        }
+                      },
+                      {
+                        "configMap": {
+                          "name": "kube-root-ca.crt",
+                          "items": [
+                            {
+                              "key": "ca.crt",
+                              "path": "ca.crt"
+                            }
+                          ]
+                        }
+                      },
+                      {
+                        "downwardAPI": {
+                          "items": [
+                            {
+                              "path": "namespace",
+                              "fieldRef": {
+                                "apiVersion": "v1",
+                                "fieldPath": "metadata.namespace"
+                              }
+                            }
+                          ]
+                        }
+                      }
+                    ],
+                    "defaultMode": 420
+                  }
+                }
+              ],
+              "containers": [
+                {
+                  "name": "nginx",
+                  "image": "nginx:1.27-alpine",
+                  "ports": [
+                    {
+                      "name": "http",
+                      "containerPort": 80,
+                      "protocol": "TCP"
+                    },
+                    {
+                      "name": "app-alt",
+                      "containerPort": 8080,
+                      "protocol": "TCP"
+                    },
+                    {
+                      "name": "app-high",
+                      "containerPort": 31337,
+                      "protocol": "TCP"
+                    }
+                  ],
+                  "resources": {},
+                  "volumeMounts": [
+                    {
+                      "name": "html",
+                      "mountPath": "/usr/share/nginx/html"
+                    },
+                    {
+                      "name": "nginx-conf",
+                      "mountPath": "/etc/nginx/conf.d/default.conf",
+                      "subPath": "nginx.conf"
+                    },
+                    {
+                      "name": "kube-api-access-gvtk9",
+                      "readOnly": true,
+                      "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount"
+                    }
+                  ],
+                  "terminationMessagePath": "/dev/termination-log",
+                  "terminationMessagePolicy": "File",
+                  "imagePullPolicy": "IfNotPresent"
+                }
+              ],
+              "restartPolicy": "Always",
+              "terminationGracePeriodSeconds": 30,
+              "dnsPolicy": "ClusterFirst",
+              "serviceAccountName": "rebel-base",
+              "serviceAccount": "rebel-base",
+              "nodeName": "cmtc-b-worker",
+              "securityContext": {},
+              "affinity": {
+                "podAntiAffinity": {
+                  "requiredDuringSchedulingIgnoredDuringExecution": [
+                    {
+                      "labelSelector": {
+                        "matchLabels": {
+                          "name": "rebel-base"
+                        }
+                      },
+                      "topologyKey": "kubernetes.io/hostname"
+                    }
+                  ]
+                }
+              },
+              "schedulerName": "default-scheduler",
+              "tolerations": [
+                {
+                  "key": "node-role.kubernetes.io/control-plane",
+                  "operator": "Exists",
+                  "effect": "NoSchedule"
+                },
+                {
+                  "key": "node.kubernetes.io/not-ready",
+                  "operator": "Exists",
+                  "effect": "NoExecute",
+                  "tolerationSeconds": 300
+                },
+                {
+                  "key": "node.kubernetes.io/unreachable",
+                  "operator": "Exists",
+                  "effect": "NoExecute",
+                  "tolerationSeconds": 300
+                }
+              ],
+              "priority": 0,
+              "enableServiceLinks": true,
+              "preemptionPolicy": "PreemptLowerPriority"
+            },
+            "podIP": "10.20.1.211",
+            "containers": [
+              {
+                "name": "nginx",
+                "containerID": "containerd://b6adc6dda51b0f94c5778ba1963c2581412cfb3a3b49a8c34b964173ef89d85a",
+                "imageID": "docker.io/library/nginx@sha256:65645c7bb6a0661892a8b03b89d0743208a18dd2f3f17a54ef4b76fb8e2f2a10",
+                "restartCount": 0,
+                "state": {
+                  "running": {
+                    "startedAt": "2026-10-24T21:44:37Z"
+                  }
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "clientIdentity": {
+        "uid": "82122118-da9e-45bb-a3b6-4ade42cef9d3",
+        "spec": {
+          "containers": [
+            {
+              "name": "client",
+              "image": "curlimages/curl:8.14.1",
+              "command": [
+                "/bin/sh",
+                "-ec",
+                "exec sleep 840"
+              ],
+              "workingDir": "/",
+              "resources": {
+                "limits": {
+                  "memory": "64Mi"
+                },
+                "requests": {
+                  "cpu": "10m",
+                  "memory": "16Mi"
+                }
+              },
+              "terminationMessagePath": "/dev/termination-log",
+              "terminationMessagePolicy": "File",
+              "imagePullPolicy": "Never",
+              "securityContext": {
+                "capabilities": {
+                  "drop": [
+                    "ALL"
+                  ]
+                },
+                "readOnlyRootFilesystem": true,
+                "allowPrivilegeEscalation": false
+              }
+            }
+          ],
+          "restartPolicy": "Never",
+          "terminationGracePeriodSeconds": 5,
+          "activeDeadlineSeconds": 900,
+          "dnsPolicy": "ClusterFirst",
+          "serviceAccountName": "default",
+          "serviceAccount": "default",
+          "automountServiceAccountToken": false,
+          "nodeName": "cmtc-b-worker",
+          "securityContext": {
+            "runAsUser": 65532,
+            "runAsGroup": 65532,
+            "runAsNonRoot": true,
+            "seccompProfile": {
+              "type": "RuntimeDefault"
+            }
+          },
+          "schedulerName": "default-scheduler",
+          "tolerations": [
+            {
+              "key": "node.kubernetes.io/not-ready",
+              "operator": "Exists",
+              "effect": "NoExecute",
+              "tolerationSeconds": 300
+            },
+            {
+              "key": "node.kubernetes.io/unreachable",
+              "operator": "Exists",
+              "effect": "NoExecute",
+              "tolerationSeconds": 300
+            }
+          ],
+          "priority": 0,
+          "enableServiceLinks": true,
+          "preemptionPolicy": "PreemptLowerPriority"
+        },
+        "podIP": "10.20.1.129",
+        "containers": [
+          {
+            "name": "client",
+            "containerID": "containerd://2147b0f69c82aa4cd1c49f201d79d08818c5065f35b538e8d493da3ecd9bcf6b",
+            "imageID": "docker.io/curlimages/curl@sha256:9a1ed35addb45476afa911696297f8e115993df459278ed036182dd2cd22b67b",
+            "restartCount": 0,
+            "state": {
+              "running": {
+                "startedAt": "2026-10-25T08:16:43Z"
+              }
+            }
+          }
+        ]
+      },
+      "curlVersion": "curl 8.14.1 (aarch64-unknown-linux-musl) libcurl/8.14.1 OpenSSL/3.5.0 zlib/1.3.1 brotli/1.1.0 zstd/1.5.7 libidn2/2.3.7 libpsl/0.21.5 libssh2/1.11.1 nghttp2/1.65.0\nRelease-Date: 2025-06-04\nProtocols: dict file ftp ftps gopher gophers http https imap imaps ipfs ipns mqtt pop3 pop3s rtsp scp sftp smb smbs smtp smtps telnet tftp ws wss\nFeatures: alt-svc AsynchDNS brotli GSS-API HSTS HTTP2 HTTPS-proxy IDN IPv6 Kerberos Largefile libz NTLM PSL SPNEGO SSL threadsafe TLS-SRP UnixSockets zstd\n"
+    }
+  },
+  "cases": [
+    {
+      "name": "cmtc-a-to-cmtc-a-service-80",
+      "source": "cmtc-a",
+      "destination": "cmtc-a",
+      "kind": "service",
+      "target": "rebel-base-cmtc-a:80",
+      "port": 80,
+      "allowedPods": [
+        "rebel-base-688ff9949b-7cbrt",
+        "rebel-base-688ff9949b-hq6g9"
+      ],
+      "actualCluster": "cmtc-a",
+      "actualPod": "rebel-base-688ff9949b-hq6g9",
+      "httpStatus": 200,
+      "bodySHA256": "d4bc9b3b61ee3e84226d86d2963b03bfd385f6acc8bf2a2235f0c8f7fffb1c2c",
+      "responseFile": "01-cmtc-a-to-cmtc-a-service-80.json",
+      "headersFile": "01-cmtc-a-to-cmtc-a-service-80.headers",
+      "passed": true
+    },
+    {
+      "name": "cmtc-a-to-cmtc-a-service-8080",
+      "source": "cmtc-a",
+      "destination": "cmtc-a",
+      "kind": "service",
+      "target": "rebel-base-cmtc-a:8080",
+      "port": 8080,
+      "allowedPods": [
+        "rebel-base-688ff9949b-7cbrt",
+        "rebel-base-688ff9949b-hq6g9"
+      ],
+      "actualCluster": "cmtc-a",
+      "actualPod": "rebel-base-688ff9949b-hq6g9",
+      "httpStatus": 200,
+      "bodySHA256": "d4bc9b3b61ee3e84226d86d2963b03bfd385f6acc8bf2a2235f0c8f7fffb1c2c",
+      "responseFile": "02-cmtc-a-to-cmtc-a-service-8080.json",
+      "headersFile": "02-cmtc-a-to-cmtc-a-service-8080.headers",
+      "passed": true
+    },
+    {
+      "name": "cmtc-a-to-cmtc-a-service-31337",
+      "source": "cmtc-a",
+      "destination": "cmtc-a",
+      "kind": "service",
+      "target": "rebel-base-cmtc-a:31337",
+      "port": 31337,
+      "allowedPods": [
+        "rebel-base-688ff9949b-7cbrt",
+        "rebel-base-688ff9949b-hq6g9"
+      ],
+      "actualCluster": "cmtc-a",
+      "actualPod": "rebel-base-688ff9949b-7cbrt",
+      "httpStatus": 200,
+      "bodySHA256": "d4bc9b3b61ee3e84226d86d2963b03bfd385f6acc8bf2a2235f0c8f7fffb1c2c",
+      "responseFile": "03-cmtc-a-to-cmtc-a-service-31337.json",
+      "headersFile": "03-cmtc-a-to-cmtc-a-service-31337.headers",
+      "passed": true
+    },
+    {
+      "name": "cmtc-a-to-cmtc-a-podip-cmtc-a-control-plane-80",
+      "source": "cmtc-a",
+      "destination": "cmtc-a",
+      "kind": "pod-ip",
+      "target": "10.10.0.50:80",
+      "port": 80,
+      "expectedPod": "rebel-base-688ff9949b-7cbrt",
+      "allowedPods": [
+        "rebel-base-688ff9949b-7cbrt"
+      ],
+      "actualCluster": "cmtc-a",
+      "actualPod": "rebel-base-688ff9949b-7cbrt",
+      "httpStatus": 200,
+      "bodySHA256": "d4bc9b3b61ee3e84226d86d2963b03bfd385f6acc8bf2a2235f0c8f7fffb1c2c",
+      "responseFile": "04-cmtc-a-to-cmtc-a-podip-cmtc-a-control-plane-80.json",
+      "headersFile": "04-cmtc-a-to-cmtc-a-podip-cmtc-a-control-plane-80.headers",
+      "passed": true
+    },
+    {
+      "name": "cmtc-a-to-cmtc-a-podip-cmtc-a-control-plane-8080",
+      "source": "cmtc-a",
+      "destination": "cmtc-a",
+      "kind": "pod-ip",
+      "target": "10.10.0.50:8080",
+      "port": 8080,
+      "expectedPod": "rebel-base-688ff9949b-7cbrt",
+      "allowedPods": [
+        "rebel-base-688ff9949b-7cbrt"
+      ],
+      "actualCluster": "cmtc-a",
+      "actualPod": "rebel-base-688ff9949b-7cbrt",
+      "httpStatus": 200,
+      "bodySHA256": "d4bc9b3b61ee3e84226d86d2963b03bfd385f6acc8bf2a2235f0c8f7fffb1c2c",
+      "responseFile": "05-cmtc-a-to-cmtc-a-podip-cmtc-a-control-plane-8080.json",
+      "headersFile": "05-cmtc-a-to-cmtc-a-podip-cmtc-a-control-plane-8080.headers",
+      "passed": true
+    },
+    {
+      "name": "cmtc-a-to-cmtc-a-podip-cmtc-a-control-plane-31337",
+      "source": "cmtc-a",
+      "destination": "cmtc-a",
+      "kind": "pod-ip",
+      "target": "10.10.0.50:31337",
+      "port": 31337,
+      "expectedPod": "rebel-base-688ff9949b-7cbrt",
+      "allowedPods": [
+        "rebel-base-688ff9949b-7cbrt"
+      ],
+      "actualCluster": "cmtc-a",
+      "actualPod": "rebel-base-688ff9949b-7cbrt",
+      "httpStatus": 200,
+      "bodySHA256": "d4bc9b3b61ee3e84226d86d2963b03bfd385f6acc8bf2a2235f0c8f7fffb1c2c",
+      "responseFile": "06-cmtc-a-to-cmtc-a-podip-cmtc-a-control-plane-31337.json",
+      "headersFile": "06-cmtc-a-to-cmtc-a-podip-cmtc-a-control-plane-31337.headers",
+      "passed": true
+    },
+    {
+      "name": "cmtc-a-to-cmtc-a-podip-cmtc-a-worker-80",
+      "source": "cmtc-a",
+      "destination": "cmtc-a",
+      "kind": "pod-ip",
+      "target": "10.10.1.33:80",
+      "port": 80,
+      "expectedPod": "rebel-base-688ff9949b-hq6g9",
+      "allowedPods": [
+        "rebel-base-688ff9949b-hq6g9"
+      ],
+      "actualCluster": "cmtc-a",
+      "actualPod": "rebel-base-688ff9949b-hq6g9",
+      "httpStatus": 200,
+      "bodySHA256": "d4bc9b3b61ee3e84226d86d2963b03bfd385f6acc8bf2a2235f0c8f7fffb1c2c",
+      "responseFile": "07-cmtc-a-to-cmtc-a-podip-cmtc-a-worker-80.json",
+      "headersFile": "07-cmtc-a-to-cmtc-a-podip-cmtc-a-worker-80.headers",
+      "passed": true
+    },
+    {
+      "name": "cmtc-a-to-cmtc-a-podip-cmtc-a-worker-8080",
+      "source": "cmtc-a",
+      "destination": "cmtc-a",
+      "kind": "pod-ip",
+      "target": "10.10.1.33:8080",
+      "port": 8080,
+      "expectedPod": "rebel-base-688ff9949b-hq6g9",
+      "allowedPods": [
+        "rebel-base-688ff9949b-hq6g9"
+      ],
+      "actualCluster": "cmtc-a",
+      "actualPod": "rebel-base-688ff9949b-hq6g9",
+      "httpStatus": 200,
+      "bodySHA256": "d4bc9b3b61ee3e84226d86d2963b03bfd385f6acc8bf2a2235f0c8f7fffb1c2c",
+      "responseFile": "08-cmtc-a-to-cmtc-a-podip-cmtc-a-worker-8080.json",
+      "headersFile": "08-cmtc-a-to-cmtc-a-podip-cmtc-a-worker-8080.headers",
+      "passed": true
+    },
+    {
+      "name": "cmtc-a-to-cmtc-a-podip-cmtc-a-worker-31337",
+      "source": "cmtc-a",
+      "destination": "cmtc-a",
+      "kind": "pod-ip",
+      "target": "10.10.1.33:31337",
+      "port": 31337,
+      "expectedPod": "rebel-base-688ff9949b-hq6g9",
+      "allowedPods": [
+        "rebel-base-688ff9949b-hq6g9"
+      ],
+      "actualCluster": "cmtc-a",
+      "actualPod": "rebel-base-688ff9949b-hq6g9",
+      "httpStatus": 200,
+      "bodySHA256": "d4bc9b3b61ee3e84226d86d2963b03bfd385f6acc8bf2a2235f0c8f7fffb1c2c",
+      "responseFile": "09-cmtc-a-to-cmtc-a-podip-cmtc-a-worker-31337.json",
+      "headersFile": "09-cmtc-a-to-cmtc-a-podip-cmtc-a-worker-31337.headers",
+      "passed": true
+    },
+    {
+      "name": "cmtc-a-to-cmtc-b-service-80",
+      "source": "cmtc-a",
+      "destination": "cmtc-b",
+      "kind": "service",
+      "target": "rebel-base-cmtc-b:80",
+      "port": 80,
+      "allowedPods": [
+        "rebel-base-7cbb476f7-5wkhd",
+        "rebel-base-7cbb476f7-rf9bf"
+      ],
+      "actualCluster": "cmtc-b",
+      "actualPod": "rebel-base-7cbb476f7-rf9bf",
+      "httpStatus": 200,
+      "bodySHA256": "341a9409162c954c6e2ee2896bc8484eb3a9b25ab9ad4d4a12aacfe79740a1f5",
+      "responseFile": "10-cmtc-a-to-cmtc-b-service-80.json",
+      "headersFile": "10-cmtc-a-to-cmtc-b-service-80.headers",
+      "passed": true
+    },
+    {
+      "name": "cmtc-a-to-cmtc-b-service-8080",
+      "source": "cmtc-a",
+      "destination": "cmtc-b",
+      "kind": "service",
+      "target": "rebel-base-cmtc-b:8080",
+      "port": 8080,
+      "allowedPods": [
+        "rebel-base-7cbb476f7-5wkhd",
+        "rebel-base-7cbb476f7-rf9bf"
+      ],
+      "actualCluster": "cmtc-b",
+      "actualPod": "rebel-base-7cbb476f7-rf9bf",
+      "httpStatus": 200,
+      "bodySHA256": "341a9409162c954c6e2ee2896bc8484eb3a9b25ab9ad4d4a12aacfe79740a1f5",
+      "responseFile": "11-cmtc-a-to-cmtc-b-service-8080.json",
+      "headersFile": "11-cmtc-a-to-cmtc-b-service-8080.headers",
+      "passed": true
+    },
+    {
+      "name": "cmtc-a-to-cmtc-b-service-31337",
+      "source": "cmtc-a",
+      "destination": "cmtc-b",
+      "kind": "service",
+      "target": "rebel-base-cmtc-b:31337",
+      "port": 31337,
+      "allowedPods": [
+        "rebel-base-7cbb476f7-5wkhd",
+        "rebel-base-7cbb476f7-rf9bf"
+      ],
+      "actualCluster": "cmtc-b",
+      "actualPod": "rebel-base-7cbb476f7-rf9bf",
+      "httpStatus": 200,
+      "bodySHA256": "341a9409162c954c6e2ee2896bc8484eb3a9b25ab9ad4d4a12aacfe79740a1f5",
+      "responseFile": "12-cmtc-a-to-cmtc-b-service-31337.json",
+      "headersFile": "12-cmtc-a-to-cmtc-b-service-31337.headers",
+      "passed": true
+    },
+    {
+      "name": "cmtc-a-to-cmtc-b-podip-cmtc-b-control-plane-80",
+      "source": "cmtc-a",
+      "destination": "cmtc-b",
+      "kind": "pod-ip",
+      "target": "10.20.0.48:80",
+      "port": 80,
+      "expectedPod": "rebel-base-7cbb476f7-rf9bf",
+      "allowedPods": [
+        "rebel-base-7cbb476f7-rf9bf"
+      ],
+      "actualCluster": "cmtc-b",
+      "actualPod": "rebel-base-7cbb476f7-rf9bf",
+      "httpStatus": 200,
+      "bodySHA256": "341a9409162c954c6e2ee2896bc8484eb3a9b25ab9ad4d4a12aacfe79740a1f5",
+      "responseFile": "13-cmtc-a-to-cmtc-b-podip-cmtc-b-control-plane-80.json",
+      "headersFile": "13-cmtc-a-to-cmtc-b-podip-cmtc-b-control-plane-80.headers",
+      "passed": true
+    },
+    {
+      "name": "cmtc-a-to-cmtc-b-podip-cmtc-b-control-plane-8080",
+      "source": "cmtc-a",
+      "destination": "cmtc-b",
+      "kind": "pod-ip",
+      "target": "10.20.0.48:8080",
+      "port": 8080,
+      "expectedPod": "rebel-base-7cbb476f7-rf9bf",
+      "allowedPods": [
+        "rebel-base-7cbb476f7-rf9bf"
+      ],
+      "actualCluster": "cmtc-b",
+      "actualPod": "rebel-base-7cbb476f7-rf9bf",
+      "httpStatus": 200,
+      "bodySHA256": "341a9409162c954c6e2ee2896bc8484eb3a9b25ab9ad4d4a12aacfe79740a1f5",
+      "responseFile": "14-cmtc-a-to-cmtc-b-podip-cmtc-b-control-plane-8080.json",
+      "headersFile": "14-cmtc-a-to-cmtc-b-podip-cmtc-b-control-plane-8080.headers",
+      "passed": true
+    },
+    {
+      "name": "cmtc-a-to-cmtc-b-podip-cmtc-b-control-plane-31337",
+      "source": "cmtc-a",
+      "destination": "cmtc-b",
+      "kind": "pod-ip",
+      "target": "10.20.0.48:31337",
+      "port": 31337,
+      "expectedPod": "rebel-base-7cbb476f7-rf9bf",
+      "allowedPods": [
+        "rebel-base-7cbb476f7-rf9bf"
+      ],
+      "actualCluster": "cmtc-b",
+      "actualPod": "rebel-base-7cbb476f7-rf9bf",
+      "httpStatus": 200,
+      "bodySHA256": "341a9409162c954c6e2ee2896bc8484eb3a9b25ab9ad4d4a12aacfe79740a1f5",
+      "responseFile": "15-cmtc-a-to-cmtc-b-podip-cmtc-b-control-plane-31337.json",
+      "headersFile": "15-cmtc-a-to-cmtc-b-podip-cmtc-b-control-plane-31337.headers",
+      "passed": true
+    },
+    {
+      "name": "cmtc-a-to-cmtc-b-podip-cmtc-b-worker-80",
+      "source": "cmtc-a",
+      "destination": "cmtc-b",
+      "kind": "pod-ip",
+      "target": "10.20.1.211:80",
+      "port": 80,
+      "expectedPod": "rebel-base-7cbb476f7-5wkhd",
+      "allowedPods": [
+        "rebel-base-7cbb476f7-5wkhd"
+      ],
+      "actualCluster": "cmtc-b",
+      "actualPod": "rebel-base-7cbb476f7-5wkhd",
+      "httpStatus": 200,
+      "bodySHA256": "341a9409162c954c6e2ee2896bc8484eb3a9b25ab9ad4d4a12aacfe79740a1f5",
+      "responseFile": "16-cmtc-a-to-cmtc-b-podip-cmtc-b-worker-80.json",
+      "headersFile": "16-cmtc-a-to-cmtc-b-podip-cmtc-b-worker-80.headers",
+      "passed": true
+    },
+    {
+      "name": "cmtc-a-to-cmtc-b-podip-cmtc-b-worker-8080",
+      "source": "cmtc-a",
+      "destination": "cmtc-b",
+      "kind": "pod-ip",
+      "target": "10.20.1.211:8080",
+      "port": 8080,
+      "expectedPod": "rebel-base-7cbb476f7-5wkhd",
+      "allowedPods": [
+        "rebel-base-7cbb476f7-5wkhd"
+      ],
+      "actualCluster": "cmtc-b",
+      "actualPod": "rebel-base-7cbb476f7-5wkhd",
+      "httpStatus": 200,
+      "bodySHA256": "341a9409162c954c6e2ee2896bc8484eb3a9b25ab9ad4d4a12aacfe79740a1f5",
+      "responseFile": "17-cmtc-a-to-cmtc-b-podip-cmtc-b-worker-8080.json",
+      "headersFile": "17-cmtc-a-to-cmtc-b-podip-cmtc-b-worker-8080.headers",
+      "passed": true
+    },
+    {
+      "name": "cmtc-a-to-cmtc-b-podip-cmtc-b-worker-31337",
+      "source": "cmtc-a",
+      "destination": "cmtc-b",
+      "kind": "pod-ip",
+      "target": "10.20.1.211:31337",
+      "port": 31337,
+      "expectedPod": "rebel-base-7cbb476f7-5wkhd",
+      "allowedPods": [
+        "rebel-base-7cbb476f7-5wkhd"
+      ],
+      "actualCluster": "cmtc-b",
+      "actualPod": "rebel-base-7cbb476f7-5wkhd",
+      "httpStatus": 200,
+      "bodySHA256": "341a9409162c954c6e2ee2896bc8484eb3a9b25ab9ad4d4a12aacfe79740a1f5",
+      "responseFile": "18-cmtc-a-to-cmtc-b-podip-cmtc-b-worker-31337.json",
+      "headersFile": "18-cmtc-a-to-cmtc-b-podip-cmtc-b-worker-31337.headers",
+      "passed": true
+    },
+    {
+      "name": "cmtc-b-to-cmtc-a-service-80",
+      "source": "cmtc-b",
+      "destination": "cmtc-a",
+      "kind": "service",
+      "target": "rebel-base-cmtc-a:80",
+      "port": 80,
+      "allowedPods": [
+        "rebel-base-688ff9949b-7cbrt",
+        "rebel-base-688ff9949b-hq6g9"
+      ],
+      "actualCluster": "cmtc-a",
+      "actualPod": "rebel-base-688ff9949b-7cbrt",
+      "httpStatus": 200,
+      "bodySHA256": "d4bc9b3b61ee3e84226d86d2963b03bfd385f6acc8bf2a2235f0c8f7fffb1c2c",
+      "responseFile": "19-cmtc-b-to-cmtc-a-service-80.json",
+      "headersFile": "19-cmtc-b-to-cmtc-a-service-80.headers",
+      "passed": true
+    },
+    {
+      "name": "cmtc-b-to-cmtc-a-service-8080",
+      "source": "cmtc-b",
+      "destination": "cmtc-a",
+      "kind": "service",
+      "target": "rebel-base-cmtc-a:8080",
+      "port": 8080,
+      "allowedPods": [
+        "rebel-base-688ff9949b-7cbrt",
+        "rebel-base-688ff9949b-hq6g9"
+      ],
+      "actualCluster": "cmtc-a",
+      "actualPod": "rebel-base-688ff9949b-7cbrt",
+      "httpStatus": 200,
+      "bodySHA256": "d4bc9b3b61ee3e84226d86d2963b03bfd385f6acc8bf2a2235f0c8f7fffb1c2c",
+      "responseFile": "20-cmtc-b-to-cmtc-a-service-8080.json",
+      "headersFile": "20-cmtc-b-to-cmtc-a-service-8080.headers",
+      "passed": true
+    },
+    {
+      "name": "cmtc-b-to-cmtc-a-service-31337",
+      "source": "cmtc-b",
+      "destination": "cmtc-a",
+      "kind": "service",
+      "target": "rebel-base-cmtc-a:31337",
+      "port": 31337,
+      "allowedPods": [
+        "rebel-base-688ff9949b-7cbrt",
+        "rebel-base-688ff9949b-hq6g9"
+      ],
+      "actualCluster": "cmtc-a",
+      "actualPod": "rebel-base-688ff9949b-7cbrt",
+      "httpStatus": 200,
+      "bodySHA256": "d4bc9b3b61ee3e84226d86d2963b03bfd385f6acc8bf2a2235f0c8f7fffb1c2c",
+      "responseFile": "21-cmtc-b-to-cmtc-a-service-31337.json",
+      "headersFile": "21-cmtc-b-to-cmtc-a-service-31337.headers",
+      "passed": true
+    },
+    {
+      "name": "cmtc-b-to-cmtc-a-podip-cmtc-a-control-plane-80",
+      "source": "cmtc-b",
+      "destination": "cmtc-a",
+      "kind": "pod-ip",
+      "target": "10.10.0.50:80",
+      "port": 80,
+      "expectedPod": "rebel-base-688ff9949b-7cbrt",
+      "allowedPods": [
+        "rebel-base-688ff9949b-7cbrt"
+      ],
+      "actualCluster": "cmtc-a",
+      "actualPod": "rebel-base-688ff9949b-7cbrt",
+      "httpStatus": 200,
+      "bodySHA256": "d4bc9b3b61ee3e84226d86d2963b03bfd385f6acc8bf2a2235f0c8f7fffb1c2c",
+      "responseFile": "22-cmtc-b-to-cmtc-a-podip-cmtc-a-control-plane-80.json",
+      "headersFile": "22-cmtc-b-to-cmtc-a-podip-cmtc-a-control-plane-80.headers",
+      "passed": true
+    },
+    {
+      "name": "cmtc-b-to-cmtc-a-podip-cmtc-a-control-plane-8080",
+      "source": "cmtc-b",
+      "destination": "cmtc-a",
+      "kind": "pod-ip",
+      "target": "10.10.0.50:8080",
+      "port": 8080,
+      "expectedPod": "rebel-base-688ff9949b-7cbrt",
+      "allowedPods": [
+        "rebel-base-688ff9949b-7cbrt"
+      ],
+      "actualCluster": "cmtc-a",
+      "actualPod": "rebel-base-688ff9949b-7cbrt",
+      "httpStatus": 200,
+      "bodySHA256": "d4bc9b3b61ee3e84226d86d2963b03bfd385f6acc8bf2a2235f0c8f7fffb1c2c",
+      "responseFile": "23-cmtc-b-to-cmtc-a-podip-cmtc-a-control-plane-8080.json",
+      "headersFile": "23-cmtc-b-to-cmtc-a-podip-cmtc-a-control-plane-8080.headers",
+      "passed": true
+    },
+    {
+      "name": "cmtc-b-to-cmtc-a-podip-cmtc-a-control-plane-31337",
+      "source": "cmtc-b",
+      "destination": "cmtc-a",
+      "kind": "pod-ip",
+      "target": "10.10.0.50:31337",
+      "port": 31337,
+      "expectedPod": "rebel-base-688ff9949b-7cbrt",
+      "allowedPods": [
+        "rebel-base-688ff9949b-7cbrt"
+      ],
+      "actualCluster": "cmtc-a",
+      "actualPod": "rebel-base-688ff9949b-7cbrt",
+      "httpStatus": 200,
+      "bodySHA256": "d4bc9b3b61ee3e84226d86d2963b03bfd385f6acc8bf2a2235f0c8f7fffb1c2c",
+      "responseFile": "24-cmtc-b-to-cmtc-a-podip-cmtc-a-control-plane-31337.json",
+      "headersFile": "24-cmtc-b-to-cmtc-a-podip-cmtc-a-control-plane-31337.headers",
+      "passed": true
+    },
+    {
+      "name": "cmtc-b-to-cmtc-a-podip-cmtc-a-worker-80",
+      "source": "cmtc-b",
+      "destination": "cmtc-a",
+      "kind": "pod-ip",
+      "target": "10.10.1.33:80",
+      "port": 80,
+      "expectedPod": "rebel-base-688ff9949b-hq6g9",
+      "allowedPods": [
+        "rebel-base-688ff9949b-hq6g9"
+      ],
+      "actualCluster": "cmtc-a",
+      "actualPod": "rebel-base-688ff9949b-hq6g9",
+      "httpStatus": 200,
+      "bodySHA256": "d4bc9b3b61ee3e84226d86d2963b03bfd385f6acc8bf2a2235f0c8f7fffb1c2c",
+      "responseFile": "25-cmtc-b-to-cmtc-a-podip-cmtc-a-worker-80.json",
+      "headersFile": "25-cmtc-b-to-cmtc-a-podip-cmtc-a-worker-80.headers",
+      "passed": true
+    },
+    {
+      "name": "cmtc-b-to-cmtc-a-podip-cmtc-a-worker-8080",
+      "source": "cmtc-b",
+      "destination": "cmtc-a",
+      "kind": "pod-ip",
+      "target": "10.10.1.33:8080",
+      "port": 8080,
+      "expectedPod": "rebel-base-688ff9949b-hq6g9",
+      "allowedPods": [
+        "rebel-base-688ff9949b-hq6g9"
+      ],
+      "actualCluster": "cmtc-a",
+      "actualPod": "rebel-base-688ff9949b-hq6g9",
+      "httpStatus": 200,
+      "bodySHA256": "d4bc9b3b61ee3e84226d86d2963b03bfd385f6acc8bf2a2235f0c8f7fffb1c2c",
+      "responseFile": "26-cmtc-b-to-cmtc-a-podip-cmtc-a-worker-8080.json",
+      "headersFile": "26-cmtc-b-to-cmtc-a-podip-cmtc-a-worker-8080.headers",
+      "passed": true
+    },
+    {
+      "name": "cmtc-b-to-cmtc-a-podip-cmtc-a-worker-31337",
+      "source": "cmtc-b",
+      "destination": "cmtc-a",
+      "kind": "pod-ip",
+      "target": "10.10.1.33:31337",
+      "port": 31337,
+      "expectedPod": "rebel-base-688ff9949b-hq6g9",
+      "allowedPods": [
+        "rebel-base-688ff9949b-hq6g9"
+      ],
+      "actualCluster": "cmtc-a",
+      "actualPod": "rebel-base-688ff9949b-hq6g9",
+      "httpStatus": 200,
+      "bodySHA256": "d4bc9b3b61ee3e84226d86d2963b03bfd385f6acc8bf2a2235f0c8f7fffb1c2c",
+      "responseFile": "27-cmtc-b-to-cmtc-a-podip-cmtc-a-worker-31337.json",
+      "headersFile": "27-cmtc-b-to-cmtc-a-podip-cmtc-a-worker-31337.headers",
+      "passed": true
+    },
+    {
+      "name": "cmtc-b-to-cmtc-b-service-80",
+      "source": "cmtc-b",
+      "destination": "cmtc-b",
+      "kind": "service",
+      "target": "rebel-base-cmtc-b:80",
+      "port": 80,
+      "allowedPods": [
+        "rebel-base-7cbb476f7-5wkhd",
+        "rebel-base-7cbb476f7-rf9bf"
+      ],
+      "actualCluster": "cmtc-b",
+      "actualPod": "rebel-base-7cbb476f7-rf9bf",
+      "httpStatus": 200,
+      "bodySHA256": "341a9409162c954c6e2ee2896bc8484eb3a9b25ab9ad4d4a12aacfe79740a1f5",
+      "responseFile": "28-cmtc-b-to-cmtc-b-service-80.json",
+      "headersFile": "28-cmtc-b-to-cmtc-b-service-80.headers",
+      "passed": true
+    },
+    {
+      "name": "cmtc-b-to-cmtc-b-service-8080",
+      "source": "cmtc-b",
+      "destination": "cmtc-b",
+      "kind": "service",
+      "target": "rebel-base-cmtc-b:8080",
+      "port": 8080,
+      "allowedPods": [
+        "rebel-base-7cbb476f7-5wkhd",
+        "rebel-base-7cbb476f7-rf9bf"
+      ],
+      "actualCluster": "cmtc-b",
+      "actualPod": "rebel-base-7cbb476f7-rf9bf",
+      "httpStatus": 200,
+      "bodySHA256": "341a9409162c954c6e2ee2896bc8484eb3a9b25ab9ad4d4a12aacfe79740a1f5",
+      "responseFile": "29-cmtc-b-to-cmtc-b-service-8080.json",
+      "headersFile": "29-cmtc-b-to-cmtc-b-service-8080.headers",
+      "passed": true
+    },
+    {
+      "name": "cmtc-b-to-cmtc-b-service-31337",
+      "source": "cmtc-b",
+      "destination": "cmtc-b",
+      "kind": "service",
+      "target": "rebel-base-cmtc-b:31337",
+      "port": 31337,
+      "allowedPods": [
+        "rebel-base-7cbb476f7-5wkhd",
+        "rebel-base-7cbb476f7-rf9bf"
+      ],
+      "actualCluster": "cmtc-b",
+      "actualPod": "rebel-base-7cbb476f7-rf9bf",
+      "httpStatus": 200,
+      "bodySHA256": "341a9409162c954c6e2ee2896bc8484eb3a9b25ab9ad4d4a12aacfe79740a1f5",
+      "responseFile": "30-cmtc-b-to-cmtc-b-service-31337.json",
+      "headersFile": "30-cmtc-b-to-cmtc-b-service-31337.headers",
+      "passed": true
+    },
+    {
+      "name": "cmtc-b-to-cmtc-b-podip-cmtc-b-control-plane-80",
+      "source": "cmtc-b",
+      "destination": "cmtc-b",
+      "kind": "pod-ip",
+      "target": "10.20.0.48:80",
+      "port": 80,
+      "expectedPod": "rebel-base-7cbb476f7-rf9bf",
+      "allowedPods": [
+        "rebel-base-7cbb476f7-rf9bf"
+      ],
+      "actualCluster": "cmtc-b",
+      "actualPod": "rebel-base-7cbb476f7-rf9bf",
+      "httpStatus": 200,
+      "bodySHA256": "341a9409162c954c6e2ee2896bc8484eb3a9b25ab9ad4d4a12aacfe79740a1f5",
+      "responseFile": "31-cmtc-b-to-cmtc-b-podip-cmtc-b-control-plane-80.json",
+      "headersFile": "31-cmtc-b-to-cmtc-b-podip-cmtc-b-control-plane-80.headers",
+      "passed": true
+    },
+    {
+      "name": "cmtc-b-to-cmtc-b-podip-cmtc-b-control-plane-8080",
+      "source": "cmtc-b",
+      "destination": "cmtc-b",
+      "kind": "pod-ip",
+      "target": "10.20.0.48:8080",
+      "port": 8080,
+      "expectedPod": "rebel-base-7cbb476f7-rf9bf",
+      "allowedPods": [
+        "rebel-base-7cbb476f7-rf9bf"
+      ],
+      "actualCluster": "cmtc-b",
+      "actualPod": "rebel-base-7cbb476f7-rf9bf",
+      "httpStatus": 200,
+      "bodySHA256": "341a9409162c954c6e2ee2896bc8484eb3a9b25ab9ad4d4a12aacfe79740a1f5",
+      "responseFile": "32-cmtc-b-to-cmtc-b-podip-cmtc-b-control-plane-8080.json",
+      "headersFile": "32-cmtc-b-to-cmtc-b-podip-cmtc-b-control-plane-8080.headers",
+      "passed": true
+    },
+    {
+      "name": "cmtc-b-to-cmtc-b-podip-cmtc-b-control-plane-31337",
+      "source": "cmtc-b",
+      "destination": "cmtc-b",
+      "kind": "pod-ip",
+      "target": "10.20.0.48:31337",
+      "port": 31337,
+      "expectedPod": "rebel-base-7cbb476f7-rf9bf",
+      "allowedPods": [
+        "rebel-base-7cbb476f7-rf9bf"
+      ],
+      "actualCluster": "cmtc-b",
+      "actualPod": "rebel-base-7cbb476f7-rf9bf",
+      "httpStatus": 200,
+      "bodySHA256": "341a9409162c954c6e2ee2896bc8484eb3a9b25ab9ad4d4a12aacfe79740a1f5",
+      "responseFile": "33-cmtc-b-to-cmtc-b-podip-cmtc-b-control-plane-31337.json",
+      "headersFile": "33-cmtc-b-to-cmtc-b-podip-cmtc-b-control-plane-31337.headers",
+      "passed": true
+    },
+    {
+      "name": "cmtc-b-to-cmtc-b-podip-cmtc-b-worker-80",
+      "source": "cmtc-b",
+      "destination": "cmtc-b",
+      "kind": "pod-ip",
+      "target": "10.20.1.211:80",
+      "port": 80,
+      "expectedPod": "rebel-base-7cbb476f7-5wkhd",
+      "allowedPods": [
+        "rebel-base-7cbb476f7-5wkhd"
+      ],
+      "actualCluster": "cmtc-b",
+      "actualPod": "rebel-base-7cbb476f7-5wkhd",
+      "httpStatus": 200,
+      "bodySHA256": "341a9409162c954c6e2ee2896bc8484eb3a9b25ab9ad4d4a12aacfe79740a1f5",
+      "responseFile": "34-cmtc-b-to-cmtc-b-podip-cmtc-b-worker-80.json",
+      "headersFile": "34-cmtc-b-to-cmtc-b-podip-cmtc-b-worker-80.headers",
+      "passed": true
+    },
+    {
+      "name": "cmtc-b-to-cmtc-b-podip-cmtc-b-worker-8080",
+      "source": "cmtc-b",
+      "destination": "cmtc-b",
+      "kind": "pod-ip",
+      "target": "10.20.1.211:8080",
+      "port": 8080,
+      "expectedPod": "rebel-base-7cbb476f7-5wkhd",
+      "allowedPods": [
+        "rebel-base-7cbb476f7-5wkhd"
+      ],
+      "actualCluster": "cmtc-b",
+      "actualPod": "rebel-base-7cbb476f7-5wkhd",
+      "httpStatus": 200,
+      "bodySHA256": "341a9409162c954c6e2ee2896bc8484eb3a9b25ab9ad4d4a12aacfe79740a1f5",
+      "responseFile": "35-cmtc-b-to-cmtc-b-podip-cmtc-b-worker-8080.json",
+      "headersFile": "35-cmtc-b-to-cmtc-b-podip-cmtc-b-worker-8080.headers",
+      "passed": true
+    },
+    {
+      "name": "cmtc-b-to-cmtc-b-podip-cmtc-b-worker-31337",
+      "source": "cmtc-b",
+      "destination": "cmtc-b",
+      "kind": "pod-ip",
+      "target": "10.20.1.211:31337",
+      "port": 31337,
+      "expectedPod": "rebel-base-7cbb476f7-5wkhd",
+      "allowedPods": [
+        "rebel-base-7cbb476f7-5wkhd"
+      ],
+      "actualCluster": "cmtc-b",
+      "actualPod": "rebel-base-7cbb476f7-5wkhd",
+      "httpStatus": 200,
+      "bodySHA256": "341a9409162c954c6e2ee2896bc8484eb3a9b25ab9ad4d4a12aacfe79740a1f5",
+      "responseFile": "36-cmtc-b-to-cmtc-b-podip-cmtc-b-worker-31337.json",
+      "headersFile": "36-cmtc-b-to-cmtc-b-podip-cmtc-b-worker-31337.headers",
+      "passed": true
+    }
+  ],
+  "cleanupErrors": [],
+  "finishedAt": "2026-10-25T08:16:59.889709+00:00"
+}

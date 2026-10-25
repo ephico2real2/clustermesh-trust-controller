@@ -13,7 +13,7 @@ The local labs are `cmtc-a` and `cmtc-b`. ClusterMesh and KVStoreMesh run in bot
 | SPIRE server and node agents | Retained signers, secure node attestation and native workload SVID delivery | Complete trust rotation and production proxy access |
 | Cilium fork | Routing; source-qualified membership, source-IP receipts and native policy-drain guards | Exact-image activation, policy-map reachability and restore quarantine |
 | Ztunnel fork | Local TLS, identity and flow-drain tests | Combined ClusterMesh runtime qualification |
-| Experimental SPIRE registrar | Local exact registration and SVID trials | Correct withdrawal evidence and a component-ownership decision |
+| Experimental SPIRE registrar | Exact registration, controlled SVID withdrawal and recovery | Production integration and a component-ownership decision |
 
 The [delivery status](docs/agile/DELIVERY_STATUS.md) owns current source pins, deployed images, test results and blockers. A source test does not prove that its image runs in the lab.
 

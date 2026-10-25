@@ -1,7 +1,7 @@
 # SPIRE registration design and current experiment
 
 Status: experimental design change; production registration owner is undecided.
-Evidence snapshot: 2026-10-25. Runtime qualification remains open.
+Evidence snapshot: 2026-10-25. The bounded registration/credential trial passes. Production integration remains open.
 
 The original design reuses Cilium's SPIRE enrollment.
 The separate CMTC registrar was introduced later during local security qualification.
@@ -180,6 +180,10 @@ These controls require runtime failure and restart evidence.
 
 ## Current withdrawal finding
 
+The corrected eighth trial passes in both clusters. All four target Pods return explicit empty/unusable SVID responses while authorized same-node controls succeed before and after. Reenrollment, Pod replacement, server restart and exact cleanup pass. The final 36-path application test passes. [Actual output](docs/evidence/exact-spire-registration/summary.json) is retained. This proves the bounded credential lifecycle, not certificate revocation or traffic policy.
+
+### Earlier failed trial
+
 The seventh owned runtime trial created six exact entries per cluster.
 These were two agent aliases, two delegates, and two workloads.
 Real native SVID fetches passed before namespace enrollment removal.
@@ -206,7 +210,7 @@ It preserves separate setup, empty-response, stream-end, and deadline errors.
 Tests must reject an error followed by a certificate on the same stream.
 Tests must allow recovery through a fresh, fully attested request.
 The correction is committed at `75843515d549f7928d080801ac3f7e4344f572eb`. It passes 568 full-profile tests plus two diagnostic cases, formatting and strict Clippy. [Raw source evidence](docs/evidence/spire-stream-errors/summary.json) is retained. These source tests do not qualify a replacement runtime image.
-No final runtime pass is claimed here.
+That seventh trial remains failed evidence. The corrected eighth trial has its own source, image, controls and passing result above.
 
 The earlier interpretation of `PermissionDenied: no identity issued` also needs correction.
 In the reviewed SPIRE delegated service, that error comes from delegate caller authorization.
@@ -263,9 +267,10 @@ No registration or credential result alone establishes `Protected`.
 - [ ] Record the production registration owner decision against the original Cilium reuse baseline.
 - [ ] Prevent concurrent legacy and replacement writers or alternate broad entitlement.
 - [x] Qualify the source stream correction with error-first, true-timeout, valid-response, process-release, and fresh-request recovery tests.
-- [ ] Build the exact corrected ARM64 diagnostic with host Podman and verify its source and image on all four nodes.
-- [ ] Prove target withdrawal with exact entry readback, stable workload UID, explicit credential evidence, and a valid delegate control.
-- [ ] Prove reenrollment, same-name Pod replacement, server restart, source-read failure, and bounded-expiry recovery in both clusters.
-- [ ] Verify cleanup restores exact server templates, preserves signer and PVC identity, and removes only owned fixture objects and entries.
+- [x] Build the exact corrected ARM64 diagnostic with host Podman and verify its source and image on all four nodes.
+- [x] Prove target withdrawal with exact entry readback, stable workload UID, explicit credential evidence, and a valid delegate control.
+- [x] Prove reenrollment, same-name Pod replacement and server restart in both clusters.
+- [ ] Complete dedicated source-read failure and bounded-expiry fault injection.
+- [x] Verify cleanup restores exact server templates, preserves signer and PVC identity, and removes only owned fixture objects and entries.
 - [ ] Keep production agent Admin permission migration pending until the required approval and separate runtime qualification complete.
 - [ ] Keep TLS, effective policy, cross-cluster traffic, packet capture, and existing-flow revocation gates open until their own evidence passes.

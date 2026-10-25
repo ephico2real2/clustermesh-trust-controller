@@ -180,18 +180,16 @@ Implementation alone does not approve the second option.
 | Corrected diagnostic source | `75843515d549f7928d080801ac3f7e4344f572eb`; the first SPIRE stream error now ends its request. |
 | Diagnostic image | `localhost/cmtc-spire-workload-check@sha256:80096e7eab07cae5df6a093b7fcb4b39ceee47f30467dc3491abc2782380c524` |
 | Diagnostic configuration | `4bf82edb89ad5b03a2ff1bebe9c29c4c5881024f447e3d62fcbebf2111948430`; imported and version-checked on all four nodes. |
-| Eighth runtime trial | Running at this snapshot. Three failed passes reported `Kubernetes incarnation/revision changed during registration` before readiness. No final result is recorded here. |
+| Eighth runtime trial | Passed both clusters. Four target-withdrawal checks used valid same-node controls. Reenrollment, Pod replacement, server restart and exact cleanup passed. No cleanup errors. |
 | Traffic | Ztunnel remains disabled in the retained two-cluster profile. No workload TLS activation follows from this guide. |
 
-The snapshot guard rejects a changed UID or resource version.
-The failing objects still require diagnosis.
-Retries do not turn those failed passes into accepted evidence.
-Use [delivery status](docs/agile/DELIVERY_STATUS.md) for later results.
+The snapshot guard rejects a changed UID or resource version. Three startup passes rejected changing API observations before a fresh pass became ready. Those failed attempts remain in the logs. The successful retry required fresh readback; it did not accept an old acknowledgment.
+[The actual runtime output](docs/evidence/exact-spire-registration/summary.json) and [delivery status](docs/agile/DELIVERY_STATUS.md) retain the source, image and cleanup results.
 
 Registration readback, valid credentials, TLS, effective policy, and encrypted packets remain separate gates.
 Removing an entry does not revoke an issued certificate automatically.
 It does not close existing TLS, HBONE, or application streams automatically.
-The runtime withdrawal, reenrollment, restart, cleanup, certificate-revocation, and active-flow tests remain open until their own evidence passes.
+The recorded trial qualifies registration withdrawal, reenrollment, replacement, restart and cleanup for its exact images. Certificate revocation, existing-flow drain, mandatory capture and effective traffic policy retain separate acceptance gates.
 CI, branch pushes, and image publication remain deferred.
 
 ## Diagram sources
