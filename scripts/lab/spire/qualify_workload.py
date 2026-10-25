@@ -6,6 +6,7 @@ The caller creates/owns the probe Pod and exact registrations separately.
 import hashlib
 import json
 import subprocess
+import time
 from datetime import datetime, timezone
 from cryptography.x509.oid import ExtensionOID
 from cryptography import x509
@@ -15,6 +16,12 @@ from workload_api import Refusal, require, compare_entry
 
 BINARY='/usr/local/bin/spire-workload-check'
 
+class CommandFailure(Refusal):
+    def __init__(self, result):
+        self.returncode=result.returncode
+        self.stderr=result.stderr[:4096]
+        super().__init__(f'public command failed ({self.returncode}): {self.stderr}')
+
 def bounded(argv, *, timeout=40, input=None, success=True):
     result=subprocess.run(argv,input=input,text=True,capture_output=True,timeout=timeout)
     # These subcommands only emit public data, but refuse malformed/private output
@@ -22,7 +29,7 @@ def bounded(argv, *, timeout=40, input=None, success=True):
     require(len(result.stdout)<=131072 and len(result.stderr)<=65536,'bounded public output exceeded')
     require('PRIVATE KEY' not in result.stdout and 'PRIVATE KEY' not in result.stderr,'unsafe diagnostic output suppressed')
     if success and result.returncode:
-        raise Refusal(f'public command failed ({result.returncode}): {result.stderr[:4096]}')
+        raise CommandFailure(result)
     return result
 
 def server_cli(api, args):
@@ -100,7 +107,39 @@ def expect_native_denied(api, *, probe_pod, identity, pod_uid, pod_name, diagnos
     ns,name=probe_pod['metadata']['namespace'],probe_pod['metadata']['name']
     before=api.get(f'/api/v1/namespaces/{ns}/pods/{name}');same_running_pod(probe_pod,before)
     result=bounded(api.argv+['exec','-n',ns,name,'-c','probe','--',BINARY,'fetch',identity,pod_uid,pod_name],timeout=40,success=False)
-    require(result.returncode!=0 and diagnostic_substring in result.stderr,'expected explicit native credential denial absent')
+    require(result.returncode!=0 and diagnostic_substring in result.stderr,f'expected explicit native credential denial absent: exit={result.returncode}; public diagnostic={result.stderr[:4096]}')
     require(not result.stdout.strip(),'negative credential case emitted successful payload')
     same_running_pod(before,api.get(f'/api/v1/namespaces/{ns}/pods/{name}'))
     return {'credentialDenied':True,'exitCode':result.returncode,'publicDiagnostic':result.stderr[:4096],'packetProtectionTested':False}
+
+
+def native_fetch_registered(api, *, emit, **kwargs):
+    """Bounded positive-registration propagation wait; never used for negatives.
+
+    Each attempt rechecks the exact registration and both live Pod incarnations.
+    The 60-second window limits retry admission; each API/RPC keeps its own
+    command timeout. Only SPIRE's explicit no-identity response can retry. TLS, process, signer,
+    socket, and structural errors remain fatal. No failed attempt is evidence.
+    """
+    started=time.monotonic()
+    for attempt in range(1,6):
+        try:
+            result=native_fetch(api,**kwargs)
+        except CommandFailure as err:
+            elapsed=time.monotonic()-started
+            backoff=min(2**attempt,8)
+            retry=(err.returncode==1 and 'native PID-attested credential fetch' in err.stderr
+                   and 'The caller does not have permission' in err.stderr
+                   and 'message: "no identity issued"' in err.stderr
+                   and attempt<5 and elapsed+backoff<60)
+            emit({'component':'native-credential-test','stage':'registration-propagation',
+                  'attempt':attempt,'elapsedSeconds':round(elapsed,3),'retryAdmissionDeadlineSeconds':60,
+                  'nextRetrySeconds':backoff if retry else None,'error':err.stderr,'retry':retry})
+            if not retry:raise
+            time.sleep(backoff)
+        else:
+            emit({'component':'native-credential-test','stage':'SVID-verified',
+                  'attempt':attempt,'elapsedSeconds':round(time.monotonic()-started,3),
+                  'retryAdmissionDeadlineSeconds':60,'nextRetrySeconds':None})
+            return result
+    raise Refusal('registration propagation attempts exhausted')

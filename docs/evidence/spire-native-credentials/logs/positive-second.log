@@ -1,0 +1,11 @@
+Traceback (most recent call last):
+  File "/private/tmp/cmtc-native-credentials-20261025/qualify.py", line 91, in <module>
+    wanted=w.registration(cluster,w.r.CLUSTERS[cluster],PINS[cluster]['clusterUID'],{'pod':pod,'namespaceUID':namespaceUID},record,'workload');register(api,wanted)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/olasumbo/gitRepos/clustermest-trust-controller/scripts/lab/spire/workload_api.py", line 89, in registration
+    sels = selectors(pod, item['namespaceUID'], node)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/olasumbo/gitRepos/clustermest-trust-controller/scripts/lab/spire/workload_api.py", line 78, in selectors
+    require(pod['kind']=='Pod' and pod['apiVersion']=='v1', 'actual Pod required')
+            ~~~^^^^^^^^
+KeyError: 'kind'

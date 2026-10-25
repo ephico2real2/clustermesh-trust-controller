@@ -1,0 +1,15 @@
+Traceback (most recent call last):
+  File "/private/tmp/cmtc-native-credentials-20261025/qualify.py", line 101, in <module>
+    result=q.native_fetch(api,probe_pod=state['probes'][node],wanted=wanted,issuer_proof=issuer,expected_probe_image=IMAGE['canonicalImage']);state['positive'][node]={'registration':wanted,'result':result};save();print('PASS',cluster,node,'actual native held-process credential, exact workload SVID/current signer, no private output',flush=True)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/olasumbo/gitRepos/clustermest-trust-controller/scripts/lab/spire/qualify_workload.py", line 95, in native_fetch
+    result=bounded(api.argv+['exec','-n',ns,name,'-c','probe','--',BINARY,'fetch',wanted['spiffeID'],wanted['podUID'],wanted['podName']],timeout=40)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/olasumbo/gitRepos/clustermest-trust-controller/scripts/lab/spire/qualify_workload.py", line 25, in bounded
+    raise Refusal(f'public command failed ({result.returncode}): {result.stderr[:4096]}')
+workload_api.Refusal: public command failed (1): Error: native PID-attested credential fetch
+
+Caused by:
+    failed to fetch certificate for workload: Failed to stream X.509 SVIDs: gRPC status: code: 'The caller does not have permission to execute the specified operation', message: "no identity issued"
+command terminated with exit code 1
+

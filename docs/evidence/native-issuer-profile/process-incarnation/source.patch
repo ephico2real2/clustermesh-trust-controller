@@ -1,0 +1,1804 @@
+commit b69b39e2d25c1d353e3053b0c3e44dcf6af69711
+Author:     ephico2real2 <123043136+ephico2real2@users.noreply.github.com>
+AuthorDate: Sun Oct 25 00:20:25 2026 -0500
+Commit:     ephico2real2 <123043136+ephico2real2@users.noreply.github.com>
+CommitDate: Sun Oct 25 00:20:25 2026 -0500
+
+    identity: hold kernel process incarnation through SPIRE workload attestation
+    
+    Retain exact CRI sandbox/container/PID state and reject ambiguous or inconsistent observations. Hold pidfd and procfs identity, require the kernel Pod UID/container cgroup binding and recheck it through SVID, bundle and final CRI join. Bound the complete credential fetch and return startup errors instead of panic. Test-only binders are explicit and cannot disable production checks.
+    
+    Local privileged Linux ARM64 profile passes 498 library, 20 direct, 30 namespace and 2 credential example tests, zero failures/ignored/filtered in full harnesses. Actual owned-child pidfd exit and negative/recovery cases ran. Formatting and strict Clippy including examples pass. No proxy deployment or packet protection claim; exact image credential qualification is next.
+    
+    Signed-off-by: ephico2real2 <123043136+ephico2real2@users.noreply.github.com>
+
+diff --git a/src/container_runtime.rs b/src/container_runtime.rs
+index ba6a22f..a45f4c4 100644
+--- a/src/container_runtime.rs
++++ b/src/container_runtime.rs
+@@ -12,10 +12,17 @@
+ // See the License for the specific language governing permissions and
+ // limitations under the License.
+ 
+-use std::collections::HashMap;
+-
++use crate::{
++    config::Config,
++    identity::{PidClientTrait, WorkloadPid},
++    inpod::WorkloadUid,
++};
+ use cri::runtime_service_client::RuntimeServiceClient;
+ use hyper_util::rt::TokioIo;
++use std::{
++    collections::{HashMap, HashSet},
++    time::Duration,
++};
+ use tokio::net::UnixStream;
+ use tonic::transport::Uri;
+ use tonic::{
+@@ -23,222 +30,209 @@ use tonic::{
+     transport::{Channel, Endpoint},
+ };
+ use tower::service_fn;
+-
+-use crate::{
+-    config::Config,
+-    container_runtime::cri::{ContainerStatusRequest, ListContainersRequest},
+-    identity::{PidClientTrait, WorkloadPid},
+-    inpod::WorkloadUid,
+-};
+-
+ pub mod cri {
+-    tonic::include_proto!("runtime.v1"); // matches package name in proto
++    tonic::include_proto!("runtime.v1");
+ }
+ 
+ pub struct ContainerRuntimeManager {
+     runtime_client: RuntimeServiceClient<Channel>,
++    timeout: Duration,
+ }
+-
+ impl ContainerRuntimeManager {
+     pub async fn new(cfg: &Config) -> Result<Self, std::io::Error> {
+-        let path = cfg.container_runtime_sock_path.clone();
+-
+-        let channel = Self::uds_channel(path)
+-            .await
+-            .map_err(|e| std::io::Error::other(format!("Failed to create UDS channel: {}", e)))?;
+-
+-        let client = RuntimeServiceClient::new(channel);
+-
+-        Ok(ContainerRuntimeManager {
+-            runtime_client: client,
++        if cfg.spire_timeout.is_zero() {
++            return Err(std::io::Error::new(
++                std::io::ErrorKind::InvalidInput,
++                "positive SPIRE/CRI deadline required",
++            ));
++        }
++        let channel = tokio::time::timeout(
++            cfg.spire_timeout,
++            Self::uds_channel(cfg.container_runtime_sock_path.clone()),
++        )
++        .await
++        .map_err(|_| {
++            std::io::Error::new(
++                std::io::ErrorKind::TimedOut,
++                "node CRI connection deadline exceeded",
++            )
++        })?
++        .map_err(|e| std::io::Error::other(format!("node CRI connection failed: {e}")))?;
++        Ok(Self {
++            runtime_client: RuntimeServiceClient::new(channel),
++            timeout: cfg.spire_timeout,
+         })
+     }
+-
+     pub fn new_with_client(client: RuntimeServiceClient<Channel>) -> Self {
+-        ContainerRuntimeManager {
++        Self {
+             runtime_client: client,
++            timeout: Duration::from_secs(10),
+         }
+     }
+-
+     async fn uds_channel(path: String) -> Result<Channel, tonic::transport::Error> {
+-        let endpoint =
+-            Endpoint::try_from("http://[::1]:50051")?
+-                .connect_with_connector(service_fn(move |_: Uri| {
+-                    let path = path.clone();
+-                    async move {
+-                        Ok::<_, std::io::Error>(TokioIo::new(UnixStream::connect(path).await?))
+-                    }
+-                }))
+-                .await?;
+-        Ok(endpoint)
++        Endpoint::try_from("http://[::1]:50051")?.connect_with_connector(service_fn(move|_:Uri|{
++            let path=path.clone();async move{Ok::<_,std::io::Error>(TokioIo::new(UnixStream::connect(path).await?))}
++        })).await
+     }
+-
+     pub async fn get_pids_for_pod(&self, pod_uid: String) -> Result<Vec<i32>, tonic::Status> {
++        Ok(self
++            .processes(&pod_uid)
++            .await?
++            .iter()
++            .map(WorkloadPid::into_i32)
++            .collect())
++    }
++    async fn processes(&self, pod_uid: &str) -> Result<Vec<WorkloadPid>, tonic::Status> {
++        tokio::time::timeout(self.timeout, self.processes_inner(pod_uid))
++            .await
++            .map_err(|_| {
++                tonic::Status::deadline_exceeded("node CRI workload observation deadline exceeded")
++            })?
++    }
++    async fn processes_inner(&self, pod_uid: &str) -> Result<Vec<WorkloadPid>, tonic::Status> {
+         let mut client = self.runtime_client.clone();
+-
+-        tracing::info!("Fetching PIDs for pod UID: {}", pod_uid);
+-
+-        let mut map: HashMap<String, String> = std::collections::HashMap::new();
+-        map.insert("io.kubernetes.pod.uid".to_string(), pod_uid.clone());
+-
+-        let ready_state = cri::PodSandboxStateValue {
+-            state: 0, // PodSandboxState::SandboxReady
+-        };
+-
+-        let pod_filter = cri::PodSandboxFilter {
+-            label_selector: map,
+-            state: Some(ready_state),
+-            ..Default::default()
++        let request = cri::ListPodSandboxRequest {
++            filter: Some(cri::PodSandboxFilter {
++                label_selector: HashMap::from([("io.kubernetes.pod.uid".into(), pod_uid.into())]),
++                state: Some(cri::PodSandboxStateValue { state: 0 }),
++                ..Default::default()
++            }),
+         };
+-
+-        tracing::debug!("Listing pod sandboxes with filter: {:?}", pod_filter);
+-
+-        // 1. Find the sandbox
+-        let sandboxes = match client
+-            .list_pod_sandbox(cri::ListPodSandboxRequest {
+-                filter: Some(pod_filter),
+-            })
+-            .await
++        let sandboxes = client
++            .list_pod_sandbox(request.clone())
++            .await?
++            .into_inner()
++            .items;
++        if sandboxes.is_empty() {
++            return Err(tonic::Status::not_found(
++                "No sandbox found for workload UID",
++            ));
++        }
++        if sandboxes.len() != 1 {
++            return Err(tonic::Status::failed_precondition(
++                "ambiguous Ready sandboxes for workload UID",
++            ));
++        }
++        let sandbox = &sandboxes[0];
++        if sandbox.id.is_empty()
++            || sandbox.state != 0
++            || sandbox
++                .labels
++                .get("io.kubernetes.pod.uid")
++                .map(String::as_str)
++                != Some(pod_uid)
++            || sandbox.metadata.as_ref().map(|m| m.uid.as_str()) != Some(pod_uid)
+         {
+-            Ok(response) => response.into_inner().items,
+-            Err(e) => {
+-                tracing::error!("Failed to list pod sandboxes: {}", e);
+-                return Err(e);
+-            }
+-        };
+-
+-        tracing::debug!(
+-            "Found {} sandboxes for pod UID: {}",
+-            sandboxes.len(),
+-            pod_uid
+-        );
+-
+-        let sandbox = sandboxes.first().ok_or_else(|| {
+-            tracing::error!("No sandbox found for pod UID: {}", pod_uid);
+-            tonic::Status::not_found(format!("No sandbox found for pod UID: {}", pod_uid))
+-        })?;
+-
+-        let sandbox_id = sandbox.id.clone();
+-        tracing::info!(
+-            "Found sandbox for pod UID: {}, sandbox_id: {}",
+-            pod_uid,
+-            sandbox_id
+-        );
+-
+-        let container_ready = cri::ContainerStateValue {
+-            state: 1, // ContainerState::ContainerRunning
+-        };
+-
+-        // 2. List containers in that sandbox
+-        let containers = match client
+-            .list_containers(ListContainersRequest {
++            return Err(tonic::Status::failed_precondition(
++                "CRI sandbox identity/state mismatch",
++            ));
++        }
++        let mut containers = client
++            .list_containers(cri::ListContainersRequest {
+                 filter: Some(cri::ContainerFilter {
+-                    pod_sandbox_id: sandbox_id.clone(),
+-                    state: Some(container_ready),
++                    pod_sandbox_id: sandbox.id.clone(),
++                    state: Some(cri::ContainerStateValue { state: 1 }),
+                     ..Default::default()
+                 }),
+             })
+-            .await
+-        {
+-            Ok(response) => response.into_inner().containers,
+-            Err(e) => {
+-                tracing::error!("Failed to list containers in sandbox {}: {}", sandbox_id, e);
+-                return Err(e);
++            .await?
++            .into_inner()
++            .containers;
++        if containers.is_empty() {
++            return Err(tonic::Status::not_found(
++                "No running containers found for workload UID",
++            ));
++        }
++        if containers.len() > 256 {
++            return Err(tonic::Status::resource_exhausted(
++                "bounded container set exceeded",
++            ));
++        }
++        // CRI list ordering is not stable; select deterministically and retain
++        // exact sandbox/container IDs through the post-attestation rejoin.
++        containers.sort_by(|a, b| a.id.cmp(&b.id));
++        let mut ids = HashSet::new();
++        let mut processes = Vec::new();
++        let mut pids = HashSet::new();
++        for container in containers {
++            if container.id.is_empty()
++                || !ids.insert(container.id.clone())
++                || container.state != 1
++                || container.pod_sandbox_id != sandbox.id
++            {
++                return Err(tonic::Status::failed_precondition(
++                    "CRI container identity/state mismatch or duplicate",
++                ));
+             }
+-        };
+-
+-        tracing::debug!(
+-            "Found {} containers in sandbox {}",
+-            containers.len(),
+-            sandbox_id
+-        );
+-
+-        let mut pids = Vec::new();
+-
+-        // 3. Query container status → get PID
+-        for c in containers {
+-            tracing::debug!("Processing container: {}", c.id);
+-            let status = match client
+-                .container_status(ContainerStatusRequest {
+-                    container_id: c.id.clone(),
++            let response = client
++                .container_status(cri::ContainerStatusRequest {
++                    container_id: container.id.clone(),
+                     verbose: true,
+                 })
+-                .await
+-            {
+-                Ok(response) => response.into_inner(),
+-                Err(e) => {
+-                    tracing::error!("Failed to get status for container {}: {}", c.id, e);
+-                    return Err(e);
+-                }
+-            };
+-
+-            let info = status.info.get("info");
+-
+-            //info is json string, parse it to get the pid field
++                .await?
++                .into_inner();
++            let status = response
++                .status
++                .as_ref()
++                .ok_or_else(|| tonic::Status::failed_precondition("CRI container status absent"))?;
++            if status.id != container.id || status.state != 1 || status.finished_at != 0 {
++                return Err(tonic::Status::failed_precondition(
++                    "CRI container status changed during observation",
++                ));
++            }
+             #[derive(serde::Deserialize)]
+-            struct ContainerInfo {
++            struct Info {
+                 pid: i32,
+             }
+-            let info_json = info.ok_or_else(|| {
+-                tracing::error!(
+-                    "Container info not found for container: {}, available keys: {:?}",
+-                    c.id,
+-                    status.info.keys().collect::<Vec<_>>()
+-                );
+-                tonic::Status::internal(format!("Container info not found for container: {}", c.id))
+-            })?;
+-
+-            let pid: ContainerInfo = serde_json::from_str(info_json).map_err(|e| {
+-                tracing::error!(
+-                    "Failed to parse container info for container {}: {}",
+-                    c.id,
+-                    e
+-                );
+-                tonic::Status::internal(format!(
+-                    "Failed to parse container info for container {}: {}",
+-                    c.id, e
+-                ))
+-            })?;
+-
+-            tracing::debug!("Found PID {} for container {}", pid.pid, c.id);
+-            pids.push(pid.pid);
++            let info = response
++                .info
++                .get("info")
++                .ok_or_else(|| tonic::Status::failed_precondition("CRI runtime PID info absent"))?;
++            if info.len() > 1024 * 1024 {
++                return Err(tonic::Status::resource_exhausted(
++                    "bounded CRI PID info exceeded",
++                ));
++            }
++            let info: Info = serde_json::from_str(info)
++                .map_err(|_| tonic::Status::failed_precondition("invalid CRI runtime PID JSON"))?;
++            if info.pid <= 0 || !pids.insert(info.pid) {
++                return Err(tonic::Status::failed_precondition(
++                    "invalid or duplicate running container PID",
++                ));
++            }
++            processes.push(WorkloadPid::from_cri(
++                info.pid,
++                sandbox.id.clone(),
++                container.id,
++            ));
+         }
+-
+-        if pids.is_empty() {
+-            tracing::error!("No running containers found for pod UID: {}", pod_uid);
+-            return Err(tonic::Status::not_found(format!(
+-                "No running containers found for pod UID: {}",
+-                pod_uid
+-            )));
++        // Do not join container state to a retired/replaced sandbox snapshot.
++        let again = client.list_pod_sandbox(request).await?.into_inner().items;
++        if again != sandboxes {
++            return Err(tonic::Status::failed_precondition(
++                "CRI sandbox changed during observation",
++            ));
+         }
+-
+-        tracing::info!(
+-            "Successfully collected {} PIDs for pod UID: {}",
+-            pids.len(),
+-            pod_uid
+-        );
+-        Ok(pids)
++        Ok(processes)
+     }
+ }
+-
+ #[async_trait]
+ impl PidClientTrait for ContainerRuntimeManager {
+     async fn fetch_pid(&self, uid: &WorkloadUid) -> Result<WorkloadPid, std::io::Error> {
+-        let pids = self
+-            .get_pids_for_pod(uid.clone().into_string())
++        self.processes(&uid.clone().into_string())
+             .await
+-            .map_err(|e| std::io::Error::other(format!("CRI error: {}", e)))?;
+-
+-        let pid = pids.first().ok_or_else(|| {
+-            std::io::Error::new(std::io::ErrorKind::NotFound, "No PID found for pod")
+-        })?;
+-
+-        Ok(WorkloadPid::new(*pid))
++            .map_err(|e| std::io::Error::other(format!("CRI error: {e}")))?
++            .into_iter()
++            .next()
++            .ok_or_else(|| {
++                std::io::Error::new(std::io::ErrorKind::NotFound, "No PID found for pod")
++            })
+     }
+ }
+ 
+ #[cfg(test)]
+ mod tests {
++    use crate::{identity::PidClientTrait, inpod::WorkloadUid};
+     use std::{collections::HashMap, sync::Arc};
+ 
+     use http::Uri;
+@@ -265,10 +259,22 @@ mod tests {
+         },
+     };
+ 
++    fn running_status(id: &str, pid: i32) -> cri::ContainerStatusResponse {
++        cri::ContainerStatusResponse {
++            status: Some(cri::ContainerStatus {
++                id: id.into(),
++                state: 1,
++                ..Default::default()
++            }),
++            info: HashMap::from([("info".into(), format!("{{\"pid\":{pid}}}"))]),
++        }
++    }
++
+     #[derive(Clone, Default)]
+     struct MockRuntimeService {
+         // You can put shared state here to control responses from your tests
+         containers: Arc<Mutex<Vec<Container>>>,
++        stall_sandbox: Arc<std::sync::atomic::AtomicBool>,
+         sandboxes: Arc<Mutex<Vec<PodSandbox>>>,
+         container_statuses: Arc<Mutex<HashMap<String, ContainerStatusResponse>>>,
+     }
+@@ -294,6 +300,9 @@ mod tests {
+             request: tonic::Request<cri::ListPodSandboxRequest>,
+         ) -> std::result::Result<tonic::Response<cri::ListPodSandboxResponse>, tonic::Status>
+         {
++            if self.stall_sandbox.load(std::sync::atomic::Ordering::SeqCst) {
++                std::future::pending::<()>().await;
++            }
+             let sandboxes = self.sandboxes.lock().await.clone();
+             let req = request.into_inner();
+ 
+@@ -394,6 +403,10 @@ mod tests {
+             let mut lock = mock.sandboxes.lock().await;
+             lock.push(cri::PodSandbox {
+                 id: "fake-sandbox-123".into(),
++                metadata: Some(cri::PodSandboxMetadata {
++                    uid: "fake-uid-456".into(),
++                    ..Default::default()
++                }),
+                 labels: {
+                     let mut m = HashMap::new();
+                     m.insert("io.kubernetes.pod.uid".into(), "fake-uid-456".into());
+@@ -403,28 +416,8 @@ mod tests {
+             });
+ 
+             let mut lock = mock.container_statuses.lock().await;
+-            lock.insert(
+-                "fake-id-123".into(),
+-                cri::ContainerStatusResponse {
+-                    info: {
+-                        let mut m = HashMap::new();
+-                        m.insert("info".into(), r#"{"pid": 4321}"#.into());
+-                        m
+-                    },
+-                    ..Default::default()
+-                },
+-            );
+-            lock.insert(
+-                "fake-id-321".into(),
+-                cri::ContainerStatusResponse {
+-                    info: {
+-                        let mut m = HashMap::new();
+-                        m.insert("info".into(), r#"{"pid": 1234}"#.into());
+-                        m
+-                    },
+-                    ..Default::default()
+-                },
+-            );
++            lock.insert("fake-id-123".into(), running_status("fake-id-123", 4321));
++            lock.insert("fake-id-321".into(), running_status("fake-id-321", 1234));
+         }
+ 
+         // 2. Create a temporary Unix socket path
+@@ -525,6 +518,10 @@ mod tests {
+             let mut lock = mock.sandboxes.lock().await;
+             lock.push(cri::PodSandbox {
+                 id: "not-ready-sandbox".into(),
++                metadata: Some(cri::PodSandboxMetadata {
++                    uid: "not-ready-pod-uid".into(),
++                    ..Default::default()
++                }),
+                 state: 1, // SANDBOX_NOTREADY
+                 labels: {
+                     let mut m = HashMap::new();
+@@ -561,6 +558,10 @@ mod tests {
+             let mut lock = mock.sandboxes.lock().await;
+             lock.push(cri::PodSandbox {
+                 id: "ready-sandbox-123".into(),
++                metadata: Some(cri::PodSandboxMetadata {
++                    uid: "pod-with-exited-containers".into(),
++                    ..Default::default()
++                }),
+                 state: 0, // SANDBOX_READY
+                 labels: {
+                     let mut m = HashMap::new();
+@@ -592,14 +593,7 @@ mod tests {
+             let mut lock = mock.container_statuses.lock().await;
+             lock.insert(
+                 "exited-container-1".into(),
+-                cri::ContainerStatusResponse {
+-                    info: {
+-                        let mut m = HashMap::new();
+-                        m.insert("info".into(), r#"{"pid": 0}"#.into());
+-                        m
+-                    },
+-                    ..Default::default()
+-                },
++                running_status("exited-container-1", 0),
+             );
+         }
+ 
+@@ -629,6 +623,10 @@ mod tests {
+             let mut lock = mock.sandboxes.lock().await;
+             lock.push(cri::PodSandbox {
+                 id: "mixed-sandbox".into(),
++                metadata: Some(cri::PodSandboxMetadata {
++                    uid: "mixed-state-pod".into(),
++                    ..Default::default()
++                }),
+                 state: 0, // SANDBOX_READY
+                 labels: {
+                     let mut m = HashMap::new();
+@@ -664,26 +662,12 @@ mod tests {
+             let mut lock = mock.container_statuses.lock().await;
+             lock.insert(
+                 "running-container".into(),
+-                cri::ContainerStatusResponse {
+-                    info: {
+-                        let mut m = HashMap::new();
+-                        m.insert("info".into(), r#"{"pid": 9999}"#.into());
+-                        m
+-                    },
+-                    ..Default::default()
+-                },
++                running_status("running-container", 9999),
+             );
+             // Exited container would have PID 0
+             lock.insert(
+                 "exited-container".into(),
+-                cri::ContainerStatusResponse {
+-                    info: {
+-                        let mut m = HashMap::new();
+-                        m.insert("info".into(), r#"{"pid": 0}"#.into());
+-                        m
+-                    },
+-                    ..Default::default()
+-                },
++                running_status("exited-container", 0),
+             );
+         }
+ 
+@@ -703,4 +687,172 @@ mod tests {
+         server_handle.abort();
+         let _ = std::fs::remove_file(socket_path);
+     }
++    fn bound_mock() -> MockRuntimeService {
++        let mock = MockRuntimeService::default();
++        // Tests call this only outside a poll of these mutexes.
++        let uid = "11111111-2222-3333-4444-555555555555";
++        mock.sandboxes.try_lock().unwrap().push(cri::PodSandbox {
++            id: "sandbox-original".into(),
++            state: 0,
++            metadata: Some(cri::PodSandboxMetadata {
++                uid: uid.into(),
++                ..Default::default()
++            }),
++            labels: HashMap::from([("io.kubernetes.pod.uid".into(), uid.into())]),
++            ..Default::default()
++        });
++        mock.containers.try_lock().unwrap().push(Container {
++            id: "a".repeat(64),
++            pod_sandbox_id: "sandbox-original".into(),
++            state: 1,
++            ..Default::default()
++        });
++        mock.container_statuses
++            .try_lock()
++            .unwrap()
++            .insert("a".repeat(64), running_status(&"a".repeat(64), 123));
++        mock
++    }
++
++    #[tokio::test]
++    async fn native_cri_rejects_ambiguous_ready_sandboxes() {
++        let mock = bound_mock();
++        let mut second = mock.sandboxes.lock().await[0].clone();
++        second.id = "sandbox-second".into();
++        mock.sandboxes.lock().await.push(second);
++        let dir = tempfile::tempdir().unwrap();
++        let path = dir.path().join("runtime.sock");
++        let (client, server) = setup_mock_server(mock, path.to_str().unwrap()).await;
++        let error = ContainerRuntimeManager::new_with_client(client)
++            .get_pids_for_pod("11111111-2222-3333-4444-555555555555".into())
++            .await
++            .unwrap_err();
++        assert_eq!(error.code(), tonic::Code::FailedPrecondition);
++        assert!(error.message().contains("ambiguous"));
++        server.abort();
++        let _ = server.await;
++    }
++
++    #[tokio::test]
++    async fn native_cri_checks_metadata_status_pid_and_duplicate_container() {
++        for case in 0..6 {
++            let mock = bound_mock();
++            match case {
++                0 => {
++                    mock.sandboxes.lock().await[0]
++                        .metadata
++                        .as_mut()
++                        .unwrap()
++                        .uid = "wrong-uid".into()
++                }
++                1 => {
++                    mock.container_statuses
++                        .lock()
++                        .await
++                        .get_mut(&"a".repeat(64))
++                        .unwrap()
++                        .status = None
++                }
++                2 => {
++                    mock.container_statuses
++                        .lock()
++                        .await
++                        .get_mut(&"a".repeat(64))
++                        .unwrap()
++                        .status
++                        .as_mut()
++                        .unwrap()
++                        .id = "wrong-container".into()
++                }
++                3 => {
++                    mock.container_statuses
++                        .lock()
++                        .await
++                        .get_mut(&"a".repeat(64))
++                        .unwrap()
++                        .status
++                        .as_mut()
++                        .unwrap()
++                        .state = 2
++                }
++                4 => {
++                    mock.container_statuses
++                        .lock()
++                        .await
++                        .insert("a".repeat(64), running_status(&"a".repeat(64), 0));
++                }
++                5 => {
++                    let duplicate = mock.containers.lock().await[0].clone();
++                    mock.containers.lock().await.push(duplicate);
++                }
++                _ => unreachable!(),
++            }
++            let dir = tempfile::tempdir().unwrap();
++            let path = dir.path().join("runtime.sock");
++            let (client, server) = setup_mock_server(mock, path.to_str().unwrap()).await;
++            let error = ContainerRuntimeManager::new_with_client(client)
++                .get_pids_for_pod("11111111-2222-3333-4444-555555555555".into())
++                .await
++                .unwrap_err();
++            assert_eq!(
++                error.code(),
++                tonic::Code::FailedPrecondition,
++                "case {case}: {error}"
++            );
++            server.abort();
++            let _ = server.await;
++        }
++    }
++
++    #[tokio::test]
++    async fn native_cri_reordered_containers_keep_same_exact_selection() {
++        let mock = bound_mock();
++        mock.containers.lock().await.insert(
++            0,
++            Container {
++                id: "b".repeat(64),
++                pod_sandbox_id: "sandbox-original".into(),
++                state: 1,
++                ..Default::default()
++            },
++        );
++        mock.container_statuses
++            .lock()
++            .await
++            .insert("b".repeat(64), running_status(&"b".repeat(64), 456));
++        let dir = tempfile::tempdir().unwrap();
++        let path = dir.path().join("runtime.sock");
++        let (client, server) = setup_mock_server(mock.clone(), path.to_str().unwrap()).await;
++        let manager = ContainerRuntimeManager::new_with_client(client);
++        let uid = WorkloadUid::new("11111111-2222-3333-4444-555555555555".into());
++        let first = manager.fetch_pid(&uid).await.unwrap();
++        mock.containers.lock().await.reverse();
++        let second = manager.fetch_pid(&uid).await.unwrap();
++        assert_eq!(first, second);
++        assert_eq!(first.container_id.as_deref(), Some("a".repeat(64).as_str()));
++        assert_eq!(first.sandbox_id.as_deref(), Some("sandbox-original"));
++        server.abort();
++        let _ = server.await;
++    }
++
++    #[tokio::test]
++    async fn native_cri_hung_sandbox_rpc_is_bounded() {
++        let mock = bound_mock();
++        mock.stall_sandbox
++            .store(true, std::sync::atomic::Ordering::SeqCst);
++        let dir = tempfile::tempdir().unwrap();
++        let path = dir.path().join("runtime.sock");
++        let (client, server) = setup_mock_server(mock, path.to_str().unwrap()).await;
++        let mut manager = ContainerRuntimeManager::new_with_client(client);
++        manager.timeout = std::time::Duration::from_millis(30);
++        let start = std::time::Instant::now();
++        let error = manager
++            .get_pids_for_pod("11111111-2222-3333-4444-555555555555".into())
++            .await
++            .unwrap_err();
++        assert_eq!(error.code(), tonic::Code::DeadlineExceeded);
++        assert!(start.elapsed() < std::time::Duration::from_secs(1));
++        server.abort();
++        let _ = server.await;
++    }
+ }
+diff --git a/src/identity.rs b/src/identity.rs
+index 520382d..7362bab 100644
+--- a/src/identity.rs
++++ b/src/identity.rs
+@@ -19,6 +19,7 @@ use std::sync::Arc;
+ mod caclient;
+ pub use caclient::*;
+ 
++mod process_binding;
+ mod spireclient;
+ pub use spireclient::*;
+ 
+diff --git a/src/identity/process_binding.rs b/src/identity/process_binding.rs
+new file mode 100644
+index 0000000..5213df9
+--- /dev/null
++++ b/src/identity/process_binding.rs
+@@ -0,0 +1,426 @@
++//! A live PID is an integer plus a held kernel process incarnation and cgroup.
++//! Node root / CRI / SPIRE remain trusted. No mountinfo or selector fallback.
++use crate::{identity::WorkloadPid, inpod::WorkloadUid};
++use std::io;
++
++pub(crate) trait BoundProcess: Send + Sync {
++    fn validate(&self) -> io::Result<()>;
++}
++pub(crate) trait ProcessBinder: Send + Sync {
++    fn bind(&self, process: &WorkloadPid, uid: &WorkloadUid) -> io::Result<Box<dyn BoundProcess>>;
++}
++pub(crate) struct KernelProcessBinder;
++
++pub(crate) fn canonical_uid(uid: &str) -> bool {
++    uid.len() == 36
++        && uid.bytes().enumerate().all(|(i, b)| {
++            if [8, 13, 18, 23].contains(&i) {
++                b == b'-'
++            } else {
++                b.is_ascii_digit() || (b'a'..=b'f').contains(&b)
++            }
++        })
++}
++fn invalid(message: &'static str) -> io::Error {
++    io::Error::new(io::ErrorKind::InvalidData, message)
++}
++
++/// Return the kernel Pod UID and verify the selected container ID beneath it.
++/// Handles cgroupfs and systemd UUID rendering; ignores unrelated outer host
++/// cgroups, but never accepts two different Pod UIDs or container IDs.
++fn verify_cgroup(raw: &[u8], uid: &str, container: &str) -> io::Result<()> {
++    if !canonical_uid(uid)
++        || container.len() != 64
++        || !container
++            .bytes()
++            .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
++    {
++        return Err(invalid("canonical Pod UID and CRI container ID required"));
++    }
++    let text = std::str::from_utf8(raw).map_err(|_| invalid("non-UTF8 kernel cgroup"))?;
++    let mut found = false;
++    for line in text.lines() {
++        let mut fields = line.splitn(3, ':');
++        let hierarchy = fields
++            .next()
++            .ok_or_else(|| invalid("invalid kernel cgroup record"))?;
++        let _controllers = fields
++            .next()
++            .ok_or_else(|| invalid("invalid kernel cgroup record"))?;
++        let path = fields
++            .next()
++            .ok_or_else(|| invalid("invalid kernel cgroup record"))?;
++        if hierarchy.is_empty()
++            || !hierarchy.bytes().all(|b| b.is_ascii_digit())
++            || !path.starts_with('/')
++        {
++            return Err(invalid("invalid kernel cgroup record"));
++        }
++        for (offset, _) in path.match_indices("pod") {
++            if offset > 0 && !matches!(path.as_bytes()[offset - 1], b'/' | b'-' | b'.' | b':') {
++                continue;
++            }
++            let start = offset + 3;
++            let Some(candidate) = path.get(start..start + 36) else {
++                continue;
++            };
++            let normalized = candidate.replace('_', "-");
++            if !canonical_uid(&normalized) {
++                continue;
++            }
++            let end = start + 36;
++            if end < path.len() && !matches!(path.as_bytes()[end], b'/' | b'.' | b':') {
++                continue;
++            }
++            if normalized != uid {
++                return Err(invalid("kernel cgroup Pod UID mismatch or ambiguity"));
++            }
++            let suffix = &path[end..];
++            let mut matched_container = false;
++            for token in suffix.split(|c: char| !c.is_ascii_hexdigit()) {
++                if token.len() == 64 {
++                    if token != container {
++                        return Err(invalid("kernel cgroup container ID mismatch or ambiguity"));
++                    }
++                    matched_container = true;
++                }
++            }
++            if !matched_container {
++                return Err(invalid(
++                    "kernel cgroup does not bind selected CRI container",
++                ));
++            }
++            found = true;
++        }
++    }
++    if !found {
++        return Err(invalid(
++            "kernel cgroup has no exact Pod UID/container binding",
++        ));
++    }
++    Ok(())
++}
++
++#[cfg(target_os = "linux")]
++mod linux {
++    use super::*;
++    use std::{
++        ffi::CString,
++        fs::File,
++        io::Read,
++        mem::MaybeUninit,
++        os::fd::{AsRawFd, FromRawFd, OwnedFd},
++        os::unix::fs::MetadataExt,
++    };
++    const LIMIT: u64 = 64 * 1024;
++    const PROC_SUPER_MAGIC: libc::c_long = 0x9fa0;
++
++    fn open_at(parent: i32, name: &str, flags: i32) -> io::Result<OwnedFd> {
++        let name = CString::new(name).map_err(|_| invalid("invalid procfs component"))?;
++        // SAFETY: CString remains live, flags do not require a mode argument.
++        let fd = unsafe {
++            libc::openat(
++                parent,
++                name.as_ptr(),
++                flags | libc::O_CLOEXEC | libc::O_NOFOLLOW | libc::O_NONBLOCK,
++            )
++        };
++        if fd < 0 {
++            return Err(io::Error::last_os_error());
++        }
++        // SAFETY: openat returned a fresh owned descriptor.
++        Ok(unsafe { OwnedFd::from_raw_fd(fd) })
++    }
++    fn read_at(parent: i32, name: &str) -> io::Result<Vec<u8>> {
++        let fd = open_at(parent, name, libc::O_RDONLY)?;
++        let file = File::from(fd);
++        if !file.metadata()?.is_file() {
++            return Err(invalid("procfs entry is not regular"));
++        }
++        let mut raw = Vec::new();
++        file.take(LIMIT + 1).read_to_end(&mut raw)?;
++        if raw.len() > LIMIT as usize {
++            return Err(invalid("bounded procfs entry exceeded"));
++        }
++        Ok(raw)
++    }
++    fn pidfd_alive(fd: i32) -> io::Result<()> {
++        let mut poll = libc::pollfd {
++            fd,
++            events: libc::POLLIN,
++            revents: 0,
++        };
++        // SAFETY: valid pointer to one pollfd; zero timeout never blocks.
++        let result = unsafe { libc::poll(&mut poll, 1, 0) };
++        if result < 0 {
++            return Err(io::Error::last_os_error());
++        }
++        if result != 0 || poll.revents != 0 {
++            return Err(io::Error::new(
++                io::ErrorKind::NotFound,
++                "held workload process exited",
++            ));
++        }
++        Ok(())
++    }
++    fn start_time(raw: &[u8], pid: i32) -> io::Result<u64> {
++        let text = std::str::from_utf8(raw).map_err(|_| invalid("invalid proc stat"))?;
++        if !text.starts_with(&format!("{pid} (")) {
++            return Err(invalid("proc stat PID mismatch"));
++        }
++        let end = text
++            .rfind(')')
++            .ok_or_else(|| invalid("invalid proc stat comm"))?;
++        let fields = text[end + 1..].split_whitespace().collect::<Vec<_>>();
++        if fields.len() < 20 || matches!(fields[0], "Z" | "X" | "x") {
++            return Err(invalid("workload process not live"));
++        }
++        let ticks = fields[19]
++            .parse::<u64>()
++            .map_err(|_| invalid("invalid process start time"))?;
++        if ticks == 0 {
++            return Err(invalid("invalid process start time"));
++        }
++        Ok(ticks)
++    }
++    struct KernelBoundProcess {
++        pid: i32,
++        pidfd: OwnedFd,
++        proc_root: OwnedFd,
++        proc_pid: OwnedFd,
++        proc_device: u64,
++        proc_inode: u64,
++        start_time: u64,
++        cgroup: Vec<u8>,
++        uid: String,
++        container: String,
++    }
++    impl KernelBoundProcess {
++        fn capture(pid: i32, uid: String, container: String) -> io::Result<Self> {
++            if pid <= 0 {
++                return Err(invalid("positive workload PID required"));
++            }
++            // SAFETY: pidfd_open syscall accepts this PID and zero flags.
++            let fd = unsafe { libc::syscall(libc::SYS_pidfd_open, pid, 0) };
++            if fd < 0 {
++                return Err(io::Error::last_os_error());
++            }
++            // SAFETY: successful syscall returns a fresh owned descriptor.
++            let pidfd = unsafe { OwnedFd::from_raw_fd(fd as i32) };
++            pidfd_alive(pidfd.as_raw_fd())?;
++            let proc_root = open_at(libc::AT_FDCWD, "/proc", libc::O_RDONLY | libc::O_DIRECTORY)?;
++            let mut stat = MaybeUninit::<libc::statfs>::uninit();
++            // SAFETY: valid fd and storage for statfs; read only on success.
++            if unsafe { libc::fstatfs(proc_root.as_raw_fd(), stat.as_mut_ptr()) } != 0 {
++                return Err(io::Error::last_os_error());
++            }
++            // SAFETY: successful fstatfs initialized stat.
++            if unsafe { stat.assume_init() }.f_type != PROC_SUPER_MAGIC {
++                return Err(invalid("kernel procfs required"));
++            }
++            let proc_pid = open_at(
++                proc_root.as_raw_fd(),
++                &pid.to_string(),
++                libc::O_RDONLY | libc::O_DIRECTORY,
++            )?;
++            let meta = File::from(proc_pid.try_clone()?).metadata()?;
++            let start_time = start_time(&read_at(proc_pid.as_raw_fd(), "stat")?, pid)?;
++            let cgroup = read_at(proc_pid.as_raw_fd(), "cgroup")?;
++            verify_cgroup(&cgroup, &uid, &container)?;
++            let guard = Self {
++                pid,
++                pidfd,
++                proc_root,
++                proc_pid,
++                proc_device: meta.dev(),
++                proc_inode: meta.ino(),
++                start_time,
++                cgroup,
++                uid,
++                container,
++            };
++            guard.validate()?;
++            Ok(guard)
++        }
++    }
++    impl BoundProcess for KernelBoundProcess {
++        fn validate(&self) -> io::Result<()> {
++            pidfd_alive(self.pidfd.as_raw_fd())?;
++            let current = open_at(
++                self.proc_root.as_raw_fd(),
++                &self.pid.to_string(),
++                libc::O_RDONLY | libc::O_DIRECTORY,
++            )?;
++            let meta = File::from(current).metadata()?;
++            if meta.dev() != self.proc_device || meta.ino() != self.proc_inode {
++                return Err(invalid("workload proc incarnation changed"));
++            }
++            if start_time(&read_at(self.proc_pid.as_raw_fd(), "stat")?, self.pid)?
++                != self.start_time
++            {
++                return Err(invalid("workload process start time changed"));
++            }
++            let cgroup = read_at(self.proc_pid.as_raw_fd(), "cgroup")?;
++            verify_cgroup(&cgroup, &self.uid, &self.container)?;
++            if cgroup != self.cgroup {
++                return Err(invalid("workload kernel cgroup changed"));
++            }
++            pidfd_alive(self.pidfd.as_raw_fd())
++        }
++    }
++    impl ProcessBinder for KernelProcessBinder {
++        fn bind(
++            &self,
++            process: &WorkloadPid,
++            uid: &WorkloadUid,
++        ) -> io::Result<Box<dyn BoundProcess>> {
++            let container = process
++                .container_id
++                .as_ref()
++                .ok_or_else(|| invalid("CRI container identity absent"))?;
++            if process.sandbox_id.as_deref().is_none_or(str::is_empty) {
++                return Err(invalid("CRI sandbox identity absent"));
++            }
++            Ok(Box::new(KernelBoundProcess::capture(
++                process.pid,
++                uid.clone().into_string(),
++                container.clone(),
++            )?))
++        }
++    }
++    #[cfg(test)]
++    mod tests {
++        use super::*;
++        struct OwnedChild(std::process::Child);
++        impl Drop for OwnedChild {
++            fn drop(&mut self) {
++                let _ = self.0.kill();
++                let _ = self.0.wait();
++            }
++        }
++        #[test]
++        fn real_held_pidfd_detects_owned_child_exit() {
++            let mut child = OwnedChild(
++                std::process::Command::new("/bin/sleep")
++                    .arg("30")
++                    .spawn()
++                    .expect("owned child"),
++            );
++            let pid = child.0.id() as i32;
++            // The low-level descriptor lifetime is real. This test does not
++            // claim this non-Kubernetes child has a Pod UID cgroup.
++            let fd = unsafe { libc::syscall(libc::SYS_pidfd_open, pid, 0) };
++            assert!(
++                fd >= 0,
++                "pidfd_open must be supported: {}",
++                io::Error::last_os_error()
++            );
++            let held = unsafe { OwnedFd::from_raw_fd(fd as i32) };
++            pidfd_alive(held.as_raw_fd()).unwrap();
++            child.0.kill().unwrap();
++            child.0.wait().unwrap();
++            assert!(pidfd_alive(held.as_raw_fd()).is_err());
++            let mut replacement = OwnedChild(
++                std::process::Command::new("/bin/sleep")
++                    .arg("30")
++                    .spawn()
++                    .unwrap(),
++            );
++            assert!(
++                pidfd_alive(held.as_raw_fd()).is_err(),
++                "replacement cannot revive old held incarnation"
++            );
++            replacement.0.kill().unwrap();
++            replacement.0.wait().unwrap();
++        }
++        #[test]
++        fn stat_comm_with_parentheses_and_spaces() {
++            let raw = format!(
++                "123 (name with ) parens) S {} 777 0",
++                vec!["0"; 18].join(" ")
++            );
++            assert_eq!(start_time(raw.as_bytes(), 123).unwrap(), 777);
++            assert!(start_time(raw.as_bytes(), 124).is_err());
++        }
++        #[test]
++        fn real_wrong_or_unbound_process_fails_closed() {
++            let process = WorkloadPid::new(std::process::id() as i32);
++            assert!(
++                KernelProcessBinder
++                    .bind(
++                        &process,
++                        &WorkloadUid::new("11111111-2222-3333-4444-555555555555".into())
++                    )
++                    .is_err()
++            );
++            let bound =
++                WorkloadPid::from_cri(std::process::id() as i32, "sandbox".into(), "a".repeat(64));
++            assert!(
++                KernelProcessBinder
++                    .bind(
++                        &bound,
++                        &WorkloadUid::new("00000000-0000-0000-0000-000000000000".into())
++                    )
++                    .is_err()
++            );
++        }
++    }
++}
++#[cfg(not(target_os = "linux"))]
++impl ProcessBinder for KernelProcessBinder {
++    fn bind(&self, _: &WorkloadPid, _: &WorkloadUid) -> io::Result<Box<dyn BoundProcess>> {
++        Err(io::Error::new(
++            io::ErrorKind::Unsupported,
++            "SPIRE delegated process binding requires Linux pidfd/procfs",
++        ))
++    }
++}
++
++#[cfg(test)]
++mod tests {
++    use super::*;
++    const UID: &str = "11111111-2222-3333-4444-555555555555";
++    #[test]
++    fn cgroupfs_systemd_and_nested_host_prefix() {
++        for path in [
++            format!("/kubepods/burstable/pod{UID}/{}", "a".repeat(64)),
++            format!(
++                "/kubepods.slice/kubepods-burstable-pod{}.slice/cri-containerd-{}.scope",
++                UID.replace('-', "_"),
++                "a".repeat(64)
++            ),
++            format!(
++                "/docker/{}/kubepods/pod{UID}/{}",
++                "b".repeat(64),
++                "a".repeat(64)
++            ),
++        ] {
++            verify_cgroup(format!("0::{path}\n").as_bytes(), UID, &"a".repeat(64)).unwrap();
++        }
++    }
++    #[test]
++    fn wrong_missing_ambiguous_and_substring_binding_rejected() {
++        for raw in [
++            "0::/\n".to_string(),
++            format!("0::/kubepods/pod{UID}/{}\n", "b".repeat(64)),
++            format!(
++                "0::/kubepods/pod00000000-0000-0000-0000-000000000000/{}\n",
++                "a".repeat(64)
++            ),
++            format!("0::/pod{UID}/{}/{}\n", "a".repeat(64), "b".repeat(64)),
++            format!("0::/evilpod{UID}/{}\n", "a".repeat(64)),
++            format!("0::/pod{UID}extra/{}\n", "a".repeat(64)),
++        ] {
++            assert!(
++                verify_cgroup(raw.as_bytes(), UID, &"a".repeat(64)).is_err(),
++                "{raw}"
++            );
++        }
++        let raw = format!(
++            "0::/pod{UID}/{}\n1:cpu:/pod00000000-0000-0000-0000-000000000000/{}\n",
++            "a".repeat(64),
++            "a".repeat(64)
++        );
++        assert!(verify_cgroup(raw.as_bytes(), UID, &"a".repeat(64)).is_err());
++    }
++}
+diff --git a/src/identity/spireclient.rs b/src/identity/spireclient.rs
+index 911a57b..a9c1395 100644
+--- a/src/identity/spireclient.rs
++++ b/src/identity/spireclient.rs
+@@ -12,6 +12,7 @@
+ // See the License for the specific language governing permissions and
+ // limitations under the License.
+ 
++use super::process_binding::{KernelProcessBinder, ProcessBinder};
+ use crate::{
+     config::Config,
+     container_runtime::ContainerRuntimeManager,
+@@ -70,16 +71,32 @@ impl DelegatedIdentityApi for DelegatedIdentityClient {
+ }
+ 
+ #[derive(
+-    Eq, PartialEq, Hash, Debug, Clone, PartialOrd, Ord, serde::Serialize, serde::Deserialize, Copy,
++    Eq, PartialEq, Hash, Debug, Clone, PartialOrd, Ord, serde::Serialize, serde::Deserialize,
+ )]
+-pub struct WorkloadPid(i32);
+-
++pub struct WorkloadPid {
++    pub(crate) pid: i32,
++    pub(crate) sandbox_id: Option<String>,
++    pub(crate) container_id: Option<String>,
++}
+ impl WorkloadPid {
++    /// An unbound PID is useful to explicit test doubles. The production
++    /// KernelProcessBinder rejects it; it can never authorize a credential.
+     pub fn new(pid: i32) -> Self {
+-        Self(pid)
++        Self {
++            pid,
++            sandbox_id: None,
++            container_id: None,
++        }
++    }
++    pub(crate) fn from_cri(pid: i32, sandbox: String, container: String) -> Self {
++        Self {
++            pid,
++            sandbox_id: Some(sandbox),
++            container_id: Some(container),
++        }
+     }
+-    pub fn into_i32(self) -> i32 {
+-        self.0
++    pub fn into_i32(&self) -> i32 {
++        self.pid
+     }
+ }
+ 
+@@ -89,9 +106,8 @@ pub trait PidClientTrait: Send + Sync {
+     async fn fetch_pid(&self, uid: &WorkloadUid) -> Result<WorkloadPid, std::io::Error>;
+ }
+ 
+-/// SPIRE client that fetches X.509 certificates for workload identities using
+-/// Kubernetes selectors (namespace + service account) rather than PIDs.
+-/// This approach works in environments where PID-based attestation is not feasible.
++/// SPIRE delegated PID attestation bound to an exact CRI sandbox/container,
++/// held Linux process incarnation and kernel Pod UID. No selector fallback.
+ pub struct SpireClient<C: DelegatedIdentityApi> {
+     /// gRPC client for communicating with the SPIRE Delegated Identity API
+     client: C,
+@@ -99,6 +115,7 @@ pub struct SpireClient<C: DelegatedIdentityApi> {
+     trust_domain: String,
+     /// Optional PID client for workload PID verification
+     pid: Box<dyn PidClientTrait>,
++    process_binder: Arc<dyn ProcessBinder>,
+     /// Shared configuration for SPIRE client behavior
+     cfg: Arc<Config>,
+ }
+@@ -121,6 +138,23 @@ impl<C: DelegatedIdentityApi> SpireClient<C> {
+             client,
+             trust_domain,
+             pid,
++            process_binder: Arc::new(KernelProcessBinder),
++            cfg,
++        }
++    }
++
++    #[cfg(test)]
++    fn new_with_test_binder(
++        client: C,
++        trust_domain: String,
++        pid: Box<dyn PidClientTrait>,
++        cfg: Arc<Config>,
++    ) -> Self {
++        Self {
++            client,
++            trust_domain,
++            pid,
++            process_binder: Arc::new(spire_tests::LiveTestBinder),
+             cfg,
+         }
+     }
+@@ -140,45 +174,43 @@ impl<C: DelegatedIdentityApi> SpireClient<C> {
+     /// or certificate construction fails.
+     async fn get_cert_by_pid(
+         &self,
+-        pid: i32,
++        process: WorkloadPid,
+         id: &Identity,
+         uid: &WorkloadUid,
+     ) -> Result<tls::WorkloadCertificate, Error> {
+-        let certs = self
+-            .get_cert_from_spire(DelegateAttestationRequest::Pid(pid), id)
+-            .await;
+-
+-        let certs = match certs {
+-            Err(e) => {
+-                return Err(Error::FailedToFetchCertificate(format!(
+-                    "Failed to fetch certificate for PID {}: {}",
+-                    pid, e
+-                )));
+-            }
+-            Ok(certs) => certs,
++        let binding_error = |error: std::io::Error| {
++            Error::UnableToDeterminePidForWorkload(format!(
++                "workload process incarnation rejected: {error}"
++            ))
+         };
+-
+-        // Verify that the PID we used for attestation matches the PID associated with the workload UID
+-        let pid_verify = self.pid.fetch_pid(uid).await;
+-
+-        match pid_verify {
+-            Ok(fetched_pid) => {
+-                if fetched_pid.into_i32() != pid {
+-                    return Err(Error::UnableToDeterminePidForWorkload(format!(
+-                        "PID mismatch for workload UID {}: expected {}, got {}",
+-                        uid.clone().into_string(),
+-                        pid,
+-                        fetched_pid.into_i32()
+-                    )));
+-                }
+-                Ok(certs)
+-            }
+-            Err(e) => Err(Error::UnableToDeterminePidForWorkload(format!(
+-                "Failed to verify PID for workload UID {}: {}",
+-                uid.clone().into_string(),
+-                e
+-            ))),
++        let held = self
++            .process_binder
++            .bind(&process, uid)
++            .map_err(binding_error)?;
++        held.validate().map_err(binding_error)?;
++        // Rejoin CRI after pinning the process, before delegating its integer.
++        let current = self.pid.fetch_pid(uid).await.map_err(binding_error)?;
++        if current != process {
++            return Err(Error::UnableToDeterminePidForWorkload(
++                "CRI sandbox/container/PID changed before attestation".into(),
++            ));
+         }
++        held.validate().map_err(binding_error)?;
++        let certs = self
++            .get_cert_from_spire(DelegateAttestationRequest::Pid(process.pid), id)
++            .await?;
++        // The pidfd remains held through stream establishment, first SVID,
++        // bundle retrieval and the final CRI join. An exited process never
++        // becomes valid merely because the same PID integer is reused.
++        held.validate().map_err(binding_error)?;
++        let current = self.pid.fetch_pid(uid).await.map_err(binding_error)?;
++        if current != process {
++            return Err(Error::UnableToDeterminePidForWorkload(
++                "CRI sandbox/container/PID changed after attestation".into(),
++            ));
++        }
++        held.validate().map_err(binding_error)?;
++        Ok(certs)
+     }
+ 
+     /// Fetches a workload certificate using workload UID to determine PID.
+@@ -203,7 +235,7 @@ impl<C: DelegatedIdentityApi> SpireClient<C> {
+         );
+         let pid = self.pid.fetch_pid(uid).await;
+         match pid {
+-            Ok(pid) => self.get_cert_by_pid(pid.into_i32(), id, uid).await,
++            Ok(pid) => self.get_cert_by_pid(pid, id, uid).await,
+             Err(e) => Err(Error::UnableToDeterminePidForWorkload(format!(
+                 "Failed to fetch PID for workload UID {}: {}",
+                 uid.clone().into_string(),
+@@ -364,15 +396,25 @@ impl<C: DelegatedIdentityApi> crate::identity::CaClientTrait for SpireClient<C>
+     /// SPIRE attests the pod by PID, so the fetch must carry the pod UID. An
+     /// identity-keyed fetch fails closed.
+     async fn fetch_certificate(&self, key: &CacheKey) -> Result<tls::WorkloadCertificate, Error> {
+-        match key {
++        let start = std::time::Instant::now();
++        let result = match key {
+             CacheKey::Workload { id, uid, .. } => {
+-                self.get_cert_by_workload_uid(id, &WorkloadUid::new(uid.to_string()))
+-                    .await
++                tokio::time::timeout(self.cfg.spire_timeout,
++                    self.get_cert_by_workload_uid(id, &WorkloadUid::new(uid.to_string())))
++                    .await.unwrap_or_else(|_| Err(Error::FailedToFetchCertificate(
++                        "SPIRE credential deadline exceeded across CRI, process binding, SVID and bundle".into())))
+             }
+             CacheKey::Identity(_) => Err(Error::InvalidConfiguration(
+                 "expected Workload key for SPIRE attestation".to_string(),
+             )),
++        };
++        if let Err(error) = &result {
++            tracing::warn!(component="spire-client", stage="workload-credential", attempt=1u64,
++                elapsed_ms=start.elapsed().as_millis() as u64,
++                deadline_ms=self.cfg.spire_timeout.as_millis() as u64, backoff_ms=0u64,
++                error=%error, "native workload credential rejected");
+         }
++        result
+     }
+ }
+ 
+@@ -381,9 +423,11 @@ impl SecretManager {
+         cfg: Arc<Config>,
+         dc: C,
+     ) -> Result<Self, spiffe::error::GrpcClientError> {
+-        let pid_client = ContainerRuntimeManager::new(&cfg)
+-            .await
+-            .expect("unable to connect to container runtime");
++        let pid_client = ContainerRuntimeManager::new(&cfg).await.map_err(|error| {
++            spiffe::error::GrpcClientError::Grpc(tonic::Status::unavailable(format!(
++                "node CRI initialization failed: {error}"
++            )))
++        })?;
+ 
+         let client = SpireClient::new(dc, cfg.cluster_domain.clone(), Box::new(pid_client), cfg);
+ 
+@@ -403,6 +447,23 @@ impl SecretManager {
+ 
+ #[cfg(test)]
+ pub mod spire_tests {
++    pub(super) struct LiveTestBinder;
++    struct LiveTestProcess;
++    impl super::super::process_binding::BoundProcess for LiveTestProcess {
++        fn validate(&self) -> std::io::Result<()> {
++            Ok(())
++        }
++    }
++    impl ProcessBinder for LiveTestBinder {
++        fn bind(
++            &self,
++            _: &WorkloadPid,
++            _: &WorkloadUid,
++        ) -> std::io::Result<Box<dyn super::super::process_binding::BoundProcess>> {
++            Ok(Box::new(LiveTestProcess))
++        }
++    }
++
+     use crate::config;
+     use crate::identity::CaClientTrait;
+     use crate::state::WorkloadInfo;
+@@ -438,7 +499,7 @@ pub mod spire_tests {
+         let mut cfg = config::parse_config().unwrap();
+         cfg.spire_enabled = true;
+ 
+-        let spire_client = SpireClient::new(
++        let spire_client = SpireClient::new_with_test_binder(
+             mock_client,
+             "example.org".to_string(),
+             Box::new(pid_client),
+@@ -461,7 +522,7 @@ pub mod spire_tests {
+         let mut cfg = config::parse_config().unwrap();
+         cfg.spire_enabled = true;
+ 
+-        let spire_client = SpireClient::new(
++        let spire_client = SpireClient::new_with_test_binder(
+             mock_client,
+             "wrong.trust_domain".to_string(),
+             Box::new(pid_client),
+@@ -499,7 +560,7 @@ pub mod spire_tests {
+ 
+         let cfg = Arc::new(cfg);
+ 
+-        let spire_client = SpireClient::new(
++        let spire_client = SpireClient::new_with_test_binder(
+             mock_client,
+             "example.org".to_string(),
+             Box::new(pid_client),
+@@ -509,7 +570,9 @@ pub mod spire_tests {
+         let identity =
+             Identity::from_parts("example.org".into(), "default".into(), "test-sa".into());
+         let uid = WorkloadUid::new("uid-123456".to_string());
+-        let result = spire_client.get_cert_by_pid(10, &identity, &uid).await;
++        let result = spire_client
++            .get_cert_by_pid(WorkloadPid::new(10), &identity, &uid)
++            .await;
+ 
+         assert!(result.is_ok());
+ 
+@@ -553,7 +616,7 @@ pub mod spire_tests {
+ 
+         let cfg = Arc::new(cfg);
+ 
+-        let spire_client = SpireClient::new(
++        let spire_client = SpireClient::new_with_test_binder(
+             mock_client,
+             "example.org".to_string(),
+             Box::new(pid_client),
+@@ -563,7 +626,9 @@ pub mod spire_tests {
+         let identity =
+             Identity::from_parts("example.org".into(), "default".into(), "test-sa".into());
+         let uid = WorkloadUid::new("uid-123456".to_string());
+-        let result = spire_client.get_cert_by_pid(1337, &identity, &uid).await;
++        let result = spire_client
++            .get_cert_by_pid(WorkloadPid::new(1337), &identity, &uid)
++            .await;
+ 
+         assert!(result.is_err());
+     }
+@@ -594,7 +659,7 @@ pub mod spire_tests {
+         let mut cfg = config::parse_config().unwrap();
+         cfg.spire_enabled = true;
+ 
+-        let spire_client = SpireClient::new(
++        let spire_client = SpireClient::new_with_test_binder(
+             mock_client,
+             "example.org".to_string(),
+             Box::new(pid_client),
+@@ -604,7 +669,9 @@ pub mod spire_tests {
+         let identity =
+             Identity::from_parts("example.org".into(), "default".into(), "test-sa".into());
+         let uid = WorkloadUid::new("uid-123456".to_string());
+-        let result = spire_client.get_cert_by_pid(10, &identity, &uid).await;
++        let result = spire_client
++            .get_cert_by_pid(WorkloadPid::new(10), &identity, &uid)
++            .await;
+ 
+         assert!(result.is_err());
+     }
+@@ -634,7 +701,7 @@ pub mod spire_tests {
+ 
+         let cfg = Arc::new(cfg);
+ 
+-        let spire_client = SpireClient::new(
++        let spire_client = SpireClient::new_with_test_binder(
+             mock_client,
+             "example.org".to_string(),
+             Box::new(pid_client),
+@@ -698,7 +765,7 @@ pub mod spire_tests {
+ 
+         let cfg = Arc::new(cfg);
+ 
+-        let spire_client = SpireClient::new(
++        let spire_client = SpireClient::new_with_test_binder(
+             mock_client,
+             "example.org".to_string(),
+             Box::new(pid_client),
+@@ -742,7 +809,7 @@ pub mod spire_tests {
+ 
+         let cfg = Arc::new(cfg);
+ 
+-        let spire_client = SpireClient::new(
++        let spire_client = SpireClient::new_with_test_binder(
+             mock_client,
+             "example.org".to_string(),
+             Box::new(pid_client),
+@@ -752,7 +819,9 @@ pub mod spire_tests {
+         let identity =
+             Identity::from_parts("example.org".into(), "default".into(), "test-sa".into());
+         let uid = WorkloadUid::new("uid-123456".to_string());
+-        let result = spire_client.get_cert_by_pid(10, &identity, &uid).await;
++        let result = spire_client
++            .get_cert_by_pid(WorkloadPid::new(10), &identity, &uid)
++            .await;
+ 
+         assert!(result.is_ok());
+ 
+@@ -797,7 +866,7 @@ pub mod spire_tests {
+ 
+         let cfg = Arc::new(cfg);
+ 
+-        let spire_client = SpireClient::new(
++        let spire_client = SpireClient::new_with_test_binder(
+             mock_client,
+             "example.org".to_string(),
+             Box::new(pid_client),
+@@ -807,7 +876,9 @@ pub mod spire_tests {
+         let identity =
+             Identity::from_parts("example.org".into(), "default".into(), "test-sa".into());
+         let uid = WorkloadUid::new("uid-123456".to_string());
+-        let result = spire_client.get_cert_by_pid(10, &identity, &uid).await;
++        let result = spire_client
++            .get_cert_by_pid(WorkloadPid::new(10), &identity, &uid)
++            .await;
+ 
+         assert!(result.is_err());
+ 
+@@ -840,7 +911,7 @@ pub mod spire_tests {
+ 
+         let cfg = Arc::new(cfg);
+ 
+-        let spire_client = SpireClient::new(
++        let spire_client = SpireClient::new_with_test_binder(
+             mock_client,
+             "example.org".to_string(),
+             Box::new(pid_client),
+@@ -850,7 +921,9 @@ pub mod spire_tests {
+         let identity =
+             Identity::from_parts("example.org".into(), "default".into(), "test-sa".into());
+         let uid = WorkloadUid::new("uid-123456".to_string());
+-        let result = spire_client.get_cert_by_pid(10, &identity, &uid).await;
++        let result = spire_client
++            .get_cert_by_pid(WorkloadPid::new(10), &identity, &uid)
++            .await;
+ 
+         assert!(result.is_err());
+ 
+@@ -961,7 +1034,7 @@ pub mod spire_tests {
+         let mut cfg = config::parse_config().unwrap();
+         cfg.spire_enabled = true;
+ 
+-        let spire_client = SpireClient::new(
++        let spire_client = SpireClient::new_with_test_binder(
+             mock_client,
+             "example.org".to_string(),
+             Box::new(pid_client),
+@@ -984,6 +1057,197 @@ pub mod spire_tests {
+         );
+     }
+ 
++    struct FlagBinder {
++        alive: Arc<std::sync::atomic::AtomicBool>,
++        leases: Arc<std::sync::atomic::AtomicUsize>,
++    }
++    struct FlagProcess {
++        alive: Arc<std::sync::atomic::AtomicBool>,
++        leases: Arc<std::sync::atomic::AtomicUsize>,
++    }
++    impl Drop for FlagProcess {
++        fn drop(&mut self) {
++            self.leases
++                .fetch_sub(1, std::sync::atomic::Ordering::SeqCst);
++        }
++    }
++    impl super::super::process_binding::BoundProcess for FlagProcess {
++        fn validate(&self) -> std::io::Result<()> {
++            if self.alive.load(std::sync::atomic::Ordering::SeqCst) {
++                Ok(())
++            } else {
++                Err(std::io::Error::new(
++                    std::io::ErrorKind::NotFound,
++                    "test held incarnation exited",
++                ))
++            }
++        }
++    }
++    impl ProcessBinder for FlagBinder {
++        fn bind(
++            &self,
++            _: &WorkloadPid,
++            _: &WorkloadUid,
++        ) -> std::io::Result<Box<dyn super::super::process_binding::BoundProcess>> {
++            if !self.alive.load(std::sync::atomic::Ordering::SeqCst) {
++                return Err(std::io::Error::other("test pidfd unavailable"));
++            }
++            self.leases
++                .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
++            Ok(Box::new(FlagProcess {
++                alive: self.alive.clone(),
++                leases: self.leases.clone(),
++            }))
++        }
++    }
++    fn test_key() -> CacheKey {
++        workload_key(
++            &Identity::from_parts("example.org".into(), "default".into(), "test-sa".into()),
++            "11111111-2222-3333-4444-555555555555",
++        )
++    }
++    fn guarded_client<C: DelegatedIdentityApi>(
++        client: C,
++        pid: Box<dyn PidClientTrait>,
++        alive: Arc<std::sync::atomic::AtomicBool>,
++        leases: Arc<std::sync::atomic::AtomicUsize>,
++    ) -> SpireClient<C> {
++        let mut cfg = config::parse_config().unwrap();
++        cfg.spire_enabled = true;
++        cfg.spire_timeout = std::time::Duration::from_secs(2);
++        let mut client = SpireClient::new(client, "example.org".into(), pid, Arc::new(cfg));
++        client.process_binder = Arc::new(FlagBinder { alive, leases });
++        client
++    }
++    #[tokio::test]
++    async fn same_integer_pid_cannot_revive_dead_binding_after_bundle() {
++        use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
++        let alive = Arc::new(AtomicBool::new(true));
++        let leases = Arc::new(AtomicUsize::new(0));
++        let mut api = MockDelegatedIdentityApi::new();
++        api.expect_get_x509_svids().returning(|_| {
++            Ok(mock_stream_svid_success_response(
++                "spiffe://example.org/ns/default/sa/test-sa".into(),
++            ))
++        });
++        let flag = alive.clone();
++        api.expect_get_x509_bundles().returning(move || {
++            flag.store(false, Ordering::SeqCst);
++            Ok(mock_bundle_response())
++        });
++        let mut pid = MockPidClientTrait::new();
++        pid.expect_fetch_pid()
++            .returning(|_| Ok(WorkloadPid::new(10)));
++        let client = guarded_client(api, Box::new(pid), alive, leases.clone());
++        let error = client.fetch_certificate(&test_key()).await.unwrap_err();
++        assert!(error.to_string().contains("incarnation exited"));
++        assert_eq!(leases.load(Ordering::SeqCst), 0);
++    }
++    #[tokio::test]
++    async fn unavailable_pidfd_prevents_any_spire_request() {
++        use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
++        let alive = Arc::new(AtomicBool::new(false));
++        let leases = Arc::new(AtomicUsize::new(0));
++        let mut api = MockDelegatedIdentityApi::new();
++        api.expect_get_x509_svids().times(0);
++        api.expect_get_x509_bundles().times(0);
++        let mut pid = MockPidClientTrait::new();
++        pid.expect_fetch_pid()
++            .returning(|_| Ok(WorkloadPid::new(10)));
++        let client = guarded_client(api, Box::new(pid), alive, leases.clone());
++        assert!(client.fetch_certificate(&test_key()).await.is_err());
++        assert_eq!(leases.load(Ordering::SeqCst), 0);
++    }
++    #[tokio::test]
++    async fn same_pid_new_sandbox_cannot_complete_old_fetch() {
++        use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
++        let alive = Arc::new(AtomicBool::new(true));
++        let leases = Arc::new(AtomicUsize::new(0));
++        let changed = Arc::new(AtomicBool::new(false));
++        let mut api = MockDelegatedIdentityApi::new();
++        api.expect_get_x509_svids().returning(|_| {
++            Ok(mock_stream_svid_success_response(
++                "spiffe://example.org/ns/default/sa/test-sa".into(),
++            ))
++        });
++        let flag = changed.clone();
++        api.expect_get_x509_bundles().returning(move || {
++            flag.store(true, Ordering::SeqCst);
++            Ok(mock_bundle_response())
++        });
++        let mut pid = MockPidClientTrait::new();
++        pid.expect_fetch_pid().returning(move |_| {
++            Ok(WorkloadPid::from_cri(
++                10,
++                if changed.load(Ordering::SeqCst) {
++                    "new"
++                } else {
++                    "old"
++                }
++                .into(),
++                "a".repeat(64),
++            ))
++        });
++        let client = guarded_client(api, Box::new(pid), alive, leases.clone());
++        let error = client.fetch_certificate(&test_key()).await.unwrap_err();
++        assert!(error.to_string().contains("changed after attestation"));
++        assert_eq!(leases.load(Ordering::SeqCst), 0);
++    }
++    struct HangingBundle;
++    #[async_trait]
++    impl DelegatedIdentityApi for HangingBundle {
++        async fn get_x509_bundles(&self) -> Result<spiffe::X509BundleSet, GrpcClientError> {
++            std::future::pending().await
++        }
++        async fn get_x509_svids(
++            &self,
++            _: DelegateAttestationRequest,
++        ) -> Result<
++            Box<dyn Stream<Item = Result<X509Svid, GrpcClientError>> + Send + Unpin>,
++            GrpcClientError,
++        > {
++            Ok(mock_stream_svid_success_response(
++                "spiffe://example.org/ns/default/sa/test-sa".into(),
++            ))
++        }
++    }
++    #[tokio::test]
++    async fn bundle_deadline_cancels_and_drops_process_binding() {
++        use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
++        let alive = Arc::new(AtomicBool::new(true));
++        let leases = Arc::new(AtomicUsize::new(0));
++        let mut pid = MockPidClientTrait::new();
++        pid.expect_fetch_pid()
++            .returning(|_| Ok(WorkloadPid::new(10)));
++        let mut client = guarded_client(HangingBundle, Box::new(pid), alive, leases.clone());
++        Arc::get_mut(&mut client.cfg).unwrap().spire_timeout = std::time::Duration::from_millis(30);
++        let start = std::time::Instant::now();
++        let error = client.fetch_certificate(&test_key()).await.unwrap_err();
++        assert!(error.to_string().contains("deadline exceeded across CRI"));
++        assert!(start.elapsed() < std::time::Duration::from_secs(1));
++        assert_eq!(leases.load(Ordering::SeqCst), 0);
++    }
++    struct HangingPid;
++    #[async_trait]
++    impl PidClientTrait for HangingPid {
++        async fn fetch_pid(&self, _: &WorkloadUid) -> Result<WorkloadPid, std::io::Error> {
++            std::future::pending().await
++        }
++    }
++    #[tokio::test]
++    async fn initial_cri_deadline_prevents_any_spire_request() {
++        use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
++        let alive = Arc::new(AtomicBool::new(true));
++        let leases = Arc::new(AtomicUsize::new(0));
++        let mut api = MockDelegatedIdentityApi::new();
++        api.expect_get_x509_svids().times(0);
++        let mut client = guarded_client(api, Box::new(HangingPid), alive, leases.clone());
++        Arc::get_mut(&mut client.cfg).unwrap().spire_timeout = std::time::Duration::from_millis(30);
++        let error = client.fetch_certificate(&test_key()).await.unwrap_err();
++        assert!(error.to_string().contains("deadline exceeded across CRI"));
++        assert_eq!(leases.load(Ordering::SeqCst), 0);
++    }
++
+     fn ca_params(cn: &str) -> Result<CertificateParams, rcgen::Error> {
+         // Empty Vec<String> => no DNS SANs; we'll just use DN for the CA
+         let mut params = CertificateParams::new(Vec::<String>::new())?;

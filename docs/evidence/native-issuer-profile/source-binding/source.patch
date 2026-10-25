@@ -1,0 +1,1927 @@
+diff --git a/benches/throughput.rs b/benches/throughput.rs
+index c86756e..b6c01ad 100644
+--- a/benches/throughput.rs
++++ b/benches/throughput.rs
+@@ -383,15 +383,15 @@ pub fn rbac(c: &mut Criterion) {
+         ResolverOpts::default(),
+         metrics,
+     );
+-    let rc = ProxyRbacContext {
+-        conn: rbac::Connection {
++    let rc = ProxyRbacContext::new(
++        rbac::Connection {
+             src: "127.0.0.1:12345".parse().unwrap(),
+             dst: "127.0.0.2:12345".parse().unwrap(),
+             src_identity: None,
+             dst_network: "".into(),
+         },
+-        dest_workload: Arc::new(test_default_workload()),
+-    };
++        Arc::new(test_default_workload()),
++    );
+     let rt = tokio::runtime::Builder::new_current_thread()
+         .enable_all()
+         .build()
+diff --git a/src/metrics/server.rs b/src/metrics/server.rs
+index 07f20ee..f6ee6fb 100644
+--- a/src/metrics/server.rs
++++ b/src/metrics/server.rs
+@@ -125,6 +125,7 @@ fn content_type<T>(req: &Request<T>) -> &str {
+         .into()
+ }
+ 
++#[cfg(test)]
+ mod test {
+ 
+     #[test]
+@@ -166,4 +167,153 @@ mod test {
+             "text/plain; charset=utf-8"
+         )
+     }
++
++    fn frozen_metrics_body() -> bytes::Bytes {
++        use prometheus_client::metrics::counter::Counter;
++        use prometheus_client::metrics::gauge::Gauge;
++        let mut registry = prometheus_client::registry::Registry::default();
++        let requests: Counter = Counter::default();
++        requests.inc_by(12345);
++        registry.register(
++            "fixture_requests",
++            "A frozen request counter for compression verification",
++            requests,
++        );
++        let active = Gauge::<i64>::default();
++        active.set(17);
++        registry.register(
++            "fixture_active",
++            "A frozen active connection gauge for compression verification",
++            active,
++        );
++        let mut text = String::new();
++        prometheus_client::encoding::text::encode(&mut text, &registry).unwrap();
++        text.into()
++    }
++
++    async fn compressed_snapshot(encoding: &str, frozen: bytes::Bytes) -> bytes::Bytes {
++        use http_body_util::{BodyExt, Empty, Full};
++        use tower::{ServiceBuilder, ServiceExt};
++        let service = ServiceBuilder::new()
++            .layer(tower_http::compression::CompressionLayer::new())
++            .service_fn(move |_request: http::Request<Empty<bytes::Bytes>>| {
++                let body = frozen.clone();
++                async move {
++                    Ok::<_, std::convert::Infallible>(
++                        http::Response::builder()
++                            .status(http::StatusCode::OK)
++                            .header(http::header::CONTENT_TYPE, "text/plain; charset=utf-8")
++                            .body(Full::new(body))
++                            .unwrap(),
++                    )
++                }
++            });
++        let request = http::Request::builder()
++            .header(http::header::ACCEPT_ENCODING, encoding)
++            .body(Empty::<bytes::Bytes>::new())
++            .unwrap();
++        let response = service.oneshot(request).await.unwrap();
++        assert_eq!(response.status(), http::StatusCode::OK);
++        assert_eq!(
++            response.headers()[http::header::CONTENT_TYPE],
++            "text/plain; charset=utf-8"
++        );
++        assert_eq!(
++            response
++                .headers()
++                .get(http::header::CONTENT_ENCODING)
++                .map(|v| v.to_str().unwrap())
++                .unwrap_or(""),
++            encoding
++        );
++        response.into_body().collect().await.unwrap().to_bytes()
++    }
++
++    async fn decompress_snapshot(encoding: &str, bytes: &[u8]) -> std::io::Result<Vec<u8>> {
++        use async_compression::tokio::bufread::{BrotliDecoder, GzipDecoder, ZstdDecoder};
++        use tokio::io::AsyncReadExt;
++        let mut decoded = Vec::new();
++        match encoding {
++            "gzip" => {
++                GzipDecoder::new(bytes).read_to_end(&mut decoded).await?;
++            }
++            "zstd" => {
++                ZstdDecoder::new(bytes).read_to_end(&mut decoded).await?;
++            }
++            "br" => {
++                BrotliDecoder::new(bytes).read_to_end(&mut decoded).await?;
++            }
++            "" => decoded.extend_from_slice(bytes),
++            _ => {
++                return Err(std::io::Error::new(
++                    std::io::ErrorKind::InvalidInput,
++                    "unsupported test encoding",
++                ));
++            }
++        }
++        Ok(decoded)
++    }
++
++    #[tokio::test]
++    async fn metrics_compression_frozen_body_roundtrips_exactly() {
++        let frozen = frozen_metrics_body();
++        let expected_schema =
++            crate::test_helpers::app::metrics_schema(std::str::from_utf8(&frozen).unwrap())
++                .unwrap();
++        for encoding in ["", "gzip", "zstd", "br"] {
++            let encoded = compressed_snapshot(encoding, frozen.clone()).await;
++            if !encoding.is_empty() {
++                assert_ne!(
++                    encoded, frozen,
++                    "requested compression returned raw bytes for {encoding}"
++                );
++            }
++            let decoded = decompress_snapshot(encoding, &encoded).await.unwrap();
++            assert_eq!(
++                decoded.as_slice(),
++                frozen.as_ref(),
++                "frozen body roundtrip failed for {encoding}"
++            );
++            let actual_schema =
++                crate::test_helpers::app::metrics_schema(std::str::from_utf8(&decoded).unwrap())
++                    .unwrap();
++            assert_eq!(actual_schema, expected_schema);
++        }
++    }
++
++    #[tokio::test]
++    async fn metrics_compression_truncated_body_is_rejected() {
++        let frozen = frozen_metrics_body();
++        for encoding in ["gzip", "zstd", "br"] {
++            let encoded = compressed_snapshot(encoding, frozen.clone()).await;
++            assert!(encoded.len() > 2);
++            let truncated = &encoded[..encoded.len() / 2];
++            assert!(
++                decompress_snapshot(encoding, truncated).await.is_err(),
++                "truncated {encoding} stream was accepted"
++            );
++        }
++    }
++
++    #[tokio::test]
++    async fn metrics_compression_corrupt_headers_and_gzip_checksum_are_rejected() {
++        let frozen = frozen_metrics_body();
++        for encoding in ["gzip", "zstd"] {
++            let mut encoded = compressed_snapshot(encoding, frozen.clone()).await.to_vec();
++            encoded[..4].fill(0);
++            assert!(
++                decompress_snapshot(encoding, &encoded).await.is_err(),
++                "corrupt {encoding} header was accepted"
++            );
++        }
++        // Gzip carries a CRC32 trailer. Brotli does not provide an equivalent
++        // checksum, so no general corruption-integrity claim is made for br.
++        let mut gzip = compressed_snapshot("gzip", frozen).await.to_vec();
++        let crc_offset = gzip.len() - 8;
++        gzip[crc_offset] ^= 0x80;
++        assert!(
++            decompress_snapshot("gzip", &gzip).await.is_err(),
++            "corrupt gzip checksum was accepted"
++        );
++    }
+ }
+diff --git a/src/proxy.rs b/src/proxy.rs
+index 613568e..9aa1ca8 100644
+--- a/src/proxy.rs
++++ b/src/proxy.rs
+@@ -405,6 +405,7 @@ pub struct Addresses {
+ #[derive(Debug, PartialEq, Eq)]
+ pub enum AuthorizationRejectionError {
+     AuthenticationRequired,
++    NativeSourceBinding(Strng),
+     XdsSessionUnavailable,
+     UnclassifiedEgress(SocketAddr),
+     UnknownProtectedDestination(SocketAddr),
+@@ -422,6 +423,9 @@ impl fmt::Display for AuthorizationRejectionError {
+     fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
+         match self {
+             Self::AuthenticationRequired => write!(fmt, "verified TLS peer required"),
++            Self::NativeSourceBinding(reason) => {
++                write!(fmt, "native direct source binding rejected: {reason}")
++            }
+             Self::XdsSessionUnavailable => {
+                 write!(fmt, "current xDS authorization snapshot unavailable")
+             }
+diff --git a/src/proxy/connection_manager.rs b/src/proxy/connection_manager.rs
+index d72ba1f..4c075ae 100644
+--- a/src/proxy/connection_manager.rs
++++ b/src/proxy/connection_manager.rs
+@@ -402,6 +402,7 @@ pub struct PolicyWatcher {
+     stop: DrainWatcher,
+     connection_manager: ConnectionManager,
+     drain_participant: Option<crate::xds::DrainParticipant>,
++    workloads_changed: tokio::sync::watch::Receiver<()>,
+     policies_changed: tokio::sync::watch::Receiver<()>,
+ }
+ 
+@@ -414,6 +415,7 @@ impl PolicyWatcher {
+         // Subscribe before the watcher task is spawned so policy changes cannot
+         // be lost between construction and its first poll.
+         let policies_changed = state.read().policies.subscribe();
++        let workloads_changed = state.read().workloads.new_subscriber();
+         let drain_participant = state
+             .xds_session()
+             .map(|gate| gate.register_drain_participant());
+@@ -423,11 +425,13 @@ impl PolicyWatcher {
+             connection_manager,
+             drain_participant,
+             policies_changed,
++            workloads_changed,
+         }
+     }
+ 
+     pub async fn run(self) {
+         let mut policies_changed = self.policies_changed;
++        let mut workloads_changed = self.workloads_changed;
+         let session_gate = self.state.xds_session();
+         let mut session_changes = session_gate.as_ref().map(|gate| gate.subscribe());
+         if let (Some(gate), Some(participant)) = (&session_gate, self.drain_participant) {
+@@ -468,12 +472,17 @@ impl PolicyWatcher {
+                         }
+                     }
+                 }
+-                _ = policies_changed.changed() => {
++                _ = async {
++                    tokio::select! {
++                        _ = policies_changed.changed() => {},
++                        _ = workloads_changed.changed() => {},
++                    }
++                } => {
+                     let connections = self.connection_manager.connections();
+                     for conn in connections {
+                         if self.state.assert_rbac(&conn.ctx).await.is_err() {
+                             self.connection_manager.close(&conn).await;
+-                            info!("connection {} closed because it's no longer allowed after a policy update", conn.ctx);
++                            info!("connection {} closed because it's no longer allowed after a policy/workload update", conn.ctx);
+                         }
+                     }
+                 }
+@@ -529,6 +538,7 @@ mod tests {
+         // track a new connection
+         let rbac_ctx1 = InboundConnection {
+             ctx: crate::state::ProxyRbacContext {
++                native_source: None,
+                 conn: Connection {
+                     src_identity: None,
+                     src: std::net::SocketAddr::new(
+@@ -563,6 +573,7 @@ mod tests {
+         // track a second connection
+         let rbac_ctx2 = InboundConnection {
+             ctx: crate::state::ProxyRbacContext {
++                native_source: None,
+                 conn: Connection {
+                     src_identity: None,
+                     src: std::net::SocketAddr::new(
+@@ -632,6 +643,7 @@ mod tests {
+         // create a new connection
+         let conn1 = InboundConnection {
+             ctx: crate::state::ProxyRbacContext {
++                native_source: None,
+                 conn: Connection {
+                     src_identity: None,
+                     src: std::net::SocketAddr::new(
+@@ -652,6 +664,7 @@ mod tests {
+         // create a second connection
+         let conn2 = InboundConnection {
+             ctx: crate::state::ProxyRbacContext {
++                native_source: None,
+                 conn: Connection {
+                     src_identity: None,
+                     src: std::net::SocketAddr::new(
+@@ -748,6 +761,7 @@ mod tests {
+         // create a test connection
+         let conn1 = InboundConnection {
+             ctx: crate::state::ProxyRbacContext {
++                native_source: None,
+                 conn: Connection {
+                     src_identity: None,
+                     src: std::net::SocketAddr::new(
+@@ -824,6 +838,7 @@ mod tests {
+         .with_xds_session(Some(session.clone()));
+         let connection = |source_port| InboundConnection {
+             ctx: crate::state::ProxyRbacContext {
++                native_source: None,
+                 conn: Connection {
+                     src_identity: None,
+                     src: std::net::SocketAddr::new(
+@@ -976,6 +991,7 @@ mod tests {
+ 
+         let connection = InboundConnection {
+             ctx: crate::state::ProxyRbacContext {
++                native_source: None,
+                 conn: Connection {
+                     src_identity: Some(Identity::Spiffe {
+                         trust_domain: "cluster.local".into(),
+@@ -1156,6 +1172,7 @@ mod tests {
+         let manager = ConnectionManager::default();
+         let connection = InboundConnection {
+             ctx: crate::state::ProxyRbacContext {
++                native_source: None,
+                 conn: Connection {
+                     src: "10.1.2.3:42000".parse().unwrap(),
+                     dst: "10.1.2.4:8080".parse().unwrap(),
+diff --git a/src/proxy/h2/server.rs b/src/proxy/h2/server.rs
+index 8532dc6..d9a8bef 100644
+--- a/src/proxy/h2/server.rs
++++ b/src/proxy/h2/server.rs
+@@ -119,7 +119,7 @@ where
+     Fut: Future<Output = ()> + Send + 'static,
+ {
+     let mut builder = h2::server::Builder::new();
+-    let mut conn = builder
++    let handshake = builder
+         .initial_window_size(cfg.window_size)
+         .initial_connection_window_size(cfg.connection_window_size)
+         .max_frame_size(cfg.frame_size)
+@@ -131,8 +131,12 @@ where
+         // default from hyper
+         .max_concurrent_streams(200)
+         .data_frame_budget(usize::MAX)
+-        .handshake(s)
+-        .await?;
++        .handshake(s);
++    let mut conn = tokio::select! {
++        biased;
++        _ = force_shutdown.changed() => return Err(Error::DrainTimeOut),
++        result = handshake => result?,
++    };
+ 
+     let ping_pong = conn
+         .ping_pong()
+@@ -155,6 +159,15 @@ where
+     loop {
+         let drain = drain.clone();
+         tokio::select! {
++            biased;
++            // This also terminates an idle outer connection. Child stream
++            // tasks share this receiver and cancel their application I/O.
++            _ = force_shutdown.changed() => {
++                dropped.store(true, Ordering::Relaxed);
++                teardown.set(Teardown::Transport("immediate shutdown or native source invalidation".into()));
++                conn.abrupt_shutdown(h2::Reason::NO_ERROR);
++                return Err(Error::DrainTimeOut);
++            }
+             request = conn.accept() => {
+                 let Some(request) = request else {
+                     // done!
+diff --git a/src/proxy/inbound.rs b/src/proxy/inbound.rs
+index 23b7eae..3a35219 100644
+--- a/src/proxy/inbound.rs
++++ b/src/proxy/inbound.rs
+@@ -140,6 +140,12 @@ impl Inbound {
+                             dst_network: pi.cfg.network.clone(), // inbound request must be on our network
+                             dst,
+                         };
++                        let native_source = pi.state.capture_native_source(&conn)
++                            .map_err(Error::AuthorizationPolicyRejection)
++                            .inspect_err(|error| metrics::log_early_deny(src, dst, Reporter::destination, error))?;
++                        let (force_shutdown, _native_source_owner) = pi.state.native_source_shutdown(
++                            native_source.clone(), force_shutdown,
++                        );
+                         debug!(%conn, "accepted connection");
+                         let cfg = pi.cfg.clone();
+                         // Enforce CRL revocation on this existing connection when a CRL is configured
+@@ -148,15 +154,17 @@ impl Inbound {
+                         let request_handler = move |req| {
+                             let id = Self::extract_traceparent(&req);
+                             let peer = conn.src;
+-                            let req_handler = Self::serve_connect(
++                            let req_handler = Box::pin(Self::serve_connect(
+                                 pi.clone(),
+                                 conn.clone(),
++                                native_source.clone(),
+                                 self.enable_orig_src,
+                                 req,
+-                            )
++                            ))
+                             .instrument(info_span!("inbound", %id, %peer));
+-                            // This is for each user connection, so most important to keep small
+-                            assertions::size_between_ref(1500, 2750, &req_handler);
++                            // Keep the per-application task small by boxing its expanded body.
++                            // The original upper task-size bound remains unchanged.
++                            assertions::size_between_ref(8, 2750, &req_handler);
+                             req_handler
+                         };
+ 
+@@ -231,6 +239,7 @@ impl Inbound {
+     async fn serve_connect(
+         pi: Arc<ProxyInputs>,
+         conn: Connection,
++        native_source: Option<Arc<crate::state::source_binding::DirectSource>>,
+         enable_original_source: bool,
+         req: H2Request,
+     ) {
+@@ -243,7 +252,7 @@ impl Inbound {
+         // phases.
+ 
+         // Initial phase, build up context about the request.
+-        let ri = match Self::build_inbound_request(&pi, conn, req.get_request()).await {
++        let mut ri = match Self::build_inbound_request(&pi, conn, req.get_request()).await {
+             Ok(i) => i,
+             Err(InboundError(e, code)) => {
+                 // At this point in processing, we never built up full context to log a complete access log.
+@@ -258,6 +267,8 @@ impl Inbound {
+             }
+         };
+ 
++        ri.rbac_ctx.native_source = native_source;
++
+         // Now we have enough context to properly report logs and metrics. Group everything else that
+         // can fail before we send the OK response here.
+         let rx = async {
+@@ -374,6 +385,32 @@ impl Inbound {
+         ri.result_tracker.record(res);
+     }
+ 
++    fn validate_native_direct_target(
++        conn: &Connection,
++        destination: &Workload,
++        hbone: &HboneAddress,
++        headers: &http::HeaderMap,
++    ) -> Result<(), Error> {
++        let direct = matches!(hbone, HboneAddress::SocketAddr(addr)
++            if addr.ip() == conn.dst.ip() && destination.workload_ips.contains(&addr.ip()));
++        if !direct
++            || headers.contains_key(X_FORWARDED_NETWORK_HEADER)
++            || destination.waypoint.is_some()
++            || destination.network_gateway.is_some()
++            || destination.application_tunnel.is_some()
++            || destination.native_tunnel
++        {
++            return Err(Error::AuthorizationPolicyRejection(
++                proxy::AuthorizationRejectionError::NativeSourceBinding(
++                    "strict native policy supports only direct Pod-address CONNECT".into(),
++                ),
++            ));
++        }
++        // Forwarded and baggage remain telemetry. Neither can substitute for
++        // the kernel socket or the captured verified TLS peer witness.
++        Ok(())
++    }
++
+     // build_inbound_request builds up the context for an inbound request.
+     async fn build_inbound_request<T: RequestParts>(
+         pi: &Arc<ProxyInputs>,
+@@ -401,6 +438,16 @@ impl Inbound {
+             // At this point we already fetched the local workload for TLS, so it should be infallible.
+             .map_err(InboundError::build(StatusCode::SERVICE_UNAVAILABLE))?;
+ 
++        if pi.state.native_source_required() {
++            Self::validate_native_direct_target(
++                &conn,
++                &destination_workload,
++                &hbone_addr,
++                req.headers(),
++            )
++            .map_err(InboundError::build(StatusCode::UNAUTHORIZED))?;
++        }
++
+         // Check the request is allowed by verifying the destination
+         Self::validate_destination(&pi.state, &conn, &destination_workload, &hbone_addr)
+             .await
+@@ -424,6 +471,7 @@ impl Inbound {
+         };
+ 
+         let rbac_ctx = ProxyRbacContext {
++            native_source: None,
+             conn,
+             dest_workload: destination_workload.clone(),
+         };
+@@ -1204,4 +1252,55 @@ mod tests {
+         assert_eq!(baggage_disabled.namespace, None);
+         assert_eq!(baggage_disabled.workload_name, None);
+     }
++    #[test]
++    fn native_direct_target_ignores_telemetry_identity_and_rejects_gateway_targets() {
++        let conn = Connection {
++            src: "10.1.0.1:12345".parse().unwrap(),
++            dst: "10.2.0.1:15008".parse().unwrap(),
++            src_identity: None,
++            dst_network: "".into(),
++        };
++        let destination = Workload {
++            workload_ips: vec![conn.dst.ip()],
++            ..crate::test_helpers::test_default_workload()
++        };
++        let direct = HboneAddress::SocketAddr("10.2.0.1:8080".parse().unwrap());
++        let mut headers = http::HeaderMap::new();
++        headers.insert("forwarded", http::HeaderValue::from_static("for=10.99.0.1"));
++        headers.insert(
++            "baggage",
++            http::HeaderValue::from_static("k8s.cluster.name=foreign,service.name=admin"),
++        );
++        assert!(
++            Inbound::validate_native_direct_target(&conn, &destination, &direct, &headers).is_ok()
++        );
++        assert_eq!(conn.src, "10.1.0.1:12345".parse().unwrap());
++        assert!(
++            conn.src_identity.is_none(),
++            "headers do not create a verified principal"
++        );
++        let mismatch = HboneAddress::SocketAddr("10.9.0.1:8080".parse().unwrap());
++        assert!(
++            Inbound::validate_native_direct_target(&conn, &destination, &mismatch, &headers)
++                .is_err()
++        );
++        let hostname = HboneAddress::SvcHostname("server.example".into(), 8080);
++        assert!(
++            Inbound::validate_native_direct_target(&conn, &destination, &hostname, &headers)
++                .is_err()
++        );
++        headers.insert(
++            crate::proxy::X_FORWARDED_NETWORK_HEADER,
++            http::HeaderValue::from_static("foreign-network"),
++        );
++        assert!(
++            Inbound::validate_native_direct_target(&conn, &destination, &direct, &headers).is_err()
++        );
++        headers.remove(crate::proxy::X_FORWARDED_NETWORK_HEADER);
++        let mut destination = destination;
++        destination.native_tunnel = true;
++        assert!(
++            Inbound::validate_native_direct_target(&conn, &destination, &direct, &headers).is_err()
++        );
++    }
+ }
+diff --git a/src/proxy/inbound_passthrough.rs b/src/proxy/inbound_passthrough.rs
+index 75629b1..56ac5d0 100644
+--- a/src/proxy/inbound_passthrough.rs
++++ b/src/proxy/inbound_passthrough.rs
+@@ -152,6 +152,7 @@ impl InboundPassthrough {
+         let upstream_services = pi.state.get_services_by_workload(&upstream_workload);
+ 
+         let rbac_ctx = crate::state::ProxyRbacContext {
++            native_source: None,
+             conn: rbac::Connection {
+                 src_identity: None,
+                 src: source_addr,
+diff --git a/src/state.rs b/src/state.rs
+index ee1dc38..f245cd3 100644
+--- a/src/state.rs
++++ b/src/state.rs
+@@ -55,6 +55,7 @@ use self::workload::ApplicationTunnel;
+ 
+ pub mod policy;
+ pub mod service;
++pub(crate) mod source_binding;
+ pub mod workload;
+ 
+ #[derive(Debug, Eq, PartialEq, Clone)]
+@@ -154,12 +155,24 @@ impl WorkloadInfo {
+ #[derive(Educe, Debug, Clone, Eq, serde::Serialize)]
+ #[educe(PartialEq, Hash)]
+ pub struct ProxyRbacContext {
++    #[serde(skip_serializing)]
++    pub(crate) native_source: Option<Arc<source_binding::DirectSource>>,
+     pub conn: rbac::Connection,
+     #[educe(Hash(ignore), PartialEq(ignore))]
+     pub dest_workload: Arc<Workload>,
+ }
+ 
+ impl ProxyRbacContext {
++    /// Construct an ordinary context without authenticated native source proof.
++    /// Strict native authorization requires the internal TLS capture path.
++    pub fn new(conn: rbac::Connection, dest_workload: Arc<Workload>) -> Self {
++        Self {
++            native_source: None,
++            conn,
++            dest_workload,
++        }
++    }
++
+     pub fn into_conn(self) -> rbac::Connection {
+         self.conn
+     }
+@@ -524,6 +537,8 @@ pub struct DemandProxyState {
+     /// Immutable process requirement; cannot disappear during an xDS resync.
+     #[serde(skip_serializing)]
+     require_inbound_mtls: bool,
++    #[serde(skip_serializing)]
++    native_source_ranges: Option<Arc<config::MeshEgressConfig>>,
+     /// Tracks whether strict-mode authorization data belongs to the current,
+     /// fully accepted xDS snapshot and whether old inbound streams were drained.
+     #[serde(skip_serializing)]
+@@ -588,6 +603,7 @@ impl DemandProxyState {
+         let dns_resolver = rb.build().expect("dns resolver config should be valid");
+         Self {
+             require_inbound_mtls: false,
++            native_source_ranges: None,
+             xds_session: None,
+             profile_provider: None,
+             state,
+@@ -659,6 +675,7 @@ impl DemandProxyState {
+             return Err(proxy::AuthorizationRejectionError::XdsSessionUnavailable);
+         }
+         let state = self.read();
++        self.validate_native_source(ctx, &state)?;
+         if self.require_inbound_mtls {
+             for required in &wl.authorization_policies {
+                 if state.policies.get(required).is_none() {
+@@ -1334,6 +1351,11 @@ impl ProxyStateManager {
+                 proxy_metrics,
+             )
+             .with_require_inbound_mtls(config.require_inbound_mtls)
++            .with_native_source_ranges(
++                config
++                    .require_mesh_hbone
++                    .then(|| config.mesh_egress.clone()),
++            )
+             .with_xds_session(xds_session)
+             .with_profile_provider(profile_provider),
+         })
+@@ -1777,6 +1799,7 @@ mod tests {
+         let key: Strng = format!("{dest_uid}").into();
+         let workload = &state.read().workloads.by_uid[&key];
+         crate::state::ProxyRbacContext {
++            native_source: None,
+             conn: rbac::Connection {
+                 src_identity: Some(Identity::Spiffe {
+                     trust_domain: "cluster.local".into(),
+diff --git a/src/state/source_binding.rs b/src/state/source_binding.rs
+new file mode 100644
+index 0000000..c5f5f92
+--- /dev/null
++++ b/src/state/source_binding.rs
+@@ -0,0 +1,613 @@
++// Copyright Istio Authors
++// SPDX-License-Identifier: Apache-2.0
++
++//! Process-local binding of a direct HBONE TLS peer to one native workload
++//! observation. This joins facts; it does not attest source-IP anti-spoofing,
++//! remote egress policy, or release Cilium's effective-policy quarantine.
++
++use std::fmt;
++use std::hash::{Hash, Hasher};
++use std::sync::Arc;
++
++use tokio::sync::watch;
++use tokio_util::task::AbortOnDropHandle;
++
++use super::workload::{HealthStatus, InboundProtocol, NetworkMode, Workload, network_addr};
++use super::{DemandProxyState, ProxyRbacContext, ProxyState};
++use crate::config::MeshEgressConfig;
++use crate::proxy::AuthorizationRejectionError;
++use crate::rbac::Connection;
++
++fn reject(reason: &'static str) -> AuthorizationRejectionError {
++    AuthorizationRejectionError::NativeSourceBinding(reason.into())
++}
++
++/// An ephemeral observation, never a persisted ACK, lease, numeric identity or
++/// source authorization. The mutation observation and Arc identity detect ABA even when all
++/// visible fields (including Pod UID and service account) are identical.
++#[derive(Clone)]
++pub(crate) struct DirectSource {
++    workload: Arc<Workload>,
++    connection: Connection,
++    session: u64,
++    observation: u64,
++}
++impl fmt::Debug for DirectSource {
++    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
++        f.debug_struct("DirectSource")
++            .field("uid", &self.workload.uid)
++            .field("cluster", &self.workload.cluster_id)
++            .field("session", &self.session)
++            .finish_non_exhaustive()
++    }
++}
++impl PartialEq for DirectSource {
++    fn eq(&self, other: &Self) -> bool {
++        self.session == other.session
++            && self.observation == other.observation
++            && self.connection == other.connection
++            && Arc::ptr_eq(&self.workload, &other.workload)
++    }
++}
++impl Eq for DirectSource {}
++impl Hash for DirectSource {
++    fn hash<H: Hasher>(&self, state: &mut H) {
++        self.session.hash(state);
++        self.observation.hash(state);
++        self.connection.hash(state);
++        Arc::as_ptr(&self.workload).hash(state);
++    }
++}
++
++fn direct_workload(w: &Workload) -> bool {
++    !w.uid.is_empty()
++        && !w.namespace.is_empty()
++        && !w.service_account.is_empty()
++        && !w.trust_domain.is_empty()
++        && !w.cluster_id.is_empty()
++        && !w.node.is_empty()
++        && w.network_mode == NetworkMode::Standard
++        && w.protocol == InboundProtocol::HBONE
++        && w.status == HealthStatus::Healthy
++        && w.waypoint.is_none()
++        && w.network_gateway.is_none()
++        && w.application_tunnel.is_none()
++        && !w.native_tunnel
++        && w.hostname.is_empty()
++}
++
++impl DirectSource {
++    fn capture(
++        state: &ProxyState,
++        conn: &Connection,
++        session: u64,
++        ranges: &MeshEgressConfig,
++    ) -> Result<Self, AuthorizationRejectionError> {
++        let identity = conn
++            .src_identity
++            .as_ref()
++            .ok_or_else(|| reject("TLS peer URI missing"))?;
++        let (source, observation) = state
++            .workloads
++            .unique_address_observation(&network_addr(conn.dst_network.clone(), conn.src.ip()))
++            .ok_or_else(|| reject("source IP has no unique native workload"))?;
++        if !direct_workload(&source) {
++            return Err(reject("source is not a supported direct HBONE workload"));
++        }
++        if source.identity() != *identity {
++            return Err(reject("kernel peer IP and verified TLS URI disagree"));
++        }
++        let cluster = ranges
++            .cluster_for_workload_ip(&source.cluster_id, &source.trust_domain, conn.src.ip())
++            .map_err(|_| reject("source cluster/domain/IP not independently configured"))?;
++        // cluster_for_workload_ip also admits gateway ranges; direct-source
++        // authorization deliberately does not. No forwarded network is trusted.
++        if !cluster
++            .pod_cidrs
++            .iter()
++            .any(|cidr| cidr.contains(&conn.src.ip()))
++        {
++            return Err(reject("source is outside the approved direct Pod ranges"));
++        }
++        Ok(Self {
++            workload: source,
++            connection: conn.clone(),
++            session,
++            observation,
++        })
++    }
++
++    fn current(
++        &self,
++        state: &ProxyState,
++        conn: &Connection,
++        session: u64,
++        ranges: &MeshEgressConfig,
++    ) -> Result<(), AuthorizationRejectionError> {
++        // The application port replaces the original HBONE destination port.
++        // Source socket, destination network, and verified URI must not change.
++        if self.session != session
++            || self.connection.src != conn.src
++            || self.connection.src_identity != conn.src_identity
++            || self.connection.dst_network != conn.dst_network
++        {
++            return Err(reject("captured TLS peer/session changed"));
++        }
++        let current = Self::capture(state, conn, session, ranges)?;
++        if self.observation != current.observation
++            || !Arc::ptr_eq(&self.workload, &current.workload)
++        {
++            return Err(reject(
++                "source workload observation changed; reconnect required",
++            ));
++        }
++        Ok(())
++    }
++}
++
++impl DemandProxyState {
++    /// Internal configuration only: derived from the existing strict mesh mode.
++    /// There is no user-supplied "source authenticated" boolean or header.
++    pub(crate) fn with_native_source_ranges(mut self, ranges: Option<MeshEgressConfig>) -> Self {
++        self.native_source_ranges = ranges.map(Arc::new);
++        self
++    }
++    pub(crate) fn native_source_required(&self) -> bool {
++        self.native_source_ranges.is_some()
++    }
++    pub(crate) fn capture_native_source(
++        &self,
++        conn: &Connection,
++    ) -> Result<Option<Arc<DirectSource>>, AuthorizationRejectionError> {
++        let Some(ranges) = &self.native_source_ranges else {
++            return Ok(None);
++        };
++        let session = self
++            .xds_snapshot_generation()
++            .ok_or(AuthorizationRejectionError::XdsSessionUnavailable)?;
++        let source = DirectSource::capture(&self.read(), conn, session, ranges)?;
++        if self.xds_snapshot_generation() != Some(session) {
++            return Err(AuthorizationRejectionError::XdsSessionUnavailable);
++        }
++        Ok(Some(Arc::new(source)))
++    }
++
++    pub(crate) fn validate_native_source(
++        &self,
++        ctx: &ProxyRbacContext,
++        state: &ProxyState,
++    ) -> Result<(), AuthorizationRejectionError> {
++        let Some(ranges) = &self.native_source_ranges else {
++            return Ok(());
++        };
++        let source = ctx
++            .native_source
++            .as_ref()
++            .ok_or_else(|| reject("captured TLS source absent"))?;
++        let session = self
++            .xds_snapshot_generation()
++            .ok_or(AuthorizationRejectionError::XdsSessionUnavailable)?;
++        source.current(state, &ctx.conn, session, ranges)?;
++        let destination = state
++            .workloads
++            .find_uid(&ctx.dest_workload.uid)
++            .ok_or_else(|| reject("destination workload removed"))?;
++        if !Arc::ptr_eq(&destination, &ctx.dest_workload)
++            || !direct_workload(&destination)
++            || destination.network != ctx.conn.dst_network
++            || !destination.workload_ips.contains(&ctx.conn.dst.ip())
++        {
++            return Err(reject("destination observation or direct address changed"));
++        }
++        if self.xds_snapshot_generation() != Some(session) {
++            return Err(AuthorizationRejectionError::XdsSessionUnavailable);
++        }
++        Ok(())
++    }
++
++    async fn wait_native_source_invalid(&self, source: Arc<DirectSource>) {
++        // Subscribe before checking to cover a delta between capture and spawn.
++        let mut changed = self.read().workloads.new_subscriber();
++        let gate = self.xds_session();
++        let mut sessions = gate.as_ref().map(crate::xds::XdsSessionGate::subscribe);
++        loop {
++            let valid = self.native_source_ranges.as_ref().is_some_and(|ranges| {
++                self.xds_snapshot_generation().is_some_and(|session| {
++                    source
++                        .current(&self.read(), &source.connection, session, ranges)
++                        .is_ok()
++                })
++            });
++            if !valid {
++                tracing::warn!(component="native-source-binding", stage="source-invalidated",
++                    workload_uid=%source.workload.uid, cluster=%source.workload.cluster_id,
++                    session_generation=source.session,
++                    "direct source witness invalidated; cancelling outer HBONE and inner streams");
++                return;
++            }
++            tokio::select! {
++                result = changed.changed() => { if result.is_err() { return; } },
++                _ = async {
++                    match sessions.as_mut() {
++                        Some(receiver) => { let _ = receiver.changed().await; },
++                        None => std::future::pending().await,
++                    }
++                } => {},
++            }
++        }
++    }
++
++    /// Merge source invalidation with existing immediate shutdown. The owner
++    /// must live as long as the outer H2 driver. Dropping it aborts the task,
++    /// drops its sole sender and wakes *all* child stream shutdown receivers.
++    /// Ordinary transport shutdown is propagated unchanged.
++    pub(crate) fn native_source_shutdown(
++        &self,
++        source: Option<Arc<DirectSource>>,
++        mut shutdown: watch::Receiver<()>,
++    ) -> (watch::Receiver<()>, Option<AbortOnDropHandle<()>>) {
++        let Some(source) = source else {
++            return (shutdown, None);
++        };
++        let (send, recv) = watch::channel(());
++        let state = self.clone();
++        let task = tokio::spawn(async move {
++            tokio::select! {
++                _ = shutdown.changed() => {},
++                _ = state.wait_native_source_invalid(source) => {},
++            }
++            send.send_replace(());
++        });
++        (recv, Some(AbortOnDropHandle::new(task)))
++    }
++}
++
++#[cfg(test)]
++pub(crate) mod tests {
++    use super::*;
++    use crate::config::MeshClusterRanges;
++    use crate::identity::Identity;
++    use crate::rbac::{Authorization, RbacAction, RbacMatch, RbacScope, StringMatch};
++    use crate::strng;
++    use crate::test_helpers::test_default_workload;
++    use crate::xds::XdsSessionGate;
++    use hickory_resolver::config::{ResolverConfig, ResolverOpts};
++    use std::sync::RwLock;
++    use std::time::Duration;
++
++    pub(crate) fn fixture(
++        conn: Connection,
++    ) -> (DemandProxyState, ProxyRbacContext, XdsSessionGate) {
++        let source_identity = conn.src_identity.as_ref().unwrap();
++        let Identity::Spiffe {
++            trust_domain,
++            namespace,
++            service_account,
++        } = source_identity;
++        let source = Arc::new(Workload {
++            uid: "source-pod-uid".into(),
++            name: "source".into(),
++            node: "node-a".into(),
++            namespace: namespace.clone(),
++            service_account: service_account.clone(),
++            trust_domain: trust_domain.clone(),
++            cluster_id: "cmtc-a".into(),
++            workload_ips: vec![conn.src.ip()],
++            network: conn.dst_network.clone(),
++            protocol: InboundProtocol::HBONE,
++            ..test_default_workload()
++        });
++        let destination = Arc::new(Workload {
++            uid: "destination-pod-uid".into(),
++            name: "destination".into(),
++            node: "node-b".into(),
++            namespace: "orders".into(),
++            service_account: "api".into(),
++            trust_domain: "cmtc-b.mesh.example".into(),
++            cluster_id: "cmtc-b".into(),
++            workload_ips: vec![conn.dst.ip()],
++            network: conn.dst_network.clone(),
++            protocol: InboundProtocol::HBONE,
++            authorization_policies: vec!["orders/native-fixture".into()],
++            ..test_default_workload()
++        });
++        let mut state = ProxyState::new(None);
++        state.workloads.insert(source);
++        state.workloads.insert(destination.clone());
++        state.policies.insert(
++            "orders/native-fixture".into(),
++            Authorization {
++                name: "native-fixture".into(),
++                namespace: "orders".into(),
++                scope: RbacScope::WorkloadSelector,
++                action: RbacAction::Allow,
++                dry_run: false,
++                rules: vec![vec![vec![RbacMatch {
++                    principals: vec![StringMatch::Exact(
++                        source_identity
++                            .to_strng()
++                            .strip_prefix("spiffe://")
++                            .unwrap()
++                            .into(),
++                    )],
++                    source_ips: vec![ipnet::IpNet::from(conn.src.ip())],
++                    destination_ips: vec![ipnet::IpNet::from(conn.dst.ip())],
++                    destination_ports: vec![conn.dst.port()],
++                    ..Default::default()
++                }]]],
++            },
++        );
++        let gate = XdsSessionGate::new();
++        let generation = gate.begin_session();
++        gate.mark_snapshot_ready(generation);
++        let state = DemandProxyState::new(
++            Arc::new(RwLock::new(state)),
++            None,
++            ResolverConfig::default(),
++            ResolverOpts::default(),
++            crate::test_helpers::helpers::test_proxy_metrics(),
++        )
++        .with_require_inbound_mtls(true)
++        .with_xds_session(Some(gate.clone()))
++        .with_native_source_ranges(Some(MeshEgressConfig {
++            clusters: vec![MeshClusterRanges {
++                cluster_id: "cmtc-a".into(),
++                trust_domain: trust_domain.to_string(),
++                pod_cidrs: vec![ipnet::IpNet::from(conn.src.ip())],
++                service_cidrs: vec![],
++                gateway_cidrs: vec![],
++            }],
++            exceptions: vec![],
++        }));
++        let native_source = state.capture_native_source(&conn).unwrap();
++        (
++            state,
++            ProxyRbacContext {
++                conn,
++                dest_workload: destination,
++                native_source,
++            },
++            gate,
++        )
++    }
++    pub(crate) fn remove_workload(
++        state: &DemandProxyState,
++        uid: &crate::strng::Strng,
++    ) -> Option<Workload> {
++        state.state.write().unwrap().workloads.remove(uid)
++    }
++    pub(crate) fn insert_workload(state: &DemandProxyState, workload: Arc<Workload>) {
++        state.state.write().unwrap().workloads.insert(workload);
++    }
++    fn connection() -> Connection {
++        Connection {
++            src: "10.1.0.10:12345".parse().unwrap(),
++            dst: "10.2.0.10:8080".parse().unwrap(),
++            dst_network: strng::EMPTY,
++            src_identity: Some(Identity::Spiffe {
++                trust_domain: "cmtc-a.mesh.example".into(),
++                namespace: "orders".into(),
++                service_account: "api".into(),
++            }),
++        }
++    }
++    #[tokio::test]
++    async fn direct_native_source_rejects_missing_unknown_ambiguous_and_uri_mismatch() {
++        let (state, ctx, _) = fixture(connection());
++        assert!(state.assert_rbac(&ctx).await.is_ok());
++        let no_witness = ProxyRbacContext::new(ctx.conn.clone(), ctx.dest_workload.clone());
++        assert!(state.assert_rbac(&no_witness).await.is_err());
++        let mut no_tls = ctx.conn.clone();
++        no_tls.src_identity = None;
++        assert!(state.capture_native_source(&no_tls).is_err());
++        let mut unknown = ctx.conn.clone();
++        unknown.src.set_ip("10.1.0.99".parse().unwrap());
++        assert!(state.capture_native_source(&unknown).is_err());
++        let mut wrong_uri = ctx.conn.clone();
++        wrong_uri.src_identity = Some(Identity::Spiffe {
++            trust_domain: "cmtc-a.mesh.example".into(),
++            namespace: "orders".into(),
++            service_account: "other".into(),
++        });
++        assert!(state.capture_native_source(&wrong_uri).is_err());
++        let source = state
++            .read()
++            .workloads
++            .find_uid(&"source-pod-uid".into())
++            .unwrap();
++        let mut duplicate = (*source).clone();
++        duplicate.uid = "other-pod-same-address".into();
++        state
++            .state
++            .write()
++            .unwrap()
++            .workloads
++            .insert(Arc::new(duplicate));
++        assert!(state.capture_native_source(&ctx.conn).is_err());
++        assert!(state.assert_rbac(&ctx).await.is_err());
++        state
++            .state
++            .write()
++            .unwrap()
++            .workloads
++            .remove(&"other-pod-same-address".into());
++        assert!(state.assert_rbac(&ctx).await.is_ok());
++    }
++    #[tokio::test]
++    async fn same_service_account_cannot_inherit_allowed_source_ip_or_old_connection() {
++        let (mut state, ctx, _) = fixture(connection());
++        // The independently supplied fixture ranges include the second Pod.
++        Arc::make_mut(state.native_source_ranges.as_mut().unwrap()).clusters[0].pod_cidrs =
++            vec!["10.1.0.0/24".parse().unwrap()];
++        let source = state
++            .read()
++            .workloads
++            .find_uid(&"source-pod-uid".into())
++            .unwrap();
++        let mut other = (*source).clone();
++        other.uid = "other-label-identity".into();
++        other.workload_ips = vec!["10.1.0.11".parse().unwrap()];
++        state
++            .state
++            .write()
++            .unwrap()
++            .workloads
++            .insert(Arc::new(other));
++        let mut other_ctx = ctx.clone();
++        other_ctx.conn.src.set_ip("10.1.0.11".parse().unwrap());
++        other_ctx.native_source = state.capture_native_source(&other_ctx.conn).unwrap();
++        assert!(
++            state.assert_rbac(&other_ctx).await.is_err(),
++            "same SA cannot replace exact SourceIps match"
++        );
++        state.state.write().unwrap().workloads.remove(&source.uid);
++        state
++            .state
++            .write()
++            .unwrap()
++            .workloads
++            .insert(source.clone()); // SAME Arc ABA
++        assert!(state.assert_rbac(&ctx).await.is_err());
++        let mut fresh = ctx.clone();
++        fresh.native_source = state.capture_native_source(&fresh.conn).unwrap();
++        assert!(
++            state.assert_rbac(&fresh).await.is_ok(),
++            "fresh outer TLS may bind current observation"
++        );
++    }
++    #[tokio::test]
++    async fn unsupported_source_modes_cluster_domain_and_gateway_ranges_are_closed() {
++        for case in 0..8 {
++            let (state, ctx, _) = fixture(connection());
++            let source = state
++                .read()
++                .workloads
++                .find_uid(&"source-pod-uid".into())
++                .unwrap();
++            let mut changed = (*source).clone();
++            match case {
++                0 => changed.cluster_id = "unapproved-cluster".into(),
++                1 => changed.trust_domain = "other.mesh".into(),
++                2 => changed.protocol = InboundProtocol::TCP,
++                3 => changed.network_mode = NetworkMode::HostNetwork,
++                4 => changed.native_tunnel = true,
++                5 => changed.status = HealthStatus::Unhealthy,
++                6 => changed.hostname = "alias.example".into(),
++                7 => changed.node = strng::EMPTY,
++                _ => unreachable!(),
++            }
++            state
++                .state
++                .write()
++                .unwrap()
++                .workloads
++                .insert(Arc::new(changed));
++            assert!(
++                state.capture_native_source(&ctx.conn).is_err(),
++                "case {case}"
++            );
++        }
++        let (mut state, ctx, _) = fixture(connection());
++        let ranges = Arc::make_mut(state.native_source_ranges.as_mut().unwrap());
++        ranges.clusters[0].gateway_cidrs = std::mem::take(&mut ranges.clusters[0].pod_cidrs);
++        assert!(state.capture_native_source(&ctx.conn).is_err());
++    }
++    #[tokio::test]
++    async fn deletion_wakes_idle_source_owner_and_restore_requires_new_witness() {
++        let (state, ctx, _) = fixture(connection());
++        let (_global, global) = watch::channel(());
++        let (mut shutdown, owner) = state.native_source_shutdown(ctx.native_source.clone(), global);
++        let old = state
++            .state
++            .write()
++            .unwrap()
++            .workloads
++            .remove(&"source-pod-uid".into())
++            .unwrap();
++        tokio::time::timeout(Duration::from_secs(2), shutdown.changed())
++            .await
++            .unwrap()
++            .unwrap();
++        assert!(state.assert_rbac(&ctx).await.is_err());
++        state.state.write().unwrap().workloads.insert(Arc::new(old));
++        assert!(state.assert_rbac(&ctx).await.is_err());
++        drop(owner);
++        let mut fresh = ctx.clone();
++        fresh.native_source = state.capture_native_source(&ctx.conn).unwrap();
++        assert!(state.assert_rbac(&fresh).await.is_ok());
++    }
++    #[tokio::test]
++    async fn stale_session_and_source_owner_cancellation_wake_all_shutdown_receivers() {
++        let (state, ctx, gate) = fixture(connection());
++        let (_global, global) = watch::channel(());
++        let (mut outer, owner) = state.native_source_shutdown(ctx.native_source.clone(), global);
++        let mut inner = outer.clone();
++        gate.mark_stale(gate.snapshot().generation);
++        tokio::time::timeout(Duration::from_secs(2), outer.changed())
++            .await
++            .unwrap()
++            .unwrap();
++        assert!(inner.changed().await.is_ok());
++        assert!(state.capture_native_source(&ctx.conn).is_err());
++        drop(owner);
++        let (state, ctx, _) = fixture(connection());
++        let (_global, global) = watch::channel(());
++        let (mut receiver, owner) = state.native_source_shutdown(ctx.native_source.clone(), global);
++        drop(owner);
++        tokio::time::timeout(Duration::from_secs(2), receiver.changed())
++            .await
++            .unwrap()
++            .unwrap_err();
++    }
++    #[tokio::test]
++    async fn real_policy_watcher_drains_on_workload_only_delta_and_allows_fresh_observation() {
++        let (state, mut ctx, gate) = fixture(connection());
++        let manager = crate::proxy::connection_manager::ConnectionManager::default();
++        let (stop, stopped) = crate::drain::new();
++        let watcher = crate::proxy::connection_manager::PolicyWatcher::new(
++            state.clone(),
++            stopped,
++            manager.clone(),
++        );
++        let watcher = tokio::spawn(watcher.run());
++        tokio::time::timeout(Duration::from_secs(2), async {
++            while !gate.is_open() {
++                tokio::task::yield_now().await;
++            }
++        })
++        .await
++        .unwrap();
++        ctx.native_source = state.capture_native_source(&ctx.conn).unwrap();
++        let mut guard = manager.assert_rbac(&state, &ctx, None).await.unwrap();
++        let changed = guard.watcher();
++        let application = tokio::spawn(async move {
++            drop(changed.wait_for_drain().await);
++        });
++        assert_eq!(manager.connections().len(), 1);
++        let previous = remove_workload(&state, &"source-pod-uid".into()).unwrap();
++        tokio::time::timeout(Duration::from_secs(2), application)
++            .await
++            .unwrap()
++            .unwrap();
++        drop(guard);
++        tokio::time::timeout(Duration::from_secs(2), async {
++            while !manager.is_empty() {
++                tokio::task::yield_now().await;
++            }
++        })
++        .await
++        .unwrap();
++        assert!(state.assert_rbac(&ctx).await.is_err());
++        insert_workload(&state, Arc::new(previous));
++        assert!(state.assert_rbac(&ctx).await.is_err());
++        ctx.native_source = state.capture_native_source(&ctx.conn).unwrap();
++        let guard = manager.assert_rbac(&state, &ctx, None).await.unwrap();
++        drop(guard);
++        stop.start_drain_and_wait(crate::drain::DrainMode::Immediate)
++            .await;
++        tokio::time::timeout(Duration::from_secs(2), watcher)
++            .await
++            .unwrap()
++            .unwrap();
++    }
++}
+diff --git a/src/state/workload.rs b/src/state/workload.rs
+index 05c2a96..1f264b9 100644
+--- a/src/state/workload.rs
++++ b/src/state/workload.rs
+@@ -804,6 +804,8 @@ impl From<&Identity> for WorkloadIdentity {
+ #[derive(Debug)]
+ pub struct WorkloadStore {
+     local_node: Option<Strng>,
++    source_observations: HashMap<Strng, u64>,
++    next_source_observation: Option<u64>,
+     // TODO this could be expanded to Sender<Workload> + a full subscriber/streaming
+     // model, but for now just notifying watchers to wake when _any_ insert happens
+     // is simpler (and only requires a channelsize of 1)
+@@ -970,6 +972,8 @@ impl WorkloadStore {
+     pub fn new(local_node: Option<Strng>) -> Self {
+         WorkloadStore {
+             local_node,
++            source_observations: Default::default(),
++            next_source_observation: Some(1),
+             insert_notifier: Sender::new(()),
+             by_addr: Default::default(),
+             node_local_by_identity: Default::default(),
+@@ -979,7 +983,7 @@ impl WorkloadStore {
+     }
+ 
+     // Returns a new subscriber. Note that subscribers are only guaranteed to be notified on
+-    // new values sent _after_ their creation, so callers should create, check current state,
++    // inserts/removals sent _after_ their creation, so callers should create, check current state,
+     // then sub.
+     pub fn new_subscriber(&self) -> Receiver<()> {
+         self.insert_notifier.subscribe()
+@@ -998,6 +1002,10 @@ impl WorkloadStore {
+                     .or_insert_with(|| WorkloadByAddr::Single(w.clone()));
+             }
+         }
++        if let Some(observation) = self.next_source_observation {
++            self.source_observations.insert(w.uid.clone(), observation);
++            self.next_source_observation = observation.checked_add(1);
++        }
+         self.by_uid.insert(w.uid.clone(), w.clone());
+         // Only track local nodes to avoid overhead
+         if self.local_node.is_none() || self.local_node.as_ref() == Some(&w.node) {
+@@ -1024,6 +1032,7 @@ impl WorkloadStore {
+                 None
+             }
+             Some(prev) => {
++                self.source_observations.remove(uid);
+                 if prev.network_mode != NetworkMode::HostNetwork {
+                     for wip in prev.workload_ips.iter() {
+                         if let Entry::Occupied(mut o) =
+@@ -1049,6 +1058,9 @@ impl WorkloadStore {
+                     }
+                 }
+ 
++                // Deletion must wake source leases and active-flow revalidation,
++                // including a remove/reinsert with identical visible fields.
++                self.insert_notifier.send_replace(());
+                 Some(prev.deref().clone())
+             }
+         }
+@@ -1059,6 +1071,27 @@ impl WorkloadStore {
+         self.by_addr.get(addr).map(WorkloadByAddr::get)
+     }
+ 
++    /// Authorization requires one owner; the general routing lookup deliberately
++    /// ranks duplicate owners and is not a source-identity proof.
++    pub(crate) fn find_unique_address(&self, addr: &NetworkAddress) -> Option<Arc<Workload>> {
++        match self.by_addr.get(addr)? {
++            WorkloadByAddr::Single(workload) => Some(workload.clone()),
++            WorkloadByAddr::Many(_) => None,
++        }
++    }
++
++    /// A process-local mutation incarnation, including same-Arc remove/reinsert.
++    /// Exhaustion permanently closes native source admission until restart.
++    pub(crate) fn unique_address_observation(
++        &self,
++        addr: &NetworkAddress,
++    ) -> Option<(Arc<Workload>, u64)> {
++        self.next_source_observation?;
++        let workload = self.find_unique_address(addr)?;
++        let observation = *self.source_observations.get(&workload.uid)?;
++        Some((workload, observation))
++    }
++
+     /// Finds the workload by workload information, as an arc.
+     pub fn find_by_info(&self, wl: &WorkloadInfo) -> Option<Arc<Workload>> {
+         // We do not have an index directly on the full workload info, but we can narrow it down
+@@ -2334,4 +2367,34 @@ mod tests {
+         // Make sure we get a valid VIP
+         assert_eq!(port, 8080);
+     }
++    #[test]
++    fn direct_source_observation_never_reuses_same_arc_or_wraps_counter() {
++        let mut store = WorkloadStore::new(None);
++        let workload = Arc::new(Workload {
++            uid: "source".into(),
++            workload_ips: vec!["10.1.0.1".parse().unwrap()],
++            ..crate::test_helpers::test_default_workload()
++        });
++        let address = network_addr(workload.network.clone(), workload.workload_ips[0]);
++        store.insert(workload.clone());
++        let (_, first) = store.unique_address_observation(&address).unwrap();
++        store.remove(&workload.uid);
++        assert!(store.unique_address_observation(&address).is_none());
++        assert!(store.source_observations.is_empty());
++        store.insert(workload.clone());
++        let (_, second) = store.unique_address_observation(&address).unwrap();
++        assert!(
++            second > first,
++            "reusing the identical Arc is still a new observation"
++        );
++        store.next_source_observation = Some(u64::MAX);
++        store.insert(workload.clone());
++        assert!(store.next_source_observation.is_none());
++        assert!(store.unique_address_observation(&address).is_none());
++        store.insert(workload);
++        assert!(
++            store.unique_address_observation(&address).is_none(),
++            "overflow cannot reopen source admission"
++        );
++    }
+ }
+diff --git a/src/test_helpers/app.rs b/src/test_helpers/app.rs
+index d171cdc..021c567 100644
+--- a/src/test_helpers/app.rs
++++ b/src/test_helpers/app.rs
+@@ -13,7 +13,7 @@
+ // limitations under the License.
+ 
+ use anyhow::anyhow;
+-use std::collections::HashMap;
++use std::collections::{BTreeSet, HashMap};
+ use std::io;
+ use std::net::{IpAddr, Ipv4Addr, SocketAddr};
+ use std::ops::Deref;
+@@ -23,7 +23,7 @@ use std::time::Duration;
+ use bytes::Bytes;
+ 
+ use async_compression::tokio::bufread::{BrotliDecoder, GzipDecoder, ZstdDecoder};
+-use http::header::CONTENT_ENCODING;
++use http::header::{CONTENT_ENCODING, CONTENT_TYPE};
+ use http_body_util::Empty;
+ use http_body_util::{BodyExt, BodyStream};
+ use hyper::body::Incoming;
+@@ -174,6 +174,16 @@ impl TestApp {
+             .unwrap();
+         let client = hyper_util::pooling_client();
+         let (parts, body) = client.request(req).await?.into_parts();
++        if parts.status != http::StatusCode::OK {
++            anyhow::bail!("metrics returned HTTP {}", parts.status);
++        }
++        let content_type = parts
++            .headers
++            .get(CONTENT_TYPE)
++            .and_then(|v| v.to_str().ok());
++        if content_type != Some("text/plain; charset=utf-8") {
++            anyhow::bail!("unexpected metrics content type: {content_type:?}");
++        }
+         let frame_stream = BodyStream::new(body);
+         let byte_stream = frame_stream.map(|item| {
+             item.map(|frame| frame.into_data().unwrap_or_else(|_| Bytes::new()))
+@@ -388,6 +398,45 @@ pub async fn socks5_connect(
+     Ok(stream)
+ }
+ 
++/// Parse a complete scrape and return its stable metric descriptors. Sample
++/// values and labelsets are deliberately excluded: live collectors can change
++/// them between two HTTP requests even when compression is correct.
++pub fn metrics_schema(text: &str) -> anyhow::Result<BTreeSet<String>> {
++    // Scrape::parse is permissive about malformed lines. Require each data
++    // line to be recognized with a valid sample value before using its schema.
++    for line in text
++        .lines()
++        .filter(|line| !line.trim().is_empty() && !line.trim_start().starts_with('#'))
++    {
++        match prometheus_parse::LineInfo::parse(line) {
++            prometheus_parse::LineInfo::Sample { value, .. }
++                if matches!(value, "+Inf" | "Inf" | "-Inf" | "NaN")
++                    || value.parse::<f64>().is_ok() => {}
++            _ => anyhow::bail!("metrics response contains an invalid sample line: {line}"),
++        }
++    }
++    let scrape = Scrape::parse(
++        text.lines()
++            .map(|line| Ok::<_, io::Error>(line.to_string())),
++    )?;
++    if scrape.docs.is_empty() || scrape.samples.is_empty() {
++        anyhow::bail!("metrics response contains no parsed descriptors or samples");
++    }
++    let schema: BTreeSet<_> = text
++        .lines()
++        .filter(|line| {
++            line.starts_with("# HELP ")
++                || line.starts_with("# TYPE ")
++                || line.starts_with("# UNIT ")
++        })
++        .map(str::to_string)
++        .collect();
++    if !schema.iter().any(|line| line.starts_with("# TYPE ")) {
++        anyhow::bail!("metrics response contains no metric types");
++    }
++    Ok(schema)
++}
++
+ #[derive(Debug)]
+ pub struct ParsedMetrics {
+     scrape: Scrape,
+@@ -454,3 +503,47 @@ fn superset_of(base: &HashMap<String, String>, check: &HashMap<String, String>)
+     }
+     true
+ }
++
++#[cfg(test)]
++mod compression_schema_tests {
++    use super::metrics_schema;
++
++    #[test]
++    fn metrics_schema_ignores_values_but_preserves_types_and_help() {
++        let original =
++            "# HELP example Work in progress.\n# TYPE example gauge\nexample{worker=\"0\"} 9\n";
++        let changed = "# HELP example Work in progress.\n# TYPE example gauge\nexample{worker=\"0\"} 10\nexample{worker=\"1\"} 11\n";
++        assert_ne!(original.len(), changed.len());
++        assert_eq!(
++            metrics_schema(original).unwrap(),
++            metrics_schema(changed).unwrap()
++        );
++        let changed_type = original.replace("# TYPE example gauge", "# TYPE example counter");
++        assert_ne!(
++            metrics_schema(original).unwrap(),
++            metrics_schema(&changed_type).unwrap()
++        );
++        let changed_help = original.replace("Work in progress.", "A different contract.");
++        assert_ne!(
++            metrics_schema(original).unwrap(),
++            metrics_schema(&changed_help).unwrap()
++        );
++    }
++
++    #[test]
++    fn metrics_schema_rejects_empty_unparsed_or_missing_type() {
++        for invalid in [
++            "",
++            "not a metrics scrape",
++            "# HELP example Missing sample.\n# TYPE example gauge\n",
++            "# HELP example Missing type.\nexample 1\n",
++            "# HELP example Invalid sample.\n# TYPE example gauge\nexample 1\ngarbage\n",
++            "# HELP example Invalid value.\n# TYPE example gauge\nexample 1\nexample broken\n",
++        ] {
++            assert!(
++                metrics_schema(invalid).is_err(),
++                "accepted invalid metrics response: {invalid}"
++            );
++        }
++    }
++}
+diff --git a/src/tls/profile_provider.rs b/src/tls/profile_provider.rs
+index 5e6acf8..81c01e5 100644
+--- a/src/tls/profile_provider.rs
++++ b/src/tls/profile_provider.rs
+@@ -2480,4 +2480,335 @@ mod tests {
+             assert_eq!(&data, b"fresh");
+         }
+     }
++    // These are real loopback TCP + native TLS + HTTP/2 tests. The fixture's
++    // independently supplied ranges admit loopback only here; the native
++    // Cilium publisher continues rejecting loopback workload Addresses.
++    #[cfg(target_os = "linux")]
++    async fn direct_source_tls_fixture() -> (
++        ClientTls<TcpStream>,
++        ServerTls<TcpStream>,
++        crate::rbac::Connection,
++        tempfile::TempDir,
++        tempfile::TempDir,
++        Arc<WorkloadCertificate>,
++        Arc<WorkloadCertificate>,
++        Arc<ProfileProvider>,
++        Arc<ProfileProvider>,
++    ) {
++        let root = ca("root", None);
++        let a = ca("a", Some(&root));
++        let b = ca("b", Some(&root));
++        let ca = workload("cmtc-a.mesh.example", &a);
++        let cb = workload("cmtc-b.mesh.example", &b);
++        let wa = live_wire("cmtc-a", &root, &a, &b);
++        let wb = live_wire("cmtc-b", &root, &a, &b);
++        let da = dir();
++        let db = dir();
++        let (pa, ga, sa) = opened(da.path(), &expected(&wa), SystemTime::now);
++        let (pb, gb, sb) = opened(db.path(), &expected(&wb), SystemTime::now);
++        pa.commit(decode(&wa, &expected(&wa), SystemTime::now))
++            .unwrap();
++        pb.commit(decode(&wb, &expected(&wb), SystemTime::now))
++            .unwrap();
++        ready(&pa, &ga, sa);
++        ready(&pb, &gb, sb);
++        let (client, server, connection) = direct_source_tls_again(&ca, &cb, &pa, &pb).await;
++        (client, server, connection, da, db, ca, cb, pa, pb)
++    }
++    #[cfg(target_os = "linux")]
++    async fn direct_source_tls_again(
++        ca: &Arc<WorkloadCertificate>,
++        cb: &Arc<WorkloadCertificate>,
++        pa: &Arc<ProfileProvider>,
++        pb: &Arc<ProfileProvider>,
++    ) -> (
++        ClientTls<TcpStream>,
++        ServerTls<TcpStream>,
++        crate::rbac::Connection,
++    ) {
++        let listener = TcpListener::bind("127.0.0.2:0").await.unwrap();
++        let address = listener.local_addr().unwrap();
++        let client = async {
++            let socket = tokio::net::TcpSocket::new_v4().unwrap();
++            socket.bind("127.0.0.1:0".parse().unwrap()).unwrap();
++            connect(
++                ca.clone(),
++                Some(pa.acquire().unwrap()),
++                socket.connect(address).await.unwrap(),
++                vec![cb.identity().unwrap()],
++                None,
++            )
++            .await
++            .unwrap()
++            .0
++        };
++        let server = async {
++            let (raw, peer) = listener.accept().await.unwrap();
++            let destination = raw.local_addr().unwrap();
++            let server = accept(cb.clone(), Some(pb.acquire().unwrap()), raw, None)
++                .await
++                .unwrap()
++                .0;
++            let (_, ssl) = server.get_ref().get_ref();
++            let certificate = tls::certificate_from_connection(ssl);
++            let connection = crate::rbac::Connection {
++                src: peer,
++                dst: destination,
++                dst_network: crate::strng::EMPTY,
++                src_identity: tls::identity(&certificate),
++            };
++            (server, connection)
++        };
++        let (client, (server, connection)) = tokio::time::timeout(Duration::from_secs(5), async {
++            tokio::join!(client, server)
++        })
++        .await
++        .unwrap();
++        (client, server, connection)
++    }
++
++    #[cfg(target_os = "linux")]
++    #[tokio::test]
++    async fn native_kernel_peer_and_verified_uri_reject_mismatch_and_ambiguous_xds() {
++        let (_client, _server, connection, _da, _db, _ca, _cb, _pa, _pb) =
++            direct_source_tls_fixture().await;
++        assert_eq!(
++            connection.src.ip(),
++            "127.0.0.1".parse::<std::net::IpAddr>().unwrap()
++        );
++        assert_eq!(
++            connection.src_identity.as_ref().unwrap().to_string(),
++            "spiffe://cmtc-a.mesh.example/ns/orders/sa/api"
++        );
++        let (state, ctx, _) = crate::state::source_binding::tests::fixture(connection);
++        assert!(state.assert_rbac(&ctx).await.is_ok());
++        let old = state
++            .read()
++            .workloads
++            .find_uid(&"source-pod-uid".into())
++            .unwrap();
++        let mut wrong = (*old).clone();
++        wrong.service_account = "wrong-label-owner".into();
++        crate::state::source_binding::tests::insert_workload(&state, Arc::new(wrong));
++        assert!(state.capture_native_source(&ctx.conn).is_err());
++        crate::state::source_binding::tests::insert_workload(&state, old.clone());
++        let mut duplicate = (*old).clone();
++        duplicate.uid = "ambiguous-other-pod".into();
++        crate::state::source_binding::tests::insert_workload(&state, Arc::new(duplicate));
++        assert!(state.capture_native_source(&ctx.conn).is_err());
++        assert!(state.assert_rbac(&ctx).await.is_err());
++    }
++
++    #[cfg(target_os = "linux")]
++    #[tokio::test]
++    async fn native_source_delta_closes_actual_idle_and_active_tls_h2_then_fresh_tls_recovers() {
++        for active in [false, true] {
++            for recovered in [false, true] {
++                let (client, server, mut connection, _da, _db, ca, cb, pa, pb) =
++                    direct_source_tls_fixture().await;
++                // RBAC sees the application target port, not outer HBONE port.
++                connection.dst.set_port(8080);
++                let (state, ctx, _) = crate::state::source_binding::tests::fixture(connection);
++                let source = state
++                    .read()
++                    .workloads
++                    .find_uid(&"source-pod-uid".into())
++                    .unwrap();
++                let (_global, global) = watch::channel(());
++                let (shutdown, _source_owner) =
++                    state.native_source_shutdown(ctx.native_source.clone(), global);
++                let (_drain_owner, drain) = crate::drain::new();
++                let (entered, mut entered_rx) = tokio::sync::mpsc::unbounded_channel();
++                let (dropped, mut dropped_rx) = tokio::sync::mpsc::unbounded_channel();
++                struct AckDrop(tokio::sync::mpsc::UnboundedSender<()>);
++                impl Drop for AckDrop {
++                    fn drop(&mut self) {
++                        let _ = self.0.send(());
++                    }
++                }
++                let handler_state = state.clone();
++                let handler_ctx = ctx.clone();
++                let server_task = tokio::spawn(crate::proxy::h2::server::serve_connection(
++                    Arc::new(crate::test_helpers::test_config()),
++                    server,
++                    drain,
++                    shutdown,
++                    None,
++                    move |req| {
++                        let state = handler_state.clone();
++                        let ctx = handler_ctx.clone();
++                        let entered = entered.clone();
++                        let drop_ack = AckDrop(dropped.clone());
++                        async move {
++                            let _drop_ack = drop_ack;
++                            // Forged telemetry never rewrites the captured kernel
++                            // address or verified TLS principal in this native join.
++                            assert!(req.headers().contains_key("forwarded"));
++                            assert!(state.assert_rbac(&ctx).await.is_ok());
++                            let stream = req
++                                .send_response(
++                                    http::Response::builder().status(200).body(()).unwrap(),
++                                )
++                                .await
++                                .unwrap();
++                            let mut stream = crate::proxy::h2::TokioH2Stream::new(stream);
++                            entered.send(()).unwrap();
++                            let mut data = [0; 5];
++                            stream.read_exact(&mut data).await.unwrap();
++                            assert_eq!(&data, b"proof");
++                            stream.write_all(&data).await.unwrap();
++                            std::future::pending::<()>().await;
++                        }
++                    },
++                ));
++                let (mut send, mut driver) = h2::client::handshake(client).await.unwrap();
++                let mut ping = driver.ping_pong().unwrap();
++                let driver = tokio_util::task::AbortOnDropHandle::new(tokio::spawn(driver));
++                tokio::time::timeout(Duration::from_secs(2), ping.ping(h2::Ping::opaque()))
++                    .await
++                    .unwrap()
++                    .unwrap();
++                let mut data = if active {
++                    let request = http::Request::builder()
++                        .method(http::Method::CONNECT)
++                        .uri("127.0.0.2:8080")
++                        .header("forwarded", "for=10.9.9.9")
++                        .header(
++                            "baggage",
++                            "k8s.cluster.name=foreign,service.name=privileged",
++                        )
++                        .body(())
++                        .unwrap();
++                    let (response, mut stream) = send.send_request(request, false).unwrap();
++                    stream
++                        .send_data(bytes::Bytes::from_static(b"proof"), false)
++                        .unwrap();
++                    tokio::time::timeout(Duration::from_secs(2), entered_rx.recv())
++                        .await
++                        .unwrap()
++                        .unwrap();
++                    let response = tokio::time::timeout(Duration::from_secs(2), response)
++                        .await
++                        .unwrap()
++                        .unwrap();
++                    assert_eq!(response.status(), 200);
++                    let mut body = response.into_body();
++                    assert_eq!(
++                        &tokio::time::timeout(Duration::from_secs(2), body.data())
++                            .await
++                            .unwrap()
++                            .unwrap()
++                            .unwrap()[..],
++                        b"proof"
++                    );
++                    Some((body, stream))
++                } else {
++                    None
++                };
++                // Workload-only mutation; no policy event or direct close_all.
++                crate::state::source_binding::tests::remove_workload(&state, &source.uid);
++                if recovered {
++                    crate::state::source_binding::tests::insert_workload(&state, source);
++                    assert!(
++                        state.assert_rbac(&ctx).await.is_err(),
++                        "old TLS witness cannot rebind after ABA"
++                    );
++                    let mut new_ctx = ctx.clone();
++                    new_ctx.native_source = state.capture_native_source(&ctx.conn).unwrap();
++                    assert!(
++                        state.assert_rbac(&new_ctx).await.is_ok(),
++                        "a fresh qualified TLS connection can bind restored state"
++                    );
++                }
++                let result = tokio::time::timeout(Duration::from_secs(2), server_task)
++                    .await
++                    .unwrap()
++                    .unwrap();
++                assert!(result.is_err(), "idle outer driver must stop");
++                if let Some((ref mut body, _)) = data {
++                    let closed = tokio::time::timeout(Duration::from_secs(2), body.data())
++                        .await
++                        .unwrap();
++                    assert!(closed.is_none() || closed.is_some_and(|value| value.is_err()));
++                    tokio::time::timeout(Duration::from_secs(2), dropped_rx.recv())
++                        .await
++                        .unwrap()
++                        .unwrap();
++                }
++                let _ = tokio::time::timeout(Duration::from_secs(2), driver)
++                    .await
++                    .unwrap()
++                    .unwrap();
++                drop(send);
++                if recovered {
++                    // A real NEW TCP/TLS/H2 connection uses the SAME native
++                    // providers and SAME restored workload/policy state.
++                    let (client, server, mut conn) =
++                        direct_source_tls_again(&ca, &cb, &pa, &pb).await;
++                    conn.dst.set_port(8080);
++                    let mut fresh_ctx = ctx.clone();
++                    fresh_ctx.conn = conn;
++                    fresh_ctx.native_source = state.capture_native_source(&fresh_ctx.conn).unwrap();
++                    assert!(state.assert_rbac(&ctx).await.is_err());
++                    assert!(state.assert_rbac(&fresh_ctx).await.is_ok());
++                    let (_global, global) = watch::channel(());
++                    let (shutdown, owner) =
++                        state.native_source_shutdown(fresh_ctx.native_source.clone(), global);
++                    let (_drain, drain) = crate::drain::new();
++                    let serving_state = state.clone();
++                    let serving = tokio::spawn(crate::proxy::h2::server::serve_connection(
++                        Arc::new(crate::test_helpers::test_config()),
++                        server,
++                        drain,
++                        shutdown,
++                        None,
++                        move |req| {
++                            let state = serving_state.clone();
++                            let ctx = fresh_ctx.clone();
++                            async move {
++                                assert!(state.assert_rbac(&ctx).await.is_ok());
++                                let _stream = req
++                                    .send_response(
++                                        http::Response::builder().status(200).body(()).unwrap(),
++                                    )
++                                    .await
++                                    .unwrap();
++                                std::future::pending::<()>().await;
++                            }
++                        },
++                    ));
++                    let (mut sender, driver) = h2::client::handshake(client).await.unwrap();
++                    let driver = tokio_util::task::AbortOnDropHandle::new(tokio::spawn(driver));
++                    let request = http::Request::builder()
++                        .method(http::Method::CONNECT)
++                        .uri("127.0.0.2:8080")
++                        .body(())
++                        .unwrap();
++                    let (response, _body) = sender.send_request(request, false).unwrap();
++                    assert_eq!(
++                        tokio::time::timeout(Duration::from_secs(2), response)
++                            .await
++                            .unwrap()
++                            .unwrap()
++                            .status(),
++                        200
++                    );
++                    // Owner cancellation is a real cleanup event, never an allow.
++                    drop(owner);
++                    assert!(
++                        tokio::time::timeout(Duration::from_secs(2), serving)
++                            .await
++                            .unwrap()
++                            .unwrap()
++                            .is_err()
++                    );
++                    let _ = tokio::time::timeout(Duration::from_secs(2), driver)
++                        .await
++                        .unwrap()
++                        .unwrap();
++                    drop(sender);
++                }
++            }
++        }
++    }
+ }
+diff --git a/src/xds/client.rs b/src/xds/client.rs
+index 05d2182..7febf1a 100644
+--- a/src/xds/client.rs
++++ b/src/xds/client.rs
+@@ -1867,6 +1867,7 @@ mod tests {
+                         dst_network: "".into(),
+                     };
+                     let rbac_ctx = crate::state::ProxyRbacContext {
++                        native_source: None,
+                         conn: conn.clone(),
+                         dest_workload: Arc::new(test_default_workload()),
+                     };
+@@ -1879,6 +1880,7 @@ mod tests {
+                         ..conn
+                     };
+                     let rbac_ctx = crate::state::ProxyRbacContext {
++                        native_source: None,
+                         conn,
+                         dest_workload: Arc::new(test_default_workload()),
+                     };
+@@ -2825,6 +2827,7 @@ mod tests {
+             .find_uid(&strng::new("default/foo0"))
+             .unwrap();
+         let ctx = crate::state::ProxyRbacContext {
++            native_source: None,
+             dest_workload: destination,
+             conn: crate::rbac::Connection {
+                 src: "10.0.0.9:42000".parse().unwrap(),
+diff --git a/tests/namespaced.rs b/tests/namespaced.rs
+index b2b0030..24a576a 100644
+--- a/tests/namespaced.rs
++++ b/tests/namespaced.rs
+@@ -42,7 +42,7 @@ mod namespaced {
+     use tracing::{error, info};
+ 
+     use ztunnel::state::workload::NetworkAddress;
+-    use ztunnel::test_helpers::app::{ParsedMetrics, TestApp};
++    use ztunnel::test_helpers::app::{ParsedMetrics, TestApp, metrics_schema};
+     use ztunnel::test_helpers::linux::TestMode::{Dedicated, Shared};
+     use ztunnel::test_helpers::linux::WorkloadManager;
+     use ztunnel::test_helpers::netns::{Namespace, Resolver};
+@@ -2177,14 +2177,16 @@ mod namespaced {
+     }
+ 
+     async fn verify_metrics_compression(ztunnel: &TestApp) {
+-        let expected = ztunnel.get_metrics("").await.unwrap().len();
++        let expected = metrics_schema(&ztunnel.get_metrics("").await.unwrap()).unwrap();
++        assert!(expected.contains("# TYPE istio_build gauge"));
++        // Each live request encodes a new registry snapshot. Tokio and process
++        // sample values can change while these HTTP requests are in flight.
++        // Header/status validation and decoding happen in get_metrics; compare
++        // the parsed descriptor contract here, not volatile values or lengths.
++        // The server unit tests compare exact bytes for one frozen body.
+         for encoding in ["gzip", "zstd", "br"] {
+-            let actual = ztunnel.get_metrics(encoding).await.unwrap().len();
+-            assert_eq!(
+-                actual, expected,
+-                "decompression mismatch got: {} want: {}",
+-                actual, expected
+-            );
++            let actual = metrics_schema(&ztunnel.get_metrics(encoding).await.unwrap()).unwrap();
++            assert_eq!(actual, expected, "metrics schema changed for {encoding}");
+         }
+     }
+ 

@@ -1,4 +1,6 @@
 import copy, hashlib, json, sys, unittest
+from unittest.mock import patch
+from types import SimpleNamespace
 from pathlib import Path
 from datetime import datetime,timedelta,timezone
 from cryptography import x509
@@ -43,4 +45,31 @@ class Tests(unittest.TestCase):
         p={'metadata':{'uid':'x'},'spec':{'nodeName':'a'},'status':{'phase':'Running','containerStatuses':[{'name':'probe','ready':True,'containerID':'one','imageID':'sha256:1','restartCount':0,'state':{'running':{'startedAt':'old'}}}]}}
         q.same_running_pod(p,copy.deepcopy(p));other=copy.deepcopy(p);other['status']['containerStatuses'][0]['containerID']='two'
         with self.assertRaises(Refusal):q.same_running_pod(p,other)
+
+class RetryTests(unittest.TestCase):
+    def denied(self, text=None):
+        return q.CommandFailure(SimpleNamespace(returncode=1,stderr=text or 'native PID-attested credential fetch: The caller does not have permission; message: "no identity issued"'))
+    def test_propagation_rechecks_fetch_and_logs_recovery(self):
+        logs=[]
+        with patch.object(q,'native_fetch',side_effect=[self.denied(),{'verified':True}]) as fetch, patch.object(q.time,'sleep') as sleep:
+            self.assertEqual(q.native_fetch_registered(None,emit=logs.append),{'verified':True})
+        self.assertEqual(fetch.call_count,2);sleep.assert_called_once_with(2)
+        self.assertTrue(logs[0]['retry']);self.assertEqual(logs[1]['stage'],'SVID-verified')
+    def test_bounded_attempts_do_not_turn_denial_into_success(self):
+        logs=[]
+        with patch.object(q,'native_fetch',side_effect=self.denied()) as fetch, patch.object(q.time,'sleep') as sleep:
+            with self.assertRaises(q.CommandFailure):q.native_fetch_registered(None,emit=logs.append)
+        self.assertEqual(fetch.call_count,5);self.assertFalse(logs[-1]['retry'])
+        self.assertEqual([call.args[0] for call in sleep.call_args_list],[2,4,8,8])
+    def test_tls_and_structural_errors_are_fatal(self):
+        for error in [self.denied('TLS certificate rejected'),Refusal('Pod UID changed')]:
+            with patch.object(q,'native_fetch',side_effect=error) as fetch, patch.object(q.time,'sleep') as sleep:
+                with self.assertRaises(Refusal):q.native_fetch_registered(None,emit=lambda _:None)
+            self.assertEqual(fetch.call_count,1);sleep.assert_not_called()
+    def test_elapsed_deadline_prevents_retry(self):
+        logs=[]
+        with patch.object(q,'native_fetch',side_effect=self.denied()) as fetch, patch.object(q.time,'monotonic',side_effect=[0,60]),patch.object(q.time,'sleep') as sleep:
+            with self.assertRaises(q.CommandFailure):q.native_fetch_registered(None,emit=logs.append)
+        self.assertEqual(fetch.call_count,1);sleep.assert_not_called();self.assertFalse(logs[0]['retry'])
+
 if __name__=='__main__':unittest.main()

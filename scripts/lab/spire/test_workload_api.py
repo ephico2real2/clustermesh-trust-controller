@@ -30,6 +30,9 @@ class Tests(unittest.TestCase):
     def test_node_probe_has_explicit_host_pid_and_no_api_token_or_capabilities(self):
         pod=w.probe_pod('cmtc-a',self.s['nodes'][0],self.s['approvedAgentImage'])
         self.assertTrue(pod['spec']['hostPID'])
+        self.assertEqual(pod['spec']['securityContext']['runAsUser'],1000)
+        self.assertEqual(pod['spec']['securityContext']['runAsGroup'],0)
+        self.assertEqual(pod['spec']['containers'][0]['workingDir'],'/')
         self.assertFalse(pod['spec']['automountServiceAccountToken'])
         self.assertEqual(pod['spec']['containers'][0]['securityContext']['capabilities'],{'drop':['ALL']})
         self.assertFalse(pod['spec']['containers'][0]['securityContext']['allowPrivilegeEscalation'])

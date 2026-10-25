@@ -1,0 +1,4 @@
+#!/bin/bash
+set -euo pipefail
+src=/private/tmp/cmtc-ztunnel-upstream
+podman --connection cmtc-ubuntu-build run --rm --platform linux/arm64 --cpus 2 --memory 4g --security-opt label=disable -e CARGO_HOME=/cargo -e CARGO_BUILD_JOBS=2 -v "$src:$src" -v /private/tmp/cmtc-ztunnel-enforcement/.git:/private/tmp/cmtc-ztunnel-enforcement/.git:ro -v /private/tmp/cmtc-ztunnel-enforcement/out/rust:"$src/out/rust" -v /private/tmp/cmtc-ztunnel-cargo-cache:/cargo -w "$src" def7f2e8dac02fbe34556331944cd766aa7f2ea9b90784f083634d52b59edb0f sh -ec 'git config --global --add safe.directory "$PWD"; cargo fmt --all; cargo test --locked --example spire-workload-check; cargo clippy --locked --example spire-workload-check -- -D warnings' > /private/tmp/cmtc-native-pid-binding-20261025/example-version-tests.log 2>&1

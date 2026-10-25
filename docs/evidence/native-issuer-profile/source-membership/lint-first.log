@@ -1,0 +1,63 @@
+pkg/ztunnel/remote_workload/source_join.go:19:2: import 'time' is not allowed from list 'time': Use github.com/cilium/cilium/pkg/time instead to improve ordering and consistency testing (depguard)
+	"time"
+	^
+pkg/ztunnel/membership/source_publisher.go:215:13: use of `sync.Mutex` forbidden because "Use pkg/lock instead to improve deadlock detection." (forbidigo)
+	mu         sync.Mutex
+	           ^
+pkg/ztunnel/membership/source_publisher_test.go:22:8: use of `sync.Mutex` forbidden because "Use pkg/lock instead to improve deadlock detection." (forbidigo)
+	mu    sync.Mutex
+	      ^
+pkg/ztunnel/membership/source_publisher_test.go:42:12: use of `sync.Mutex` forbidden because "Use pkg/lock instead to improve deadlock detection." (forbidigo)
+	mu        sync.Mutex
+	          ^
+pkg/ztunnel/membership/source_publisher_test.go:116:17: use of `sync.Mutex` forbidden because "Use pkg/lock instead to improve deadlock detection." (forbidigo)
+	mu             sync.Mutex
+	               ^
+pkg/ztunnel/remote_workload/origin_supervisor.go:566:14: use of `sync.Mutex` forbidden because "Use pkg/lock instead to improve deadlock detection." (forbidigo)
+	mu          sync.Mutex
+	            ^
+pkg/ztunnel/remote_workload/source_join.go:224:5: use of `sync.Mutex` forbidden because "Use pkg/lock instead to improve deadlock detection." (forbidigo)
+	mu sync.Mutex
+	   ^
+pkg/ztunnel/remote_workload/source_join.go:20:1: File is not properly formatted (goimports)
+
+^
+pkg/ztunnel/membership/source_publisher_test.go:411:6: rangeint: for loop can be modernized using range over int (modernize)
+	for i := 0; i < 2; i++ {
+	    ^
+pkg/ztunnel/remote_workload/source_join.go:416:5: minmax: if statement can be modernized using min (modernize)
+	if ttl > j.maxLeaseTTL {
+	   ^
+pkg/ztunnel/remote_workload/source_join_test.go:254:6: rangeint: for loop can be modernized using range over int (modernize)
+	for i := 0; i < 2; i++ {
+	    ^
+pkg/ztunnel/remote_workload/source_join_test.go:276:6: rangeint: for loop can be modernized using range over int (modernize)
+	for i := 0; i < 2; i++ {
+	    ^
+pkg/ztunnel/membership/source_publisher.go:318:29: arguments should be put on separate lines (sloglint)
+				logSourceStage, "lock", logfields.ClusterName, p.config.ClusterInfo.Name,
+				                        ^
+pkg/ztunnel/membership/source_publisher.go:333:115: arguments should be put on separate lines (sloglint)
+			p.logger.Warn("Unable to withdraw source membership before releasing writer lock", logSourceStage, "withdraw", logfields.Error, withdrawErr)
+			                                                                                                               ^
+pkg/ztunnel/membership/source_publisher.go:338:95: arguments should be put on separate lines (sloglint)
+			p.logger.Warn("Unable to release source membership writer lock", logSourceStage, "unlock", logfields.Error, unlockErr)
+			                                                                                           ^
+pkg/ztunnel/membership/source_publisher.go:346:32: arguments should be put on separate lines (sloglint)
+				logSourceStage, "session", logfields.ClusterName, p.config.ClusterInfo.Name,
+				                           ^
+pkg/ztunnel/membership/source_publisher.go:486:42: arguments should be put on separate lines (sloglint)
+		logSourceStage, "source-revalidation", logfields.Reason, reason,
+		                                       ^
+pkg/ztunnel/remote_workload/clustermesh_observer.go:187:102: arguments should be put on separate lines (sloglint)
+			o.logger.Error("Direct-origin membership supervisor stopped", logFieldStage, "origin-supervisor", logfields.Error, err)
+			                                                                                                  ^
+pkg/ztunnel/remote_workload/source_join.go:559:103: arguments should be put on separate lines (sloglint)
+	j.logger.Warn("Remote workload source membership was withdrawn", logSourceJoinStage, "source-lease", logfields.Reason, reason, logfields.ClusterName, j.clusterName)
+	                                                                                                     ^
+19 issues:
+* depguard: 1
+* forbidigo: 6
+* goimports: 1
+* modernize: 4
+* sloglint: 7

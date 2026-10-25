@@ -1,0 +1,12 @@
+STEP 1/5: FROM gcr.io/distroless/cc-debian13@sha256:91e80685018de611a20450bed6b011c3d3242b3d9cc4452208121f342703ada0
+STEP 2/5: COPY --chmod=755 spire-workload-check /usr/local/bin/spire-workload-check
+--> 0fed31cd481f
+STEP 3/5: USER 65532:65532
+--> 3fff260553d0
+STEP 4/5: ENTRYPOINT ["/usr/local/bin/spire-workload-check"]
+--> 7d101bcf2ccd
+STEP 5/5: LABEL org.opencontainers.image.source="https://github.com/ephico2real2/ztunnel" org.opencontainers.image.revision="3b1a6a9e8fa3fcc9d3de499835feeafc0e735d39" io.cmtc.scope="native-credential-diagnostic-no-proxy"
+COMMIT localhost/cmtc-spire-workload-check:pid-3b1a6a9e8f
+--> 6f4f445e01d3
+Successfully tagged localhost/cmtc-spire-workload-check:pid-3b1a6a9e8f
+6f4f445e01d3f06d003a94f5904a33c11bce25dd29fd219f474e8035b1b8f87c

@@ -1,0 +1,10 @@
+PASS cmtc-a unregistered delegate same SA different exact PodUID denied
+Traceback (most recent call last):
+  File "/private/tmp/cmtc-native-credentials-20261025/unregistered.py", line 19, in <module>
+    state['negative']['unregistered-workload']=q.expect_native_denied(api,probe_pod=state['probes'][node],identity=identity,pod_uid=target['metadata']['uid'],pod_name=target['metadata']['name'],diagnostic_substring='no identity issued');save();print('PASS',cluster,'unregistered workload with real running PID denied',flush=True)
+                                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/olasumbo/gitRepos/clustermest-trust-controller/scripts/lab/spire/qualify_workload.py", line 110, in expect_native_denied
+    require(result.returncode!=0 and diagnostic_substring in result.stderr,'expected explicit native credential denial absent')
+  File "/Users/olasumbo/gitRepos/clustermest-trust-controller/scripts/lab/spire/workload_api.py", line 36, in require
+    raise Refusal(message)
+workload_api.Refusal: expected explicit native credential denial absent

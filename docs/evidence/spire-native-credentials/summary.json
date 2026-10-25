@@ -1,0 +1,1194 @@
+{
+  "scope": "native workload credentials only; no traffic proxy or encryption claim",
+  "sourceSHA": "3b1a6a9e8fa3fcc9d3de499835feeafc0e735d39",
+  "image": {
+    "sourceSHA": "3b1a6a9e8fa3fcc9d3de499835feeafc0e735d39",
+    "image": "localhost/cmtc-spire-workload-check:pid-3b1a6a9e8f",
+    "configurationID": "sha256:6f4f445e01d3f06d003a94f5904a33c11bce25dd29fd219f474e8035b1b8f87c",
+    "architecture": "arm64",
+    "scope": "native credential diagnostic, no proxy",
+    "canonicalImage": "localhost/cmtc-spire-workload-check@sha256:081b2dabeef4548673e9d8a68e98dfd1aec19ccc55c8a60f182af2fc660b7394",
+    "importedManifestDigest": "sha256:081b2dabeef4548673e9d8a68e98dfd1aec19ccc55c8a60f182af2fc660b7394",
+    "normalization": "Docker archive reused different compressed base blobs with identical uncompressed diffIDs; export one verified OCI manifest and import it unchanged"
+  },
+  "allNodePositives": 4,
+  "credentialNegativeCases": 32,
+  "wrongKubeletCATLSFailureAndRecovery": true,
+  "allNodeAgentRestarts": 4,
+  "appPathsPassed": 36,
+  "freshIssuerMetricQueries": 10,
+  "hostTestsPassed": 76,
+  "temporaryRegistrationEntriesRemoved": 14,
+  "temporaryUIDBoundObjectsRemoved": 14,
+  "wrongCAConfigRemoved": true,
+  "fixtureCleaned": true,
+  "privateKeysExported": false,
+  "packetProtectionTested": false,
+  "productionProxySocketDACQualified": false,
+  "files": [
+    {
+      "path": "docs/evidence/spire-native-credentials/runners/archive.py",
+      "bytes": 4061,
+      "sha256": "5181dafcec1f55b4b8f25c0edfeed1e658dce1cd38ed8b511b7fac3a8be9e76d",
+      "storedSHA256": "5181dafcec1f55b4b8f25c0edfeed1e658dce1cd38ed8b511b7fac3a8be9e76d"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/runners/check-apps.sh",
+      "bytes": 3946,
+      "sha256": "3d2d89984692790fb552662c9ff5ab93f8ce5884c709066b1738a6c49b569630",
+      "storedSHA256": "3d2d89984692790fb552662c9ff5ab93f8ce5884c709066b1738a6c49b569630"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/runners/check-publications.py",
+      "bytes": 2681,
+      "sha256": "c426ac07dca65b20dc69926f823bf042973d1a04716093d914d28ddf8ba6cd7a",
+      "storedSHA256": "c426ac07dca65b20dc69926f823bf042973d1a04716093d914d28ddf8ba6cd7a"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/logs/cleanup-first.log",
+      "bytes": 178,
+      "sha256": "127bc77b161a40f986e4c0da07ddccc06bc589e7e0c84225bf6776e77fa6feb9",
+      "storedSHA256": "127bc77b161a40f986e4c0da07ddccc06bc589e7e0c84225bf6776e77fa6feb9"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/runners/cleanup.py",
+      "bytes": 4341,
+      "sha256": "ffd0226a0993257db1b299a3d030076ab479f62c736526d6913cfd2a280185e2",
+      "storedSHA256": "ffd0226a0993257db1b299a3d030076ab479f62c736526d6913cfd2a280185e2"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/runtime/cmtc-a-after-agent-restart-cmtc-a-control-plane-issuer-proof.json",
+      "bytes": 5844,
+      "sha256": "65ba9d5f36346f529309a53b82273bd8c67e2491767c1d06991792507ad1dee9",
+      "storedSHA256": "65ba9d5f36346f529309a53b82273bd8c67e2491767c1d06991792507ad1dee9"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/runtime/cmtc-a-after-agent-restart-cmtc-a-worker-issuer-proof.json",
+      "bytes": 5844,
+      "sha256": "2dc5e3f636b3888578e6d9534614f5f064c0412b941b0faa73f4652482e729fe",
+      "storedSHA256": "2dc5e3f636b3888578e6d9534614f5f064c0412b941b0faa73f4652482e729fe"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/runtime/cmtc-a-before-agent-restart-cmtc-a-control-plane-issuer-proof.json",
+      "bytes": 5844,
+      "sha256": "ff439684f750d63474ac1ee34a96a69c0cee1902ab6a86ab8cac74739c056de9",
+      "storedSHA256": "ff439684f750d63474ac1ee34a96a69c0cee1902ab6a86ab8cac74739c056de9"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/runtime/cmtc-a-before-agent-restart-cmtc-a-worker-issuer-proof.json",
+      "bytes": 5844,
+      "sha256": "28a48aaadd08e4a8e5a7904fb150f743c1998a0ad562ee36981145c973168939",
+      "storedSHA256": "28a48aaadd08e4a8e5a7904fb150f743c1998a0ad562ee36981145c973168939"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/runtime/cmtc-a-before-cmtc-a-control-plane-issuer-proof.json",
+      "bytes": 5844,
+      "sha256": "8f102e87b6304c2263c8123484bb2e64666130d401898cde96c28c106f438718",
+      "storedSHA256": "8f102e87b6304c2263c8123484bb2e64666130d401898cde96c28c106f438718"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/runtime/cmtc-a-before-cmtc-a-worker-issuer-proof.json",
+      "bytes": 5844,
+      "sha256": "85a806c600ecbc48b403834d4a0a800e4e16e9039f479ff36e6509d3c32efe27",
+      "storedSHA256": "85a806c600ecbc48b403834d4a0a800e4e16e9039f479ff36e6509d3c32efe27"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/runtime/cmtc-a-delegate-recovery-issuer-proof.json",
+      "bytes": 5844,
+      "sha256": "a946ad87a51680d63f1046355503b6c3e786e80cb6fc48d66524821969a5cc94",
+      "storedSHA256": "a946ad87a51680d63f1046355503b6c3e786e80cb6fc48d66524821969a5cc94"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/runtime/cmtc-a-final-issuer-proof.json",
+      "bytes": 5844,
+      "sha256": "02e835097e0ca3d0f522ca90fde71e025ff46a5c9ac9fd89e0acd6d18bbaf668",
+      "storedSHA256": "02e835097e0ca3d0f522ca90fde71e025ff46a5c9ac9fd89e0acd6d18bbaf668"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/runtime/cmtc-a-owned-target-before-replacement-issuer-proof.json",
+      "bytes": 5844,
+      "sha256": "db95f9cb8b8776729b497c1a3937b0b8adacd6ee492d9dfb7f17f63c385752f7",
+      "storedSHA256": "db95f9cb8b8776729b497c1a3937b0b8adacd6ee492d9dfb7f17f63c385752f7"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/runtime/cmtc-a-wrong-kubelet-ca-recovered-issuer-proof.json",
+      "bytes": 5844,
+      "sha256": "496c841eba05ae95082e7fd642e31a1afd134bb901db594f7912cbc94db738ae",
+      "storedSHA256": "496c841eba05ae95082e7fd642e31a1afd134bb901db594f7912cbc94db738ae"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/runtime/cmtc-b-after-agent-restart-cmtc-b-control-plane-issuer-proof.json",
+      "bytes": 5848,
+      "sha256": "7a08f3d09125a944ebaef3a5f647d76e8939b53b1f64ae8ef23fdb693b2e59cd",
+      "storedSHA256": "7a08f3d09125a944ebaef3a5f647d76e8939b53b1f64ae8ef23fdb693b2e59cd"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/runtime/cmtc-b-after-agent-restart-cmtc-b-worker-issuer-proof.json",
+      "bytes": 5848,
+      "sha256": "3c40dcbe251e82eaf8e9f8635abb8d7a1a00a68a0e806f8ae9f79a36214ccf4f",
+      "storedSHA256": "3c40dcbe251e82eaf8e9f8635abb8d7a1a00a68a0e806f8ae9f79a36214ccf4f"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/runtime/cmtc-b-before-agent-restart-cmtc-b-control-plane-issuer-proof.json",
+      "bytes": 5848,
+      "sha256": "60ea06f70181dd0214e00ac9e02b8f6e37427e55a349bdba6089769c43793103",
+      "storedSHA256": "60ea06f70181dd0214e00ac9e02b8f6e37427e55a349bdba6089769c43793103"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/runtime/cmtc-b-before-agent-restart-cmtc-b-worker-issuer-proof.json",
+      "bytes": 5848,
+      "sha256": "8122212d444db0212c6e5518fe87d0f2dff085093caf818c7c4770ac0ce36ea3",
+      "storedSHA256": "8122212d444db0212c6e5518fe87d0f2dff085093caf818c7c4770ac0ce36ea3"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/runtime/cmtc-b-before-cmtc-b-control-plane-issuer-proof.json",
+      "bytes": 5848,
+      "sha256": "caed646b4511e623dd888e8674d09a9dc2a005bc85e46ef4a3a89d8ef95c8818",
+      "storedSHA256": "caed646b4511e623dd888e8674d09a9dc2a005bc85e46ef4a3a89d8ef95c8818"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/runtime/cmtc-b-before-cmtc-b-worker-issuer-proof.json",
+      "bytes": 5848,
+      "sha256": "5631a978237a3e19a4d480f803cb0b8f70a1faefa41e435cddbd7cd5bc5f0d26",
+      "storedSHA256": "5631a978237a3e19a4d480f803cb0b8f70a1faefa41e435cddbd7cd5bc5f0d26"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/runtime/cmtc-b-delegate-recovery-issuer-proof.json",
+      "bytes": 5848,
+      "sha256": "3ed4ac50c07a9721afb5f1b94ad1b6ff8de361f22eb96d0605a449bb7531c5d8",
+      "storedSHA256": "3ed4ac50c07a9721afb5f1b94ad1b6ff8de361f22eb96d0605a449bb7531c5d8"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/runtime/cmtc-b-final-issuer-proof.json",
+      "bytes": 5848,
+      "sha256": "e958c04088dcad5a8f1bce11158f54b7f11150089851dd65f13833577c8cae08",
+      "storedSHA256": "e958c04088dcad5a8f1bce11158f54b7f11150089851dd65f13833577c8cae08"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/runtime/cmtc-b-owned-target-before-replacement-issuer-proof.json",
+      "bytes": 5848,
+      "sha256": "a150d669be2171b6a2fdac0de802ffc7566ad02d9003457c3e9e7f8cc3835f3f",
+      "storedSHA256": "a150d669be2171b6a2fdac0de802ffc7566ad02d9003457c3e9e7f8cc3835f3f"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/logs/create-clients.log",
+      "bytes": 150,
+      "sha256": "9fdb5887a26534afc2024f2ab7e4564f610aacfb390435faad06d62515296e0a",
+      "storedSHA256": "9fdb5887a26534afc2024f2ab7e4564f610aacfb390435faad06d62515296e0a"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/runners/create-clients.py",
+      "bytes": 2097,
+      "sha256": "75b66bf106e009a1963bd85a76712892c3501af8151e9d865d30d4b13518dab2",
+      "storedSHA256": "75b66bf106e009a1963bd85a76712892c3501af8151e9d865d30d4b13518dab2"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/logs/delegate-recovery-first.log",
+      "bytes": 5610,
+      "sha256": "0473cbc6fb2f87e10011f4bf2687fdaadb342524bb06996bb935a46626f7c41e",
+      "storedSHA256": "0473cbc6fb2f87e10011f4bf2687fdaadb342524bb06996bb935a46626f7c41e"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/logs/delegate-recovery-second.log",
+      "bytes": 309,
+      "sha256": "b09b4a7b16029cce5e1e60ce0ebdfd746df4d12b9802212c793ce816ca3560aa",
+      "storedSHA256": "b09b4a7b16029cce5e1e60ce0ebdfd746df4d12b9802212c793ce816ca3560aa"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/runners/delegate-recovery.py",
+      "bytes": 2393,
+      "sha256": "634e2978eb533e6879c7fd1f5ee5e5be155f9651fd9533493a659ce13a53e4a4",
+      "storedSHA256": "634e2978eb533e6879c7fd1f5ee5e5be155f9651fd9533493a659ce13a53e4a4"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/logs/final-check.log",
+      "bytes": 202,
+      "sha256": "4b6ae0bc8c636a9039a8f282ca42f9bb654d6a446f23aae38346b1ee55b99824",
+      "storedSHA256": "4b6ae0bc8c636a9039a8f282ca42f9bb654d6a446f23aae38346b1ee55b99824"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/runners/final-check.py",
+      "bytes": 3414,
+      "sha256": "492834385c229b0ba1b9b91249a47545bab190a41c518971a78c7bdc2d4830f5",
+      "storedSHA256": "492834385c229b0ba1b9b91249a47545bab190a41c518971a78c7bdc2d4830f5"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/logs/fixture-tests-final.log",
+      "bytes": 175,
+      "sha256": "f97407404a9e14d29454af32939ddb5a6aedfc8af647da31eb661abb78efca0a",
+      "storedSHA256": "f97407404a9e14d29454af32939ddb5a6aedfc8af647da31eb661abb78efca0a"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/logs/fixture-tests-registration-retry.log",
+      "bytes": 175,
+      "sha256": "010679e9d64dee4c99cdccf6e54f7032ed96908ad5c1869b999134a581982b4b",
+      "storedSHA256": "010679e9d64dee4c99cdccf6e54f7032ed96908ad5c1869b999134a581982b4b"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/logs/fixture-tests-working-dir.log",
+      "bytes": 171,
+      "sha256": "21606bd3bb8cdfba4625d472b89ece1e5868b2c55e120ee597b40dbee8585788",
+      "storedSHA256": "21606bd3bb8cdfba4625d472b89ece1e5868b2c55e120ee597b40dbee8585788"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/runtime/ledger.json.gz",
+      "bytes": 1160862,
+      "sha256": "6724e2a2ef7c19e6d8a3be7e7968201e68785efb92ab0c1df113eddea575915e",
+      "storedSHA256": "f0123cf8e5855671a636d520141b64cae8be069828e5c180a0341a4e55bad052"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/logs/negative-first.log",
+      "bytes": 1582,
+      "sha256": "bedf5e036ba2272478a508737ddab51552af14c3826cefb85ac788eed338c55e",
+      "storedSHA256": "bedf5e036ba2272478a508737ddab51552af14c3826cefb85ac788eed338c55e"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/runners/negative.py",
+      "bytes": 1479,
+      "sha256": "f422f77731717a55d729b65337cfd46594eaab04458f1c67febb1fd3f82a1440",
+      "storedSHA256": "f422f77731717a55d729b65337cfd46594eaab04458f1c67febb1fd3f82a1440"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/logs/positive-fifth.log",
+      "bytes": 1835,
+      "sha256": "6965b35374711c780c9966ce94b5277b02db6318cb566d306a991a44b28ec064",
+      "storedSHA256": "6965b35374711c780c9966ce94b5277b02db6318cb566d306a991a44b28ec064"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/logs/positive-first.log",
+      "bytes": 325,
+      "sha256": "c75387f406b78f0deb9e3dc1276ee7365941b199a33b8f7384e4dcc5b266195c",
+      "storedSHA256": "c75387f406b78f0deb9e3dc1276ee7365941b199a33b8f7384e4dcc5b266195c"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/logs/positive-fourth.log",
+      "bytes": 1590,
+      "sha256": "56c61036c3a367f507417fa935515d7794625b521d22ce2ba23bfa7167684959",
+      "storedSHA256": "56c61036c3a367f507417fa935515d7794625b521d22ce2ba23bfa7167684959"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/logs/positive-second.log",
+      "bytes": 905,
+      "sha256": "2c1697e5b792027a8ac0328b6343e69a14dc012f97912d1b92944b0805a07de2",
+      "storedSHA256": "2c1697e5b792027a8ac0328b6343e69a14dc012f97912d1b92944b0805a07de2"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/logs/positive-sixth.log",
+      "bytes": 1161,
+      "sha256": "d1fccb3ecc87a5f21436a9e7c23079e15b542930b8573558ac8a3e5759c80764",
+      "storedSHA256": "d1fccb3ecc87a5f21436a9e7c23079e15b542930b8573558ac8a3e5759c80764"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/logs/positive-third.log",
+      "bytes": 1459,
+      "sha256": "be915b6d8b6ed0e1944a620dd65578c15baa72224d2448ac20facb1b9aa21d38",
+      "storedSHA256": "be915b6d8b6ed0e1944a620dd65578c15baa72224d2448ac20facb1b9aa21d38"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/runtime/publication-after-bootstrap.json",
+      "bytes": 23355,
+      "sha256": "2c82eb2e9497764374482de4797a4560e820970273a2720236fa3ab494af0f28",
+      "storedSHA256": "2c82eb2e9497764374482de4797a4560e820970273a2720236fa3ab494af0f28"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/logs/publication-final.log",
+      "bytes": 178,
+      "sha256": "10d6e200597e78d4fa6f9485118054c4255586b009c7c42e755c5994c54e1b9e",
+      "storedSHA256": "10d6e200597e78d4fa6f9485118054c4255586b009c7c42e755c5994c54e1b9e"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/runners/qualify-before-list-fix.py",
+      "bytes": 8702,
+      "sha256": "240b636d78f20509b4a404dbd9ddff662cd0de634e185fde8018df5198c3883c",
+      "storedSHA256": "240b636d78f20509b4a404dbd9ddff662cd0de634e185fde8018df5198c3883c"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/runners/qualify-before-resume.py",
+      "bytes": 7686,
+      "sha256": "1592ede2a8e96e7d32d423256628ff3823e253ff0098b3ee6ff534162fa8f2e3",
+      "storedSHA256": "1592ede2a8e96e7d32d423256628ff3823e253ff0098b3ee6ff534162fa8f2e3"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/runners/qualify.py",
+      "bytes": 9348,
+      "sha256": "f6a19f182382a106268fa47d385c70f5aed6cd7c3085b5acddcd1ca9ea64f300",
+      "storedSHA256": "f6a19f182382a106268fa47d385c70f5aed6cd7c3085b5acddcd1ca9ea64f300"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/logs/recovery-first.log",
+      "bytes": 1608,
+      "sha256": "171a90fa4aa59b3ac375b1887d10a2baedf327309afdb7cc87755ebcffe07fed",
+      "storedSHA256": "171a90fa4aa59b3ac375b1887d10a2baedf327309afdb7cc87755ebcffe07fed"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/runners/recovery.py",
+      "bytes": 5703,
+      "sha256": "a16b0b7767cb797003e459cbcf6e2d2e6b2af0eb7dcb186a252c7fe0c6c12278",
+      "storedSHA256": "a16b0b7767cb797003e459cbcf6e2d2e6b2af0eb7dcb186a252c7fe0c6c12278"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/logs/replace-probes-second.log",
+      "bytes": 211,
+      "sha256": "5c933f25bf3ed255c88f301dab7c8cda45eb397e49bc0873830f93938b800fe2",
+      "storedSHA256": "5c933f25bf3ed255c88f301dab7c8cda45eb397e49bc0873830f93938b800fe2"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/logs/replace-probes.log",
+      "bytes": 307,
+      "sha256": "1823989f7612c31894fe6d6d9218e9d90d051d958010843c5d1048fad15631fb",
+      "storedSHA256": "1823989f7612c31894fe6d6d9218e9d90d051d958010843c5d1048fad15631fb"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/runners/replace-probes.py",
+      "bytes": 1747,
+      "sha256": "f0a619b9903e44be528c1661803ea9f8af4ed53413508a968159b4ab5aa7b701",
+      "storedSHA256": "f0a619b9903e44be528c1661803ea9f8af4ed53413508a968159b4ab5aa7b701"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/logs/restart-agents-first.log",
+      "bytes": 252,
+      "sha256": "9a9ba2fb4400d8cf5e2df220d565f1d62f7a6ee4785f3e1fc02fe689e6ba535a",
+      "storedSHA256": "9a9ba2fb4400d8cf5e2df220d565f1d62f7a6ee4785f3e1fc02fe689e6ba535a"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/logs/restart-agents-second.log",
+      "bytes": 1058,
+      "sha256": "45817108c137fbf47d9e1935c49f1ebb71a99623b7ef14d68c4e7aad6c341d58",
+      "storedSHA256": "45817108c137fbf47d9e1935c49f1ebb71a99623b7ef14d68c4e7aad6c341d58"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/runners/restart-agents.py",
+      "bytes": 3389,
+      "sha256": "b29c6fbd7fa8813b6a232426e07e2dc15d46a76370e17d39b8e0465cd241f563",
+      "storedSHA256": "b29c6fbd7fa8813b6a232426e07e2dc15d46a76370e17d39b8e0465cd241f563"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/logs/unregistered-first.log",
+      "bytes": 1248,
+      "sha256": "179a3072dc4ab6e66c7f83cdf55aee2837e349bef1f667f447c3ce306c0f4382",
+      "storedSHA256": "179a3072dc4ab6e66c7f83cdf55aee2837e349bef1f667f447c3ce306c0f4382"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/logs/unregistered-second.log",
+      "bytes": 1563,
+      "sha256": "ed111ddbaf372e50c2b41f0a6e44119e78e20b43e5f477f0f9b9d98179697e0c",
+      "storedSHA256": "ed111ddbaf372e50c2b41f0a6e44119e78e20b43e5f477f0f9b9d98179697e0c"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/logs/unregistered-third.log",
+      "bytes": 350,
+      "sha256": "6336f555c48d89e70ade9840d6745a14aa67544deb49e5ba226bfe206d71b4fb",
+      "storedSHA256": "6336f555c48d89e70ade9840d6745a14aa67544deb49e5ba226bfe206d71b4fb"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/runners/unregistered.py",
+      "bytes": 2285,
+      "sha256": "3b9f28f4d5e34b40cdfb18e4903a3dd42af277f1a753fd2dd7c41d380dbea12e",
+      "storedSHA256": "3b9f28f4d5e34b40cdfb18e4903a3dd42af277f1a753fd2dd7c41d380dbea12e"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/logs/wrong-ca-first.log",
+      "bytes": 335,
+      "sha256": "99566cedaf2c6e9a060d325a1ea03468bdf4794420471983f474b626ac157a70",
+      "storedSHA256": "99566cedaf2c6e9a060d325a1ea03468bdf4794420471983f474b626ac157a70"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/runners/wrong-ca.py",
+      "bytes": 5583,
+      "sha256": "c58ecd68fae3742f047db6e4c06cc71fd3d11891366a86f14eacf1e2c05979ce",
+      "storedSHA256": "c58ecd68fae3742f047db6e4c06cc71fd3d11891366a86f14eacf1e2c05979ce"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/apps/clustermesh-a-to-a-podip-cmtc-a-control-plane-31337.headers",
+      "bytes": 301,
+      "sha256": "4283189e892f11b579bc109de4d0e18f8701f0deb8660c81e1e0957b2ed4e253",
+      "storedSHA256": "4283189e892f11b579bc109de4d0e18f8701f0deb8660c81e1e0957b2ed4e253"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/apps/clustermesh-a-to-a-podip-cmtc-a-control-plane-31337.json",
+      "bytes": 68,
+      "sha256": "d4bc9b3b61ee3e84226d86d2963b03bfd385f6acc8bf2a2235f0c8f7fffb1c2c",
+      "storedSHA256": "d4bc9b3b61ee3e84226d86d2963b03bfd385f6acc8bf2a2235f0c8f7fffb1c2c"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/apps/clustermesh-a-to-a-podip-cmtc-a-control-plane-80.headers",
+      "bytes": 301,
+      "sha256": "4283189e892f11b579bc109de4d0e18f8701f0deb8660c81e1e0957b2ed4e253",
+      "storedSHA256": "4283189e892f11b579bc109de4d0e18f8701f0deb8660c81e1e0957b2ed4e253"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/apps/clustermesh-a-to-a-podip-cmtc-a-control-plane-80.json",
+      "bytes": 68,
+      "sha256": "d4bc9b3b61ee3e84226d86d2963b03bfd385f6acc8bf2a2235f0c8f7fffb1c2c",
+      "storedSHA256": "d4bc9b3b61ee3e84226d86d2963b03bfd385f6acc8bf2a2235f0c8f7fffb1c2c"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/apps/clustermesh-a-to-a-podip-cmtc-a-control-plane-8080.headers",
+      "bytes": 301,
+      "sha256": "4283189e892f11b579bc109de4d0e18f8701f0deb8660c81e1e0957b2ed4e253",
+      "storedSHA256": "4283189e892f11b579bc109de4d0e18f8701f0deb8660c81e1e0957b2ed4e253"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/apps/clustermesh-a-to-a-podip-cmtc-a-control-plane-8080.json",
+      "bytes": 68,
+      "sha256": "d4bc9b3b61ee3e84226d86d2963b03bfd385f6acc8bf2a2235f0c8f7fffb1c2c",
+      "storedSHA256": "d4bc9b3b61ee3e84226d86d2963b03bfd385f6acc8bf2a2235f0c8f7fffb1c2c"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/apps/clustermesh-a-to-a-podip-cmtc-a-worker-31337.headers",
+      "bytes": 301,
+      "sha256": "bc653337972110f340ab2f82331cc8de544627cf0868011ac9bfd037a145dfc1",
+      "storedSHA256": "bc653337972110f340ab2f82331cc8de544627cf0868011ac9bfd037a145dfc1"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/apps/clustermesh-a-to-a-podip-cmtc-a-worker-31337.json",
+      "bytes": 68,
+      "sha256": "d4bc9b3b61ee3e84226d86d2963b03bfd385f6acc8bf2a2235f0c8f7fffb1c2c",
+      "storedSHA256": "d4bc9b3b61ee3e84226d86d2963b03bfd385f6acc8bf2a2235f0c8f7fffb1c2c"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/apps/clustermesh-a-to-a-podip-cmtc-a-worker-80.headers",
+      "bytes": 301,
+      "sha256": "bc653337972110f340ab2f82331cc8de544627cf0868011ac9bfd037a145dfc1",
+      "storedSHA256": "bc653337972110f340ab2f82331cc8de544627cf0868011ac9bfd037a145dfc1"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/apps/clustermesh-a-to-a-podip-cmtc-a-worker-80.json",
+      "bytes": 68,
+      "sha256": "d4bc9b3b61ee3e84226d86d2963b03bfd385f6acc8bf2a2235f0c8f7fffb1c2c",
+      "storedSHA256": "d4bc9b3b61ee3e84226d86d2963b03bfd385f6acc8bf2a2235f0c8f7fffb1c2c"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/apps/clustermesh-a-to-a-podip-cmtc-a-worker-8080.headers",
+      "bytes": 301,
+      "sha256": "bc653337972110f340ab2f82331cc8de544627cf0868011ac9bfd037a145dfc1",
+      "storedSHA256": "bc653337972110f340ab2f82331cc8de544627cf0868011ac9bfd037a145dfc1"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/apps/clustermesh-a-to-a-podip-cmtc-a-worker-8080.json",
+      "bytes": 68,
+      "sha256": "d4bc9b3b61ee3e84226d86d2963b03bfd385f6acc8bf2a2235f0c8f7fffb1c2c",
+      "storedSHA256": "d4bc9b3b61ee3e84226d86d2963b03bfd385f6acc8bf2a2235f0c8f7fffb1c2c"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/apps/clustermesh-a-to-a-service-31337.headers",
+      "bytes": 301,
+      "sha256": "90624a4c3368c8ea5cf07b4218d6cb7570e6950f8085fd7b75e4d21b1e04030f",
+      "storedSHA256": "90624a4c3368c8ea5cf07b4218d6cb7570e6950f8085fd7b75e4d21b1e04030f"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/apps/clustermesh-a-to-a-service-31337.json",
+      "bytes": 68,
+      "sha256": "d4bc9b3b61ee3e84226d86d2963b03bfd385f6acc8bf2a2235f0c8f7fffb1c2c",
+      "storedSHA256": "d4bc9b3b61ee3e84226d86d2963b03bfd385f6acc8bf2a2235f0c8f7fffb1c2c"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/apps/clustermesh-a-to-a-service-80.headers",
+      "bytes": 301,
+      "sha256": "027176ccb3bd0928f9795e723d47e61dbbaaafa6e8d16a841ee64989c4826213",
+      "storedSHA256": "027176ccb3bd0928f9795e723d47e61dbbaaafa6e8d16a841ee64989c4826213"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/apps/clustermesh-a-to-a-service-80.json",
+      "bytes": 68,
+      "sha256": "d4bc9b3b61ee3e84226d86d2963b03bfd385f6acc8bf2a2235f0c8f7fffb1c2c",
+      "storedSHA256": "d4bc9b3b61ee3e84226d86d2963b03bfd385f6acc8bf2a2235f0c8f7fffb1c2c"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/apps/clustermesh-a-to-a-service-8080.headers",
+      "bytes": 301,
+      "sha256": "90624a4c3368c8ea5cf07b4218d6cb7570e6950f8085fd7b75e4d21b1e04030f",
+      "storedSHA256": "90624a4c3368c8ea5cf07b4218d6cb7570e6950f8085fd7b75e4d21b1e04030f"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/apps/clustermesh-a-to-a-service-8080.json",
+      "bytes": 68,
+      "sha256": "d4bc9b3b61ee3e84226d86d2963b03bfd385f6acc8bf2a2235f0c8f7fffb1c2c",
+      "storedSHA256": "d4bc9b3b61ee3e84226d86d2963b03bfd385f6acc8bf2a2235f0c8f7fffb1c2c"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/apps/clustermesh-a-to-b-podip-31337.json",
+      "bytes": 68,
+      "sha256": "341a9409162c954c6e2ee2896bc8484eb3a9b25ab9ad4d4a12aacfe79740a1f5",
+      "storedSHA256": "341a9409162c954c6e2ee2896bc8484eb3a9b25ab9ad4d4a12aacfe79740a1f5"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/apps/clustermesh-a-to-b-podip-80.json",
+      "bytes": 68,
+      "sha256": "341a9409162c954c6e2ee2896bc8484eb3a9b25ab9ad4d4a12aacfe79740a1f5",
+      "storedSHA256": "341a9409162c954c6e2ee2896bc8484eb3a9b25ab9ad4d4a12aacfe79740a1f5"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/apps/clustermesh-a-to-b-podip-8080.json",
+      "bytes": 68,
+      "sha256": "341a9409162c954c6e2ee2896bc8484eb3a9b25ab9ad4d4a12aacfe79740a1f5",
+      "storedSHA256": "341a9409162c954c6e2ee2896bc8484eb3a9b25ab9ad4d4a12aacfe79740a1f5"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/apps/clustermesh-a-to-b-podip-cmtc-b-control-plane-31337.headers",
+      "bytes": 300,
+      "sha256": "ac15bc417e2d3b99000550963b7900723e9658a46dcffbaa030408cd09d06965",
+      "storedSHA256": "ac15bc417e2d3b99000550963b7900723e9658a46dcffbaa030408cd09d06965"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/apps/clustermesh-a-to-b-podip-cmtc-b-control-plane-31337.json",
+      "bytes": 68,
+      "sha256": "341a9409162c954c6e2ee2896bc8484eb3a9b25ab9ad4d4a12aacfe79740a1f5",
+      "storedSHA256": "341a9409162c954c6e2ee2896bc8484eb3a9b25ab9ad4d4a12aacfe79740a1f5"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/apps/clustermesh-a-to-b-podip-cmtc-b-control-plane-80.headers",
+      "bytes": 300,
+      "sha256": "ac15bc417e2d3b99000550963b7900723e9658a46dcffbaa030408cd09d06965",
+      "storedSHA256": "ac15bc417e2d3b99000550963b7900723e9658a46dcffbaa030408cd09d06965"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/apps/clustermesh-a-to-b-podip-cmtc-b-control-plane-80.json",
+      "bytes": 68,
+      "sha256": "341a9409162c954c6e2ee2896bc8484eb3a9b25ab9ad4d4a12aacfe79740a1f5",
+      "storedSHA256": "341a9409162c954c6e2ee2896bc8484eb3a9b25ab9ad4d4a12aacfe79740a1f5"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/apps/clustermesh-a-to-b-podip-cmtc-b-control-plane-8080.headers",
+      "bytes": 300,
+      "sha256": "ac15bc417e2d3b99000550963b7900723e9658a46dcffbaa030408cd09d06965",
+      "storedSHA256": "ac15bc417e2d3b99000550963b7900723e9658a46dcffbaa030408cd09d06965"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/apps/clustermesh-a-to-b-podip-cmtc-b-control-plane-8080.json",
+      "bytes": 68,
+      "sha256": "341a9409162c954c6e2ee2896bc8484eb3a9b25ab9ad4d4a12aacfe79740a1f5",
+      "storedSHA256": "341a9409162c954c6e2ee2896bc8484eb3a9b25ab9ad4d4a12aacfe79740a1f5"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/apps/clustermesh-a-to-b-podip-cmtc-b-worker-31337.headers",
+      "bytes": 300,
+      "sha256": "27852705dce123322b8d19181a573bc5384422f4e3051f9d508923ff6843abd2",
+      "storedSHA256": "27852705dce123322b8d19181a573bc5384422f4e3051f9d508923ff6843abd2"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/apps/clustermesh-a-to-b-podip-cmtc-b-worker-31337.json",
+      "bytes": 68,
+      "sha256": "341a9409162c954c6e2ee2896bc8484eb3a9b25ab9ad4d4a12aacfe79740a1f5",
+      "storedSHA256": "341a9409162c954c6e2ee2896bc8484eb3a9b25ab9ad4d4a12aacfe79740a1f5"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/apps/clustermesh-a-to-b-podip-cmtc-b-worker-80.headers",
+      "bytes": 300,
+      "sha256": "c134bd018e2968865d635c526ac6b9a7d3f20f617b92b327d24225038096b489",
+      "storedSHA256": "c134bd018e2968865d635c526ac6b9a7d3f20f617b92b327d24225038096b489"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/apps/clustermesh-a-to-b-podip-cmtc-b-worker-80.json",
+      "bytes": 68,
+      "sha256": "341a9409162c954c6e2ee2896bc8484eb3a9b25ab9ad4d4a12aacfe79740a1f5",
+      "storedSHA256": "341a9409162c954c6e2ee2896bc8484eb3a9b25ab9ad4d4a12aacfe79740a1f5"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/apps/clustermesh-a-to-b-podip-cmtc-b-worker-8080.headers",
+      "bytes": 300,
+      "sha256": "27852705dce123322b8d19181a573bc5384422f4e3051f9d508923ff6843abd2",
+      "storedSHA256": "27852705dce123322b8d19181a573bc5384422f4e3051f9d508923ff6843abd2"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/apps/clustermesh-a-to-b-podip-cmtc-b-worker-8080.json",
+      "bytes": 68,
+      "sha256": "341a9409162c954c6e2ee2896bc8484eb3a9b25ab9ad4d4a12aacfe79740a1f5",
+      "storedSHA256": "341a9409162c954c6e2ee2896bc8484eb3a9b25ab9ad4d4a12aacfe79740a1f5"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/apps/clustermesh-a-to-b-service-31337.headers",
+      "bytes": 300,
+      "sha256": "678e505d9d5f2ee75665be6aaa9b90dcf7543702f36e9e88b4563f1fe7c015d2",
+      "storedSHA256": "678e505d9d5f2ee75665be6aaa9b90dcf7543702f36e9e88b4563f1fe7c015d2"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/apps/clustermesh-a-to-b-service-31337.json",
+      "bytes": 68,
+      "sha256": "341a9409162c954c6e2ee2896bc8484eb3a9b25ab9ad4d4a12aacfe79740a1f5",
+      "storedSHA256": "341a9409162c954c6e2ee2896bc8484eb3a9b25ab9ad4d4a12aacfe79740a1f5"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/apps/clustermesh-a-to-b-service-80.headers",
+      "bytes": 300,
+      "sha256": "678e505d9d5f2ee75665be6aaa9b90dcf7543702f36e9e88b4563f1fe7c015d2",
+      "storedSHA256": "678e505d9d5f2ee75665be6aaa9b90dcf7543702f36e9e88b4563f1fe7c015d2"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/apps/clustermesh-a-to-b-service-80.json",
+      "bytes": 68,
+      "sha256": "341a9409162c954c6e2ee2896bc8484eb3a9b25ab9ad4d4a12aacfe79740a1f5",
+      "storedSHA256": "341a9409162c954c6e2ee2896bc8484eb3a9b25ab9ad4d4a12aacfe79740a1f5"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/apps/clustermesh-a-to-b-service-8080.headers",
+      "bytes": 300,
+      "sha256": "0744d561baf45973fa4130661a336b363e6bd6231cbd5955f111cd0e29aec2a7",
+      "storedSHA256": "0744d561baf45973fa4130661a336b363e6bd6231cbd5955f111cd0e29aec2a7"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/apps/clustermesh-a-to-b-service-8080.json",
+      "bytes": 68,
+      "sha256": "341a9409162c954c6e2ee2896bc8484eb3a9b25ab9ad4d4a12aacfe79740a1f5",
+      "storedSHA256": "341a9409162c954c6e2ee2896bc8484eb3a9b25ab9ad4d4a12aacfe79740a1f5"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/apps/clustermesh-b-to-a-podip-31337.json",
+      "bytes": 68,
+      "sha256": "d4bc9b3b61ee3e84226d86d2963b03bfd385f6acc8bf2a2235f0c8f7fffb1c2c",
+      "storedSHA256": "d4bc9b3b61ee3e84226d86d2963b03bfd385f6acc8bf2a2235f0c8f7fffb1c2c"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/apps/clustermesh-b-to-a-podip-80.json",
+      "bytes": 68,
+      "sha256": "d4bc9b3b61ee3e84226d86d2963b03bfd385f6acc8bf2a2235f0c8f7fffb1c2c",
+      "storedSHA256": "d4bc9b3b61ee3e84226d86d2963b03bfd385f6acc8bf2a2235f0c8f7fffb1c2c"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/apps/clustermesh-b-to-a-podip-8080.json",
+      "bytes": 68,
+      "sha256": "d4bc9b3b61ee3e84226d86d2963b03bfd385f6acc8bf2a2235f0c8f7fffb1c2c",
+      "storedSHA256": "d4bc9b3b61ee3e84226d86d2963b03bfd385f6acc8bf2a2235f0c8f7fffb1c2c"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/apps/clustermesh-b-to-a-podip-cmtc-a-control-plane-31337.headers",
+      "bytes": 301,
+      "sha256": "c9c59573dd1556fdf809a612072e06c2607b21af68aa1d9c8f2251fc6f9d54b7",
+      "storedSHA256": "c9c59573dd1556fdf809a612072e06c2607b21af68aa1d9c8f2251fc6f9d54b7"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/apps/clustermesh-b-to-a-podip-cmtc-a-control-plane-31337.json",
+      "bytes": 68,
+      "sha256": "d4bc9b3b61ee3e84226d86d2963b03bfd385f6acc8bf2a2235f0c8f7fffb1c2c",
+      "storedSHA256": "d4bc9b3b61ee3e84226d86d2963b03bfd385f6acc8bf2a2235f0c8f7fffb1c2c"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/apps/clustermesh-b-to-a-podip-cmtc-a-control-plane-80.headers",
+      "bytes": 301,
+      "sha256": "c9c59573dd1556fdf809a612072e06c2607b21af68aa1d9c8f2251fc6f9d54b7",
+      "storedSHA256": "c9c59573dd1556fdf809a612072e06c2607b21af68aa1d9c8f2251fc6f9d54b7"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/apps/clustermesh-b-to-a-podip-cmtc-a-control-plane-80.json",
+      "bytes": 68,
+      "sha256": "d4bc9b3b61ee3e84226d86d2963b03bfd385f6acc8bf2a2235f0c8f7fffb1c2c",
+      "storedSHA256": "d4bc9b3b61ee3e84226d86d2963b03bfd385f6acc8bf2a2235f0c8f7fffb1c2c"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/apps/clustermesh-b-to-a-podip-cmtc-a-control-plane-8080.headers",
+      "bytes": 301,
+      "sha256": "c9c59573dd1556fdf809a612072e06c2607b21af68aa1d9c8f2251fc6f9d54b7",
+      "storedSHA256": "c9c59573dd1556fdf809a612072e06c2607b21af68aa1d9c8f2251fc6f9d54b7"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/apps/clustermesh-b-to-a-podip-cmtc-a-control-plane-8080.json",
+      "bytes": 68,
+      "sha256": "d4bc9b3b61ee3e84226d86d2963b03bfd385f6acc8bf2a2235f0c8f7fffb1c2c",
+      "storedSHA256": "d4bc9b3b61ee3e84226d86d2963b03bfd385f6acc8bf2a2235f0c8f7fffb1c2c"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/apps/clustermesh-b-to-a-podip-cmtc-a-worker-31337.headers",
+      "bytes": 301,
+      "sha256": "bc653337972110f340ab2f82331cc8de544627cf0868011ac9bfd037a145dfc1",
+      "storedSHA256": "bc653337972110f340ab2f82331cc8de544627cf0868011ac9bfd037a145dfc1"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/apps/clustermesh-b-to-a-podip-cmtc-a-worker-31337.json",
+      "bytes": 68,
+      "sha256": "d4bc9b3b61ee3e84226d86d2963b03bfd385f6acc8bf2a2235f0c8f7fffb1c2c",
+      "storedSHA256": "d4bc9b3b61ee3e84226d86d2963b03bfd385f6acc8bf2a2235f0c8f7fffb1c2c"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/apps/clustermesh-b-to-a-podip-cmtc-a-worker-80.headers",
+      "bytes": 301,
+      "sha256": "bc653337972110f340ab2f82331cc8de544627cf0868011ac9bfd037a145dfc1",
+      "storedSHA256": "bc653337972110f340ab2f82331cc8de544627cf0868011ac9bfd037a145dfc1"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/apps/clustermesh-b-to-a-podip-cmtc-a-worker-80.json",
+      "bytes": 68,
+      "sha256": "d4bc9b3b61ee3e84226d86d2963b03bfd385f6acc8bf2a2235f0c8f7fffb1c2c",
+      "storedSHA256": "d4bc9b3b61ee3e84226d86d2963b03bfd385f6acc8bf2a2235f0c8f7fffb1c2c"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/apps/clustermesh-b-to-a-podip-cmtc-a-worker-8080.headers",
+      "bytes": 301,
+      "sha256": "bc653337972110f340ab2f82331cc8de544627cf0868011ac9bfd037a145dfc1",
+      "storedSHA256": "bc653337972110f340ab2f82331cc8de544627cf0868011ac9bfd037a145dfc1"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/apps/clustermesh-b-to-a-podip-cmtc-a-worker-8080.json",
+      "bytes": 68,
+      "sha256": "d4bc9b3b61ee3e84226d86d2963b03bfd385f6acc8bf2a2235f0c8f7fffb1c2c",
+      "storedSHA256": "d4bc9b3b61ee3e84226d86d2963b03bfd385f6acc8bf2a2235f0c8f7fffb1c2c"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/apps/clustermesh-b-to-a-service-31337.headers",
+      "bytes": 301,
+      "sha256": "4283189e892f11b579bc109de4d0e18f8701f0deb8660c81e1e0957b2ed4e253",
+      "storedSHA256": "4283189e892f11b579bc109de4d0e18f8701f0deb8660c81e1e0957b2ed4e253"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/apps/clustermesh-b-to-a-service-31337.json",
+      "bytes": 68,
+      "sha256": "d4bc9b3b61ee3e84226d86d2963b03bfd385f6acc8bf2a2235f0c8f7fffb1c2c",
+      "storedSHA256": "d4bc9b3b61ee3e84226d86d2963b03bfd385f6acc8bf2a2235f0c8f7fffb1c2c"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/apps/clustermesh-b-to-a-service-80.headers",
+      "bytes": 301,
+      "sha256": "90624a4c3368c8ea5cf07b4218d6cb7570e6950f8085fd7b75e4d21b1e04030f",
+      "storedSHA256": "90624a4c3368c8ea5cf07b4218d6cb7570e6950f8085fd7b75e4d21b1e04030f"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/apps/clustermesh-b-to-a-service-80.json",
+      "bytes": 68,
+      "sha256": "d4bc9b3b61ee3e84226d86d2963b03bfd385f6acc8bf2a2235f0c8f7fffb1c2c",
+      "storedSHA256": "d4bc9b3b61ee3e84226d86d2963b03bfd385f6acc8bf2a2235f0c8f7fffb1c2c"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/apps/clustermesh-b-to-a-service-8080.headers",
+      "bytes": 301,
+      "sha256": "4283189e892f11b579bc109de4d0e18f8701f0deb8660c81e1e0957b2ed4e253",
+      "storedSHA256": "4283189e892f11b579bc109de4d0e18f8701f0deb8660c81e1e0957b2ed4e253"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/apps/clustermesh-b-to-a-service-8080.json",
+      "bytes": 68,
+      "sha256": "d4bc9b3b61ee3e84226d86d2963b03bfd385f6acc8bf2a2235f0c8f7fffb1c2c",
+      "storedSHA256": "d4bc9b3b61ee3e84226d86d2963b03bfd385f6acc8bf2a2235f0c8f7fffb1c2c"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/apps/clustermesh-b-to-b-podip-cmtc-b-control-plane-31337.headers",
+      "bytes": 300,
+      "sha256": "ac15bc417e2d3b99000550963b7900723e9658a46dcffbaa030408cd09d06965",
+      "storedSHA256": "ac15bc417e2d3b99000550963b7900723e9658a46dcffbaa030408cd09d06965"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/apps/clustermesh-b-to-b-podip-cmtc-b-control-plane-31337.json",
+      "bytes": 68,
+      "sha256": "341a9409162c954c6e2ee2896bc8484eb3a9b25ab9ad4d4a12aacfe79740a1f5",
+      "storedSHA256": "341a9409162c954c6e2ee2896bc8484eb3a9b25ab9ad4d4a12aacfe79740a1f5"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/apps/clustermesh-b-to-b-podip-cmtc-b-control-plane-80.headers",
+      "bytes": 300,
+      "sha256": "ac15bc417e2d3b99000550963b7900723e9658a46dcffbaa030408cd09d06965",
+      "storedSHA256": "ac15bc417e2d3b99000550963b7900723e9658a46dcffbaa030408cd09d06965"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/apps/clustermesh-b-to-b-podip-cmtc-b-control-plane-80.json",
+      "bytes": 68,
+      "sha256": "341a9409162c954c6e2ee2896bc8484eb3a9b25ab9ad4d4a12aacfe79740a1f5",
+      "storedSHA256": "341a9409162c954c6e2ee2896bc8484eb3a9b25ab9ad4d4a12aacfe79740a1f5"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/apps/clustermesh-b-to-b-podip-cmtc-b-control-plane-8080.headers",
+      "bytes": 300,
+      "sha256": "ac15bc417e2d3b99000550963b7900723e9658a46dcffbaa030408cd09d06965",
+      "storedSHA256": "ac15bc417e2d3b99000550963b7900723e9658a46dcffbaa030408cd09d06965"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/apps/clustermesh-b-to-b-podip-cmtc-b-control-plane-8080.json",
+      "bytes": 68,
+      "sha256": "341a9409162c954c6e2ee2896bc8484eb3a9b25ab9ad4d4a12aacfe79740a1f5",
+      "storedSHA256": "341a9409162c954c6e2ee2896bc8484eb3a9b25ab9ad4d4a12aacfe79740a1f5"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/apps/clustermesh-b-to-b-podip-cmtc-b-worker-31337.headers",
+      "bytes": 300,
+      "sha256": "27852705dce123322b8d19181a573bc5384422f4e3051f9d508923ff6843abd2",
+      "storedSHA256": "27852705dce123322b8d19181a573bc5384422f4e3051f9d508923ff6843abd2"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/apps/clustermesh-b-to-b-podip-cmtc-b-worker-31337.json",
+      "bytes": 68,
+      "sha256": "341a9409162c954c6e2ee2896bc8484eb3a9b25ab9ad4d4a12aacfe79740a1f5",
+      "storedSHA256": "341a9409162c954c6e2ee2896bc8484eb3a9b25ab9ad4d4a12aacfe79740a1f5"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/apps/clustermesh-b-to-b-podip-cmtc-b-worker-80.headers",
+      "bytes": 300,
+      "sha256": "27852705dce123322b8d19181a573bc5384422f4e3051f9d508923ff6843abd2",
+      "storedSHA256": "27852705dce123322b8d19181a573bc5384422f4e3051f9d508923ff6843abd2"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/apps/clustermesh-b-to-b-podip-cmtc-b-worker-80.json",
+      "bytes": 68,
+      "sha256": "341a9409162c954c6e2ee2896bc8484eb3a9b25ab9ad4d4a12aacfe79740a1f5",
+      "storedSHA256": "341a9409162c954c6e2ee2896bc8484eb3a9b25ab9ad4d4a12aacfe79740a1f5"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/apps/clustermesh-b-to-b-podip-cmtc-b-worker-8080.headers",
+      "bytes": 300,
+      "sha256": "27852705dce123322b8d19181a573bc5384422f4e3051f9d508923ff6843abd2",
+      "storedSHA256": "27852705dce123322b8d19181a573bc5384422f4e3051f9d508923ff6843abd2"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/apps/clustermesh-b-to-b-podip-cmtc-b-worker-8080.json",
+      "bytes": 68,
+      "sha256": "341a9409162c954c6e2ee2896bc8484eb3a9b25ab9ad4d4a12aacfe79740a1f5",
+      "storedSHA256": "341a9409162c954c6e2ee2896bc8484eb3a9b25ab9ad4d4a12aacfe79740a1f5"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/apps/clustermesh-b-to-b-service-31337.headers",
+      "bytes": 300,
+      "sha256": "678e505d9d5f2ee75665be6aaa9b90dcf7543702f36e9e88b4563f1fe7c015d2",
+      "storedSHA256": "678e505d9d5f2ee75665be6aaa9b90dcf7543702f36e9e88b4563f1fe7c015d2"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/apps/clustermesh-b-to-b-service-31337.json",
+      "bytes": 68,
+      "sha256": "341a9409162c954c6e2ee2896bc8484eb3a9b25ab9ad4d4a12aacfe79740a1f5",
+      "storedSHA256": "341a9409162c954c6e2ee2896bc8484eb3a9b25ab9ad4d4a12aacfe79740a1f5"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/apps/clustermesh-b-to-b-service-80.headers",
+      "bytes": 300,
+      "sha256": "678e505d9d5f2ee75665be6aaa9b90dcf7543702f36e9e88b4563f1fe7c015d2",
+      "storedSHA256": "678e505d9d5f2ee75665be6aaa9b90dcf7543702f36e9e88b4563f1fe7c015d2"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/apps/clustermesh-b-to-b-service-80.json",
+      "bytes": 68,
+      "sha256": "341a9409162c954c6e2ee2896bc8484eb3a9b25ab9ad4d4a12aacfe79740a1f5",
+      "storedSHA256": "341a9409162c954c6e2ee2896bc8484eb3a9b25ab9ad4d4a12aacfe79740a1f5"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/apps/clustermesh-b-to-b-service-8080.headers",
+      "bytes": 300,
+      "sha256": "678e505d9d5f2ee75665be6aaa9b90dcf7543702f36e9e88b4563f1fe7c015d2",
+      "storedSHA256": "678e505d9d5f2ee75665be6aaa9b90dcf7543702f36e9e88b4563f1fe7c015d2"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/apps/clustermesh-b-to-b-service-8080.json",
+      "bytes": 68,
+      "sha256": "341a9409162c954c6e2ee2896bc8484eb3a9b25ab9ad4d4a12aacfe79740a1f5",
+      "storedSHA256": "341a9409162c954c6e2ee2896bc8484eb3a9b25ab9ad4d4a12aacfe79740a1f5"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/apps/clustermesh-backends.tsv",
+      "bytes": 261,
+      "sha256": "27c51fd802d4e67622ef8687f9499dd27554872c3e47b8c28891a0396bd98781",
+      "storedSHA256": "27c51fd802d4e67622ef8687f9499dd27554872c3e47b8c28891a0396bd98781"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/apps/cmtc-a-backends.json",
+      "bytes": 23696,
+      "sha256": "c0c2876496bda8041520f8a1355d2e6e55f330dda50e8a61ad162ae602a06906",
+      "storedSHA256": "c0c2876496bda8041520f8a1355d2e6e55f330dda50e8a61ad162ae602a06906"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/apps/cmtc-b-backends.json",
+      "bytes": 23690,
+      "sha256": "180044ce6a1a1301f9ff749c2ec56d1c7982fb75cede06b1bfa6cd0d01376019",
+      "storedSHA256": "180044ce6a1a1301f9ff749c2ec56d1c7982fb75cede06b1bfa6cd0d01376019"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/apps/regression-second.log",
+      "bytes": 3666,
+      "sha256": "532f0d752d9a9beb716bc23fda1c86d86d2e31908fcc7f942d215708e503ce09",
+      "storedSHA256": "532f0d752d9a9beb716bc23fda1c86d86d2e31908fcc7f942d215708e503ce09"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/apps/regression.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "storedSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/image/binary.sha256",
+      "bytes": 152,
+      "sha256": "1297b518b60505f725c37104bc52ae31d5e525e47cc03bcd1118f09026ee6a43",
+      "storedSHA256": "1297b518b60505f725c37104bc52ae31d5e525e47cc03bcd1118f09026ee6a43"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/image/build.exit",
+      "bytes": 2,
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+      "storedSHA256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/image/build.sh",
+      "bytes": 2517,
+      "sha256": "546f3cd32a89f5c6103889837159a7dbaa69a1cb20e74b608f6f7428ec533588",
+      "storedSHA256": "546f3cd32a89f5c6103889837159a7dbaa69a1cb20e74b608f6f7428ec533588"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/image/canonical-cmtc-a-control-plane.json",
+      "bytes": 7580,
+      "sha256": "acbff27fae1e9d6c4b644cba85d4611e2075e0eea77fb7fb2d2dea6063a540e7",
+      "storedSHA256": "acbff27fae1e9d6c4b644cba85d4611e2075e0eea77fb7fb2d2dea6063a540e7"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/image/canonical-cmtc-a-worker.json",
+      "bytes": 7697,
+      "sha256": "4189814f4bbeee3620cb9b3e1ed45739f1126db117cc5649d3b1d560f6b73cf3",
+      "storedSHA256": "4189814f4bbeee3620cb9b3e1ed45739f1126db117cc5649d3b1d560f6b73cf3"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/image/canonical-cmtc-b-control-plane.json",
+      "bytes": 7580,
+      "sha256": "acbff27fae1e9d6c4b644cba85d4611e2075e0eea77fb7fb2d2dea6063a540e7",
+      "storedSHA256": "acbff27fae1e9d6c4b644cba85d4611e2075e0eea77fb7fb2d2dea6063a540e7"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/image/canonical-cmtc-b-worker.json",
+      "bytes": 7697,
+      "sha256": "4189814f4bbeee3620cb9b3e1ed45739f1126db117cc5649d3b1d560f6b73cf3",
+      "storedSHA256": "4189814f4bbeee3620cb9b3e1ed45739f1126db117cc5649d3b1d560f6b73cf3"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/image/canonical-oci.tar.sha256",
+      "bytes": 84,
+      "sha256": "61b10aa4b0178c6437456a70e6c46c1ebdf7326e7c03839da9c0087816d07708",
+      "storedSHA256": "61b10aa4b0178c6437456a70e6c46c1ebdf7326e7c03839da9c0087816d07708"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/image/compile.log.gz",
+      "bytes": 450,
+      "sha256": "3658aafc7a05da03360bf95191486c71bf0d092cbe26cf2e9c7195e92a1245ea",
+      "storedSHA256": "8aeeee7cdced01e91b0d92c90921ee43ddbac1cccffa8c10f251396f0b239fb2"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/image/credential-arm64.tar.sha256",
+      "bytes": 138,
+      "sha256": "4e772dde69f84e0272936a0c1f3b2aa752e18193b40ab1c024e5cdcdac6635df",
+      "storedSHA256": "4e772dde69f84e0272936a0c1f3b2aa752e18193b40ab1c024e5cdcdac6635df"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/image/docker-archive-canonical-cmtc-a-control-plane.json",
+      "bytes": 7463,
+      "sha256": "29ef60458e61e67f866b7428283242a956f4f3aa04a95fe69539e415b975844d",
+      "storedSHA256": "29ef60458e61e67f866b7428283242a956f4f3aa04a95fe69539e415b975844d"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/image/docker-archive-canonical-cmtc-a-worker.json",
+      "bytes": 7463,
+      "sha256": "fdfc198f72afc835b2b996cbb17427a2883072a06b02a4a8f54d2b533a2026ad",
+      "storedSHA256": "fdfc198f72afc835b2b996cbb17427a2883072a06b02a4a8f54d2b533a2026ad"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/image/docker-archive-canonical-cmtc-b-control-plane.json",
+      "bytes": 7463,
+      "sha256": "29ef60458e61e67f866b7428283242a956f4f3aa04a95fe69539e415b975844d",
+      "storedSHA256": "29ef60458e61e67f866b7428283242a956f4f3aa04a95fe69539e415b975844d"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/image/docker-archive-canonical-cmtc-b-worker.json",
+      "bytes": 7463,
+      "sha256": "fdfc198f72afc835b2b996cbb17427a2883072a06b02a4a8f54d2b533a2026ad",
+      "storedSHA256": "fdfc198f72afc835b2b996cbb17427a2883072a06b02a4a8f54d2b533a2026ad"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/image/image-build.log",
+      "bytes": 772,
+      "sha256": "1189cd293af1f709e8bc50407ae080adf6ccdfd14c6037259d975b9666de88f9",
+      "storedSHA256": "1189cd293af1f709e8bc50407ae080adf6ccdfd14c6037259d975b9666de88f9"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/image/image-pin.json",
+      "bytes": 707,
+      "sha256": "6ced3f50fa9120b10c951376ce219ad523208631ba5d0a4bdd15d542edde2980",
+      "storedSHA256": "6ced3f50fa9120b10c951376ce219ad523208631ba5d0a4bdd15d542edde2980"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/image/image.json",
+      "bytes": 12918,
+      "sha256": "7ee4d84ac69fffd02c4117b5a9df5c82e8eab33716743f9dba4d48dbdde68300",
+      "storedSHA256": "7ee4d84ac69fffd02c4117b5a9df5c82e8eab33716743f9dba4d48dbdde68300"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/image/import-cmtc-a-control-plane.json",
+      "bytes": 7346,
+      "sha256": "c74a2e1ee0c25a08c6bbd4d05fae0114bf881c2c5ea453076c0f849cfa8320e0",
+      "storedSHA256": "c74a2e1ee0c25a08c6bbd4d05fae0114bf881c2c5ea453076c0f849cfa8320e0"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/image/import-cmtc-a-worker.json",
+      "bytes": 7346,
+      "sha256": "4c6831306fcb04d8993ee0073328231221b7c477f2996fe1fafc1114a98750ac",
+      "storedSHA256": "4c6831306fcb04d8993ee0073328231221b7c477f2996fe1fafc1114a98750ac"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/image/import-cmtc-b-control-plane.json",
+      "bytes": 7346,
+      "sha256": "c74a2e1ee0c25a08c6bbd4d05fae0114bf881c2c5ea453076c0f849cfa8320e0",
+      "storedSHA256": "c74a2e1ee0c25a08c6bbd4d05fae0114bf881c2c5ea453076c0f849cfa8320e0"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/image/import-cmtc-b-worker.json",
+      "bytes": 7346,
+      "sha256": "4c6831306fcb04d8993ee0073328231221b7c477f2996fe1fafc1114a98750ac",
+      "storedSHA256": "4c6831306fcb04d8993ee0073328231221b7c477f2996fe1fafc1114a98750ac"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/image/load-and-verify.log",
+      "bytes": 494,
+      "sha256": "3b21d8f4f0ec422881e5290d10ecfd4a2f7c856100ef87552fe1f9788befd33b",
+      "storedSHA256": "3b21d8f4f0ec422881e5290d10ecfd4a2f7c856100ef87552fe1f9788befd33b"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/image/load-and-verify.py",
+      "bytes": 5063,
+      "sha256": "c00c5b1c338c502b86b08816714beaf247c449350df860bb5f7b80020535d41a",
+      "storedSHA256": "c00c5b1c338c502b86b08816714beaf247c449350df860bb5f7b80020535d41a"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/image/load-cmtc-a.log",
+      "bytes": 47,
+      "sha256": "e5401e59473a36e999328ff52697e54c85e2f050c9875b7baf4e5a55f3b7d2b4",
+      "storedSHA256": "e5401e59473a36e999328ff52697e54c85e2f050c9875b7baf4e5a55f3b7d2b4"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/image/load-cmtc-b.log",
+      "bytes": 47,
+      "sha256": "e5401e59473a36e999328ff52697e54c85e2f050c9875b7baf4e5a55f3b7d2b4",
+      "storedSHA256": "e5401e59473a36e999328ff52697e54c85e2f050c9875b7baf4e5a55f3b7d2b4"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/image/loaded-images.json",
+      "bytes": 3729,
+      "sha256": "c1f7b876edbd99489c54b3fff0fb2e5e8c2d2b1fb9597ad3cd0562ab0452e8bb",
+      "storedSHA256": "c1f7b876edbd99489c54b3fff0fb2e5e8c2d2b1fb9597ad3cd0562ab0452e8bb"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/image/manifest-cmtc-a-control-plane.json",
+      "bytes": 3782,
+      "sha256": "081b2dabeef4548673e9d8a68e98dfd1aec19ccc55c8a60f182af2fc660b7394",
+      "storedSHA256": "081b2dabeef4548673e9d8a68e98dfd1aec19ccc55c8a60f182af2fc660b7394"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/image/manifest-cmtc-a-worker.json",
+      "bytes": 3786,
+      "sha256": "b0936ba58ff0cda6b730c5fa8319333f0f7926f5ff43652b11558e1de4a359f1",
+      "storedSHA256": "b0936ba58ff0cda6b730c5fa8319333f0f7926f5ff43652b11558e1de4a359f1"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/image/manifest-cmtc-b-control-plane.json",
+      "bytes": 3782,
+      "sha256": "081b2dabeef4548673e9d8a68e98dfd1aec19ccc55c8a60f182af2fc660b7394",
+      "storedSHA256": "081b2dabeef4548673e9d8a68e98dfd1aec19ccc55c8a60f182af2fc660b7394"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/image/manifest-cmtc-b-worker.json",
+      "bytes": 3786,
+      "sha256": "b0936ba58ff0cda6b730c5fa8319333f0f7926f5ff43652b11558e1de4a359f1",
+      "storedSHA256": "b0936ba58ff0cda6b730c5fa8319333f0f7926f5ff43652b11558e1de4a359f1"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/image/normalize-imports.log",
+      "bytes": 494,
+      "sha256": "957b4854e5886b09bb57035466b6c898723bd0464e0efaf96dea021bbcca27ca",
+      "storedSHA256": "957b4854e5886b09bb57035466b6c898723bd0464e0efaf96dea021bbcca27ca"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/image/normalize-imports.py",
+      "bytes": 2930,
+      "sha256": "a99fe6e91acf69b68928af7038d1fb74ffc83eb0f2543c14a58c8b39e0f9d963",
+      "storedSHA256": "a99fe6e91acf69b68928af7038d1fb74ffc83eb0f2543c14a58c8b39e0f9d963"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/image/normalized-images.json",
+      "bytes": 1657,
+      "sha256": "0c3e33b38e990824f9cb8fb1b747ebab7fd27c9911bc1858aaacffa1008f0ea2",
+      "storedSHA256": "0c3e33b38e990824f9cb8fb1b747ebab7fd27c9911bc1858aaacffa1008f0ea2"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/image/oci-export.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "storedSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/image/oci-import-cmtc-a.log",
+      "bytes": 47,
+      "sha256": "e5401e59473a36e999328ff52697e54c85e2f050c9875b7baf4e5a55f3b7d2b4",
+      "storedSHA256": "e5401e59473a36e999328ff52697e54c85e2f050c9875b7baf4e5a55f3b7d2b4"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/image/oci-import-cmtc-b.log",
+      "bytes": 47,
+      "sha256": "e5401e59473a36e999328ff52697e54c85e2f050c9875b7baf4e5a55f3b7d2b4",
+      "storedSHA256": "e5401e59473a36e999328ff52697e54c85e2f050c9875b7baf4e5a55f3b7d2b4"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/image/pin-imports.log",
+      "bytes": 885,
+      "sha256": "ca187aa952c22d21f9fc2418c9fc6b8a92a0560817e3a70ddc0f2621fc54bf14",
+      "storedSHA256": "ca187aa952c22d21f9fc2418c9fc6b8a92a0560817e3a70ddc0f2621fc54bf14"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/image/pin-imports.py",
+      "bytes": 1773,
+      "sha256": "e5279e3d804a8769e77b1ef29a5c8fbc11253102d7e482c981e2cfd3fcd26a13",
+      "storedSHA256": "e5279e3d804a8769e77b1ef29a5c8fbc11253102d7e482c981e2cfd3fcd26a13"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/image/spire-credential-pins-3b1a6a9e8f-cmtc-a-control-plane-pod.json",
+      "bytes": 5483,
+      "sha256": "267c61827e6a2d2ecc951a45e11d84d72a1db72150d82f1d8581a8d482ef20cf",
+      "storedSHA256": "267c61827e6a2d2ecc951a45e11d84d72a1db72150d82f1d8581a8d482ef20cf"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/image/spire-credential-pins-3b1a6a9e8f-cmtc-a-control-plane.log",
+      "bytes": 244,
+      "sha256": "2c6af4d4dfef1c4403a85462372a209047af2d3890187350ea5406409298d4bf",
+      "storedSHA256": "2c6af4d4dfef1c4403a85462372a209047af2d3890187350ea5406409298d4bf"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/image/spire-credential-pins-3b1a6a9e8f-cmtc-a-worker-pod.json",
+      "bytes": 5445,
+      "sha256": "51b1e43aecaa768dc892f4bdc3bddf9c61f1e9725ee469719c4250978914750c",
+      "storedSHA256": "51b1e43aecaa768dc892f4bdc3bddf9c61f1e9725ee469719c4250978914750c"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/image/spire-credential-pins-3b1a6a9e8f-cmtc-a-worker.log",
+      "bytes": 244,
+      "sha256": "2c6af4d4dfef1c4403a85462372a209047af2d3890187350ea5406409298d4bf",
+      "storedSHA256": "2c6af4d4dfef1c4403a85462372a209047af2d3890187350ea5406409298d4bf"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/image/spire-credential-pins-3b1a6a9e8f-cmtc-b-control-plane-pod.json",
+      "bytes": 5487,
+      "sha256": "f633e990a3bd27c9b1b1aba456e381a425d936884edfd6a7fd593c63fdaaeaa2",
+      "storedSHA256": "f633e990a3bd27c9b1b1aba456e381a425d936884edfd6a7fd593c63fdaaeaa2"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/image/spire-credential-pins-3b1a6a9e8f-cmtc-b-control-plane.log",
+      "bytes": 244,
+      "sha256": "2c6af4d4dfef1c4403a85462372a209047af2d3890187350ea5406409298d4bf",
+      "storedSHA256": "2c6af4d4dfef1c4403a85462372a209047af2d3890187350ea5406409298d4bf"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/image/spire-credential-pins-3b1a6a9e8f-cmtc-b-worker-pod.json",
+      "bytes": 5519,
+      "sha256": "bfd9a500baadf4fda45756b9ccb825e1f6dcff8722312406d26f0de08a812dad",
+      "storedSHA256": "bfd9a500baadf4fda45756b9ccb825e1f6dcff8722312406d26f0de08a812dad"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/image/spire-credential-pins-3b1a6a9e8f-cmtc-b-worker.log",
+      "bytes": 244,
+      "sha256": "2c6af4d4dfef1c4403a85462372a209047af2d3890187350ea5406409298d4bf",
+      "storedSHA256": "2c6af4d4dfef1c4403a85462372a209047af2d3890187350ea5406409298d4bf"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/image/version-job-cleanup.json",
+      "bytes": 585,
+      "sha256": "0d1a535d21d1f6917d18d9e4abf17e81b2aa48c01ead106f743e75cd2ae67158",
+      "storedSHA256": "0d1a535d21d1f6917d18d9e4abf17e81b2aa48c01ead106f743e75cd2ae67158"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/image/version.txt",
+      "bytes": 244,
+      "sha256": "2c6af4d4dfef1c4403a85462372a209047af2d3890187350ea5406409298d4bf",
+      "storedSHA256": "2c6af4d4dfef1c4403a85462372a209047af2d3890187350ea5406409298d4bf"
+    },
+    {
+      "path": "docs/evidence/spire-native-credentials/image/Containerfile",
+      "bytes": 460,
+      "sha256": "faddb1764a68eb5322449047e6a427b20780d754367a1f8217079294b15335a7",
+      "storedSHA256": "faddb1764a68eb5322449047e6a427b20780d754367a1f8217079294b15335a7"
+    }
+  ]
+}

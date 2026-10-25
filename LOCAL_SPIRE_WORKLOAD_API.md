@@ -5,7 +5,7 @@ Each agent exposes a separate Workload API socket and Admin API socket.
 The agent verifies the kubelet certificate against the approved per-node CA and the exact node DNS name.
 Applications have no sidecars, socket mounts or private-key files.
 
-This increment enables the node APIs. It does not prove workload SVID delivery or workload mTLS.
+The node API bootstrap is qualified. A later [native credential qualification](LOCAL_NATIVE_CREDENTIALS.md) also verifies real workload SVID delivery on all four nodes. Workload traffic mTLS remains unqualified.
 [The deployment ledger](docs/evidence/spire-workload-api/summary.json) records that boundary.
 
 ## Exact runtime
@@ -88,6 +88,7 @@ They preserve the Cilium DaemonSet and configuration, SPIRE server template and 
 [The public ledger and raw results](docs/evidence/spire-workload-api/summary.json) retain the evidence.
 Private keys remain outside the evidence.
 
-Next, verify exact workload registrations and native credential delivery on every node.
+Exact registrations and native credential delivery now pass on every node.
+See the [native credential guide](LOCAL_NATIVE_CREDENTIALS.md) for denial, replacement, retry and recovery evidence.
 Then qualify process incarnation, native remote provenance, effective policy, actual drains and cross-cluster traffic.
 Keep the ClusterMesh/ztunnel compatibility guard closed until those gates pass.

@@ -1,0 +1,12 @@
+Traceback (most recent call last):
+  File "/private/tmp/cmtc-native-credentials-20261025/qualify.py", line 101, in <module>
+    result=q.native_fetch(api,probe_pod=state['probes'][node],wanted=wanted,issuer_proof=issuer,expected_probe_image=IMAGE['canonicalImage']);state['positive'][node]={'registration':wanted,'result':result};save();print('PASS',cluster,node,'actual native held-process credential, exact workload SVID/current signer, no private output',flush=True)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/olasumbo/gitRepos/clustermest-trust-controller/scripts/lab/spire/qualify_workload.py", line 95, in native_fetch
+    result=bounded(api.argv+['exec','-n',ns,name,'-c','probe','--',BINARY,'fetch',wanted['spiffeID'],wanted['podUID'],wanted['podName']],timeout=40)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/olasumbo/gitRepos/clustermest-trust-controller/scripts/lab/spire/qualify_workload.py", line 25, in bounded
+    raise Refusal(f'public command failed ({result.returncode}): {result.stderr[:4096]}')
+workload_api.Refusal: public command failed (1): Error: error parsing proxy config: failed parsing mesh config file ./etc/istio/config/mesh: Permission denied (os error 13)
+command terminated with exit code 1
+
