@@ -2,6 +2,10 @@
 
 Updated 2026-10-25. This checkpoint supersedes older current-state paragraphs in delivery history. The full end-to-end workload-mTLS mandate is active. A question, review, document or commit does not pause it. Read [the master prompt](CODEX_MASTER_PROMPT.md), [delivery status](../agile/DELIVERY_STATUS.md), [recovery receipt](OPUS_RECOVERY.md) and the security acceptance matrix.
 
+## Actual quota and operational continuation
+
+Claude has now actually hit its session limit; the CLI reports **11:30 a.m. America/Chicago**. The XHigh review did not return a completed result. Preserve its [partial session record](../research/cursor/OPUS_XHIGH_PARTIAL_REVIEW.md). Codex takes the sole operational compiler/live lease while Opus is unavailable; product implementation remains Opus-owned. The current agent and API-server rebuilds pass with unchanged source/image pins. User authorizes commit-all and merge-all into personal repository defaults, with **every working branch/worktree retained**. This supersedes the earlier no-merge/push boundary only for those merges; do not merge canonical upstream, force push, publish registries or dispatch manual CI. Continue actual deployment from verified current code; no mTLS claim yet. Read root resume-opus.md for the live handback and safe-runner requirements.
+
 ## Immediate local activation mandate
 
 The user now explicitly directs Opus to **rebuild the current code, deploy it and enable mTLS now** on the owned lab. Codex queued the full mandate to the active Max implementation owner. Prioritize current-source host-Podman rebuild, exact-image deployment, concrete ztunnel activation and immediate real traffic; do not wait for optional reviews, dashboards, quota reset or CI. Keep one compiler/live writer and preserve the restricted Admin/socket and signer boundaries. Report actual positive/denied/failed paths; activation is not a Protected claim. Finish the requested root resume-opus.md as a concise checkpoint. The Claude quota has not been reached. No external publishing was requested.

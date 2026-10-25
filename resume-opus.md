@@ -2,6 +2,14 @@
 
 Saved 2026-10-25T15:35Z. This is a checkpoint, not a stop. The quota has not been reached and work continues now. The 11:00 Central resume time is user-reported, not an observed reset or pause. Live detail stays current in `/private/tmp/cmtc-opus-final-20261025/review/STATUS-CLAUDE.md` (durable checkpoint at its top).
 
+## Latest operational checkpoint
+
+Claude has now actually reported its session limit, with reset at **11:30 a.m. America/Chicago**. Both sessions stopped on synthetic quota-error output; no alternate model implementation was used. The XHigh review is incomplete. The user's later mandate authorizes **all current CMTC work to be committed, rebuilt and merged into personal-repository defaults**, then deployed with mTLS enabled now. Preserve every working branch and worktree. No canonical upstream merge or force push is authorized. Targeted personal-default merge pushes may trigger CI; registry publication and manual dispatch remain separate.
+
+Codex holds the temporary sole **operational** compiler/live lease while Claude is unavailable. Opus retains implementation-source ownership. No task compiler was active at transfer. Read updated BUILD_SLOT.json/LAB_OWNER.json before resuming. Do not start Claude live or compiler writes until Codex explicitly hands those leases back. The agent and API-server rebuilds have completed successfully at51170b1239 with unchanged exact configuration IDs; other rebuild/deployment/merge work continues.
+
+The old runner opens its log with truncation and replays its queue from offset0. **Do not blindly restart it.** A safe resumed runner must use new append-only logs, persist the forwarded queue offset, verify the old processes exited, retain the actual-model guard and same session/model/effort, and require lease handback. Preserve all current transcripts.
+
 ## Mandate (latest human instruction)
 
 Rebuild the current code and deploy it. Enable workload mTLS now on both owned ClusterMesh labs: activate cmtc-a first to detect errors, then cmtc-b immediately. Test real traffic in this order:
@@ -31,7 +39,7 @@ Capture peer identities, certificate chains, policy verdicts and packets. If the
 
 The model-substitution guard terminates on any model other than `claude-opus-5-5` or on `model_refusal_fallback`, and writes `live-max-owner-model-block.json`. Never use Opus 4.8, Fable or a fallback model.
 
-To resume: confirm PIDs 54798/54800 have exited and `live-max-owner-exit` exists. Only then restart the same runner, which uses `--resume` with the same model, effort and tools. Keep normal permission review and streamed steering. The compiler and live leases are `review/BUILD_SLOT.json` (`claudeCompileAllowed=true`) and `review/LAB_OWNER.json` (`adminDACMigrationApproved=false`).
+To resume: first obtain operational lease handback and confirm the old processes have exited. Use a guarded continuation runner with new retained logs and the persisted queue offset; do not restart the old truncating runner. Resume the same session, model and effort with normal permission review and streamed steering. The compiler and live leases are `review/BUILD_SLOT.json` (`claudeCompileAllowed=true`) and `review/LAB_OWNER.json` (`adminDACMigrationApproved=false`).
 
 The separate XHigh reviewer runs read-only (Read/Glob/Grep only) and proposal-only:
 - session `c0e51864-c536-41eb-8839-a34043c36e6e`;
