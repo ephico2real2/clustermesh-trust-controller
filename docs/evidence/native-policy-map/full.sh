@@ -1,0 +1,3 @@
+#!/bin/bash
+set -euo pipefail
+podman --connection cmtc-ubuntu-build run --rm --platform linux/arm64 --cpus 2 --memory 4g --privileged --security-opt label=disable -e PRIVILEGED_TESTS=1 -e GOMAXPROCS=2 -e GOMEMLIMIT=2GiB -e GOFLAGS=-p=2 -e GOCACHE=/cache -v /private/tmp/cilium-ztunnel-authorization-runtime:/src -v /private/tmp/cilium-ztunnel-linux-go-cache:/cache -w /src cee8c5638bdedad0944780cd5dd7e3ff4f7b5c7e558d328d5412deacd364b905 sh -ec 'go test -race -count=1 -json ./pkg/policy ./pkg/endpoint; go vet ./pkg/policy ./pkg/endpoint' > /private/tmp/cmtc-native-policy-map-20261025/full-first.jsonl 2>&1

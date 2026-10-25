@@ -1,0 +1,3 @@
+#!/bin/bash
+set -euo pipefail
+podman --connection cmtc-ubuntu-build run --rm --platform linux/arm64 --cpus 2 --memory 4g --security-opt label=disable -e GOMAXPROCS=2 -e GOMEMLIMIT=2GiB -e GOFLAGS=-p=2 -e GOCACHE=/cache -v /private/tmp/cilium-ztunnel-authorization-runtime:/src -v /private/tmp/cilium-ztunnel-linux-go-cache:/cache -w /src cee8c5638bdedad0944780cd5dd7e3ff4f7b5c7e558d328d5412deacd364b905 sh -ec 'gofmt -w pkg/endpoint/ztunnel_policy_attestation_test.go; go test -race -tags lockdebug -count=1 -json ./pkg/endpoint -run "^TestNativePolicyMap"; go vet ./pkg/endpoint' > /private/tmp/cmtc-native-policy-map-20261025/lockdebug-second.jsonl 2>&1

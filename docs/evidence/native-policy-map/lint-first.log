@@ -1,0 +1,17 @@
+pkg/endpoint/ztunnel_policy_attestation_test.go:94:3: mapsloop: Replace m[k]=v loop with maps.Insert (modernize)
+		entries[key] = value
+		^
+pkg/policy/ztunnel_l4_wire.go:198:6: rangeint: for loop can be modernized using range over int (modernize)
+	for i := uint32(0); i < count; i++ {
+	    ^
+pkg/policy/ztunnel_l4_wire_test.go:146:6: rangeint: for loop can be modernized using range over int (modernize)
+	for length := 0; length < len(wire); length++ {
+	    ^
+pkg/policy/ztunnel_l4_wire_test.go:181:5: mapsloop: Replace m[k]=v loop with maps.Copy (modernize)
+				changed[k] = v
+				^
+pkg/policy/ztunnel_l4_wire_test.go:234:6: rangeint: for loop can be modernized using range over int (modernize)
+	for i := 0; i < maxZtunnelPolicyEntries; i++ {
+	    ^
+5 issues:
+* modernize: 5
