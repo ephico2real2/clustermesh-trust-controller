@@ -66,3 +66,24 @@ Keep those semantics explicit in the eventual production policy.
 The compatibility guard stays closed. The labs still prove ClusterMesh and
 application connectivity; ztunnel is disabled, and cross-cluster workload mTLS
 is not qualified. CI, pushes and registry publication remain deferred.
+
+## Native profile source increment
+
+Cilium source `a001caa8cd` now validates the current API publication and projects bounded public DER.
+Its10 top-level tests and20 subtests pass with race detection, vet and zero lint issues.
+The local [issuer-profile producer](LOCAL_ISSUER_PROFILE.md) is qualified separately.
+
+Ztunnel source `fc422ec` decodes the same public fixture with independent origin, root and version-floor inputs.
+It retains delivery reasons. Current producer withdrawals close availability; they do not permanently revoke issuer keys.
+Atomic authority withdrawal and explicit restoration preserve cumulative issuer history and old-connection cutoffs.
+The caller must independently authorize permanent revocation or restoration.
+
+The final full suite passes454 tests:404 library,20 direct and30 namespace tests.
+There are zero failures and zero ignored tests.
+An additional forced TLS1.2 case passes. Formatting and strict Clippy pass.
+[Source hashes, patches and raw results](docs/evidence/native-issuer-profile/summary.json) identify the tested code.
+
+These source commits are local. They have no new runtime image or active ADS handler yet.
+The deployed Cilium image remains4459; ztunnel remains disabled.
+Durable checkpoints, live provider transitions, peer-root CRL registration and actual socket draining remain open.
+No publication acknowledgment or parser result can open admission.
