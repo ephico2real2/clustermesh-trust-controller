@@ -12,6 +12,33 @@ The baseline remains reuse of Cilium's enrollment and inventory interfaces.
 A production owner change requires a recorded design decision and passing acceptance tests.
 The project must not acquire two independent registration owners by accident.
 
+## Why this helper was created
+
+The immediate problem was registration precision and lifecycle control.
+The reviewed Cilium registrar selected workloads mainly by namespace and service account.
+The experiment needed exact current Pod and node binding before testing native credentials.
+It also needed measurable withdrawal, retry, restart and cleanup behavior.
+
+| Need | Experimental mechanism | Limit |
+| --- | --- | --- |
+| Avoid obsolete Pod entitlement | Include the exact Pod UID in selectors and the entry key. | A service-account SPIFFE identity can still be shared by authorized Pods. |
+| Bind the current node and agent | Use the approved node UID and current SPIRE agent Pod UID in the parent alias. | Agent attestation and selector verification remain SPIRE responsibilities. |
+| Control approval | Pin namespace, service-account and DaemonSet UIDs and images. | Approval pins are not all certificate fields or SPIRE selectors. |
+| Detect failed enrollment | Read back the exact Entry and expose fresh readiness. | Readback does not prove SVID delivery or protected traffic. |
+| Bound abandoned registration | Renew short-lived entries and withdraw owned rows. | Already-issued certificates and existing flows require separate controls. |
+| Keep administrative access local | Use the private server Admin socket inside the SPIRE server Pod. | The helper still has powerful administrative authority inside that boundary. |
+
+A separate Go helper made these checks independently testable during local development.
+It avoided granting the server Admin socket to every node.
+It did not replace SPIRE or create a new certificate authority.
+SPIRE still performs attestation and certificate issuance.
+
+This placement also adds a build, image, configuration and availability dependency.
+The experiment must justify those costs before permanent adoption.
+Enhancing Cilium's existing registrar could provide the same lifecycle checks without a second registration owner.
+The tested mechanisms can inform that implementation.
+A separate component is not required merely because we wrote one.
+
 ## Original baseline and later change
 
 The [implementation plan](docs/architecture/IMPLEMENTATION_PLAN.md) states both reuse requirements:

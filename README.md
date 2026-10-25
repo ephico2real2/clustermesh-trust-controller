@@ -25,8 +25,6 @@ The registrar is a separate Go helper in this repository. It runs inside the SPI
 
 <!-- markdownlint-disable MD033 -->
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/diagrams/component-roles/component-roles.dark.png">
-  <source media="(prefers-color-scheme: light)" srcset="docs/diagrams/component-roles/component-roles.light.png">
   <img src="docs/diagrams/component-roles/component-roles.light.png" alt="The experimental registrar uses SPIRE's private server API. The CMTC node agent reports inventory. Ztunnel activation remains pending.">
 </picture>
 <!-- markdownlint-enable MD033 -->

@@ -76,7 +76,7 @@ The component-role figure uses the local diagram-kit template and renderer:
   docs/diagrams/component-roles component-roles
 ```
 
-Inspect both images after rendering. Keep measured behavior separate from proposed behavior. Use the established Tableau palette for dashboards.
+Use the light-theme image in documentation, regardless of the reader theme. Keep the dark-theme render for validation. Inspect both images after rendering. Keep measured behavior separate from proposed behavior. Use the established Tableau palette for dashboards.
 
 ## Automated test records
 

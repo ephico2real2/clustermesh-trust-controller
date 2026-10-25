@@ -1,0 +1,179 @@
+{
+  "info": {
+    "chainID": "sha256:0bd270133fe8fc5e93a191c734ffed015bca484593dab84811693be664179e25",
+    "imageSpec": {
+      "architecture": "arm64",
+      "config": {
+        "Entrypoint": [
+          "/usr/local/bin/spire-workload-check"
+        ],
+        "Env": [
+          "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+          "SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt"
+        ],
+        "Labels": {
+          "io.buildah.version": "1.33.7",
+          "io.cmtc.scope": "native-credential-diagnostic-no-proxy",
+          "org.opencontainers.image.revision": "75843515d549f7928d080801ac3f7e4344f572eb",
+          "org.opencontainers.image.source": "https://github.com/ephico2real2/ztunnel"
+        },
+        "User": "65532:65532",
+        "WorkingDir": "/home/nonroot"
+      },
+      "created": "2026-10-25T07:58:21.515615891Z",
+      "history": [
+        {
+          "created": "1970-01-01T00:00:00Z",
+          "created_by": "bazel build @trixie//base-files/arm64:data_statusd"
+        },
+        {
+          "created": "1970-01-01T00:00:00Z",
+          "created_by": "bazel build @trixie//netbase/arm64:data_statusd"
+        },
+        {
+          "created": "1970-01-01T00:00:00Z",
+          "created_by": "bazel build @trixie//tzdata/arm64:data_statusd"
+        },
+        {
+          "created": "1970-01-01T00:00:00Z",
+          "created_by": "bazel build @trixie//tzdata-legacy/arm64:data_statusd"
+        },
+        {
+          "created": "1970-01-01T00:00:00Z",
+          "created_by": "bazel build @trixie//media-types/arm64:data_statusd"
+        },
+        {
+          "created": "1970-01-01T00:00:00Z",
+          "created_by": "bazel build //common:rootfs"
+        },
+        {
+          "created": "1970-01-01T00:00:00Z",
+          "created_by": "bazel build //common:passwd"
+        },
+        {
+          "created": "1970-01-01T00:00:00Z",
+          "created_by": "bazel build //common:home"
+        },
+        {
+          "created": "1970-01-01T00:00:00Z",
+          "created_by": "bazel build //common:group"
+        },
+        {
+          "created": "1970-01-01T00:00:00Z",
+          "created_by": "bazel build //common:tmp"
+        },
+        {
+          "created": "1970-01-01T00:00:00Z",
+          "created_by": "bazel build //static:nsswitch"
+        },
+        {
+          "created": "1970-01-01T00:00:00Z",
+          "created_by": "bazel build //common:os_release_debian13"
+        },
+        {
+          "created": "1970-01-01T00:00:00Z",
+          "created_by": "bazel build //common:cacerts_debian13_arm64_tar"
+        },
+        {
+          "created": "1970-01-01T00:00:00Z",
+          "created_by": "bazel build @trixie//libc6/arm64:data_statusd"
+        },
+        {
+          "created": "1970-01-01T00:00:00Z",
+          "created_by": "bazel build @trixie//libssl3t64/arm64:data_statusd"
+        },
+        {
+          "created": "1970-01-01T00:00:00Z",
+          "created_by": "bazel build @trixie//libzstd1/arm64:data_statusd"
+        },
+        {
+          "created": "1970-01-01T00:00:00Z",
+          "created_by": "bazel build @trixie//zlib1g/arm64:data_statusd"
+        },
+        {
+          "created": "1970-01-01T00:00:00Z",
+          "created_by": "bazel build @trixie//libgomp1/arm64:data_statusd"
+        },
+        {
+          "created": "1970-01-01T00:00:00Z",
+          "created_by": "bazel build @trixie//libstdc++6/arm64:data_statusd"
+        },
+        {
+          "created": "1970-01-01T00:00:00Z",
+          "created_by": "bazel build @trixie//libgcc-s1/arm64:data_statusd"
+        },
+        {
+          "created": "1970-01-01T00:00:00Z",
+          "created_by": "bazel build @trixie//gcc-14-base/arm64:data_statusd"
+        },
+        {
+          "comment": "FROM gcr.io/distroless/cc-debian13:nonroot",
+          "created": "2026-10-25T07:58:21.365055894Z",
+          "created_by": "/bin/sh -c #(nop) COPY file:6c45405389b1423bdef4ec77787d923e751387cee5ed84a09ddbcf3f3288905a in /usr/local/bin/spire-workload-check "
+        },
+        {
+          "comment": "FROM a6cb162bb1b9",
+          "created": "2026-10-25T07:58:21.462245523Z",
+          "created_by": "/bin/sh -c #(nop) USER 65532:65532",
+          "empty_layer": true
+        },
+        {
+          "comment": "FROM cf4177d46d03",
+          "created": "2026-10-25T07:58:21.488859639Z",
+          "created_by": "/bin/sh -c #(nop) ENTRYPOINT [\"/usr/local/bin/spire-workload-check\"]",
+          "empty_layer": true
+        },
+        {
+          "comment": "FROM d5f7957d9c51",
+          "created": "2026-10-25T07:58:21.515824708Z",
+          "created_by": "/bin/sh -c #(nop) LABEL org.opencontainers.image.source=\"https://github.com/ephico2real2/ztunnel\" org.opencontainers.image.revision=\"75843515d549f7928d080801ac3f7e4344f572eb\" io.cmtc.scope=\"native-credential-diagnostic-no-proxy\"",
+          "empty_layer": true
+        }
+      ],
+      "os": "linux",
+      "rootfs": {
+        "diff_ids": [
+          "sha256:e842bc95a0a8664498b7881e537b5929e419d590f5a9954fb7f81c73c20fc6c7",
+          "sha256:621c35e751a51a9a9dc3e80aa0b7fe8be2a93402ea6ccd307d30852cd7776cda",
+          "sha256:92a3b02188b326c1b10a0a375d3c0019dff4ee8ff02a4b51a7e640bb9400932f",
+          "sha256:ef430e4865b6130e131d5777c1d072fdcc89478668d10ab41a18549e0fdc88b5",
+          "sha256:275a30dd8ce958b21daa9ad962c6fbc09f98306ee2f486b65c9075dc257b1412",
+          "sha256:4d049f83d9cf21d1f5cc0e11deaf36df02790d0e60c1a3829538fb4b61685368",
+          "sha256:af5aa97ebe6ce1604747ec1e21af7136ded391bcabe4acef882e718a87c86bcc",
+          "sha256:6f1cdceb6a3146f0ccb986521156bef8a422cdbb0863396f7f751f575ba308f4",
+          "sha256:bd3cdfae1d3fdd83a2231d608969b38b82349777c2fff9a7c12d54f8ac5c9b38",
+          "sha256:4cde6b0bb6f50a5f255eef7b2a42162c661cf776b803225dcac9a659e396bb6b",
+          "sha256:ad51d0769d16ba578106a177987dfe3d2e02c1668c852b795b2f6b024068242a",
+          "sha256:187cfc6d1e3e8a40a5e64653bcd3239c140807dcf1c09e48021178705a5a6139",
+          "sha256:0762a1f6557d1e88a761ab05aa7f65a10dc0e559913ea13befb873d907e1a396",
+          "sha256:50a5575df19e16694e9b7bfca79ef13cfce85faab4b0585ff197a078a952b007",
+          "sha256:948af73b9b4f49fa4e0009269c2f4a5b174fb02c4485b13ab7f6d0c705d49966",
+          "sha256:91213e6dc2fda431a0de4541602a933c7a48206a0bf487217fa681260fccdc23",
+          "sha256:7b57942929394e731b49e8f1863a4da2cbd1b9fda48d9f1e75a0a28b2d89d01a",
+          "sha256:7578331450f7cd6e1f6f28caf2ce9af93ea935a049132bb63ed523dcbda068e4",
+          "sha256:323c2be748e4417f7ab7b05b33d6c1a52df0788e779143555109ddcd5325c76c",
+          "sha256:fcb0c313318aac64dde0e0574b4df3394902929eb62d43e8b6c47ec4562f170d",
+          "sha256:30884b21b6a1362fbcdb60743280a138148b6d0ac50a3f8ee3e9f213b371c9e7",
+          "sha256:af74d323348b93b3ef822d07d63bdb3723a6c8c0b47ec1d98e0baab86d1d951e"
+        ],
+        "type": "layers"
+      },
+      "variant": "v8"
+    }
+  },
+  "status": {
+    "id": "sha256:4bf82edb89ad5b03a2ff1bebe9c29c4c5881024f447e3d62fcbebf2111948430",
+    "pinned": false,
+    "repoDigests": [
+      "docker.io/library/import-2026-10-25@sha256:22fa029312d851a5d761a6b1678fc7e0e870b301e5f1077133b6733b3ffc6ab1"
+    ],
+    "repoTags": [
+      "localhost/cmtc-spire-workload-check:stream-75843515d5"
+    ],
+    "size": "56919040",
+    "uid": {
+      "value": "65532"
+    },
+    "username": ""
+  }
+}

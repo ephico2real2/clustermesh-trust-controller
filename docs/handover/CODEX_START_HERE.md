@@ -26,7 +26,7 @@ The experimental registrar is a separate CMTC Go image inside the SPIRE server P
 
 The Cilium fork has source-qualified source-IP receipts and native policy-drain guards. These are separate from the older deployed image. Use delivery status for exact pins.
 
-The registrar trial found a real ztunnel client defect. The client swallowed SPIRE stream errors and later reported a deadline. The corrected source passed 568 full-profile tests plus two diagnostic cases, format and strict Clippy. Its exact diagnostic image is built; import and runtime qualification remain open. Correct the withdrawal fixture to distinguish target credential absence from delegate denial.
+The registrar trial found a real ztunnel client defect. The client swallowed SPIRE stream errors and later reported a deadline. The corrected source passed 568 full-profile tests plus two diagnostic cases, format and strict Clippy. Its exact diagnostic image is imported and version-verified on all four nodes. The corrected withdrawal fixture remains open. Correct the withdrawal fixture to distinguish target credential absence from delegate denial.
 
 The restore path still lacks complete persistent quarantine before regeneration. Kernel policy-map reachability, mandatory capture and active transport-grant closure remain open. Keep the ClusterMesh/ztunnel guard closed.
 

@@ -25,8 +25,6 @@ The shared clusters still have ztunnel disabled. A public profile, valid SVID or
 
 <!-- markdownlint-disable MD033 -->
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/diagrams/pki-trust-flow/issuance.dark.png">
-  <source media="(prefers-color-scheme: light)" srcset="docs/diagrams/pki-trust-flow/issuance.light.png">
   <img src="docs/diagrams/pki-trust-flow/issuance.light.png" alt="The protected host root signs each separate cluster CA. Cert-manager signs SPIRE's CA. SPIRE issues workload SVIDs. CMTC publishes approved public signer profiles.">
 </picture>
 <!-- markdownlint-enable MD033 -->
@@ -75,8 +73,6 @@ The peer verifier pins the approved SPIRE signer. The organization root and clus
 
 <!-- markdownlint-disable MD033 -->
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/diagrams/pki-trust-flow/verification.dark.png">
-  <source media="(prefers-color-scheme: light)" srcset="docs/diagrams/pki-trust-flow/verification.light.png">
   <img src="docs/diagrams/pki-trust-flow/verification.light.png" alt="The proxy source checks the exact peer signer and live authority before ciphertext I/O, buffered plaintext release and pooled CONNECT admission. Combined runtime activation remains pending.">
 </picture>
 <!-- markdownlint-enable MD033 -->
@@ -129,4 +125,4 @@ The [diagram page](docs/diagrams/pki-trust-flow/source.html) uses diagram-kit. R
   docs/diagrams/pki-trust-flow issuance,verification
 ```
 
-Update the page, images and text twins together. Inspect all four images after rendering.
+Documentation displays the light-theme figures. The dark-theme figures remain validation assets. Update the page, images and text twins together. Inspect all four images after rendering.

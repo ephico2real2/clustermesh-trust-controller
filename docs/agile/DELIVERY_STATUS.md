@@ -11,7 +11,7 @@ Use only the persistent `cmtc-a` and `cmtc-b` labs in Colima `cmtc-cilium`. Pres
 | Cilium | `4459d58ed3`; routing and native baseline policy. Newer candidate source is not deployed. |
 | CMTC | `f5fe9992da855a22660c07b141e19feee50310ba`; six Observe processes. The issuer-profile producer is enabled in both clusters. |
 | SPIRE server and agents | `28f6b8d84ade21c6accb32ba9689a3bdf64877ec`; retained signer/PVC restart and secure node attestation passed. |
-| Native credential diagnostic | `3b1a6a9e8fa3fcc9d3de499835feeafc0e735d39`; exact image imported on four nodes and real native SVID checks passed. |
+| Native credential diagnostic | The earlier `3b1a6a9e8f` passed real SVID checks. Corrected `75843515d5` is now imported and version-verified on all four nodes; new withdrawal qualification remains open. |
 | Experimental registrar | `e39928bc4f79ad6da134e77583945c8e5e9d52bf`; image built/imported. Owned runtime trial remains unqualified. |
 | Ztunnel, WireGuard and IPsec | Combined workload-mTLS profile disabled. No end-to-end Protected claim. |
 
@@ -24,7 +24,7 @@ The live producer approval expires at `2026-10-26T03:55:11Z`. Its output leases 
 | Cilium source-IP receipt `df2a6c1ec88f0358c52e95229dd8fe21c2b56201` | Actual loaded program, sole TCX link and frozen configuration checks. Functional race: 102 top-level / 177 subtests. Lockdebug: 20 / 44. Vet and lint pass. Separate verifier-complexity benchmark excluded. [Evidence](../../LOCAL_SOURCE_IP_VALIDATION.md). |
 | Cilium native policy transition `8bb97137fcc92b935171d60e59d7fb8a93714bd8` | Functional race: 403 / 1691. Lockdebug: 27 / 52. Zero failures or selected skips. Vet and lint pass. No new image. [Evidence](../evidence/native-policy-transition/summary.json). |
 | Ztunnel source witness `1609bfd38abdf4be671ad0d8144fecfa0b6d94b0` | 513 library, 20 direct and 30 namespace tests, plus two diagnostic cases. Format and strict Clippy pass. [Evidence](../evidence/native-issuer-profile/source-binding/summary.json). |
-| Ztunnel SPIRE stream correction over `1609bfd` | Committed at `75843515d549f7928d080801ac3f7e4344f572eb`. First error now ends the request. Full profile: 518 library + 20 direct + 30 namespace tests, plus two diagnostic cases. No failures or ignored cases. Format and strict Clippy pass. The corrected diagnostic image is built but not yet imported. [Raw source evidence](../evidence/spire-stream-errors/summary.json). [Exact image build](../evidence/spire-stream-errors/image/build.sh) completed with config `sha256:4bf82edb89ad5b03a2ff1bebe9c29c4c5881024f447e3d62fcbebf2111948430`. No replacement runtime qualification yet. |
+| Ztunnel SPIRE stream correction over `1609bfd` | Committed at `75843515d549f7928d080801ac3f7e4344f572eb`. First error now ends the request. Full profile: 518 library + 20 direct + 30 namespace tests, plus two diagnostic cases. No failures or ignored cases. Format and strict Clippy pass. The corrected diagnostic image is built, imported and version-verified on all four nodes. [Raw source evidence](../evidence/spire-stream-errors/summary.json). [Exact image build](../evidence/spire-stream-errors/image/build.sh) completed with config `sha256:4bf82edb89ad5b03a2ff1bebe9c29c4c5881024f447e3d62fcbebf2111948430`. All four temporary version Jobs passed and were UID-safely removed. One unchanged OCI manifest was then verified on all nodes. The automatic 36-path application continuity test passed with zero cleanup errors. These checks do not qualify credential withdrawal. |
 | SPIRE host helper suite | 107 tests pass automatically with the qualified Python and loopback TLS enabled. Missing dependency and sandbox failures are retained. This does not qualify the runtime withdrawal assertion. |
 
 Tests execute their assertions automatically after one runner invocation. The primary inspects failures, corrects the cause and reruns the affected profile. Manual inspection cannot convert a failed case into a pass. Setup, evidence and owned cleanup are part of the lab runner.
@@ -39,15 +39,11 @@ The seventh trial obtained valid SVIDs and withdrew exact server entries. It lat
 
 ## Next concrete actions
 
-1. Commit the requested documentation, diagrams and build procedures.
-2. Preserve the source-tested SPIRE stream correction and its raw evidence.
-3. Build its exact diagnostic image with host Podman.
-4. Verify that image on all four nodes.
-5. Correct the automatic withdrawal fixture with an authorized control and one bounded deadline.
-6. Run registration, withdrawal, reenrollment, replacement, restart and exact cleanup checks in both clusters.
-7. Run the owned 36-path application continuity suite.
-8. Review and qualify the kernel policy-map reachability proposal against Cilium `8bb97137fc`.
-9. Complete lost-ADD-ACK drain recovery, persistent restore quarantine, mandatory capture and authenticated policy integration.
+1. Apply and independently test the corrected automatic withdrawal fixture.
+2. Run registration, withdrawal, reenrollment, replacement, restart and exact cleanup checks in both clusters.
+3. Rerun the owned 36-path application suite after fixture cleanup.
+4. Review and qualify the kernel policy-map reachability proposal against Cilium `8bb97137fc`.
+5. Complete lost-ADD-ACK drain recovery, persistent restore quarantine, mandatory capture and authenticated policy integration.
 
 The policy-map proposal is not compiled or tested yet. A point-in-time map/program reference cannot prove full traffic coverage. Keep the combined startup guard closed. Never add a blanket port-15008 allowance.
 
