@@ -75,10 +75,7 @@ func main() {
 	scheme := runtime.NewScheme()
 	must(corev1.AddToScheme(scheme))
 	must(api.AddToScheme(scheme))
-	options := ctrl.Options{Scheme: scheme, Metrics: metricsserver.Options{BindAddress: metricsAddress}, HealthProbeBindAddress: healthAddress, LeaderElection: mode == "controller", LeaderElectionID: "cmtc-controller.security.cmtc.io", LeaderElectionNamespace: "cmtc-system"}
-	if mode == "node" {
-		options.Cache.ByObject = map[client.Object]cache.ByObject{&corev1.Pod{}: {Field: fields.OneTermEqualSelector("spec.nodeName", node)}}
-	}
+	options := managerOptions(scheme, mode, node, metricsAddress, healthAddress)
 	kubeConfig := ctrl.GetConfigOrDie()
 	if issuerEnabled {
 		must(validateIssuerAPITransport(kubeConfig))
@@ -100,6 +97,23 @@ func main() {
 	must(mgr.AddReadyzCheck("ping", healthz.Ping))
 	ctrl.Log.Info("starting experimental CMTC", "cluster", cluster, "mode", mode, "issuerProfileProducer", issuerEnabled, "enforcementAvailable", false)
 	must(mgr.Start(ctrl.SetupSignalHandler()))
+}
+
+// managerOptions configures the controller's leader election so that the
+// issuer-profile publication outlives a handover (see
+// controller.LeaderLeaseDuration). The leader releases its lease when the
+// manager stops; that is safe because main returns as soon as Start does.
+func managerOptions(scheme *runtime.Scheme, mode, node, metricsAddress, healthAddress string) ctrl.Options {
+	options := ctrl.Options{Scheme: scheme, Metrics: metricsserver.Options{BindAddress: metricsAddress}, HealthProbeBindAddress: healthAddress, LeaderElection: mode == "controller", LeaderElectionID: "cmtc-controller.security.cmtc.io", LeaderElectionNamespace: "cmtc-system"}
+	if mode == "controller" {
+		leaseDuration, renewDeadline, retryPeriod := controller.LeaderLeaseDuration, controller.LeaderRenewDeadline, controller.LeaderRetryPeriod
+		options.LeaderElectionReleaseOnCancel = true
+		options.LeaseDuration, options.RenewDeadline, options.RetryPeriod = &leaseDuration, &renewDeadline, &retryPeriod
+	}
+	if mode == "node" {
+		options.Cache.ByObject = map[client.Object]cache.ByObject{&corev1.Pod{}: {Field: fields.OneTermEqualSelector("spec.nodeName", node)}}
+	}
+	return options
 }
 
 func must(err error) {

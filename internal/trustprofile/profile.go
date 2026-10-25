@@ -29,7 +29,10 @@ const MaxPublicationBytes = 256 * 1024
 const MaxJSONDepth = 12
 const SchemaVersion = 1
 const MaxLease = 30 * time.Second
-const RenewBefore = 15 * time.Second
+
+// RenewBefore is the validity left at which the producer republishes. It
+// must outlast a leader handover; see the controller's leader timing.
+const RenewBefore = 24 * time.Second
 const DataKey = "profile.json"
 const ApprovalKey = "approval.json"
 const OutputLabel = "security.cmtc.io/issuer-profile-output"

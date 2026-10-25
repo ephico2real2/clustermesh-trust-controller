@@ -182,7 +182,12 @@ func TestIssuerPublicationIdempotentRenewalAndTelemetryBoundary(t *testing.T) {
 	if c.updates != 1 || first.ResourceVersion != second.ResourceVersion {
 		t.Fatal("unchanged pass churned output")
 	}
-	*now = now.Add(16 * time.Second)
+	*now = now.Add(trustprofile.MaxLease - trustprofile.RenewBefore - time.Second)
+	reconcileProfile(t, r)
+	if c.updates != 1 {
+		t.Fatal("renewed before less than RenewBefore of validity remained")
+	}
+	*now = now.Add(2 * time.Second)
 	reconcileProfile(t, r)
 	_, renewed := readProfile(t, c, r.Options.Output)
 	if renewed.Sequence != 2 || c.updates != 2 {
@@ -199,6 +204,26 @@ func TestIssuerPublicationIdempotentRenewalAndTelemetryBoundary(t *testing.T) {
 		if strings.Contains(family.GetName(), "trust_bundle_ready") || strings.Contains(family.GetName(), "protected") || strings.Contains(family.GetName(), "mtls") {
 			t.Fatal("producer claimed consumer/datapath work")
 		}
+	}
+}
+
+// The cmtc-b controller rollout on 2026-10-25 let the publication expire for
+// 2.7 s while the new leader waited out the old one's lease, and every node's
+// ztunnel drained its workload TLS. A publication must outlive the slowest
+// leader handover with a waiting successor.
+func TestIssuerProfilePublicationOutlivesLeaderHandover(t *testing.T) {
+	leftAtStop := trustprofile.RenewBefore - issuerProfilePoll - issuerProfilePassTimeout
+	handover := LeaderLeaseDuration + LeaderRetryPeriod + issuerProfilePassTimeout
+	if leftAtStop <= handover {
+		t.Fatalf("a stopping leader leaves %v of validity but a successor may need %v", leftAtStop, handover)
+	}
+	if trustprofile.RenewBefore >= trustprofile.MaxLease {
+		t.Fatalf("RenewBefore %v must be shorter than MaxLease %v", trustprofile.RenewBefore, trustprofile.MaxLease)
+	}
+	// client-go's leader elector requires LeaseDuration > RenewDeadline >
+	// JitterFactor (1.2) * RetryPeriod.
+	if LeaderLeaseDuration <= LeaderRenewDeadline || LeaderRenewDeadline <= LeaderRetryPeriod*12/10 {
+		t.Fatalf("invalid leader timing %v/%v/%v", LeaderLeaseDuration, LeaderRenewDeadline, LeaderRetryPeriod)
 	}
 }
 func TestIssuerSourceDeletionUIDReplacementGenerationAndRecovery(t *testing.T) {

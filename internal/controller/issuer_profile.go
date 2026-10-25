@@ -16,7 +16,22 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-const issuerProfilePoll = 5 * time.Second
+// Producer and leader-election timing. A publication is valid for
+// trustprofile.MaxLease and republished once less than
+// trustprofile.RenewBefore remains, so a stopping leader leaves at least
+// RenewBefore - issuerProfilePoll - issuerProfilePassTimeout of validity. A
+// waiting successor publishes within LeaderLeaseDuration + LeaderRetryPeriod
+// (the leader crashed and never released its lease) plus its first pass. The
+// publication must outlive that handover: otherwise every node's issuer
+// profile expires and ztunnel drains all workload TLS. A graceful leader
+// releases the lease at once (LeaderElectionReleaseOnCancel).
+const (
+	issuerProfilePoll        = 5 * time.Second
+	issuerProfilePassTimeout = 4 * time.Second
+	LeaderLeaseDuration      = 8 * time.Second
+	LeaderRenewDeadline      = 5 * time.Second
+	LeaderRetryPeriod        = 1 * time.Second
+)
 
 type IssuerProfileOptions struct {
 	Source, Output       client.ObjectKey
@@ -58,7 +73,7 @@ func (r *IssuerProfileReconciler) now() time.Time {
 	return time.Now().UTC()
 }
 func (r *IssuerProfileReconciler) Reconcile(ctx context.Context, _ ctrl.Request) (requeue ctrl.Result, reconcileErr error) {
-	ctx, cancel := context.WithTimeout(ctx, 4*time.Second)
+	ctx, cancel := context.WithTimeout(ctx, issuerProfilePassTimeout)
 	defer cancel()
 	started := time.Now()
 	attempt := r.attempt.Add(1)
