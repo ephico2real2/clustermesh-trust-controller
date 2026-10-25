@@ -13,6 +13,8 @@ DECISIONS={'selected':('Selected',BLUE),'excluded':('Excluded',RED),'platform':(
 SEL='job="cmtc",cluster=~"$cluster"'
 CONTROLLER=SEL+',component="cmtc-controller"'
 AGENT=SEL+',component="cmtc-node-agent"'
+OBSERVER=SEL+',component="cmtc-bpf-observer"'
+FENCE=SEL+',component="cmtc-bpf-fence"'
 ALL=SEL+',component=~"cmtc-controller|cmtc-node-agent"'
 
 def metric(name,labels=CONTROLLER,end=False):
@@ -82,12 +84,12 @@ def operations():
     panels.extend([pie,table(11,'Namespace decisions by cluster',(12,14,12,10),f'sum by(cluster,decision) ({metric("cmtc_namespace_decisions",end=True)})',{'cluster':'Cluster','decision':'Decision','Value':'Namespaces'},'Latest namespace decision gauges at range end, one row per cluster and decision. Zero is an observed empty category; a missing controller is not zero.'),
        text(12,'Read the namespace categories',(12,24,12,4),'**Selected** = policy intent. **Excluded** = explicit exclusion. **Platform** = protected infrastructure. **Unselected** = remaining namespaces.\n\nThe pie includes platform namespaces in its denominator. Non-platform inventory includes excluded namespaces. Enrollment labels are observed from any actor. None of these counts proves mTLS or Protected status.'),
        row(13,'Do controllers and node agents keep up?',28),
-       stat(14,'Metrics targets reachable',(0,29,12,4),f'sum({metric("up",ALL,True)})','Latest successful scrapes at range end. The two-cluster lab expects six: two controllers plus four node agents. Filtered views have fewer targets. Read the target table for individual failures; this count is not an all-healthy verdict.',BLUE),
+       stat(14,'Inventory/controller targets reachable',(0,29,12,4),f'sum({metric("up",ALL,True)})','Latest successful scrapes at range end. The two-cluster lab expects six inventory/controller targets: two controllers plus four node agents. Opt-in fence targets are shown separately below. Filtered views have fewer targets. Read the target table for individual failures; this count is not an all-healthy verdict.',BLUE),
        stat(15,'Controller reconcile errors/s',(12,29,12,4),f'sum(rate({metric("controller_runtime_reconcile_errors_total")}[$__rate_interval]))','Controller-runtime reconcile errors per second over the adaptive rate interval. An observed zero means no recorded errors; missing data is unavailable.',ORANGE,unit='ops',decimals=3),
        series(16,'Policy evaluations/s · by cluster',(0,33,12,8),f'sum by(cluster) (rate({metric("cmtc_policy_evaluations_total")}[$__rate_interval]))','Successful CMTC policy evaluations per second over $__rate_interval. A fall to zero can mean idle work; it is not protection readiness. Missing metrics remain unavailable.','ops'),
        series(17,'Controller reconcile p95 · seconds',(12,33,12,8),f'histogram_quantile(0.95, sum by(cluster,le) (rate({metric("controller_runtime_reconcile_time_seconds_bucket")}[$__rate_interval])))','95th-percentile controller-runtime reconcile duration from real histogram buckets, over $__rate_interval. It measures controller work, not network or TLS latency. No observations mean the percentile is unavailable.','s'),
        table(18,'Pod inventory by node',(0,41,12,10),f'sum by(cluster,node,network) ({metric("cmtc_pods_observed",AGENT,True)})',{'cluster':'Cluster','node':'Node','network':'Network','Value':'Pods'},'Latest node-local pod inventory at range end. pod and host classify network mode. Counts are not protected pods or successful platform probes.'),
-       table(19,'Metrics targets · current state',(12,41,12,10),f'max by(cluster,component,node) ({metric("up",ALL,True)})',{'cluster':'Cluster','component':'Component','node':'Node','Value':'Scrape'},'Latest Prometheus target reachability at range end, with authoritative scrape cluster/component/node labels. UP does not establish workload or certificate readiness.'),
+       table(19,'Inventory/controller targets · current state',(12,41,12,10),f'max by(cluster,component,node) ({metric("up",ALL,True)})',{'cluster':'Cluster','component':'Component','node':'Node','Value':'Scrape'},'Latest Prometheus target reachability at range end, with authoritative scrape cluster/component/node labels. UP does not establish workload or certificate readiness.'),
        text(20,'Inventory and controller telemetry boundaries',(0,51,24,3),'Rates use the adaptive scrape/zoom interval; lines start at zero, with solid blue cmtc-a and dashed red cmtc-b. Tables show the latest observations at range end. **hostNetwork inventory is not platform safety.** API, DNS, probe health, certificate rotation and layered encryption still require their own verified instrumentation.'),
        row(21,'What is still awaiting security qualification?',54),
        text(22,'Implementation status · documented scope, not live health',(0,55,24,10),'| Capability | Current evidence boundary |\n| --- | --- |\n| Namespace intent / node inventory | Live CMTC telemetry above; Observe remains read-only |\n| Workload mTLS / native DENY | Tested in the isolated two-node SPIRE fixture; see the separate mTLS evidence |\n| Persistent strict admission / authorization | Missing-policy, first-packet, finer caller permissions and restart/revocation gates remain open |\n| CA trust / rotation / remote identity | Public SVID validation demonstrated locally; rotation, issuer faults and cluster identity isolation remain open |\n| ClusterMesh / WireGuard / IPsec | Observe ClusterMesh baseline tested; cross-cluster workload mTLS and transport composition remain unqualified |\n| Kubernetes / OpenShift platform safety | Platform namespace exclusion implemented; required traffic/probe checks remain separate gates |\n\n**Missing security metrics are unknown.** No invented handshake, protected-pod, trust-ready or transport-success numbers are substituted. Planned panels below retain every original domain; their metrics will be implemented as the agile stories progress.'),
@@ -181,8 +183,44 @@ def security():
     d['panels'].append(text(90,'Future security instrumentation',(0,44,24,4),'**The four sections below preserve the original mTLS Performance, CA Trust and Rotation, Network Encryption and Security Violations dashboards.** Peer-identity failures appear once under TLS performance. Native TCP counters above do not replace actual TLS handshake metrics.\n\nPlanned counters use rates, gauges show latest levels/states, and TLS p95 requires actual handshake histogram buckets. Missing instrumentation is unknown, not zero.'))
     return add_planned(d,'workload-mtls',48)
 
+def add_datapath(dashboard):
+    desc='Explicit deny-only disposable-veth prototype. Packets are not requests, connections or TLS handshakes. Missing telemetry remains unavailable; quarantine verification is not Protected or mTLS. '
+    dashboard['panels'].extend([
+        row(30,'Audited datapath quarantine · opt-in lab only',65),
+        text(31,'Packet counters and quarantine scope',(0,66,24,4),'**One audited workload veth/hook per selected node.** These panels observe the opt-in deny-only DaemonSet, not whole-node traffic or workload mTLS. Packet retransmissions count; counters are not HTTP request totals. **No mTLS or Protected claim.**\n\nA fresh verified sample permits counters to be exported; stale/unverified samples omit counters and report verification 0. Missing exporter/scrape is unavailable. Exact pinned-map adoption retains counters; a newly installed map resets them. There is no meaningful success-percentage pie from these counters.'),
+        table(32,'Audited quarantine · latest by node',(0,70,12,8),f'min by(cluster,node,direction) ({metric("cmtc_datapath_fence_quarantine_verified",FENCE,True)}) and on(cluster,node) ({metric("up",FENCE,True)} == 1)',{'cluster':'Cluster','node':'Node','direction':'Hook','Value':'Quarantine'},desc+'Latest 0/1 sample at range end, filtered to reachable scrapes. Do not sum away individual failed or missing nodes.'),
+        series(33,'Packets rejected by audited quarantine/s',(12,70,12,8),f'sum by(cluster) (rate({metric("cmtc_datapath_fence_dropped_packets_total",FENCE)}[$__rate_interval]))',desc+'Rate of actual TCX DROP packets over the adaptive scrape interval; an idle verified hook can report zero.','pps'),
+        stat(34,'Quarantine rejected packets · selected range',(0,78,12,6),f'sum by(cluster) (increase({metric("cmtc_datapath_fence_dropped_packets_total",FENCE)}[$__range]))',desc+'Prometheus extrapolated selected-range packet increase; retransmits count. This is not an exact application-attempt ledger.'),
+        series(35,'skb bytes rejected by quarantine/s',(12,78,12,6),f'sum by(cluster) (rate({metric("cmtc_datapath_fence_dropped_bytes_total",FENCE)}[$__rate_interval]))',desc+'skb byte lengths per second, including network headers; not payload or encrypted bytes.','Bps'),
+        table(36,'Fence metrics targets · latest reachability',(0,84,24,8),f'max by(cluster,node) ({metric("up",FENCE,True)})',{'cluster':'Cluster','node':'Node','Value':'Scrape'},desc+'UP means only scrape reachable. Missing expected nodes must be checked against the explicit selected-node ledger; this table cannot invent a missing target.'),
+    ])
+    for p in dashboard['panels']:
+        if p['id']==32:
+            p['fieldConfig']['overrides'].append({'matcher':{'id':'byName','options':'Quarantine'},'properties':[{'id':'mappings','value':[{'type':'value','options':{'0':{'text':'Unverified','color':ORANGE},'1':{'text':'Quarantine verified','color':BLUE}}}]}]})
+        if p['id']==34:
+            p['targets'][0]['legendFormat']='{{cluster}}'
+            p['options']['textMode']='value_and_name'
+            p['fieldConfig']['defaults']['decimals']=1
+            p['fieldConfig']['overrides']=[color_override(c,v) for c,v in CLUSTERS.items()]
+    return dashboard
+
+def add_observer(dashboard):
+    desc='Opt-in Observe prototype at one audited TCX hook per selected node, before native Cilium verdict. The observer returns NEXT, so its counters do not prove forwarding, a Cilium decision, requests, TLS or protection. '
+    dashboard['panels'].extend([
+        row(40,'Audited packet observation · opt-in lab only',92),
+        text(41,'Read observation separately from quarantine',(0,93,24,4),'**Observer counts packets at an audited TCX hook before native Cilium makes its verdict.** It returns NEXT and does not allow/deny traffic itself. Native Cilium can still drop a counted packet. These are skb/packet totals, not HTTP attempts, connections or TLS handshakes.\n\nThe observer and deny-only fence have different hooks/lifecycles. They are qualified sequentially and cannot be combined into an outcome pie. Missing observer telemetry means it is not installed or not reporting; no successful zero is invented. A fresh idle observer can report zero, and unpinned maps reset on process/attachment restart.'),
+        table(42,'Audited observer · latest by node',(0,97,12,8),f'min by(cluster,node,direction) ({metric("cmtc_datapath_observer_ready",OBSERVER,True)}) and on(cluster,node) ({metric("up",OBSERVER,True)} == 1)',{'cluster':'Cluster','node':'Node','direction':'Hook','Value':'Observation'},desc+'Latest fresh0/1 sample at range end, filtered to reachable scrapes. Failed/missing expected nodes remain an explicit evidence gate.'),
+        series(43,'Packets observed before Cilium verdict/s',(12,97,12,8),f'sum by(cluster) (rate({metric("cmtc_datapath_observer_packets_total",OBSERVER)}[$__rate_interval]))',desc+'Packet rate over the adaptive scrape interval. Retransmits/non-HTTP traffic count; zero can mean idle. Missing/stale counters remain unavailable.','pps'),
+        series(44,'skb bytes observed before Cilium verdict/s',(0,105,12,8),f'sum by(cluster) (rate({metric("cmtc_datapath_observer_bytes_total",OBSERVER)}[$__rate_interval]))',desc+'skb byte lengths per second over the adaptive interval, including network headers; not payload or encrypted bytes.','Bps'),
+        table(45,'Observer metrics targets · latest reachability',(12,105,12,8),f'max by(cluster,node) ({metric("up",OBSERVER,True)})',{'cluster':'Cluster','node':'Node','Value':'Scrape'},desc+'Latest scrape UP is reachability only. The two-worker observer qualification expects one selected worker per cluster; this is separate from the four-node fence profile.'),
+    ])
+    for p in dashboard['panels']:
+        if p['id']==42:
+            p['fieldConfig']['overrides'].append({'matcher':{'id':'byName','options':'Observation'},'properties':[{'id':'mappings','value':[{'type':'value','options':{'0':{'text':'Unverified','color':ORANGE},'1':{'text':'Observation verified','color':BLUE}}}]}]})
+    return dashboard
+
 def build():
-    return add_planned(operations(),'operations',65)
+    return add_planned(add_observer(add_datapath(operations())),'operations',113)
 
 def dashboards():
     return {'operations.json':build(),'workload-security.json':security()}

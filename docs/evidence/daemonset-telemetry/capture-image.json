@@ -1,0 +1,36 @@
+{
+  "image": "localhost/cmtc-capture:daemonset-telemetry",
+  "configID": "sha256:e5821254a3500f7853aa316c1aebbbc1f4183b2a0c08b94fa90d0e16ae81a468",
+  "architecture": "arm64",
+  "os": "linux",
+  "sourceHashes": {
+    "scripts/capture/walk-smoke.cjs": "54e94eefaddc5f30640d5960023494de5593af62efe36bfe60cf14514ba07341",
+    "scripts/capture/grafana-page.test.cjs": "1d61f5f6a708570aeec7c21120f3869d263f3a48531fccf13166ed595228e0bd",
+    "scripts/capture/walk.cjs": "e6f56ed5387ebb541ea9a058ef0c084de858e3a7a489b5d59963df2638dc7021",
+    "scripts/capture/Dockerfile": "d2781bd304c7c86383b69d7b94dbb538cd8217b02b1026a90ea863e0982962ca",
+    "scripts/capture/SOURCE.md": "77d97eaee7f347a0e22d40a8f7cabc0ee3fb9d174252b756146c5e6bed06a9a1",
+    "scripts/capture/capture.mjs": "65fc94e3d47fe5d26c18e167fb9ab315733d9854b0c62ebff05103faa8eef8dd",
+    "scripts/capture/publish.sh": "e753fbd10d05f55ed0ad8ede353b8dab22b5d36abbed591ea53c4085d3026cd4",
+    "scripts/capture/package-lock.json": "c50bbdbc4ecef137a25da2cd62d611180fbf1e757708aedfc78f1017f13c2979",
+    "scripts/capture/package.json": "31aac7c148a5bb1dc0610740a481bae5ecc0afa8efc941b4176c3591437d33ce",
+    "scripts/capture/grafana-page.cjs": "9b4243f9f38b38c043dc55365af6b2340e1d7cc26330dae5dbdb716467066bcb"
+  },
+  "testResult": "Dockerfile browser launch, existing walker smoke and real virtualized/missing/height-limit fixture passed",
+  "command": [
+    "podman",
+    "--connection",
+    "cmtc-ubuntu-build",
+    "build",
+    "--platform",
+    "linux/arm64",
+    "--jobs",
+    "1",
+    "--memory",
+    "3g",
+    "-f",
+    "/private/tmp/cmtc-daemonset-20261024/capture-build/scripts/capture/Dockerfile",
+    "-t",
+    "localhost/cmtc-capture:daemonset-telemetry",
+    "/private/tmp/cmtc-daemonset-20261024/capture-build"
+  ]
+}

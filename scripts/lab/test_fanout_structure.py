@@ -22,7 +22,7 @@ def route(cluster='cmtc-a', node='cmtc-a-control-plane'):
     h=m.NodeHarness.__new__(m.NodeHarness)
     h.cluster=cluster; h.physical_node=node; h.run_id='testrun'; h.ns='own-ns'; h.parents={}
     h.report={'clusters': {},'cleanupErrors': []}; h.flush=lambda: None
-    h.args=SimpleNamespace(image='localhost/fence:test',image_id='sha256:'+'1'*64)
+    h.args=SimpleNamespace(image='localhost/fence:test',image_id='sha256:'+'1'*64,client_image='curlimages/curl:8.14.1')
     return h
 
 
@@ -31,6 +31,18 @@ class Structural(unittest.TestCase):
         self.no_exec=patch('subprocess.run',side_effect=AssertionError('real subprocess forbidden'))
         self.no_exec.start()
     def tearDown(self): self.no_exec.stop()
+
+    def test_uncached_or_invalid_client_configuration_fails_without_waiting(self):
+        h=m.lab.FenceHarness.__new__(m.lab.FenceHarness)
+        for reason in ('ErrImageNeverPull', 'CreateContainerConfigError'):
+            h.own_pod=lambda c,reason=reason:{'status':{'containerStatuses':[{'ready':False,'state':{'waiting':{'reason':reason}}}]}}
+            with self.subTest(reason=reason), self.assertRaisesRegex(AssertionError,'client prerequisite rejected'):
+                h._ready_client('cmtc-a')
+        h.own_pod=lambda c:{'status':{'containerStatuses':[{'ready':False,'state':{'waiting':{'reason':'ContainerCreating'}}}]}}
+        self.assertFalse(h._ready_client('cmtc-a'))
+        ready={'status':{'containerStatuses':[{'ready':True}]}}
+        h.own_pod=lambda c:ready
+        self.assertIs(h._ready_client('cmtc-a'),ready)
 
     def test_physical_node_route_never_aliases_cluster(self):
         h=route(); calls=[]

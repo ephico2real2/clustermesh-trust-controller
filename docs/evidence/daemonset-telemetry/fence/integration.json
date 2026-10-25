@@ -1,0 +1,519 @@
+{
+  "run": "6241ee08889c",
+  "status": "passed",
+  "scope": "explicit-four-node-opt-in-distribution",
+  "enforcementAvailable": false,
+  "mtlsProven": false,
+  "firstPacketAdmissionProven": false,
+  "errors": [],
+  "clusters": {
+    "cmtc-a": {
+      "daemonSetUID": "3e79ce1a-30ad-4e6a-b89f-64b37c86c1bc",
+      "configMap": "cmtc-bpf-fence-fanout-6241ee08889c",
+      "simultaneousStatus": {
+        "currentNumberScheduled": 2,
+        "desiredNumberScheduled": 2,
+        "numberAvailable": 2,
+        "numberMisscheduled": 0,
+        "numberReady": 2,
+        "observedGeneration": 1,
+        "updatedNumberScheduled": 2
+      }
+    },
+    "cmtc-b": {
+      "daemonSetUID": "f7e1d3b7-6e97-49d8-bc64-384768b8e6bf",
+      "configMap": "cmtc-bpf-fence-fanout-6241ee08889c",
+      "simultaneousStatus": {
+        "currentNumberScheduled": 2,
+        "desiredNumberScheduled": 2,
+        "numberAvailable": 2,
+        "numberMisscheduled": 0,
+        "numberReady": 2,
+        "observedGeneration": 1,
+        "updatedNumberScheduled": 2
+      }
+    }
+  },
+  "started": "2026-10-25T00:57:48.766878+00:00",
+  "telemetry": {
+    "scope": "one audited source-veth ingress hook/node; packet counts, not HTTP requests or TLS",
+    "centralPrometheus": "http://127.0.0.1:13000/api/datasources/proxy/uid/cmtc-prom",
+    "localTargetURLs": {
+      "cmtc-a": "http://127.0.0.1:13000/api/datasources/proxy/uid/cmtc-prom",
+      "cmtc-b": "http://127.0.0.1:19091"
+    },
+    "loadRepetitions": 2,
+    "captureStatus": "captured; primary visual inspection still required",
+    "loadHTTPAttempts": 48,
+    "captureInterval": {
+      "fromUnix": 1792889979.803782,
+      "toUnix": 1792890025.8553221
+    },
+    "screenshots": "/private/tmp/cmtc-daemonset-20261024/fanout-third/telemetry/screenshots",
+    "installedEvidencePassed": true,
+    "absentEvidencePassed": true
+  },
+  "continuity": [
+    {
+      "phase": "before-fanout",
+      "checks": [
+        {
+          "source": "cmtc-a",
+          "destination": "cmtc-a",
+          "port": 80
+        },
+        {
+          "source": "cmtc-a",
+          "destination": "cmtc-a",
+          "port": 8080
+        },
+        {
+          "source": "cmtc-a",
+          "destination": "cmtc-a",
+          "port": 31337
+        },
+        {
+          "source": "cmtc-a",
+          "destination": "cmtc-b",
+          "port": 80
+        },
+        {
+          "source": "cmtc-a",
+          "destination": "cmtc-b",
+          "port": 8080
+        },
+        {
+          "source": "cmtc-a",
+          "destination": "cmtc-b",
+          "port": 31337
+        },
+        {
+          "source": "cmtc-b",
+          "destination": "cmtc-a",
+          "port": 80
+        },
+        {
+          "source": "cmtc-b",
+          "destination": "cmtc-a",
+          "port": 8080
+        },
+        {
+          "source": "cmtc-b",
+          "destination": "cmtc-a",
+          "port": 31337
+        },
+        {
+          "source": "cmtc-b",
+          "destination": "cmtc-b",
+          "port": 80
+        },
+        {
+          "source": "cmtc-b",
+          "destination": "cmtc-b",
+          "port": 8080
+        },
+        {
+          "source": "cmtc-b",
+          "destination": "cmtc-b",
+          "port": 31337
+        }
+      ]
+    },
+    {
+      "phase": "cmtc-a-both-ready",
+      "checks": [
+        {
+          "source": "cmtc-a",
+          "destination": "cmtc-a",
+          "port": 80
+        },
+        {
+          "source": "cmtc-a",
+          "destination": "cmtc-a",
+          "port": 8080
+        },
+        {
+          "source": "cmtc-a",
+          "destination": "cmtc-a",
+          "port": 31337
+        },
+        {
+          "source": "cmtc-a",
+          "destination": "cmtc-b",
+          "port": 80
+        },
+        {
+          "source": "cmtc-a",
+          "destination": "cmtc-b",
+          "port": 8080
+        },
+        {
+          "source": "cmtc-a",
+          "destination": "cmtc-b",
+          "port": 31337
+        },
+        {
+          "source": "cmtc-b",
+          "destination": "cmtc-a",
+          "port": 80
+        },
+        {
+          "source": "cmtc-b",
+          "destination": "cmtc-a",
+          "port": 8080
+        },
+        {
+          "source": "cmtc-b",
+          "destination": "cmtc-a",
+          "port": 31337
+        },
+        {
+          "source": "cmtc-b",
+          "destination": "cmtc-b",
+          "port": 80
+        },
+        {
+          "source": "cmtc-b",
+          "destination": "cmtc-b",
+          "port": 8080
+        },
+        {
+          "source": "cmtc-b",
+          "destination": "cmtc-b",
+          "port": 31337
+        }
+      ]
+    },
+    {
+      "phase": "cmtc-b-both-ready",
+      "checks": [
+        {
+          "source": "cmtc-a",
+          "destination": "cmtc-a",
+          "port": 80
+        },
+        {
+          "source": "cmtc-a",
+          "destination": "cmtc-a",
+          "port": 8080
+        },
+        {
+          "source": "cmtc-a",
+          "destination": "cmtc-a",
+          "port": 31337
+        },
+        {
+          "source": "cmtc-a",
+          "destination": "cmtc-b",
+          "port": 80
+        },
+        {
+          "source": "cmtc-a",
+          "destination": "cmtc-b",
+          "port": 8080
+        },
+        {
+          "source": "cmtc-a",
+          "destination": "cmtc-b",
+          "port": 31337
+        },
+        {
+          "source": "cmtc-b",
+          "destination": "cmtc-a",
+          "port": 80
+        },
+        {
+          "source": "cmtc-b",
+          "destination": "cmtc-a",
+          "port": 8080
+        },
+        {
+          "source": "cmtc-b",
+          "destination": "cmtc-a",
+          "port": 31337
+        },
+        {
+          "source": "cmtc-b",
+          "destination": "cmtc-b",
+          "port": 80
+        },
+        {
+          "source": "cmtc-b",
+          "destination": "cmtc-b",
+          "port": 8080
+        },
+        {
+          "source": "cmtc-b",
+          "destination": "cmtc-b",
+          "port": 31337
+        }
+      ]
+    },
+    {
+      "phase": "cmtc-a-one-node-deselected-still-denied",
+      "checks": [
+        {
+          "source": "cmtc-a",
+          "destination": "cmtc-a",
+          "port": 80
+        },
+        {
+          "source": "cmtc-a",
+          "destination": "cmtc-a",
+          "port": 8080
+        },
+        {
+          "source": "cmtc-a",
+          "destination": "cmtc-a",
+          "port": 31337
+        },
+        {
+          "source": "cmtc-a",
+          "destination": "cmtc-b",
+          "port": 80
+        },
+        {
+          "source": "cmtc-a",
+          "destination": "cmtc-b",
+          "port": 8080
+        },
+        {
+          "source": "cmtc-a",
+          "destination": "cmtc-b",
+          "port": 31337
+        },
+        {
+          "source": "cmtc-b",
+          "destination": "cmtc-a",
+          "port": 80
+        },
+        {
+          "source": "cmtc-b",
+          "destination": "cmtc-a",
+          "port": 8080
+        },
+        {
+          "source": "cmtc-b",
+          "destination": "cmtc-a",
+          "port": 31337
+        },
+        {
+          "source": "cmtc-b",
+          "destination": "cmtc-b",
+          "port": 80
+        },
+        {
+          "source": "cmtc-b",
+          "destination": "cmtc-b",
+          "port": 8080
+        },
+        {
+          "source": "cmtc-b",
+          "destination": "cmtc-b",
+          "port": 31337
+        }
+      ]
+    },
+    {
+      "phase": "cmtc-a-no-daemon-pins-deny",
+      "checks": [
+        {
+          "source": "cmtc-a",
+          "destination": "cmtc-a",
+          "port": 80
+        },
+        {
+          "source": "cmtc-a",
+          "destination": "cmtc-a",
+          "port": 8080
+        },
+        {
+          "source": "cmtc-a",
+          "destination": "cmtc-a",
+          "port": 31337
+        },
+        {
+          "source": "cmtc-a",
+          "destination": "cmtc-b",
+          "port": 80
+        },
+        {
+          "source": "cmtc-a",
+          "destination": "cmtc-b",
+          "port": 8080
+        },
+        {
+          "source": "cmtc-a",
+          "destination": "cmtc-b",
+          "port": 31337
+        },
+        {
+          "source": "cmtc-b",
+          "destination": "cmtc-a",
+          "port": 80
+        },
+        {
+          "source": "cmtc-b",
+          "destination": "cmtc-a",
+          "port": 8080
+        },
+        {
+          "source": "cmtc-b",
+          "destination": "cmtc-a",
+          "port": 31337
+        },
+        {
+          "source": "cmtc-b",
+          "destination": "cmtc-b",
+          "port": 80
+        },
+        {
+          "source": "cmtc-b",
+          "destination": "cmtc-b",
+          "port": 8080
+        },
+        {
+          "source": "cmtc-b",
+          "destination": "cmtc-b",
+          "port": 31337
+        }
+      ]
+    },
+    {
+      "phase": "cmtc-b-one-node-deselected-still-denied",
+      "checks": [
+        {
+          "source": "cmtc-a",
+          "destination": "cmtc-a",
+          "port": 80
+        },
+        {
+          "source": "cmtc-a",
+          "destination": "cmtc-a",
+          "port": 8080
+        },
+        {
+          "source": "cmtc-a",
+          "destination": "cmtc-a",
+          "port": 31337
+        },
+        {
+          "source": "cmtc-a",
+          "destination": "cmtc-b",
+          "port": 80
+        },
+        {
+          "source": "cmtc-a",
+          "destination": "cmtc-b",
+          "port": 8080
+        },
+        {
+          "source": "cmtc-a",
+          "destination": "cmtc-b",
+          "port": 31337
+        },
+        {
+          "source": "cmtc-b",
+          "destination": "cmtc-a",
+          "port": 80
+        },
+        {
+          "source": "cmtc-b",
+          "destination": "cmtc-a",
+          "port": 8080
+        },
+        {
+          "source": "cmtc-b",
+          "destination": "cmtc-a",
+          "port": 31337
+        },
+        {
+          "source": "cmtc-b",
+          "destination": "cmtc-b",
+          "port": 80
+        },
+        {
+          "source": "cmtc-b",
+          "destination": "cmtc-b",
+          "port": 8080
+        },
+        {
+          "source": "cmtc-b",
+          "destination": "cmtc-b",
+          "port": 31337
+        }
+      ]
+    },
+    {
+      "phase": "cmtc-b-no-daemon-pins-deny",
+      "checks": [
+        {
+          "source": "cmtc-a",
+          "destination": "cmtc-a",
+          "port": 80
+        },
+        {
+          "source": "cmtc-a",
+          "destination": "cmtc-a",
+          "port": 8080
+        },
+        {
+          "source": "cmtc-a",
+          "destination": "cmtc-a",
+          "port": 31337
+        },
+        {
+          "source": "cmtc-a",
+          "destination": "cmtc-b",
+          "port": 80
+        },
+        {
+          "source": "cmtc-a",
+          "destination": "cmtc-b",
+          "port": 8080
+        },
+        {
+          "source": "cmtc-a",
+          "destination": "cmtc-b",
+          "port": 31337
+        },
+        {
+          "source": "cmtc-b",
+          "destination": "cmtc-a",
+          "port": 80
+        },
+        {
+          "source": "cmtc-b",
+          "destination": "cmtc-a",
+          "port": 8080
+        },
+        {
+          "source": "cmtc-b",
+          "destination": "cmtc-a",
+          "port": 31337
+        },
+        {
+          "source": "cmtc-b",
+          "destination": "cmtc-b",
+          "port": 80
+        },
+        {
+          "source": "cmtc-b",
+          "destination": "cmtc-b",
+          "port": 8080
+        },
+        {
+          "source": "cmtc-b",
+          "destination": "cmtc-b",
+          "port": 31337
+        }
+      ]
+    }
+  ],
+  "nodeReports": {
+    "cmtc-a-control-plane": "/private/tmp/cmtc-daemonset-20261024/fanout-third/cmtc-a-control-plane/report.json",
+    "cmtc-a-worker": "/private/tmp/cmtc-daemonset-20261024/fanout-third/cmtc-a-worker/report.json",
+    "cmtc-b-control-plane": "/private/tmp/cmtc-daemonset-20261024/fanout-third/cmtc-b-control-plane/report.json",
+    "cmtc-b-worker": "/private/tmp/cmtc-daemonset-20261024/fanout-third/cmtc-b-worker/report.json"
+  }
+}

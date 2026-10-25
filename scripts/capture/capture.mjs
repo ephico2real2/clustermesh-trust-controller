@@ -4,6 +4,8 @@ import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 
 const base=process.env.CMTC_GRAFANA_URL || 'http://127.0.0.1:3000';
+const requireObserver=process.env.CMTC_REQUIRE_OBSERVER==='true';
+const requireFence=process.env.CMTC_REQUIRE_FENCE==='true';
 const requireNative=process.env.CMTC_REQUIRE_NATIVE_MTLS==='true';
 const to=Number(process.env.CMTC_CAPTURE_TO_MS || Date.now());
 const from=Number(process.env.CMTC_CAPTURE_FROM_MS || to-15*60*1000);
@@ -24,6 +26,22 @@ for(let i=0;i<60;i++){
     for(const cluster of ['cmtc-a','cmtc-b']){
       if(!(data.selected[cluster]>=2)||data.agents[cluster]!==2||data.enforcement[cluster]!==0)throw Error(`Incomplete or misleading telemetry for ${cluster}: ${JSON.stringify(data)}`);
     }
+    if(requireFence){
+      for(const [name,query] of Object.entries({fenceVerified:'count by(cluster) (cmtc_datapath_fence_quarantine_verified{job="cmtc",component="cmtc-bpf-fence"} == 1)',fenceTargets:'count by(cluster) (up{job="cmtc",component="cmtc-bpf-fence"} == 1)'})){
+        const result=await api(`/api/datasources/proxy/uid/cmtc-prom/api/v1/query?query=${encodeURIComponent(query)}`);
+        if(result.status!=='success'||result.warnings?.length||result.infos?.length)throw Error(`Fence query failed ${name}`);
+        data[name]=Object.fromEntries(result.data.result.map(s=>[s.metric.cluster,Number(s.value[1])]));
+        for(const cluster of ['cmtc-a','cmtc-b'])if(data[name][cluster]!==2)throw Error(`Missing four-node fence telemetry: ${JSON.stringify(data)}`);
+      }
+    }
+    if(requireObserver){
+      for(const [name,query] of Object.entries({observerVerified:'count by(cluster) (cmtc_datapath_observer_ready{job="cmtc",component="cmtc-bpf-observer"} == 1)',observerTargets:'count by(cluster) (up{job="cmtc",component="cmtc-bpf-observer"} == 1)'})){
+        const result=await api(`/api/datasources/proxy/uid/cmtc-prom/api/v1/query?query=${encodeURIComponent(query)}`);
+        if(result.status!=='success'||result.warnings?.length||result.infos?.length)throw Error(`Observer query failed ${name}`);
+        data[name]=Object.fromEntries(result.data.result.map(s=>[s.metric.cluster,Number(s.value[1])]));
+        for(const cluster of ['cmtc-a','cmtc-b'])if(data[name][cluster]!==1)throw Error(`Missing two-worker observer telemetry: ${JSON.stringify(data)}`);
+      }
+    }
     await writeFile(path.join(output,'metric-assertions.json'),JSON.stringify(data,null,2)+'\n');
     metricsError=undefined;break;
   }catch(e){metricsError=e;await new Promise(r=>setTimeout(r,2000));}
@@ -40,15 +58,15 @@ for(const d of dashboards){
     const name=`${d.uid==='cmtc-observe-lab'?'cmtc-operations':'cmtc-workload-security'}-${theme}`;
     // Planned panels must remain visible. Their missing signals are explicit
     // blockers, not failed browser rendering or invented successful zeros.
-    const allowed=panels.filter(p=>p.title.endsWith('· planned') || (!requireNative && d.uid==='cmtc-authenticated-only' && p.targets?.length)).map(p=>p.title);
-    spec.pages.push({name,url:base+d.url+`?kiosk&theme=${theme}&from=${from}&to=${to}`,evidence:'panels',fullPage:true,before:2500,blockedSignalsOnNoData:true,expect:{panelsMin:panels.length,noDataAllowed:allowed},unavailableReasons:Object.fromEntries(allowed.map(title=>[title,title.endsWith('· planned')?'Planned instrumentation; implement and qualify in its assigned agile story.':'Native security signal requires the separate SPIRE fixture, outside baseline Observe CI.']))});
+    const allowed=panels.filter(p=>p.title.endsWith('· planned') || (!requireObserver && d.uid==='cmtc-observe-lab' && p.id>=40 && p.id<=45 && p.targets?.length) || (!requireFence && d.uid==='cmtc-observe-lab' && p.id>=30 && p.id<=36 && p.targets?.length) || (!requireNative && d.uid==='cmtc-authenticated-only' && p.targets?.length)).map(p=>p.title);
+    spec.pages.push({name,url:base+d.url+`?kiosk&theme=${theme}&from=${from}&to=${to}`,evidence:'panels',grafanaFullPage:true,fullPage:true,before:2500,blockedSignalsOnNoData:true,expect:{panelsMin:panels.length,panelTitles:panels.map(p=>p.title),noDataAllowed:allowed},unavailableReasons:Object.fromEntries(allowed.map(title=>[title,title.endsWith('· planned')?'Planned instrumentation; implement and qualify in its assigned agile story.':(d.uid==='cmtc-observe-lab'?'Opt-in audited-veth datapath DaemonSet is not installed in baseline Observe; this does not indicate mTLS.':'Native security signal requires the separate SPIRE fixture, outside baseline Observe CI.')]))});
     index.push({title:`${d.title} (${theme})`,file:`${name}.png`,uid:d.uid});
   }
 }
 spec.pages.push({name:'application-global-service',url:process.env.CMTC_APP_URL || 'http://127.0.0.1:28080',evidence:'text',settle:false,before:500,screenshot:false,expect:{text:['cmtc-b']}});
 const specPath=path.join(output,'walk-spec.json');
 await writeFile(specPath,JSON.stringify(spec,null,2)+'\n');
-await writeFile(path.join(output,'capture-range.json'),JSON.stringify({fromMilliseconds:from,toMilliseconds:to,requireNative},null,2)+'\n');
+await writeFile(path.join(output,'capture-range.json'),JSON.stringify({fromMilliseconds:from,toMilliseconds:to,requireNative,requireFence,requireObserver},null,2)+'\n');
 await writeFile(path.join(output,'index.json'),JSON.stringify(index,null,2)+'\n');
 const walked=spawnSync(process.execPath,[fileURLToPath(new URL('./walk.cjs',import.meta.url)),specPath],{env:{...process.env,S:output},stdio:'inherit'});
 if(metricsError){console.error(metricsError.message);process.exitCode=1;}

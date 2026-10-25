@@ -62,6 +62,9 @@ class NodeHarness(lab.FenceHarness):
         image = json.loads(self.node(c, "crictl", "inspecti", self.args.image).stdout)
         require(image["status"]["id"] == self.args.image_id and image["info"]["imageSpec"]["architecture"] == "arm64", "exact image not loaded on selected node")
         state["importedImage"] = image
+        client_image = json.loads(self.node(c, "crictl", "inspecti", self.args.client_image).stdout)
+        require(client_image["info"]["imageSpec"]["architecture"] == "arm64", "ARM64 client image must be cached before creating fixtures")
+        state["clientImportedImage"] = client_image
         require(self.get(c, "namespace", self.ns, absent=True) is None, "fanout namespace exists")
         self.create(c, {"apiVersion": "v1", "kind": "Namespace", "metadata": {"name": self.ns}})
         state["namespaceUID"] = self.get(c, "namespace", self.ns)["metadata"]["uid"]

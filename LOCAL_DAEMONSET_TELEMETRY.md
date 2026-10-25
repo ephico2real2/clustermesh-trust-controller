@@ -68,13 +68,30 @@ Podman test service; rootless `--privileged` does not supply BPF privileges.
 The first four-node telemetry attempt stopped before attachment because the
 control-plane nodes lacked the explicit PullNever client image. The exact
 ARM64 client image was imported and verified on all four nodes. The second
-attempt deployed two ready fence instances per cluster, audited metrics routes,
-ran48 additional denied HTTP load attempts, checked exact kernel counter deltas
-and quiet idle behavior, and verified local scrapes plus central remote-write
-queries. Its browser check failed because only33 of39 Operations panels mounted.
-The failure was retained and cleanup completed without errors. Restart,
-deselection, absent-source and final visual gates for this new image remain
-pending; no complete-run claim follows from those partial results.
+attempt passed load and queries, then failed its strict39-panel rendering check;
+cleanup completed without errors. The corrected browser expands the actual
+viewport to measured content height and requires the full expected title multiset
+simultaneously visible. Missing panels and oversized pages still fail.
+
+The [third four-node trial](docs/evidence/daemonset-telemetry/fence/summary.json)
+passes168 audited client attempts:24 baseline successes and144 expected quarantine
+denials, including48 additional telemetry-load attempts. Another84 mesh continuity
+checks pass separately. Exact map/program identity, raw kernel deltas, quiet idle,
+source Targets APIs, fresh central sample timestamps, cluster selection, SIGKILL/
+adoption, node deselection, daemon absence, absent telemetry, defunct retirement
+and foreign/native-link cleanup pass with zero cleanup errors. No fence from that
+trial remains. The [separate worker lifecycle trial](docs/evidence/daemonset-telemetry/fence-lifecycle/summary.json)
+also passes84 attempts (36 baseline/recovery successes,48 denials), corrupted
+adoption rejection, stale-Pod identity rejection and exact defunct retirement,
+with zero cleanup errors. Observer scrape/reset/visual qualification is running.
+
+[Full dashboards and readable sections](docs/evidence/daemonset-telemetry/fence/screenshots/)
+were inspected in both themes: Operations39/39 panels, Workload Security29/29.
+Packet rates and skb byte rates show real load on both clusters. Fractional range
+increases are Prometheus extrapolations, not exact HTTP attempt totals. Planned
+security metrics and the uninstalled observer remain unavailable. The
+[raw integration archive](docs/evidence/daemonset-telemetry/fence/raw-integration.tar.gz)
+retains exact commands, outputs, logs and the exercised source snapshot.
 
 Live trial diagnostics remain in `/private/tmp/cmtc-daemonset-20261024/`.
 The [delivery status](docs/agile/DELIVERY_STATUS.md) records the next gate and

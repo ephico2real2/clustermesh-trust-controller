@@ -9,7 +9,7 @@ capture_image=${CMTC_CAPTURE_IMAGE:-cmtc-capture:dev}
 app_forward_port=${CMTC_APP_FORWARD_PORT:-28080}
 app_url="http://127.0.0.1:$app_forward_port"
 docker image inspect "$capture_image" >/dev/null
-docker_args=(--rm --init --network host --shm-size=1g --env S=/captures --env CMTC_WALK_ENV_JSON --env CMTC_REQUIRE_NATIVE_MTLS --env CMTC_CAPTURE_FROM_MS --env CMTC_CAPTURE_TO_MS --volume "$PWD/$out:/captures")
+docker_args=(--rm --init --network host --shm-size=1g --env S=/captures --env CMTC_WALK_ENV_JSON --env CMTC_REQUIRE_NATIVE_MTLS --env CMTC_REQUIRE_FENCE --env CMTC_REQUIRE_OBSERVER --env CMTC_CAPTURE_FROM_MS --env CMTC_CAPTURE_TO_MS --volume "$PWD/$out:/captures")
 docker_args+=(--env "CMTC_APP_URL=$app_url")
 if [ -n "${CMTC_WALK_SPEC:-}" ]; then
   spec=$(realpath "$CMTC_WALK_SPEC")

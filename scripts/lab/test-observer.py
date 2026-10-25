@@ -582,39 +582,54 @@ class Harness(ObserverLogCaptureMixin):
         self.observer_log_close_all()
         self.flush()
 
+    def prepare_cluster(self, cluster):
+        self.create(cluster, {"apiVersion": "v1", "kind": "Namespace", "metadata": {"name": NS}})
+        self.create_client(cluster); pod = self.wait_client(cluster)
+        self.create(cluster, {"apiVersion": "cilium.io/v2", "kind": "CiliumNetworkPolicy", "metadata": {"name": "observer-native-egress", "namespace": NS},
+            "spec": {"endpointSelector": {"matchLabels": {"app": "cmtc-observer-client"}}, "egress": [{"toEntities": ["all"], "toPorts": [{"ports": [{"port": "80", "protocol": "TCP"}, {"port": "8080", "protocol": "TCP"}]}]}]}})
+        # CNP synchronization may lag API creation. Require denied31337
+        # from this exact endpoint before accepting any phase evidence.
+        self.discover(cluster, pod)
+        self.start_monitor(cluster); self.traffic(cluster, "before-observer")
+        self.install(cluster)
+
+    def exercise_cluster(self, cluster):
+        before = self.metrics(cluster); self.traffic(cluster, "during-observer", repetitions=self.args.repetitions); time.sleep(1.2); after = self.metrics(cluster)
+        require(after["cmtc_datapath_observer_packets_total"] > before["cmtc_datapath_observer_packets_total"], "no actual observer packet delta")
+        require(after["cmtc_datapath_observer_bytes_total"] > before["cmtc_datapath_observer_bytes_total"], "no actual observer byte delta")
+        self.report["clusters"][cluster]["loadMetricSamples"] = {"before": before, "after": after}
+        self.kill_observer(cluster)
+        # Check foreign chain after observer deletion before deliberately
+        # removing the veth needed for the immutable-config negative.
+        self.uninstall(cluster)
+        self.traffic(cluster, "after-observer")
+        # Reinstall only the SAME frozen config, then remove its Pod.
+        self.install(cluster)
+        self.replace_client(cluster)
+        # DS deletion cannot compare a deleted-veth chain; its foreign
+        # preservation was already checked above while that veth lived.
+        resources = self.owned[cluster]
+        for item in list(resources):
+            if item[0] == "DaemonSet": self.delete_owned(cluster, *item); resources.remove(item)
+        self.poll("stale observer removed", lambda: self.observer_pod(cluster) is None)
+        self.traffic(cluster, "after-old-config-rejection", repetitions=1)
+        self.verify_foreign_links(cluster)
+
+    def after_all_installed(self):
+        """Optional telemetry hook; both exact worker observers remain installed."""
+        pass
+
+    def after_all_removed(self):
+        """Optional absent-telemetry hook after both recovery phases removed DSs."""
+        pass
+
     def execute(self):
         try:
             self.preflight()
-            for cluster in ["cmtc-a", "cmtc-b"]:
-                self.create(cluster, {"apiVersion": "v1", "kind": "Namespace", "metadata": {"name": NS}})
-                self.create_client(cluster); pod = self.wait_client(cluster)
-                self.create(cluster, {"apiVersion": "cilium.io/v2", "kind": "CiliumNetworkPolicy", "metadata": {"name": "observer-native-egress", "namespace": NS},
-                    "spec": {"endpointSelector": {"matchLabels": {"app": "cmtc-observer-client"}}, "egress": [{"toEntities": ["all"], "toPorts": [{"ports": [{"port": "80", "protocol": "TCP"}, {"port": "8080", "protocol": "TCP"}]}]}]}})
-                # CNP synchronization may lag API creation. Require denied31337
-                # from this exact endpoint before accepting any phase evidence.
-                self.discover(cluster, pod)
-                self.start_monitor(cluster); self.traffic(cluster, "before-observer")
-                self.install(cluster)
-                before = self.metrics(cluster); self.traffic(cluster, "during-observer", repetitions=self.args.repetitions); time.sleep(1.2); after = self.metrics(cluster)
-                require(after["cmtc_datapath_observer_packets_total"] > before["cmtc_datapath_observer_packets_total"], "no actual observer packet delta")
-                require(after["cmtc_datapath_observer_bytes_total"] > before["cmtc_datapath_observer_bytes_total"], "no actual observer byte delta")
-                self.report["clusters"][cluster]["loadMetricSamples"] = {"before": before, "after": after}
-                self.kill_observer(cluster)
-                # Check foreign chain after observer deletion before deliberately
-                # removing the veth needed for the immutable-config negative.
-                self.uninstall(cluster)
-                self.traffic(cluster, "after-observer")
-                # Reinstall only the SAME frozen config, then remove its Pod.
-                self.install(cluster)
-                self.replace_client(cluster)
-                # DS deletion cannot compare a deleted-veth chain; its foreign
-                # preservation was already checked above while that veth lived.
-                resources = self.owned[cluster]
-                for item in list(resources):
-                    if item[0] == "DaemonSet": self.delete_owned(cluster, *item); resources.remove(item)
-                self.poll("stale observer removed", lambda: self.observer_pod(cluster) is None)
-                self.traffic(cluster, "after-old-config-rejection", repetitions=1)
-                self.verify_foreign_links(cluster)
+            for cluster in ["cmtc-a", "cmtc-b"]: self.prepare_cluster(cluster)
+            self.after_all_installed()
+            for cluster in ["cmtc-a", "cmtc-b"]: self.exercise_cluster(cluster)
+            self.after_all_removed()
             self.report["status"] = "checks-passed-cleanup-pending"
         except Exception as error:
             self.report["status"] = "failed"; self.report["error"] = str(error); self.report["traceback"] = traceback.format_exc()

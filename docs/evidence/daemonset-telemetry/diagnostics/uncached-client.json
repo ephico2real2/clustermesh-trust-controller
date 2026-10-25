@@ -1,0 +1,29 @@
+{
+  "run": "e6aa934ada7e",
+  "status": "failed",
+  "scope": "explicit-four-node-opt-in-distribution",
+  "enforcementAvailable": false,
+  "mtlsProven": false,
+  "firstPacketAdmissionProven": false,
+  "errors": [],
+  "clusters": {},
+  "started": "2026-10-25T00:40:53.793624+00:00",
+  "telemetry": {
+    "scope": "one audited source-veth ingress hook/node; packet counts, not HTTP requests or TLS",
+    "centralPrometheus": "http://127.0.0.1:13000/api/datasources/proxy/uid/cmtc-prom",
+    "localTargetURLs": {
+      "cmtc-a": "http://127.0.0.1:13000/api/datasources/proxy/uid/cmtc-prom",
+      "cmtc-b": "http://127.0.0.1:19091"
+    },
+    "loadRepetitions": 2,
+    "captureStatus": "pending primary capture_live_evidence callback"
+  },
+  "error": "timeout: owned client Ready; last=False",
+  "traceback": "Traceback (most recent call last):\n  File \"/Users/olasumbo/gitRepos/clustermest-trust-controller/scripts/lab/test-fence-fanout.py\", line 345, in execute\n    for h in self.routes.values(): h.prepare(backends)\n                                   ~~~~~~~~~^^^^^^^^^^\n  File \"/Users/olasumbo/gitRepos/clustermest-trust-controller/scripts/lab/test-fence-fanout.py\", line 69, in prepare\n    pod = self.new_client(c)\n  File \"/Users/olasumbo/gitRepos/clustermest-trust-controller/scripts/lab/test-fence.py\", line 96, in new_client\n    return self.ready_client(cluster)\n           ~~~~~~~~~~~~~~~~~^^^^^^^^^\n  File \"/Users/olasumbo/gitRepos/clustermest-trust-controller/scripts/lab/test-fence.py\", line 82, in ready_client\n    return self.poll(\"owned client Ready\", lambda: self._ready_client(cluster))\n           ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/olasumbo/gitRepos/clustermest-trust-controller/scripts/lab/test-observer.py\", line 167, in poll\n    raise RuntimeError(f\"timeout: {description}; last={last!r}\")\nRuntimeError: timeout: owned client Ready; last=False\n",
+  "nodeReports": {
+    "cmtc-a-control-plane": "/private/tmp/cmtc-daemonset-20261024/fanout-first/cmtc-a-control-plane/report.json",
+    "cmtc-a-worker": "/private/tmp/cmtc-daemonset-20261024/fanout-first/cmtc-a-worker/report.json",
+    "cmtc-b-control-plane": "/private/tmp/cmtc-daemonset-20261024/fanout-first/cmtc-b-control-plane/report.json",
+    "cmtc-b-worker": "/private/tmp/cmtc-daemonset-20261024/fanout-first/cmtc-b-worker/report.json"
+  }
+}

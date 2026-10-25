@@ -22,6 +22,93 @@
       "presentation": "Mapped status/table; no sum that hides one failed or missing required gate.",
       "owner": "CMTC cluster controller"
     },
+    "cmtc_datapath_fence_dropped_bytes_total": {
+      "kind": "counter",
+      "status": "implemented",
+      "meaning": "skb byte lengths rejected by the deny-only audited TCX hook; not application payload or encrypted bytes.",
+      "presentation": "Bytes/s or selected-range increase; same pinned-map lifecycle as dropped packets.",
+      "owner": "CMTC opt-in fence DaemonSet",
+      "labels": [
+        "cluster",
+        "node",
+        "direction"
+      ],
+      "deployment": "Explicit disposable lab opt-in only; absent when its DaemonSet is not installed. Source collector implemented; scrape/dashboard qualification is separate.",
+      "qualification": "Locally qualified on four selected ARM64 nodes at source 5b1bc205fee9c6bc999c7d545e23ac0ff6f29bf2: exact-map load/idle, metrics-only HTTP routes, source targets, fresh central remote-write samples, each cluster selection, absent-source checks and both-theme visual inspection. Deny-only audited-hook scope; not mTLS or Protected.",
+      "evidence": "docs/evidence/daemonset-telemetry/fence/summary.json"
+    },
+    "cmtc_datapath_fence_dropped_packets_total": {
+      "kind": "counter",
+      "status": "implemented",
+      "meaning": "Packets rejected by the explicit deny-only audited TCX hook; retransmits and non-HTTP traffic count separately.",
+      "presentation": "Packets/s and selected-range increase; never requests, connections, TLS failures or protection coverage. Counter persists across exact pinned-map adoption, resets on a new attachment/map.",
+      "owner": "CMTC opt-in fence DaemonSet",
+      "labels": [
+        "cluster",
+        "node",
+        "direction"
+      ],
+      "deployment": "Explicit disposable lab opt-in only; absent when its DaemonSet is not installed. Source collector implemented; scrape/dashboard qualification is separate.",
+      "qualification": "Locally qualified on four selected ARM64 nodes at source 5b1bc205fee9c6bc999c7d545e23ac0ff6f29bf2: exact-map load/idle, metrics-only HTTP routes, source targets, fresh central remote-write samples, each cluster selection, absent-source checks and both-theme visual inspection. Deny-only audited-hook scope; not mTLS or Protected.",
+      "evidence": "docs/evidence/daemonset-telemetry/fence/summary.json"
+    },
+    "cmtc_datapath_fence_quarantine_verified": {
+      "kind": "gauge",
+      "status": "implemented",
+      "meaning": "A sample no older than 3 seconds verifies the exact committed deny attachment and frozen audited native chain. This is never Protected, mTLS or first-packet admission.",
+      "presentation": "Latest per-cluster/node/direction state: 1 quarantine verified, 0 unverified; absent/down scrape stays unavailable. Counters omitted when unverified.",
+      "owner": "CMTC opt-in fence DaemonSet",
+      "labels": [
+        "cluster",
+        "node",
+        "direction"
+      ],
+      "deployment": "Explicit disposable lab opt-in only; absent when its DaemonSet is not installed. Source collector implemented; scrape/dashboard qualification is separate.",
+      "qualification": "Locally qualified on four selected ARM64 nodes at source 5b1bc205fee9c6bc999c7d545e23ac0ff6f29bf2: exact-map load/idle, metrics-only HTTP routes, source targets, fresh central remote-write samples, each cluster selection, absent-source checks and both-theme visual inspection. Deny-only audited-hook scope; not mTLS or Protected.",
+      "evidence": "docs/evidence/daemonset-telemetry/fence/summary.json"
+    },
+    "cmtc_datapath_observer_bytes_total": {
+      "kind": "counter",
+      "status": "implemented",
+      "meaning": "skb byte lengths seen at the audited TCX hook before the native Cilium verdict; not application payload bytes.",
+      "presentation": "Bytes/s or selected-range increase; no encryption inference.",
+      "owner": "CMTC opt-in observer DaemonSet",
+      "labels": [
+        "cluster",
+        "node",
+        "direction"
+      ],
+      "deployment": "Explicit disposable lab opt-in only; absent when its DaemonSet is not installed. Source collector implemented; scrape/dashboard qualification is separate.",
+      "qualification": "Source collector only. New public scrape path, actual queries and dashboard visuals require primary local qualification and retained evidence before delivery."
+    },
+    "cmtc_datapath_observer_packets_total": {
+      "kind": "counter",
+      "status": "implemented",
+      "meaning": "Packets seen at the one audited TCX hook before the native Cilium verdict; not forwarded packets, attempts, requests, TLS handshakes or mTLS.",
+      "presentation": "Packets/s or selected-range increase; observer process/attachment restart resets the counter.",
+      "owner": "CMTC opt-in observer DaemonSet",
+      "labels": [
+        "cluster",
+        "node",
+        "direction"
+      ],
+      "deployment": "Explicit disposable lab opt-in only; absent when its DaemonSet is not installed. Source collector implemented; scrape/dashboard qualification is separate.",
+      "qualification": "Source collector only. New public scrape path, actual queries and dashboard visuals require primary local qualification and retained evidence before delivery."
+    },
+    "cmtc_datapath_observer_ready": {
+      "kind": "gauge",
+      "status": "implemented",
+      "meaning": "Fresh sample verifies the exact audited observer interface and native baseline chain. Zero is unverified, not an enforcement verdict.",
+      "presentation": "Latest per-cluster/node/direction state; absence remains unavailable. Observer counters are omitted when this is stale or zero.",
+      "owner": "CMTC opt-in observer DaemonSet",
+      "labels": [
+        "cluster",
+        "node",
+        "direction"
+      ],
+      "deployment": "Explicit disposable lab opt-in only; absent when its DaemonSet is not installed. Source collector implemented; scrape/dashboard qualification is separate.",
+      "qualification": "Source collector only. New public scrape path, actual queries and dashboard visuals require primary local qualification and retained evidence before delivery."
+    },
     "cmtc_dual_encryption_probe_success": {
       "kind": "gauge",
       "status": "planned",

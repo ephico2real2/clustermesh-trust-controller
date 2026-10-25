@@ -84,6 +84,10 @@ class FenceHarness(observer.Harness):
     def _ready_client(self, cluster):
         pod = self.own_pod(cluster)
         statuses = pod["status"].get("containerStatuses", [])
+        for status in statuses:
+            waiting = status.get("state", {}).get("waiting", {})
+            require(waiting.get("reason") not in ("ErrImageNeverPull", "CreateContainerConfigError"),
+                "client prerequisite rejected: " + repr(waiting))
         return pod if statuses and all(s.get("ready") for s in statuses) else False
 
     def new_client(self, cluster):

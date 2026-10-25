@@ -1,0 +1,2947 @@
+{
+  "observedAt": "2026-10-25T01:00:25.847133+00:00",
+  "queryTimeSeconds": 1792890025.320839,
+  "rateInterval": "60s",
+  "selections": [
+    {
+      "clusterSelection": "cmtc-a|cmtc-b",
+      "queries": [
+        {
+          "panel": "Controllers reporting",
+          "panelId": 3,
+          "target": "A",
+          "query": "count(cmtc_enforcement_available{job=\"cmtc\",cluster=~\"cmtc-a|cmtc-b\",component=\"cmtc-controller\"} @ end())",
+          "elapsedSeconds": 0.01413608412258327,
+          "response": {
+            "status": "success",
+            "data": {
+              "resultType": "vector",
+              "result": [
+                {
+                  "metric": {},
+                  "value": [
+                    1792890025.321,
+                    "2"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "panel": "Node inventories ready",
+          "panelId": 4,
+          "target": "A",
+          "query": "sum(cmtc_node_agent_ready{job=\"cmtc\",cluster=~\"cmtc-a|cmtc-b\",component=\"cmtc-node-agent\"} @ end())",
+          "elapsedSeconds": 0.003985458053648472,
+          "response": {
+            "status": "success",
+            "data": {
+              "resultType": "vector",
+              "result": [
+                {
+                  "metric": {},
+                  "value": [
+                    1792890025.321,
+                    "4"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "panel": "Namespaces selected \u00b7 intent",
+          "panelId": 5,
+          "target": "A",
+          "query": "sum(cmtc_namespaces_selected{job=\"cmtc\",cluster=~\"cmtc-a|cmtc-b\",component=\"cmtc-controller\"} @ end())",
+          "elapsedSeconds": 0.003908500075340271,
+          "response": {
+            "status": "success",
+            "data": {
+              "resultType": "vector",
+              "result": [
+                {
+                  "metric": {},
+                  "value": [
+                    1792890025.321,
+                    "8"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "panel": "Enforcement verification",
+          "panelId": 6,
+          "target": "A",
+          "query": "max(cmtc_enforcement_available{job=\"cmtc\",cluster=~\"cmtc-a|cmtc-b\",component=\"cmtc-controller\"} @ end())",
+          "elapsedSeconds": 0.00412416597828269,
+          "response": {
+            "status": "success",
+            "data": {
+              "resultType": "vector",
+              "result": [
+                {
+                  "metric": {},
+                  "value": [
+                    1792890025.321,
+                    "0"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "panel": "Enrollment labels observed",
+          "panelId": 8,
+          "target": "A",
+          "query": "sum(cmtc_namespaces_enrolled{job=\"cmtc\",cluster=~\"cmtc-a|cmtc-b\",component=\"cmtc-controller\"} @ end())",
+          "elapsedSeconds": 0.003938041860237718,
+          "response": {
+            "status": "success",
+            "data": {
+              "resultType": "vector",
+              "result": [
+                {
+                  "metric": {},
+                  "value": [
+                    1792890025.321,
+                    "0"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "panel": "Non-platform namespaces observed",
+          "panelId": 9,
+          "target": "A",
+          "query": "sum(cmtc_namespaces_eligible{job=\"cmtc\",cluster=~\"cmtc-a|cmtc-b\",component=\"cmtc-controller\"} @ end())",
+          "elapsedSeconds": 0.0037504590582102537,
+          "response": {
+            "status": "success",
+            "data": {
+              "resultType": "vector",
+              "result": [
+                {
+                  "metric": {},
+                  "value": [
+                    1792890025.321,
+                    "16"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "panel": "Namespace decisions \u00b7 latest share",
+          "panelId": 10,
+          "target": "A",
+          "query": "sum(cmtc_namespace_decisions{job=\"cmtc\",cluster=~\"cmtc-a|cmtc-b\",component=\"cmtc-controller\",decision=\"selected\"} @ end())",
+          "elapsedSeconds": 0.003924707882106304,
+          "response": {
+            "status": "success",
+            "data": {
+              "resultType": "vector",
+              "result": [
+                {
+                  "metric": {},
+                  "value": [
+                    1792890025.321,
+                    "8"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "panel": "Namespace decisions \u00b7 latest share",
+          "panelId": 10,
+          "target": "B",
+          "query": "sum(cmtc_namespace_decisions{job=\"cmtc\",cluster=~\"cmtc-a|cmtc-b\",component=\"cmtc-controller\",decision=\"excluded\"} @ end())",
+          "elapsedSeconds": 0.003848708001896739,
+          "response": {
+            "status": "success",
+            "data": {
+              "resultType": "vector",
+              "result": [
+                {
+                  "metric": {},
+                  "value": [
+                    1792890025.321,
+                    "2"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "panel": "Namespace decisions \u00b7 latest share",
+          "panelId": 10,
+          "target": "C",
+          "query": "sum(cmtc_namespace_decisions{job=\"cmtc\",cluster=~\"cmtc-a|cmtc-b\",component=\"cmtc-controller\",decision=\"platform\"} @ end())",
+          "elapsedSeconds": 0.003854749957099557,
+          "response": {
+            "status": "success",
+            "data": {
+              "resultType": "vector",
+              "result": [
+                {
+                  "metric": {},
+                  "value": [
+                    1792890025.321,
+                    "18"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "panel": "Namespace decisions \u00b7 latest share",
+          "panelId": 10,
+          "target": "D",
+          "query": "sum(cmtc_namespace_decisions{job=\"cmtc\",cluster=~\"cmtc-a|cmtc-b\",component=\"cmtc-controller\",decision=\"unselected\"} @ end())",
+          "elapsedSeconds": 0.004192832857370377,
+          "response": {
+            "status": "success",
+            "data": {
+              "resultType": "vector",
+              "result": [
+                {
+                  "metric": {},
+                  "value": [
+                    1792890025.321,
+                    "6"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "panel": "Namespace decisions by cluster",
+          "panelId": 11,
+          "target": "A",
+          "query": "sum by(cluster,decision) (cmtc_namespace_decisions{job=\"cmtc\",cluster=~\"cmtc-a|cmtc-b\",component=\"cmtc-controller\"} @ end())",
+          "elapsedSeconds": 0.003877124981954694,
+          "response": {
+            "status": "success",
+            "data": {
+              "resultType": "vector",
+              "result": [
+                {
+                  "metric": {
+                    "cluster": "cmtc-a",
+                    "decision": "excluded"
+                  },
+                  "value": [
+                    1792890025.321,
+                    "1"
+                  ]
+                },
+                {
+                  "metric": {
+                    "cluster": "cmtc-a",
+                    "decision": "platform"
+                  },
+                  "value": [
+                    1792890025.321,
+                    "9"
+                  ]
+                },
+                {
+                  "metric": {
+                    "cluster": "cmtc-a",
+                    "decision": "selected"
+                  },
+                  "value": [
+                    1792890025.321,
+                    "4"
+                  ]
+                },
+                {
+                  "metric": {
+                    "cluster": "cmtc-a",
+                    "decision": "unselected"
+                  },
+                  "value": [
+                    1792890025.321,
+                    "3"
+                  ]
+                },
+                {
+                  "metric": {
+                    "cluster": "cmtc-b",
+                    "decision": "excluded"
+                  },
+                  "value": [
+                    1792890025.321,
+                    "1"
+                  ]
+                },
+                {
+                  "metric": {
+                    "cluster": "cmtc-b",
+                    "decision": "platform"
+                  },
+                  "value": [
+                    1792890025.321,
+                    "9"
+                  ]
+                },
+                {
+                  "metric": {
+                    "cluster": "cmtc-b",
+                    "decision": "selected"
+                  },
+                  "value": [
+                    1792890025.321,
+                    "4"
+                  ]
+                },
+                {
+                  "metric": {
+                    "cluster": "cmtc-b",
+                    "decision": "unselected"
+                  },
+                  "value": [
+                    1792890025.321,
+                    "3"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "panel": "Inventory/controller targets reachable",
+          "panelId": 14,
+          "target": "A",
+          "query": "sum(up{job=\"cmtc\",cluster=~\"cmtc-a|cmtc-b\",component=~\"cmtc-controller|cmtc-node-agent\"} @ end())",
+          "elapsedSeconds": 0.003985207993537188,
+          "response": {
+            "status": "success",
+            "data": {
+              "resultType": "vector",
+              "result": [
+                {
+                  "metric": {},
+                  "value": [
+                    1792890025.321,
+                    "6"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "panel": "Controller reconcile errors/s",
+          "panelId": 15,
+          "target": "A",
+          "query": "sum(rate(controller_runtime_reconcile_errors_total{job=\"cmtc\",cluster=~\"cmtc-a|cmtc-b\",component=\"cmtc-controller\"}[60s]))",
+          "elapsedSeconds": 0.0036080419085919857,
+          "response": {
+            "status": "success",
+            "data": {
+              "resultType": "vector",
+              "result": [
+                {
+                  "metric": {},
+                  "value": [
+                    1792890025.321,
+                    "0"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "panel": "Policy evaluations/s \u00b7 by cluster",
+          "panelId": 16,
+          "target": "A",
+          "query": "sum by(cluster) (rate(cmtc_policy_evaluations_total{job=\"cmtc\",cluster=~\"cmtc-a|cmtc-b\",component=\"cmtc-controller\"}[60s]))",
+          "elapsedSeconds": 0.0036563340108841658,
+          "response": {
+            "status": "success",
+            "data": {
+              "resultType": "vector",
+              "result": [
+                {
+                  "metric": {
+                    "cluster": "cmtc-a"
+                  },
+                  "value": [
+                    1792890025.321,
+                    "0.03636363636363636"
+                  ]
+                },
+                {
+                  "metric": {
+                    "cluster": "cmtc-b"
+                  },
+                  "value": [
+                    1792890025.321,
+                    "0.03636363636363636"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "panel": "Controller reconcile p95 \u00b7 seconds",
+          "panelId": 17,
+          "target": "A",
+          "query": "histogram_quantile(0.95, sum by(cluster,le) (rate(controller_runtime_reconcile_time_seconds_bucket{job=\"cmtc\",cluster=~\"cmtc-a|cmtc-b\",component=\"cmtc-controller\"}[60s])))",
+          "elapsedSeconds": 0.003694541985169053,
+          "response": {
+            "status": "success",
+            "data": {
+              "resultType": "vector",
+              "result": [
+                {
+                  "metric": {
+                    "cluster": "cmtc-a"
+                  },
+                  "value": [
+                    1792890025.321,
+                    "0.004749999999999999"
+                  ]
+                },
+                {
+                  "metric": {
+                    "cluster": "cmtc-b"
+                  },
+                  "value": [
+                    1792890025.321,
+                    "0.004749999999999999"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "panel": "Pod inventory by node",
+          "panelId": 18,
+          "target": "A",
+          "query": "sum by(cluster,node,network) (cmtc_pods_observed{job=\"cmtc\",cluster=~\"cmtc-a|cmtc-b\",component=\"cmtc-node-agent\"} @ end())",
+          "elapsedSeconds": 0.0037715828511863947,
+          "response": {
+            "status": "success",
+            "data": {
+              "resultType": "vector",
+              "result": [
+                {
+                  "metric": {
+                    "cluster": "cmtc-a",
+                    "network": "host",
+                    "node": "cmtc-a-worker"
+                  },
+                  "value": [
+                    1792890025.321,
+                    "3"
+                  ]
+                },
+                {
+                  "metric": {
+                    "cluster": "cmtc-a",
+                    "network": "pod",
+                    "node": "cmtc-a-worker"
+                  },
+                  "value": [
+                    1792890025.321,
+                    "24"
+                  ]
+                },
+                {
+                  "metric": {
+                    "cluster": "cmtc-a",
+                    "network": "host",
+                    "node": "cmtc-a-control-plane"
+                  },
+                  "value": [
+                    1792890025.321,
+                    "8"
+                  ]
+                },
+                {
+                  "metric": {
+                    "cluster": "cmtc-a",
+                    "network": "pod",
+                    "node": "cmtc-a-control-plane"
+                  },
+                  "value": [
+                    1792890025.321,
+                    "8"
+                  ]
+                },
+                {
+                  "metric": {
+                    "cluster": "cmtc-b",
+                    "network": "host",
+                    "node": "cmtc-b-control-plane"
+                  },
+                  "value": [
+                    1792890025.321,
+                    "8"
+                  ]
+                },
+                {
+                  "metric": {
+                    "cluster": "cmtc-b",
+                    "network": "pod",
+                    "node": "cmtc-b-control-plane"
+                  },
+                  "value": [
+                    1792890025.321,
+                    "8"
+                  ]
+                },
+                {
+                  "metric": {
+                    "cluster": "cmtc-b",
+                    "network": "host",
+                    "node": "cmtc-b-worker"
+                  },
+                  "value": [
+                    1792890025.321,
+                    "3"
+                  ]
+                },
+                {
+                  "metric": {
+                    "cluster": "cmtc-b",
+                    "network": "pod",
+                    "node": "cmtc-b-worker"
+                  },
+                  "value": [
+                    1792890025.321,
+                    "23"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "panel": "Inventory/controller targets \u00b7 current state",
+          "panelId": 19,
+          "target": "A",
+          "query": "max by(cluster,component,node) (up{job=\"cmtc\",cluster=~\"cmtc-a|cmtc-b\",component=~\"cmtc-controller|cmtc-node-agent\"} @ end())",
+          "elapsedSeconds": 0.003599375020712614,
+          "response": {
+            "status": "success",
+            "data": {
+              "resultType": "vector",
+              "result": [
+                {
+                  "metric": {
+                    "cluster": "cmtc-a",
+                    "component": "cmtc-controller",
+                    "node": "cmtc-a-worker"
+                  },
+                  "value": [
+                    1792890025.321,
+                    "1"
+                  ]
+                },
+                {
+                  "metric": {
+                    "cluster": "cmtc-a",
+                    "component": "cmtc-node-agent",
+                    "node": "cmtc-a-worker"
+                  },
+                  "value": [
+                    1792890025.321,
+                    "1"
+                  ]
+                },
+                {
+                  "metric": {
+                    "cluster": "cmtc-a",
+                    "component": "cmtc-node-agent",
+                    "node": "cmtc-a-control-plane"
+                  },
+                  "value": [
+                    1792890025.321,
+                    "1"
+                  ]
+                },
+                {
+                  "metric": {
+                    "cluster": "cmtc-b",
+                    "component": "cmtc-node-agent",
+                    "node": "cmtc-b-control-plane"
+                  },
+                  "value": [
+                    1792890025.321,
+                    "1"
+                  ]
+                },
+                {
+                  "metric": {
+                    "cluster": "cmtc-b",
+                    "component": "cmtc-controller",
+                    "node": "cmtc-b-worker"
+                  },
+                  "value": [
+                    1792890025.321,
+                    "1"
+                  ]
+                },
+                {
+                  "metric": {
+                    "cluster": "cmtc-b",
+                    "component": "cmtc-node-agent",
+                    "node": "cmtc-b-worker"
+                  },
+                  "value": [
+                    1792890025.321,
+                    "1"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "panel": "Audited quarantine \u00b7 latest by node",
+          "panelId": 32,
+          "target": "A",
+          "query": "min by(cluster,node,direction) (cmtc_datapath_fence_quarantine_verified{job=\"cmtc\",cluster=~\"cmtc-a|cmtc-b\",component=\"cmtc-bpf-fence\"} @ end()) and on(cluster,node) (up{job=\"cmtc\",cluster=~\"cmtc-a|cmtc-b\",component=\"cmtc-bpf-fence\"} @ end() == 1)",
+          "elapsedSeconds": 0.003821750171482563,
+          "response": {
+            "status": "success",
+            "data": {
+              "resultType": "vector",
+              "result": [
+                {
+                  "metric": {
+                    "cluster": "cmtc-a",
+                    "direction": "ingress",
+                    "node": "cmtc-a-worker"
+                  },
+                  "value": [
+                    1792890025.321,
+                    "1"
+                  ]
+                },
+                {
+                  "metric": {
+                    "cluster": "cmtc-a",
+                    "direction": "ingress",
+                    "node": "cmtc-a-control-plane"
+                  },
+                  "value": [
+                    1792890025.321,
+                    "1"
+                  ]
+                },
+                {
+                  "metric": {
+                    "cluster": "cmtc-b",
+                    "direction": "ingress",
+                    "node": "cmtc-b-control-plane"
+                  },
+                  "value": [
+                    1792890025.321,
+                    "1"
+                  ]
+                },
+                {
+                  "metric": {
+                    "cluster": "cmtc-b",
+                    "direction": "ingress",
+                    "node": "cmtc-b-worker"
+                  },
+                  "value": [
+                    1792890025.321,
+                    "1"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "panel": "Packets rejected by audited quarantine/s",
+          "panelId": 33,
+          "target": "A",
+          "query": "sum by(cluster) (rate(cmtc_datapath_fence_dropped_packets_total{job=\"cmtc\",cluster=~\"cmtc-a|cmtc-b\",component=\"cmtc-bpf-fence\"}[60s]))",
+          "elapsedSeconds": 0.004870499949902296,
+          "response": {
+            "status": "success",
+            "data": {
+              "resultType": "vector",
+              "result": [
+                {
+                  "metric": {
+                    "cluster": "cmtc-a"
+                  },
+                  "value": [
+                    1792890025.321,
+                    "0.6909028100315531"
+                  ]
+                },
+                {
+                  "metric": {
+                    "cluster": "cmtc-b"
+                  },
+                  "value": [
+                    1792890025.321,
+                    "0.9638026381739755"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "panel": "Quarantine rejected packets \u00b7 selected range",
+          "panelId": 34,
+          "target": "A",
+          "query": "sum by(cluster) (increase(cmtc_datapath_fence_dropped_packets_total{job=\"cmtc\",cluster=~\"cmtc-a|cmtc-b\",component=\"cmtc-bpf-fence\"}[15m]))",
+          "elapsedSeconds": 0.004765999969094992,
+          "response": {
+            "status": "success",
+            "data": {
+              "resultType": "vector",
+              "result": [
+                {
+                  "metric": {
+                    "cluster": "cmtc-a"
+                  },
+                  "value": [
+                    1792890025.321,
+                    "112.6254466470466"
+                  ]
+                },
+                {
+                  "metric": {
+                    "cluster": "cmtc-b"
+                  },
+                  "value": [
+                    1792890025.321,
+                    "141.78193197382853"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "panel": "skb bytes rejected by quarantine/s",
+          "panelId": 35,
+          "target": "A",
+          "query": "sum by(cluster) (rate(cmtc_datapath_fence_dropped_bytes_total{job=\"cmtc\",cluster=~\"cmtc-a|cmtc-b\",component=\"cmtc-bpf-fence\"}[60s]))",
+          "elapsedSeconds": 0.004065792076289654,
+          "response": {
+            "status": "success",
+            "data": {
+              "resultType": "vector",
+              "result": [
+                {
+                  "metric": {
+                    "cluster": "cmtc-a"
+                  },
+                  "value": [
+                    1792890025.321,
+                    "30.036090583476994"
+                  ]
+                },
+                {
+                  "metric": {
+                    "cluster": "cmtc-b"
+                  },
+                  "value": [
+                    1792890025.321,
+                    "44.609923074219054"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "panel": "Fence metrics targets \u00b7 latest reachability",
+          "panelId": 36,
+          "target": "A",
+          "query": "max by(cluster,node) (up{job=\"cmtc\",cluster=~\"cmtc-a|cmtc-b\",component=\"cmtc-bpf-fence\"} @ end())",
+          "elapsedSeconds": 0.004293167032301426,
+          "response": {
+            "status": "success",
+            "data": {
+              "resultType": "vector",
+              "result": [
+                {
+                  "metric": {
+                    "cluster": "cmtc-a",
+                    "node": "cmtc-a-worker"
+                  },
+                  "value": [
+                    1792890025.321,
+                    "1"
+                  ]
+                },
+                {
+                  "metric": {
+                    "cluster": "cmtc-a",
+                    "node": "cmtc-a-control-plane"
+                  },
+                  "value": [
+                    1792890025.321,
+                    "1"
+                  ]
+                },
+                {
+                  "metric": {
+                    "cluster": "cmtc-b",
+                    "node": "cmtc-b-worker"
+                  },
+                  "value": [
+                    1792890025.321,
+                    "1"
+                  ]
+                },
+                {
+                  "metric": {
+                    "cluster": "cmtc-b",
+                    "node": "cmtc-b-control-plane"
+                  },
+                  "value": [
+                    1792890025.321,
+                    "1"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "panel": "Audited observer \u00b7 latest by node",
+          "panelId": 42,
+          "target": "A",
+          "query": "min by(cluster,node,direction) (cmtc_datapath_observer_ready{job=\"cmtc\",cluster=~\"cmtc-a|cmtc-b\",component=\"cmtc-bpf-observer\"} @ end()) and on(cluster,node) (up{job=\"cmtc\",cluster=~\"cmtc-a|cmtc-b\",component=\"cmtc-bpf-observer\"} @ end() == 1)",
+          "elapsedSeconds": 0.004165707854554057,
+          "response": {
+            "status": "success",
+            "data": {
+              "resultType": "vector",
+              "result": []
+            }
+          }
+        },
+        {
+          "panel": "Packets observed before Cilium verdict/s",
+          "panelId": 43,
+          "target": "A",
+          "query": "sum by(cluster) (rate(cmtc_datapath_observer_packets_total{job=\"cmtc\",cluster=~\"cmtc-a|cmtc-b\",component=\"cmtc-bpf-observer\"}[60s]))",
+          "elapsedSeconds": 0.0039967079646885395,
+          "response": {
+            "status": "success",
+            "data": {
+              "resultType": "vector",
+              "result": []
+            }
+          }
+        },
+        {
+          "panel": "skb bytes observed before Cilium verdict/s",
+          "panelId": 44,
+          "target": "A",
+          "query": "sum by(cluster) (rate(cmtc_datapath_observer_bytes_total{job=\"cmtc\",cluster=~\"cmtc-a|cmtc-b\",component=\"cmtc-bpf-observer\"}[60s]))",
+          "elapsedSeconds": 0.004042916931211948,
+          "response": {
+            "status": "success",
+            "data": {
+              "resultType": "vector",
+              "result": []
+            }
+          }
+        },
+        {
+          "panel": "Observer metrics targets \u00b7 latest reachability",
+          "panelId": 45,
+          "target": "A",
+          "query": "max by(cluster,node) (up{job=\"cmtc\",cluster=~\"cmtc-a|cmtc-b\",component=\"cmtc-bpf-observer\"} @ end())",
+          "elapsedSeconds": 0.0040940409526228905,
+          "response": {
+            "status": "success",
+            "data": {
+              "resultType": "vector",
+              "result": []
+            }
+          }
+        },
+        {
+          "panel": "Verified cluster gates \u00b7 planned",
+          "panelId": 101,
+          "target": "A",
+          "query": "min by(cluster) (cmtc_cluster_ready{job=\"cmtc\",cluster=~\"cmtc-a|cmtc-b\",component=~\"cmtc-controller|cmtc-node-agent\"} @ end())",
+          "elapsedSeconds": 0.004398917080834508,
+          "response": {
+            "status": "success",
+            "data": {
+              "resultType": "vector",
+              "result": []
+            }
+          }
+        },
+        {
+          "panel": "Pods protected \u00b7 planned",
+          "panelId": 102,
+          "target": "A",
+          "query": "sum by(cluster) (cmtc_pods_protected{job=\"cmtc\",cluster=~\"cmtc-a|cmtc-b\",component=~\"cmtc-controller|cmtc-node-agent\"} @ end())",
+          "elapsedSeconds": 0.004045791923999786,
+          "response": {
+            "status": "success",
+            "data": {
+              "resultType": "vector",
+              "result": []
+            }
+          }
+        },
+        {
+          "panel": "Pods awaiting enforcement \u00b7 planned",
+          "panelId": 103,
+          "target": "A",
+          "query": "sum by(cluster) (cmtc_pods_pending{job=\"cmtc\",cluster=~\"cmtc-a|cmtc-b\",component=~\"cmtc-controller|cmtc-node-agent\"} @ end())",
+          "elapsedSeconds": 0.0038624999579042196,
+          "response": {
+            "status": "success",
+            "data": {
+              "resultType": "vector",
+              "result": []
+            }
+          }
+        },
+        {
+          "panel": "Pods enforcement failed \u00b7 planned",
+          "panelId": 104,
+          "target": "A",
+          "query": "sum by(cluster) (cmtc_pods_enforcement_failed{job=\"cmtc\",cluster=~\"cmtc-a|cmtc-b\",component=~\"cmtc-controller|cmtc-node-agent\"} @ end())",
+          "elapsedSeconds": 0.003843457903712988,
+          "response": {
+            "status": "success",
+            "data": {
+              "resultType": "vector",
+              "result": []
+            }
+          }
+        },
+        {
+          "panel": "Platform dependency health \u00b7 planned",
+          "panelId": 106,
+          "target": "A",
+          "query": "cmtc_platform_dependency_healthy{job=\"cmtc\",cluster=~\"cmtc-a|cmtc-b\",component=~\"cmtc-controller|cmtc-node-agent\"} @ end()",
+          "elapsedSeconds": 0.003707125084474683,
+          "response": {
+            "status": "success",
+            "data": {
+              "resultType": "vector",
+              "result": []
+            }
+          }
+        },
+        {
+          "panel": "API probe result \u00b7 planned",
+          "panelId": 107,
+          "target": "A",
+          "query": "min by(cluster) (cmtc_apiserver_probe_success{job=\"cmtc\",cluster=~\"cmtc-a|cmtc-b\",component=~\"cmtc-controller|cmtc-node-agent\"} @ end())",
+          "elapsedSeconds": 0.0038085829000920057,
+          "response": {
+            "status": "success",
+            "data": {
+              "resultType": "vector",
+              "result": []
+            }
+          }
+        },
+        {
+          "panel": "Rollouts aborted/s \u00b7 planned",
+          "panelId": 108,
+          "target": "A",
+          "query": "sum by(cluster) (rate(cmtc_rollout_aborted_total{job=\"cmtc\",cluster=~\"cmtc-a|cmtc-b\",component=~\"cmtc-controller|cmtc-node-agent\"}[60s]))",
+          "elapsedSeconds": 0.0037919168826192617,
+          "response": {
+            "status": "success",
+            "data": {
+              "resultType": "vector",
+              "result": []
+            }
+          }
+        },
+        {
+          "panel": "Enrollment label drift/s \u00b7 planned",
+          "panelId": 110,
+          "target": "A",
+          "query": "sum by(cluster) (rate(cmtc_namespace_label_drift_total{job=\"cmtc\",cluster=~\"cmtc-a|cmtc-b\",component=~\"cmtc-controller|cmtc-node-agent\"}[60s]))",
+          "elapsedSeconds": 0.003704165806993842,
+          "response": {
+            "status": "success",
+            "data": {
+              "resultType": "vector",
+              "result": []
+            }
+          }
+        },
+        {
+          "panel": "Node configuration drift/s \u00b7 planned",
+          "panelId": 111,
+          "target": "A",
+          "query": "sum by(cluster) (rate(cmtc_node_config_drift_total{job=\"cmtc\",cluster=~\"cmtc-a|cmtc-b\",component=~\"cmtc-controller|cmtc-node-agent\"}[60s]))",
+          "elapsedSeconds": 0.004012624965980649,
+          "response": {
+            "status": "success",
+            "data": {
+              "resultType": "vector",
+              "result": []
+            }
+          }
+        },
+        {
+          "panel": "Proxy configuration ready \u00b7 planned",
+          "panelId": 112,
+          "target": "A",
+          "query": "min by(cluster) (cmtc_ztunnel_ready{job=\"cmtc\",cluster=~\"cmtc-a|cmtc-b\",component=~\"cmtc-controller|cmtc-node-agent\"} @ end())",
+          "elapsedSeconds": 0.003837500000372529,
+          "response": {
+            "status": "success",
+            "data": {
+              "resultType": "vector",
+              "result": []
+            }
+          }
+        }
+      ],
+      "namespacePie": {
+        "total": 34.0,
+        "categories": [
+          {
+            "decision": "Selected",
+            "namespaces": 8.0,
+            "percent": 23.529411764705884
+          },
+          {
+            "decision": "Excluded",
+            "namespaces": 2.0,
+            "percent": 5.882352941176471
+          },
+          {
+            "decision": "Platform",
+            "namespaces": 18.0,
+            "percent": 52.94117647058823
+          },
+          {
+            "decision": "Unselected",
+            "namespaces": 6.0,
+            "percent": 17.647058823529413
+          }
+        ],
+        "percentSum": 100
+      },
+      "querySeconds": 0.15298508200794458
+    },
+    {
+      "clusterSelection": "cmtc-a",
+      "queries": [
+        {
+          "panel": "Controllers reporting",
+          "panelId": 3,
+          "target": "A",
+          "query": "count(cmtc_enforcement_available{job=\"cmtc\",cluster=~\"cmtc-a\",component=\"cmtc-controller\"} @ end())",
+          "elapsedSeconds": 0.0035846249666064978,
+          "response": {
+            "status": "success",
+            "data": {
+              "resultType": "vector",
+              "result": [
+                {
+                  "metric": {},
+                  "value": [
+                    1792890025.321,
+                    "1"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "panel": "Node inventories ready",
+          "panelId": 4,
+          "target": "A",
+          "query": "sum(cmtc_node_agent_ready{job=\"cmtc\",cluster=~\"cmtc-a\",component=\"cmtc-node-agent\"} @ end())",
+          "elapsedSeconds": 0.0036217919550836086,
+          "response": {
+            "status": "success",
+            "data": {
+              "resultType": "vector",
+              "result": [
+                {
+                  "metric": {},
+                  "value": [
+                    1792890025.321,
+                    "2"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "panel": "Namespaces selected \u00b7 intent",
+          "panelId": 5,
+          "target": "A",
+          "query": "sum(cmtc_namespaces_selected{job=\"cmtc\",cluster=~\"cmtc-a\",component=\"cmtc-controller\"} @ end())",
+          "elapsedSeconds": 0.003674166975542903,
+          "response": {
+            "status": "success",
+            "data": {
+              "resultType": "vector",
+              "result": [
+                {
+                  "metric": {},
+                  "value": [
+                    1792890025.321,
+                    "4"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "panel": "Enforcement verification",
+          "panelId": 6,
+          "target": "A",
+          "query": "max(cmtc_enforcement_available{job=\"cmtc\",cluster=~\"cmtc-a\",component=\"cmtc-controller\"} @ end())",
+          "elapsedSeconds": 0.0035485420376062393,
+          "response": {
+            "status": "success",
+            "data": {
+              "resultType": "vector",
+              "result": [
+                {
+                  "metric": {},
+                  "value": [
+                    1792890025.321,
+                    "0"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "panel": "Enrollment labels observed",
+          "panelId": 8,
+          "target": "A",
+          "query": "sum(cmtc_namespaces_enrolled{job=\"cmtc\",cluster=~\"cmtc-a\",component=\"cmtc-controller\"} @ end())",
+          "elapsedSeconds": 0.003655583132058382,
+          "response": {
+            "status": "success",
+            "data": {
+              "resultType": "vector",
+              "result": [
+                {
+                  "metric": {},
+                  "value": [
+                    1792890025.321,
+                    "0"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "panel": "Non-platform namespaces observed",
+          "panelId": 9,
+          "target": "A",
+          "query": "sum(cmtc_namespaces_eligible{job=\"cmtc\",cluster=~\"cmtc-a\",component=\"cmtc-controller\"} @ end())",
+          "elapsedSeconds": 0.0038060408551245928,
+          "response": {
+            "status": "success",
+            "data": {
+              "resultType": "vector",
+              "result": [
+                {
+                  "metric": {},
+                  "value": [
+                    1792890025.321,
+                    "8"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "panel": "Namespace decisions \u00b7 latest share",
+          "panelId": 10,
+          "target": "A",
+          "query": "sum(cmtc_namespace_decisions{job=\"cmtc\",cluster=~\"cmtc-a\",component=\"cmtc-controller\",decision=\"selected\"} @ end())",
+          "elapsedSeconds": 0.008237209171056747,
+          "response": {
+            "status": "success",
+            "data": {
+              "resultType": "vector",
+              "result": [
+                {
+                  "metric": {},
+                  "value": [
+                    1792890025.321,
+                    "4"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "panel": "Namespace decisions \u00b7 latest share",
+          "panelId": 10,
+          "target": "B",
+          "query": "sum(cmtc_namespace_decisions{job=\"cmtc\",cluster=~\"cmtc-a\",component=\"cmtc-controller\",decision=\"excluded\"} @ end())",
+          "elapsedSeconds": 0.0059222502168267965,
+          "response": {
+            "status": "success",
+            "data": {
+              "resultType": "vector",
+              "result": [
+                {
+                  "metric": {},
+                  "value": [
+                    1792890025.321,
+                    "1"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "panel": "Namespace decisions \u00b7 latest share",
+          "panelId": 10,
+          "target": "C",
+          "query": "sum(cmtc_namespace_decisions{job=\"cmtc\",cluster=~\"cmtc-a\",component=\"cmtc-controller\",decision=\"platform\"} @ end())",
+          "elapsedSeconds": 0.004377124831080437,
+          "response": {
+            "status": "success",
+            "data": {
+              "resultType": "vector",
+              "result": [
+                {
+                  "metric": {},
+                  "value": [
+                    1792890025.321,
+                    "9"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "panel": "Namespace decisions \u00b7 latest share",
+          "panelId": 10,
+          "target": "D",
+          "query": "sum(cmtc_namespace_decisions{job=\"cmtc\",cluster=~\"cmtc-a\",component=\"cmtc-controller\",decision=\"unselected\"} @ end())",
+          "elapsedSeconds": 0.005683082854375243,
+          "response": {
+            "status": "success",
+            "data": {
+              "resultType": "vector",
+              "result": [
+                {
+                  "metric": {},
+                  "value": [
+                    1792890025.321,
+                    "3"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "panel": "Namespace decisions by cluster",
+          "panelId": 11,
+          "target": "A",
+          "query": "sum by(cluster,decision) (cmtc_namespace_decisions{job=\"cmtc\",cluster=~\"cmtc-a\",component=\"cmtc-controller\"} @ end())",
+          "elapsedSeconds": 0.004728499799966812,
+          "response": {
+            "status": "success",
+            "data": {
+              "resultType": "vector",
+              "result": [
+                {
+                  "metric": {
+                    "cluster": "cmtc-a",
+                    "decision": "excluded"
+                  },
+                  "value": [
+                    1792890025.321,
+                    "1"
+                  ]
+                },
+                {
+                  "metric": {
+                    "cluster": "cmtc-a",
+                    "decision": "platform"
+                  },
+                  "value": [
+                    1792890025.321,
+                    "9"
+                  ]
+                },
+                {
+                  "metric": {
+                    "cluster": "cmtc-a",
+                    "decision": "selected"
+                  },
+                  "value": [
+                    1792890025.321,
+                    "4"
+                  ]
+                },
+                {
+                  "metric": {
+                    "cluster": "cmtc-a",
+                    "decision": "unselected"
+                  },
+                  "value": [
+                    1792890025.321,
+                    "3"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "panel": "Inventory/controller targets reachable",
+          "panelId": 14,
+          "target": "A",
+          "query": "sum(up{job=\"cmtc\",cluster=~\"cmtc-a\",component=~\"cmtc-controller|cmtc-node-agent\"} @ end())",
+          "elapsedSeconds": 0.0043656660709530115,
+          "response": {
+            "status": "success",
+            "data": {
+              "resultType": "vector",
+              "result": [
+                {
+                  "metric": {},
+                  "value": [
+                    1792890025.321,
+                    "3"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "panel": "Controller reconcile errors/s",
+          "panelId": 15,
+          "target": "A",
+          "query": "sum(rate(controller_runtime_reconcile_errors_total{job=\"cmtc\",cluster=~\"cmtc-a\",component=\"cmtc-controller\"}[60s]))",
+          "elapsedSeconds": 0.004269917029887438,
+          "response": {
+            "status": "success",
+            "data": {
+              "resultType": "vector",
+              "result": [
+                {
+                  "metric": {},
+                  "value": [
+                    1792890025.321,
+                    "0"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "panel": "Policy evaluations/s \u00b7 by cluster",
+          "panelId": 16,
+          "target": "A",
+          "query": "sum by(cluster) (rate(cmtc_policy_evaluations_total{job=\"cmtc\",cluster=~\"cmtc-a\",component=\"cmtc-controller\"}[60s]))",
+          "elapsedSeconds": 0.00422775000333786,
+          "response": {
+            "status": "success",
+            "data": {
+              "resultType": "vector",
+              "result": [
+                {
+                  "metric": {
+                    "cluster": "cmtc-a"
+                  },
+                  "value": [
+                    1792890025.321,
+                    "0.03636363636363636"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "panel": "Controller reconcile p95 \u00b7 seconds",
+          "panelId": 17,
+          "target": "A",
+          "query": "histogram_quantile(0.95, sum by(cluster,le) (rate(controller_runtime_reconcile_time_seconds_bucket{job=\"cmtc\",cluster=~\"cmtc-a\",component=\"cmtc-controller\"}[60s])))",
+          "elapsedSeconds": 0.004721082979813218,
+          "response": {
+            "status": "success",
+            "data": {
+              "resultType": "vector",
+              "result": [
+                {
+                  "metric": {
+                    "cluster": "cmtc-a"
+                  },
+                  "value": [
+                    1792890025.321,
+                    "0.004749999999999999"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "panel": "Pod inventory by node",
+          "panelId": 18,
+          "target": "A",
+          "query": "sum by(cluster,node,network) (cmtc_pods_observed{job=\"cmtc\",cluster=~\"cmtc-a\",component=\"cmtc-node-agent\"} @ end())",
+          "elapsedSeconds": 0.00434708409011364,
+          "response": {
+            "status": "success",
+            "data": {
+              "resultType": "vector",
+              "result": [
+                {
+                  "metric": {
+                    "cluster": "cmtc-a",
+                    "network": "host",
+                    "node": "cmtc-a-worker"
+                  },
+                  "value": [
+                    1792890025.321,
+                    "3"
+                  ]
+                },
+                {
+                  "metric": {
+                    "cluster": "cmtc-a",
+                    "network": "pod",
+                    "node": "cmtc-a-worker"
+                  },
+                  "value": [
+                    1792890025.321,
+                    "24"
+                  ]
+                },
+                {
+                  "metric": {
+                    "cluster": "cmtc-a",
+                    "network": "host",
+                    "node": "cmtc-a-control-plane"
+                  },
+                  "value": [
+                    1792890025.321,
+                    "8"
+                  ]
+                },
+                {
+                  "metric": {
+                    "cluster": "cmtc-a",
+                    "network": "pod",
+                    "node": "cmtc-a-control-plane"
+                  },
+                  "value": [
+                    1792890025.321,
+                    "8"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "panel": "Inventory/controller targets \u00b7 current state",
+          "panelId": 19,
+          "target": "A",
+          "query": "max by(cluster,component,node) (up{job=\"cmtc\",cluster=~\"cmtc-a\",component=~\"cmtc-controller|cmtc-node-agent\"} @ end())",
+          "elapsedSeconds": 0.004208333091810346,
+          "response": {
+            "status": "success",
+            "data": {
+              "resultType": "vector",
+              "result": [
+                {
+                  "metric": {
+                    "cluster": "cmtc-a",
+                    "component": "cmtc-controller",
+                    "node": "cmtc-a-worker"
+                  },
+                  "value": [
+                    1792890025.321,
+                    "1"
+                  ]
+                },
+                {
+                  "metric": {
+                    "cluster": "cmtc-a",
+                    "component": "cmtc-node-agent",
+                    "node": "cmtc-a-worker"
+                  },
+                  "value": [
+                    1792890025.321,
+                    "1"
+                  ]
+                },
+                {
+                  "metric": {
+                    "cluster": "cmtc-a",
+                    "component": "cmtc-node-agent",
+                    "node": "cmtc-a-control-plane"
+                  },
+                  "value": [
+                    1792890025.321,
+                    "1"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "panel": "Audited quarantine \u00b7 latest by node",
+          "panelId": 32,
+          "target": "A",
+          "query": "min by(cluster,node,direction) (cmtc_datapath_fence_quarantine_verified{job=\"cmtc\",cluster=~\"cmtc-a\",component=\"cmtc-bpf-fence\"} @ end()) and on(cluster,node) (up{job=\"cmtc\",cluster=~\"cmtc-a\",component=\"cmtc-bpf-fence\"} @ end() == 1)",
+          "elapsedSeconds": 0.0040134170558303595,
+          "response": {
+            "status": "success",
+            "data": {
+              "resultType": "vector",
+              "result": [
+                {
+                  "metric": {
+                    "cluster": "cmtc-a",
+                    "direction": "ingress",
+                    "node": "cmtc-a-worker"
+                  },
+                  "value": [
+                    1792890025.321,
+                    "1"
+                  ]
+                },
+                {
+                  "metric": {
+                    "cluster": "cmtc-a",
+                    "direction": "ingress",
+                    "node": "cmtc-a-control-plane"
+                  },
+                  "value": [
+                    1792890025.321,
+                    "1"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "panel": "Packets rejected by audited quarantine/s",
+          "panelId": 33,
+          "target": "A",
+          "query": "sum by(cluster) (rate(cmtc_datapath_fence_dropped_packets_total{job=\"cmtc\",cluster=~\"cmtc-a\",component=\"cmtc-bpf-fence\"}[60s]))",
+          "elapsedSeconds": 0.003969999961555004,
+          "response": {
+            "status": "success",
+            "data": {
+              "resultType": "vector",
+              "result": [
+                {
+                  "metric": {
+                    "cluster": "cmtc-a"
+                  },
+                  "value": [
+                    1792890025.321,
+                    "0.6909028100315531"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "panel": "Quarantine rejected packets \u00b7 selected range",
+          "panelId": 34,
+          "target": "A",
+          "query": "sum by(cluster) (increase(cmtc_datapath_fence_dropped_packets_total{job=\"cmtc\",cluster=~\"cmtc-a\",component=\"cmtc-bpf-fence\"}[15m]))",
+          "elapsedSeconds": 0.0038062501698732376,
+          "response": {
+            "status": "success",
+            "data": {
+              "resultType": "vector",
+              "result": [
+                {
+                  "metric": {
+                    "cluster": "cmtc-a"
+                  },
+                  "value": [
+                    1792890025.321,
+                    "112.6254466470466"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "panel": "skb bytes rejected by quarantine/s",
+          "panelId": 35,
+          "target": "A",
+          "query": "sum by(cluster) (rate(cmtc_datapath_fence_dropped_bytes_total{job=\"cmtc\",cluster=~\"cmtc-a\",component=\"cmtc-bpf-fence\"}[60s]))",
+          "elapsedSeconds": 0.004462083801627159,
+          "response": {
+            "status": "success",
+            "data": {
+              "resultType": "vector",
+              "result": [
+                {
+                  "metric": {
+                    "cluster": "cmtc-a"
+                  },
+                  "value": [
+                    1792890025.321,
+                    "30.036090583476994"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "panel": "Fence metrics targets \u00b7 latest reachability",
+          "panelId": 36,
+          "target": "A",
+          "query": "max by(cluster,node) (up{job=\"cmtc\",cluster=~\"cmtc-a\",component=\"cmtc-bpf-fence\"} @ end())",
+          "elapsedSeconds": 0.0042319579515606165,
+          "response": {
+            "status": "success",
+            "data": {
+              "resultType": "vector",
+              "result": [
+                {
+                  "metric": {
+                    "cluster": "cmtc-a",
+                    "node": "cmtc-a-worker"
+                  },
+                  "value": [
+                    1792890025.321,
+                    "1"
+                  ]
+                },
+                {
+                  "metric": {
+                    "cluster": "cmtc-a",
+                    "node": "cmtc-a-control-plane"
+                  },
+                  "value": [
+                    1792890025.321,
+                    "1"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "panel": "Audited observer \u00b7 latest by node",
+          "panelId": 42,
+          "target": "A",
+          "query": "min by(cluster,node,direction) (cmtc_datapath_observer_ready{job=\"cmtc\",cluster=~\"cmtc-a\",component=\"cmtc-bpf-observer\"} @ end()) and on(cluster,node) (up{job=\"cmtc\",cluster=~\"cmtc-a\",component=\"cmtc-bpf-observer\"} @ end() == 1)",
+          "elapsedSeconds": 0.003969665849581361,
+          "response": {
+            "status": "success",
+            "data": {
+              "resultType": "vector",
+              "result": []
+            }
+          }
+        },
+        {
+          "panel": "Packets observed before Cilium verdict/s",
+          "panelId": 43,
+          "target": "A",
+          "query": "sum by(cluster) (rate(cmtc_datapath_observer_packets_total{job=\"cmtc\",cluster=~\"cmtc-a\",component=\"cmtc-bpf-observer\"}[60s]))",
+          "elapsedSeconds": 0.0037150001153349876,
+          "response": {
+            "status": "success",
+            "data": {
+              "resultType": "vector",
+              "result": []
+            }
+          }
+        },
+        {
+          "panel": "skb bytes observed before Cilium verdict/s",
+          "panelId": 44,
+          "target": "A",
+          "query": "sum by(cluster) (rate(cmtc_datapath_observer_bytes_total{job=\"cmtc\",cluster=~\"cmtc-a\",component=\"cmtc-bpf-observer\"}[60s]))",
+          "elapsedSeconds": 0.0037311248015612364,
+          "response": {
+            "status": "success",
+            "data": {
+              "resultType": "vector",
+              "result": []
+            }
+          }
+        },
+        {
+          "panel": "Observer metrics targets \u00b7 latest reachability",
+          "panelId": 45,
+          "target": "A",
+          "query": "max by(cluster,node) (up{job=\"cmtc\",cluster=~\"cmtc-a\",component=\"cmtc-bpf-observer\"} @ end())",
+          "elapsedSeconds": 0.0038799589965492487,
+          "response": {
+            "status": "success",
+            "data": {
+              "resultType": "vector",
+              "result": []
+            }
+          }
+        },
+        {
+          "panel": "Verified cluster gates \u00b7 planned",
+          "panelId": 101,
+          "target": "A",
+          "query": "min by(cluster) (cmtc_cluster_ready{job=\"cmtc\",cluster=~\"cmtc-a\",component=~\"cmtc-controller|cmtc-node-agent\"} @ end())",
+          "elapsedSeconds": 0.003831292036920786,
+          "response": {
+            "status": "success",
+            "data": {
+              "resultType": "vector",
+              "result": []
+            }
+          }
+        },
+        {
+          "panel": "Pods protected \u00b7 planned",
+          "panelId": 102,
+          "target": "A",
+          "query": "sum by(cluster) (cmtc_pods_protected{job=\"cmtc\",cluster=~\"cmtc-a\",component=~\"cmtc-controller|cmtc-node-agent\"} @ end())",
+          "elapsedSeconds": 0.003869167063385248,
+          "response": {
+            "status": "success",
+            "data": {
+              "resultType": "vector",
+              "result": []
+            }
+          }
+        },
+        {
+          "panel": "Pods awaiting enforcement \u00b7 planned",
+          "panelId": 103,
+          "target": "A",
+          "query": "sum by(cluster) (cmtc_pods_pending{job=\"cmtc\",cluster=~\"cmtc-a\",component=~\"cmtc-controller|cmtc-node-agent\"} @ end())",
+          "elapsedSeconds": 0.003911666106432676,
+          "response": {
+            "status": "success",
+            "data": {
+              "resultType": "vector",
+              "result": []
+            }
+          }
+        },
+        {
+          "panel": "Pods enforcement failed \u00b7 planned",
+          "panelId": 104,
+          "target": "A",
+          "query": "sum by(cluster) (cmtc_pods_enforcement_failed{job=\"cmtc\",cluster=~\"cmtc-a\",component=~\"cmtc-controller|cmtc-node-agent\"} @ end())",
+          "elapsedSeconds": 0.004025625064969063,
+          "response": {
+            "status": "success",
+            "data": {
+              "resultType": "vector",
+              "result": []
+            }
+          }
+        },
+        {
+          "panel": "Platform dependency health \u00b7 planned",
+          "panelId": 106,
+          "target": "A",
+          "query": "cmtc_platform_dependency_healthy{job=\"cmtc\",cluster=~\"cmtc-a\",component=~\"cmtc-controller|cmtc-node-agent\"} @ end()",
+          "elapsedSeconds": 0.003642916912212968,
+          "response": {
+            "status": "success",
+            "data": {
+              "resultType": "vector",
+              "result": []
+            }
+          }
+        },
+        {
+          "panel": "API probe result \u00b7 planned",
+          "panelId": 107,
+          "target": "A",
+          "query": "min by(cluster) (cmtc_apiserver_probe_success{job=\"cmtc\",cluster=~\"cmtc-a\",component=~\"cmtc-controller|cmtc-node-agent\"} @ end())",
+          "elapsedSeconds": 0.0037140410859137774,
+          "response": {
+            "status": "success",
+            "data": {
+              "resultType": "vector",
+              "result": []
+            }
+          }
+        },
+        {
+          "panel": "Rollouts aborted/s \u00b7 planned",
+          "panelId": 108,
+          "target": "A",
+          "query": "sum by(cluster) (rate(cmtc_rollout_aborted_total{job=\"cmtc\",cluster=~\"cmtc-a\",component=~\"cmtc-controller|cmtc-node-agent\"}[60s]))",
+          "elapsedSeconds": 0.003766499925404787,
+          "response": {
+            "status": "success",
+            "data": {
+              "resultType": "vector",
+              "result": []
+            }
+          }
+        },
+        {
+          "panel": "Enrollment label drift/s \u00b7 planned",
+          "panelId": 110,
+          "target": "A",
+          "query": "sum by(cluster) (rate(cmtc_namespace_label_drift_total{job=\"cmtc\",cluster=~\"cmtc-a\",component=~\"cmtc-controller|cmtc-node-agent\"}[60s]))",
+          "elapsedSeconds": 0.0036333329044282436,
+          "response": {
+            "status": "success",
+            "data": {
+              "resultType": "vector",
+              "result": []
+            }
+          }
+        },
+        {
+          "panel": "Node configuration drift/s \u00b7 planned",
+          "panelId": 111,
+          "target": "A",
+          "query": "sum by(cluster) (rate(cmtc_node_config_drift_total{job=\"cmtc\",cluster=~\"cmtc-a\",component=~\"cmtc-controller|cmtc-node-agent\"}[60s]))",
+          "elapsedSeconds": 0.0034950829576700926,
+          "response": {
+            "status": "success",
+            "data": {
+              "resultType": "vector",
+              "result": []
+            }
+          }
+        },
+        {
+          "panel": "Proxy configuration ready \u00b7 planned",
+          "panelId": 112,
+          "target": "A",
+          "query": "min by(cluster) (cmtc_ztunnel_ready{job=\"cmtc\",cluster=~\"cmtc-a\",component=~\"cmtc-controller|cmtc-node-agent\"} @ end())",
+          "elapsedSeconds": 0.003647957928478718,
+          "response": {
+            "status": "success",
+            "data": {
+              "resultType": "vector",
+              "result": []
+            }
+          }
+        }
+      ],
+      "namespacePie": {
+        "total": 17.0,
+        "categories": [
+          {
+            "decision": "Selected",
+            "namespaces": 4.0,
+            "percent": 23.529411764705884
+          },
+          {
+            "decision": "Excluded",
+            "namespaces": 1.0,
+            "percent": 5.882352941176471
+          },
+          {
+            "decision": "Platform",
+            "namespaces": 9.0,
+            "percent": 52.94117647058823
+          },
+          {
+            "decision": "Unselected",
+            "namespaces": 3.0,
+            "percent": 17.647058823529413
+          }
+        ],
+        "percentSum": 100
+      },
+      "querySeconds": 0.15029579075053334
+    },
+    {
+      "clusterSelection": "cmtc-b",
+      "queries": [
+        {
+          "panel": "Controllers reporting",
+          "panelId": 3,
+          "target": "A",
+          "query": "count(cmtc_enforcement_available{job=\"cmtc\",cluster=~\"cmtc-b\",component=\"cmtc-controller\"} @ end())",
+          "elapsedSeconds": 0.004223833093419671,
+          "response": {
+            "status": "success",
+            "data": {
+              "resultType": "vector",
+              "result": [
+                {
+                  "metric": {},
+                  "value": [
+                    1792890025.321,
+                    "1"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "panel": "Node inventories ready",
+          "panelId": 4,
+          "target": "A",
+          "query": "sum(cmtc_node_agent_ready{job=\"cmtc\",cluster=~\"cmtc-b\",component=\"cmtc-node-agent\"} @ end())",
+          "elapsedSeconds": 0.004612375050783157,
+          "response": {
+            "status": "success",
+            "data": {
+              "resultType": "vector",
+              "result": [
+                {
+                  "metric": {},
+                  "value": [
+                    1792890025.321,
+                    "2"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "panel": "Namespaces selected \u00b7 intent",
+          "panelId": 5,
+          "target": "A",
+          "query": "sum(cmtc_namespaces_selected{job=\"cmtc\",cluster=~\"cmtc-b\",component=\"cmtc-controller\"} @ end())",
+          "elapsedSeconds": 0.004492833046242595,
+          "response": {
+            "status": "success",
+            "data": {
+              "resultType": "vector",
+              "result": [
+                {
+                  "metric": {},
+                  "value": [
+                    1792890025.321,
+                    "4"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "panel": "Enforcement verification",
+          "panelId": 6,
+          "target": "A",
+          "query": "max(cmtc_enforcement_available{job=\"cmtc\",cluster=~\"cmtc-b\",component=\"cmtc-controller\"} @ end())",
+          "elapsedSeconds": 0.004341542022302747,
+          "response": {
+            "status": "success",
+            "data": {
+              "resultType": "vector",
+              "result": [
+                {
+                  "metric": {},
+                  "value": [
+                    1792890025.321,
+                    "0"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "panel": "Enrollment labels observed",
+          "panelId": 8,
+          "target": "A",
+          "query": "sum(cmtc_namespaces_enrolled{job=\"cmtc\",cluster=~\"cmtc-b\",component=\"cmtc-controller\"} @ end())",
+          "elapsedSeconds": 0.004199041984975338,
+          "response": {
+            "status": "success",
+            "data": {
+              "resultType": "vector",
+              "result": [
+                {
+                  "metric": {},
+                  "value": [
+                    1792890025.321,
+                    "0"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "panel": "Non-platform namespaces observed",
+          "panelId": 9,
+          "target": "A",
+          "query": "sum(cmtc_namespaces_eligible{job=\"cmtc\",cluster=~\"cmtc-b\",component=\"cmtc-controller\"} @ end())",
+          "elapsedSeconds": 0.00403362512588501,
+          "response": {
+            "status": "success",
+            "data": {
+              "resultType": "vector",
+              "result": [
+                {
+                  "metric": {},
+                  "value": [
+                    1792890025.321,
+                    "8"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "panel": "Namespace decisions \u00b7 latest share",
+          "panelId": 10,
+          "target": "A",
+          "query": "sum(cmtc_namespace_decisions{job=\"cmtc\",cluster=~\"cmtc-b\",component=\"cmtc-controller\",decision=\"selected\"} @ end())",
+          "elapsedSeconds": 0.004410457797348499,
+          "response": {
+            "status": "success",
+            "data": {
+              "resultType": "vector",
+              "result": [
+                {
+                  "metric": {},
+                  "value": [
+                    1792890025.321,
+                    "4"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "panel": "Namespace decisions \u00b7 latest share",
+          "panelId": 10,
+          "target": "B",
+          "query": "sum(cmtc_namespace_decisions{job=\"cmtc\",cluster=~\"cmtc-b\",component=\"cmtc-controller\",decision=\"excluded\"} @ end())",
+          "elapsedSeconds": 0.004062999971210957,
+          "response": {
+            "status": "success",
+            "data": {
+              "resultType": "vector",
+              "result": [
+                {
+                  "metric": {},
+                  "value": [
+                    1792890025.321,
+                    "1"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "panel": "Namespace decisions \u00b7 latest share",
+          "panelId": 10,
+          "target": "C",
+          "query": "sum(cmtc_namespace_decisions{job=\"cmtc\",cluster=~\"cmtc-b\",component=\"cmtc-controller\",decision=\"platform\"} @ end())",
+          "elapsedSeconds": 0.004409916931763291,
+          "response": {
+            "status": "success",
+            "data": {
+              "resultType": "vector",
+              "result": [
+                {
+                  "metric": {},
+                  "value": [
+                    1792890025.321,
+                    "9"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "panel": "Namespace decisions \u00b7 latest share",
+          "panelId": 10,
+          "target": "D",
+          "query": "sum(cmtc_namespace_decisions{job=\"cmtc\",cluster=~\"cmtc-b\",component=\"cmtc-controller\",decision=\"unselected\"} @ end())",
+          "elapsedSeconds": 0.004628458991646767,
+          "response": {
+            "status": "success",
+            "data": {
+              "resultType": "vector",
+              "result": [
+                {
+                  "metric": {},
+                  "value": [
+                    1792890025.321,
+                    "3"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "panel": "Namespace decisions by cluster",
+          "panelId": 11,
+          "target": "A",
+          "query": "sum by(cluster,decision) (cmtc_namespace_decisions{job=\"cmtc\",cluster=~\"cmtc-b\",component=\"cmtc-controller\"} @ end())",
+          "elapsedSeconds": 0.004153374815359712,
+          "response": {
+            "status": "success",
+            "data": {
+              "resultType": "vector",
+              "result": [
+                {
+                  "metric": {
+                    "cluster": "cmtc-b",
+                    "decision": "excluded"
+                  },
+                  "value": [
+                    1792890025.321,
+                    "1"
+                  ]
+                },
+                {
+                  "metric": {
+                    "cluster": "cmtc-b",
+                    "decision": "platform"
+                  },
+                  "value": [
+                    1792890025.321,
+                    "9"
+                  ]
+                },
+                {
+                  "metric": {
+                    "cluster": "cmtc-b",
+                    "decision": "selected"
+                  },
+                  "value": [
+                    1792890025.321,
+                    "4"
+                  ]
+                },
+                {
+                  "metric": {
+                    "cluster": "cmtc-b",
+                    "decision": "unselected"
+                  },
+                  "value": [
+                    1792890025.321,
+                    "3"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "panel": "Inventory/controller targets reachable",
+          "panelId": 14,
+          "target": "A",
+          "query": "sum(up{job=\"cmtc\",cluster=~\"cmtc-b\",component=~\"cmtc-controller|cmtc-node-agent\"} @ end())",
+          "elapsedSeconds": 0.003945583011955023,
+          "response": {
+            "status": "success",
+            "data": {
+              "resultType": "vector",
+              "result": [
+                {
+                  "metric": {},
+                  "value": [
+                    1792890025.321,
+                    "3"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "panel": "Controller reconcile errors/s",
+          "panelId": 15,
+          "target": "A",
+          "query": "sum(rate(controller_runtime_reconcile_errors_total{job=\"cmtc\",cluster=~\"cmtc-b\",component=\"cmtc-controller\"}[60s]))",
+          "elapsedSeconds": 0.003921082941815257,
+          "response": {
+            "status": "success",
+            "data": {
+              "resultType": "vector",
+              "result": [
+                {
+                  "metric": {},
+                  "value": [
+                    1792890025.321,
+                    "0"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "panel": "Policy evaluations/s \u00b7 by cluster",
+          "panelId": 16,
+          "target": "A",
+          "query": "sum by(cluster) (rate(cmtc_policy_evaluations_total{job=\"cmtc\",cluster=~\"cmtc-b\",component=\"cmtc-controller\"}[60s]))",
+          "elapsedSeconds": 0.00373112503439188,
+          "response": {
+            "status": "success",
+            "data": {
+              "resultType": "vector",
+              "result": [
+                {
+                  "metric": {
+                    "cluster": "cmtc-b"
+                  },
+                  "value": [
+                    1792890025.321,
+                    "0.03636363636363636"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "panel": "Controller reconcile p95 \u00b7 seconds",
+          "panelId": 17,
+          "target": "A",
+          "query": "histogram_quantile(0.95, sum by(cluster,le) (rate(controller_runtime_reconcile_time_seconds_bucket{job=\"cmtc\",cluster=~\"cmtc-b\",component=\"cmtc-controller\"}[60s])))",
+          "elapsedSeconds": 0.004005624912679195,
+          "response": {
+            "status": "success",
+            "data": {
+              "resultType": "vector",
+              "result": [
+                {
+                  "metric": {
+                    "cluster": "cmtc-b"
+                  },
+                  "value": [
+                    1792890025.321,
+                    "0.004749999999999999"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "panel": "Pod inventory by node",
+          "panelId": 18,
+          "target": "A",
+          "query": "sum by(cluster,node,network) (cmtc_pods_observed{job=\"cmtc\",cluster=~\"cmtc-b\",component=\"cmtc-node-agent\"} @ end())",
+          "elapsedSeconds": 0.0034412499517202377,
+          "response": {
+            "status": "success",
+            "data": {
+              "resultType": "vector",
+              "result": [
+                {
+                  "metric": {
+                    "cluster": "cmtc-b",
+                    "network": "host",
+                    "node": "cmtc-b-control-plane"
+                  },
+                  "value": [
+                    1792890025.321,
+                    "8"
+                  ]
+                },
+                {
+                  "metric": {
+                    "cluster": "cmtc-b",
+                    "network": "pod",
+                    "node": "cmtc-b-control-plane"
+                  },
+                  "value": [
+                    1792890025.321,
+                    "8"
+                  ]
+                },
+                {
+                  "metric": {
+                    "cluster": "cmtc-b",
+                    "network": "host",
+                    "node": "cmtc-b-worker"
+                  },
+                  "value": [
+                    1792890025.321,
+                    "3"
+                  ]
+                },
+                {
+                  "metric": {
+                    "cluster": "cmtc-b",
+                    "network": "pod",
+                    "node": "cmtc-b-worker"
+                  },
+                  "value": [
+                    1792890025.321,
+                    "23"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "panel": "Inventory/controller targets \u00b7 current state",
+          "panelId": 19,
+          "target": "A",
+          "query": "max by(cluster,component,node) (up{job=\"cmtc\",cluster=~\"cmtc-b\",component=~\"cmtc-controller|cmtc-node-agent\"} @ end())",
+          "elapsedSeconds": 0.0035425410605967045,
+          "response": {
+            "status": "success",
+            "data": {
+              "resultType": "vector",
+              "result": [
+                {
+                  "metric": {
+                    "cluster": "cmtc-b",
+                    "component": "cmtc-node-agent",
+                    "node": "cmtc-b-control-plane"
+                  },
+                  "value": [
+                    1792890025.321,
+                    "1"
+                  ]
+                },
+                {
+                  "metric": {
+                    "cluster": "cmtc-b",
+                    "component": "cmtc-controller",
+                    "node": "cmtc-b-worker"
+                  },
+                  "value": [
+                    1792890025.321,
+                    "1"
+                  ]
+                },
+                {
+                  "metric": {
+                    "cluster": "cmtc-b",
+                    "component": "cmtc-node-agent",
+                    "node": "cmtc-b-worker"
+                  },
+                  "value": [
+                    1792890025.321,
+                    "1"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "panel": "Audited quarantine \u00b7 latest by node",
+          "panelId": 32,
+          "target": "A",
+          "query": "min by(cluster,node,direction) (cmtc_datapath_fence_quarantine_verified{job=\"cmtc\",cluster=~\"cmtc-b\",component=\"cmtc-bpf-fence\"} @ end()) and on(cluster,node) (up{job=\"cmtc\",cluster=~\"cmtc-b\",component=\"cmtc-bpf-fence\"} @ end() == 1)",
+          "elapsedSeconds": 0.0037603750824928284,
+          "response": {
+            "status": "success",
+            "data": {
+              "resultType": "vector",
+              "result": [
+                {
+                  "metric": {
+                    "cluster": "cmtc-b",
+                    "direction": "ingress",
+                    "node": "cmtc-b-control-plane"
+                  },
+                  "value": [
+                    1792890025.321,
+                    "1"
+                  ]
+                },
+                {
+                  "metric": {
+                    "cluster": "cmtc-b",
+                    "direction": "ingress",
+                    "node": "cmtc-b-worker"
+                  },
+                  "value": [
+                    1792890025.321,
+                    "1"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "panel": "Packets rejected by audited quarantine/s",
+          "panelId": 33,
+          "target": "A",
+          "query": "sum by(cluster) (rate(cmtc_datapath_fence_dropped_packets_total{job=\"cmtc\",cluster=~\"cmtc-b\",component=\"cmtc-bpf-fence\"}[60s]))",
+          "elapsedSeconds": 0.0036793327890336514,
+          "response": {
+            "status": "success",
+            "data": {
+              "resultType": "vector",
+              "result": [
+                {
+                  "metric": {
+                    "cluster": "cmtc-b"
+                  },
+                  "value": [
+                    1792890025.321,
+                    "0.9638026381739755"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "panel": "Quarantine rejected packets \u00b7 selected range",
+          "panelId": 34,
+          "target": "A",
+          "query": "sum by(cluster) (increase(cmtc_datapath_fence_dropped_packets_total{job=\"cmtc\",cluster=~\"cmtc-b\",component=\"cmtc-bpf-fence\"}[15m]))",
+          "elapsedSeconds": 0.0038070420268923044,
+          "response": {
+            "status": "success",
+            "data": {
+              "resultType": "vector",
+              "result": [
+                {
+                  "metric": {
+                    "cluster": "cmtc-b"
+                  },
+                  "value": [
+                    1792890025.321,
+                    "141.78193197382853"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "panel": "skb bytes rejected by quarantine/s",
+          "panelId": 35,
+          "target": "A",
+          "query": "sum by(cluster) (rate(cmtc_datapath_fence_dropped_bytes_total{job=\"cmtc\",cluster=~\"cmtc-b\",component=\"cmtc-bpf-fence\"}[60s]))",
+          "elapsedSeconds": 0.003979834029451013,
+          "response": {
+            "status": "success",
+            "data": {
+              "resultType": "vector",
+              "result": [
+                {
+                  "metric": {
+                    "cluster": "cmtc-b"
+                  },
+                  "value": [
+                    1792890025.321,
+                    "44.609923074219054"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "panel": "Fence metrics targets \u00b7 latest reachability",
+          "panelId": 36,
+          "target": "A",
+          "query": "max by(cluster,node) (up{job=\"cmtc\",cluster=~\"cmtc-b\",component=\"cmtc-bpf-fence\"} @ end())",
+          "elapsedSeconds": 0.0039935000240802765,
+          "response": {
+            "status": "success",
+            "data": {
+              "resultType": "vector",
+              "result": [
+                {
+                  "metric": {
+                    "cluster": "cmtc-b",
+                    "node": "cmtc-b-worker"
+                  },
+                  "value": [
+                    1792890025.321,
+                    "1"
+                  ]
+                },
+                {
+                  "metric": {
+                    "cluster": "cmtc-b",
+                    "node": "cmtc-b-control-plane"
+                  },
+                  "value": [
+                    1792890025.321,
+                    "1"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "panel": "Audited observer \u00b7 latest by node",
+          "panelId": 42,
+          "target": "A",
+          "query": "min by(cluster,node,direction) (cmtc_datapath_observer_ready{job=\"cmtc\",cluster=~\"cmtc-b\",component=\"cmtc-bpf-observer\"} @ end()) and on(cluster,node) (up{job=\"cmtc\",cluster=~\"cmtc-b\",component=\"cmtc-bpf-observer\"} @ end() == 1)",
+          "elapsedSeconds": 0.0037540001794695854,
+          "response": {
+            "status": "success",
+            "data": {
+              "resultType": "vector",
+              "result": []
+            }
+          }
+        },
+        {
+          "panel": "Packets observed before Cilium verdict/s",
+          "panelId": 43,
+          "target": "A",
+          "query": "sum by(cluster) (rate(cmtc_datapath_observer_packets_total{job=\"cmtc\",cluster=~\"cmtc-b\",component=\"cmtc-bpf-observer\"}[60s]))",
+          "elapsedSeconds": 0.003819959005340934,
+          "response": {
+            "status": "success",
+            "data": {
+              "resultType": "vector",
+              "result": []
+            }
+          }
+        },
+        {
+          "panel": "skb bytes observed before Cilium verdict/s",
+          "panelId": 44,
+          "target": "A",
+          "query": "sum by(cluster) (rate(cmtc_datapath_observer_bytes_total{job=\"cmtc\",cluster=~\"cmtc-b\",component=\"cmtc-bpf-observer\"}[60s]))",
+          "elapsedSeconds": 0.003352500032633543,
+          "response": {
+            "status": "success",
+            "data": {
+              "resultType": "vector",
+              "result": []
+            }
+          }
+        },
+        {
+          "panel": "Observer metrics targets \u00b7 latest reachability",
+          "panelId": 45,
+          "target": "A",
+          "query": "max by(cluster,node) (up{job=\"cmtc\",cluster=~\"cmtc-b\",component=\"cmtc-bpf-observer\"} @ end())",
+          "elapsedSeconds": 0.003993208985775709,
+          "response": {
+            "status": "success",
+            "data": {
+              "resultType": "vector",
+              "result": []
+            }
+          }
+        },
+        {
+          "panel": "Verified cluster gates \u00b7 planned",
+          "panelId": 101,
+          "target": "A",
+          "query": "min by(cluster) (cmtc_cluster_ready{job=\"cmtc\",cluster=~\"cmtc-b\",component=~\"cmtc-controller|cmtc-node-agent\"} @ end())",
+          "elapsedSeconds": 0.0038158330135047436,
+          "response": {
+            "status": "success",
+            "data": {
+              "resultType": "vector",
+              "result": []
+            }
+          }
+        },
+        {
+          "panel": "Pods protected \u00b7 planned",
+          "panelId": 102,
+          "target": "A",
+          "query": "sum by(cluster) (cmtc_pods_protected{job=\"cmtc\",cluster=~\"cmtc-b\",component=~\"cmtc-controller|cmtc-node-agent\"} @ end())",
+          "elapsedSeconds": 0.0038027078844606876,
+          "response": {
+            "status": "success",
+            "data": {
+              "resultType": "vector",
+              "result": []
+            }
+          }
+        },
+        {
+          "panel": "Pods awaiting enforcement \u00b7 planned",
+          "panelId": 103,
+          "target": "A",
+          "query": "sum by(cluster) (cmtc_pods_pending{job=\"cmtc\",cluster=~\"cmtc-b\",component=~\"cmtc-controller|cmtc-node-agent\"} @ end())",
+          "elapsedSeconds": 0.003634791122749448,
+          "response": {
+            "status": "success",
+            "data": {
+              "resultType": "vector",
+              "result": []
+            }
+          }
+        },
+        {
+          "panel": "Pods enforcement failed \u00b7 planned",
+          "panelId": 104,
+          "target": "A",
+          "query": "sum by(cluster) (cmtc_pods_enforcement_failed{job=\"cmtc\",cluster=~\"cmtc-b\",component=~\"cmtc-controller|cmtc-node-agent\"} @ end())",
+          "elapsedSeconds": 0.0037802080623805523,
+          "response": {
+            "status": "success",
+            "data": {
+              "resultType": "vector",
+              "result": []
+            }
+          }
+        },
+        {
+          "panel": "Platform dependency health \u00b7 planned",
+          "panelId": 106,
+          "target": "A",
+          "query": "cmtc_platform_dependency_healthy{job=\"cmtc\",cluster=~\"cmtc-b\",component=~\"cmtc-controller|cmtc-node-agent\"} @ end()",
+          "elapsedSeconds": 0.0036354169715195894,
+          "response": {
+            "status": "success",
+            "data": {
+              "resultType": "vector",
+              "result": []
+            }
+          }
+        },
+        {
+          "panel": "API probe result \u00b7 planned",
+          "panelId": 107,
+          "target": "A",
+          "query": "min by(cluster) (cmtc_apiserver_probe_success{job=\"cmtc\",cluster=~\"cmtc-b\",component=~\"cmtc-controller|cmtc-node-agent\"} @ end())",
+          "elapsedSeconds": 0.004299083026126027,
+          "response": {
+            "status": "success",
+            "data": {
+              "resultType": "vector",
+              "result": []
+            }
+          }
+        },
+        {
+          "panel": "Rollouts aborted/s \u00b7 planned",
+          "panelId": 108,
+          "target": "A",
+          "query": "sum by(cluster) (rate(cmtc_rollout_aborted_total{job=\"cmtc\",cluster=~\"cmtc-b\",component=~\"cmtc-controller|cmtc-node-agent\"}[60s]))",
+          "elapsedSeconds": 0.003720958949998021,
+          "response": {
+            "status": "success",
+            "data": {
+              "resultType": "vector",
+              "result": []
+            }
+          }
+        },
+        {
+          "panel": "Enrollment label drift/s \u00b7 planned",
+          "panelId": 110,
+          "target": "A",
+          "query": "sum by(cluster) (rate(cmtc_namespace_label_drift_total{job=\"cmtc\",cluster=~\"cmtc-b\",component=~\"cmtc-controller|cmtc-node-agent\"}[60s]))",
+          "elapsedSeconds": 0.0037123749498277903,
+          "response": {
+            "status": "success",
+            "data": {
+              "resultType": "vector",
+              "result": []
+            }
+          }
+        },
+        {
+          "panel": "Node configuration drift/s \u00b7 planned",
+          "panelId": 111,
+          "target": "A",
+          "query": "sum by(cluster) (rate(cmtc_node_config_drift_total{job=\"cmtc\",cluster=~\"cmtc-b\",component=~\"cmtc-controller|cmtc-node-agent\"}[60s]))",
+          "elapsedSeconds": 0.0036490000784397125,
+          "response": {
+            "status": "success",
+            "data": {
+              "resultType": "vector",
+              "result": []
+            }
+          }
+        },
+        {
+          "panel": "Proxy configuration ready \u00b7 planned",
+          "panelId": 112,
+          "target": "A",
+          "query": "min by(cluster) (cmtc_ztunnel_ready{job=\"cmtc\",cluster=~\"cmtc-b\",component=~\"cmtc-controller|cmtc-node-agent\"} @ end())",
+          "elapsedSeconds": 0.004225665936246514,
+          "response": {
+            "status": "success",
+            "data": {
+              "resultType": "vector",
+              "result": []
+            }
+          }
+        }
+      ],
+      "namespacePie": {
+        "total": 17.0,
+        "categories": [
+          {
+            "decision": "Selected",
+            "namespaces": 4.0,
+            "percent": 23.529411764705884
+          },
+          {
+            "decision": "Excluded",
+            "namespaces": 1.0,
+            "percent": 5.882352941176471
+          },
+          {
+            "decision": "Platform",
+            "namespaces": 9.0,
+            "percent": 52.94117647058823
+          },
+          {
+            "decision": "Unselected",
+            "namespaces": 3.0,
+            "percent": 17.647058823529413
+          }
+        ],
+        "percentSum": 100
+      },
+      "querySeconds": 0.14257145789451897
+    },
+    {
+      "plannedSecurityPanels": [
+        {
+          "panel": "TLS handshakes/s \u00b7 planned",
+          "query": "sum by(cluster) (rate(cmtc_mtls_handshakes_total{job=\"cmtc\",cluster=~\"cmtc-a|cmtc-b\",component=~\"cmtc-controller|cmtc-node-agent\"}[60s]))",
+          "response": {
+            "status": "success",
+            "data": {
+              "resultType": "vector",
+              "result": []
+            }
+          },
+          "elapsedSeconds": 0.003646792145445943
+        },
+        {
+          "panel": "Active mTLS connections \u00b7 planned",
+          "query": "sum by(cluster) (cmtc_mtls_active_connections{job=\"cmtc\",cluster=~\"cmtc-a|cmtc-b\",component=~\"cmtc-controller|cmtc-node-agent\"} @ end())",
+          "response": {
+            "status": "success",
+            "data": {
+              "resultType": "vector",
+              "result": []
+            }
+          },
+          "elapsedSeconds": 0.003578915959224105
+        },
+        {
+          "panel": "Peer identity validation failures/s \u00b7 planned",
+          "query": "sum by(cluster) (rate(cmtc_mtls_identity_validation_failures_total{job=\"cmtc\",cluster=~\"cmtc-a|cmtc-b\",component=~\"cmtc-controller|cmtc-node-agent\"}[60s]))",
+          "response": {
+            "status": "success",
+            "data": {
+              "resultType": "vector",
+              "result": []
+            }
+          },
+          "elapsedSeconds": 0.0036669999826699495
+        },
+        {
+          "panel": "Remote identity cache misses/s \u00b7 planned",
+          "query": "sum by(cluster) (rate(cmtc_remote_identity_cache_misses_total{job=\"cmtc\",cluster=~\"cmtc-a|cmtc-b\",component=~\"cmtc-controller|cmtc-node-agent\"}[60s]))",
+          "response": {
+            "status": "success",
+            "data": {
+              "resultType": "vector",
+              "result": []
+            }
+          },
+          "elapsedSeconds": 0.0037082498893141747
+        },
+        {
+          "panel": "TLS handshake p95 \u00b7 planned",
+          "query": "histogram_quantile(0.95, sum by(cluster,le) (rate(cmtc_mtls_handshake_duration_seconds_bucket{job=\"cmtc\",cluster=~\"cmtc-a|cmtc-b\",component=~\"cmtc-controller|cmtc-node-agent\"}[60s])))",
+          "response": {
+            "status": "success",
+            "data": {
+              "resultType": "vector",
+              "result": []
+            }
+          },
+          "elapsedSeconds": 0.00564416591078043
+        },
+        {
+          "panel": "Trust bundle consumed \u00b7 planned",
+          "query": "min by(cluster) (cmtc_trust_bundle_ready{job=\"cmtc\",cluster=~\"cmtc-a|cmtc-b\",component=~\"cmtc-controller|cmtc-node-agent\"} @ end())",
+          "response": {
+            "status": "success",
+            "data": {
+              "resultType": "vector",
+              "result": []
+            }
+          },
+          "elapsedSeconds": 0.0034867499489337206
+        },
+        {
+          "panel": "SPIRE API acknowledged \u00b7 planned",
+          "query": "min by(cluster) (cmtc_spire_ready{job=\"cmtc\",cluster=~\"cmtc-a|cmtc-b\",component=~\"cmtc-controller|cmtc-node-agent\"} @ end())",
+          "response": {
+            "status": "success",
+            "data": {
+              "resultType": "vector",
+              "result": []
+            }
+          },
+          "elapsedSeconds": 0.003714333986863494
+        },
+        {
+          "panel": "Issuer chain verified \u00b7 planned",
+          "query": "min by(cluster) (cmtc_issuer_ready{job=\"cmtc\",cluster=~\"cmtc-a|cmtc-b\",component=~\"cmtc-controller|cmtc-node-agent\"} @ end())",
+          "response": {
+            "status": "success",
+            "data": {
+              "resultType": "vector",
+              "result": []
+            }
+          },
+          "elapsedSeconds": 0.0034342079889029264
+        },
+        {
+          "panel": "Certificate rotation failures/s \u00b7 planned",
+          "query": "sum by(cluster) (rate(cmtc_certificate_rotation_failures_total{job=\"cmtc\",cluster=~\"cmtc-a|cmtc-b\",component=~\"cmtc-controller|cmtc-node-agent\"}[60s]))",
+          "response": {
+            "status": "success",
+            "data": {
+              "resultType": "vector",
+              "result": []
+            }
+          },
+          "elapsedSeconds": 0.0036666658706963062
+        },
+        {
+          "panel": "Transport profile verified \u00b7 planned",
+          "query": "min by(cluster) (cmtc_transport_compatibility_ready{job=\"cmtc\",cluster=~\"cmtc-a|cmtc-b\",component=~\"cmtc-controller|cmtc-node-agent\"} @ end())",
+          "response": {
+            "status": "success",
+            "data": {
+              "resultType": "vector",
+              "result": []
+            }
+          },
+          "elapsedSeconds": 0.003680249908939004
+        },
+        {
+          "panel": "Dual encryption probe result \u00b7 planned",
+          "query": "min by(cluster) (cmtc_dual_encryption_probe_success{job=\"cmtc\",cluster=~\"cmtc-a|cmtc-b\",component=~\"cmtc-controller|cmtc-node-agent\"} @ end())",
+          "response": {
+            "status": "success",
+            "data": {
+              "resultType": "vector",
+              "result": []
+            }
+          },
+          "elapsedSeconds": 0.0036837090738117695
+        },
+        {
+          "panel": "Transport encryption failures/s \u00b7 planned",
+          "query": "sum by(cluster) (rate(cmtc_transport_encryption_failures_total{job=\"cmtc\",cluster=~\"cmtc-a|cmtc-b\",component=~\"cmtc-controller|cmtc-node-agent\"}[60s]))",
+          "response": {
+            "status": "success",
+            "data": {
+              "resultType": "vector",
+              "result": []
+            }
+          },
+          "elapsedSeconds": 0.0037150420248508453
+        },
+        {
+          "panel": "MTU validation failures/s \u00b7 planned",
+          "query": "sum by(cluster) (rate(cmtc_mtu_validation_failures_total{job=\"cmtc\",cluster=~\"cmtc-a|cmtc-b\",component=~\"cmtc-controller|cmtc-node-agent\"}[60s]))",
+          "response": {
+            "status": "success",
+            "data": {
+              "resultType": "vector",
+              "result": []
+            }
+          },
+          "elapsedSeconds": 0.003619292052462697
+        },
+        {
+          "panel": "Authorization denials/s \u00b7 planned",
+          "query": "sum by(cluster) (rate(cmtc_mtls_authorization_denials_total{job=\"cmtc\",cluster=~\"cmtc-a|cmtc-b\",component=~\"cmtc-controller|cmtc-node-agent\"}[60s]))",
+          "response": {
+            "status": "success",
+            "data": {
+              "resultType": "vector",
+              "result": []
+            }
+          },
+          "elapsedSeconds": 0.0035249998327344656
+        },
+        {
+          "panel": "Plaintext bypass incidents/s \u00b7 planned",
+          "query": "sum by(cluster) (rate(cmtc_plaintext_bypass_detected_total{job=\"cmtc\",cluster=~\"cmtc-a|cmtc-b\",component=~\"cmtc-controller|cmtc-node-agent\"}[60s]))",
+          "response": {
+            "status": "success",
+            "data": {
+              "resultType": "vector",
+              "result": []
+            }
+          },
+          "elapsedSeconds": 0.003914916887879372
+        },
+        {
+          "panel": "Namespace policy conflicts/s \u00b7 planned",
+          "query": "sum by(cluster) (rate(cmtc_namespace_policy_conflicts_total{job=\"cmtc\",cluster=~\"cmtc-a|cmtc-b\",component=~\"cmtc-controller|cmtc-node-agent\"}[60s]))",
+          "response": {
+            "status": "success",
+            "data": {
+              "resultType": "vector",
+              "result": []
+            }
+          },
+          "elapsedSeconds": 0.004301167093217373
+        }
+      ],
+      "missingDataMeans": "Instrumentation not implemented; no protection claim"
+    }
+  ],
+  "missingTelemetryRemainsUnavailable": true
+}

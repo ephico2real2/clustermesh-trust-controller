@@ -8,6 +8,8 @@ RUN npm ci --omit=dev --no-audit --no-fund \
 COPY scripts/capture/capture.mjs ./capture.mjs
 COPY scripts/capture/walk.cjs ./walk.cjs
 COPY scripts/capture/walk-smoke.cjs ./walk-smoke.cjs
-RUN node walk-smoke.cjs
+COPY scripts/capture/grafana-page.cjs ./grafana-page.cjs
+COPY scripts/capture/grafana-page.test.cjs ./grafana-page.test.cjs
+RUN node walk-smoke.cjs && node grafana-page.test.cjs
 WORKDIR /workspace
 ENTRYPOINT ["node", "/opt/cmtc-capture/capture.mjs"]

@@ -26,6 +26,7 @@
 // text is exactly "No data". Panels below the fold are lazy — not queried until scrolled to — so a "panels" page is
 // scrolled through to the bottom before it is read.
 const { chromium } = require('playwright'); const fs = require('fs');
+const {prepareGrafanaDashboard,missingTitles}=require('./grafana-page.cjs');
 const S = process.env.S || '.';
 const variables = {...process.env, ...JSON.parse(process.env.CMTC_WALK_ENV_JSON || '{}')};
 const expand = s => String(s).replace(/\$\{(\w+)\}/g, (_, k) => variables[k] ?? '');
@@ -68,6 +69,12 @@ const evidence = {
 function check(page, ev) { // the page's expectations against its evidence; the reasons a page fails, in words
   const e = page.expect || {}, why = [];
   if (e.noDataAllowed !== undefined) { const allowed = new Set(e.noDataAllowed || []); const bad = (ev.empty || []).filter(t => !allowed.has(t)); if (bad.length) why.push(`"No data" on ${bad.length} panel(s) not allowed to be empty: ${bad.join(' | ')}`); }
+  if (e.panelTitles) {
+    const missing=missingTitles(e.panelTitles,ev.titles || []);
+    const unexpected=missingTitles(ev.titles || [],e.panelTitles);
+    if(missing.length)why.push(`Missing expected panels: ${missing.join(' | ')}`);
+    if(unexpected.length)why.push(`Unexpected panels: ${unexpected.join(' | ')}`);
+  }
   if (e.panelsMin && (ev.titles || []).length < e.panelsMin) why.push(`${(ev.titles || []).length} panels, expected at least ${e.panelsMin}`);
   for (const s of e.text || []) if (!(ev.text || '').includes(s)) why.push(`text "${s}" not on the page`);
   return why;
@@ -80,6 +87,7 @@ function check(page, ev) { // the page's expectations against its evidence; the 
   let failures = 0; const results = [];
   for (const page of spec.pages) {
     try {
+      await p.setViewportSize(spec.viewport || {width:1600,height:1100});
       await p.goto(page.url, { waitUntil: 'load', timeout: 60000 });
       let waited = page.settle === false ? 0 : await settled(p, page.settleSeconds || 90);
       await p.waitForTimeout(page.before || 5000);
@@ -91,7 +99,10 @@ function check(page, ev) { // the page's expectations against its evidence; the 
         if (a.fill) await p.fill(a.fill[0], a.fill[1]);
         if (a.wait) await p.waitForTimeout(a.wait);
       }
-      if ((page.evidence || 'title') === 'panels') { const n = await scrollThrough(p); waited += page.settle === false ? 0 : await settled(p, 60); if (n > 1) console.log(`${page.name}: scrolled ${n} screens for the lazy panels`); }
+      if (page.grafanaFullPage) {
+        const materialized=await prepareGrafanaDashboard(p,{expectedTitles:page.expect?.panelTitles,maxHeight:page.grafanaMaxHeight || 16000,timeoutMs:page.grafanaTimeoutMs || 60000});
+        fs.writeFileSync(`${S}/${page.name}-geometry.json`,JSON.stringify(materialized,null,2)+'\n');
+      } else if ((page.evidence || 'title') === 'panels') { const n = await scrollThrough(p); waited += page.settle === false ? 0 : await settled(p, 60); if (n > 1) console.log(`${page.name}: scrolled ${n} screens for the lazy panels`); }
       if (page.screenshot !== false) await p.screenshot({ path: `${S}/${page.name}.png`, fullPage: !!page.fullPage });
       const ev = await (evidence[page.evidence || 'title'])(p);
       const why = check(page, ev);
@@ -100,7 +111,7 @@ function check(page, ev) { // the page's expectations against its evidence; the 
       if (why.length) { failures++; console.log(`${page.name}: settled ${waited}s; ${ev.line}`); console.log(`${page.name}: FAILED — ${why.join('; ')}`); }
       else if (blocked.length) console.log(`${page.name}: settled ${waited}s; ${ev.line} — render passed; feature evidence BLOCKED: ${blocked.join(' | ')}`);
       else console.log(`${page.name}: settled ${waited}s; ${ev.line}${page.expect ? ' — expectations met' : ''}`);
-    } catch (e) { failures++; results.push({name:page.name,render:'failed',featureEvidence:'failed',error:e.message.split('\n')[0]}); console.log(`${page.name}: FAILED — ${e.message.split('\n')[0]}`); try { await p.screenshot({ path: `${S}/${page.name}-failed.png` }); } catch {} }
+    } catch (e) { if(e.captureGeometry)fs.writeFileSync(`${S}/${page.name}-geometry-failed.json`,JSON.stringify(e.captureGeometry,null,2)+'\n'); failures++; results.push({name:page.name,render:'failed',featureEvidence:'failed',error:e.message.split('\n')[0]}); console.log(`${page.name}: FAILED — ${e.message.split('\n')[0]}`); try { await p.screenshot({ path: `${S}/${page.name}-failed.png` }); } catch {} }
   }
   await b.close(); fs.writeFileSync(`${S}/walk-results.json`, JSON.stringify({pages:results},null,2)+'\n'); if (failures) { console.log(`${failures} page(s) failed`); process.exit(2); }
 })().catch(e => { console.error('ERR', e.message); process.exit(1); });

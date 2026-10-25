@@ -19,6 +19,25 @@ The chart follows the value's meaning: gauges are current levels/states, counter
 | `controller_runtime_reconcile_errors_total` | counter | Actual controller-runtime reconcile error observations. | Errors/s over $__rate_interval; observed zero is valid. Owner: controller-runtime. |
 | `controller_runtime_reconcile_time_seconds` | histogram | Observed controller reconcile duration in seconds. | p95 from bucket rates aggregated by cluster/le; not TLS/network latency. Owner: controller-runtime. |
 
+## Opt-in datapath prototype collectors
+
+These six implemented source collectors are separate from the 31 original proposed security names. They do not fulfill planned TLS, protected-pod, remote identity, authorization or node-encryption contracts. The profiles are qualified sequentially; the run ledger identifies which one is installed. An uninstalled profile remains absent. Each exporter has bounded `cluster`, `node`, `direction` labels, with one audited veth/hook per selected node. No namespace, Pod UID, SPIFFE ID or certificate label is added.
+
+| Family | Type | Observation boundary and lifecycle |
+| --- | --- | --- |
+| `cmtc_datapath_observer_packets_total` | counter | Packets seen at the one audited TCX hook before the native Cilium verdict; not forwarded packets, attempts, requests, TLS handshakes or mTLS. Packets/s or selected-range increase; observer process/attachment restart resets the counter. |
+| `cmtc_datapath_observer_bytes_total` | counter | skb byte lengths seen at the audited TCX hook before the native Cilium verdict; not application payload bytes. Bytes/s or selected-range increase; no encryption inference. |
+| `cmtc_datapath_observer_ready` | gauge | Fresh sample verifies the exact audited observer interface and native baseline chain. Zero is unverified, not an enforcement verdict. Latest per-cluster/node/direction state; absence remains unavailable. Observer counters are omitted when this is stale or zero. |
+| `cmtc_datapath_fence_dropped_packets_total` | counter | Packets rejected by the explicit deny-only audited TCX hook; retransmits and non-HTTP traffic count separately. Packets/s and selected-range increase; never requests, connections, TLS failures or protection coverage. Counter persists across exact pinned-map adoption, resets on a new attachment/map. |
+| `cmtc_datapath_fence_dropped_bytes_total` | counter | skb byte lengths rejected by the deny-only audited TCX hook; not application payload or encrypted bytes. Bytes/s or selected-range increase; same pinned-map lifecycle as dropped packets. |
+| `cmtc_datapath_fence_quarantine_verified` | gauge | A sample no older than 3 seconds verifies the exact committed deny attachment and frozen audited native chain. This is never Protected, mTLS or first-packet admission. Latest per-cluster/node/direction state: 1 quarantine verified, 0 unverified; absent/down scrape stays unavailable. Counters omitted when unverified. |
+
+Fence counters live in the committed pinned kernel map, survive SIGKILL and exact adoption, and can reset after defunct retirement/new-map installation. The observer's unpinned attachment/maps reset when its process/attachment restarts. Prometheus `rate`/`increase` handle observed resets, but cannot recover increments during a missing scrape interval or distinguish an unseen complete map replacement. Keep evidence of exact map IDs and traffic-boundary samples in the lab ledger.
+
+Both exporters suppress packet/byte counters when their sample is stale/unverified and emit readiness 0. A successful HTTP scrape is only reachability: check `up`, the verification gauge and actual counters separately. An idle fresh attachment legitimately exports zero counters/rates; an absent source produces no series and must never be filled with `vector(0)`. With the lab's 5s scrape interval, allow bounded scrape visibility lag in addition to the exporter's 3s freshness bound; Prometheus lookback is not a substitute for freshness. The local validator checks each source Targets API and requires central `timestamp(metric)` samples within 15 seconds; the instant-vector evaluation timestamp alone cannot prove remote-write freshness.
+
+The optional fence and observer listeners expose only GET `/metrics` on the exact downward node address at ports 18084 and 18085 respectively. Loopback health is separate. This lab HTTP surface is not authenticated and requires explicit operator opt-in; no API credentials, health handler, configuration endpoint, pprof, hostPID or additional privileges are added. It is not a production scrape-access policy.
+
 ## Planned story contracts
 
 | Proposed metric | Intended type | Meaning | Presentation / owner |
@@ -57,6 +76,12 @@ The chart follows the value's meaning: gauges are current levels/states, counter
 | Proposed metric | Intended type | Meaning | Presentation / owner |
 | --- | --- | --- | --- |
 | `cmtc_hostnetwork_pods_total` | gauge | Current hostNetwork pod inventory; the old proposed _total suffix is misleading for a level. | Use cmtc_pods_observed{network="host"} now; agree a gauge name before adding another exporter. Never rate() inventory. Owner: CMTC node agent. |
+
+## Required telemetry in every owning security story
+
+The collector, event owner and collection/query evidence ship with the story; no applicable mTLS, trust, authorization or recovery story is complete while its telemetry remains an unqualified placeholder. Specify the actual observing boundary, Prometheus type/base unit, bounded labels, reset/event/retry semantics and freshness before implementation. Collect real positive, negative, idle and missing-source cases, then validate queries and real traffic/load with both-theme screenshots in the existing two consolidated dashboards. Retain raw scrape/target/query/log/traffic outputs; source-only instrumentation is not qualified collection.
+
+Actual TLS handshakes belong at the TLS boundary; certificate/peer checks at their verifier; authorization denials at the effective destination check; trust consumption/rotation at its authenticated bundle/issuer owner; retry/recovery at the actual lifecycle transition. The per-node observer/fence packet counters cannot substitute for any of those owners. ACKs, Ready, counters and enrollment intent cannot establish Protected. Preserve unimplemented original contracts as planned until the corresponding story passes its gates.
 
 ## Acceptance when a story delivers instrumentation
 

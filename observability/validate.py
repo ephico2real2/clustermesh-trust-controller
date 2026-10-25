@@ -20,7 +20,7 @@ PALETTE={build.BLUE,build.RED,build.YELLOW,build.PURPLE,build.GREEN,build.ORANGE
 def static_check(path):
     d=json.loads(path.read_text());assert d==build.build(),'Generated dashboard differs from its source'
     assert len(list((ROOT/'dashboards').glob('*.json')))==11,'Keep nine originals and two consolidated sources'
-    panels=[p for p in d['panels'] if p['type']!='row'];assert len([p for p in panels if p['id']<100])==18
+    panels=[p for p in d['panels'] if p['type']!='row'];assert len([p for p in panels if p['id']<100])==29
     security=json.loads((ROOT/'dashboards/workload-security.json').read_text());assert security==build.security()
     native=json.loads((ROOT.parent/'examples/observability/ztunnel-spike/authenticated-only.json').read_text())
     for p in native['panels']:
@@ -40,7 +40,8 @@ def static_check(path):
                 if kind=='counter':assert 'rate(' in t['expr'] or 'increase(' in t['expr'], 'Raw counter shown without a window: '+name
                 if kind=='histogram':assert 'histogram_quantile(' in t['expr'] and 'le)' in t['expr'], 'Latency percentile needs actual buckets'
     actual={n.removesuffix('_bucket') for n in re.findall(r'\bcmtc_[a-zA-Z0-9_]+',' '.join(t['expr'] for p in panels for t in p.get('targets',[])))}
-    available={'cmtc_enforcement_available','cmtc_namespace_decisions','cmtc_namespaces_selected','cmtc_namespaces_enrolled','cmtc_namespaces_eligible','cmtc_node_agent_ready','cmtc_pods_observed','cmtc_policy_evaluations_total'}
+    available={n for n,c in contract.items() if c['status']=='implemented'}
+    available|={'cmtc_enforcement_available','cmtc_namespace_decisions','cmtc_namespaces_selected','cmtc_namespaces_enrolled','cmtc_namespaces_eligible','cmtc_node_agent_ready','cmtc_pods_observed','cmtc_policy_evaluations_total'}
     planned={n for n,c in contract.items() if c['status']!='implemented'}
     assert actual<=available|planned,actual-available-planned
     for p in panels:
@@ -94,8 +95,8 @@ def live_check(d,base):
         records=[];pie=[]
         for p in d['panels']:
             for t in p.get('targets',[]):
-                expr=t['expr'].replace('$cluster',cluster).replace('$__rate_interval','60s')
-                body,elapsed=query(expr,allow_empty=p['id']>=100);values=[float(r['value'][1]) for r in body['data']['result']]
+                expr=t['expr'].replace('$cluster',cluster).replace('$__rate_interval','60s').replace('$__range','15m')
+                body,elapsed=query(expr,allow_empty=p['id']>=100 or 30<=p['id']<=36 or 40<=p['id']<=45);values=[float(r['value'][1]) for r in body['data']['result']]
                 records.append({'panel':p['title'],'panelId':p['id'],'target':t['refId'],'query':expr,'elapsedSeconds':elapsed,'response':body})
                 if p['id']>=100:assert not values,'A planned metric is now exported; qualify and update its contract: '+p['title']
                 if p['id'] in [3,4,6,14]:assert values==[{3:controllers,4:agents,6:0,14:targets}[p['id']]],(p['title'],values)
@@ -112,7 +113,7 @@ def live_check(d,base):
     for p in build.security()['panels']:
         if p['id']<100:continue
         for t in p.get('targets',[]):
-            expr=t['expr'].replace('$cluster','cmtc-a|cmtc-b').replace('$__rate_interval','60s')
+            expr=t['expr'].replace('$cluster','cmtc-a|cmtc-b').replace('$__rate_interval','60s').replace('$__range','15m')
             body,elapsed=query(expr,allow_empty=True);assert not body['data']['result'],'Qualify newly exported planned metric: '+p['title']
             planned_security.append({'panel':p['title'],'query':expr,'response':body,'elapsedSeconds':elapsed})
     reports.append({'plannedSecurityPanels':planned_security,'missingDataMeans':'Instrumentation not implemented; no protection claim'})
