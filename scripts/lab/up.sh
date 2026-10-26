@@ -121,7 +121,10 @@ ips_b=$(python3 scripts/lab/kind-node-ips.py cmtc-b)
 ip_a=$(python3 -c 'import json,sys; print(json.loads(sys.argv[1])[0])' "$ips_a")
 python3 - "$pki/root.crt" "$ips_a" "$ips_b" <<'PY'
 import json,pathlib,sys
-values={'tls':{'caBundle':{'enabled':True,'name':'cmtc-public-root','key':'ca.crt','useSecret':False,'content':pathlib.Path(sys.argv[1]).read_text()}},'clustermesh':{'useAPIServer':True,'apiserver':{'service':{'type':'NodePort'},'tls':{'auto':{'enabled':True,'method':'certmanager','certValidityDuration':1,'certManagerIssuerRef':{'group':'cert-manager.io','kind':'ClusterIssuer','name':'cmtc-lab-intermediate'}}}},'config':{'enabled':True,'clusters':[{'name':'cmtc-a','ips':json.loads(sys.argv[2]),'port':32379},{'name':'cmtc-b','ips':json.loads(sys.argv[3]),'port':32379}]}}}
+# A peer's ztunnel-origin-config pins the server certificate's key (spki-sha256), so cert-manager must renew the
+# server certificate with the same key; the client certificates keep cert-manager's default (a new key each time).
+# Charts before the fork's auto.server.privateKey value ignore it; they also predate the pin.
+values={'tls':{'caBundle':{'enabled':True,'name':'cmtc-public-root','key':'ca.crt','useSecret':False,'content':pathlib.Path(sys.argv[1]).read_text()}},'clustermesh':{'useAPIServer':True,'apiserver':{'service':{'type':'NodePort'},'tls':{'auto':{'enabled':True,'method':'certmanager','certValidityDuration':1,'certManagerIssuerRef':{'group':'cert-manager.io','kind':'ClusterIssuer','name':'cmtc-lab-intermediate'},'server':{'privateKey':{'rotationPolicy':'Never'}}}}},'config':{'enabled':True,'clusters':[{'name':'cmtc-a','ips':json.loads(sys.argv[2]),'port':32379},{'name':'cmtc-b','ips':json.loads(sys.argv[3]),'port':32379}]}}}
 pathlib.Path('.tmp/mesh-values.json').write_text(json.dumps(values))
 PY
 for cluster in cmtc-a cmtc-b; do
