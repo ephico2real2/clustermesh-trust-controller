@@ -21,22 +21,30 @@ lab=u.load(str(ROOT/'scripts/lab/issuer-profile/test-issuer-profile.py'),'pub_te
 NOW=dt.datetime.now(dt.timezone.utc).replace(microsecond=0)
 
 def key():return ec.generate_private_key(ec.SECP256R1())
-def cert(k,name,parent=None,pk=None,depth=0,domain=None):
+def cert(k,name,parent=None,pk=None,depth=0,domain=None,ski=False,days=None,hours=2):
     subject=x509.Name([x509.NameAttribute(NameOID.COMMON_NAME,name)])
-    b=x509.CertificateBuilder().subject_name(subject).issuer_name(parent.subject if parent else subject).public_key(k.public_key()).serial_number(x509.random_serial_number()).not_valid_before(NOW-dt.timedelta(minutes=1)).not_valid_after(NOW+dt.timedelta(hours=2)).add_extension(x509.BasicConstraints(ca=True,path_length=depth),critical=True).add_extension(x509.KeyUsage(digital_signature=False,content_commitment=False,key_encipherment=False,data_encipherment=False,key_agreement=False,key_cert_sign=True,crl_sign=True,encipher_only=None,decipher_only=None),critical=True)
+    start,end=(NOW-dt.timedelta(minutes=1),NOW+dt.timedelta(hours=hours)) if days is None else (NOW+dt.timedelta(days=days),NOW+dt.timedelta(days=days,hours=2))
+    b=x509.CertificateBuilder().subject_name(subject).issuer_name(parent.subject if parent else subject).public_key(k.public_key()).serial_number(x509.random_serial_number()).not_valid_before(start).not_valid_after(end).add_extension(x509.BasicConstraints(ca=True,path_length=depth),critical=True).add_extension(x509.KeyUsage(digital_signature=False,content_commitment=False,key_encipherment=False,data_encipherment=False,key_agreement=False,key_cert_sign=True,crl_sign=True,encipher_only=None,decipher_only=None),critical=True)
     if domain:b=b.add_extension(x509.SubjectAlternativeName([x509.UniformResourceIdentifier('spiffe://'+domain)]),critical=False)
+    if ski:b=b.add_extension(x509.SubjectKeyIdentifier.from_public_key(k.public_key()),critical=False)
     return b.sign(pk or k,hashes.SHA256())
 
 class Fixtures:
     def __init__(self):
-        rk=key();root=cert(rk,'root',depth=2);self.parents={};self.proofs={}
+        rk=key();root=cert(rk,'root',depth=2);self.parents={};self.proofs={};self.parent_keys={};self.signer_keys={};self.root,self.root_key=root,rk
         for cluster,domain in q.DOMAINS.items():
-            pk=key();parent=cert(pk,cluster+' parent',root,rk,1)
-            sk=rsa.generate_private_key(public_exponent=65537,key_size=2048);signer=cert(sk,cluster+' SPIRE',parent,pk,None,domain)
+            pk=key();parent=cert(pk,cluster+' parent',root,rk,1);self.parent_keys[cluster]=pk
+            sk=rsa.generate_private_key(public_exponent=65537,key_size=2048);signer=cert(sk,cluster+' SPIRE',parent,pk,None,domain);self.signer_keys[cluster]=sk
             self.parents[cluster]=(parent,root)
             self.proofs[cluster]={'cluster':cluster,'domain':domain,'protected':False,'workloadAttestation':False,'source':'authenticated-kubernetes-exec-local-SPIRE-admin-API-nonce-mint','observedAt':NOW.isoformat(),'directIssuerSHA256':q.sha(q.der(signer)),'directIssuerPEM':q.pem(signer),'parentPEM':q.pem(parent),'rootSHA256':q.sha(q.der(root))}
         self.rootpin=q.sha(q.der(root))
     def approval(self):return u.build_approval(self.proofs,self.parents,q,1,NOW,3600)
+    def prepared(self,cluster,domain=None,signer=None,chain=None,depth=None,days=None,k=None,hours=2):
+        """A public chain [prepared CA, parent] and the prepared CA's key identifier, as SPIRE logs it."""
+        k=k or key();parent=self.parents[cluster][0]
+        c=cert(k,cluster+' SPIRE prepared',signer[0] if signer else parent,signer[1] if signer else self.parent_keys[cluster],depth,domain or q.DOMAINS[cluster],True,days,hours)
+        ski=c.extensions.get_extension_for_class(x509.SubjectKeyIdentifier).value.digest.hex()
+        return q.pem(c)+(chain if chain is not None else q.pem(parent)),ski
 
 class MemoryState:
     poison=False
@@ -156,6 +164,73 @@ class Tests(unittest.TestCase):
         with self.assertRaises(u.Refusal):u.pairs(['cmtc-a=x','cmtc-a=y'],['cmtc-a','cmtc-b'])
         with self.assertRaises(u.Refusal):u.pairs(['cmtc-a=x'],['cmtc-a','cmtc-b'])
         self.assertTrue(u.same_material(self.fx.approval(),dict(self.fx.approval(),expiresAt='later')))
+
+class PreparedIssuerTests(unittest.TestCase):
+    """SPIRE's prepared X509 CA becomes each cluster's second issuer before SPIRE activates it."""
+    @classmethod
+    def setUpClass(cls):cls.fx=Fixtures()
+    def build(self,prepared):return u.build_approval(self.fx.proofs,self.fx.parents,q,2,NOW,3600,prepared)
+    def test_prepared_ca_is_the_second_issuer_sorted_by_key_with_the_same_expiry(self):
+        prepared={c:self.fx.prepared(c) for c in q.DOMAINS};a=self.build(prepared);plain=self.fx.approval()
+        self.assertEqual(plain['expiresAt'],a['expiresAt']);self.assertEqual(plain['roots'],a['roots'])
+        for cluster,before in zip(a['clusters'],plain['clusters']):
+            issuers=cluster['issuers'];keys=[i['spkiSHA256'] for i in issuers]
+            self.assertEqual(2,len(issuers));self.assertEqual(sorted(keys),keys);self.assertIn(before['issuers'][0],issuers)
+            new=next(i for i in issuers if i!=before['issuers'][0]);c=q.certs(new['certificatePEM'])[0]
+            self.assertEqual(['certificatePEM','chainPEM','spkiSHA256','rootSHA256'],list(new));self.assertEqual(before['issuers'][0]['chainPEM'],new['chainPEM'])
+            self.assertEqual(q.sha(q.spki(c)),new['spkiSHA256']);self.assertEqual(self.fx.rootpin,new['rootSHA256'])
+            self.assertEqual(prepared[cluster['clusterID']][0].split('-----END CERTIFICATE-----\n')[0]+'-----END CERTIFICATE-----\n',new['certificatePEM'])
+    def test_a_prepared_ca_that_expires_first_bounds_the_approval(self):
+        a=u.build_approval(self.fx.proofs,self.fx.parents,q,2,NOW,86400,{'cmtc-a':self.fx.prepared('cmtc-a',hours=1)})
+        self.assertEqual(u.stamp(NOW+dt.timedelta(hours=1)),a['expiresAt'])
+    def test_one_cluster_may_carry_a_prepared_issuer_alone(self):
+        a=self.build({'cmtc-b':self.fx.prepared('cmtc-b')})
+        self.assertEqual([1,2],[len(c['issuers']) for c in a['clusters']])
+    def test_prepared_issuer_outside_the_exact_lineage_or_binding_is_refused(self):
+        other=self.fx.parents['cmtc-b'][0];chain_b=q.pem(other)
+        cases={
+            'wrong domain':lambda:self.fx.prepared('cmtc-a',domain=q.DOMAINS['cmtc-b']),
+            'signed by the other cluster parent':lambda:self.fx.prepared('cmtc-a',signer=(other,self.fx.parent_keys['cmtc-b'])),
+            'signed by the root directly':lambda:self.fx.prepared('cmtc-a',signer=(self.fx.root,self.fx.root_key)),
+            'chain names another parent':lambda:self.fx.prepared('cmtc-a',chain=chain_b),
+            'no parent in the chain':lambda:self.fx.prepared('cmtc-a',chain=''),
+            'chain with the root too':lambda:self.fx.prepared('cmtc-a',chain=q.pem(self.fx.parents['cmtc-a'][0])+q.pem(self.fx.root)),
+            'path length that allows sub-CAs':lambda:self.fx.prepared('cmtc-a',depth=1),
+            'not yet valid':lambda:self.fx.prepared('cmtc-a',days=1),
+            'expired':lambda:self.fx.prepared('cmtc-a',days=-1),
+        }
+        for name,make in cases.items():
+            with self.subTest(name),self.assertRaises((u.Refusal,q.Refusal)):self.build({'cmtc-a':make()})
+    def test_key_identifier_must_be_spire_prepared_authority(self):
+        raw,ski=self.fx.prepared('cmtc-a');other=self.fx.prepared('cmtc-a')[1]
+        with self.assertRaises(u.Refusal):self.build({'cmtc-a':(raw,other)})
+    def test_active_signer_key_or_any_reused_key_is_refused(self):
+        # SPIRE has activated the prepared CA: the proof's signer and the prepared CA share a key.
+        cases={'the active signer of the cluster':self.fx.prepared('cmtc-a',k=self.fx.signer_keys['cmtc-a']),
+               'the active signer of the other cluster':self.fx.prepared('cmtc-a',k=self.fx.signer_keys['cmtc-b']),
+               'the cluster parent':self.fx.prepared('cmtc-a',k=self.fx.parent_keys['cmtc-a']),
+               'the root':self.fx.prepared('cmtc-a',k=self.fx.root_key)}
+        for name,prepared in cases.items():
+            with self.subTest(name),self.assertRaises(u.Refusal):self.build({'cmtc-a':prepared})
+    def test_prepared_issuer_for_an_unknown_cluster_is_refused(self):
+        with self.assertRaises(u.Refusal):self.build({'cmtc-x':self.fx.prepared('cmtc-a')})
+    def test_same_prepared_ca_in_both_clusters_is_refused(self):
+        raw,ski=self.fx.prepared('cmtc-a')
+        with self.assertRaises((u.Refusal,q.Refusal)):self.build({'cmtc-a':(raw,ski),'cmtc-b':(raw,ski)})
+    def test_private_or_noncertificate_material_is_refused(self):
+        raw,ski=self.fx.prepared('cmtc-a')
+        for bad in [raw+'-----BEGIN PRIVATE KEY-----\nAAAA\n-----END PRIVATE KEY-----\n',raw.replace('\n','\r\n'),'']:
+            with self.subTest(bad=bad[-30:]),self.assertRaises((u.Refusal,q.Refusal)):self.build({'cmtc-a':(bad,ski)})
+    def test_material_check_sees_a_dropped_prepared_issuer(self):
+        with_prepared=self.build({c:self.fx.prepared(c) for c in q.DOMAINS});without=u.build_approval(self.fx.proofs,self.fx.parents,q,2,NOW,3600)
+        self.assertFalse(u.same_material(with_prepared,without))
+    def test_cli_pins_need_a_key_identifier_per_file_and_known_clusters(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            raw,ski=self.fx.prepared('cmtc-a');f=Path(tmp,'a.pem');f.write_text(raw)
+            self.assertEqual({'cmtc-a':(raw,ski)},u.prepared_pins(['cmtc-a='+str(f)],['cmtc-a='+ski],['cmtc-a','cmtc-b']))
+            self.assertEqual({},u.prepared_pins([],[],['cmtc-a','cmtc-b']))
+            for files,skis in [(['cmtc-a='+str(f)],[]),([],['cmtc-a='+ski]),(['cmtc-x='+str(f)],['cmtc-x='+ski]),(['cmtc-a='+str(f)],['cmtc-a='+ski.upper()]),(['cmtc-a='+str(f)],['cmtc-a='+ski[:-2]]),(['cmtc-a='+str(f),'cmtc-a='+str(f)],['cmtc-a='+ski]),(['cmtc-a'],['cmtc-a='+ski])]:
+                with self.subTest(files=files,skis=skis),self.assertRaises(u.Refusal):u.prepared_pins(files,skis,['cmtc-a','cmtc-b'])
 
 class PublicationRecoveryTests(unittest.TestCase):
     @classmethod

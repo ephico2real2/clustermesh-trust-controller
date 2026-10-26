@@ -101,9 +101,28 @@ class State:
         if self.lock is not None:os.close(self.lock);self.lock=None
         if self.fd is not None:os.close(self.fd);self.fd=None
 
-def build_approval(proofs,parents,q,generation,now,horizon):
+def prepared_issuer(q,cluster,raw,ski,parent,now):
+    """SPIRE's prepared X509 CA, approved before SPIRE activates it.
+
+    The fresh proof shows only the active signer, so the prepared CA comes from a public
+    chain [prepared CA, approved parent]. Any CA the parent ever signed passes the lineage
+    checks; the key identifier binds it to SPIRE's "X509 CA prepared" local_authority_id.
+    """
+    from cryptography import x509
+    chain=q.certs(raw)
+    if len(chain)!=2 or q.der(chain[1])!=q.der(parent):raise Refusal('prepared issuer chain must be exactly [prepared CA, approved parent]')
+    c=chain[0]
+    q.ca(c,'signer',now,True);q.issued(c,parent)
+    if list(q.ext(c,x509.SubjectAlternativeName).value)!=[x509.UniformResourceIdentifier('spiffe://'+q.DOMAINS[cluster])]:raise Refusal('prepared issuer domain mismatch')
+    if q.ext(c,x509.SubjectKeyIdentifier).value.digest.hex()!=ski:raise Refusal('prepared issuer key identifier differs from the SPIRE prepared authority')
+    return c
+
+def build_approval(proofs,parents,q,generation,now,horizon,prepared=None):
+    """Each cluster's active signer from its fresh proof, plus SPIRE's prepared CA where one is given."""
+    prepared=prepared or {}
     if type(generation)is not int or not 1<=generation<2**64 or not 120<=horizon<=86400:raise Refusal('invalid administered generation/horizon')
     if set(proofs)!={'cmtc-a','cmtc-b'} or set(parents)!=set(proofs):raise Refusal('both exact clusters required')
+    if not set(prepared)<=set(proofs):raise Refusal('prepared issuer for an unknown cluster')
     roots={};clusters=[];keys=set();rolekeys=set()
     expiry=now+dt.timedelta(seconds=horizon)
     for cluster in sorted(proofs):
@@ -123,7 +142,16 @@ def build_approval(proofs,parents,q,generation,now,horizon):
         keys.add(k);rolekeys.add(pk);rolekeys.add(rk)
         pin=q.sha(q.der(root));roots[pin]={'certificatePEM':q.pem(root),'sha256':pin}
         expiry=min(expiry,signer.not_valid_after_utc,parent.not_valid_after_utc,root.not_valid_after_utc)
-        clusters.append({'clusterID':cluster,'trustDomain':q.DOMAINS[cluster],'issuers':[{'certificatePEM':q.pem(signer),'chainPEM':q.pem(parent),'spkiSHA256':k,'rootSHA256':pin}]})
+        issuers=[{'certificatePEM':q.pem(signer),'chainPEM':q.pem(parent),'spkiSHA256':k,'rootSHA256':pin}]
+        if cluster in prepared:
+            c=prepared_issuer(q,cluster,*prepared[cluster],parent,now);nk=q.sha(q.spki(c))
+            # The same key as the active signer means SPIRE has already activated it.
+            if nk in keys or nk in rolekeys:raise Refusal('prepared issuer key is already an approved issuer, parent or root')
+            keys.add(nk);expiry=min(expiry,c.not_valid_after_utc)
+            issuers.append({'certificatePEM':q.pem(c),'chainPEM':q.pem(parent),'spkiSHA256':nk,'rootSHA256':pin})
+        # The controller canonicalizes issuers by key; build them in that order so the material compares equal.
+        issuers.sort(key=lambda i:i['spkiSHA256'])
+        clusters.append({'clusterID':cluster,'trustDomain':q.DOMAINS[cluster],'issuers':issuers})
     if len(roots)!=1 or (expiry-now).total_seconds()<120:raise Refusal('one common approved root and at least120seconds remaining required')
     approval={'schemaVersion':1,'generation':generation,'expiresAt':stamp(expiry),'roots':list(roots.values()),'clusters':clusters}
     if len(compact(approval).encode())>65536:raise Refusal('approval size bound')
@@ -272,7 +300,7 @@ class Publisher:
             if proofs[cluster].get('approvedServerImage')!=server_image:raise Refusal('proof did not retain the independent approved server image pin')
             approval=api.get('/api/v1/namespaces/cert-manager/configmaps/cmtc-spire-cluster-ca-approval')
             parents[cluster]=self.q.approved_parent(approval,uid=self.a.approval_pins[cluster],cluster=cluster,root_pin=self.a.root_sha256,now=dt.datetime.now(dt.timezone.utc))
-        return proofs,build_approval(proofs,parents,self.q,self.a.generation,dt.datetime.now(dt.timezone.utc),self.a.horizon)
+        return proofs,build_approval(proofs,parents,self.q,self.a.generation,dt.datetime.now(dt.timezone.utc),self.a.horizon,getattr(self.a,'prepared',None))
     def fresh_proofs(self):
         proofs,approval=self.current_approval(self.preflight)
         old=self.s.data.get('approval')
@@ -571,6 +599,17 @@ def pairs(values,expected):
     if set(result)!=set(expected):raise Refusal('exact pin set required')
     return result
 
+def prepared_pins(files,skis,clusters):
+    """--prepared-issuer CLUSTER=PEMFILE, each with --prepared-issuer-ski CLUSTER=HEX from SPIRE's log."""
+    paths,keys={},{}
+    for values,out in ((files,paths),(skis,keys)):
+        for value in values:
+            k,sep,v=value.partition('=')
+            if not sep or not v or k in out or k not in clusters:raise Refusal('duplicate/invalid prepared issuer pin')
+            out[k]=v
+    if set(paths)!=set(keys) or any(not re.fullmatch('[0-9a-f]{40}',v) for v in keys.values()):raise Refusal('each prepared issuer needs its SPIRE key identifier (40 lowercase hex)')
+    return {c:(public(Path(paths[c]).read_bytes()).decode(),keys[c]) for c in paths}
+
 def main():
     p=argparse.ArgumentParser(description=__doc__)
     for name in ('kubeconfig','state-dir','root-sha256','image','image-config','source-sha','pki-module','proof-module','publication-module'):p.add_argument('--'+name,required=True)
@@ -578,10 +617,13 @@ def main():
     p.add_argument('--server-image',dest='spire_server_image',default=None,help='Independent approved digest-qualified SPIRE server/CLI image; first verify source/config and all-node CRI imports')
     p.add_argument('--generation',type=int,required=True);p.add_argument('--horizon',type=int,default=3600)
     p.add_argument('--advance',action='store_true',help='Move the qualified live producer from generation N-1 to N; keeps the ledger owner, output and floors')
+    p.add_argument('--prepared-issuer',action='append',default=[],metavar='CLUSTER=PEMFILE',help="Public chain [SPIRE prepared X509 CA, approved parent]; approved as the cluster's second issuer")
+    p.add_argument('--prepared-issuer-ski',action='append',default=[],metavar='CLUSTER=HEX',help='Key identifier of that CA: the local_authority_id of SPIRE\'s "X509 CA prepared" log line')
     p.add_argument('--colima-profile',default='cmtc-cilium');p.add_argument('--prometheus-a',default='http://127.0.0.1:13000/api/datasources/proxy/uid/cmtc-prom');p.add_argument('--prometheus-b',default='http://127.0.0.1:19091')
     a=p.parse_args();clusters=['cmtc-a','cmtc-b']
     a.cluster_pins=pairs(a.cluster_pin,clusters);a.approval_pins=pairs(a.approval_pin,clusters);a.deployment_pins=pairs(a.deployment_pin,clusters)
     a.node_pins=pairs(a.node_pin,[c+'/'+c+'-'+n for c in clusters for n in ('worker','control-plane')]);a.prometheus={'cmtc-a':a.prometheus_a,'cmtc-b':a.prometheus_b}
+    a.prepared=prepared_pins(a.prepared_issuer,a.prepared_issuer_ski,clusters)
     if not re.fullmatch('[0-9a-f]{64}',a.root_sha256) or not re.fullmatch('sha256:[0-9a-f]{64}',a.image_config) or not re.fullmatch('[0-9a-f]{40}',a.source_sha):p.error('exact root/config/source pins required')
     pki=load(a.pki_module,'accepted_pki');q=load(a.proof_module,'accepted_public_proof');lab=load(a.publication_module,'accepted_publication_parser')
     a.spire_server_image=q.approved_server_image(a.spire_server_image if a.spire_server_image is not None else q.SERVER_IMAGE)
