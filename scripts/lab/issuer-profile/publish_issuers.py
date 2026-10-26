@@ -483,9 +483,22 @@ class Publisher:
         # An interrupted restore leaves its fence template; advancing from it is the recorded intent.
         if live in (step['from'],step.get('fence')):self.patch_template(cluster,live,desired)
         elif live!=desired:raise Refusal('controller template drifted before the advance patch')
-        self.runtime(cluster,desired);self.publications(cluster,source);self.metrics_logs(cluster)
+        self.runtime(cluster,desired);self.await_source(cluster,source);self.publications(cluster,source);self.metrics_logs(cluster)
         self.set_access(cluster,[source]);self.rbac(cluster,source)
         step['phase']='qualified';c['phase']='publication-qualified-no-consumer';self.s.save()
+    def await_source(self,cluster,source,timeout=90):
+        """Wait until the output names the new source.
+
+        A Ready new controller still has to win leader election before it writes, so
+        the output keeps the previous generation's publication for a while.
+        """
+        api=self.apis[cluster];c=self.s.data['clusters'][cluster];deadline=time.monotonic()+timeout
+        while time.monotonic()<deadline:
+            out=owned(api.get(self.cm_path(OUT)),self.s.data['owner'],c['uids']['ConfigMap/'+OUT])
+            raw=out.get('data',{}).get('profile.json')
+            if raw and self.pki.strict_json(raw).get('source',{}).get('name')==source:return
+            time.sleep(1)
+        raise Refusal('new source was not published before the deadline')
     def restore_advance(self,cluster):
         """Conditionally return an unfinished advance to the exact previous-generation template."""
         c=self.s.data['clusters'][cluster];step=c.get('advance')

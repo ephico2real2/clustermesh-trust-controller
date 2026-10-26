@@ -261,6 +261,19 @@ class AdvanceTests(unittest.TestCase):
         pub.set_access('cmtc-a',[u.source_name(1),u.source_name(2)]);self.assertEqual(1,len(sent))
         pub.command=lambda argv,timeout=25:b''
         with self.assertRaises(u.Refusal):pub.set_access('cmtc-a',[u.source_name(2)])
+    def test_await_source_tolerates_the_previous_publication_then_times_out(self):
+        pub,c,api=self.setup_advance();api.objects[pub.cm_path(u.OUT)]={'metadata':{'uid':'out-uid','resourceVersion':'1','labels':{u.OWNER:'owner-token',u.OUTPUT:'true'}},'data':{'profile.json':u.compact({'source':{'name':u.source_name(1)}})}}
+        reads=[]
+        real=api.get
+        def get(path):
+            reads.append(path)
+            if path==pub.cm_path(u.OUT) and len([r for r in reads if r==path])==3:api.objects[path]['data']['profile.json']=u.compact({'source':{'name':u.source_name(2)}})
+            return real(path)
+        api.get=get
+        with patch.object(u.time,'sleep',lambda s:None):pub.await_source('cmtc-a',u.source_name(2))
+        self.assertEqual(3,reads.count(pub.cm_path(u.OUT)))
+        api.objects[pub.cm_path(u.OUT)]['data']['profile.json']=u.compact({'source':{'name':u.source_name(1)}});api.get=real
+        with patch.object(u.time,'sleep',lambda s:None),self.assertRaises(u.Refusal):pub.await_source('cmtc-a',u.source_name(2),timeout=0.05)
     def test_resume_accepts_an_interrupted_restore_fence_only(self):
         pub,c,api=self.setup_advance();pub.advance_preflight('cmtc-a',1);step=c['advance']
         fence=copy.deepcopy(step['from']);fence['metadata']['annotations'][u.ROLLBACK]='f';step.update(to={'other':1},fence=fence,phase='restore-intended')
