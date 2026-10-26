@@ -140,6 +140,31 @@ def enabled_template(baseline,owner,cluster,source,source_uid,output_uid,root_pi
     cs[0]['args']=list(cs[0].get('args',[]))+['--issuer-profile-producer=true','--issuer-profile-namespace='+NS,'--issuer-profile-source='+source,'--issuer-profile-output='+OUT,'--issuer-profile-source-uid='+source_uid,'--issuer-profile-output-uid='+output_uid,'--issuer-profile-root-sha256='+root_pin,'--issuer-profile-minimum-generation='+str(generation)]
     return t
 
+def producer_disabled(template,owner):
+    """Return the live template with only this tool's producer args and owner annotation removed.
+
+    An advance derives the rollback baseline from the live owned template, never from the
+    ledger's first-activation baseline: the controller image may have been upgraded since.
+    """
+    t=copy.deepcopy(template);cs=t.get('spec',{}).get('containers',[])
+    if len(cs)!=1 or cs[0].get('name')!='controller':raise Refusal('unexpected controller topology')
+    annotations=t.get('metadata',{}).get('annotations',{})
+    if annotations.get(OWNER)!=owner:raise Refusal('controller template is not owned by this ledger')
+    annotations.pop(OWNER)
+    cs[0]['args']=[x for x in cs[0].get('args',[]) if not x.startswith('--issuer-profile')]
+    return t
+
+ADVANCE_FIELDS=('generation','image','imageConfig','sourceRevision')
+def advanced_identity(old,new):
+    """An advance may change only the administered generation (+1) and the verified controller image."""
+    keep=lambda i:{k:v for k,v in i.items() if k not in ADVANCE_FIELDS}
+    if keep(old)!=keep(new) or new['generation']!=old['generation']+1:raise Refusal('advance changes only generation (+1) and the verified controller image')
+
+def source_name(generation):return 'cmtc-issuer-approval-g'+str(generation)
+
+def access_rules(sources):
+    return [{'apiGroups':[''],'resources':['configmaps'],'resourceNames':list(sources),'verbs':['get']},{'apiGroups':[''],'resources':['configmaps'],'resourceNames':[OUT],'verbs':['get','update']}]
+
 def template_patch(deployment,uid,expected,desired):
     if meta(deployment)['uid']!=uid or deployment['spec']['template']!=expected:raise Refusal('Deployment identity/template drift; no takeover')
     return tests(deployment)+[{'op':'test','path':'/spec/template','value':expected},{'op':'replace','path':'/spec/template','value':desired}]
@@ -227,24 +252,27 @@ class Publisher:
             c.update(baseline=baseline,deploymentUID=meta(d)['uid']);self.s.save()
         if d['spec']['template'] not in (c['baseline'],c.get('active')):raise Refusal('unowned Deployment template')
         return d
-    def fresh_proofs(self):
+    def current_approval(self,check):
+        """Mint fresh public proofs from both exact SPIRE servers and build the administered approval."""
         server_image=self.q.approved_server_image(getattr(self.a,'spire_server_image',self.q.SERVER_IMAGE))
         proofs={};parents={}
         for cluster in sorted(self.apis):
-            api=self.apis[cluster];self.preflight(cluster)
+            api=self.apis[cluster];check(cluster)
             pod=api.get('/api/v1/namespaces/cilium-spire/pods/spire-server-0')
             proofs[cluster]=self.q.execute_proof(api,cluster=cluster,cluster_uid=self.a.cluster_pins[cluster],pod_uid=meta(pod)['uid'],approval_uid=self.a.approval_pins[cluster],root_pin=self.a.root_sha256,server_image=server_image)
             if proofs[cluster].get('approvedServerImage')!=server_image:raise Refusal('proof did not retain the independent approved server image pin')
             approval=api.get('/api/v1/namespaces/cert-manager/configmaps/cmtc-spire-cluster-ca-approval')
             parents[cluster]=self.q.approved_parent(approval,uid=self.a.approval_pins[cluster],cluster=cluster,root_pin=self.a.root_sha256,now=dt.datetime.now(dt.timezone.utc))
-        approval=build_approval(proofs,parents,self.q,self.a.generation,dt.datetime.now(dt.timezone.utc),self.a.horizon)
+        return proofs,build_approval(proofs,parents,self.q,self.a.generation,dt.datetime.now(dt.timezone.utc),self.a.horizon)
+    def fresh_proofs(self):
+        proofs,approval=self.current_approval(self.preflight)
         old=self.s.data.get('approval')
         if old:
             if not same_material(old,approval) or dt.datetime.fromisoformat(old['expiresAt'].replace('Z','+00:00'))<=dt.datetime.now(dt.timezone.utc)+dt.timedelta(seconds=120):raise Refusal('recorded approval expired/material changed; explicit higher-generation workflow required')
         else:self.s.data['approval']=approval
         self.s.data['freshProofs']=proofs;self.s.save()
     def rbac(self,cluster,source):
-        body={'rules':[{'apiGroups':[''],'resources':['configmaps'],'resourceNames':[source],'verbs':['get']},{'apiGroups':[''],'resources':['configmaps'],'resourceNames':[OUT],'verbs':['get','update']}]}
+        body={'rules':access_rules([source])}
         self.owned_object(cluster,'Role',ACCESS,body)
         self.owned_object(cluster,'RoleBinding',ACCESS,{'roleRef':{'apiGroup':'rbac.authorization.k8s.io','kind':'Role','name':ACCESS},'subjects':[{'kind':'ServiceAccount','name':'cmtc-controller','namespace':NS}]})
         api=self.apis[cluster];checks=[('get','configmap/'+source,True),('get','configmap/'+OUT,True),('update','configmap/'+OUT,True),('update','configmap/'+source,False),('update','configmap/cmtc-live-issuer-foreign',False),('list','configmaps',False),('watch','configmaps',False),('create','configmaps',False),('delete','configmap/'+OUT,False),('patch','configmap/'+source,False),('patch','configmap/'+OUT,False),('patch','configmap/cmtc-live-issuer-foreign',False),('deletecollection','configmaps',False),('get','secret/cmtc-live-issuer-never-created',False),('list','secrets',False),('watch','secrets',False),('create','secrets',False),('update','secret/cmtc-live-issuer-never-created',False),('patch','secret/cmtc-live-issuer-never-created',False),('delete','secret/cmtc-live-issuer-never-created',False),('deletecollection','secrets',False)]
@@ -389,6 +417,93 @@ class Publisher:
         c.pop('rollbackTemplate',None);c['phase']='disabled-after-failure'
         if not self.s.poison:self.s.save()
         if ledger_error:raise Refusal('controller disabled but rollback ledger commit failed: '+ledger_error)
+    def identity_check(self,cluster):
+        if meta(self.apis[cluster].get('/api/v1/namespaces/kube-system'))['uid']!=self.a.cluster_pins[cluster]:raise Refusal('cluster UID mismatch')
+    def set_access(self,cluster,sources):
+        """CAS-replace the owned Role's source names; output access is unchanged."""
+        api=self.apis[cluster];c=self.s.data['clusters'][cluster];path='/apis/rbac.authorization.k8s.io/v1/namespaces/'+NS+'/roles/'+ACCESS
+        role=owned(api.get(path),self.s.data['owner'],c['uids']['Role/'+ACCESS]);desired=access_rules(sources)
+        if role.get('rules')==desired:return
+        ops=tests(role)+[{'op':'test','path':'/rules','value':role.get('rules')},{'op':'replace','path':'/rules','value':desired}]
+        self.command(api.argv+['-n',NS,'patch','role',ACCESS,'--type=json','-p',compact(ops),'--request-timeout=12s'])
+        again=owned(api.get(path),self.s.data['owner'],c['uids']['Role/'+ACCESS])
+        if again.get('rules')!=desired:raise Refusal('Role patch acknowledgment differs')
+    def advance_preflight(self,cluster,previous):
+        """Pin the live producer to exactly the ledger's previous generation before any write."""
+        api=self.apis[cluster];c=self.s.data['clusters'][cluster];self.identity_check(cluster)
+        for node in (cluster+'-worker',cluster+'-control-plane'):self.inspect_image(cluster,node)
+        d=api.get('/apis/apps/v1/namespaces/'+NS+'/deployments/'+DEP)
+        if meta(d)['uid']!=c['deploymentUID'] or d['spec'].get('replicas',1)!=1:raise Refusal('controller Deployment UID/topology mismatch')
+        if meta(api.get('/api/v1/namespaces/'+NS+'/serviceaccounts/cmtc-controller'))['uid']!=c['saUID']:raise Refusal('controller SA replaced')
+        live=d['spec']['template']
+        if live['spec']['containers'][0].get('image')!=self.a.image:raise Refusal('running controller image differs from the verified image pin')
+        step=c.get('advance')
+        if step and step['generation']==self.a.generation:
+            if live not in (step['from'],step['to']):raise Refusal('controller template drifted during an unfinished advance')
+            return
+        disabled=producer_disabled(live,self.s.data['owner'])
+        expected=enabled_template(disabled,self.s.data['owner'],cluster,source_name(previous),c['uids']['ConfigMap/'+source_name(previous)],c['uids']['ConfigMap/'+OUT],self.a.root_sha256,previous)
+        if live!=expected:raise Refusal('live producer is not exactly the ledger previous generation')
+        c['advance']={'generation':self.a.generation,'from':live,'disabled':disabled,'phase':'preflighted'};self.s.save()
+    def advance_cluster(self,cluster,previous):
+        api=self.apis[cluster];c=self.s.data['clusters'][cluster];step=c['advance'];source=source_name(self.a.generation);owner=self.s.data['owner']
+        src=self.owned_object(cluster,'ConfigMap',source,{'immutable':True,'data':{'approval.json':compact(self.s.data['approval'])}})
+        out=self.owned_object(cluster,'ConfigMap',OUT,{'metadata':{'labels':{OUTPUT:'true'}},'data':{}})
+        # Both names stay readable until the new generation is published, so the
+        # running producer never loses its source mid-transition.
+        self.set_access(cluster,[source_name(previous),source])
+        # A SPIRE rotation between proof and patch would publish a stale signer.
+        _,current=self.current_approval(self.identity_check)
+        if not same_material(current,self.s.data['approval']):raise Refusal('SPIRE signer changed during advance; explicit recovery required')
+        desired=enabled_template(step['disabled'],owner,cluster,source,meta(src)['uid'],meta(out)['uid'],self.a.root_sha256,self.a.generation)
+        # Record intent BEFORE the patch so an unknown acknowledgment is recoverable.
+        step.update(to=desired,phase='patch-intended');c['active']=desired;c['baseline']=step['disabled'];self.s.save()
+        live=api.get('/apis/apps/v1/namespaces/'+NS+'/deployments/'+DEP)['spec']['template']
+        if live==step['from']:self.patch_template(cluster,step['from'],desired)
+        elif live!=desired:raise Refusal('controller template drifted before the advance patch')
+        self.runtime(cluster,desired);self.publications(cluster,source);self.metrics_logs(cluster)
+        self.set_access(cluster,[source]);self.rbac(cluster,source)
+        step['phase']='qualified';c['phase']='publication-qualified-no-consumer';self.s.save()
+    def restore_advance(self,cluster):
+        """Conditionally return an unfinished advance to the exact previous-generation template."""
+        c=self.s.data['clusters'][cluster];step=c.get('advance')
+        if not step or step.get('phase') in ('preflighted','qualified') or 'to' not in step:return
+        api=self.apis[cluster];d=api.get('/apis/apps/v1/namespaces/'+NS+'/deployments/'+DEP)
+        if meta(d)['uid']!=c['deploymentUID']:raise Refusal('cannot restore replaced Deployment')
+        current=d['spec']['template']
+        if current not in (step['from'],step['to']):raise Refusal('cannot restore foreign Deployment template')
+        # A resourceVersion-changing fence stops a timed-out advance PATCH from committing later.
+        fence=copy.deepcopy(step['from']);fence['metadata']['annotations'][ROLLBACK]=uuid.uuid4().hex
+        step.update(fence=fence,phase='restore-intended')
+        if not self.s.poison:self.s.save()
+        self.patch_template(cluster,current,fence);self.patch_template(cluster,fence,step['from']);self.runtime(cluster,step['from'])
+        c['active']=step['from'];step.pop('fence',None);step['phase']='restored-after-failure'
+        if not self.s.poison:self.s.save()
+    def advance(self):
+        """Move the live producer from generation N-1 to N, keeping the ledger owner, output UID and floors."""
+        d=self.s.data;previous=self.a.generation-1;resume=d.get('advancing')==self.a.generation
+        if not resume and (not d.get('success') or d['approval']['generation']!=previous):raise Refusal('advance requires a qualified ledger at generation N-1')
+        if any(c.get('rollbackTemplate') or c.get('pendingCreate') for c in d['clusters'].values()):raise Refusal('unfinished owned operation; explicit recovery required')
+        try:
+            for cluster in sorted(self.apis):self.advance_preflight(cluster,previous)
+            if not resume:
+                proofs,approval=self.current_approval(self.identity_check)
+                d.setdefault('approvalHistory',[]).append(d['approval'])
+                d.update(approval=approval,freshProofs=proofs,advancing=self.a.generation,success=False);self.s.save()
+            elif dt.datetime.fromisoformat(d['approval']['expiresAt'].replace('Z','+00:00'))<=dt.datetime.now(dt.timezone.utc)+dt.timedelta(seconds=120):raise Refusal('recorded advance approval expired; explicit recovery required')
+            for cluster in sorted(self.apis):
+                if d['clusters'][cluster]['advance'].get('phase')!='qualified':self.advance_cluster(cluster,previous)
+            d.pop('advancing',None);d.update(success=True,scope='public issuer mapping publication only; no TLS/Protected');self.s.save()
+        except BaseException as error:
+            cleanup=[]
+            for cluster in sorted(self.apis):
+                try:self.restore_advance(cluster)
+                except Exception as failure:cleanup.append({'cluster':cluster,'failure':type(failure).__name__})
+            if not self.s.poison:
+                try:d.update(failure=type(error).__name__,conditionalRestoreFailures=cleanup);self.s.save()
+                except Exception as failure:cleanup.append({'stage':'failure-ledger','failure':type(failure).__name__})
+            if cleanup:error.add_note('Conditional restore failures: '+compact(cleanup))
+            raise
     def run(self):
         try:
             self.s.data['success']=False
@@ -427,6 +542,7 @@ def main():
     for name in ('cluster-pin','approval-pin','deployment-pin','node-pin'):p.add_argument('--'+name,action='append',required=True)
     p.add_argument('--server-image',dest='spire_server_image',default=None,help='Independent approved digest-qualified SPIRE server/CLI image; first verify source/config and all-node CRI imports')
     p.add_argument('--generation',type=int,required=True);p.add_argument('--horizon',type=int,default=3600)
+    p.add_argument('--advance',action='store_true',help='Move the qualified live producer from generation N-1 to N; keeps the ledger owner, output and floors')
     p.add_argument('--colima-profile',default='cmtc-cilium');p.add_argument('--prometheus-a',default='http://127.0.0.1:13000/api/datasources/proxy/uid/cmtc-prom');p.add_argument('--prometheus-b',default='http://127.0.0.1:19091')
     a=p.parse_args();clusters=['cmtc-a','cmtc-b']
     a.cluster_pins=pairs(a.cluster_pin,clusters);a.approval_pins=pairs(a.approval_pin,clusters);a.deployment_pins=pairs(a.deployment_pin,clusters)
@@ -436,9 +552,15 @@ def main():
     a.spire_server_image=q.approved_server_image(a.spire_server_image if a.spire_server_image is not None else q.SERVER_IMAGE)
     identity={'spireServerImage':a.spire_server_image,'schemaVersion':1,'rootSHA256':a.root_sha256,'generation':a.generation,'clusterPins':a.cluster_pins,'approvalPins':a.approval_pins,'deploymentPins':a.deployment_pins,'nodePins':a.node_pins,'image':a.image,'imageConfig':a.image_config,'sourceRevision':a.source_sha}
     with State(a.state_dir,pki) as state,contextlib.ExitStack() as stack:
-        if state.data is None:state.data={'identity':identity,'owner':uuid.uuid4().hex,'clusters':{c:{'uids':{}} for c in clusters}};state.save()
+        if a.advance:
+            if state.data is None:raise Refusal('advance requires an existing qualified ledger')
+            if state.data.get('identity')!=identity:
+                advanced_identity(state.data['identity'],identity)
+                state.data.setdefault('identityHistory',[]).append(state.data['identity']);state.data['identity']=identity;state.save()
+        elif state.data is None:state.data={'identity':identity,'owner':uuid.uuid4().hex,'clusters':{c:{'uids':{}} for c in clusters}};state.save()
         elif state.data.get('identity')!=identity:raise Refusal('ledger identity differs; no automatic rotation/reassignment')
         apis={c:stack.enter_context(pki.Proxy(a.kubeconfig,'kind-'+c)) for c in clusters}
-        Publisher(a,pki,q,lab.publication,state,apis).run()
+        publisher=Publisher(a,pki,q,lab.publication,state,apis)
+        publisher.advance() if a.advance else publisher.run()
     print(json.dumps({'success':True,'ledger':str(Path(a.state_dir)/'ledger.json'),'scope':'public mapping publication only; consumer remains disabled'},indent=2))
 if __name__=='__main__':main()

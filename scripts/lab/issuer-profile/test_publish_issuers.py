@@ -208,4 +208,70 @@ class PublicationRecoveryTests(unittest.TestCase):
         pub.apis['cmtc-a'].objects[path]=deployment(c['active']);pub.apis['cmtc-a'].objects[path]['spec']['template']['metadata']['annotations']['foreign']='change'
         with self.assertRaises(u.Refusal):pub.disable_owned('cmtc-a')
 
+class AdvanceTests(unittest.TestCase):
+    """Generation N-1 -> N on the same ledger owner, output and floors."""
+    @classmethod
+    def setUpClass(cls):cls.fx=Fixtures()
+    def live(self,image='localhost/cmtc:current'):
+        t=baseline();t['spec']['containers'][0]['image']=image;t['metadata']['annotations']['kubectl.kubernetes.io/restartedAt']='then'
+        return u.enabled_template(t,'owner-token','cmtc-a',u.source_name(1),'src1-uid','out-uid',self.fx.rootpin,1)
+    def setup_advance(self,live=None):
+        pub=publisher();pub.a.generation=2;pub.a.image='localhost/cmtc:current';pub.a.root_sha256=self.fx.rootpin;pub.a.cluster_pins={'cmtc-a':'ks-uid'}
+        pub.inspect_image=lambda cluster,node:None
+        c=pub.s.data['clusters']['cmtc-a'];c.update(deploymentUID='deployment-uid',saUID='sa-uid');c['uids'].update({'ConfigMap/'+u.source_name(1):'src1-uid','ConfigMap/'+u.OUT:'out-uid','Role/'+u.ACCESS:'role-uid'})
+        api=pub.apis['cmtc-a'];api.objects['/api/v1/namespaces/kube-system']={'metadata':{'uid':'ks-uid','resourceVersion':'1'}}
+        api.objects['/api/v1/namespaces/'+u.NS+'/serviceaccounts/cmtc-controller']={'metadata':{'uid':'sa-uid','resourceVersion':'1'}}
+        api.objects['/apis/apps/v1/namespaces/'+u.NS+'/deployments/'+u.DEP]=deployment(live or self.live())
+        return pub,c,api
+    def test_producer_disabled_round_trips_the_live_template_and_requires_ownership(self):
+        live=self.live();disabled=u.producer_disabled(live,'owner-token')
+        self.assertFalse(any(x.startswith('--issuer-profile') for x in disabled['spec']['containers'][0]['args']))
+        self.assertEqual('then',disabled['metadata']['annotations']['kubectl.kubernetes.io/restartedAt'])
+        self.assertEqual(live,u.enabled_template(disabled,'owner-token','cmtc-a',u.source_name(1),'src1-uid','out-uid',self.fx.rootpin,1))
+        with self.assertRaises(u.Refusal):u.producer_disabled(live,'other-owner')
+    def test_identity_advance_changes_only_generation_plus_one_and_image(self):
+        old={'generation':1,'image':'a','imageConfig':'c','sourceRevision':'s','rootSHA256':'r','clusterPins':{'cmtc-a':'x'}}
+        u.advanced_identity(old,dict(old,generation=2,image='b',imageConfig='d',sourceRevision='t'))
+        for new in (dict(old,generation=3),dict(old,generation=1),dict(old,generation=2,rootSHA256='other'),dict(old,generation=2,clusterPins={'cmtc-a':'y'})):
+            with self.subTest(new=new),self.assertRaises(u.Refusal):u.advanced_identity(old,new)
+    def test_preflight_pins_exact_previous_generation_and_records_disabled_baseline(self):
+        pub,c,api=self.setup_advance();pub.advance_preflight('cmtc-a',1)
+        self.assertEqual('preflighted',c['advance']['phase']);self.assertEqual(self.live(),c['advance']['from'])
+        self.assertEqual('localhost/cmtc:current',c['advance']['disabled']['spec']['containers'][0]['image'])
+    def test_preflight_refuses_drifted_producer_wrong_image_or_replaced_identity(self):
+        drifted=self.live();drifted['spec']['containers'][0]['args'].append('--issuer-profile-extra=1')
+        cases=[('drift',lambda api:None,drifted),('image',lambda api:None,self.live('localhost/cmtc:other')),('sa',lambda api:api.objects['/api/v1/namespaces/'+u.NS+'/serviceaccounts/cmtc-controller']['metadata'].update(uid='new'),None),('cluster',lambda api:api.objects['/api/v1/namespaces/kube-system']['metadata'].update(uid='other'),None)]
+        for name,change,live in cases:
+            pub,c,api=self.setup_advance(live);change(api)
+            with self.subTest(name),self.assertRaises(u.Refusal):pub.advance_preflight('cmtc-a',1)
+            self.assertNotIn('advance',c)
+    def test_advance_requires_a_qualified_ledger_at_the_previous_generation(self):
+        for data in ({'success':False,'approval':{'generation':1}},{'success':True,'approval':{'generation':2}}):
+            pub,c,api=self.setup_advance();pub.s.data.update(data)
+            with self.subTest(data=data),self.assertRaises(u.Refusal):pub.advance()
+            self.assertNotIn('advance',c)
+    def test_access_is_cas_replaced_and_verified(self):
+        pub,c,api=self.setup_advance();path='/apis/rbac.authorization.k8s.io/v1/namespaces/'+u.NS+'/roles/'+u.ACCESS
+        api.objects[path]={'metadata':{'uid':'role-uid','resourceVersion':'7','labels':{u.OWNER:'owner-token'}},'rules':u.access_rules([u.source_name(1)])}
+        sent=[]
+        def command(argv,timeout=25):
+            ops=json.loads(argv[argv.index('-p')+1]);sent.append(ops);api.objects[path]['rules']=ops[-1]['value'];return b''
+        pub.command=command;pub.set_access('cmtc-a',[u.source_name(1),u.source_name(2)])
+        self.assertEqual([{'op':'test','path':'/metadata/uid','value':'role-uid'},{'op':'test','path':'/metadata/resourceVersion','value':'7'},{'op':'test','path':'/rules','value':u.access_rules([u.source_name(1)])},{'op':'replace','path':'/rules','value':u.access_rules([u.source_name(1),u.source_name(2)])}],sent[0])
+        pub.set_access('cmtc-a',[u.source_name(1),u.source_name(2)]);self.assertEqual(1,len(sent))
+        pub.command=lambda argv,timeout=25:b''
+        with self.assertRaises(u.Refusal):pub.set_access('cmtc-a',[u.source_name(2)])
+    def test_restore_fences_then_returns_exact_previous_template_only(self):
+        pub,c,api=self.setup_advance();pub.advance_preflight('cmtc-a',1);step=c['advance']
+        step.update(to=u.enabled_template(step['disabled'],'owner-token','cmtc-a',u.source_name(2),'src2-uid','out-uid',self.fx.rootpin,2),phase='patch-intended')
+        path='/apis/apps/v1/namespaces/'+u.NS+'/deployments/'+u.DEP;api.objects[path]['spec']['template']=copy.deepcopy(step['to']);seen=[]
+        def patch_template(cluster,expected,desired):
+            d=api.objects[path];u.template_patch(d,'deployment-uid',expected,desired);d['spec']['template']=copy.deepcopy(desired);seen.append(desired)
+        pub.patch_template=patch_template;pub.runtime=lambda cluster,template:None
+        pub.restore_advance('cmtc-a')
+        self.assertIn(u.ROLLBACK,seen[0]['metadata']['annotations']);self.assertEqual(step['from'],api.objects[path]['spec']['template']);self.assertEqual('restored-after-failure',step['phase'])
+        pub,c,api=self.setup_advance();pub.advance_preflight('cmtc-a',1);c['advance'].update(to=step['to'],phase='patch-intended')
+        api.objects[path]['spec']['template']['metadata']['annotations']['foreign']='change'
+        with self.assertRaises(u.Refusal):pub.restore_advance('cmtc-a')
+
 if __name__=='__main__':unittest.main()
