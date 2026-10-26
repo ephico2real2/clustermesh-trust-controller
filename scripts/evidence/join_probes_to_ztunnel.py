@@ -31,6 +31,9 @@ Inputs:
                   the probe's window and the capture's declared coverage. Without --drops the verdicts are as above.
 
 A probe's window ends at its `at`. It starts at `startedAt` when the row has one, else --window seconds before `at`.
+Probe times are on the host clock; ztunnel lines and drops are on the node clock. --node-clock-offset LO:HI gives the
+measured bound of node minus host, in seconds (node_clock_offset.py), and the window [start, at] becomes
+[start + LO, at + HI] on the node clock. More than one matching connection in a window is a failure, not a guess.
 
 Exit status: 0 when every probe is proven, or denied as expected (unanswered, or dropped by Cilium), 1 when any
 probe fails, 2 for bad input.
@@ -165,7 +168,7 @@ def curl_error(probe: dict) -> str | None:
 
 
 def failed_curl(probe: dict, target, client: Pod, pods: dict[str, Pod], seen: list[Connection],
-                drop_logs: DropLogs | None, start: datetime, at: datetime) -> dict:
+                drop_logs: DropLogs | None, start: datetime, end: datetime) -> dict:
     """The verdict for an allowed probe whose curl failed: what the logs show about it, and nothing more."""
     rc, port = probe.get("curlRC"), str(target.port or 80)
     verdict = {"result": f"FAIL: curl exit {rc}, no connection to join"}
@@ -180,8 +183,8 @@ def failed_curl(probe: dict, target, client: Pod, pods: dict[str, Pod], seen: li
                    "targetName": target.hostname}
     if drop_logs is None:
         return verdict
-    dns = drop_logs.matching(client.ip, start, at, lambda d: d.dst_port == DNS_PORT) if name else []
-    found = drop_logs.matching(client.ip, start, at, lambda d: _to_target(d, target, pods))
+    dns = drop_logs.matching(client.ip, start, end, lambda d: d.dst_port == DNS_PORT) if name else []
+    found = drop_logs.matching(client.ip, start, end, lambda d: _to_target(d, target, pods))
     if dns:
         verdict["result"] += f"; Cilium dropped DNS traffic from the client: {causes(dns)}"
     if found:
@@ -189,17 +192,20 @@ def failed_curl(probe: dict, target, client: Pod, pods: dict[str, Pod], seen: li
     if dns or found:
         verdict["drops"] = [d.raw for d in dns + found]
     else:
-        verdict["dropSearch"] = drop_logs.search(start, at)
+        verdict["dropSearch"] = drop_logs.search(start, end)
     return verdict
 
 
 def judge(probe: dict, pods: dict[str, Pod], trust: dict[str, str], conns: list[Connection], records,
-          coverage: dict, window: timedelta, drop_logs: DropLogs | None = None) -> dict:
+          coverage: dict, window: timedelta, drop_logs: DropLogs | None = None,
+          offset: tuple[timedelta, timedelta] = (timedelta(0), timedelta(0))) -> dict:
     """Return the verdict for one probe, with the connection it was joined to."""
     at, target = utc(probe["at"]), urlsplit(probe["url"])
     start = utc(probe["startedAt"]) if probe.get("startedAt") else at - window
+    # The window, from here on on the node clock: every offset in the measured bound must be allowed.
+    start, end = start + offset[0], at + offset[1]
     # Absence of a line means something only where every node's log covers the probe's whole window.
-    gaps = sorted(n for n, (lo, hi) in coverage.items() if not lo <= start or not at <= hi)
+    gaps = sorted(n for n, (lo, hi) in coverage.items() if not lo <= start or not end <= hi)
     if gaps:
         return {"result": "FAIL: the logs of " + ", ".join(gaps) + " do not cover this probe"}
     cluster = probe["context"].removeprefix("kind-")
@@ -207,10 +213,10 @@ def judge(probe: dict, pods: dict[str, Pod], trust: dict[str, str], conns: list[
                    if (p.cluster, p.namespace, p.name) == (cluster, probe["namespace"], probe["client"])), None)
     if client is None:
         return {"result": f"FAIL: client {cluster}/{probe['namespace']}/{probe['client']} is not in --pods"}
-    seen = [c for c in conns if c.src_ip == client.ip and start <= c.at <= at]
+    seen = [c for c in conns if c.src_ip == client.ip and start <= c.at <= end]
 
     if probe["expect"] == "deny":
-        lines = [r.raw for r in records if start <= r.at <= at
+        lines = [r.raw for r in records if start <= r.at <= end
                  and client.ip in (_ip(r.fields.get("src.addr", "")), _ip(r.spans.get("inbound", {}).get("peer", "")))]
         if str(probe.get("curlRC")) == "0":
             return {"result": "FAIL: the denied caller got a response"}
@@ -218,20 +224,24 @@ def judge(probe: dict, pods: dict[str, Pod], trust: dict[str, str], conns: list[
             return {"result": "FAIL: a ztunnel saw the denied caller", "lines": lines}
         if drop_logs is None:
             return {"result": DENIED}
-        found = drop_logs.matching(client.ip, start, at, lambda d: _to_target(d, target, pods))
+        found = drop_logs.matching(client.ip, start, end, lambda d: _to_target(d, target, pods))
         if found:
             return {"result": f"{DROPPED}: {causes(found)}", "drops": [d.raw for d in found]}
-        return {"result": DENIED, "dropSearch": drop_logs.search(start, at)}
+        return {"result": DENIED, "dropSearch": drop_logs.search(start, end)}
 
     if str(probe.get("curlRC")) != "0":
-        return failed_curl(probe, target, client, pods, seen, drop_logs, start, at)
+        return failed_curl(probe, target, client, pods, seen, drop_logs, start, end)
     server = pods.get(target.hostname)
     # A Service address is translated to a backend before ztunnel; join to whichever backend served the port.
     match = [c for c in seen if (c.hbone == f"{target.hostname}:{target.port}" if server
                                  else c.app_port == str(target.port) and _ip(c.hbone) in pods)]
     if not match:
         return {"result": "FAIL: no ztunnel connection from the client to this destination in the window"}
-    conn = next((c for c in reversed(match) if c.outbound and c.inbound), match[-1])
+    if len(match) > 1:
+        return {"result": f"FAIL: {len(match)} ztunnel connections from the client to this destination in the window; "
+                          "the probe cannot be joined to one",
+                "lines": [r.raw for c in match for r in (c.outbound, c.inbound) if r]}
+    conn = match[0]
     server = server or pods[_ip(conn.hbone)]
     want_src, want_dst = spiffe(trust, client), spiffe(trust, server)
     failures = [text for bad, text in (
@@ -266,6 +276,8 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--since", help="ignore probes before this ISO 8601 time")
     ap.add_argument("--window", type=float, default=3.0,
                     help="seconds before a probe's `at` to search, for a row without startedAt (default 3)")
+    ap.add_argument("--node-clock-offset", default="0:0", metavar="LO:HI",
+                    help="measured bound of node clock minus host clock, in seconds (default 0:0)")
     ap.add_argument("--out", type=Path, help="write every verdict, with its log lines, to this JSON file")
     ap.add_argument("--rows", action="store_true", help="print one line per probe, not only the summary")
     ap.add_argument("--color", choices=("auto", "always", "never"), default="auto")
@@ -280,18 +292,27 @@ def main(argv: list[str] | None = None) -> int:
         print("no ztunnel log records found in --logs", file=sys.stderr)
         return 2
     conns, since, window = connections(records), args.since and utc(args.since), timedelta(seconds=args.window)
+    try:
+        lo, hi = (float(x) for x in args.node_clock_offset.split(":"))
+    except ValueError:
+        ap.error("--node-clock-offset takes LO:HI in seconds")
+    if lo > hi:
+        ap.error("--node-clock-offset: LO must not be above HI")
+    offset = (timedelta(seconds=lo), timedelta(seconds=hi))
+    recorded = {"nodeClockOffset": [lo, hi]} if lo or hi else {}
     drop_logs = DropLogs(*read_drops(args.drops)) if args.drops else None
 
     verdicts = []
     for name, probe in load_probes(args.probes):
         if since and utc(probe["at"]) < since:
             continue
-        verdict = judge(probe, pods, trust, conns, records, coverage, window, drop_logs)
+        verdict = judge(probe, pods, trust, conns, records, coverage, window, drop_logs, offset)
         # The runner's curl timings (time_namelookup, remote_ip, exitcode), when it records them, travel with the row.
         timings = {"curl": probe["curl"]} if "curl" in probe else {}
         verdicts.append({"file": name, "at": probe["at"], "cluster": probe["context"].removeprefix("kind-"),
                          "scope": probe["scope"], "expect": probe["expect"], "client": probe["client"],
-                         "url": probe["url"].split("?", 1)[0], "curlRC": probe.get("curlRC"), **timings, **verdict})
+                         "url": probe["url"].split("?", 1)[0], "curlRC": probe.get("curlRC"), **timings, **recorded,
+                         **verdict})
     if args.out:
         args.out.write_text(json.dumps(verdicts, indent=2) + "\n")
 

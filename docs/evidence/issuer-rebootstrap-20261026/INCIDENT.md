@@ -135,5 +135,16 @@ before its time, so 25 probes counted as not covered (24 on cmtc-a, 1 on cmtc-b)
 `matrix/*narrow-window*`. The logs were extracted again for 03:09:30–03:10:40Z. `run_matrix.sh` now keeps a 10 s
 margin.
 
+The drop captures in `matrix/cilium-drops/` are not the third run's own capture. They are the second run's
+900 s capture (headers `for 900s`, coverage 03:03:46.9–03:18:46.0Z, written at 03:18:45Z); its own report in
+`matrix/failed-attempt-2/capture.txt` names these files. The second run exited 1 at the log extraction
+(`matrix/failed-attempt-2/run.txt`) and left its capture running. The third run wrote its own 240 s capture
+into the same directory (coverage 03:09:40–03:13:39Z, `matrix/capture.txt`). The join read it at 03:14:34Z. At
+03:18:45Z the second run's capture ended and replaced those files, so the third run's drop files are lost. The
+remaining capture covers the third run's whole probe window on the same four nodes. `matrix/join.json` is
+regenerated from it: the 62 verdicts are unchanged. 14 verdicts quote drops, and only their arrival stamps changed
+(by microseconds), because two monitors timed the same events. `matrix/join.txt` is unchanged. Since commit
+`61ca693`, `capture_cilium_drops.sh` refuses a directory that already holds a capture.
+
 This is workload-mTLS traffic qualification for the generation-2 approval. It is not a `Protected` claim. Recovery
 after the next SPIRE CA activation (about 11:55Z) is not qualified; that is the rotation fix.

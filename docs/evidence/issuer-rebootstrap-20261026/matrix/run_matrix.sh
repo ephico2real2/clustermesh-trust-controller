@@ -12,6 +12,8 @@ CAP=$!
 # A background job of a script ignores SIGINT; forward an interrupt so the capture writes what it has.
 trap 'kill -TERM $CAP 2> /dev/null; wait $CAP; exit 130' INT TERM
 until grep -q 'capturing drops on 4 node' "$R/capture.txt"; do kill -0 $CAP; sleep 1; done
+# Probe times are on the host clock, log lines on the node clock: bound node minus host before and after the probes.
+scripts/evidence/node_clock_offset.py --out "$R/node-clock-before.json" "${NODES[@]}" 2>> "$R/node-clock.txt"
 START_S=$(date -u +%s); START=$(date -u -r "$START_S" +%FT%TZ)
 echo "probes start $START" | tee "$R/window.txt"
 # The runner's --out is the fixture state (namespace UID pins, registration ledger); it writes each probe file there.
@@ -26,6 +28,7 @@ done
 mkdir -p "$R/probes"
 find "$STATE" -maxdepth 1 -name '*-probe-*.json' -newer "$R/.probes-start" -exec cp -p {} "$R/probes/" \;
 END_S=$(date -u +%s); END=$(date -u -r "$END_S" +%FT%TZ)
+scripts/evidence/node_clock_offset.py --out "$R/node-clock-after.json" "${NODES[@]}" 2>> "$R/node-clock.txt"
 echo "probes end $END" | tee -a "$R/window.txt"
 for c in cmtc-a cmtc-b; do for ns in cmtc-live-mtls cmtc-live-mtls-unauth; do
   kubectl --context kind-$c get pods -n $ns --no-headers \
@@ -42,4 +45,10 @@ for _ in $(seq 20); do
     'cmtc-live-mtls|src\.addr=10\.(10|20)\.[01]\.' "${NODES[@]}" && break
   sleep 15
 done
-echo done
+OFFSET=$(scripts/evidence/node_clock_offset.py --union "$R/node-clock-before.json" "$R/node-clock-after.json")
+echo "node minus host $OFFSET s" | tee -a "$R/window.txt"
+scripts/evidence/join_probes_to_ztunnel.py "$R/probes" --pods "$R/fixture-pods.txt" \
+  --trust-domain cmtc-a=cmtc-a.mesh.example --trust-domain cmtc-b=cmtc-b.mesh.example \
+  --logs "$R"/ztunnel-access/*.log --drops "$R"/cilium-drops/*.log \
+  --node-clock-offset "$OFFSET" --out "$R/join.json" --rows --color never > "$R/join.txt" || echo "join exit $?" | tee -a "$R/window.txt"
+echo "matrix finished"

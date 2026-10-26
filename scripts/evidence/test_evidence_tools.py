@@ -18,6 +18,7 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 import cilium_drop_view as drops  # noqa: E402
 import join_probes_to_ztunnel as join  # noqa: E402
+import node_clock_offset as clock_offset  # noqa: E402
 import ztunnel_log_view as view  # noqa: E402
 
 A, B = "cmtc-a.mesh.example", "cmtc-b.mesh.example"
@@ -213,7 +214,7 @@ class DropParseTests(unittest.TestCase):
 class JoinCase:
     """Runs the join on synthetic logs, probes and drop captures. A mixin, so that its subclasses share no tests."""
 
-    def run_join(self, nodes, probes, drop_nodes=None):
+    def run_join(self, nodes, probes, drop_nodes=None, extra=()):
         with Logs(nodes) as logs, Logs(drop_nodes or {}) as captures, tempfile.TemporaryDirectory() as tmp:
             Path(tmp, "pods.txt").write_text(PODS)
             Path(tmp, "probes.json").write_text(json.dumps(probes))
@@ -222,7 +223,7 @@ class JoinCase:
                 code = join.main([str(Path(tmp, "probes.json")), "--pods", str(Path(tmp, "pods.txt")),
                                   "--trust-domain", f"cmtc-a={A}", "--trust-domain", f"cmtc-b={B}",
                                   "--logs", *logs.paths, "--out", str(out), "--color", "never"]
-                                 + (["--drops", *captures.paths] if drop_nodes else []))
+                                 + (["--drops", *captures.paths] if drop_nodes else []) + list(extra))
             return code, json.loads(out.read_text())
 
     @staticmethod
@@ -278,6 +279,38 @@ class JoinTests(JoinCase, unittest.TestCase):
         deny = self.probe(client="stranger", namespace="fx-unauth", expect="deny", rc="0")
         _, rows = self.run_join(self.good_logs(), [deny])
         self.assertIn("got a response", rows[0]["result"])
+
+    def test_a_node_clock_ahead_of_the_host_needs_its_measured_bound(self):
+        # Measured 2026-10-26: the node clock ran 38-79 ms ahead of the host, and the ztunnel lines of a probe came
+        # 7-11 ms after its host-clock `at`. Without the bound the join cannot see them; with it, it proves them.
+        logs = {"a-worker": [COVER, access("23:01:00.058", "outbound", 5555)],
+                "b-cp": [COVER, access("23:01:00.060", "inbound", 4444)]}
+        _, rows = self.run_join(logs, [self.probe()])
+        self.assertIn("no ztunnel connection", rows[0]["result"])
+        code, rows = self.run_join(logs, [self.probe()], extra=["--node-clock-offset", "0.038:0.079"])
+        self.assertEqual((code, rows[0]["result"], rows[0]["nodeClockOffset"]), (0, join.PROVEN, [0.038, 0.079]))
+
+    def test_the_bound_also_moves_the_window_start(self):
+        # With the node 0.5 s ahead, a node-clock line 0.2 s after the host-clock window start is before the window.
+        logs = {"a-worker": [COVER, access("23:00:57.250", "outbound", 5555)],
+                "b-cp": [COVER, access("23:00:57.252", "inbound", 4444)]}
+        _, rows = self.run_join(logs, [self.probe()])
+        self.assertEqual(rows[0]["result"], join.PROVEN)
+        _, rows = self.run_join(logs, [self.probe()], extra=["--node-clock-offset", "0.5:0.5"])
+        self.assertIn("no ztunnel connection", rows[0]["result"])
+
+    def test_two_connections_in_one_window_are_not_guessed(self):
+        logs = self.good_logs()
+        logs["a-worker"].append(access("23:01:00.030", "outbound", 5556))
+        logs["b-cp"].append(access("23:01:00.032", "inbound", 4445))
+        code, rows = self.run_join(logs, [self.probe()])
+        self.assertEqual(code, 1)
+        self.assertIn("2 ztunnel connections", rows[0]["result"])
+
+    def test_an_inverted_bound_is_refused(self):
+        with self.assertRaises(SystemExit) as stop, contextlib.redirect_stderr(io.StringIO()):
+            self.run_join(self.good_logs(), [self.probe()], extra=["--node-clock-offset", "0.1:0.05"])
+        self.assertEqual(stop.exception.code, 2)
 
     def test_probe_outside_log_coverage_is_not_judged(self):
         _, rows = self.run_join(self.good_logs(), [self.probe(at="2026-10-25T22:57:00+00:00",
@@ -543,6 +576,32 @@ class CaptureScriptTests(unittest.TestCase):
                                   "kind-x/node-a"], capture_output=True, text=True, timeout=30)
             self.assertEqual(run.returncode, 2)
             self.assertIn("already holds a capture", run.stderr)
+
+
+class NodeClockOffsetTests(unittest.TestCase):
+    def test_the_bound_holds_the_true_offset_and_tightens_with_samples(self):
+        clock = iter(range(0, 10**12, 20_000_000))   # each host read is 20 ms after the last
+        host = lambda: next(clock)
+        read = lambda node: host() + 50_000_000          # the node runs 50 ms ahead, read mid-exec
+        lo, hi = clock_offset.bound("n", 8, read, host)
+        self.assertTrue(lo <= 50_000_000 <= hi, (lo, hi))
+        self.assertEqual(hi - lo, 40_000_000)
+
+    def test_a_clock_that_moves_while_measured_fails(self):
+        clock = iter(range(0, 10**12, 1_000_000))
+        offsets = iter([0, 500_000_000])                 # the node clock steps 0.5 s between samples
+        host = lambda: next(clock)
+        with self.assertRaises(SystemExit):
+            clock_offset.bound("n", 2, lambda node: host() + next(offsets), host)
+
+    def test_union_of_measurements(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            for name, b in (("before", [38_000_000, 79_000_000]), ("after", [41_000_000, 83_000_000])):
+                Path(tmp, name).write_text(json.dumps({"boundNs": b}))
+            out = io.StringIO()
+            with contextlib.redirect_stdout(out):
+                clock_offset.main(["--union", str(Path(tmp, "before")), str(Path(tmp, "after"))])
+        self.assertEqual(out.getvalue().strip(), "0.038000:0.083000")
 
 
 @unittest.skipUnless(shutil.which("bash"), "needs bash")

@@ -70,6 +70,7 @@ All six are in [`scripts/evidence/`](../../../scripts/evidence/). They use only 
 | `capture_cilium_drops.sh` | Captures each node's Cilium drop events for a fixed time into one file per node. Puts the arrival time in front of each line. Writes a `# coverage` header. |
 | `cilium_drop_view.py` | Parses drop captures. Shows the time each capture covers, lost events, and the drops grouped by flow, reason and BPF source location. |
 | `join_probes_to_ztunnel.py` | Joins each probe to its connection, and gives each probe a verdict. With `--drops`, it also joins each denied or failed probe to the drops of its flow. |
+| `node_clock_offset.py` | Measures a bound on node clock minus host clock, for the join's `--node-clock-offset`. |
 | `dns_check.sh` | Resolves one name with `nslookup` from named Pods, and records the answer or the error. |
 
 There is one parser for each format. `ztunnel_log_view.py` parses ztunnel logs and `cilium_drop_view.py` parses drop
@@ -250,10 +251,28 @@ scripts/evidence/join_probes_to_ztunnel.py <run-dir>/probes \
   --trust-domain cmtc-a=cmtc-a.mesh.example --trust-domain cmtc-b=cmtc-b.mesh.example \
   --logs <run-dir>/ztunnel-access/*.log \
   --drops <run-dir>/cilium-drops/*.log \
-  --since 2026-10-25T23:00:00Z --out <run-dir>/join.json
+  --since 2026-10-25T23:00:00Z --node-clock-offset <LO:HI> --out <run-dir>/join.json
 ```
 
 `--drops` is optional. Without it, no verdict uses drops.
+
+`--node-clock-offset` maps the probe windows onto the node clock. Probe times are on the host clock. ztunnel lines and
+drops are on the node clock. Measure the bound before and after the probes, and give the join their union:
+
+```sh
+NODES="cmtc-a-control-plane cmtc-a-worker cmtc-b-control-plane cmtc-b-worker"
+scripts/evidence/node_clock_offset.py --out <run-dir>/node-clock-before.json $NODES   # before the probes
+scripts/evidence/node_clock_offset.py --out <run-dir>/node-clock-after.json $NODES    # after the probes
+scripts/evidence/node_clock_offset.py --union <run-dir>/node-clock-before.json <run-dir>/node-clock-after.json
+```
+
+Each sample reads the host clock, runs `date +%s.%N` in the node container, and reads the host clock again. The node
+read its clock between the two host reads, so node minus host is inside that interval. The tool intersects the samples
+of each node, and fails if they do not overlap (a clock moved during the measurement). It prints `LO:HI` in seconds.
+The join then searches `[start + LO, at + HI]` on the node clock. The default `0:0` compares the clocks directly.
+`join.json` records the bound in each verdict when it is not `0:0`.
+
+On 2026-10-26T03:48Z the bound was `0.039115:0.079109`: every kind node was 39 to 79 ms ahead of the host.
 
 You give the trust domains on the command line. The tool does not read them from the logs, so the check is not
 circular. The expected identity is `spiffe://<trust domain>/ns/<namespace>/sa/<service account>`.
@@ -290,7 +309,7 @@ What each verdict means:
 | `no response, no ztunnel line` | A probe expected to be denied got no response, and no ztunnel logged its caller's IP. The logs cover the window on every node. With `--drops`, `dropSearch` in `join.json` says why no drop matched: no drop in captures that cover the window, captures that do not cover it, or lost events. |
 | `FAIL: the logs of … do not cover this probe` | A log does not cover the probe's window. The probe is not judged. |
 | `FAIL: curl exit N ("…"); the target is a DNS name; …` | The probe's URL names a host, not an IP address, and curl failed. The verdict quotes curl's error without its variable tail. It says whether a ztunnel connection from the client to a backend on the port is in the window. With `--drops`, it adds any Cilium drop of DNS traffic (port 53) from the client. |
-| `FAIL: …` (other) | The reason: a missing line, a wrong identity, a non-HBONE port, a failed curl, or a denied caller that ztunnel saw. With `--drops`, a failed curl adds any drop of its flow. |
+| `FAIL: …` (other) | The reason: a missing line, a wrong identity, a non-HBONE port, more than one matching connection in the window, a failed curl, or a denied caller that ztunnel saw. With `--drops`, a failed curl adds any drop of its flow. |
 
 A probe's window ends at its `at`, which the runner writes after curl returns. The window starts at the row's
 `startedAt` when it has one, else 3 s (`--window`) before `at`. The rows in this folder have no `startedAt`.
@@ -318,9 +337,12 @@ Without `--since`, the 22:57Z baseline probes are refused: the logs in this fold
 - **A missing drop is not a verdict.** The monitor can lose events (`CPU NN: Lost N events`). The join reports lost
   events and coverage gaps in `dropSearch`, and never changes a verdict because a drop is missing.
 - **Drop times are arrival times on the node's clock.** Probe times are on the clock of the host that ran the runner.
-  The join compares them directly, as it does with ztunnel times.
-- **The join matches by time.** It matches client IP and destination within the window, not by a request ID. A
-  fixture that probes the same client, destination and port twice inside 3 s cannot be told apart.
+  Without `--node-clock-offset`, the join compares them directly, as it does with ztunnel times. The bound covers a
+  steady drift and one step between the two measurements. It does not cover a clock that moves away and back
+  between them.
+- **The join matches by time.** It matches client IP and destination within the window, not by a request ID. When
+  more than one connection from the client to the destination is in the window, the probe fails: the join does not
+  choose one.
 - **The proof is per connection, not per packet.** Use a packet capture to show the bytes on the wire.
 - **Workload mTLS is not transport encryption.** This evidence says nothing about WireGuard or IPsec.
 
