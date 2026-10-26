@@ -23,10 +23,8 @@ Read [the illustrated PKI flow](PKI_TRUST_FLOW.md) for issuance and verification
 
 ## Preserve ClusterMesh
 
-The current ClusterMesh issuer is `cmtc-lab-intermediate`.
-Its Secret is `cert-manager/cluster-intermediate`.
-Its certificates do not allow the extra SPIRE CA level.
-Keep that issuer and Secret intact.
+Historical, until 2026-10-26: the ClusterMesh issuer was `cmtc-lab-intermediate` on Secret `cert-manager/cluster-intermediate`, whose certificates did not allow the extra SPIRE CA level.
+ClusterMesh now uses `<cluster>-clustermesh-intermediate` from the mesh root ([MESH_PKI.md](MESH_PKI.md)); SPIRE's move onto `<cluster>-spire-intermediate` is proposed.
 
 The new SPIRE cluster CA uses `cert-manager/cmtc-spire-cluster-ca`.
 The new SPIRE issuer is `cmtc-spire-issuer`.

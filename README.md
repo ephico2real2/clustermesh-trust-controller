@@ -50,6 +50,7 @@ Ztunnel runs on all four nodes. Cross-cluster workload mTLS remains unqualified.
 | Check the work plan | [Backlog](docs/agile/BACKLOG.md) and [security test matrix](docs/architecture/SECURITY_AND_FAILURE_TEST_MATRIX.md) |
 | Prove mTLS for each request from ztunnel logs | [ztunnel evidence tutorial](docs/evidence/g1-destination-sources/PROVE_MTLS_FROM_ZTUNNEL_LOGS.md) and [G1 traffic record](docs/evidence/g1-destination-sources/README.md) |
 | Understand PKI and stale-flow checks | [PKI trust flow](PKI_TRUST_FLOW.md) |
+| See which cluster signed a certificate, and certificate lifetimes | [Mesh PKI](MESH_PKI.md) |
 | Build each image | [Local image build](LOCAL_IMAGE_BUILD.md) |
 | Build and test locally | [Podman workflow](docs/development/PODMAN_LOCAL_VALIDATION.md) |
 | Run the lab scripts in order | [Lab scripts](docs/development/LAB_SCRIPTS.md) |

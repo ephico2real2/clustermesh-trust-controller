@@ -1,6 +1,6 @@
 # PKI trust and workload verification flow
 
-Status: current, revised 2026-10-25.
+Status: current, revised 2026-10-25. The ClusterMesh chain and the per-cluster intermediates are in [MESH_PKI.md](MESH_PKI.md).
 
 The intended certificate chain has four levels:
 
