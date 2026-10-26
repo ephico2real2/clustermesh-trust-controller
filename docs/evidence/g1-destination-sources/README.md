@@ -85,13 +85,17 @@ first.
 
 | From | Same node | Cross node | Cross cluster (Pod IP) | Global Service by name | Unregistered caller |
 |---|---|---|---|---|---|
-| cmtc-a | 6/6 mTLS proven | 6/6 mTLS proven | 12/12 mTLS proven | failed: curl exit 28 (DNS) | 6/6 no response, no ztunnel line |
-| cmtc-b | 6/6 mTLS proven | 6/6 mTLS proven | 12/12 mTLS proven | failed: curl exit 28 (DNS) | 6/6 no response, no ztunnel line |
+| cmtc-a | 6/6 mTLS proven | 6/6 mTLS proven | 12/12 mTLS proven | failed: curl exit 28, `Resolving timed out` | 6/6 no response, no ztunnel line |
+| cmtc-b | 6/6 mTLS proven | 6/6 mTLS proven | 12/12 mTLS proven | failed: curl exit 28, `Resolving timed out` | 6/6 no response, no ztunnel line |
 
 - "mTLS proven" is the join verdict: both ztunnel lines, HBONE port 15008, and the expected peer and destination
   SPIFFE IDs. Each allowed reply also named the expected serving cluster.
-- The negative probes ended in a curl connect timeout (exit 28). The native drop events of these flows were not
-  recorded, so this record does not show which component dropped them.
+- The negative probes ended in a curl connect timeout (exit 28): curl reported `Connection timed out after 3001
+  milliseconds` (3 probes) or `3002 milliseconds` (9). The native drop events of these flows were not recorded, so
+  this record does not show which component dropped them.
+- The Global Service probes by name: curl reported `Resolving timed out after 3001 milliseconds`. curl writes this
+  only when its timeout expires while it is still resolving the name (curl 8.14.1, `lib/multi.c:1642`). No ztunnel
+  connection from the client to a backend on port 80 is in the window.
 - Row files are in `probes/`. Every verdict, with its two log lines, is in [`join.json`](join.json).
 
 **Global Service by ClusterIP**, recorded at 23:10:33Z in [clusterip-dns-gauges.txt](clusterip-dns-gauges.txt):
@@ -148,7 +152,9 @@ The 72 connections are:
   - The native HBONE-only gate (`bpf/lib/ztunnel_admission.h`) passes only TCP/15008 and has no resolver exception.
   - The fix is in progress; it is not part of this record.
 - **Recovery on `6090aa6eff`:** agent restart, ztunnel restart, node reboot, drain, lost ACK.
-- **Explicit native drop events** for the negative probes.
+- **Explicit native drop events** for the negative probes. The tools exist: capture the drops during the next run with
+  `scripts/evidence/capture_cilium_drops.sh` and join with `--drops`
+  ([tutorial, Step 1](PROVE_MTLS_FROM_ZTUNNEL_LOGS.md#step-1-start-the-drop-capture)).
 - **The client-side handshake errors** above.
 - **Policy shapes:** a source whose egress denies the destination, and a live port narrowing. Both are unit-tested only.
 - **WireGuard/IPsec composition.**

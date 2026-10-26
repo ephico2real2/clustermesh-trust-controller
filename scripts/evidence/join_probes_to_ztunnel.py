@@ -10,7 +10,12 @@ evidence from ztunnel's access log, parsed by ztunnel_log_view.py:
                   SPIFFE ID and the destination identity equal to the server's
   denied probe    no ztunnel line from the caller's IP inside the window, in logs that cover the window on every
                   node. This shows that no ztunnel accepted the caller; it does not show which component dropped
-                  the packets. That needs the Cilium drop event of the same flow.
+                  the packets. With --drops, a Cilium drop event of the same flow names it: "dropped by Cilium:
+                  <reason> at <file:line>"
+  failed probe    a probe whose curl failed. For a target given as a DNS name, the verdict says so, quotes curl's
+                  error (curl writes "Resolving timed out" only when its timeout expires while it still resolves
+                  the name), and says whether any ztunnel connection from the client to a backend on the port is
+                  in the window. With --drops, it adds any Cilium drop of DNS traffic (port 53) from the client.
 
 Inputs:
   probes          JSON files, or directories of them, written by live_mtls_fixture_runner.py: a list of rows with
@@ -21,8 +26,14 @@ Inputs:
                   check is not circular.
   --logs FILES    ztunnel logs, one file per node, named after the node. A filtered extract must declare what it
                   covers with a "# coverage <ISO start> <ISO end>" line (see ztunnel_log_view.read_logs).
+  --drops FILES   optional Cilium drop captures, one file per node, written by capture_cilium_drops.sh (parsed by
+                  cilium_drop_view.py). A drop matches a probe on caller IP, destination IP:port and protocol, inside
+                  the probe's window and the capture's declared coverage. Without --drops the verdicts are as above.
 
-Exit status: 0 when every probe is proven or unanswered as expected, 1 when any probe fails, 2 for bad input.
+A probe's window ends at its `at`. It starts at `startedAt` when the row has one, else --window seconds before `at`.
+
+Exit status: 0 when every probe is proven, or denied as expected (unanswered, or dropped by Cilium), 1 when any
+probe fails, 2 for bad input.
 
 Example:
   scripts/evidence/join_probes_to_ztunnel.py docs/evidence/g1-destination-sources/probes \\
@@ -34,8 +45,10 @@ Example:
 from __future__ import annotations
 
 import argparse
+import ipaddress
 import json
 import os
+import re
 import sys
 from collections import Counter
 from dataclasses import dataclass
@@ -44,12 +57,17 @@ from pathlib import Path
 from urllib.parse import urlsplit
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+from cilium_drop_view import Drop, read_drops  # noqa: E402
 from ztunnel_log_view import (HBONE_PORT, Connection, Style, connections, read_logs,  # noqa: E402
                               section, short_identity, table)
 
 PROVEN = "mTLS proven"
 DENIED = "no response, no ztunnel line"
-RESULT_COLORS = {PROVEN: "green", DENIED: "teal"}
+DROPPED = "dropped by Cilium"
+RESULT_COLORS = {PROVEN: "green", DENIED: "teal", DROPPED: "teal"}
+DNS_PORT = "53"
+# curl's error without its variable tail: "Resolving timed out after 3001 milliseconds" -> "Resolving timed out".
+CURL_ERROR = re.compile(r"^curl: \(\d+\) (.*?)(?: after \d+ m(?:illiseconds|s)\b.*)?$", re.M)
 
 
 @dataclass(frozen=True)
@@ -97,12 +115,91 @@ def _ip(addr: str) -> str:
     return addr.rsplit(":", 1)[0]
 
 
+def _is_ip(host: str | None) -> bool:
+    try:
+        ipaddress.ip_address(host or "")
+    except ValueError:
+        return False
+    return True
+
+
+@dataclass(frozen=True)
+class DropLogs:
+    """Cilium drop captures: the drops, each node's declared coverage, and the monitor's lost-event reports."""
+    drops: list[Drop]
+    coverage: dict
+    lost: list
+
+    def matching(self, src_ip: str, start: datetime, end: datetime, wanted) -> list[Drop]:
+        """Drops from src_ip inside the window and inside their capture's coverage, for which wanted(drop) holds."""
+        return [d for d in self.drops if d.src_ip == src_ip and start <= d.at <= end
+                and self.coverage[d.node][0] <= d.at <= self.coverage[d.node][1] and wanted(d)]
+
+    def search(self, start: datetime, end: datetime) -> str:
+        """What a search that found no drop can say. Absence counts only inside declared coverage."""
+        gaps = sorted(n for n, (lo, hi) in self.coverage.items() if not lo <= start or not end <= hi)
+        if gaps:
+            return "no matching Cilium drop; the drop captures of " + ", ".join(gaps) + " do not cover this probe"
+        # A lost-event report can come after the events it counts, so every report from the window start counts.
+        lost = sum(x.count for x in self.lost if start <= x.at)
+        if lost:
+            return f"no matching Cilium drop; the monitor reported {lost} lost event(s) from the window start on"
+        return "no matching Cilium drop in the captures of " + ", ".join(sorted(self.coverage))
+
+
+def causes(found: list[Drop]) -> str:
+    """Each distinct drop reason and BPF source location, e.g. "Policy denied at bpf_lxc.c:2373"."""
+    return "; ".join(sorted({f"{d.reason} at {d.location}" for d in found}))
+
+
+def _to_target(d: Drop, target, pods: dict[str, Pod]) -> bool:
+    """A TCP drop to the probed Pod, or, for a Service address or a name, to it or a fixture backend on the port."""
+    if d.proto != "tcp" or d.dst_port != str(target.port or 80):
+        return False
+    return d.dst_ip == target.hostname if target.hostname in pods else d.dst_ip in pods or d.dst_ip == target.hostname
+
+
+def curl_error(probe: dict) -> str | None:
+    said = CURL_ERROR.search(probe.get("stderr") or "")
+    return said.group(1) if said else None
+
+
+def failed_curl(probe: dict, target, client: Pod, pods: dict[str, Pod], seen: list[Connection],
+                drop_logs: DropLogs | None, start: datetime, at: datetime) -> dict:
+    """The verdict for an allowed probe whose curl failed: what the logs show about it, and nothing more."""
+    rc, port = probe.get("curlRC"), str(target.port or 80)
+    verdict = {"result": f"FAIL: curl exit {rc}, no connection to join"}
+    name = not _is_ip(target.hostname)
+    if name:
+        said = curl_error(probe)
+        backend = any(c.app_port == port and _ip(c.hbone) in pods for c in seen)
+        seen_text = (f"a ztunnel connection from the client to a backend on port {port} is in the window" if backend
+                     else f"no ztunnel connection from the client to a backend on port {port} in the window")
+        verdict = {"result": f"FAIL: curl exit {rc}" + (f' ("{said}")' if said else "")
+                             + f"; the target is a DNS name; {seen_text}",
+                   "targetName": target.hostname}
+    if drop_logs is None:
+        return verdict
+    dns = drop_logs.matching(client.ip, start, at, lambda d: d.dst_port == DNS_PORT) if name else []
+    found = drop_logs.matching(client.ip, start, at, lambda d: _to_target(d, target, pods))
+    if dns:
+        verdict["result"] += f"; Cilium dropped DNS traffic from the client: {causes(dns)}"
+    if found:
+        verdict["result"] += f"; {DROPPED}: {causes(found)}"
+    if dns or found:
+        verdict["drops"] = [d.raw for d in dns + found]
+    else:
+        verdict["dropSearch"] = drop_logs.search(start, at)
+    return verdict
+
+
 def judge(probe: dict, pods: dict[str, Pod], trust: dict[str, str], conns: list[Connection], records,
-          coverage: dict, window: timedelta) -> dict:
+          coverage: dict, window: timedelta, drop_logs: DropLogs | None = None) -> dict:
     """Return the verdict for one probe, with the connection it was joined to."""
     at, target = utc(probe["at"]), urlsplit(probe["url"])
+    start = utc(probe["startedAt"]) if probe.get("startedAt") else at - window
     # Absence of a line means something only where every node's log covers the probe's whole window.
-    gaps = sorted(n for n, (start, end) in coverage.items() if not start <= at - window or not at <= end)
+    gaps = sorted(n for n, (lo, hi) in coverage.items() if not lo <= start or not at <= hi)
     if gaps:
         return {"result": "FAIL: the logs of " + ", ".join(gaps) + " do not cover this probe"}
     cluster = probe["context"].removeprefix("kind-")
@@ -110,17 +207,24 @@ def judge(probe: dict, pods: dict[str, Pod], trust: dict[str, str], conns: list[
                    if (p.cluster, p.namespace, p.name) == (cluster, probe["namespace"], probe["client"])), None)
     if client is None:
         return {"result": f"FAIL: client {cluster}/{probe['namespace']}/{probe['client']} is not in --pods"}
-    seen = [c for c in conns if c.src_ip == client.ip and at - window <= c.at <= at]
+    seen = [c for c in conns if c.src_ip == client.ip and start <= c.at <= at]
 
     if probe["expect"] == "deny":
-        lines = [r.raw for r in records if at - window <= r.at <= at
+        lines = [r.raw for r in records if start <= r.at <= at
                  and client.ip in (_ip(r.fields.get("src.addr", "")), _ip(r.spans.get("inbound", {}).get("peer", "")))]
         if str(probe.get("curlRC")) == "0":
             return {"result": "FAIL: the denied caller got a response"}
-        return {"result": DENIED} if not lines else {"result": "FAIL: a ztunnel saw the denied caller", "lines": lines}
+        if lines:
+            return {"result": "FAIL: a ztunnel saw the denied caller", "lines": lines}
+        if drop_logs is None:
+            return {"result": DENIED}
+        found = drop_logs.matching(client.ip, start, at, lambda d: _to_target(d, target, pods))
+        if found:
+            return {"result": f"{DROPPED}: {causes(found)}", "drops": [d.raw for d in found]}
+        return {"result": DENIED, "dropSearch": drop_logs.search(start, at)}
 
     if str(probe.get("curlRC")) != "0":
-        return {"result": f"FAIL: curl exit {probe.get('curlRC')}, no connection to join"}
+        return failed_curl(probe, target, client, pods, seen, drop_logs, start, at)
     server = pods.get(target.hostname)
     # A Service address is translated to a backend before ztunnel; join to whichever backend served the port.
     match = [c for c in seen if (c.hbone == f"{target.hostname}:{target.port}" if server
@@ -158,8 +262,10 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--pods", type=Path, required=True)
     ap.add_argument("--trust-domain", action="append", default=[], metavar="CLUSTER=DOMAIN", required=True)
     ap.add_argument("--logs", nargs="+", required=True, help="ztunnel logs, one per node, named after the node")
+    ap.add_argument("--drops", nargs="+", help="Cilium drop captures, one per node, named after the node")
     ap.add_argument("--since", help="ignore probes before this ISO 8601 time")
-    ap.add_argument("--window", type=float, default=3.0, help="seconds before a probe's `at` to search (default 3)")
+    ap.add_argument("--window", type=float, default=3.0,
+                    help="seconds before a probe's `at` to search, for a row without startedAt (default 3)")
     ap.add_argument("--out", type=Path, help="write every verdict, with its log lines, to this JSON file")
     ap.add_argument("--rows", action="store_true", help="print one line per probe, not only the summary")
     ap.add_argument("--color", choices=("auto", "always", "never"), default="auto")
@@ -174,15 +280,18 @@ def main(argv: list[str] | None = None) -> int:
         print("no ztunnel log records found in --logs", file=sys.stderr)
         return 2
     conns, since, window = connections(records), args.since and utc(args.since), timedelta(seconds=args.window)
+    drop_logs = DropLogs(*read_drops(args.drops)) if args.drops else None
 
     verdicts = []
     for name, probe in load_probes(args.probes):
         if since and utc(probe["at"]) < since:
             continue
-        verdict = judge(probe, pods, trust, conns, records, coverage, window)
+        verdict = judge(probe, pods, trust, conns, records, coverage, window, drop_logs)
+        # The runner's curl timings (time_namelookup, remote_ip, exitcode), when it records them, travel with the row.
+        timings = {"curl": probe["curl"]} if "curl" in probe else {}
         verdicts.append({"file": name, "at": probe["at"], "cluster": probe["context"].removeprefix("kind-"),
                          "scope": probe["scope"], "expect": probe["expect"], "client": probe["client"],
-                         "url": probe["url"].split("?", 1)[0], "curlRC": probe.get("curlRC"), **verdict})
+                         "url": probe["url"].split("?", 1)[0], "curlRC": probe.get("curlRC"), **timings, **verdict})
     if args.out:
         args.out.write_text(json.dumps(verdicts, indent=2) + "\n")
 
@@ -190,7 +299,8 @@ def main(argv: list[str] | None = None) -> int:
                                              and "NO_COLOR" not in os.environ))
 
     def result_cell(result):
-        return style.color(result, RESULT_COLORS.get(result, "red"), bold=result.startswith("FAIL"))
+        color = RESULT_COLORS[DROPPED] if result.startswith(DROPPED) else RESULT_COLORS.get(result, "red")
+        return style.color(result, color, bold=result.startswith("FAIL"))
 
     counts = Counter((v["cluster"], v["scope"], v["expect"], v["result"]) for v in verdicts)
     rows = [[style.cluster(c, c), s, e, str(n), result_cell(r)] for (c, s, e, r), n in sorted(counts.items())]
@@ -205,9 +315,11 @@ def main(argv: list[str] | None = None) -> int:
                 table(["AT", "CLIENT", "TARGET", "SERVED BY", "PEER IDENTITY", "RESULT"], rows, style)]
     failed = [v for v in verdicts if v["result"].startswith("FAIL")]
     proven, denied = (sum(v["result"] == r for v in verdicts) for r in (PROVEN, DENIED))
+    dropped = sum(v["result"].startswith(DROPPED) for v in verdicts)
     out.append(f"\n  {style.color(str(proven), 'green', bold=True)} proven over mTLS · "
                f"{style.color(str(denied), 'teal', bold=True)} unanswered with no ztunnel line · "
-               f"{style.color(str(len(failed)), 'red' if failed else 'green', bold=True)} failed")
+               + (f"{style.color(str(dropped), 'teal', bold=True)} dropped by Cilium · " if drop_logs else "")
+               + f"{style.color(str(len(failed)), 'red' if failed else 'green', bold=True)} failed")
     print("\n".join(out))
     return 1 if failed else 0
 
