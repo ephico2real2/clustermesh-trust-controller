@@ -1,0 +1,168 @@
+{
+  "apiVersion": "v1",
+  "kind": "List",
+  "items": [
+    {
+      "apiVersion": "v1",
+      "kind": "Service",
+      "metadata": {
+        "name": "server-control-plane",
+        "namespace": "cmtc-live-mtls",
+        "labels": {
+          "security.cmtc.io/test-owner": "cmtc-primary-live-mtls-20261025"
+        }
+      },
+      "spec": {
+        "ports": [
+          {
+            "name": "tcp-80",
+            "port": 80,
+            "protocol": "TCP",
+            "targetPort": 80
+          },
+          {
+            "name": "tcp-8080",
+            "port": 8080,
+            "protocol": "TCP",
+            "targetPort": 8080
+          },
+          {
+            "name": "tcp-31337",
+            "port": 31337,
+            "protocol": "TCP",
+            "targetPort": 31337
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "discovery.k8s.io/v1",
+      "kind": "EndpointSlice",
+      "metadata": {
+        "name": "server-control-plane",
+        "namespace": "cmtc-live-mtls",
+        "labels": {
+          "security.cmtc.io/test-owner": "cmtc-primary-live-mtls-20261025",
+          "kubernetes.io/service-name": "server-control-plane",
+          "endpointslice.kubernetes.io/managed-by": "cmtc-live-mtls-fixture"
+        }
+      },
+      "addressType": "IPv4",
+      "endpoints": [
+        {
+          "addresses": [
+            "10.10.0.98"
+          ],
+          "conditions": {
+            "ready": true
+          },
+          "nodeName": "cmtc-a-control-plane",
+          "targetRef": {
+            "kind": "Pod",
+            "namespace": "cmtc-live-mtls",
+            "name": "server-control-plane",
+            "uid": "232526d3-f410-46e2-abf7-a66d1638d78e"
+          }
+        }
+      ],
+      "ports": [
+        {
+          "name": "tcp-80",
+          "port": 80,
+          "protocol": "TCP"
+        },
+        {
+          "name": "tcp-8080",
+          "port": 8080,
+          "protocol": "TCP"
+        },
+        {
+          "name": "tcp-31337",
+          "port": 31337,
+          "protocol": "TCP"
+        }
+      ]
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "Service",
+      "metadata": {
+        "name": "server-worker",
+        "namespace": "cmtc-live-mtls",
+        "labels": {
+          "security.cmtc.io/test-owner": "cmtc-primary-live-mtls-20261025"
+        }
+      },
+      "spec": {
+        "ports": [
+          {
+            "name": "tcp-80",
+            "port": 80,
+            "protocol": "TCP",
+            "targetPort": 80
+          },
+          {
+            "name": "tcp-8080",
+            "port": 8080,
+            "protocol": "TCP",
+            "targetPort": 8080
+          },
+          {
+            "name": "tcp-31337",
+            "port": 31337,
+            "protocol": "TCP",
+            "targetPort": 31337
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "discovery.k8s.io/v1",
+      "kind": "EndpointSlice",
+      "metadata": {
+        "name": "server-worker",
+        "namespace": "cmtc-live-mtls",
+        "labels": {
+          "security.cmtc.io/test-owner": "cmtc-primary-live-mtls-20261025",
+          "kubernetes.io/service-name": "server-worker",
+          "endpointslice.kubernetes.io/managed-by": "cmtc-live-mtls-fixture"
+        }
+      },
+      "addressType": "IPv4",
+      "endpoints": [
+        {
+          "addresses": [
+            "10.10.1.37"
+          ],
+          "conditions": {
+            "ready": true
+          },
+          "nodeName": "cmtc-a-worker",
+          "targetRef": {
+            "kind": "Pod",
+            "namespace": "cmtc-live-mtls",
+            "name": "server-worker",
+            "uid": "3aef6668-0a36-4885-9589-193af26eef2a"
+          }
+        }
+      ],
+      "ports": [
+        {
+          "name": "tcp-80",
+          "port": 80,
+          "protocol": "TCP"
+        },
+        {
+          "name": "tcp-8080",
+          "port": 8080,
+          "protocol": "TCP"
+        },
+        {
+          "name": "tcp-31337",
+          "port": 31337,
+          "protocol": "TCP"
+        }
+      ]
+    }
+  ]
+}
