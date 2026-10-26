@@ -1,10 +1,10 @@
 # End-to-end local delivery status
 
-**Current state, measured by traffic at 2026-10-26T03:10Z.** Enrolled workload traffic runs over workload mTLS
-through ztunnel: same node, across nodes and across clusters, in both directions. All 48 allowed Pod-IP probes are
-joined to a ztunnel HBONE connection that both ztunnels logged, with the client identity read from its certificate.
-All 12 unregistered callers were dropped by Cilium. DNS from enrolled Pods fails, so the Global Service by name fails.
-Recovery is not yet tested on the deployed images. This is not a `Protected` claim.
+**Current state, measured by traffic at 2026-10-26T19:07Z.** Both labs run only published images
+(`ghcr.io/ephico2real2`). Enrolled workload traffic runs over workload mTLS through ztunnel: same node, across nodes
+and across clusters, by Pod IP, by per-Pod name and by Global Service name. Matrix 7 joined all 96 allowed probes to a
+ztunnel HBONE connection that both ztunnels logged, and Cilium dropped all 36 unregistered probes. DNS from enrolled
+Pods works over UDP and TCP, in plain text to CoreDNS only. This is not a `Protected` claim.
 
 **Incident.** Workload mTLS failed closed on both labs from 2026-10-25T23:55Z to 2026-10-26T03:10Z, after a
 SPIRE CA rotation that the issuer approval did not pin. The status in this file at 23:56Z said traffic worked; that
@@ -31,64 +31,68 @@ Both labs run in Colima profile `cmtc-cilium`. They are the only clusters that q
 
 ## Deployed images
 
-Read from the workload image fields at 23:56Z. Both clusters run the same images. Every DaemonSet and Deployment in
-both clusters is fully ready.
+Read from the workload image fields at 19:10Z on 2026-10-26, and each image's source labels on the node. Both
+clusters run the same digests, and every DaemonSet, Deployment and StatefulSet listed is fully ready.
 
-| Component | Image | Source |
+| Component | Image (`ghcr.io/ephico2real2/…`) | Source |
 | --- | --- | --- |
-| Cilium agent | `localhost/cilium:dev-overlay-6090aa6eff` | Cilium fork `6090aa6eff`, branch `feat/opus-mesh-mtls-finalization` |
-| Cilium operator, ClusterMesh API server | `dev-overlay-0ed63bf906` | Cilium fork `0ed63bf906` |
-| ztunnel | `localhost/cmtc-ztunnel@sha256:5cf97f91e562…` (tag `native-f221f29b59`) | ztunnel fork `f221f29b59`, branch `feat/opus-mesh-mtls-finalization` |
-| SPIRE node agent | `localhost/cmtc-spire-agent:delegated-0f8fe4d681` | SPIRE fork `0f8fe4d6` |
-| SPIRE server | `localhost/cmtc-spire-server@sha256:f57e537d42e5…` | not re-verified in this checkpoint |
-| CMTC controller and node agent | `localhost/cmtc:current-46d01e91ce` | CMTC `46d01e9` |
+| Cilium agent | `cilium-dev@sha256:708656877bb2…5961518` | Cilium fork `a99264f008`, branch `feat/ztunnel-tcp-dns-resolvers` |
+| Cilium operator | `cilium-dev@sha256:533e8ff5483a…40cb38` | Cilium fork `64a07d46a6` |
+| ClusterMesh API server (etcd, apiserver, kvstoremesh) | `cilium-dev@sha256:1e3fc5a8f272…cffc6` | Cilium fork `64a07d46a6` |
+| ztunnel | `cmtc-ztunnel@sha256:cf4c4d2e5957…a2e94` | ztunnel fork `47956afb33` |
+| SPIRE node agent | `cmtc-spire-agent@sha256:c2d1cbc74d38…a4f1c` | SPIRE fork `0f8fe4d681` |
+| SPIRE server | `cmtc-spire-server@sha256:5d125886ba75…986cab` | SPIRE fork `0f8fe4d681` |
+| CMTC controller and node agent | `cmtc@sha256:e2f036654104…5b7d8` | CMTC `1c3db28a58` |
 
-The Cilium and ztunnel source commits are pushed to `ephico2real2/cilium` and `ephico2real2/ztunnel`. SPIRE
-`0f8fe4d6` is on the fork's `main`. No fork CI ran, and no image is published to a registry.
+The images were moved one component at a time under traffic; see
+[the image qualification record](../evidence/image-qualification-20261026/README.md). The SPIRE registrar image is
+published but not deployed: making it the live registration owner is the operator's decision.
+
+The labs' ztunnel options exist only as edits to `kube-system/cilium-config`; the Helm release does not hold them, so
+a `helm upgrade cilium` would remove them ([#33](https://github.com/ephico2real2/clustermesh-trust-controller/issues/33)).
 
 ## Traffic-qualified results
 
 | Result | Evidence |
 | --- | --- |
-| mTLS restored on the generation-2 approval (03:09:41–03:10:29Z): 48/48 allowed Pod-IP probes proven per connection; 12/12 unregistered callers dropped at `bpf_lxc.c:2373`; 0 ztunnel errors or warnings. | [Incident record, restoration](../evidence/issuer-rebootstrap-20261026/INCIDENT.md#restoration) |
-| Source egress delivered to the destination (ADR-010). 48/48 allowed Pod-IP probes are joined to a ztunnel connection that both ztunnels logged, over HBONE port 15008, with the expected client SPIFFE ID read from the client certificate. The 12 connections of the Global Service check by ClusterIP have the same properties. 12/12 unregistered callers got no response and no ztunnel logged them. | [G1 traffic record](../evidence/g1-destination-sources/README.md) |
-| How to repeat the per-connection proof | [Prove mTLS for each request from ztunnel logs](../evidence/g1-destination-sources/PROVE_MTLS_FROM_ZTUNNEL_LOGS.md) |
-| Earlier images (agent `bc2c9639c5`): ZDS ownership fixes rolled out and the agent `hostPID` requirement removed. Historical for the current images. | [ZDS ownership rollout](../evidence/zds-ownership-rollout-20261025/README.md) |
+| Matrix 7, after the TCP DNS agent (19:05:50–19:07:49Z): 96/96 allowed probes proven per connection (48 by Pod IP, 24 by per-Pod name, each served by its named Pod, 24 by Global Service name); 36/36 unregistered probes dropped at `bpf_lxc.c:2381`. | [matrix 7](../evidence/image-qualification-20261026/matrix-7-tcp-dns/join.txt) |
+| DNS from enrolled Pods: UDP 6/6 and TCP 6/6 names per cluster; unenrolled control 2/2; 9/9 negative probes fail per cluster, with TCP 53 to a non-resolver dropped at `bpf_lxc.c:1630`. Before the TCP rule, TCP was 0/6. | [DNS guide](../../MESH_DNS.md), [DNS evidence](../evidence/image-qualification-20261026/dns/) |
+| Each component moved to its published image under traffic. Steps 1–3 (CMTC, SPIRE agent, SPIRE server): 0 allowed requests failed. Agent restarts (step 5, TCP DNS step): every failure inside the restart window. | [rollout steps](../evidence/image-qualification-20261026/README.md#rollout-steps) |
+| How to repeat the per-connection proof | [Prove mTLS for each request from ztunnel logs](../evidence/g1-destination-sources/PROVE_MTLS_FROM_ZTUNNEL_LOGS.md), `scripts/evidence/run_mtls_matrix.sh` |
+| Earlier: mTLS restored on approval generation 2 at 03:10Z; the G1 source-egress record (ADR-010). Historical for the current images. | [Incident record](../evidence/issuer-rebootstrap-20261026/INCIDENT.md#restoration), [G1 traffic record](../evidence/g1-destination-sources/README.md) |
 
 The ADR-010 implementation commits and their test counts are in
 [ADR-010, implementation status](../architecture/adr/ADR-010.md#implementation-status-2026-10-25).
 
-## Time limit: SPIRE activates its next CA at about 2026-10-26T11:55Z
+## Time limit: issuer approval generation 5 expires at 2026-10-27T03:55:28Z
 
-Both clusters publish from `cmtc-system/cmtc-issuer-approval-g2` (generation 2). It pins SPIRE's current CA (slot B)
-and expires at `2026-10-26T15:55:19Z`. SPIRE prepares its next CA at about 03:55Z and activates it at about 11:55Z.
-From then on, ztunnel refuses every handshake again, until the approval also holds the new CA. A rotation
-that needs no checkpoint reset is in progress (gate 10). The operator authorized one reset only, and it is used. Never
-reset authority state, floors or the ledger to extend the approval.
+Both clusters publish from `cmtc-system/cmtc-issuer-approval-g5` (`approval.expiresAt` 2026-10-27T03:55:28Z, read
+at 19:10Z). No generation 6 exists. When the approval expires, ztunnel refuses every handshake until a new generation
+is accepted. Publishing it is part of gate 10. Never reset authority state, floors or the ledger to extend an approval.
 
 ## Open gates
 
-1. **DNS from enrolled Pods.** The HBONE-only gate in `bpf/lib/ztunnel_admission.h` passes only TCP/15008, so the
-   source endpoint drops the DNS query (`bpf_lxc.c:1626`). Cilium fork commit `8d7b7accfd` admits UDP and TCP port
-   53 only to approved resolver identities. It is tested offline only and not deployed; see `review/dns-fix/REPORT.md`.
-2. **Recovery on the deployed images:** agent restart with an open cross-cluster connection, ztunnel restart, node
-   reboot, drain and a lost ACK.
-3. **ADR-010 review findings C2, C3, C4 and C6–C8** (see ADR-010).
-4. **Live policy shapes:** a source whose egress denies the destination, and a live port narrowing. Both are
+1. **Issuer rotation without reset (gate 10).** Approval generations 3–5 exist on both clusters, and both publish
+   generation 5 (`acceptedGeneration` 5, read at 19:10Z). The next generation is due before 03:55Z on 2026-10-27.
+   The rotation report and ADR-012 are not written.
+2. **Recovery on the deployed images.** Agent restarts are measured per request above. The ztunnel replacement is
+   proven only by the matrix after it (its logs went with the old Pods). Open: node reboot, drain and a lost ACK.
+3. **Restored endpoints before quarantine:** for 1–2 s after an agent restart, an unregistered caller on the same node
+   reaches the destination's ztunnel, which refuses it ([#31](https://github.com/ephico2real2/clustermesh-trust-controller/issues/31)).
+4. **ClusterMesh API server restart** closes cross-cluster traffic for about 65 s
+   ([#30](https://github.com/ephico2real2/clustermesh-trust-controller/issues/30)).
+5. **ExternalIP on a resolver address** could carry DNS from an enrolled Pod to another backend
+   ([#32](https://github.com/ephico2real2/clustermesh-trust-controller/issues/32)).
+6. **Cilium configuration persistence** ([#33](https://github.com/ephico2real2/clustermesh-trust-controller/issues/33)).
+7. **ADR-010 review findings C2, C3, C4 and C6–C8** (see ADR-010).
+8. **Live policy shapes:** a source whose egress denies the destination, and a live port narrowing. Both are
    unit-tested only.
-5. **Native drop events** for the negative probes. The 03:10Z run attributes all 12 to Cilium
-   (`Policy denied at bpf_lxc.c:2373`) with the drop capture. The evidence tools that do this are not committed yet.
-6. **24 client-side HBONE handshake errors** (`authenticated issuer profile/session expired or changed`) between
-   23:01:54Z and 23:12:22Z on 2026-10-25. No probe failed because of them. The cause is not diagnosed. The 03:10Z run
-   logged 0 errors or warnings.
-7. **WireGuard/IPsec composition** with workload mTLS.
-8. **Monitoring.** CoreDNS exposes `:9153` but is not scraped. The `cilium-native` scrape keeps only
-   `cilium_ztunnel_.*|cmtc_.*`. Hubble is off. The CMTC eBPF measurement plane ([ADR-005](../architecture/adr/ADR-005.md))
-   is not built beyond Pod inventory: `internal/agent/` holds only `inventory.go`.
-9. **Stale material.** `scripts/lab/mtls/bootstrap.sh` still creates the retired `cmtc-mtls` cluster. The
-   [component-roles figure](../diagrams/component-roles/source.html) still shows ztunnel activation as pending.
-10. **Issuer rotation without reset.** Source succession that carries the checkpoint floors, and SPIRE's prepared CA
-    as the second approved issuer. It must be qualified on both labs before about 11:55Z.
+9. **WireGuard/IPsec composition** with workload mTLS.
+10. **Monitoring.** CoreDNS exposes `:9153` but is not scraped. Hubble is off. The CMTC eBPF measurement plane
+    ([ADR-005](../architecture/adr/ADR-005.md)) is not built beyond Pod inventory. Metrics v2 is uncommitted
+    (`observability/v2/`).
+11. **Stale material.** `scripts/lab/mtls/bootstrap.sh` still creates the retired `cmtc-mtls` cluster. The
+    [component-roles figure](../diagrams/component-roles/source.html) still shows ztunnel activation as pending.
 
 ## Approval boundary
 
@@ -99,17 +103,16 @@ listener is the approved path. Preserve agent UID 1000/GID 1000 and its private 
 ## Work in progress and leases
 
 The source/compiler lease (`BUILD_SLOT.json`) and the live-writer lease (`LAB_OWNER.json`) are under
-`/private/tmp/cmtc-opus-final-20261025/review/`. Both are owned by Claude Code session `b744973a` and delegated to the
-issuer-rotation agent: the compiler lease at 02:38Z and the live-writer lease at 03:15Z on 2026-10-26. Nothing else
-compiles or writes to the labs until it hands back.
+`/private/tmp/cmtc-opus-final-20261025/review/`. Both are owned by Claude Code session `b744973a`. The issuer-rotation
+agent's delegation was returned at 18:08:46Z on 2026-10-26.
 
 | Work | Owner | State |
 | --- | --- | --- |
-| Issuer rotation without reset (gate 10) | issuer-rotation agent, holds both leases | in progress; brief `review/issuer-rotation/BRIEF.md` |
-| DNS resolver exception (gate 1) | orchestrator | committed in the Cilium fork (`8d7b7accfd`), tested offline; deploy waits for the lease |
-| Cilium drop attribution and DNS verdicts in the evidence tools (gate 5) | orchestrator | finished; uncommitted in `scripts/evidence/` |
-| eBPF measurement plane review (gate 8) | eBPF review agent, read-only | restarted at 02:58Z after the 00:16Z stop |
-| Metrics, CoreDNS scraping and Grafana dashboards v2 (gate 8) | metrics review agent, read-only | restarted at 02:58Z; partial inventory kept; uncommitted `observability/v2/` |
+| DNS from enrolled Pods (CMTC-603, CMTC-404) | orchestrator | UDP and TCP deployed and traffic-qualified (Cilium `8d7b7accfd`, `a99264f008`) |
+| Evidence tools: client-socket join, per-Pod names, DNS probes | orchestrator | committed (`ed6e004`) |
+| Issuer rotation without reset (gate 10) | orchestrator | generation 5 published; report and ADR-012 not written |
+| eBPF measurement plane review | none | one patch proposed, not applied; no report |
+| Metrics, CoreDNS scraping and Grafana dashboards v2 | none | rules and tests pass; not deployed; uncommitted |
 
 Each result is reviewed and verified on both labs before it is committed.
 
