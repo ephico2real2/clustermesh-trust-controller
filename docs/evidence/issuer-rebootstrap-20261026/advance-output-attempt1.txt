@@ -1,0 +1,23 @@
+exit 1
+--stdout
+
+--stderr
+Traceback (most recent call last):
+  File "/Users/olasumbo/gitRepos/clustermest-trust-controller/scripts/lab/issuer-profile/publish_issuers.py", line 566, in <module>
+    if __name__=='__main__':main()
+                            ^^^^^^
+  File "/Users/olasumbo/gitRepos/clustermest-trust-controller/scripts/lab/issuer-profile/publish_issuers.py", line 564, in main
+    publisher.advance() if a.advance else publisher.run()
+    ^^^^^^^^^^^^^^^^^^^
+  File "/Users/olasumbo/gitRepos/clustermest-trust-controller/scripts/lab/issuer-profile/publish_issuers.py", line 495, in advance
+    if d['clusters'][cluster]['advance'].get('phase')!='qualified':self.advance_cluster(cluster,previous)
+                                                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/olasumbo/gitRepos/clustermest-trust-controller/scripts/lab/issuer-profile/publish_issuers.py", line 464, in advance_cluster
+    self.runtime(cluster,desired);self.publications(cluster,source);self.metrics_logs(cluster)
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/olasumbo/gitRepos/clustermest-trust-controller/scripts/lab/issuer-profile/publish_issuers.py", line 316, in runtime
+    if running not in {x.rsplit('@',1)[-1] for x in cri.get('repoDigests',[])} or not re.fullmatch('sha256:[0-9a-f]{64}',running):raise Refusal('runtime imageID is not a manifest of exact CRI image')
+                                                                                                                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Refusal: runtime imageID is not a manifest of exact CRI image
+Conditional restore failures: [{"cluster":"cmtc-a","failure":"Refusal"}]
+

@@ -1,0 +1,17 @@
+Traceback (most recent call last):
+  File "/private/tmp/cmtc-opus-final-20261025/review/live_mtls_fixture_runner.py", line 213, in <module>
+    if __name__=='__main__':main()
+                            ~~~~^^
+  File "/private/tmp/cmtc-opus-final-20261025/review/live_mtls_fixture_runner.py", line 210, in main
+    if x.stage=='probe':l.probe(x.cluster,x.scope,x.expect,x.repeat)
+                        ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/private/tmp/cmtc-opus-final-20261025/review/live_mtls_fixture_runner.py", line 140, in probe
+    self.owned(c,NS);local=self.get(c,'-n',NS,'get','pods')['items'];lp={p['metadata']['name']:p for p in local}
+    ~~~~~~~~~~^^^^^^
+  File "/private/tmp/cmtc-opus-final-20261025/review/live_mtls_fixture_runner.py", line 33, in owned
+    require(pin.exists() and pin.read_text().strip()==n['metadata']['uid'],'Namespace incarnation mismatch')
+    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/private/tmp/cmtc-opus-final-20261025/review/live_mtls_fixture_runner.py", line 14, in require
+    if not x: raise RuntimeError(msg)
+              ^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: Namespace incarnation mismatch

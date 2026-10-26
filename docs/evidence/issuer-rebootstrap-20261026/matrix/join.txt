@@ -1,0 +1,17 @@
+
+▌ Probe join  62 probes joined to 48 ztunnel connections
+
+  CLUSTER  SCOPE         EXPECT  PROBES  RESULT
+  ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  cmtc-a   crosscluster  allow       12  mTLS proven
+  cmtc-a   crossnode     allow        6  mTLS proven
+  cmtc-a   global        allow        1  FAIL: curl exit 28 ("Resolving timed out"); the target is a DNS name; no ztunnel connection from the client to a backend on port 80 in the window; Cilium dropped DNS traffic from the client: Policy denied at bpf_lxc.c:1626
+  cmtc-a   negative      deny         6  dropped by Cilium: Policy denied at bpf_lxc.c:2373
+  cmtc-a   same          allow        6  mTLS proven
+  cmtc-b   crosscluster  allow       12  mTLS proven
+  cmtc-b   crossnode     allow        6  mTLS proven
+  cmtc-b   global        allow        1  FAIL: curl exit 28 ("Resolving timed out"); the target is a DNS name; no ztunnel connection from the client to a backend on port 80 in the window; Cilium dropped DNS traffic from the client: Policy denied at bpf_lxc.c:1626
+  cmtc-b   negative      deny         6  dropped by Cilium: Policy denied at bpf_lxc.c:2373
+  cmtc-b   same          allow        6  mTLS proven
+
+  48 proven over mTLS · 0 unanswered with no ztunnel line · 12 dropped by Cilium · 2 failed

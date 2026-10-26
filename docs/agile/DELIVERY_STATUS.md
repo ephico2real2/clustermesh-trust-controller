@@ -1,9 +1,14 @@
 # End-to-end local delivery status
 
-**Current state, read from both cluster APIs at 2026-10-25T23:56Z.** Enrolled workload traffic runs over workload
-mTLS through ztunnel: same node, across nodes and across clusters, in both directions, on ports 80, 8080 and 31337.
-Every allowed Pod-IP probe has per-connection evidence (48 of 48). DNS from enrolled Pods fails, so the Global
-Service by name fails. Recovery is not yet tested on the deployed images. This is not a `Protected` claim.
+**Current state, measured by traffic at 2026-10-26T03:10Z.** Enrolled workload traffic runs over workload mTLS
+through ztunnel: same node, across nodes and across clusters, in both directions. All 48 allowed Pod-IP probes are
+joined to a ztunnel HBONE connection that both ztunnels logged, with the client identity read from its certificate.
+All 12 unregistered callers were dropped by Cilium. DNS from enrolled Pods fails, so the Global Service by name fails.
+Recovery is not yet tested on the deployed images. This is not a `Protected` claim.
+
+**Incident.** Workload mTLS failed closed on both labs from 2026-10-25T23:55Z to 2026-10-26T03:10Z, after a
+SPIRE CA rotation that the issuer approval did not pin. The status in this file at 23:56Z said traffic worked; that
+was read from readiness, not traffic, and was wrong. See [the incident record](../evidence/issuer-rebootstrap-20261026/INCIDENT.md).
 
 The dated checkpoints that this file held until 2026-10-25T23:56Z are in
 [delivery status history](DELIVERY_STATUS_HISTORY_TO_2026-10-25.md), unchanged. They are historical.
@@ -45,6 +50,7 @@ The Cilium and ztunnel source commits are pushed to `ephico2real2/cilium` and `e
 
 | Result | Evidence |
 | --- | --- |
+| mTLS restored on the generation-2 approval (03:09:41–03:10:29Z): 48/48 allowed Pod-IP probes proven per connection; 12/12 unregistered callers dropped at `bpf_lxc.c:2373`; 0 ztunnel errors or warnings. | [Incident record, restoration](../evidence/issuer-rebootstrap-20261026/INCIDENT.md#restoration) |
 | Source egress delivered to the destination (ADR-010). 48/48 allowed Pod-IP probes are joined to a ztunnel connection that both ztunnels logged, over HBONE port 15008, with the expected client SPIFFE ID read from the client certificate. The 12 connections of the Global Service check by ClusterIP have the same properties. 12/12 unregistered callers got no response and no ztunnel logged them. | [G1 traffic record](../evidence/g1-destination-sources/README.md) |
 | How to repeat the per-connection proof | [Prove mTLS for each request from ztunnel logs](../evidence/g1-destination-sources/PROVE_MTLS_FROM_ZTUNNEL_LOGS.md) |
 | Earlier images (agent `bc2c9639c5`): ZDS ownership fixes rolled out and the agent `hostPID` requirement removed. Historical for the current images. | [ZDS ownership rollout](../evidence/zds-ownership-rollout-20261025/README.md) |
@@ -52,33 +58,37 @@ The Cilium and ztunnel source commits are pushed to `ephico2real2/cilium` and `e
 The ADR-010 implementation commits and their test counts are in
 [ADR-010, implementation status](../architecture/adr/ADR-010.md#implementation-status-2026-10-25).
 
-## Time limit: issuer approval expires at 2026-10-26T03:55:11Z
+## Time limit: SPIRE activates its next CA at about 2026-10-26T11:55Z
 
-`cmtc-system/cmtc-issuer-approval-g1` is an immutable ConfigMap in both clusters. Its `expiresAt` is
-`2026-10-26T03:55:11Z` in both. What expiry does to running traffic is not tested. Rotate the approval before that
-time as described in [the issuer-profile guide](../../LOCAL_ISSUER_PROFILE.md). Never reset authority state,
-floors or the ledger to extend it.
+Both clusters publish from `cmtc-system/cmtc-issuer-approval-g2` (generation 2). It pins SPIRE's current CA (slot B)
+and expires at `2026-10-26T15:55:19Z`. SPIRE prepares its next CA at about 03:55Z and activates it at about 11:55Z.
+From then on, ztunnel refuses every handshake again, until the approval also holds the new CA. A rotation
+that needs no checkpoint reset is in progress (gate 10). The operator authorized one reset only, and it is used. Never
+reset authority state, floors or the ledger to extend the approval.
 
 ## Open gates
 
 1. **DNS from enrolled Pods.** The HBONE-only gate in `bpf/lib/ztunnel_admission.h` passes only TCP/15008, so the
-   source endpoint drops the DNS query (`bpf_lxc.c:1626`). A fix that admits UDP and TCP port 53 only to approved
-   resolver identities is in progress. It is not deployed.
+   source endpoint drops the DNS query (`bpf_lxc.c:1626`). Cilium fork commit `8d7b7accfd` admits UDP and TCP port
+   53 only to approved resolver identities. It is tested offline only and not deployed; see `review/dns-fix/REPORT.md`.
 2. **Recovery on the deployed images:** agent restart with an open cross-cluster connection, ztunnel restart, node
    reboot, drain and a lost ACK.
 3. **ADR-010 review findings C2, C3, C4 and C6–C8** (see ADR-010).
 4. **Live policy shapes:** a source whose egress denies the destination, and a live port narrowing. Both are
    unit-tested only.
-5. **Native drop events** for the negative probes. The record shows no response and no ztunnel line, not which
-   component dropped the packets.
+5. **Native drop events** for the negative probes. The 03:10Z run attributes all 12 to Cilium
+   (`Policy denied at bpf_lxc.c:2373`) with the drop capture. The evidence tools that do this are not committed yet.
 6. **24 client-side HBONE handshake errors** (`authenticated issuer profile/session expired or changed`) between
-   23:01:54Z and 23:12:22Z. No probe failed because of them. The cause is not diagnosed.
+   23:01:54Z and 23:12:22Z on 2026-10-25. No probe failed because of them. The cause is not diagnosed. The 03:10Z run
+   logged 0 errors or warnings.
 7. **WireGuard/IPsec composition** with workload mTLS.
 8. **Monitoring.** CoreDNS exposes `:9153` but is not scraped. The `cilium-native` scrape keeps only
    `cilium_ztunnel_.*|cmtc_.*`. Hubble is off. The CMTC eBPF measurement plane ([ADR-005](../architecture/adr/ADR-005.md))
    is not built beyond Pod inventory: `internal/agent/` holds only `inventory.go`.
 9. **Stale material.** `scripts/lab/mtls/bootstrap.sh` still creates the retired `cmtc-mtls` cluster. The
    [component-roles figure](../diagrams/component-roles/source.html) still shows ztunnel activation as pending.
+10. **Issuer rotation without reset.** Source succession that carries the checkpoint floors, and SPIRE's prepared CA
+    as the second approved issuer. It must be qualified on both labs before about 11:55Z.
 
 ## Approval boundary
 
@@ -89,15 +99,17 @@ listener is the approved path. Preserve agent UID 1000/GID 1000 and its private 
 ## Work in progress and leases
 
 The source/compiler lease (`BUILD_SLOT.json`) and the live-writer lease (`LAB_OWNER.json`) are under
-`/private/tmp/cmtc-opus-final-20261025/review/`. Both are owned by Claude Code session `b744973a` and delegated at
-23:14Z to the DNS-fix agent. Nothing else compiles or writes to the labs until it hands back.
+`/private/tmp/cmtc-opus-final-20261025/review/`. Both are owned by Claude Code session `b744973a` and delegated to the
+issuer-rotation agent: the compiler lease at 02:38Z and the live-writer lease at 03:15Z on 2026-10-26. Nothing else
+compiles or writes to the labs until it hands back.
 
 | Work | Owner | State |
 | --- | --- | --- |
-| DNS resolver exception (gate 1) | DNS-fix agent, holds both leases | in progress; brief `review/dns-fix/BRIEF.md` |
-| Cilium drop attribution and DNS verdicts in the evidence tools (gate 5) | evidence agent | uncommitted changes in `scripts/evidence/` |
-| eBPF measurement plane review and build (gate 8) | eBPF agent | in progress |
-| Metrics and dashboards v2 (gate 8) | metrics agent | uncommitted `observability/v2/` |
+| Issuer rotation without reset (gate 10) | issuer-rotation agent, holds both leases | in progress; brief `review/issuer-rotation/BRIEF.md` |
+| DNS resolver exception (gate 1) | orchestrator | committed in the Cilium fork (`8d7b7accfd`), tested offline; deploy waits for the lease |
+| Cilium drop attribution and DNS verdicts in the evidence tools (gate 5) | orchestrator | finished; uncommitted in `scripts/evidence/` |
+| eBPF measurement plane review (gate 8) | eBPF review agent, read-only | restarted at 02:58Z after the 00:16Z stop |
+| Metrics, CoreDNS scraping and Grafana dashboards v2 (gate 8) | metrics review agent, read-only | restarted at 02:58Z; partial inventory kept; uncommitted `observability/v2/` |
 
 Each result is reviewed and verified on both labs before it is committed.
 
