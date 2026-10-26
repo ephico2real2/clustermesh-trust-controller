@@ -9,7 +9,7 @@ import unittest
 from unittest.mock import patch
 
 from cryptography import x509
-from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives import hashes,serialization
 from cryptography.hazmat.primitives.asymmetric import ec,rsa
 from cryptography.x509.oid import NameOID
 import publish_issuers as u
@@ -169,9 +169,9 @@ class PreparedIssuerTests(unittest.TestCase):
     """SPIRE's prepared X509 CA becomes each cluster's second issuer before SPIRE activates it."""
     @classmethod
     def setUpClass(cls):cls.fx=Fixtures()
-    def build(self,prepared):return u.build_approval(self.fx.proofs,self.fx.parents,q,2,NOW,3600,prepared)
+    def build(self,prepared):return u.build_approval(self.fx.proofs,self.fx.parents,q,2,NOW,86400,prepared)
     def test_prepared_ca_is_the_second_issuer_sorted_by_key_with_the_same_expiry(self):
-        prepared={c:self.fx.prepared(c) for c in q.DOMAINS};a=self.build(prepared);plain=self.fx.approval()
+        prepared={c:self.fx.prepared(c) for c in q.DOMAINS};a=self.build(prepared);plain=u.build_approval(self.fx.proofs,self.fx.parents,q,2,NOW,86400)
         self.assertEqual(plain['expiresAt'],a['expiresAt']);self.assertEqual(plain['roots'],a['roots'])
         for cluster,before in zip(a['clusters'],plain['clusters']):
             issuers=cluster['issuers'];keys=[i['spkiSHA256'] for i in issuers]
@@ -183,6 +183,47 @@ class PreparedIssuerTests(unittest.TestCase):
     def test_a_prepared_ca_that_expires_first_bounds_the_approval(self):
         a=u.build_approval(self.fx.proofs,self.fx.parents,q,2,NOW,86400,{'cmtc-a':self.fx.prepared('cmtc-a',hours=1)})
         self.assertEqual(u.stamp(NOW+dt.timedelta(hours=1)),a['expiresAt'])
+    def special(self,cluster,ski=None,ski_critical=False,aki_critical=False,hours=2,k=None):
+        """A prepared CA signed by the approved parent, with a chosen key identifier, criticality or lifetime."""
+        parent=self.fx.parents[cluster][0];pk=self.fx.parent_keys[cluster];k=k or key()
+        b=(x509.CertificateBuilder().subject_name(x509.Name([x509.NameAttribute(NameOID.COMMON_NAME,cluster+' special')])).issuer_name(parent.subject)
+           .public_key(k.public_key()).serial_number(x509.random_serial_number()).not_valid_before(NOW-dt.timedelta(minutes=1)).not_valid_after(NOW+dt.timedelta(hours=hours))
+           .add_extension(x509.BasicConstraints(ca=True,path_length=None),critical=True)
+           .add_extension(x509.KeyUsage(digital_signature=False,content_commitment=False,key_encipherment=False,data_encipherment=False,key_agreement=False,key_cert_sign=True,crl_sign=True,encipher_only=None,decipher_only=None),critical=True)
+           .add_extension(x509.SubjectAlternativeName([x509.UniformResourceIdentifier('spiffe://'+q.DOMAINS[cluster])]),critical=False)
+           .add_extension(x509.SubjectKeyIdentifier(ski) if ski else x509.SubjectKeyIdentifier.from_public_key(k.public_key()),critical=ski_critical))
+        if aki_critical:b=b.add_extension(x509.AuthorityKeyIdentifier.from_issuer_public_key(pk.public_key()),critical=True)
+        c=b.sign(pk,hashes.SHA256())
+        return q.pem(c)+q.pem(parent),c.extensions.get_extension_for_class(x509.SubjectKeyIdentifier).value.digest.hex()
+    def test_a_key_identifier_copied_onto_another_key_is_refused(self):
+        # The parent signs whatever it is asked to: SPIRE's logged identifier on another key must not pass.
+        genuine=self.fx.prepared('cmtc-a')[1]
+        forged=self.special('cmtc-a',ski=bytes.fromhex(genuine))
+        self.assertEqual(genuine,forged[1])
+        with self.assertRaises(u.Refusal):self.build({'cmtc-a':forged})
+        with self.assertRaises(u.Refusal):u.prepared_identity(q,'cmtc-a',*forged)
+    def test_truncated_sha256_key_identifier_as_spire_writes_it_is_accepted(self):
+        k=key();bits=k.public_key().public_bytes(serialization.Encoding.X962,serialization.PublicFormat.UncompressedPoint)
+        import hashlib
+        self.assertEqual(2,len(self.build({'cmtc-a':self.special('cmtc-a',ski=hashlib.sha256(bits).digest()[:20],k=k)})['clusters'][0]['issuers']))
+    def test_critical_key_identifiers_that_the_controller_refuses_are_refused(self):
+        for name,prepared in {'critical SKI':self.special('cmtc-a',ski_critical=True),'critical AKI':self.special('cmtc-a',aki_critical=True)}.items():
+            with self.subTest(name),self.assertRaises(u.Refusal):self.build({'cmtc-a':prepared})
+    def test_a_prepared_ca_that_outlives_its_parent_is_refused(self):
+        with self.assertRaises(u.Refusal):self.build({'cmtc-a':self.special('cmtc-a',hours=3)})
+    def test_a_horizon_that_ends_before_the_certificates_is_refused_only_with_a_prepared_issuer(self):
+        u.build_approval(self.fx.proofs,self.fx.parents,q,2,NOW,3600)
+        with self.assertRaises(u.Refusal):u.build_approval(self.fx.proofs,self.fx.parents,q,2,NOW,3600,{'cmtc-a':self.fx.prepared('cmtc-a')})
+    def test_a_prepared_key_that_sorts_first_is_the_first_issuer(self):
+        # Random fixture keys leave the order to chance; pin the case the sort must fix.
+        active=q.sha(q.spki(q.certs(self.fx.proofs['cmtc-a']['directIssuerPEM'])[0]));k=key()
+        while q.sha(k.public_key().public_bytes(serialization.Encoding.DER,serialization.PublicFormat.SubjectPublicKeyInfo))>active:k=key()
+        keys=[i['spkiSHA256'] for i in self.build({'cmtc-a':self.fx.prepared('cmtc-a',k=k)})['clusters'][0]['issuers']]
+        self.assertEqual(active,keys[1]);self.assertLess(keys[0],keys[1])
+    def test_wrong_file_or_identifier_is_refused_without_the_parent(self):
+        raw,ski=self.fx.prepared('cmtc-a');u.prepared_identity(q,'cmtc-a',raw,ski)
+        for bad in [(raw,self.fx.prepared('cmtc-a')[1]),(self.fx.prepared('cmtc-b')[0],ski),(raw.split('-----END CERTIFICATE-----\n')[0]+'-----END CERTIFICATE-----\n',ski)]:
+            with self.subTest(bad=bad[1][:8]),self.assertRaises((u.Refusal,q.Refusal)):u.prepared_identity(q,'cmtc-a',*bad)
     def test_one_cluster_may_carry_a_prepared_issuer_alone(self):
         a=self.build({'cmtc-b':self.fx.prepared('cmtc-b')})
         self.assertEqual([1,2],[len(c['issuers']) for c in a['clusters']])
