@@ -261,6 +261,13 @@ class AdvanceTests(unittest.TestCase):
         pub.set_access('cmtc-a',[u.source_name(1),u.source_name(2)]);self.assertEqual(1,len(sent))
         pub.command=lambda argv,timeout=25:b''
         with self.assertRaises(u.Refusal):pub.set_access('cmtc-a',[u.source_name(2)])
+    def test_resume_accepts_an_interrupted_restore_fence_only(self):
+        pub,c,api=self.setup_advance();pub.advance_preflight('cmtc-a',1);step=c['advance']
+        fence=copy.deepcopy(step['from']);fence['metadata']['annotations'][u.ROLLBACK]='f';step.update(to={'other':1},fence=fence,phase='restore-intended')
+        path='/apis/apps/v1/namespaces/'+u.NS+'/deployments/'+u.DEP;api.objects[path]['spec']['template']=copy.deepcopy(fence)
+        pub.advance_preflight('cmtc-a',1)
+        api.objects[path]['spec']['template']['metadata']['annotations']['foreign']='x'
+        with self.assertRaises(u.Refusal):pub.advance_preflight('cmtc-a',1)
     def test_restore_fences_then_returns_exact_previous_template_only(self):
         pub,c,api=self.setup_advance();pub.advance_preflight('cmtc-a',1);step=c['advance']
         step.update(to=u.enabled_template(step['disabled'],'owner-token','cmtc-a',u.source_name(2),'src2-uid','out-uid',self.fx.rootpin,2),phase='patch-intended')
@@ -273,5 +280,39 @@ class AdvanceTests(unittest.TestCase):
         pub,c,api=self.setup_advance();pub.advance_preflight('cmtc-a',1);c['advance'].update(to=step['to'],phase='patch-intended')
         api.objects[path]['spec']['template']['metadata']['annotations']['foreign']='change'
         with self.assertRaises(u.Refusal):pub.restore_advance('cmtc-a')
+
+class RuntimeAndCASTests(unittest.TestCase):
+    """Archive-imported image identity and Deployment CAS races."""
+    def test_archive_import_accepts_only_the_exact_config_digest(self):
+        pulled={'id':'sha256:'+'c'*64,'repoDigests':['localhost/cmtc@sha256:'+'m'*64]}
+        self.assertEqual({'sha256:'+'m'*64},u.runtime_image_ids(pulled))
+        self.assertNotIn('sha256:'+'c'*64,u.runtime_image_ids(pulled))
+        self.assertEqual({'sha256:'+'c'*64},u.runtime_image_ids({'id':'sha256:'+'c'*64,'repoDigests':[]}))
+    def cas(self,after_failure):
+        pub=publisher();c=pub.s.data['clusters']['cmtc-a'];c['deploymentUID']='deployment-uid';api=pub.apis['cmtc-a']
+        path='/apis/apps/v1/namespaces/'+u.NS+'/deployments/'+u.DEP;api.objects[path]=deployment(baseline())
+        desired=copy.deepcopy(baseline());desired['metadata']['annotations']['next']='1';calls=[]
+        def command(argv,timeout=25):
+            calls.append(json.loads(argv[argv.index('-p')+1]))
+            d=api.objects[path]
+            if len(calls)==1:
+                after_failure(d,desired);raise u.Refusal('public command failed (1): test operation failed')
+            d['spec']['template']=copy.deepcopy(calls[-1][-1]['value']);d['metadata']['resourceVersion']=str(int(d['metadata']['resourceVersion'])+1);return b''
+        pub.command=command
+        return pub,api,path,desired,calls
+    def test_status_write_race_retries_with_fresh_resource_version(self):
+        def status_write(d,desired):d['metadata']['resourceVersion']='99'
+        pub,api,path,desired,calls=self.cas(status_write)
+        pub.patch_template('cmtc-a',baseline(),desired)
+        self.assertEqual(2,len(calls));self.assertEqual('99',calls[1][1]['value']);self.assertEqual(desired,api.objects[path]['spec']['template'])
+    def test_failed_ack_with_committed_template_is_not_reapplied(self):
+        def committed(d,desired):d['spec']['template']=copy.deepcopy(desired);d['metadata']['resourceVersion']='4'
+        pub,api,path,desired,calls=self.cas(committed)
+        pub.patch_template('cmtc-a',baseline(),desired);self.assertEqual(1,len(calls))
+    def test_foreign_template_change_is_never_retried(self):
+        def foreign(d,desired):d['spec']['template']['metadata']['annotations']['foreign']='x';d['metadata']['resourceVersion']='5'
+        pub,api,path,desired,calls=self.cas(foreign)
+        with self.assertRaises(u.Refusal):pub.patch_template('cmtc-a',baseline(),desired)
+        self.assertEqual(1,len(calls))
 
 if __name__=='__main__':unittest.main()

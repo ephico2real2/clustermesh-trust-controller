@@ -165,6 +165,15 @@ def source_name(generation):return 'cmtc-issuer-approval-g'+str(generation)
 def access_rules(sources):
     return [{'apiGroups':[''],'resources':['configmaps'],'resourceNames':list(sources),'verbs':['get']},{'apiGroups':[''],'resources':['configmaps'],'resourceNames':[OUT],'verbs':['get','update']}]
 
+def runtime_image_ids(cri):
+    """Content digests a running container may report for this exact CRI image.
+
+    A registry pull records manifest repoDigests. An archive import (kind/ctr) records
+    none, and the kubelet then reports the image config digest itself as imageID.
+    """
+    digests={x.rsplit('@',1)[-1] for x in cri.get('repoDigests',[])}
+    return digests or {cri.get('id')}
+
 def template_patch(deployment,uid,expected,desired):
     if meta(deployment)['uid']!=uid or deployment['spec']['template']!=expected:raise Refusal('Deployment identity/template drift; no takeover')
     return tests(deployment)+[{'op':'test','path':'/spec/template','value':expected},{'op':'replace','path':'/spec/template','value':desired}]
@@ -283,10 +292,22 @@ class Publisher:
             if p.stdout.strip()!=(b'yes' if want else b'no') or p.returncode not in (0,1):raise Refusal('effective SA permission differs from exact contract: '+verb+' '+res)
             results.append({'verb':verb,'resource':res,'allowed':want})
         self.s.data['clusters'][cluster]['rbac']=results;self.s.save()
-    def patch_template(self,cluster,expected,desired):
+    def patch_template(self,cluster,expected,desired,attempts=5):
         api=self.apis[cluster];c=self.s.data['clusters'][cluster];path='/apis/apps/v1/namespaces/'+NS+'/deployments/'+DEP
-        d=api.get(path);ops=template_patch(d,c['deploymentUID'],expected,desired)
-        self.command(api.argv+['-n',NS,'patch','deployment',DEP,'--type=json','-p',compact(ops),'--request-timeout=12s'])
+        for attempt in range(attempts):
+            d=api.get(path);ops=template_patch(d,c['deploymentUID'],expected,desired)
+            try:
+                self.command(api.argv+['-n',NS,'patch','deployment',DEP,'--type=json','-p',compact(ops),'--request-timeout=12s'])
+                break
+            except Refusal:
+                # The Deployment controller writes status right after every template
+                # change, so the resourceVersion test can lose that race. Retry only
+                # while the template is still exactly the expected one.
+                again=api.get(path)
+                if meta(again)['uid']!=c['deploymentUID']:raise
+                if again['spec']['template']==desired:break
+                if again['spec']['template']!=expected or attempt==attempts-1:raise
+                time.sleep(0.5)
         again=api.get(path)
         if meta(again)['uid']!=c['deploymentUID'] or again['spec']['template']!=desired:raise Refusal('Deployment patch acknowledgment differs')
     def runtime(self,cluster,template):
@@ -313,7 +334,7 @@ class Publisher:
                 image=json.loads(raw);spec=image.get('info',{}).get('imageSpec',{});cri=image['status']
                 if cri.get('id')!=self.a.image_config or spec.get('architecture')!='arm64' or spec.get('config',{}).get('Labels',{}).get('org.opencontainers.image.revision')!=self.a.source_sha:raise Refusal('actual running image config/source/architecture differs')
                 running=p['status']['containerStatuses'][0]['imageID'].split('://',1)[-1].rsplit('@',1)[-1]
-                if running not in {x.rsplit('@',1)[-1] for x in cri.get('repoDigests',[])} or not re.fullmatch('sha256:[0-9a-f]{64}',running):raise Refusal('runtime imageID is not a manifest of exact CRI image')
+                if running not in runtime_image_ids(cri) or not re.fullmatch('sha256:[0-9a-f]{64}',running):raise Refusal('runtime imageID is not a manifest of exact CRI image')
                 c['runtime']={'podUID':meta(p)['uid'],'podName':p['metadata']['name'],'podIP':p['status']['podIP'],'containerID':p['status']['containerStatuses'][0]['containerID'],'imageID':p['status']['containerStatuses'][0]['imageID'],'imageConfig':cri['id'],'sourceRevision':self.a.source_sha,'nodeUID':nodeuid};self.s.save();return p
             time.sleep(1)
         raise Refusal('exact existing controller rollout timed out')
@@ -439,7 +460,7 @@ class Publisher:
         if live['spec']['containers'][0].get('image')!=self.a.image:raise Refusal('running controller image differs from the verified image pin')
         step=c.get('advance')
         if step and step['generation']==self.a.generation:
-            if live not in (step['from'],step['to']):raise Refusal('controller template drifted during an unfinished advance')
+            if live not in (step['from'],step.get('to'),step.get('fence')):raise Refusal('controller template drifted during an unfinished advance')
             return
         disabled=producer_disabled(live,self.s.data['owner'])
         expected=enabled_template(disabled,self.s.data['owner'],cluster,source_name(previous),c['uids']['ConfigMap/'+source_name(previous)],c['uids']['ConfigMap/'+OUT],self.a.root_sha256,previous)
@@ -459,7 +480,8 @@ class Publisher:
         # Record intent BEFORE the patch so an unknown acknowledgment is recoverable.
         step.update(to=desired,phase='patch-intended');c['active']=desired;c['baseline']=step['disabled'];self.s.save()
         live=api.get('/apis/apps/v1/namespaces/'+NS+'/deployments/'+DEP)['spec']['template']
-        if live==step['from']:self.patch_template(cluster,step['from'],desired)
+        # An interrupted restore leaves its fence template; advancing from it is the recorded intent.
+        if live in (step['from'],step.get('fence')):self.patch_template(cluster,live,desired)
         elif live!=desired:raise Refusal('controller template drifted before the advance patch')
         self.runtime(cluster,desired);self.publications(cluster,source);self.metrics_logs(cluster)
         self.set_access(cluster,[source]);self.rbac(cluster,source)
@@ -471,7 +493,7 @@ class Publisher:
         api=self.apis[cluster];d=api.get('/apis/apps/v1/namespaces/'+NS+'/deployments/'+DEP)
         if meta(d)['uid']!=c['deploymentUID']:raise Refusal('cannot restore replaced Deployment')
         current=d['spec']['template']
-        if current not in (step['from'],step['to']):raise Refusal('cannot restore foreign Deployment template')
+        if current not in (step['from'],step['to'],step.get('fence')):raise Refusal('cannot restore foreign Deployment template')
         # A resourceVersion-changing fence stops a timed-out advance PATCH from committing later.
         fence=copy.deepcopy(step['from']);fence['metadata']['annotations'][ROLLBACK]=uuid.uuid4().hex
         step.update(fence=fence,phase='restore-intended')
