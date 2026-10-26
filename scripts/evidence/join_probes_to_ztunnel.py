@@ -235,6 +235,13 @@ def judge(probe: dict, pods: dict[str, Pod], trust: dict[str, str], conns: list[
     # A Service address is translated to a backend before ztunnel; join to whichever backend served the port.
     match = [c for c in seen if (c.hbone == f"{target.hostname}:{target.port}" if server
                                  else c.app_port == str(target.port) and _ip(c.hbone) in pods)]
+    # The probe's own socket is the outbound src.addr: it names one connection, where the window can hold several.
+    client_addr = probe.get("clientAddr")
+    if client_addr and match:
+        match = [c for c in match if c.outbound and c.outbound.fields.get("src.addr") == client_addr]
+        if not match:
+            return {"result": f"FAIL: no ztunnel outbound line from the probe's socket {client_addr} "
+                              "to this destination in the window"}
     if not match:
         return {"result": "FAIL: no ztunnel connection from the client to this destination in the window"}
     if len(match) > 1:
@@ -244,7 +251,10 @@ def judge(probe: dict, pods: dict[str, Pod], trust: dict[str, str], conns: list[
     conn = match[0]
     server = server or pods[_ip(conn.hbone)]
     want_src, want_dst = spiffe(trust, client), spiffe(trust, server)
+    # A per-Pod name must reach that one Pod; any other backend means the name or its Service points elsewhere.
+    served, want_server = f"{server.cluster}/{server.name}", probe.get("expectedServer")
     failures = [text for bad, text in (
+        (want_server is not None and served != want_server, f"served by {served}, expected {want_server}"),
         (conn.outbound is None, "no client-side (outbound) line"),
         (conn.inbound is None, "no server-side (inbound) line"),
         (conn.outer_port != HBONE_PORT, f"outer port {conn.outer_port}, not HBONE {HBONE_PORT}"),
@@ -254,7 +264,7 @@ def judge(probe: dict, pods: dict[str, Pod], trust: dict[str, str], conns: list[
     ) if bad]
     return {
         "result": "FAIL: " + "; ".join(failures) if failures else PROVEN,
-        "servedBy": f"{server.cluster}/{server.name}",
+        "servedBy": served,
         "originalDestination": conn.hbone,
         "outerPort": conn.outer_port,
         "peerIdentity": conn.peer_identity,
