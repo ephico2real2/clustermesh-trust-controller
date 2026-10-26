@@ -1,0 +1,63 @@
+global:
+  # true on OpenShift. The Pods then leave runAsUser unset, so the restricted-v2 SCC assigns a UID from the namespace's
+  # range (Red Hat image guidelines; SPIFFE's helm-charts-hardened does the same). The image runs as any non-root UID.
+  # false keeps runAsUser 65532, the image's own user.
+  openshift: false
+
+# Required: the stable cluster name used in metric labels (--cluster-name).
+clusterName: ""
+
+image:
+  repository: ghcr.io/ephico2real2/cmtc
+  # Preferred: the digest from the images workflow's images.lock.json (sha256:...). Used before tag when set.
+  digest: ""
+  tag: ""
+  pullPolicy: IfNotPresent
+
+namespace:
+  # Creates the release namespace with security.cmtc.io/platform-protected=true, which keeps CMTC's own namespace out of
+  # enrollment. Install with -n <namespace> and without --create-namespace. Set false only for a namespace that already
+  # carries that label.
+  create: true
+
+crds:
+  # Installs and upgrades the NamespaceMTLSPolicy CRD. Helm keeps it on uninstall.
+  enabled: true
+
+# Merged over the defaults: runAsNonRoot, seccompProfile RuntimeDefault, and runAsUser 65532 unless global.openshift.
+podSecurityContext: {}
+# Merged over the defaults: allowPrivilegeEscalation false, readOnlyRootFilesystem true, capabilities drop ALL.
+securityContext: {}
+
+controller:
+  replicas: 1
+  resources:
+    requests: {cpu: 25m, memory: 64Mi}
+    limits: {memory: 256Mi}
+  # The opt-in issuer-profile producer. It never enables workload enforcement. An administrator creates the source and
+  # output ConfigMaps first; their UIDs are pinned here, so a replaced object is refused.
+  issuerProfile:
+    enabled: false
+    source: cmtc-issuer-approval
+    sourceUID: ""
+    output: cmtc-issuer-publication
+    outputUID: ""
+    # Installation-approved root certificate SHA-256 pins (hex).
+    rootSHA256: []
+    minimumGeneration: 1
+    # ServiceAccounts allowed to read the source and the output, e.g. {namespace: kube-system, name: cilium}.
+    readers: []
+
+nodeAgent:
+  resources:
+    requests: {cpu: 10m, memory: 32Mi}
+    limits: {memory: 128Mi}
+  tolerations:
+    - operator: Exists
+
+metrics:
+  networkPolicy:
+    enabled: true
+    # Namespaces allowed to scrape port 8080, besides the release namespace. Empty selects the platform's monitoring:
+    # monitoring on Kubernetes; openshift-monitoring and openshift-user-workload-monitoring on OpenShift.
+    allowedNamespaces: []
