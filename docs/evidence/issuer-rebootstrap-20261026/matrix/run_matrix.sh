@@ -9,6 +9,8 @@ scripts/evidence/capture_cilium_drops.sh "$R/cilium-drops" 240 \
   kind-cmtc-a/cmtc-a-control-plane kind-cmtc-a/cmtc-a-worker \
   kind-cmtc-b/cmtc-b-control-plane kind-cmtc-b/cmtc-b-worker > "$R/capture.txt" 2>&1 &
 CAP=$!
+# A background job of a script ignores SIGINT; forward an interrupt so the capture writes what it has.
+trap 'kill -TERM $CAP 2> /dev/null; wait $CAP; exit 130' INT TERM
 until grep -q 'capturing drops on 4 node' "$R/capture.txt"; do kill -0 $CAP; sleep 1; done
 START_S=$(date -u +%s); START=$(date -u -r "$START_S" +%FT%TZ)
 echo "probes start $START" | tee "$R/window.txt"

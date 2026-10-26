@@ -95,8 +95,8 @@ scripts/evidence/capture_cilium_drops.sh <run-dir>/cilium-drops 300 \
   kind-cmtc-b/cmtc-b-control-plane kind-cmtc-b/cmtc-b-worker &
 ```
 
-Start the probes after it prints `capturing drops on 4 node(s) for 300s`. The capture is read-only. `timeout` in the
-agent container stops each monitor after the duration, also when you interrupt the script.
+Start the probes after it prints `capturing drops on 4 node(s) for 300s`. The capture is read-only. Let it run to its
+end with `wait`. To stop it early, send it SIGTERM: a background job of a script ignores SIGINT.
 
 Each output file starts like this (the 6 s capture on cmtc-a-worker):
 
@@ -110,6 +110,19 @@ Each output file starts like this (the 6 s capture on cmtc-a-worker):
 The coverage starts 1 s after the monitor printed `Press Ctrl-C to quit`. The monitor prints that line just before it
 connects to the agent (`cilium-dbg/cmd/monitor.go:248`). The coverage ends when `timeout` stopped the monitor. If the
 monitor stops early, or reports `connection closed`, the coverage ends there and the script exits 1.
+
+An ending that is not the timeout keeps everything that arrived:
+
+| Ending | What you get |
+| --- | --- |
+| SIGTERM, SIGINT or SIGHUP | Every log, written from the lines received. The coverage ends at the node's last heartbeat. The log has a `# ended early:` line. Exit 128 + the signal. |
+| The exec stream is cut (API server, network, agent Pod) | The same, for that node, with the reason. Exit 1. |
+| SIGKILL of the script | No log, but every line is in `OUT_DIR/.raw/`. Run `capture_cilium_drops.sh --finalize OUT_DIR`. It refuses while a stream still writes. |
+
+The agent side sends a heartbeat with its clock time each second without a line. The newest heartbeat is the last
+time the stream is proven alive, on the same clock as the drops. When the client goes, the exec's stdin reaches EOF and
+the agent side stops its monitor at once. `timeout` stays the upper bound. The capture refuses an `OUT_DIR` that already
+holds a capture.
 
 ## Step 2: run the probes
 
@@ -327,8 +340,10 @@ The 46 tests use synthetic ztunnel lines, synthetic Cilium drop lines and a stub
 - the drop join: a matching drop, other ports, protocols, callers, destinations and times, a drop outside its
   capture's coverage, lost events, `startedAt`, a Service address, and a failed curl with a drop;
 - the DNS name verdicts: curl's error, a backend connection in the window, and a DNS drop from the client;
-- `capture_cilium_drops.sh` (a clean capture, a monitor that stops early) and `dns_check.sh` (an answer, a failed
-  exec). These tests need `bash` 5 and GNU `timeout` on `PATH`; without them they are skipped.
+- `capture_cilium_drops.sh`: a clean capture, a monitor that stops early or never starts, SIGTERM, SIGKILL and
+  `--finalize`, a cut stream, a line split across a heartbeat, and a used directory; `dns_check.sh`: an answer and a
+  failed exec. These tests need `bash` 5 and GNU `timeout` on `PATH`; without them they are skipped.
 
-These are unit tests. The capture ran once on the lab, for 6 s on two cmtc-a agents, read-only. It has not yet been
-used in a probe run.
+These are unit tests. On the labs, the capture ran in the 2026-10-26T03:10Z probe run
+([record](../issuer-rebootstrap-20261026/INCIDENT.md#restoration)). It was also interrupted with SIGTERM on two
+agents: both logs kept their drops, and no agent-side monitor was left 3 s later.

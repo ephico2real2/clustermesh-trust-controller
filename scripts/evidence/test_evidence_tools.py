@@ -5,11 +5,13 @@ import io
 import json
 import os
 import shutil
+import signal
 import subprocess
 import sys
 import tempfile
+import time
 import unittest
-from datetime import timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -391,15 +393,30 @@ def _bash5_and_timeout() -> bool:
 
 
 STUB_KUBECTL = """#!/usr/bin/env bash
-# kubectl stub: "get" names one agent Pod; "exec ... -- CMD" runs CMD here.
-while [ $# -gt 0 ]; do case $1 in get) echo cilium-stub; exit 0;; --) shift; exec "$@";; esac; shift; done
+# kubectl stub: "get" names one agent Pod; "exec ... -- CMD" runs CMD here. STUB_STREAM_SECONDS cuts the exec stream
+# after that time, as a lost API connection does: the remote side never sends its exit line.
+while [ $# -gt 0 ]; do case $1 in get) echo cilium-stub; exit 0;; --) shift; break;; esac; shift; done
+[ -n "${STUB_STREAM_SECONDS:-}" ] || exec "$@"
+"$@" | timeout "$STUB_STREAM_SECONDS" cat
+exit 1
 """
+def kill_group(pid):
+    with contextlib.suppress(ProcessLookupError):
+        os.killpg(pid, signal.SIGKILL)
+
+
 STUB_MONITOR = """#!/usr/bin/env bash
 echo "Press Ctrl-C to quit" >&2
 [ "${STUB_MODE:-}" = now ] && exit 3
 sleep 1.3
-echo "xx drop (Policy denied) flow 0xe380ae81 to endpoint 0, ifindex 403, file bpf_lxc.c:1626, , identity 1->2: \
-10.10.1.205:46029 -> 10.10.0.193:53 udp"
+if [ "${STUB_MODE:-}" = split ]; then
+  # One line in two writes, 1.5 s apart: the reader's 1 s heartbeat times out in the middle of it.
+  printf "xx drop (Policy denied) flow 0xe380ae81 to endpoint 0, ifindex 403, file bpf_lxc.c"
+  sleep 1.5
+else
+  printf "xx drop (Policy denied) flow 0xe380ae81 to endpoint 0, ifindex 403, file bpf_lxc.c"
+fi
+echo ":1626, , identity 1->2: 10.10.1.205:46029 -> 10.10.0.193:53 udp"
 [ "${STUB_MODE:-}" = exit ] && exit 3
 exec sleep 30
 """
@@ -439,6 +456,93 @@ class CaptureScriptTests(unittest.TestCase):
         run, _, (start, end) = self.capture("now")
         self.assertEqual(run.returncode, 1)
         self.assertEqual(start, end)
+
+    def start(self, tmp, seconds="30", **env):
+        stubs = Path(tmp, "bin")
+        stubs.mkdir()
+        for name, body in (("kubectl", STUB_KUBECTL), ("cilium-dbg", STUB_MONITOR)):
+            Path(stubs, name).write_text(body)
+            Path(stubs, name).chmod(0o755)
+        env = dict(os.environ, PATH=f"{stubs}:{os.environ['PATH']}", STUB_MODE="clean", **env)
+        proc = subprocess.Popen(["bash", str(HERE / "capture_cilium_drops.sh"), str(Path(tmp, "out")), seconds,
+                                 "kind-x/node-a"], env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
+                                start_new_session=True)
+        self.addCleanup(kill_group, proc.pid)
+        self.assertIn("capturing drops on 1 node(s)", proc.stderr.readline())
+        return proc
+
+    def test_an_interrupted_capture_keeps_its_lines_and_a_true_coverage(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            proc = self.start(tmp)
+            time.sleep(2.5)
+            stopped = datetime.now(timezone.utc)
+            proc.send_signal(signal.SIGTERM)
+            _, err = proc.communicate(timeout=30)
+            self.assertEqual(proc.returncode, 143, err)
+            self.assertIn("interrupted by SIGTERM", err)
+            found, coverage, _ = drops.read_drops([str(Path(tmp, "out", "node-a.log"))])
+            start, end = coverage["node-a"]
+            self.assertEqual([d.location for d in found], ["bpf_lxc.c:1626"])
+            # The coverage reaches the last heartbeat before the signal, never past it.
+            self.assertTrue(found[0].at < end <= stopped, (found[0].at, end, stopped))
+            self.assertFalse(Path(tmp, "out", ".raw").exists())
+
+    def test_a_killed_capture_is_finalized_from_its_raw_lines(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            proc = self.start(tmp)
+            time.sleep(2.5)
+            finalize = ["bash", str(HERE / "capture_cilium_drops.sh"), "--finalize", str(Path(tmp, "out"))]
+            # SIGKILL of the script alone: no trap runs, and its stream still writes, so finalizing must wait.
+            proc.kill()
+            proc.communicate(timeout=30)
+            self.assertFalse(Path(tmp, "out", "node-a.log").exists())
+            run = subprocess.run(finalize, capture_output=True, text=True, timeout=30)
+            self.assertEqual(run.returncode, 2, run.stderr)
+            self.assertIn("is still written", run.stderr)
+            os.killpg(proc.pid, signal.SIGKILL)
+            time.sleep(0.5)
+            run = subprocess.run(finalize, capture_output=True, text=True, timeout=30)
+            self.assertEqual(run.returncode, 1, run.stderr)
+            self.assertIn("killed before it finished", run.stderr)
+            found, coverage, _ = drops.read_drops([str(Path(tmp, "out", "node-a.log"))])
+            self.assertEqual([d.location for d in found], ["bpf_lxc.c:1626"])
+            self.assertTrue(found[0].at < coverage["node-a"][1], coverage)
+
+    def test_a_lost_stream_covers_until_its_last_heartbeat(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            proc = self.start(tmp, STUB_STREAM_SECONDS="3")
+            _, err = proc.communicate(timeout=60)
+            self.assertEqual(proc.returncode, 1)
+            self.assertIn("the stream ended before the monitor stopped", err)
+            found, coverage, _ = drops.read_drops([str(Path(tmp, "out", "node-a.log"))])
+            # The drop arrives at 1.3 s; heartbeats prove the stream alive for about 1.5 s more.
+            self.assertGreater(coverage["node-a"][1] - found[0].at, timedelta(seconds=0.8), coverage)
+
+    def test_a_line_split_across_a_heartbeat_stays_one_line(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            stubs = Path(tmp, "bin")
+            stubs.mkdir()
+            for name, body in (("kubectl", STUB_KUBECTL), ("cilium-dbg", STUB_MONITOR)):
+                Path(stubs, name).write_text(body)
+                Path(stubs, name).chmod(0o755)
+            env = dict(os.environ, PATH=f"{stubs}:{os.environ['PATH']}", STUB_MODE="split")
+            run = subprocess.run(["bash", str(HERE / "capture_cilium_drops.sh"), str(Path(tmp, "out")), "5",
+                                  "kind-x/node-a"], env=env, capture_output=True, text=True, timeout=30)
+            self.assertEqual(run.returncode, 0, run.stderr)
+            log = Path(tmp, "out", "node-a.log").read_text()
+            found, _, _ = drops.read_drops([str(Path(tmp, "out", "node-a.log"))])
+            self.assertEqual([(d.location, d.src_ip, d.src_port, d.dst_ip, d.dst_port) for d in found],
+                             [("bpf_lxc.c:1626", "10.10.1.205", "46029", "10.10.0.193", "53")], log)
+            self.assertNotIn("CMTC_ALIVE", log)
+
+    def test_a_used_directory_is_refused(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            Path(tmp, "out").mkdir()
+            Path(tmp, "out", "node-a.log").write_text("# coverage x y\n")
+            run = subprocess.run(["bash", str(HERE / "capture_cilium_drops.sh"), str(Path(tmp, "out")), "2",
+                                  "kind-x/node-a"], capture_output=True, text=True, timeout=30)
+            self.assertEqual(run.returncode, 2)
+            self.assertIn("already holds a capture", run.stderr)
 
 
 @unittest.skipUnless(shutil.which("bash"), "needs bash")
