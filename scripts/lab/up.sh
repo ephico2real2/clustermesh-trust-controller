@@ -48,74 +48,13 @@ for cluster in cmtc-a cmtc-b; do
   helm upgrade --install cert-manager jetstack/cert-manager --version v1.21.1 --namespace cert-manager --create-namespace \
     --kube-context "kind-$cluster" --set crds.enabled=true --wait --timeout 5m
 done
-# Disposable test authority: root key remains on this runner, never in a cluster or artifact.
-# Each intermediate key is generated inside its own cluster; only CSRs leave it.
+# Mesh PKI (ADR-011, MESH_PKI.md): cert-manager in cmtc-a, the control cluster, mints the 10-year mesh root; its Secret
+# is copied to cmtc-b; each cluster signs its own <cluster>-clustermesh-intermediate and <cluster>-spire-intermediate.
+# Only the public root certificate is written here, for the trust bundle.
 umask 077
 pki=$(mktemp -d "$PWD/.tmp/pki.XXXXXX")
 echo "$pki" > .tmp/pki-directory
-openssl ecparam -name prime256v1 -genkey -noout -out "$pki/root.key"
-openssl req -x509 -new -key "$pki/root.key" -out "$pki/root.crt" -days 3 -subj '/CN=CMTC disposable lab root' \
-  -addext 'basicConstraints=critical,CA:TRUE,pathlen:1' -addext 'keyUsage=critical,keyCertSign,cRLSign'
-for cluster in cmtc-a cmtc-b; do
-  kubectl --context "kind-$cluster" -n cert-manager apply -f - <<EOF
-apiVersion: v1
-kind: ServiceAccount
-metadata: {name: lab-ca-init}
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: Role
-metadata: {name: lab-ca-init}
-rules:
-  - apiGroups: [""]
-    resources: [secrets]
-    verbs: [create]
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: RoleBinding
-metadata: {name: lab-ca-init}
-roleRef: {apiGroup: rbac.authorization.k8s.io, kind: Role, name: lab-ca-init}
-subjects: [{kind: ServiceAccount, name: lab-ca-init, namespace: cert-manager}]
----
-apiVersion: batch/v1
-kind: Job
-metadata: {name: lab-ca-init}
-spec:
-  backoffLimit: 0
-  template:
-    spec:
-      restartPolicy: Never
-      serviceAccountName: lab-ca-init
-      containers:
-        - name: init
-          image: $image
-          imagePullPolicy: IfNotPresent
-          command: [/lab-ca-init]
-          env: [{name: CLUSTER_NAME, value: $cluster}]
-EOF
-  kubectl --context "kind-$cluster" -n cert-manager wait job/lab-ca-init --for=condition=Complete --timeout=2m
-  kubectl --context "kind-$cluster" -n cert-manager logs job/lab-ca-init > "$pki/$cluster.csr"
-  printf 'basicConstraints=critical,CA:TRUE,pathlen:0\nkeyUsage=critical,keyCertSign,cRLSign\nsubjectKeyIdentifier=hash\nauthorityKeyIdentifier=keyid:always,issuer\n' > "$pki/intermediate.ext"
-  openssl x509 -req -in "$pki/$cluster.csr" -CA "$pki/root.crt" -CAkey "$pki/root.key" -CAcreateserial \
-    -out "$pki/$cluster.crt" -days 2 -extfile "$pki/intermediate.ext"
-  cat "$pki/$cluster.crt" "$pki/root.crt" > "$pki/$cluster.chain.crt"
-  python3 - "$pki/$cluster.chain.crt" > "$pki/public-certificate-patch.json" <<'PY'
-import base64,json,pathlib,sys
-# Secret.type is immutable. cert-manager's CA issuer consumes tls.crt/tls.key
-# from the existing Opaque Secret; only this public chain is added here.
-print(json.dumps({'data':{'tls.crt':base64.b64encode(pathlib.Path(sys.argv[1]).read_bytes()).decode()}}))
-PY
-  kubectl --context "kind-$cluster" -n cert-manager patch secret cluster-intermediate --type merge --patch-file "$pki/public-certificate-patch.json"
-  kubectl --context "kind-$cluster" -n cert-manager delete job/lab-ca-init rolebinding/lab-ca-init role/lab-ca-init sa/lab-ca-init
-  kubectl --context "kind-$cluster" apply -f - <<EOF
-apiVersion: cert-manager.io/v1
-kind: ClusterIssuer
-metadata: {name: cmtc-lab-intermediate}
-spec:
-  ca: {secretName: cluster-intermediate}
-EOF
-  kubectl --context "kind-$cluster" wait clusterissuer/cmtc-lab-intermediate --for=condition=Ready --timeout=2m
-done
-rm "$pki/root.key"
+bash scripts/lab/pki/mesh-pki.sh --root-out "$pki/root.crt" cmtc-a cmtc-b
 ips_a=$(python3 scripts/lab/kind-node-ips.py cmtc-a)
 ips_b=$(python3 scripts/lab/kind-node-ips.py cmtc-b)
 ip_a=$(python3 -c 'import json,sys; print(json.loads(sys.argv[1])[0])' "$ips_a")
@@ -124,12 +63,14 @@ import json,pathlib,sys
 # A peer's ztunnel-origin-config pins the server certificate's key (spki-sha256), so cert-manager must renew the
 # server certificate with the same key; the client certificates keep cert-manager's default (a new key each time).
 # Charts before the fork's auto.server.privateKey value ignore it; they also predate the pin.
-values={'tls':{'caBundle':{'enabled':True,'name':'cmtc-public-root','key':'ca.crt','useSecret':False,'content':pathlib.Path(sys.argv[1]).read_text()}},'clustermesh':{'useAPIServer':True,'apiserver':{'service':{'type':'NodePort'},'tls':{'auto':{'enabled':True,'method':'certmanager','certValidityDuration':1,'certManagerIssuerRef':{'group':'cert-manager.io','kind':'ClusterIssuer','name':'cmtc-lab-intermediate'},'server':{'privateKey':{'rotationPolicy':'Never'}}}}},'config':{'enabled':True,'clusters':[{'name':'cmtc-a','ips':json.loads(sys.argv[2]),'port':32379},{'name':'cmtc-b','ips':json.loads(sys.argv[3]),'port':32379}]}}}
+values={'tls':{'caBundle':{'enabled':True,'name':'cmtc-public-root','key':'ca.crt','useSecret':False,'content':pathlib.Path(sys.argv[1]).read_text()}},'clustermesh':{'useAPIServer':True,'apiserver':{'service':{'type':'NodePort'},'tls':{'auto':{'enabled':True,'method':'certmanager','certValidityDuration':365,'certManagerIssuerRef':{'group':'cert-manager.io','kind':'ClusterIssuer'},'server':{'privateKey':{'rotationPolicy':'Never'}}}}},'config':{'enabled':True,'clusters':[{'name':'cmtc-a','ips':json.loads(sys.argv[2]),'port':32379},{'name':'cmtc-b','ips':json.loads(sys.argv[3]),'port':32379}]}}}
 pathlib.Path('.tmp/mesh-values.json').write_text(json.dumps(values))
 PY
 for cluster in cmtc-a cmtc-b; do
+  # Each cluster's leaves are signed by its own intermediate, so a leaf's issuer names the cluster that signed it.
   helm upgrade cilium "$cilium_chart" -f .tmp/cilium-image-values.json -n kube-system --kube-context "kind-$cluster" --reuse-values \
-    -f .tmp/mesh-values.json --wait --timeout 10m
+    -f .tmp/mesh-values.json --set "clustermesh.apiserver.tls.auto.certManagerIssuerRef.name=$cluster-clustermesh-intermediate" \
+    --wait --timeout 10m
   kubectl --context "kind-$cluster" -n kube-system wait certificates --all --for=condition=Ready --timeout=3m
 done
 for cluster in cmtc-a cmtc-b; do

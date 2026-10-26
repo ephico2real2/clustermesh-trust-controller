@@ -1,0 +1,8 @@
+# The issuer of every ClusterMesh and ztunnel origin/membership leaf. It is named after the CA it signs with, so a
+# leaf's issuerRef names the cluster that signed it. The Cilium chart refers to it by name
+# (clustermesh.apiserver.tls.auto.certManagerIssuerRef).
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata: {name: ${CLUSTER}-clustermesh-intermediate}
+spec:
+  ca: {secretName: ${CLUSTER}-clustermesh-intermediate}

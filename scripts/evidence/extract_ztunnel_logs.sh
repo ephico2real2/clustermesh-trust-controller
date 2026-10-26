@@ -14,17 +14,22 @@
 #     'cmtc-live-mtls|src\.addr=10\.(10|20)\.[01]\.' cmtc-a-control-plane cmtc-a-worker cmtc-b-control-plane cmtc-b-worker
 # Environment: DOCKER_CONTEXT (default colima-cmtc-cilium), the Docker context that runs the kind nodes.
 set -euo pipefail
-[ $# -ge 5 ] || { sed -n '2,17p' "$0" >&2; exit 2; }
+# Byte semantics for sed, awk, grep and sort on both GNU (Linux) and BSD (macOS): a log line need not be UTF-8.
+export LC_ALL=C
+[ $# -ge 5 ] || { sed -n '2,15p' "$0" >&2; exit 2; }
 out=$1 start=$2 end=$3 match=$4; shift 4
 context=${DOCKER_CONTEXT:-colima-cmtc-cilium}
 mkdir -p "$out"
 for node in "$@"; do
   dir=$(docker --context "$context" exec "$node" sh -c 'ls -d /var/log/pods/kube-system_ztunnel-cilium-*/*' | tail -1)
   [ -n "$dir" ] || { echo "$node: no ztunnel-cilium Pod log directory" >&2; exit 1; }
-  files=$(docker --context "$context" exec "$node" sh -c "ls -tr $dir/0.log*" | tr '\n' ' ')
+  # The kubelet names each rotated file 0.log.<rotation time> and gzips all but the newest, so the oldest-first order
+  # is the name order with the live 0.log last (mtimes are compression times and can tie), and .gz files are inflated.
+  files=$(docker --context "$context" exec "$node" sh -c "ls $dir/0.log.* 2>/dev/null | sort; echo $dir/0.log" | tr '\n' ' ')
   raw=$(mktemp)
-  # shellcheck disable=SC2086  # $files is a list of paths without spaces
-  docker --context "$context" exec "$node" sh -c "cat $files" | sed -E 's/^[^ ]+ (stdout|stderr) [FP] //' > "$raw"
+  docker --context "$context" exec "$node" sh -c \
+    "for f in $files; do case \$f in *.gz) zcat \$f;; *) cat \$f;; esac; done" \
+    | sed -E 's/^[^ ]+ (stdout|stderr) [FP] //' > "$raw"
   first=$(head -1 "$raw" | cut -f1)
   last=$(tail -1 "$raw" | cut -f1)
   # The log must reach back to START and forward to END, or the coverage header would claim times it lacks.
