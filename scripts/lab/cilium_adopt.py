@@ -307,7 +307,10 @@ def upgrade(args, cluster: Cluster) -> int:
         raise SystemExit(f'{cluster.name}: the plan refuses the upgrade')
     # No --rollback-on-failure: helm owns the fields that were hand-made, so a rollback to a revision rendered before
     # the port would remove them. A failed upgrade is finished by running this upgrade again with the same values.
-    cmd = ['upgrade', RELEASE, args.chart, '--server-side=true', '--take-ownership', '--wait=watcher',
+    # --wait=legacy: the ztunnel DaemonSet is OnDelete (each Pod is replaced on purpose, with its delegate entry), so
+    # it never reports updated Pods; the watcher strategy then waits until the timeout, while the legacy check skips a
+    # DaemonSet that is not RollingUpdate (helm v4 pkg/kube/ready.go) and still waits for every other workload.
+    cmd = ['upgrade', RELEASE, args.chart, '--server-side=true', '--take-ownership', '--wait=legacy',
            '--timeout', args.timeout]
     for f in values_files(args):
         cmd += ['-f', f]

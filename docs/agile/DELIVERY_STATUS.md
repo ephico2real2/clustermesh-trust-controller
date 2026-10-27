@@ -41,18 +41,20 @@ Both labs run in Colima profile `cmtc-cilium`. They are the only clusters that q
 
 ## Deployed images
 
-Read from the workload image fields at 10:33Z on 2026-10-27, and each image's source labels on the node. Both
-clusters run the same digests, and every DaemonSet, Deployment and StatefulSet listed is fully ready.
+Read from the workload image fields at 19:25:42Z on 2026-10-27. Both clusters run the same digests except the CMTC
+image, and every DaemonSet, Deployment and StatefulSet listed is fully ready.
 
 | Component | Image (`ghcr.io/ephico2real2/…`) | Source |
 | --- | --- | --- |
 | Cilium agent | `cilium-dev@sha256:c77bdc52d2f3…ac8a447` | Cilium fork `823d30c51b`, branch `feat/ztunnel-tcp-dns-resolvers` |
 | Cilium operator | `cilium-dev@sha256:533e8ff5483a…40cb38` | Cilium fork `64a07d46a6` |
 | ClusterMesh API server (etcd, apiserver, kvstoremesh) | `cilium-dev@sha256:1e3fc5a8f272…cffc6` | Cilium fork `64a07d46a6` |
-| ztunnel | `cmtc-ztunnel@sha256:6f1ae6891782…d4f4f4a` | ztunnel fork `0e92198`, branch `feat/spire-intermediate-pin` |
+| Hubble relay (cmtc-a only) | `cilium-dev@sha256:bbda6e67ddb9…6b0413` | Cilium fork `b1c3622a9a` ([record](../evidence/hubble-20261027/README.md)) |
+| ztunnel | `cmtc-ztunnel@sha256:bc4fb925ae90…c87771` | ztunnel fork `68c0282`, branch `feat/root-pin-retirement` (draft PR ephico2real2/ztunnel#2) |
 | SPIRE node agent | `cmtc-spire-agent@sha256:c2d1cbc74d38…a4f1c` | SPIRE fork `0f8fe4d681` |
 | SPIRE server | `cmtc-spire-server@sha256:5d125886ba75…986cab` | SPIRE fork `0f8fe4d681` |
-| CMTC controller and node agent | `cmtc@sha256:113b94c09da2…e0ac312` | CMTC `5e5d6308f2` |
+| CMTC controller and node agent, cmtc-a | `cmtc@sha256:a3efbe8c9824…7623719` | CMTC `bb3cfd5`; Helm release `cmtc` revision 1, arbiter off |
+| CMTC controller and node agent, cmtc-b | `cmtc@sha256:113b94c09da2…e0ac312` | CMTC `5e5d6308f2` |
 
 On 2026-10-27 (10:25–10:32Z) the CMTC, Cilium agent and ztunnel images moved for the SPIRE intermediate
 approval, generation 6 ([#34](https://github.com/ephico2real2/clustermesh-trust-controller/issues/34),
@@ -63,8 +65,14 @@ component at a time under traffic; see
 [the image qualification record](../evidence/image-qualification-20261026/README.md). The SPIRE registrar image is
 published but not deployed: making it the live registration owner is the operator's decision.
 
-The labs' ztunnel options exist only as edits to `kube-system/cilium-config`; the Helm release does not hold them, so
-a `helm upgrade cilium` would remove them ([#33](https://github.com/ephico2real2/clustermesh-trust-controller/issues/33)).
+On 2026-10-27 (19:05–19:21Z) the ztunnel image moved to `68c0282`, and the retired Lab Organization Root was removed
+from every node's ztunnel issuer pins without a checkpoint reset; **deployed and traffic-qualified** (96/96, 36/36;
+[record](../evidence/root-pin-retirement-20261027/README.md)).
+
+The Cilium releases hold the labs' ztunnel options since the Helm adoption of 2026-10-27
+([#33](https://github.com/ephico2real2/clustermesh-trust-controller/issues/33),
+[cmtc-b record](../evidence/helm-adoption-cmtc-b-20261027/README.md)); `cilium_release.py check` shows 0 differences
+on both clusters at 19:14Z (cmtc-a revision 9) and 19:05Z (cmtc-b revision 10).
 
 ## Traffic-qualified results
 

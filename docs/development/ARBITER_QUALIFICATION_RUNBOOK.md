@@ -106,9 +106,11 @@ and gives `helm` the kubectl managers' fields first. `A=(cmtc-a config/lab/cmtc/
    `nodeTrustReport=false` for the controller and the node agent's has `nodeTrustReport=true managePins=false`
    (`cmd/cmtc/main.go:148`).
 7. `kubectl --context kind-cmtc-a get nodetrustreports -o yaml` — expected: two reports, named after the nodes;
-   `status.pins.state: ReadOnly` with `rootSHA256` [`0c28af9e…`, `6c12c735…`] (every node's pins file, read
-   2026-10-27T17:55Z, still holds the retired Lab Org Root; `managePins` stays off because a managing agent reports
-   `WriteFailed` for an unapproved pin, which `accepts` in `internal/controller/approval_evidence.go:303` refuses), `status.ztunnel.state: Accepted`,
+   `status.pins.state: ReadOnly` with `rootSHA256` [`6c12c735…`] (the retired Lab Org Root `0c28af9e…` was removed
+   from every node's pins file on 2026-10-27,
+   [evidence](../evidence/root-pin-retirement-20261027/README.md); the step-2 run at 17:55Z, before that, read both
+   roots). `managePins` stays off, the chart default: the administrator writes the pins file, and `accepts` in
+   `internal/controller/approval_evidence.go:303` takes `ReadOnly`. `status.ztunnel.state: Accepted`,
    `acceptedGeneration: 6`, `trustedIssuers` with the two SPKIs of the table, `observedAt` advancing every 30 s.
 8. `kubectl --context kind-cmtc-a -n cmtc-system get cm cmtc-issuer-publication -o jsonpath='{.data.profile\.json}' | python3 -c 'import json,sys; p=json.load(sys.stdin); print(p["state"], p["acceptedGeneration"], p["source"]["name"])'`
    — expected: `published 6 cmtc-issuer-approval-g6` (unchanged).

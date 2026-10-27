@@ -35,5 +35,5 @@ controller:
 nodeAgent:
   trustReport:
     enabled: true
-    # managePins stays off (the chart default): every node's pins file also holds the retired Lab Org Root
-    # (0c28af9e…), which a managing agent refuses to keep (WriteFailed), and no root change is planned.
+    # managePins stays off (the chart default): the administrator writes each node's pins file, outside the
+    # Kubernetes API; the agent mounts it read-only and reports ReadOnly, which the arbiter accepts.

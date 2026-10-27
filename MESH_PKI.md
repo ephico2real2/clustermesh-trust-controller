@@ -376,8 +376,9 @@ ztunnel), one at a time with the traffic matrix after each.
 2. Remove the disposable root from `cmtc-public-root` before 2026-10-27T19:37Z, with the traffic matrix after.
 3. Move the ztunnel ADS, membership-writer and origin-reader Certificates from the lab activation script into the
    chart, with the CA lifetimes above.
-4. Move SPIRE onto `<cluster>-spire-intermediate`: `scripts/lab/spire/render_spire.py` issuer per cluster, old and new
-   root pins together in `pins.json` and the issuer approval.
+4. Done 2026-10-27: SPIRE moved onto `<cluster>-spire-intermediate`, with old and new root pins together in `pins.json`
+   ([LOCAL_ISSUER_PROFILE.md, rollout](LOCAL_ISSUER_PROFILE.md#rollout-2026-10-27)); the old root pin was then
+   retired from every node ([record](docs/evidence/root-pin-retirement-20261027/README.md)).
 5. Decide the SVID TTL (registrar 120 s today; SPIRE default 1 h; Istio 24 h).
 6. Fix the local source-membership watch (finding 1).
 7. Move the root, the ClusterMesh intermediate and their issuers from `mesh-pki.sh` into a chart (Helm-first, #33).

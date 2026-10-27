@@ -90,7 +90,7 @@ Before the advance:
 - The issuer approval must not pin the intermediate while cert-manager still approves every request
   ([MESH_PKI.md, Approval](MESH_PKI.md#approval)).
 - Each node's `pins.json` lists the mesh root in `rootPins`. The Cilium agent and ztunnel read that file at startup.
-- **Blocker (found 2026-10-27T06:28Z; fix implemented and tested, not deployed):** ztunnel's checkpoint binds the installation's root pins as part of its
+- **Blocker (found 2026-10-27T06:28Z; fixed, deployed in the rollout below, step 4):** ztunnel's checkpoint binds the installation's root pins as part of its
   immutable origin (ztunnel fork `1f32bac`, `src/tls/profile_checkpoint.rs`: `Origin.root_pins`, and `validate()`
   refuses "checkpoint independent origin/root scope differs"). Read on the live nodes: the checkpoints are version 2,
   `origin.root_pins` = [`0c28af9e…`] only, authority generation 5. Adding the mesh root to `pins.json` therefore puts
@@ -101,8 +101,9 @@ Before the advance:
   The fix is ztunnel fork `0e92198` (`feat/spire-intermediate-pin`). On load, a stored origin that differs from the
   installation only by missing root pins is extended in memory, after the integrity check on the stored bytes. Floors,
   anchor history, fences and cutoffs carry over, and the file keeps the narrower origin until the next distinct durable
-  commit. A new root still gains authority only through a strictly newer approval generation. Dropping a root pin, or
-  adding one together with any other origin change, still fails closed. ztunnel logs
+  commit. A new root still gains authority only through a strictly newer approval generation. In `0e92198`, dropping a
+  root pin, or adding one together with any other origin change, still fails closed (retirement:
+  [Root pin retirement](#root-pin-retirement-2026-10-27)). ztunnel logs
   `stage="installation-root-pin-extension"`. Tested by the fork's CI (Rust Related Checks, run 40462405566: format,
   build, `cargo test --benches --tests --bins` passed, with the new
   `installation_root_pin_extension_continues_the_checkpoint`). Clippy with `-D warnings` passed locally.
@@ -166,6 +167,26 @@ first CA from the intermediate would have activated at about 23:55Z.
    client socket to a ztunnel mTLS connection with both SPIFFE identities, in every scope; 36 of 36 unregistered
    probes are dropped at `bpf_lxc.c:2381`. The 96th returned HTTP 200 from the expected Pod; NAT gave its socket a new
    source port, so it is joined by destination and time (one candidate) instead.
+
+### Root pin retirement, 2026-10-27
+
+After the rollout every node pinned two roots: the Lab Organization Root (`0c28af9e…`) and the mesh root
+(`6c12c735…`). The operator chose to retire the old root in ztunnel, not to redo the mTLS enabling.
+
+- **Code:** ztunnel fork `68c0282` (branch `feat/root-pin-retirement`, draft PR ephico2real2/ztunnel#2, on `0e92198`).
+  A stored origin that differs from the installation only by retired root pins continues, if the recovered anchors
+  still chain to a remaining pin. Retiring the anchored root ("checkpoint root not independently pinned"), any other
+  origin change, and an add together with a retire still fail closed. ztunnel logs
+  `stage="installation-root-pin-retirement"`. Tested by the fork's CI (Rust Related Checks, run 40560082332).
+- **Tool:** [retire_root_pin.py](scripts/lab/issuer-profile/retire_root_pin.py) removes one pin from one node's
+  `pins.json`, keeps every other field, keeps the old file on the node, and refuses the last pin.
+- **Order per cluster:** the ztunnel image first (Helm; `OnDelete`, so no Pod changes), then per node: narrow the
+  pins, replace the ztunnel Pod at once with its delegate entry, restart the node's Cilium agent. An old ztunnel that
+  restarts on the narrow file fails closed, so the image moves first. Rollback: restore the kept file before any image
+  rollback.
+- **Result (19:05–19:21Z):** every node pins only `6c12c735…`; every checkpoint origin has only `6c12c735…`, logical
+  generation 6, sequence continued, no reset; matrix 96/96 proven, 36/36 dropped
+  ([evidence](docs/evidence/root-pin-retirement-20261027/README.md)).
 
 ### Approval renewal
 
