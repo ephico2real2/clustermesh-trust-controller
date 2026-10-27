@@ -25,6 +25,9 @@ Since 2026-10-25 ztunnel runs in `cmtc-a` and `cmtc-b` with per-cluster trust do
 
 ## Issuance and approval
 
+This is the current SPIRE chain on both labs. The planned move of SPIRE's CA onto the mesh root's
+`<cluster>-spire-intermediate` (issue #34) is drawn in [MESH_PKI.md](MESH_PKI.md#spire-certificates-and-svids).
+
 <!-- markdownlint-disable MD033 -->
 <picture>
   <img src="docs/diagrams/pki-trust-flow/issuance.light.png" alt="The protected host root signs each separate cluster CA. Cert-manager signs SPIRE's CA. SPIRE issues workload SVIDs. CMTC publishes approved public signer profiles.">

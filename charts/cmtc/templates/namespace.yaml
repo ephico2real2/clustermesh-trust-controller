@@ -6,4 +6,6 @@ metadata:
   labels:
     {{- include "cmtc.labels" . | nindent 4 }}
     security.cmtc.io/platform-protected: "true"
+    # Opts in to the mesh root ConfigMap (trust.bundle): the controller verifies the SPIRE issuers it publishes.
+    trust: enabled
 {{- end }}

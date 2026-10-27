@@ -53,7 +53,13 @@ func run(t *testing.T, name string, args ...string) (string, error) {
 
 func render(t *testing.T, set ...string) map[string]object {
 	t.Helper()
-	args := []string{"template", "cmtc", "./cmtc", "--namespace", "cmtc-system"}
+	return renderWith(t, nil, set...)
+}
+
+// renderWith passes extra helm arguments, such as --api-versions, before the --set values.
+func renderWith(t *testing.T, helmArgs []string, set ...string) map[string]object {
+	t.Helper()
+	args := append([]string{"template", "cmtc", "./cmtc", "--namespace", "cmtc-system"}, helmArgs...)
 	for _, s := range set {
 		args = append(args, "--set", s)
 	}
@@ -66,7 +72,12 @@ func render(t *testing.T, set ...string) map[string]object {
 
 func renderFails(t *testing.T, want string, set ...string) {
 	t.Helper()
-	args := []string{"template", "cmtc", "./cmtc", "--namespace", "cmtc-system"}
+	renderFailsWith(t, nil, want, set...)
+}
+
+func renderFailsWith(t *testing.T, helmArgs []string, want string, set ...string) {
+	t.Helper()
+	args := append([]string{"template", "cmtc", "./cmtc", "--namespace", "cmtc-system"}, helmArgs...)
 	for _, s := range set {
 		args = append(args, "--set", s)
 	}
@@ -254,4 +265,50 @@ func TestInvalidValuesFail(t *testing.T) {
 		"controller.issuerProfile.rootSHA256[0]=ABC")
 	renderFails(t, "sourceUID is required", "clusterName=cmtc-a", "image.tag=x",
 		"controller.issuerProfile.enabled=true", "controller.issuerProfile.rootSHA256[0]="+strings.Repeat("a", 64))
+}
+
+func TestTrustIsOwnedByTheChart(t *testing.T) {
+	for k := range render(t, "clusterName=cmtc-a", "image.tag=x") {
+		if strings.HasPrefix(k, "Certificate/") || strings.HasPrefix(k, "ClusterIssuer/") || strings.HasPrefix(k, "Bundle/") {
+			t.Errorf("%s rendered without trust.enabled", k)
+		}
+	}
+	// helm template has no cluster to ask, so the test names the cert-manager and trust-manager APIs.
+	trustAPIs := []string{"--api-versions", "cert-manager.io/v1/Certificate", "--api-versions", "trust.cert-manager.io/v1alpha1/Bundle"}
+	got := renderWith(t, trustAPIs, "clusterName=cmtc-a", "image.tag=x", "trust.enabled=true")
+	cert, issuer, bundle := got["Certificate/cmtc-a-spire-intermediate"], got["ClusterIssuer/cmtc-a-spire-intermediate"], got["Bundle/cmtc-mesh-root"]
+	if cert == nil || issuer == nil || bundle == nil {
+		t.Fatalf("trust objects missing: certificate %v, issuer %v, bundle %v", cert != nil, issuer != nil, bundle != nil)
+	}
+	for path, want := range map[string]any{
+		"metadata.namespace": "cert-manager", "spec.isCA": true, "spec.commonName": "cmtc-a SPIRE intermediate CA",
+		"spec.duration": "26280h", "spec.renewBefore": "8760h", "spec.secretName": "cmtc-a-spire-intermediate",
+		"spec.privateKey.algorithm": "ECDSA", "spec.privateKey.rotationPolicy": "Always",
+		"spec.issuerRef.name": "cmtc-mesh-root", "spec.issuerRef.kind": "ClusterIssuer",
+	} {
+		if v := dig(cert, strings.Split(path, ".")...); v != want {
+			t.Errorf("Certificate %s: %v, want %v", path, v, want)
+		}
+	}
+	if v := dig(issuer, "spec", "ca", "secretName"); v != "cmtc-a-spire-intermediate" {
+		t.Errorf("ClusterIssuer spec.ca.secretName: %v", v)
+	}
+	// Only the issuing root (ca.crt) is copied, and only to namespaces that opted in.
+	source := dig(bundle, "spec", "sources").([]any)[0].(object)["secret"]
+	if !reflect.DeepEqual(source, object{"name": "cmtc-a-spire-intermediate", "key": "ca.crt"}) {
+		t.Errorf("Bundle source: %v", source)
+	}
+	if v := dig(bundle, "spec", "target", "namespaceSelector", "matchLabels"); !reflect.DeepEqual(v, object{"trust": "enabled"}) {
+		t.Errorf("Bundle namespaceSelector.matchLabels: %v", v)
+	}
+	if v := dig(got["Namespace/cmtc-system"], "metadata", "labels", "trust"); v != "enabled" {
+		t.Errorf("the release namespace must opt in to the mesh root: label trust=%v", v)
+	}
+	renderFailsWith(t, trustAPIs, "trust.bundle.namespaceLabels must name at least one label", "clusterName=cmtc-a", "image.tag=x",
+		"trust.enabled=true", "trust.bundle.namespaceLabels=null")
+	renderFails(t, "trust.enabled needs cert-manager installed first (no cert-manager.io/v1 Certificate API)",
+		"clusterName=cmtc-a", "image.tag=x", "trust.enabled=true")
+	certManagerOnly := []string{"--api-versions", "cert-manager.io/v1/Certificate"}
+	renderFailsWith(t, certManagerOnly, "trust.enabled needs cert-manager and trust-manager installed first (no trust.cert-manager.io/v1alpha1 Bundle API)",
+		"clusterName=cmtc-a", "image.tag=x", "trust.enabled=true")
 }

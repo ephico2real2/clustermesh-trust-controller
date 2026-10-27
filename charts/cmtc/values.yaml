@@ -48,6 +48,32 @@ controller:
     # ServiceAccounts allowed to read the source and the output, e.g. {namespace: kube-system, name: cilium}.
     readers: []
 
+# The SPIFFE trust of this cluster (ADR-011, MESH_PKI.md "Trust bundle"): its SPIRE intermediate, signed by the mesh
+# root, and the ConfigMap that carries the mesh root to the namespaces that verify mesh certificates. Needs cert-manager
+# and trust-manager installed first (trust-manager installed without app.targetNamespaces).
+trust:
+  enabled: false
+  # cert-manager's namespace: CA Secrets live here, and trust-manager reads Bundle sources from here (its trust
+  # namespace).
+  certManagerNamespace: cert-manager
+  # The ClusterIssuer backed by the mesh root.
+  # It must match the ClusterIssuer scripts/lab/pki/mesh-pki.sh creates: <prefix>-mesh-root (prefix cmtc by default).
+  rootIssuer: cmtc-mesh-root
+  # <clusterName>-spire-intermediate: a Certificate, its Secret and a ClusterIssuer of that name. SPIRE's UpstreamAuthority
+  # "cert-manager" requests its own X509 CA from that ClusterIssuer.
+  spireIntermediate:
+    # 3 years, renewed 1 year early, which covers the longest certificate it signs (ADR-011, Lifetimes).
+    duration: 26280h
+    renewBefore: 8760h
+  bundle:
+    # The trust-manager Bundle, and the ConfigMap it writes (key ca.crt): the mesh root, read from the intermediate
+    # Secret's ca.crt. Only that key is copied; trust-manager's watch still receives the whole Secret (ADR-011, Accepted
+    # risk).
+    name: cmtc-mesh-root
+    # A namespace opts in with these labels, in its own manifest, only when a component in it verifies mesh certificates.
+    namespaceLabels:
+      trust: enabled
+
 nodeAgent:
   resources:
     requests: {cpu: 10m, memory: 32Mi}

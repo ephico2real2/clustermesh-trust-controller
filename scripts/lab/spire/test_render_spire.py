@@ -201,6 +201,7 @@ class ManifestTests(unittest.TestCase):
                     "security.cmtc.io/pki-cluster": cluster,
                     "security.cmtc.io/pki-role": expected_roles[key],
                     **({"app": doc["metadata"]["labels"]["app"]} if "app" in doc["metadata"]["labels"] else {}),
+                    **({"trust": "enabled"} if doc["kind"] == "Namespace" else {}),
                 },
             )
             if doc["kind"] in {"Namespace", "ClusterRole", "ClusterRoleBinding"}:
@@ -218,7 +219,7 @@ class ManifestTests(unittest.TestCase):
         self.assertEqual(hcl_strings(server, "connection_string"), ["/run/spire/data/datastore.sqlite3"])
         self.assertEqual(hcl_strings(server, "keys_path"), ["/run/spire/data/keys.json"])
         self.assertEqual(hcl_strings(server, "data_dir"), ["/run/spire/data"])
-        self.assertEqual(hcl_strings(server, "issuer_name"), ["cmtc-spire-issuer"])
+        self.assertEqual(hcl_strings(server, "issuer_name"), [cluster + "-spire-intermediate"])
         self.assertEqual(hcl_strings(server, "issuer_kind"), ["ClusterIssuer"])
         self.assertEqual(hcl_strings(server, "issuer_group"), ["cert-manager.io"])
         self.assertEqual(hcl_strings(server, "namespace"), ["cilium-spire", "cilium-spire"])
@@ -548,6 +549,13 @@ class ManifestTests(unittest.TestCase):
         docs = spire.render("cmtc-a")
         docs[0]["metadata"]["name"] = "changed"
         self.assertEqual(spire.render("cmtc-a")[0]["metadata"]["name"], "cilium-spire")
+
+    def test_issuer_is_the_cluster_intermediate_of_the_cmtc_chart(self):
+        # charts/cmtc/templates/trust.yaml names the ClusterIssuer <clusterName>-spire-intermediate.
+        expected = {"cmtc-a": "cmtc-a-spire-intermediate", "cmtc-b": "cmtc-b-spire-intermediate"}
+        for cluster, issuer in expected.items():
+            server = one(spire.render(cluster), "ConfigMap", "spire-server")["data"]["server.conf"]
+            self.assertEqual(hcl_strings(server, "issuer_name"), [issuer])
 
 
 class RefusalTests(unittest.TestCase):
