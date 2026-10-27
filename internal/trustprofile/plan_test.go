@@ -101,9 +101,9 @@ func planInput(t *testing.T, m *mesh, now time.Time, previous *Approval, ledger 
 		generation = previous.Generation
 	}
 	return PlanInput{Now: now, LocalCluster: "cmtc-a", RootPins: m.rootPins(), RootPEM: m.root.pem(),
-		Clusters:   []ClusterIdentity{{"cmtc-a", "cmtc-a.mesh.example"}, {"cmtc-b", "cmtc-b.mesh.example"}},
-		Evidence:   evidence, Previous: previous, Generation: generation, Ledger: ledger,
-		Horizon:    MaxHorizon, RenewBefore: 7 * 24 * time.Hour, RetirementMargin: time.Hour,
+		Clusters: []ClusterIdentity{{"cmtc-a", "cmtc-a.mesh.example"}, {"cmtc-b", "cmtc-b.mesh.example"}},
+		Evidence: evidence, Previous: previous, Generation: generation, Ledger: ledger,
+		Horizon: MaxHorizon, RenewBefore: 7 * 24 * time.Hour, RetirementMargin: time.Hour,
 		MeshTrusts: func(string, string) bool { return true }}
 }
 
@@ -443,4 +443,32 @@ func TestSPIREIntermediateEvidenceRules(t *testing.T) {
 	if _, err := ParseRoot(good.pem(), []string{SHA(good.cert.Raw)}, planNow); err == nil {
 		t.Error("an intermediate was accepted as the root")
 	}
+}
+
+// The SPIRE CA bound of a key is the largest approver-policy maxDuration seen while the key was current or superseded:
+// a CA signed under the old key before the renewal lived under the bound of that time, so a bound lowered afterwards
+// does not shorten the retirement.
+func TestRetirementBoundKeepsTheLargestPolicyDuration(t *testing.T) {
+	m := newMesh(t)
+	oldKey, b := m.intermediates["cmtc-a"], evidenceFor(t, m, "cmtc-b", m.intermediates["cmtc-b"], planNow)
+	wide := evidenceFor(t, m, "cmtc-a", oldKey, planNow)
+	wide.SPIRECAMaxDuration = 72 * time.Hour
+	first := mustPlan(t, planInput(t, m, planNow, nil, nil, map[string]Evidence{"cmtc-a": wide, "cmtc-b": b}))
+	one := validated(t, m, first.Next, planNow).Approval
+	switched := planNow.Add(time.Minute)
+	narrow := evidenceFor(t, m, "cmtc-a", m.intermediate(t, "cmtc-a", switched, switched.AddDate(1, 0, 0)), switched)
+	narrow.SPIRECAMaxDuration = 24 * time.Hour
+	rotation := mustPlan(t, planInput(t, m, switched, &one, first.Ledger, map[string]Evidence{"cmtc-a": narrow, "cmtc-b": b}))
+	if rotation.Next == nil || rotation.Reason != ReasonIssuerAdded {
+		t.Fatalf("rotation: %+v %s", rotation.Next, holdReasons(rotation))
+	}
+	for _, r := range rotation.Ledger {
+		if r.Cluster == "cmtc-a" && r.SPKISHA256 == spki(oldKey) {
+			if at, ok := r.RetireAfter(time.Hour); !ok || !at.Equal(switched.Add(72*time.Hour+time.Hour)) {
+				t.Fatalf("retirement bound %s %v, want the 72h bound seen while current", at, ok)
+			}
+			return
+		}
+	}
+	t.Fatal("no record of the old key")
 }

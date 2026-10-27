@@ -423,14 +423,16 @@ func (m *meshView) cluster(name string) *clusterView {
 	return v
 }
 
-// converged reports whether every node of every cluster converged, and names the first cluster that did not.
+// converged reports whether every node of every cluster converged, and names the first cluster that did not. Every
+// cluster is read, so each pass that reaches this gate tracks every node's heartbeat.
 func (m *meshView) converged() (bool, string) {
+	why := ""
 	for _, c := range m.r.Options.Clusters {
-		if v := m.cluster(c.Name); !v.converged() {
-			return false, c.Name + ": " + v.summary.Message
+		if v := m.cluster(c.Name); !v.converged() && why == "" {
+			why = c.Name + ": " + v.summary.Message
 		}
 	}
-	return true, ""
+	return why == "", why
 }
 
 // trusts is the planner's mesh trust gate: ztunnel on every node of every cluster holds this issuer key of this
@@ -445,18 +447,16 @@ func (m *meshView) trusts(cluster, spki string) bool {
 	if domain == "" {
 		return false
 	}
+	// Every cluster is read before the answer, so each pass that asks tracks every node's heartbeat.
+	all := true
 	for _, c := range m.r.Options.Clusters {
 		v := m.cluster(c.Name)
-		if v.err != nil || len(v.views) == 0 {
-			return false
-		}
+		all = all && v.err == nil && len(v.views) > 0
 		for _, n := range v.views {
-			if !trusts(n, domain, spki) {
-				return false
-			}
+			all = all && trusts(n, domain, spki)
 		}
 	}
-	return true
+	return all
 }
 
 // Reconcile is one arbiter pass. Order: promote a published pending slot; wait while a slot is pending; delete a

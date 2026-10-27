@@ -59,7 +59,8 @@ type IssuerRecord struct {
 	Superseded time.Time
 	// SupersededBy is the key issued next after this one: the key every node must trust before this one retires.
 	SupersededBy string
-	// SPIRECAMaxDuration is the largest policy bound seen while superseded.
+	// SPIRECAMaxDuration is the largest policy bound seen while this key was current or superseded: a SPIRE CA under
+	// it was signed while it was current, under the bound of that time.
 	SPIRECAMaxDuration time.Duration
 }
 
@@ -258,6 +259,9 @@ func PlanApproval(in PlanInput) (Plan, error) {
 			r.Superseded, r.SupersededBy = time.Time{}, ""
 			if r.FirstCurrent.IsZero() {
 				r.FirstCurrent = now
+			}
+			if ev.SPIRECAMaxDuration > r.SPIRECAMaxDuration {
+				r.SPIRECAMaxDuration = ev.SPIRECAMaxDuration
 			}
 			plan.Current[c.Name] = current.SPKISHA256
 			inPrior := false
