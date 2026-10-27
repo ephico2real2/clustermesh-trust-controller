@@ -1,0 +1,126 @@
+ServiceAccount/kube-system/ztunnel-cilium: .metadata.annotations.kubectl.kubernetes.io/last-applied-configuration
+    live ="{\"apiVersion\":\"v1\",\"kind\":\"ServiceAccount\",\"metadata\":{\"annotations\":{},\"labels\":{\"app.kubernetes.io/managed-by\":\"cmtc-local-qualification\"},\"name\":\"ztunnel-cilium\",\"namespace\":\"kube-system\"}}\n"
+    after="<absent>"
+ServiceAccount/kube-system/ztunnel-cilium: .metadata.annotations.meta.helm.sh/release-name
+    live ="<absent>"
+    after="cilium"
+ServiceAccount/kube-system/ztunnel-cilium: .metadata.annotations.meta.helm.sh/release-namespace
+    live ="<absent>"
+    after="kube-system"
+ServiceAccount/kube-system/ztunnel-cilium: .metadata.labels.app.kubernetes.io/managed-by
+    live ="cmtc-local-qualification"
+    after="Helm"
+ConfigMap/kube-system/ztunnel-membership-etcd: .metadata.annotations.kubectl.kubernetes.io/last-applied-configuration
+    live ="{\"apiVersion\":\"v1\",\"data\":{\"etcd.yaml\":\"endpoints:\\n- https://clustermesh-apiserver.kube-system.svc:2379\\ntrusted-ca-file: /var/lib/cilium/ztunnel-membership/ca.crt\\ncert-file: /var/lib/cilium/ztunnel-membership/tls.crt\\nkey-file: /var/lib/cilium/ztunnel-membership/tls.key\\n\"},\"kind
+    after="<absent>"
+ConfigMap/kube-system/ztunnel-membership-etcd: .metadata.annotations.meta.helm.sh/release-name
+    live ="<absent>"
+    after="cilium"
+ConfigMap/kube-system/ztunnel-membership-etcd: .metadata.annotations.meta.helm.sh/release-namespace
+    live ="<absent>"
+    after="kube-system"
+ConfigMap/kube-system/ztunnel-membership-etcd: .metadata.labels.app.kubernetes.io/managed-by
+    live ="cmtc-local-qualification"
+    after="Helm"
+ConfigMap/kube-system/ztunnel-origin-config: .metadata.annotations.kubectl.kubernetes.io/last-applied-configuration
+    live ="{\"apiVersion\":\"v1\",\"data\":{\"cmtc-a\":\"endpoints:\\n- https://cmtc-a.mesh.cilium.io:32379\\ntrusted-ca-file: /var/lib/cilium/clustermesh-origin/ca.crt\\ncert-file: /var/lib/cilium/clustermesh-origin/tls.crt\\nkey-file: /var/lib/cilium/clustermesh-origin/tls.key\\ncilium-host-aliases:\\n- hos
+    after="<absent>"
+ConfigMap/kube-system/ztunnel-origin-config: .metadata.annotations.meta.helm.sh/release-name
+    live ="<absent>"
+    after="cilium"
+ConfigMap/kube-system/ztunnel-origin-config: .metadata.annotations.meta.helm.sh/release-namespace
+    live ="<absent>"
+    after="kube-system"
+ConfigMap/kube-system/ztunnel-origin-config: .metadata.labels.app.kubernetes.io/managed-by
+    live ="cmtc-local-qualification"
+    after="Helm"
+DaemonSet.apps/kube-system/cilium: .metadata.annotations.deprecated.daemonset.template.generation
+    live ="19"
+    after="20"
+DaemonSet.apps/kube-system/cilium: .spec.template.metadata.annotations.prometheus.io/port
+    live ="<absent>"
+    after="9962"
+DaemonSet.apps/kube-system/cilium: .spec.template.metadata.annotations.prometheus.io/scrape
+    live ="<absent>"
+    after="true"
+DaemonSet.apps/kube-system/cilium: .spec.template.spec.containers[name="cilium-agent"].ports[name="prometheus"].hostPort
+    live ="<absent>"
+    after=9962
+DaemonSet.apps/kube-system/cilium: .spec.template.spec.containers[name="cilium-agent"].ports (order)
+    live =["\"prometheus\"", "\"health\""]
+    after=["\"health\"", "\"prometheus\""]
+DaemonSet.apps/kube-system/cilium: .spec.template.spec.containers[name="cilium-agent"].volumeMounts[name="cmtc-ztunnel-bootstrap"]
+    live ={"mountPath": "/etc/ztunnel", "name": "cmtc-ztunnel-bootstrap", "readOnly": true}
+    after="<absent>"
+DaemonSet.apps/kube-system/cilium: .spec.template.spec.containers[name="cilium-agent"].volumeMounts[name="cilium-ztunnel-secrets"]
+    live ="<absent>"
+    after={"mountPath": "/etc/ztunnel", "name": "cilium-ztunnel-secrets", "readOnly": true}
+DaemonSet.apps/kube-system/cilium: .spec.template.spec.containers[name="cilium-agent"].volumeMounts (order)
+    live =["\"ztunnel-membership\"", "\"ztunnel-origin\"", "\"ztunnel-issuer-pins\"", "\"envoy-sockets\"", "\"host-proc-sys-net\"", "\"host-proc-sys-kernel\"", "\"bpf-maps\"", "\"cilium-run\"", "\"cilium-netns\"", "\"etc-cni-netd\"", "\"clustermesh-secrets\"", "\"lib-modules\"", "\"xtables-lock\"", "\"tmp\""]
+    after=["\"envoy-sockets\"", "\"host-proc-sys-net\"", "\"host-proc-sys-kernel\"", "\"bpf-maps\"", "\"cilium-run\"", "\"cilium-netns\"", "\"etc-cni-netd\"", "\"clustermesh-secrets\"", "\"lib-modules\"", "\"xtables-lock\"", "\"ztunnel-membership\"", "\"ztunnel-origin\"", "\"ztunnel-issuer-pins\"", "\"tmp\""]
+DaemonSet.apps/kube-system/cilium: .spec.template.spec.volumes[name="cmtc-ztunnel-bootstrap"]
+    live ={"name": "cmtc-ztunnel-bootstrap", "secret": {"defaultMode": 384, "items": [{"key": "tls.key", "path": "bootstrap-private.key"}, {"key": "tls.crt", "path": "bootstrap-root.crt"}], "secretName": "cmtc-ztunnel-ads-tls"}}
+    after="<absent>"
+DaemonSet.apps/kube-system/cilium: .spec.template.spec.volumes[name="cilium-ztunnel-secrets"]
+    live ="<absent>"
+    after={"name": "cilium-ztunnel-secrets", "secret": {"defaultMode": 384, "items": [{"key": "tls.key", "path": "bootstrap-private.key"}, {"key": "tls.crt", "path": "bootstrap-root.crt"}], "secretName": "cmtc-ztunnel-ads-tls"}}
+DaemonSet.apps/kube-system/cilium: .spec.template.spec.volumes (order)
+    live =["\"ztunnel-membership\"", "\"ztunnel-origin\"", "\"ztunnel-issuer-pins\"", "\"tmp\"", "\"cilium-run\"", "\"cilium-netns\"", "\"bpf-maps\"", "\"hostproc\"", "\"cilium-cgroup\"", "\"cni-path\"", "\"etc-cni-netd\"", "\"lib-modules\"", "\"xtables-lock\"", "\"envoy-sockets\"", "\"clustermesh-secrets\"",
+    after=["\"tmp\"", "\"cilium-run\"", "\"cilium-netns\"", "\"bpf-maps\"", "\"hostproc\"", "\"cilium-cgroup\"", "\"cni-path\"", "\"etc-cni-netd\"", "\"lib-modules\"", "\"xtables-lock\"", "\"envoy-sockets\"", "\"clustermesh-secrets\"", "\"ztunnel-membership\"", "\"ztunnel-origin\"", "\"ztunnel-issuer-pins\"",
+DaemonSet.apps/kube-system/cilium: kubectl-patch still owns 7 field(s) (transfer)
+DaemonSet.apps/kube-system/ztunnel-cilium: .metadata.annotations.kubectl.kubernetes.io/last-applied-configuration
+    live ="{\"apiVersion\":\"apps/v1\",\"kind\":\"DaemonSet\",\"metadata\":{\"annotations\":{},\"labels\":{\"app\":\"ztunnel-cilium\",\"app.kubernetes.io/managed-by\":\"cmtc-local-qualification\",\"app.kubernetes.io/name\":\"ztunnel-cilium\",\"app.kubernetes.io/part-of\":\"cilium\",\"helm.sh/chart\":\"cilium-
+    after="<absent>"
+DaemonSet.apps/kube-system/ztunnel-cilium: .metadata.annotations.meta.helm.sh/release-name
+    live ="<absent>"
+    after="cilium"
+DaemonSet.apps/kube-system/ztunnel-cilium: .metadata.annotations.meta.helm.sh/release-namespace
+    live ="<absent>"
+    after="kube-system"
+DaemonSet.apps/kube-system/ztunnel-cilium: .metadata.labels.app.kubernetes.io/managed-by
+    live ="cmtc-local-qualification"
+    after="Helm"
+DaemonSet.apps/kube-system/ztunnel-cilium: kubectl-patch still owns 1 field(s) (transfer)
+Certificate.cert-manager.io/kube-system/cmtc-ztunnel-ads-server: .metadata.annotations.kubectl.kubernetes.io/last-applied-configuration
+    live ="{\"apiVersion\":\"cert-manager.io/v1\",\"kind\":\"Certificate\",\"metadata\":{\"annotations\":{},\"labels\":{\"app.kubernetes.io/managed-by\":\"cmtc-local-qualification\"},\"name\":\"cmtc-ztunnel-ads-server\",\"namespace\":\"kube-system\"},\"spec\":{\"commonName\":\"localhost\",\"dnsNames\":[\"loca
+    after="<absent>"
+Certificate.cert-manager.io/kube-system/cmtc-ztunnel-ads-server: .metadata.annotations.meta.helm.sh/release-name
+    live ="<absent>"
+    after="cilium"
+Certificate.cert-manager.io/kube-system/cmtc-ztunnel-ads-server: .metadata.annotations.meta.helm.sh/release-namespace
+    live ="<absent>"
+    after="kube-system"
+Certificate.cert-manager.io/kube-system/cmtc-ztunnel-ads-server: .metadata.labels.app.kubernetes.io/managed-by
+    live ="cmtc-local-qualification"
+    after="Helm"
+Certificate.cert-manager.io/kube-system/ztunnel-membership-writer: .metadata.annotations.kubectl.kubernetes.io/last-applied-configuration
+    live ="{\"apiVersion\":\"cert-manager.io/v1\",\"kind\":\"Certificate\",\"metadata\":{\"annotations\":{},\"labels\":{\"app.kubernetes.io/managed-by\":\"cmtc-local-qualification\",\"security.cmtc.io/purpose\":\"ztunnel-membership-activation\"},\"name\":\"ztunnel-membership-writer\",\"namespace\":\"kube-syst
+    after="<absent>"
+Certificate.cert-manager.io/kube-system/ztunnel-membership-writer: .metadata.annotations.meta.helm.sh/release-name
+    live ="<absent>"
+    after="cilium"
+Certificate.cert-manager.io/kube-system/ztunnel-membership-writer: .metadata.annotations.meta.helm.sh/release-namespace
+    live ="<absent>"
+    after="kube-system"
+Certificate.cert-manager.io/kube-system/ztunnel-membership-writer: .metadata.labels.app.kubernetes.io/managed-by
+    live ="cmtc-local-qualification"
+    after="Helm"
+Certificate.cert-manager.io/kube-system/ztunnel-membership-writer: .metadata.labels.security.cmtc.io/purpose
+    live ="ztunnel-membership-activation"
+    after="<absent>"
+Certificate.cert-manager.io/kube-system/ztunnel-origin-reader: .metadata.annotations.kubectl.kubernetes.io/last-applied-configuration
+    live ="{\"apiVersion\":\"cert-manager.io/v1\",\"kind\":\"Certificate\",\"metadata\":{\"annotations\":{},\"labels\":{\"app.kubernetes.io/managed-by\":\"cmtc-local-qualification\",\"security.cmtc.io/purpose\":\"ztunnel-membership-activation\"},\"name\":\"ztunnel-origin-reader\",\"namespace\":\"kube-system\"
+    after="<absent>"
+Certificate.cert-manager.io/kube-system/ztunnel-origin-reader: .metadata.annotations.meta.helm.sh/release-name
+    live ="<absent>"
+    after="cilium"
+Certificate.cert-manager.io/kube-system/ztunnel-origin-reader: .metadata.annotations.meta.helm.sh/release-namespace
+    live ="<absent>"
+    after="kube-system"
+Certificate.cert-manager.io/kube-system/ztunnel-origin-reader: .metadata.labels.app.kubernetes.io/managed-by
+    live ="cmtc-local-qualification"
+    after="Helm"
+Certificate.cert-manager.io/kube-system/ztunnel-origin-reader: .metadata.labels.security.cmtc.io/purpose
+    live ="ztunnel-membership-activation"
+    after="<absent>"
+cmtc-b: 41 change(s), 0 deletion(s); 2 kubectl manager entr(ies) left; 0 refusal(s)
