@@ -2,7 +2,9 @@
 
 Record of [the runbook](../../development/ARBITER_QUALIFICATION_RUNBOOK.md), run by the live-writer session. Image:
 `ghcr.io/ephico2real2/cmtc@sha256:a3efbe8c98249fbe931498edd9d35ab821bd7a506f6bbf33fbc0fb3ba7623719` (CI run 40554526163,
-source `bb3cfd5`, artifact `cmtc-images-bb3cfd5…`).
+source `bb3cfd5`, artifact `cmtc-images-bb3cfd5…`). From 20:48Z (step 7.3 fix):
+`ghcr.io/ephico2real2/cmtc@sha256:a99717bbba669e879caf0c48bc33f51125d77a6a499acf5a1701876bb738cbd1` (CI run
+40580338929, source `9145ad0`).
 
 ## Step 2: kind-cmtc-a adopted into Helm, the arbiter off (17:56-18:01Z)
 
@@ -181,7 +183,7 @@ A fresh client has an empty cache, so the first read of a peer whose connection 
 dial timeout (`k8s.io/client-go@v0.36.0/transport/cache.go:122`) while the pass deadline passes. The status write then
 ran on the expired pass context. A peer that is down made the record report stale evidence as current.
 
-**Fix** (implemented and unit-tested; not yet deployed):
+**Fix** (deployed and traffic-qualified, below):
 
 - `cmd/cmtc/main.go` `peerReader`: the peer client's `rest.Config.Timeout` is `controller.PeerRequestTimeout` (4 s), so
   every request, discovery included, ends within 4 s. Discovery stops at its first failed request, and each read site
@@ -197,3 +199,22 @@ ran on the expired pass context. A peer that is down made the record report stal
 A second finding of the same read: the peer client is built once, at start, from a kubeconfig with an inline token.
 A replaced peer credential takes effect only after a controller restart; `scripts/lab/pki/peer-reader-credential.sh`
 now says so.
+
+### 7.3 again, on the fixed image (20:48-20:58Z)
+
+- Deploy ([cmtc-b](step7-fix/cmtc-b-upgrade.txt), [cmtc-a](step7-fix/cmtc-a-upgrade.txt)): `cmtc_adopt.py plan` on each
+  cluster: 3 changes (the two images and the DaemonSet's template generation), 0 kubectl managers, 0 refusals; the
+  repository's render of the old digest equals each release's manifest. `helm upgrade` cmtc-b to revision 2
+  (20:48:40Z), then cmtc-a to revision 3 (20:55:38Z). Each new arbiter showed `Distributing` until it saw one
+  heartbeat move, then `Overlapping` 8 (cmtc-b 20:49:15Z, cmtc-a 20:56:14Z); 0 failed passes; 0 fences.
+- The test ([record](step7-fix/peer-unreachable.txt), cmtc-b, policy 20:49:50Z, controller restarted 20:49:51Z,
+  policy deleted 20:53:54Z): the first pass wrote `EvidenceReady=False` (`EvidenceMissing`), cmtc-a's evidence
+  `Unavailable`, at `observedAt` 20:49:53Z. All 13 passes with the peer down ended in 4.01-4.22 s
+  ([log](step7-fix/no-peer-arbiter-log.jsonl)): one peer request at the 4 s timeout. `status.current` stayed 8 in
+  `cmtc-issuer-approval-b`, no other slot existed, 0 fences. After the deletion the pass at 20:54:00Z read cmtc-a
+  again (`EvidenceReady=True`, 0.019 s; [log](step7-fix/after-delete-arbiter-log.jsonl)).
+- Traffic: [matrix-step7-fix-no-peer](matrix-step7-fix-no-peer/join.txt) (20:49:55-20:51:55Z, peer down) and
+  [matrix-step7-fix-both](matrix-step7-fix-both/join.txt) (20:56:33-20:58:34Z, both clusters on the new image): each
+  96 proven over mTLS, 0 unanswered, 36 dropped by Cilium, 0 failed.
+- Observed: a pass with the peer down logs `result=idle` with an empty `blocked`; the arbiter log does not name the
+  unavailable peer. The record does (`status.clusters[cmtc-a].evidence`).

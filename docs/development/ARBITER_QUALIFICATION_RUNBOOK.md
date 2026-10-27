@@ -6,7 +6,7 @@ Runbook for the **proposed** behavior of [ADR-012](../architecture/adr/ADR-012.m
 <!-- /CMTC_DOC_CONTEXT -->
 
 **Status:** written 2026-10-27 from the branch `feat/arbiter-qualification`; steps 2 to 5 and 7.1 to 7.2 executed on 2026-10-27,
-step 6 in progress, 7.3 found a defect (fix in deployment) ([record](../evidence/approval-arbiter-20261027/README.md)). Every value below was
+step 6 in progress; 7.3 found a defect, passed on the fixed image ([record](../evidence/approval-arbiter-20261027/README.md)). Every value below was
 read from the labs on 2026-10-27 with read-only `kubectl get` and `helm list` (`--kubeconfig
 /private/tmp/cmtc-a-b-20261024.kubeconfig`, never printed; no Secret read). The executor records each step's actual
 output under `docs/evidence/approval-arbiter-<date>/` and updates the delivery status.
@@ -264,8 +264,7 @@ a peer down is the fail-closed path: the approval then expires and workload mTLS
 
 ## Not run, and open
 
-- Steps 2 to 5, 7.1 and 7.2 ran on 2026-10-27; step 6 is in progress; 7.3 found a defect, and its rerun waits for
-  the fixed image. The stale-report branch of 7.2 (a report older than 2 min) was not exercised. Step 3.2 and 4.11 use
+- Steps 2 to 5 and 7 ran on 2026-10-27; step 6 is in progress; 7.3 found a defect and passed on the fixed image. The stale-report branch of 7.2 (a report older than 2 min) was not exercised. Step 3.2 and 4.11 use
   `curlimages/curl:8.11.1` from Docker Hub: a pull on the lab.
 - The forced renewal (step 6) makes SPIRE sign under the new key only after it prepares and activates its next CA
   (up to 24 h); the retirement is due about 25 h after the renewal. The runbook spans two days.

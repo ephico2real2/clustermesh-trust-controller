@@ -53,7 +53,7 @@ digests, and every DaemonSet, Deployment and StatefulSet listed is fully ready.
 | ztunnel | `cmtc-ztunnel@sha256:bc4fb925ae90…c87771` | ztunnel fork `68c0282`, branch `feat/root-pin-retirement` (draft PR ephico2real2/ztunnel#2) |
 | SPIRE node agent | `cmtc-spire-agent@sha256:c2d1cbc74d38…a4f1c` | SPIRE fork `0f8fe4d681` |
 | SPIRE server | `cmtc-spire-server@sha256:5d125886ba75…986cab` | SPIRE fork `0f8fe4d681` |
-| CMTC controller and node agent | `cmtc@sha256:a3efbe8c9824…7623719` | CMTC `bb3cfd5`; Helm release `cmtc` (cmtc-a revision 2, cmtc-b revision 1), issuer approval arbiter on |
+| CMTC controller and node agent | `cmtc@sha256:a99717bbba66…38cbd1` | CMTC `9145ad0` (CI run 40580338929; from 2026-10-27T20:48Z); Helm release `cmtc` (cmtc-a revision 3, cmtc-b revision 2), issuer approval arbiter on |
 
 On 2026-10-27 (10:25–10:32Z) the CMTC, Cilium agent and ztunnel images moved for the SPIRE intermediate
 approval, generation 6 ([#34](https://github.com/ephico2real2/clustermesh-trust-controller/issues/34),
@@ -95,9 +95,16 @@ is **traffic-qualified** ([record](../evidence/approval-arbiter-20261027/README.
 generation 7 with the same issuers, in `cmtc-system/cmtc-issuer-approval-a` (cmtc-b 19:47:28Z, expires
 2026-11-25T19:47:11Z; cmtc-a 19:56:10Z, expires 2026-11-25T19:55:52Z). Both publications are `published 7`; every
 node accepts generation 7; matrix 96/96 proven, 36/36 dropped (19:56–20:00Z). The arbiter renews 168 h before expiry
-(first due about 2026-11-18T19:47Z); that renewal, the forced intermediate renewal with its overlap and retirement, and
-the recovery tests are runbook steps 6 and 7, **not run yet**. Never reset authority state, floors or the ledger to
-extend an approval.
+(first due about 2026-11-18T19:47Z). Never reset authority state, floors or the ledger to extend an approval.
+
+- **Step 6, forced renewal of cmtc-b's intermediate (in progress):** both arbiters wrote generation 8 with both cmtc-b
+  keys (20:03-20:04Z); both clusters `Overlapping`, matrix 96/96. Open: SPIRE's next CA under the new key (activation
+  about 2026-10-28T06:52Z) and the retirement of the old key, generation 9 (about 2026-10-28T21:03Z).
+- **Step 7, recovery (cmtc-b):** a controller restart and a node agent restart changed nothing approved, 0 fences.
+  The peer-unreachable test found a defect: after a controller restart each pass waited 30 s in API discovery and
+  could not write its status, so the record kept a stale `EvidenceReady=True` (nothing was approved). Fixed in
+  `ca56da7` (4 s peer request timeout; the status write outside the pass deadline), deployed on both labs; the rerun
+  reported `EvidenceMissing` in the first pass, every pass ended in 4.0-4.2 s, matrix 96/96 during and after.
 
 ## Open gates
 
