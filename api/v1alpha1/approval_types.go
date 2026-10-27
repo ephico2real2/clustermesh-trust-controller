@@ -21,11 +21,12 @@ const (
 	ApprovalBlocked = "Blocked"
 )
 
-// ApprovalRef names one immutable approval slot ConfigMap.
+// ApprovalRef names one immutable approval slot ConfigMap. Generations are int64, as Kubernetes API conventions require;
+// the arbiter refuses a slot whose generation does not fit.
 type ApprovalRef struct {
 	Slot       string      `json:"slot"`
 	UID        string      `json:"uid"`
-	Generation uint64      `json:"generation"`
+	Generation int64       `json:"generation"`
 	Digest     string      `json:"digest,omitempty"`
 	ExpiresAt  metav1.Time `json:"expiresAt"`
 	Reason     string      `json:"reason,omitempty"`
@@ -132,7 +133,7 @@ type TrustedIssuer struct {
 type ZtunnelReport struct {
 	State              string          `json:"state"`
 	Observation        string          `json:"observation,omitempty"`
-	AcceptedGeneration uint64          `json:"acceptedGeneration,omitempty"`
+	AcceptedGeneration int64           `json:"acceptedGeneration,omitempty"`
 	ApprovalDigest     string          `json:"approvalDigest,omitempty"`
 	LoadedRootSHA256   []string        `json:"loadedRootSHA256,omitempty"`
 	TrustedIssuers     []TrustedIssuer `json:"trustedIssuers,omitempty"`

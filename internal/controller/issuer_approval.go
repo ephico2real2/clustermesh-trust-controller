@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
 	"strconv"
 	"strings"
 	"sync"
@@ -214,9 +215,12 @@ func (r *IssuerApprovalReconciler) readSlot(ctx context.Context, name string) (s
 		s.invalid = "not one immutable approval"
 	default:
 		a, err := trustprofile.DecodeApproval([]byte(cm.Data[trustprofile.ApprovalKey]))
-		if err != nil {
+		switch {
+		case err != nil:
 			s.invalid = err.Error()
-		} else {
+		case a.Generation > math.MaxInt64:
+			s.invalid = "generation out of range"
+		default:
 			s.approval = a
 		}
 	}
@@ -360,7 +364,8 @@ func ref(s *slot, reason string) *api.ApprovalRef {
 	expires, _ := time.Parse(time.RFC3339, s.approval.ExpiresAt)
 	// A slot holds the producer's canonical approval bytes, so this is the digest the producer publishes.
 	digest := trustprofile.SHA([]byte(s.object.Data[trustprofile.ApprovalKey]))
-	return &api.ApprovalRef{Slot: s.name, UID: string(s.object.UID), Generation: s.generation(), Digest: digest, ExpiresAt: metav1.NewTime(expires), Reason: reason}
+	// readSlot refuses a generation above math.MaxInt64, so the conversion is exact.
+	return &api.ApprovalRef{Slot: s.name, UID: string(s.object.UID), Generation: int64(s.generation()), Digest: digest, ExpiresAt: metav1.NewTime(expires), Reason: reason}
 }
 
 // clusterView is one cluster's nodes and reports as one pass read them, and the generation they must accept.

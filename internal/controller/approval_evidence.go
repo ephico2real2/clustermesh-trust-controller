@@ -272,7 +272,7 @@ func accepts(v nodeView, t target) bool {
 	}
 	p, z := v.report.Status.Pins, v.report.Status.Ztunnel
 	pinsOK := p.State == api.PinsUnchanged || p.State == api.PinsWritten || p.State == api.PinsReadOnly
-	return pinsOK && contains(p.RootSHA256, t.root) && z.State == api.ZtunnelAccepted && z.AcceptedGeneration == t.generation &&
+	return pinsOK && contains(p.RootSHA256, t.root) && z.State == api.ZtunnelAccepted && z.AcceptedGeneration > 0 && uint64(z.AcceptedGeneration) == t.generation &&
 		z.ApprovalDigest == t.digest && contains(z.LoadedRootSHA256, t.root)
 }
 

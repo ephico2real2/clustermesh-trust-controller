@@ -11,6 +11,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -414,7 +415,10 @@ func (t *TrustReporter) ztunnelReport(c checkpoint, now time.Time) api.ZtunnelRe
 	if c.Origin.Cluster != t.Cluster || c.Origin.Node != t.Node {
 		return api.ZtunnelReport{State: api.ZtunnelInvalid, Message: fmt.Sprintf("checkpoint names cluster %q node %q", c.Origin.Cluster, c.Origin.Node)}
 	}
-	report := api.ZtunnelReport{State: api.ZtunnelNotCurrent, Observation: c.Observation, AcceptedGeneration: c.AuthorityGeneration,
+	if c.AuthorityGeneration > math.MaxInt64 {
+		return api.ZtunnelReport{State: api.ZtunnelInvalid, Message: "checkpoint generation out of range"}
+	}
+	report := api.ZtunnelReport{State: api.ZtunnelNotCurrent, Observation: c.Observation, AcceptedGeneration: int64(c.AuthorityGeneration),
 		ApprovalDigest: c.AuthorityApprovalDigest, LoadedRootSHA256: sortedUnique(c.Origin.RootPins)}
 	if c.Anchors != nil {
 		for _, p := range c.Anchors.Pins {
