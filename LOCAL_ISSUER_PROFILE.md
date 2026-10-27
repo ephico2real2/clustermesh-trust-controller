@@ -48,7 +48,9 @@ Read [the illustrated PKI flow](PKI_TRUST_FLOW.md) for the full certificate and 
 
 ## SPIRE intermediate mode (issue #34)
 
-Status: **implemented and tested** (`publish_issuers.py --spire-intermediate`, 58 local tests); **not deployed**.
+Status: **implemented, tested and deployed** (generation 6 on both labs, 2026-10-27T10:27Z); **not
+traffic-qualified**. SPIRE still signs with a CA under the Lab Org Root, so ztunnel refuses every workload certificate
+until SPIRE's first CA from `<cluster>-spire-intermediate` is active ([Rollout](#rollout-2026-10-27)).
 
 Signer mode approves SPIRE's active 24-hour CA, so every SPIRE CA rotation needs a new generation. The intermediate
 mode approves each cluster's `<cluster>-spire-intermediate` instead, under the mesh root, with `signsSPIRECA: true`
@@ -105,9 +107,52 @@ Before the advance:
   build, `cargo test --benches --tests --bins` passed, with the new
   `installation_root_pin_extension_continues_the_checkpoint`). Clippy with `-D warnings` passed locally.
 
-  Order on each node: the running ztunnel image predates the fix and would refuse the wider pins after a restart. So
-  write the wider `pins.json` only when that node's ztunnel Pod is replaced with an image built from `0e92198` or later,
-  then restart its Cilium agent, which also reads the file only at startup.
+  Order per cluster, as run on 2026-10-27: write the wider `pins.json` on every node, roll the Cilium agent (it reads the
+  file only at startup, one node at a time), then replace each ztunnel Pod with an image built from `0e92198` or later.
+  The ztunnel Pods are `OnDelete` and also read the file only at startup, so the old ztunnel keeps its narrower origin
+  until it is replaced; only a restart of the old image in that window would fail closed on the wider file.
+
+### Rollout, 2026-10-27
+
+Run by the live-writer session under the operator's permission, cmtc-b first, then cmtc-a. Evidence:
+`/private/tmp/cmtc-opus-final-20261025/review/g6-rollout/` (ledger, pins before and after) and
+`review/issuer-rotation/live/lifecycle/advance-g6/` (advance command, output, ledger before).
+
+1. 10:19–10:21Z: approval by policy ([MESH_PKI.md, Approval](MESH_PKI.md#approval)). cert-manager runs
+   `--controllers=-certificaterequests-approver`; every CertificateRequestPolicy is Ready; the four refusal cases of
+   `approval-check.sh` pass on each cluster. clustermesh-apiserver did not restart.
+2. 10:25Z: the CMTC controller and node agent to `cmtc@sha256:113b94c09da2…e0ac312` (`5e5d6308f2`, `signsSPIRECA`).
+3. 10:26:40–10:27:13Z: `publish_issuers.py --spire-intermediate --advance --generation 6 --horizon 2505600` (29 days,
+   one day under the controller's limit for clock skew). Both publications are `published`, `Validated`, generation 6,
+   root `6c12c735…`.
+4. Per cluster: each node's `pins.json` gains the mesh root (the Lab Org Root stays; the old file is kept at
+   `/etc/cmtc/ztunnel-issuer-pins-before-g6.json`); the Cilium agent's issuer-profile Role
+   (`cmtc-system/cilium-ztunnel-issuer-profile`) names `cmtc-issuer-approval-g6`; the Cilium agent rolls to
+   `cilium-dev@sha256:c77bdc52d2f3…ac8a447` and reads the wider file at startup; then each ztunnel Pod, worker
+   first, is replaced with `cmtc-ztunnel@sha256:6f1ae6891782…d4f4f4a` and gets its exact SPIRE delegate entry.
+   Every new ztunnel logged `stage="installation-root-pin-extension"` (added `6c12c735…`), then
+   `stage="approval-source-succession"` from g5 to g6 and a durable commit at generation 6. No checkpoint was reset.
+   clustermesh-apiserver did not restart on either cluster.
+
+The Role step is the one the earlier advances also needed: the Cilium agent reads the approval object that the
+publication names, and its Role lists names. Without it the agent logged `configmaps "cmtc-issuer-approval-g6" is
+forbidden`.
+
+Traffic after the rollout, 10:33Z: every probe fails with curl 56. ztunnel logs `no approved direct issuer for domain
+cmtc-a.mesh.example` (`src/tls/domain_anchors.rs`, `UnauthorizedIssuer`). The client's chain, read from ztunnel's
+config dump, is SVID → `cmtc-a SPIRE CA` (valid 2026-10-26T15:55:33Z to 2026-10-27T15:55:33Z) → `cmtc-a SPIRE
+cluster CA` → Lab Org Root: SPIRE's active CA is still from the old upstream, and g6 pins only the new intermediate.
+This is correct fail-closed behavior.
+
+When SPIRE moves: SPIRE prepares the next CA at half of the current CA's lifetime and activates it at five sixths
+(SPIRE `pkg/server/ca/manager/manager.go`, divisors 2 and 6). The SPIRE server restarted with the cert-manager
+upstream at 04:08Z, after the current CA's preparation threshold (03:55Z), and logged no "X509 CA prepared"; its
+rotator prepares only when the next slot is empty (`pkg/server/ca/rotator/rotator.go`). So the next slot holds a CA
+prepared before the switch, under the old chain. Expected, both clusters: that CA activates at about 11:55Z; SPIRE
+requests its first CA from `<cluster>-spire-intermediate` at about 15:55Z, the first live approval by the
+`<cluster>-spire-ca` policy; that CA activates at about 23:55Z, and then the matrix runs. The SPIRE trust bundle
+(`cilium-spire/spire-bundle`) gains the mesh root at that request. No `localauthority` command is used to move it
+sooner.
 
 ## What the producer does
 

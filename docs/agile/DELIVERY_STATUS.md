@@ -31,20 +31,24 @@ Both labs run in Colima profile `cmtc-cilium`. They are the only clusters that q
 
 ## Deployed images
 
-Read from the workload image fields at 19:10Z on 2026-10-26, and each image's source labels on the node. Both
+Read from the workload image fields at 10:33Z on 2026-10-27, and each image's source labels on the node. Both
 clusters run the same digests, and every DaemonSet, Deployment and StatefulSet listed is fully ready.
 
 | Component | Image (`ghcr.io/ephico2real2/…`) | Source |
 | --- | --- | --- |
-| Cilium agent | `cilium-dev@sha256:708656877bb2…5961518` | Cilium fork `a99264f008`, branch `feat/ztunnel-tcp-dns-resolvers` |
+| Cilium agent | `cilium-dev@sha256:c77bdc52d2f3…ac8a447` | Cilium fork `823d30c51b`, branch `feat/ztunnel-tcp-dns-resolvers` |
 | Cilium operator | `cilium-dev@sha256:533e8ff5483a…40cb38` | Cilium fork `64a07d46a6` |
 | ClusterMesh API server (etcd, apiserver, kvstoremesh) | `cilium-dev@sha256:1e3fc5a8f272…cffc6` | Cilium fork `64a07d46a6` |
-| ztunnel | `cmtc-ztunnel@sha256:cf4c4d2e5957…a2e94` | ztunnel fork `47956afb33` |
+| ztunnel | `cmtc-ztunnel@sha256:6f1ae6891782…d4f4f4a` | ztunnel fork `0e92198`, branch `feat/spire-intermediate-pin` |
 | SPIRE node agent | `cmtc-spire-agent@sha256:c2d1cbc74d38…a4f1c` | SPIRE fork `0f8fe4d681` |
 | SPIRE server | `cmtc-spire-server@sha256:5d125886ba75…986cab` | SPIRE fork `0f8fe4d681` |
-| CMTC controller and node agent | `cmtc@sha256:e2f036654104…5b7d8` | CMTC `1c3db28a58` |
+| CMTC controller and node agent | `cmtc@sha256:113b94c09da2…e0ac312` | CMTC `5e5d6308f2` |
 
-The images were moved one component at a time under traffic; see
+On 2026-10-27 (10:25–10:32Z) the CMTC, Cilium agent and ztunnel images moved for the SPIRE intermediate
+approval, generation 6 ([#34](https://github.com/ephico2real2/clustermesh-trust-controller/issues/34),
+[LOCAL_ISSUER_PROFILE.md](../../LOCAL_ISSUER_PROFILE.md#spire-intermediate-mode-issue-34)). They are **deployed, not
+traffic-qualified**: the results below qualified the 2026-10-26 images. The 2026-10-26 images were moved one
+component at a time under traffic; see
 [the image qualification record](../evidence/image-qualification-20261026/README.md). The SPIRE registrar image is
 published but not deployed: making it the live registration owner is the operator's decision.
 
