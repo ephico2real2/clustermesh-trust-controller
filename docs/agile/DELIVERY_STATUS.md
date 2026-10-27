@@ -77,7 +77,8 @@ The ADR-010 implementation commits and their test counts are in
 
 Both clusters publish from `cmtc-system/cmtc-issuer-approval-g6` (read from the ledger at 11:00Z). The controller
 accepts at most 30 days, so a new generation is due before then. The host renewal job is removed; the issuer
-approval arbiter that replaces it is proposed in [ADR-012](../architecture/adr/ADR-012.md) and not deployed
+approval arbiter that replaces it is proposed in [ADR-012](../architecture/adr/ADR-012.md), implemented and
+unit-tested on `feat/approval-follows-cert-manager`, and not deployed
 ([LOCAL_ISSUER_PROFILE.md, Approval renewal](../../LOCAL_ISSUER_PROFILE.md#approval-renewal)). SPIRE's own CA
 rotations need no new generation. Never reset authority state, floors or the ledger to extend an approval.
 

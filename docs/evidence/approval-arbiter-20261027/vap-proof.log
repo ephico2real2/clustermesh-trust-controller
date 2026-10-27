@@ -1,0 +1,59 @@
+# Node report write restriction, proven 2026-10-27 on a throwaway kind cluster (kindest/node:v1.36.4), not the labs.
+# Objects: the cmtc chart's render (CRDs, RBAC, ValidatingAdmissionPolicies) and a Pod under ServiceAccount cmtc-node-agent.
+# Script: the chart render applied, then curl from inside the Pod with its projected token; long JSON bodies trimmed to their message.
+
+namespace/cmtc-system created
+namespace/cilium-spire created
+customresourcedefinition.apiextensions.k8s.io/nodetrustreports.security.cmtc.io created
+customresourcedefinition.apiextensions.k8s.io/issuerapprovals.security.cmtc.io created
+clusterrole.rbac.authorization.k8s.io/cmtc-node-trust-report created
+clusterrolebinding.rbac.authorization.k8s.io/cmtc-node-trust-report created
+validatingadmissionpolicy.admissionregistration.k8s.io/cmtc-node-trust-report-owner created
+validatingadmissionpolicybinding.admissionregistration.k8s.io/cmtc-node-trust-report-owner created
+serviceaccount/cmtc-controller created
+serviceaccount/cmtc-node-agent created
+clusterrole.rbac.authorization.k8s.io/cmtc-controller created
+clusterrole.rbac.authorization.k8s.io/cmtc-node-agent created
+clusterrolebinding.rbac.authorization.k8s.io/cmtc-controller created
+clusterrolebinding.rbac.authorization.k8s.io/cmtc-node-agent created
+role.rbac.authorization.k8s.io/cmtc-leader-election created
+rolebinding.rbac.authorization.k8s.io/cmtc-leader-election created
+configmap/cmtc-issuer-approval-config created
+clusterrole.rbac.authorization.k8s.io/cmtc-issuer-approval-evidence created
+clusterrolebinding.rbac.authorization.k8s.io/cmtc-issuer-approval-evidence created
+role.rbac.authorization.k8s.io/cmtc-issuer-approval-arbiter created
+role.rbac.authorization.k8s.io/cmtc-issuer-approval-spire-config created
+rolebinding.rbac.authorization.k8s.io/cmtc-issuer-approval-arbiter created
+rolebinding.rbac.authorization.k8s.io/cmtc-issuer-approval-spire-config created
+validatingadmissionpolicy.admissionregistration.k8s.io/cmtc-issuer-approval-slots created
+validatingadmissionpolicybinding.admissionregistration.k8s.io/cmtc-issuer-approval-slots created
+pod/agent-probe created
+pod/agent-probe condition met
+NODE=cmtc-vap-control-plane
+nodetrustreport.security.cmtc.io/other-node created
+== token review: node-name claim
+{"authentication.kubernetes.io/credential-id":["JTI=bbd85700-f0d9-4387-9c9f-af5a2beb8f54"],"authentication.kubernetes.io/node-name":["cmtc-vap-control-plane"],"authentication.kubernetes.io/node-uid":["9d6986b9-2539-4302-af8e-cd5d615869a9"],"authentication.kubernetes.io/pod-name":["agent-probe"],"authentication.kubernetes.io/pod-uid":["07349f82-39aa-4ce4-a3d3-0dfef855fb21"]}
+== CREATE own report (expect 201)
+201
+
+== CREATE another node's report (expect 403, policy message)
+422
+  "message": "nodetrustreports.security.cmtc.io \"not-my-node\" is forbidden: ValidatingAdmissionPolicy 'cmtc-node-trust-report-owner' with binding 'cmtc-node-trust-report-owner' denied request: a CMTC node agent may write only the NodeTrustReport named after the node its token is bound to",
+== UPDATE own report (expect 200)
+200
+
+== UPDATE other-node (expect 403)
+422
+  "message": "nodetrustreports.security.cmtc.io \"other-node\" is forbidden: ValidatingAdmissionPolicy 'cmtc-node-trust-report-owner' with binding 'cmtc-node-trust-report-owner' denied request: a CMTC node agent may write only the NodeTrustReport named after the node its token is bound to",
+== DELETE own (expect 403: no RBAC delete)
+403
+  "message": "nodetrustreports.security.cmtc.io \"cmtc-vap-control-plane\" is forbidden: User \"system:serviceaccount:cmtc-system:cmtc-node-agent\" cannot delete resource \"nodetrustreports\" in API group \"security.cmtc.io\" at the cluster scope",
+== slots policy: controller SA creates slot a (expect created)
+configmap/cmtc-issuer-approval-a created
+== slots policy: controller SA creates another name (expect denied)
+error: failed to create configmap: configmaps "cmtc-issuer-approval-g9" is forbidden: ValidatingAdmissionPolicy 'cmtc-issuer-approval-slots' with binding 'cmtc-issuer-approval-slots' denied request: the CMTC controller may create only its issuer approval slots
+== slots policy: controller SA deletes slot a (expect deleted) and other-cm (expect forbidden)
+configmap "cmtc-issuer-approval-a" deleted from cmtc-system namespace
+Error from server (Forbidden): configmaps "other-cm" is forbidden: User "system:serviceaccount:cmtc-system:cmtc-controller" cannot delete resource "configmaps" in API group "" in the namespace "cmtc-system"
+DONE
+exit=0

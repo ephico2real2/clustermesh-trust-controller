@@ -170,8 +170,8 @@ first CA from the intermediate would have activated at about 23:55Z.
 
 Status: the host renewal job is **removed** (`renew_approval.py`, its tests and `renewal-schedule.sh`; operator,
 2026-10-27T12:21Z). Its replacement, the issuer approval arbiter in the CMTC controller, is **proposed** in
-[ADR-012](docs/architecture/adr/ADR-012.md) and **partly implemented** on `feat/approval-follows-cert-manager`; it is
-not deployed. Uninstall the job on the operator's host before this branch merges, with the script as it was before
+[ADR-012](docs/architecture/adr/ADR-012.md) and **implemented and unit-tested** on `feat/approval-follows-cert-manager`
+(controller, node agent, chart values `controller.issuerApproval` and `nodeAgent.trustReport`); it is not deployed. Uninstall the job on the operator's host before this branch merges, with the script as it was before
 its removal (`renewal-schedule.sh uninstall` at `5fae43d`): launchd label `io.cmtc.issuer-approval-renewal`, file
 `~/Library/LaunchAgents/io.cmtc.issuer-approval-renewal.plist`.
 
