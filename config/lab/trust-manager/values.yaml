@@ -27,3 +27,10 @@ app:
   trust:
     # Where Bundle sources are read from: cert-manager writes the root and the intermediates here.
     namespace: cert-manager
+  webhook:
+    tls:
+      # The chart's own CertificateRequestPolicy for the webhook serving certificate (trust-manager.cert-manager.svc from
+      # the Issuer trust-manager), bound to cert-manager's controller. Needed because cert-manager runs with
+      # disableAutoApproval=true (MESH_PKI.md, Approval); the policy CRD comes from approver-policy, installed first.
+      approverPolicy:
+        enabled: true

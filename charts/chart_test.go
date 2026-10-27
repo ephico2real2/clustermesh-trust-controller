@@ -1,5 +1,6 @@
-// Package charts tests the CMTC Helm chart by rendering it with the helm CLI and comparing the objects with
-// config/default (rendered by kubectl kustomize), the manifests the chart replaces.
+// Package charts tests the CMTC Helm charts by rendering them with the helm CLI: the cmtc chart against config/default
+// (rendered by kubectl kustomize), the manifests it replaces, and cmtc-mesh-pki against the Certificates that
+// scripts/lab/pki/mesh-pki.sh renders.
 package charts
 
 import (
@@ -21,7 +22,7 @@ type object = map[string]any
 // without this an edited template would reuse a cached pass.
 func trackInputs(t *testing.T) {
 	t.Helper()
-	for _, dir := range []string{"cmtc", "../config/default", "../config/crd"} {
+	for _, dir := range []string{"cmtc", "cmtc-mesh-pki", "../config/default", "../config/crd", "../config/lab-pki", "../scripts/lab/pki/mesh-pki.sh"} {
 		err := filepath.WalkDir(dir, func(path string, d fs.DirEntry, err error) error {
 			if err != nil || d.IsDir() {
 				return err
@@ -59,7 +60,12 @@ func render(t *testing.T, set ...string) map[string]object {
 // renderWith passes extra helm arguments, such as --api-versions, before the --set values.
 func renderWith(t *testing.T, helmArgs []string, set ...string) map[string]object {
 	t.Helper()
-	args := append([]string{"template", "cmtc", "./cmtc", "--namespace", "cmtc-system"}, helmArgs...)
+	return renderChart(t, "cmtc", "cmtc-system", helmArgs, set...)
+}
+
+func renderChart(t *testing.T, chart, namespace string, helmArgs []string, set ...string) map[string]object {
+	t.Helper()
+	args := append([]string{"template", chart, "./" + chart, "--namespace", namespace}, helmArgs...)
 	for _, s := range set {
 		args = append(args, "--set", s)
 	}
@@ -77,7 +83,12 @@ func renderFails(t *testing.T, want string, set ...string) {
 
 func renderFailsWith(t *testing.T, helmArgs []string, want string, set ...string) {
 	t.Helper()
-	args := append([]string{"template", "cmtc", "./cmtc", "--namespace", "cmtc-system"}, helmArgs...)
+	renderChartFails(t, "cmtc", "cmtc-system", helmArgs, want, set...)
+}
+
+func renderChartFails(t *testing.T, chart, namespace string, helmArgs []string, want string, set ...string) {
+	t.Helper()
+	args := append([]string{"template", chart, "./" + chart, "--namespace", namespace}, helmArgs...)
 	for _, s := range set {
 		args = append(args, "--set", s)
 	}
@@ -373,4 +384,67 @@ func TestTrustApprovalBindsEachPolicyToItsRequester(t *testing.T) {
 		"trust.enabled=true", "trust.approval.enabled=true")
 	renderFailsWith(t, trustAPIs, "trust.approval.enabled needs cert-manager approver-policy installed first", "clusterName=cmtc-a",
 		"image.tag=x", "trust.enabled=true", "trust.approval.enabled=true", "trust.approval.spire.trustDomain=cmtc-a.mesh.example")
+}
+
+// Every Certificate that mesh-pki.sh renders is allowed by exactly the policy for its issuer, bound to cert-manager's
+// controller only, so the chart and the script cannot drift apart.
+func TestMeshPKIPoliciesAllowTheScriptsCertificates(t *testing.T) {
+	policyAPI := []string{"--api-versions", "policy.cert-manager.io/v1alpha1/CertificateRequestPolicy"}
+	member := renderChart(t, "cmtc-mesh-pki", "cert-manager", policyAPI, "clusterName=cmtc-b")
+	if _, ok := member["CertificateRequestPolicy/cmtc-mesh-root-ca"]; ok {
+		t.Error("a member cluster must not allow the mesh root")
+	}
+	got := renderChart(t, "cmtc-mesh-pki", "cert-manager", policyAPI, "clusterName=cmtc-a", "control=true")
+	if len(got) != 9 {
+		t.Errorf("want 3 policies with a ClusterRole and a ClusterRoleBinding each, got %d objects", len(got))
+	}
+	script, err := run(t, "bash", "../scripts/lab/pki/mesh-pki.sh", "--render", "cmtc-a")
+	if err != nil {
+		t.Fatalf("mesh-pki.sh --render: %v\n%s", err, script)
+	}
+	issuers := map[string]string{"Issuer/cmtc-mesh-root-bootstrap": "cmtc-mesh-root-ca",
+		"ClusterIssuer/cmtc-mesh-root": "cmtc-a-clustermesh-intermediate"}
+	certificates := 0
+	for _, o := range parse(t, script) {
+		if o["kind"] != "Certificate" {
+			continue
+		}
+		certificates++
+		ref := dig(o, "spec", "issuerRef").(object)
+		name := issuers[ref["kind"].(string)+"/"+ref["name"].(string)]
+		spec := dig(got["CertificateRequestPolicy/"+name], "spec")
+		if spec == nil {
+			t.Errorf("%s: no policy for issuer %v", key(o), ref)
+			continue
+		}
+		if v := dig(spec, "allowed", "commonName"); !reflect.DeepEqual(v, object{"value": dig(o, "spec", "commonName"), "required": true}) {
+			t.Errorf("%s: policy %s commonName %v", key(o), name, v)
+		}
+		if dig(spec, "allowed", "isCA") != dig(o, "spec", "isCA") || dig(spec, "selector", "issuerRef", "name") != ref["name"] {
+			t.Errorf("%s: policy %s isCA or issuer differ", key(o), name)
+		}
+		if dig(spec, "constraints", "maxDuration") != dig(o, "spec", "duration") {
+			t.Errorf("%s: duration %v, policy %s allows %v", key(o), dig(o, "spec", "duration"), name, dig(spec, "constraints", "maxDuration"))
+		}
+	}
+	if certificates != 2 {
+		t.Errorf("mesh-pki.sh rendered %d Certificates for the control cluster, want the root and the intermediate", certificates)
+	}
+	leaves := dig(got["CertificateRequestPolicy/cmtc-a-clustermesh-leaves"], "spec").(object)
+	if dig(leaves, "allowed", "isCA") != false || dig(leaves, "selector", "issuerRef", "name") != "cmtc-a-clustermesh-intermediate" ||
+		!reflect.DeepEqual(dig(leaves, "selector", "namespace", "matchNames"), []any{"kube-system"}) {
+		t.Errorf("leaf policy: %v", leaves)
+	}
+	for _, name := range []string{"cmtc-mesh-root-ca", "cmtc-a-clustermesh-intermediate", "cmtc-a-clustermesh-leaves"} {
+		subjects := []any{object{"kind": "ServiceAccount", "name": "cert-manager", "namespace": "cert-manager"}}
+		if s := got["ClusterRoleBinding/"+name+"-policy"]["subjects"]; !reflect.DeepEqual(s, subjects) {
+			t.Errorf("%s bound to %v", name, s)
+		}
+		if r := dig(got["ClusterRole/"+name+"-policy"]["rules"].([]any)[0], "resourceNames"); !reflect.DeepEqual(r, []any{name}) {
+			t.Errorf("%s ClusterRole names %v", name, r)
+		}
+	}
+	renderChartFails(t, "cmtc-mesh-pki", "cert-manager", nil, "needs cert-manager approver-policy installed first", "clusterName=cmtc-a")
+	renderChartFails(t, "cmtc-mesh-pki", "cert-manager", policyAPI, "clusterName is required")
+	renderChartFails(t, "cmtc-mesh-pki", "cert-manager", policyAPI, "is not a DNS label", "clusterName=Bad_Name")
 }

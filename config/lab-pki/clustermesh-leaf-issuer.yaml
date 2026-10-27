@@ -6,38 +6,3 @@ kind: ClusterIssuer
 metadata: {name: ${CLUSTER}-clustermesh-intermediate}
 spec:
   ca: {secretName: ${CLUSTER}-clustermesh-intermediate}
----
-# approver-policy (see root-control.yaml): from this cluster's ClusterMesh intermediate, cert-manager's controller may get
-# the ClusterMesh API server certificates (Cilium chart, clustermesh.apiserver.tls.auto) and the ztunnel ADS, origin and
-# membership certificates, in kube-system, and no CA.
-apiVersion: policy.cert-manager.io/v1alpha1
-kind: CertificateRequestPolicy
-metadata: {name: ${CLUSTER}-clustermesh-leaves}
-spec:
-  allowed:
-    isCA: false
-    commonName: {value: "*", required: true}
-    dnsNames: {values: [clustermesh-apiserver.kube-system.svc, "*.mesh.cilium.io", localhost]}
-    ipAddresses: {values: ["127.0.0.1", "::1"]}
-    usages: [digital signature, key encipherment, server auth, client auth]
-  # A request must name its duration (the Cilium chart sets certValidityDuration; ztunnel.yaml sets 24h).
-  constraints: {maxDuration: 8760h}
-  selector:
-    issuerRef: {name: ${CLUSTER}-clustermesh-intermediate, kind: ClusterIssuer, group: cert-manager.io}
-    namespace: {matchNames: [kube-system]}
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRole
-metadata: {name: ${CLUSTER}-clustermesh-leaves-policy}
-rules:
-  - apiGroups: [policy.cert-manager.io]
-    resources: [certificaterequestpolicies]
-    verbs: [use]
-    resourceNames: [${CLUSTER}-clustermesh-leaves]
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
-metadata: {name: ${CLUSTER}-clustermesh-leaves-policy}
-roleRef: {apiGroup: rbac.authorization.k8s.io, kind: ClusterRole, name: ${CLUSTER}-clustermesh-leaves-policy}
-subjects:
-  - {kind: ServiceAccount, name: cert-manager, namespace: cert-manager}

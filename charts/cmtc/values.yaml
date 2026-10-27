@@ -70,6 +70,7 @@ trust:
   # disableAutoApproval=true and approver-policy first: cert-manager then signs a request only when a policy allows it
   # and the requester is bound to that policy (verb use). This matters for SPIRE: ztunnel trusts every CA that the
   # SPIRE intermediate signs, so only the SPIRE server may get one, for its own trust domain.
+  # The mesh PKI's own policies (root, ClusterMesh intermediate and leaves) are in charts/cmtc-mesh-pki.
   approval:
     enabled: false
     # cert-manager's controller requests for the intermediate's Certificate object.

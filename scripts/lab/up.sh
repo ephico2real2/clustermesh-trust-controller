@@ -60,6 +60,10 @@ for cluster in cmtc-a cmtc-b; do
     --kube-context "kind-$cluster" --set crds.enabled=true --set disableAutoApproval=true --wait --timeout 5m
   helm upgrade --install cert-manager-approver-policy oci://quay.io/jetstack/charts/cert-manager-approver-policy \
     --version v0.28.0 -n cert-manager --kube-context "kind-$cluster" --wait --timeout 5m
+  # The mesh PKI's policies, before mesh-pki.sh waits for its Certificates; cmtc-a, the control cluster, mints the root.
+  control=false; [ "$cluster" = cmtc-a ] && control=true
+  helm upgrade --install cmtc-mesh-pki charts/cmtc-mesh-pki -n cert-manager --kube-context "kind-$cluster" \
+    --set "clusterName=$cluster" --set "control=$control" --wait --timeout 2m
 done
 # Mesh PKI (ADR-011, MESH_PKI.md): cert-manager in cmtc-a, the control cluster, mints the 10-year mesh root; its Secret
 # is copied to cmtc-b; each cluster signs its own <cluster>-clustermesh-intermediate. The CMTC chart adds
@@ -90,7 +94,6 @@ done
 # trust-manager first: the CMTC chart's Bundle needs its CRD. Installed without app.targetNamespaces, so a namespace that
 # opts in later (label trust=enabled) gets the mesh root ConfigMap without a reinstall (MESH_PKI.md, Trust bundle).
 for cluster in cmtc-a cmtc-b; do
-  kubectl --context "kind-$cluster" apply -f config/lab/trust-manager/approval.yaml
   helm upgrade --install trust-manager oci://quay.io/jetstack/charts/trust-manager --version v0.25.0 -n cert-manager \
     --kube-context "kind-$cluster" -f config/lab/trust-manager/values.yaml --wait --timeout 5m
 done

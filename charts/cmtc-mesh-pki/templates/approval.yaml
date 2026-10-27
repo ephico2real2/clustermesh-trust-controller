@@ -1,0 +1,88 @@
+{{- if not (.Capabilities.APIVersions.Has "policy.cert-manager.io/v1alpha1/CertificateRequestPolicy") }}{{ fail "cmtc-mesh-pki needs cert-manager approver-policy installed first (no policy.cert-manager.io/v1alpha1 CertificateRequestPolicy API)" }}{{ end -}}
+{{- $cluster := required "clusterName is required" .Values.clusterName -}}
+{{- if not (regexMatch "^[a-z0-9]([-a-z0-9]*[a-z0-9])?$" $cluster) }}{{ fail (printf "clusterName %q is not a DNS label" $cluster) }}{{ end -}}
+{{- $prefix := .Values.prefix -}}
+{{- $cm := .Values.certManager -}}
+{{- $policies := list (printf "%s-clustermesh-intermediate" $cluster) (printf "%s-clustermesh-leaves" $cluster) -}}
+{{- if .Values.control }}
+{{- $policies = prepend $policies (printf "%s-mesh-root-ca" $prefix) }}
+# From the bootstrap Issuer, cert-manager's controller may get the mesh root only.
+apiVersion: policy.cert-manager.io/v1alpha1
+kind: CertificateRequestPolicy
+metadata:
+  name: {{ $prefix }}-mesh-root-ca
+  labels:
+    {{- include "cmtc-mesh-pki.labels" . | nindent 4 }}
+spec:
+  allowed:
+    isCA: true
+    commonName: {value: {{ printf "%s mesh root CA" $prefix | quote }}, required: true}
+    usages: [digital signature, key encipherment, cert sign, crl sign]
+  constraints: {maxDuration: {{ .Values.root.maxDuration }}}
+  selector:
+    issuerRef: {name: {{ $prefix }}-mesh-root-bootstrap, kind: Issuer, group: cert-manager.io}
+    namespace: {matchNames: [{{ $cm.namespace }}]}
+---
+{{- end }}
+# From the mesh root, cert-manager's controller may get this cluster's ClusterMesh intermediate. The CMTC chart allows
+# the SPIRE intermediate from the same issuer (charts/cmtc, trust.approval).
+apiVersion: policy.cert-manager.io/v1alpha1
+kind: CertificateRequestPolicy
+metadata:
+  name: {{ $cluster }}-clustermesh-intermediate
+  labels:
+    {{- include "cmtc-mesh-pki.labels" . | nindent 4 }}
+spec:
+  allowed:
+    isCA: true
+    commonName: {value: {{ printf "%s ClusterMesh intermediate CA" $cluster | quote }}, required: true}
+    usages: [digital signature, key encipherment, cert sign, crl sign]
+  constraints: {maxDuration: {{ .Values.clusterMeshIntermediate.maxDuration }}}
+  selector:
+    issuerRef: {name: {{ $prefix }}-mesh-root, kind: ClusterIssuer, group: cert-manager.io}
+    namespace: {matchNames: [{{ $cm.namespace }}]}
+---
+# From this cluster's ClusterMesh intermediate, cert-manager's controller may get the listed leaves, and no CA.
+{{- with .Values.clusterMeshLeaves }}
+apiVersion: policy.cert-manager.io/v1alpha1
+kind: CertificateRequestPolicy
+metadata:
+  name: {{ $cluster }}-clustermesh-leaves
+  labels:
+    {{- include "cmtc-mesh-pki.labels" $ | nindent 4 }}
+spec:
+  allowed:
+    isCA: false
+    commonName: {value: "*", required: true}
+    dnsNames: {values: {{ toJson .dnsNames }}}
+    ipAddresses: {values: {{ toJson .ipAddresses }}}
+    usages: {{ toJson .usages }}
+  constraints: {maxDuration: {{ .maxDuration }}}
+  selector:
+    issuerRef: {name: {{ $cluster }}-clustermesh-intermediate, kind: ClusterIssuer, group: cert-manager.io}
+    namespace: {matchNames: [{{ .namespace }}]}
+{{- end }}
+{{- range $policies }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ . }}-policy
+  labels:
+    {{- include "cmtc-mesh-pki.labels" $ | nindent 4 }}
+rules:
+  - apiGroups: [policy.cert-manager.io]
+    resources: [certificaterequestpolicies]
+    verbs: [use]
+    resourceNames: [{{ . }}]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ . }}-policy
+  labels:
+    {{- include "cmtc-mesh-pki.labels" $ | nindent 4 }}
+roleRef: {apiGroup: rbac.authorization.k8s.io, kind: ClusterRole, name: {{ . }}-policy}
+subjects:
+  - {kind: ServiceAccount, name: {{ $cm.serviceAccount }}, namespace: {{ $cm.namespace }}}
+{{- end }}

@@ -8,6 +8,8 @@
 # cluster that signed it, and one cluster's CA can be renewed or revoked alone. The SPIRE intermediate
 # (<cluster>-spire-intermediate) and the mesh root ConfigMap are owned by the CMTC chart (charts/cmtc, trust.*).
 # The public root certificate is written to --root-out for the clusters' trust bundle (Cilium tls.caBundle).
+# With cert-manager's own approver off (MESH_PKI.md, Approval), install charts/cmtc-mesh-pki in every cluster first:
+# its policies let cert-manager sign these Certificates, and this script waits for them.
 #
 # A cluster is NAME or NAME=CONTEXT. NAME is the cluster name in object names; CONTEXT is its kubeconfig context,
 # by default --context-prefix followed by NAME (kind-NAME).
@@ -27,7 +29,7 @@ while [ $# -gt 0 ]; do
     --context-prefix) context_prefix=$2; shift 2;;
     --root-out) root_out=$2; shift 2;;
     --render) render=$2; shift 2;;
-    -h|--help) sed -n '2,20p' "$0"; exit 0;;
+    -h|--help) sed -n '2,22p' "$0"; exit 0;;
     -*) echo "unknown option $1" >&2; exit 2;;
     *) break;;
   esac
