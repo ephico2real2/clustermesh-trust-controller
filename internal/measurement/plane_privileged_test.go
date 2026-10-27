@@ -14,6 +14,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"strings"
 	"sync"
 	"syscall"
@@ -810,33 +811,123 @@ func TestPlaneKeepsEachPodsCountsApart(t *testing.T) {
 	}
 }
 
+// openPlaneWithPods opens a plane with a quiet log and attaches n Pods of testNamespace. It returns the plane, the
+// desired list and the time the first Reconcile took to attach the Pods.
+func openPlaneWithPods(tb testing.TB, n int) (*Plane, []DesiredPod, time.Duration) {
+	tb.Helper()
+	tree := newCgroupTree(tb)
+	spec, err := LoadSpec()
+	if err != nil {
+		tb.Fatal(err)
+	}
+	var p *Plane
+	asLoader(tb, func() { p, err = OpenPlane(spec, tree.root, logr.Discard()) })
+	if err != nil {
+		tb.Fatal(err)
+	}
+	tb.Cleanup(func() { _ = p.Close() })
+	if p.loadErr != nil {
+		tb.Fatalf("the kernel refused the programs: %s", verifierLog(p.loadErr))
+	}
+	var desired []DesiredPod
+	for i := 0; i < n; i++ {
+		uid := fmt.Sprintf("00000000-0000-4000-8000-%012d", i)
+		tree.createPod(tb, uid)
+		desired = append(desired, DesiredPod{UID: uid, Namespace: testNamespace, Required: true})
+	}
+	start := time.Now()
+	reconcile(tb, p, desired, start)
+	elapsed := time.Since(start)
+	if len(p.attached) != n {
+		tb.Fatalf("%d Pods attached, want %d", len(p.attached), n)
+	}
+	return p, desired, elapsed
+}
+
+// mapMemory returns a map's kernel ID and the memory the kernel charges for it (memlock in the map's fdinfo).
+func mapMemory(t *testing.T, m *ebpf.Map) (ebpf.MapID, uint64) {
+	t.Helper()
+	info, err := m.Info()
+	if err != nil {
+		t.Fatal(err)
+	}
+	id, hasID := info.ID()
+	bytes, hasMemlock := info.Memlock()
+	if !hasID || !hasMemlock {
+		t.Fatalf("the kernel reports no ID or no memlock for map %s", info.Name)
+	}
+	return id, bytes
+}
+
+// One Pod's own kernel memory is its MapTraffic and MapDNS arrays, its read-only data and its copy of the two
+// programs; all Pods share the SharedMaps. The arrays hold every cell once per possible CPU, plus a header of less
+// than a page, so the memory of a Pod grows with the possible CPUs and nothing else (contract.go). The test logs the
+// measured memory and the attach time, which docs/evidence/measurement-plane records.
+func TestPlaneMemoryPerPod(t *testing.T) {
+	requirePrivileged(t)
+	const pods = 100
+	const podBytesPerCPU = TrafficCells*16 + PodDNSCells*8 // a Counter is 16 bytes, a DNS cell 8
+	p, desired, elapsed := openPlaneWithPods(t, pods)
+	cpus := possibleCPUs(t)
+	first, second := p.attached[desired[0].UID].coll, p.attached[desired[1].UID].coll
+
+	var shared uint64
+	for _, name := range SharedMaps {
+		id, bytes := mapMemory(t, p.maps[name])
+		for _, coll := range []*ebpf.Collection{first, second} {
+			if got, _ := mapMemory(t, coll.Maps[name]); got != id {
+				t.Errorf("a Pod's map %s is map %d, want the shared map %d", name, got, id)
+			}
+		}
+		shared += bytes
+	}
+
+	var own, perCPU uint64
+	for name, m := range first.Maps {
+		if slices.Contains(SharedMaps, name) {
+			continue
+		}
+		id, bytes := mapMemory(t, m)
+		if other, _ := mapMemory(t, second.Maps[name]); other == id {
+			t.Errorf("two Pods share map %s (ID %d)", name, id)
+		}
+		own += bytes
+		if m.Type() != ebpf.PerCPUArray {
+			continue
+		}
+		cells := uint64(m.MaxEntries()) * uint64(m.ValueSize())
+		perCPU += cells
+		if want := cells * uint64(cpus); bytes < want || bytes >= want+uint64(os.Getpagesize()) {
+			t.Errorf("map %s takes %d bytes, want %d for its cells on %d CPUs plus less than a page", name, bytes,
+				want, cpus)
+		}
+	}
+	if perCPU != podBytesPerCPU {
+		t.Errorf("a Pod's arrays hold %d bytes per possible CPU, want %d", perCPU, podBytesPerCPU)
+	}
+	for name, prog := range first.Programs {
+		info, err := prog.Info()
+		if err != nil {
+			t.Fatal(err)
+		}
+		bytes, ok := info.Memlock()
+		if !ok {
+			t.Fatalf("the kernel reports no memlock for program %s", name)
+		}
+		own += bytes
+	}
+	t.Logf("%d possible CPUs: one Pod takes %d bytes (%d per possible CPU, %d that do not grow with the CPUs); the "+
+		"shared maps take %d bytes; Reconcile attached %d Pods in %v (%v per Pod)", cpus, own, perCPU,
+		own-perCPU*uint64(cpus), shared, pods, elapsed, elapsed/pods)
+}
+
 // BenchmarkPlaneTick measures the loader's work of one second for benchPods attached Pods: one Reconcile, which
 // verifies every attachment, and one Read. The ns/pod metric is the cost of one Pod.
 func BenchmarkPlaneTick(b *testing.B) {
 	requirePrivileged(b)
 	const benchPods = 100
-	tree := newCgroupTree(b)
-	spec, err := LoadSpec()
-	if err != nil {
-		b.Fatal(err)
-	}
-	var p *Plane
-	asLoader(b, func() { p, err = OpenPlane(spec, tree.root, logr.Discard()) })
-	if err != nil {
-		b.Fatal(err)
-	}
-	b.Cleanup(func() { _ = p.Close() })
-	var desired []DesiredPod
-	for i := 0; i < benchPods; i++ {
-		uid := fmt.Sprintf("00000000-0000-4000-8000-%012d", i)
-		tree.createPod(b, uid)
-		desired = append(desired, DesiredPod{UID: uid, Namespace: testNamespace, Required: true})
-	}
+	p, desired, _ := openPlaneWithPods(b, benchPods)
 	now := time.Now()
-	reconcile(b, p, desired, now)
-	if len(p.attached) != benchPods {
-		b.Fatalf("%d Pods attached, want %d", len(p.attached), benchPods)
-	}
 	b.ResetTimer()
 	asLoader(b, func() {
 		for i := 0; i < b.N; i++ {

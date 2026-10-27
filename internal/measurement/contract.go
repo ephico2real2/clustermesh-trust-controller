@@ -63,9 +63,9 @@ const (
 
 // The programs keep every counter in a cell of a per-CPU array (bpf/measure.c explains why). Each measured Pod has
 // its own traffic and DNS arrays and its own copy of the programs: TrafficCells*16 + PodDNSCells*8 = 768 bytes of
-// kernel memory per possible CPU, plus about 21 KiB that does not grow with the CPUs (the programs, a page of
-// read-only data, the map headers). With 8 possible CPUs one Pod took 27,968 bytes (fdinfo memlock, Linux 6.8). The
-// node array and the two hash maps are created once per node (450 KiB).
+// kernel memory per possible CPU, plus about 21 KiB that does not grow with the CPUs (the programs, the read-only
+// data, the map headers). With 8 possible CPUs one Pod took 27,968 bytes (fdinfo memlock, Linux 6.8,
+// TestPlaneMemoryPerPod). The node array and the two hash maps are created once per node (450 KiB).
 const (
 	// TrafficCells is the length of cmtc_traffic: a Counter for each direction, path and protocol.
 	TrafficCells = NumDirections * NumPaths * NumProtocols
