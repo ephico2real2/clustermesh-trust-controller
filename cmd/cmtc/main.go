@@ -4,15 +4,19 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
+	"time"
 
 	api "github.com/ephico2real2/clustermesh-trust-controller/api/v1alpha1"
 	"github.com/ephico2real2/clustermesh-trust-controller/internal/agent"
 	"github.com/ephico2real2/clustermesh-trust-controller/internal/controller"
+	"github.com/ephico2real2/clustermesh-trust-controller/internal/measurement"
 	"github.com/ephico2real2/clustermesh-trust-controller/internal/telemetry"
 	"github.com/ephico2real2/clustermesh-trust-controller/internal/trustprofile"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/fields"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -26,6 +30,7 @@ import (
 
 func main() {
 	var cluster, mode, node, metricsAddress, healthAddress string
+	var measurementDesiredDir, measurementSnapshotDir string
 	var issuerEnabled bool
 	var issuerNamespace, issuerSource, issuerOutput, issuerSourceUID, issuerOutputUID, issuerRoots string
 	var issuerGeneration uint64
@@ -42,12 +47,20 @@ func main() {
 	flag.StringVar(&node, "node-name", os.Getenv("NODE_NAME"), "Node for inventory mode")
 	flag.StringVar(&metricsAddress, "metrics-bind-address", ":8080", "Metrics listener; restrict access with NetworkPolicy")
 	flag.StringVar(&healthAddress, "health-probe-bind-address", ":8081", "Health listener")
+	flag.StringVar(&measurementDesiredDir, "measurement-desired-dir", "", "Node mode: directory where the agent writes the "+
+		"eBPF measurement loader's desired list (ADR-005); empty disables the measurement plane")
+	flag.StringVar(&measurementSnapshotDir, "measurement-snapshot-dir", "", "Node mode: directory where the measurement "+
+		"loader writes its snapshot; required with --measurement-desired-dir")
 	logOpts := zap.Options{Development: false}
 	logOpts.BindFlags(flag.CommandLine)
 	flag.Parse()
 	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&logOpts)))
 	if cluster == "" || (mode != "controller" && mode != "node") || (mode == "node" && node == "") {
 		fmt.Fprintln(os.Stderr, "cluster-name and a valid mode are required; node mode also requires node-name")
+		os.Exit(2)
+	}
+	if (measurementDesiredDir == "") != (measurementSnapshotDir == "") || (measurementDesiredDir != "" && mode != "node") {
+		fmt.Fprintln(os.Stderr, "measurement-desired-dir and measurement-snapshot-dir go together, in node mode only")
 		os.Exit(2)
 	}
 	profileOptions := controller.IssuerProfileOptions{Source: client.ObjectKey{Namespace: issuerNamespace, Name: issuerSource}, Output: client.ObjectKey{Namespace: issuerNamespace, Name: issuerOutput}, SourceUID: types.UID(issuerSourceUID), OutputUID: types.UID(issuerOutputUID), MinimumGeneration: issuerGeneration, LocalCluster: cluster}
@@ -92,6 +105,13 @@ func main() {
 		}
 	} else {
 		must(mgr.Add(&agent.Inventory{Client: mgr.GetAPIReader(), Node: node, Metrics: m}))
+		if measurementDesiredDir != "" {
+			collector := measurement.NewCollector(cluster, node,
+				filepath.Join(measurementSnapshotDir, measurement.SnapshotFile), measurement.SystemClock())
+			must(metrics.Registry.Register(collector))
+			must(mgr.Add(&agent.Measurement{Client: mgr.GetClient(), Node: node, DesiredDir: measurementDesiredDir,
+				Collector: collector, Log: ctrl.Log.WithName("measurement"), Interval: time.Second}))
+		}
 	}
 	must(mgr.AddHealthzCheck("ping", healthz.Ping))
 	must(mgr.AddReadyzCheck("ping", healthz.Ping))
@@ -111,7 +131,12 @@ func managerOptions(scheme *runtime.Scheme, mode, node, metricsAddress, healthAd
 		options.LeaseDuration, options.RenewDeadline, options.RetryPeriod = &leaseDuration, &renewDeadline, &retryPeriod
 	}
 	if mode == "node" {
-		options.Cache.ByObject = map[client.Object]cache.ByObject{&corev1.Pod{}: {Field: fields.OneTermEqualSelector("spec.nodeName", node)}}
+		// The node agent caches only this node's Pods, and only the namespaces enrolled in the mesh (the measurement
+		// plane's desired list).
+		options.Cache.ByObject = map[client.Object]cache.ByObject{
+			&corev1.Pod{}:       {Field: fields.OneTermEqualSelector("spec.nodeName", node)},
+			&corev1.Namespace{}: {Label: labels.SelectorFromSet(labels.Set{measurement.EnrollmentLabel: "true"})},
+		}
 	}
 	return options
 }
