@@ -46,7 +46,7 @@ done
 [ "$(kubectl --context "$source_ctx" -n "$namespace" get secret "$token_secret" -o go-template='{{if .data.token}}ok{{end}}')" = ok ] || { echo "token not issued for $sa on $source_ctx" >&2; exit 1; }
 
 # 2. The kubeconfig: SOURCE's CA from the admin kubeconfig (public), the token straight from the API into the file.
-kubectl --context "$source_ctx" config view --minify --raw -o go-template='{{(index .clusters 0).cluster "certificate-authority-data"}}' | base64 -d > "$work/ca.crt"
+kubectl --context "$source_ctx" config view --minify --raw -o go-template='{{index (index .clusters 0).cluster "certificate-authority-data"}}' | base64 -d > "$work/ca.crt"
 kubectl --context "$source_ctx" -n "$namespace" get secret "$token_secret" -o go-template='{{.data.token}}' | base64 -d > "$work/token"
 cluster_name=${source_ctx#kind-}
 python3 - "$work" "$server" "$cluster_name" <<'EOF'

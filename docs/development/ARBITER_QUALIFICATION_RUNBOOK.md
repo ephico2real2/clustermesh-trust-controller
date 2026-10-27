@@ -119,7 +119,7 @@ and gives `helm` the kubectl managers' fields first. `A=(cmtc-a config/lab/cmtc/
 
 ## Step 3: kind-cmtc-b, the peer credential of kind-cmtc-a
 
-One scripted administrator step, `scripts/lab/pki/peer-reader-credential.sh` (new on this branch; **not run yet**): a
+One scripted administrator step, `scripts/lab/pki/peer-reader-credential.sh` (first run 2026-10-27T19:43Z): a
 durable `kubernetes.io/service-account-token` Secret for `cmtc-peer-reader` on the source (revoked by deleting it), a
 kubeconfig with the source's CA and the endpoint the target's Pods reach, checked (`auth can-i get certificates` yes,
 `get secrets` no) and installed as the target's peer Secret. Nothing of the token is printed.
@@ -129,8 +129,9 @@ kubeconfig with the source's CA and the endpoint the target's Pods reach, checke
    https://172.18.0.3:6443 (token Secret cmtc-system/cmtc-peer-reader-token on kind-cmtc-a)`.
 2. Reachability of the endpoint from a Pod on cmtc-b, with the CA only (the script cannot reach a kind node IP from the
    host): `kubectl --context kind-cmtc-b -n cmtc-system run peer-probe --rm -i --restart=Never --image=curlimages/curl:8.11.1 --overrides='{"spec":{"volumes":[{"name":"peer","secret":{"secretName":"cmtc-peer-cmtc-a"}}],"containers":[{"name":"peer-probe","image":"curlimages/curl:8.11.1","command":["sh","-c","python3 -V >/dev/null 2>&1; sed -n \"s/.*certificate-authority-data\\\": \\\"\\([^\\\"]*\\)\\\".*/\\1/p\" /peer/kubeconfig | base64 -d > /tmp/ca.crt; curl -s -o /dev/null -w \"%{http_code}\\n\" --cacert /tmp/ca.crt https://172.18.0.3:6443/version"],"volumeMounts":[{"name":"peer","mountPath":"/peer","readOnly":true}]}]}}'`
-   — expected: `401` (TLS verified against cmtc-a's CA; `/version` without a token is unauthorized). `000` or a
-   certificate error means the endpoint or the CA is wrong: stop.
+   — expected: `200` (TLS verified against cmtc-a's CA; `/version` is public: the ClusterRole
+   `system:public-info-viewer` is bound to `system:unauthenticated`). `000` or a certificate error means the endpoint
+   or the CA is wrong: stop. The token itself is exercised by the arbiter in step 4.
 
 ## Step 4: kind-cmtc-b, the arbiter on
 
