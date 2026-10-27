@@ -98,6 +98,33 @@ per-connection peer-certificate evidence and passing recovery tests.
 | `python3 scripts/cilium/verify.py` | Do the running Cilium images match the lock? |
 | `venv/bin/python -m unittest discover -s scripts/lab -p 'test_*.py'` | Pure checks of the lab helpers. They use no cluster. The repository venv provides PyYAML, and 40 tests pass (run 2026-10-25T23:20Z). The system `python3` fails on `import yaml`. |
 
+### Hubble
+
+Every agent runs a Hubble server (`config/lab/cilium/base.yaml`, `hubble.*`), with its certificate from the cluster's
+ClusterIssuer `<cluster>-clustermesh-intermediate` under the mesh root ([MESH_PKI.md](../../MESH_PKI.md)). The Relay
+and the UI run in cmtc-a only (`scripts/lab/cilium_cluster_values.py`): the Relay's peer service lists every node of
+the ClusterMesh, so one Relay observes both clusters and verifies each agent against the mesh root. The Relay's own
+API is served over TLS (certificate `*.hubble-relay.cilium.io`), without client certificates.
+
+To watch flows with the [hubble CLI](https://github.com/cilium/hubble/releases) from the host, forward the Relay's
+port and trust the mesh root:
+
+```sh
+kubectl --context kind-cmtc-a -n kube-system get cm cmtc-public-root -o jsonpath='{.data.ca\.crt}' > .tmp/mesh-root.crt
+kubectl --context kind-cmtc-a -n kube-system port-forward svc/hubble-relay 4245:443 &
+hubble --server localhost:4245 --tls --tls-ca-cert-files .tmp/mesh-root.crt \
+  --tls-server-name relay.hubble-relay.cilium.io status
+hubble --server localhost:4245 --tls --tls-ca-cert-files .tmp/mesh-root.crt \
+  --tls-server-name relay.hubble-relay.cilium.io observe --follow --namespace payments-alpha
+hubble --server localhost:4245 --tls --tls-ca-cert-files .tmp/mesh-root.crt \
+  --tls-server-name relay.hubble-relay.cilium.io observe --cluster cmtc-b --last 20
+```
+
+`hubble status` lists the nodes of both clusters (`<node>.<cluster>.hubble-grpc.cilium.io`). The UI is
+`kubectl --context kind-cmtc-a -n kube-system port-forward svc/hubble-ui 12000:80`, then <http://localhost:12000>.
+Hubble metrics (`hubble_*`, port 9965 on every agent) and Relay metrics (`hubble_relay_*`, 9966) are scraped by the lab
+Prometheus (`scripts/lab/monitoring.py`, jobs `hubble` and `hubble-relay`).
+
 ## 6. Remove the lab
 
 `make lab-down` (`scripts/lab/down.sh`) deletes only the clusters this checkout

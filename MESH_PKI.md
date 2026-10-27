@@ -76,6 +76,7 @@ CA that signed it.
 | ClusterMesh and SPIRE intermediates | 3 years | 1 year before expiry | new | `config/lab-pki/clustermesh.yaml`, `charts/cmtc` `trust.spireIntermediate` |
 | clustermesh-apiserver server | 365 days | cert-manager default | kept (`Never`): peers pin its key | `up.sh` chart values |
 | clustermesh-apiserver clients | 365 days | cert-manager default | new | `up.sh` chart values |
+| Hubble: every agent's server (`*.<cluster>.hubble-grpc.cilium.io`), the Relay's client and server (`*.hubble-relay.cilium.io`), the UI's client (`*.hubble-ui.cilium.io`) | 365 days | cert-manager default | new | `config/lab/cilium/base.yaml` (`hubble.tls.auto`), issuer per cluster from `scripts/lab/cilium_cluster_values.py` |
 | ztunnel ADS, membership writer, origin reader | 24 hours | 1 hour before expiry | new | lab activation script (to move into the chart) |
 | SPIRE X509 CA | 24 hours | SPIRE | new | SPIRE `ca_ttl` |
 | Workload SVID | 120 s (registrar) | half-life | new | `internal/spireregistrar/plan.go` |
@@ -107,6 +108,7 @@ needs a new approval generation. The proposed row (#34) pins the cluster's SPIRE
 ```text
 ClusterMesh etcd   server leaf -> cmtc-a ClusterMesh intermediate CA -> cmtc mesh root CA (cmtc-public-root)
 ztunnel ADS        ADS leaf    -> cmtc-a ClusterMesh intermediate CA -> cmtc mesh root CA (bootstrap-ca.crt)
+Hubble             agent leaf  -> <its cluster> ClusterMesh intermediate CA -> cmtc mesh root CA (cmtc-public-root, the Relay in cmtc-a verifies both clusters' agents against it)
 workload, today    SVID -> SPIRE X509 CA (24 h, pinned by gN) -> cmtc-a SPIRE cluster CA -> CMTC Lab Organization Root (rootPins)
 workload, proposed SVID -> SPIRE X509 CA (24 h, not pinned) -> cmtc-a SPIRE intermediate CA (pinned)
                      -> cmtc mesh root CA (pinned, by a root succession)   [#34]

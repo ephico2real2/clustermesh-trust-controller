@@ -39,6 +39,23 @@ prom={'global':{'scrape_interval':'5s','external_labels':{'cluster':cluster}},'s
     # Keep only the families the dashboards and rules query; drop the per-locality labels.
     {'source_labels':['__name__'],'action':'keep','regex':ZTUNNEL_FAMILIES},
     {'action':'labeldrop','regex':'(source|destination)_(region|zone)'},
+]},
+# Hubble metrics (hubble_*) on every agent's hubble-metrics port (config/lab/cilium/base.yaml, hubble.metrics.port 9965).
+{'job_name':'hubble','kubernetes_sd_configs':[{'role':'pod','namespaces':{'names':['kube-system']}}],'relabel_configs':[
+    {'source_labels':['__meta_kubernetes_pod_label_k8s_app'],'action':'keep','regex':'cilium'},
+    {'source_labels':['__meta_kubernetes_pod_container_port_name'],'action':'keep','regex':'hubble-metrics'},
+    {'target_label':'cluster','replacement':cluster},
+    {'target_label':'component','replacement':'hubble'},
+    {'source_labels':['__meta_kubernetes_pod_node_name'],'target_label':'node'},
+]},
+# Hubble Relay metrics (hubble_relay_*) on its prometheus port (9966); the Relay runs in the control cluster only, so
+# the job finds no target elsewhere.
+{'job_name':'hubble-relay','kubernetes_sd_configs':[{'role':'pod','namespaces':{'names':['kube-system']}}],'relabel_configs':[
+    {'source_labels':['__meta_kubernetes_pod_label_k8s_app'],'action':'keep','regex':'hubble-relay'},
+    {'source_labels':['__meta_kubernetes_pod_container_port_name'],'action':'keep','regex':'prometheus'},
+    {'target_label':'cluster','replacement':cluster},
+    {'target_label':'component','replacement':'hubble-relay'},
+    {'source_labels':['__meta_kubernetes_pod_node_name'],'target_label':'node'},
 ]}]}
 if cluster=='cmtc-b':prom['remote_write']=[{'url':f'http://{hub}:30900/api/v1/write'}]
 add('v1','ConfigMap','prometheus',{'data':{'prometheus.yml':json.dumps(prom)}})
