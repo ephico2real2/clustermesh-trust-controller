@@ -324,17 +324,11 @@ func TestTrustIsOwnedByTheChart(t *testing.T) {
 		"clusterName=cmtc-a", "image.tag=x", "trust.enabled=true")
 }
 
-// ztunnel trusts every CA the SPIRE intermediate signs, so each policy must name its one requester and its one shape.
-func TestTrustApprovalBindsEachPolicyToItsRequester(t *testing.T) {
-	trustAPIs := []string{"--api-versions", "cert-manager.io/v1/Certificate", "--api-versions", "trust.cert-manager.io/v1alpha1/Bundle"}
-	for k := range renderWith(t, trustAPIs, "clusterName=cmtc-a", "image.tag=x", "trust.enabled=true") {
-		if strings.HasPrefix(k, "CertificateRequestPolicy/") || strings.HasSuffix(k, "-policy") {
-			t.Errorf("%s rendered without trust.approval.enabled", k)
-		}
-	}
-	approvalAPIs := append(trustAPIs, "--api-versions", "policy.cert-manager.io/v1alpha1/CertificateRequestPolicy")
-	got := renderWith(t, approvalAPIs, "clusterName=cmtc-a", "image.tag=x", "trust.enabled=true",
-		"trust.approval.enabled=true", "trust.approval.spire.trustDomain=cmtc-a.mesh.example")
+// ztunnel trusts every CA the SPIRE intermediate signs, so each SPIRE policy must name its one requester and its one
+// shape, and the CMTC chart's intermediate must fit its policy.
+func TestSPIREApprovalBindsEachPolicyToItsRequester(t *testing.T) {
+	policyAPI := []string{"--api-versions", "policy.cert-manager.io/v1alpha1/CertificateRequestPolicy"}
+	got := renderChart(t, "cmtc-mesh-pki", "cert-manager", policyAPI, "clusterName=cmtc-a", "spire.trustDomain=cmtc-a.mesh.example")
 	required := func(value string) object { return object{"value": value, "required": true} }
 	for name, want := range map[string]struct {
 		allowed, selector object
@@ -380,23 +374,35 @@ func TestTrustApprovalBindsEachPolicyToItsRequester(t *testing.T) {
 			t.Errorf("%s bound to %v, want only %v", name, s, want.requester)
 		}
 	}
-	renderFailsWith(t, approvalAPIs, "trust.approval.spire.trustDomain is required", "clusterName=cmtc-a", "image.tag=x",
-		"trust.enabled=true", "trust.approval.enabled=true")
-	renderFailsWith(t, trustAPIs, "trust.approval.enabled needs cert-manager approver-policy installed first", "clusterName=cmtc-a",
-		"image.tag=x", "trust.enabled=true", "trust.approval.enabled=true", "trust.approval.spire.trustDomain=cmtc-a.mesh.example")
+	trustAPIs := []string{"--api-versions", "cert-manager.io/v1/Certificate", "--api-versions", "trust.cert-manager.io/v1alpha1/Bundle"}
+	cmtc := renderWith(t, trustAPIs, "clusterName=cmtc-a", "image.tag=x", "trust.enabled=true")
+	for k := range cmtc {
+		if strings.HasPrefix(k, "CertificateRequestPolicy/") || strings.HasSuffix(k, "-policy") {
+			t.Errorf("the CMTC chart renders %s; every policy belongs to charts/cmtc-mesh-pki", k)
+		}
+	}
+	cert := dig(cmtc["Certificate/cmtc-a-spire-intermediate"], "spec").(object)
+	policy := dig(got["CertificateRequestPolicy/cmtc-a-spire-intermediate"], "spec").(object)
+	if dig(policy, "allowed", "commonName", "value") != cert["commonName"] || dig(policy, "allowed", "isCA") != cert["isCA"] ||
+		dig(policy, "selector", "issuerRef", "name") != dig(cert, "issuerRef", "name") ||
+		dig(policy, "constraints", "maxDuration") != cert["duration"] {
+		t.Errorf("the CMTC chart's SPIRE intermediate %v does not fit its policy %v", cert, policy)
+	}
+	renderChartFails(t, "cmtc-mesh-pki", "cert-manager", policyAPI, "spire.trustDomain is required", "clusterName=cmtc-a")
 }
 
 // Every Certificate that mesh-pki.sh renders is allowed by exactly the policy for its issuer, bound to cert-manager's
 // controller only, so the chart and the script cannot drift apart.
 func TestMeshPKIPoliciesAllowTheScriptsCertificates(t *testing.T) {
 	policyAPI := []string{"--api-versions", "policy.cert-manager.io/v1alpha1/CertificateRequestPolicy"}
-	member := renderChart(t, "cmtc-mesh-pki", "cert-manager", policyAPI, "clusterName=cmtc-b")
+	member := renderChart(t, "cmtc-mesh-pki", "cert-manager", policyAPI, "clusterName=cmtc-b", "spire.trustDomain=cmtc-b.mesh.example")
 	if _, ok := member["CertificateRequestPolicy/cmtc-mesh-root-ca"]; ok {
 		t.Error("a member cluster must not allow the mesh root")
 	}
-	got := renderChart(t, "cmtc-mesh-pki", "cert-manager", policyAPI, "clusterName=cmtc-a", "control=true")
-	if len(got) != 9 {
-		t.Errorf("want 3 policies with a ClusterRole and a ClusterRoleBinding each, got %d objects", len(got))
+	got := renderChart(t, "cmtc-mesh-pki", "cert-manager", policyAPI, "clusterName=cmtc-a", "control=true",
+		"spire.trustDomain=cmtc-a.mesh.example")
+	if len(got) != 15 {
+		t.Errorf("want 5 policies with a ClusterRole and a ClusterRoleBinding each, got %d objects", len(got))
 	}
 	script, err := run(t, "bash", "../scripts/lab/pki/mesh-pki.sh", "--render", "cmtc-a")
 	if err != nil {
@@ -446,5 +452,6 @@ func TestMeshPKIPoliciesAllowTheScriptsCertificates(t *testing.T) {
 	}
 	renderChartFails(t, "cmtc-mesh-pki", "cert-manager", nil, "needs cert-manager approver-policy installed first", "clusterName=cmtc-a")
 	renderChartFails(t, "cmtc-mesh-pki", "cert-manager", policyAPI, "clusterName is required")
-	renderChartFails(t, "cmtc-mesh-pki", "cert-manager", policyAPI, "is not a DNS label", "clusterName=Bad_Name")
+	renderChartFails(t, "cmtc-mesh-pki", "cert-manager", policyAPI, "is not a DNS label", "clusterName=Bad_Name",
+		"spire.trustDomain=x.mesh.example")
 }

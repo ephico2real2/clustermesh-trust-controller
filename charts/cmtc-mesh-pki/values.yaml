@@ -1,10 +1,10 @@
-# The approver-policy policies of the mesh PKI that scripts/lab/pki/mesh-pki.sh builds (ADR-011). Install this chart in
-# every cluster after cert-manager (disableAutoApproval=true) and approver-policy, and before mesh-pki.sh: with
-# cert-manager's own approver off, a request is signed only when a CertificateRequestPolicy allows it and its requester is
-# bound to that policy (verb use). mesh-pki.sh waits for its Certificates, so without these policies it times out.
-# The SPIRE intermediate's policies are in the CMTC chart (charts/cmtc, trust.approval), beside that Certificate.
+# The approver-policy policies of the mesh PKI (ADR-011): the issuers that scripts/lab/pki/mesh-pki.sh builds, the SPIRE
+# intermediate that the CMTC chart builds (charts/cmtc, trust.*), and the SPIRE server's CA. Install this chart in every
+# cluster after cert-manager (disableAutoApproval=true) and approver-policy, and before mesh-pki.sh and the CMTC chart:
+# with cert-manager's own approver off, a request is signed only when a CertificateRequestPolicy allows it and its
+# requester is bound to that policy (verb use). Both wait for their Certificates, so without these policies they time out.
 
-# Required: the cluster name in <clusterName>-clustermesh-intermediate.
+# Required: the cluster name in <clusterName>-clustermesh-intermediate and <clusterName>-spire-intermediate.
 clusterName: ""
 # The prefix of the mesh root's names (mesh-pki.sh --prefix): <prefix>-mesh-root-bootstrap, <prefix>-mesh-root.
 prefix: cmtc
@@ -17,10 +17,13 @@ certManager:
   namespace: cert-manager
   serviceAccount: cert-manager
 
-# A request may not ask for longer than these. Each equals its Certificate's duration in config/lab-pki.
+# A request may not ask for longer than these. Each equals its Certificate's duration in config/lab-pki or, for the SPIRE
+# intermediate, the CMTC chart's trust.spireIntermediate.duration.
 root:
   maxDuration: 87600h
 clusterMeshIntermediate:
+  maxDuration: 26280h
+spireIntermediate:
   maxDuration: 26280h
 # Leaves from <clusterName>-clustermesh-intermediate: the ClusterMesh API server certificates (Cilium chart,
 # clustermesh.apiserver.tls.auto) and the ztunnel ADS, membership-writer and origin-reader certificates. No CA.
@@ -31,3 +34,14 @@ clusterMeshLeaves:
   ipAddresses: ["127.0.0.1", "::1"]
   usages: [digital signature, key encipherment, server auth, client auth]
   maxDuration: 8760h
+
+# The SPIRE server's own CA requests (UpstreamAuthority "cert-manager") to <clusterName>-spire-intermediate.
+spire:
+  # Required: the only URI SAN the SPIRE CA may carry is spiffe://<trustDomain>.
+  trustDomain: ""
+  # The SPIRE server's ServiceAccount; its CertificateRequests live in this namespace.
+  serviceAccount: {namespace: cilium-spire, name: spire-server}
+  # SPIRE's ca_subject (scripts/lab/spire/render_spire.py). commonName defaults to "<clusterName> SPIRE CA".
+  caSubject: {commonName: "", organization: SPIRE, country: US}
+  # SPIRE's ca_ttl is 24h; a request may not ask for longer than this.
+  caMaxDuration: 48h
