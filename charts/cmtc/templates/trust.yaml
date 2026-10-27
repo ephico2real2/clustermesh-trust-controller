@@ -58,4 +58,75 @@ spec:
         {{- range $key, $value := .Values.trust.bundle.namespaceLabels }}
         {{ $key }}: {{ $value | quote }}
         {{- end }}
+{{- with .Values.trust.approval }}
+{{- if .enabled }}
+{{- if not ($.Capabilities.APIVersions.Has "policy.cert-manager.io/v1alpha1/CertificateRequestPolicy") }}{{ fail "trust.approval.enabled needs cert-manager approver-policy installed first (no policy.cert-manager.io/v1alpha1 CertificateRequestPolicy API)" }}{{ end -}}
+{{- if not .spire.trustDomain }}{{ fail "trust.approval.spire.trustDomain is required" }}{{ end -}}
+{{- $spireCA := printf "%s-spire-ca" $cluster }}
+---
+# From the mesh root, cert-manager's controller may get this cluster's SPIRE intermediate only.
+apiVersion: policy.cert-manager.io/v1alpha1
+kind: CertificateRequestPolicy
+metadata:
+  name: {{ $intermediate }}
+  labels:
+    {{- include "cmtc.labels" $ | nindent 4 }}
+spec:
+  allowed:
+    isCA: true
+    commonName: {value: {{ printf "%s SPIRE intermediate CA" $cluster | quote }}, required: true}
+    usages: [digital signature, key encipherment, cert sign, crl sign]
+  constraints: {maxDuration: {{ $.Values.trust.spireIntermediate.duration }}}
+  selector:
+    issuerRef: {name: {{ $.Values.trust.rootIssuer }}, kind: ClusterIssuer, group: cert-manager.io}
+    namespace: {matchNames: [{{ $.Values.trust.certManagerNamespace }}]}
+---
+# From the SPIRE intermediate, only the SPIRE server may get a CA, and only for its own trust domain.
+apiVersion: policy.cert-manager.io/v1alpha1
+kind: CertificateRequestPolicy
+metadata:
+  name: {{ $spireCA }}
+  labels:
+    {{- include "cmtc.labels" $ | nindent 4 }}
+spec:
+  allowed:
+    isCA: true
+    commonName: {value: {{ .spire.caSubject.commonName | default (printf "%s SPIRE CA" $cluster) | quote }}, required: true}
+    uris: {values: [{{ printf "spiffe://%s" .spire.trustDomain | quote }}], required: true}
+    subject:
+      organizations: {values: [{{ .spire.caSubject.organization | quote }}]}
+      countries: {values: [{{ .spire.caSubject.country | quote }}]}
+      # SPIRE sets the subject serialNumber to the CA certificate's random serial number.
+      serialNumber: {value: "*"}
+    usages: [cert sign, crl sign]
+  constraints: {maxDuration: {{ .spire.caMaxDuration }}}
+  selector:
+    issuerRef: {name: {{ $intermediate }}, kind: ClusterIssuer, group: cert-manager.io}
+    namespace: {matchNames: [{{ .spire.serviceAccount.namespace }}]}
+{{- range $policy, $account := dict $intermediate .certManagerServiceAccount $spireCA .spire.serviceAccount }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ $policy }}-policy
+  labels:
+    {{- include "cmtc.labels" $ | nindent 4 }}
+rules:
+  - apiGroups: [policy.cert-manager.io]
+    resources: [certificaterequestpolicies]
+    verbs: [use]
+    resourceNames: [{{ $policy }}]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ $policy }}-policy
+  labels:
+    {{- include "cmtc.labels" $ | nindent 4 }}
+roleRef: {apiGroup: rbac.authorization.k8s.io, kind: ClusterRole, name: {{ $policy }}-policy}
+subjects:
+  - {kind: ServiceAccount, name: {{ $account.name }}, namespace: {{ $account.namespace }}}
+{{- end }}
+{{- end }}
+{{- end }}
 {{- end }}

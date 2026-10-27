@@ -214,6 +214,45 @@ per cluster and puts the root certificate in `tls.caBundle`.
 The live labs were moved in place; the procedure as run is in the
 [cutover runbook](docs/evidence/clustermesh-pki-20261026/RUNBOOK.md).
 
+## Approval
+
+cert-manager signs a CertificateRequest only after it is approved. Its built-in approver approves every request to a
+cert-manager issuer, so anyone who can create a CertificateRequest, or a Certificate that cert-manager turns into one,
+gets a certificate from any ClusterIssuer. That matters most for `<cluster>-spire-intermediate`: once the issuer
+approval pins that intermediate (issue #34), ztunnel trusts every CA it signs for the trust domain.
+
+So the built-in approver is off (`disableAutoApproval=true`) and
+[approver-policy](https://cert-manager.io/docs/policy/approval/approver-policy/) v0.28.0 decides. A request is approved
+only when a CertificateRequestPolicy selects its issuer and namespace, the requester is bound to that policy with the
+verb `use`, and every field of the request is allowed. A request that no bound policy selects stays pending and is
+never signed (approver-policy records the event `Unprocessed`). A request that a bound policy refuses is `Denied`.
+
+| Policy | Requester | Issuer, namespace | Allows | Source |
+|---|---|---|---|---|
+| `cmtc-mesh-root-ca` | cert-manager | `cmtc-mesh-root-bootstrap`, cert-manager | The root CA, 10 years | `config/lab-pki/root-control.yaml` |
+| `<cluster>-clustermesh-intermediate` | cert-manager | `cmtc-mesh-root`, cert-manager | The ClusterMesh intermediate, 3 years | `config/lab-pki/clustermesh.yaml` |
+| `<cluster>-clustermesh-leaves` | cert-manager | `<cluster>-clustermesh-intermediate`, kube-system | No CA; the ClusterMesh API server and ztunnel names; 1 year | `config/lab-pki/clustermesh-leaf-issuer.yaml` |
+| `<cluster>-spire-intermediate` | cert-manager | `cmtc-mesh-root`, cert-manager | The SPIRE intermediate, `trust.spireIntermediate.duration` | `charts/cmtc` (`trust.approval`) |
+| `<cluster>-spire-ca` | SPIRE server (`cilium-spire/spire-server`) | `<cluster>-spire-intermediate`, cilium-spire | A CA with the one URI `spiffe://<trust domain>` and SPIRE's `ca_subject`, 48 hours | `charts/cmtc` (`trust.approval`) |
+| `trust-manager-webhook` | cert-manager | `trust-manager` Issuer, cert-manager | trust-manager's webhook serving certificate | `config/lab/trust-manager/approval.yaml` |
+
+Two rules of approver-policy shape these policies (read in its v0.28.0 source, `pkg/internal/approver`):
+
+- A subject field the policy does not name is refused. SPIRE puts the CA's random serial number into the subject
+  (`serialNumber`, `pkg/server/credtemplate` of SPIRE v1.15.5), so `<cluster>-spire-ca` allows any value there.
+- With `maxDuration` set, a request without a duration is refused. trust-manager's webhook Certificate names no
+  duration, so its policy has no `maxDuration`.
+
+A cluster administrator (`system:masters`) passes every `use` check and can still get any certificate. The policies
+limit service accounts and the Certificate objects that other users create.
+
+Check it: `scripts/lab/pki/approval-check.sh CLUSTER` submits SPIRE-shaped CA requests and expects `Denied` for another
+trust domain and `Unprocessed` from the wrong requester, namespace or issuer. It refuses to run while the built-in
+approver is on. `--issue` also expects the SPIRE server's own request to be signed; `up.sh` runs it on its new clusters.
+
+Status: **implemented** in the repository and **tested** by the chart test
+`TestTrustApprovalBindsEachPolicyToItsRequester`. The CI bring-up of this change is to be checked. **Not deployed:** the labs still use cert-manager's built-in approver.
+
 ## Trust bundle
 
 The trust bundle is part of the mesh PKI: it is how a verifier gets the root it checks peers against. trust-manager

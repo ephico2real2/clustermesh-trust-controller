@@ -19,3 +19,35 @@ spec:
   secretName: ${PREFIX}-mesh-root-ca
   privateKey: {algorithm: ECDSA, size: 256, rotationPolicy: Never}
   issuerRef: {name: ${PREFIX}-mesh-root-bootstrap, kind: Issuer, group: cert-manager.io}
+---
+# cert-manager approver-policy: with cert-manager's auto-approval off (disableAutoApproval), a CertificateRequest is
+# signed only when a policy allows it and its requester is bound to that policy (verb use). cert-manager's controller
+# requests for every Certificate object; from this issuer it may get the mesh root only.
+apiVersion: policy.cert-manager.io/v1alpha1
+kind: CertificateRequestPolicy
+metadata: {name: ${PREFIX}-mesh-root-ca}
+spec:
+  allowed:
+    isCA: true
+    commonName: {value: "${PREFIX} mesh root CA", required: true}
+    usages: [digital signature, key encipherment, cert sign, crl sign]
+  constraints: {maxDuration: 87600h}
+  selector:
+    issuerRef: {name: ${PREFIX}-mesh-root-bootstrap, kind: Issuer, group: cert-manager.io}
+    namespace: {matchNames: [cert-manager]}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata: {name: ${PREFIX}-mesh-root-ca-policy}
+rules:
+  - apiGroups: [policy.cert-manager.io]
+    resources: [certificaterequestpolicies]
+    verbs: [use]
+    resourceNames: [${PREFIX}-mesh-root-ca]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata: {name: ${PREFIX}-mesh-root-ca-policy}
+roleRef: {apiGroup: rbac.authorization.k8s.io, kind: ClusterRole, name: ${PREFIX}-mesh-root-ca-policy}
+subjects:
+  - {kind: ServiceAccount, name: cert-manager, namespace: cert-manager}

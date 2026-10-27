@@ -54,8 +54,12 @@ for cluster in cmtc-a cmtc-b; do
     --set operator.replicas=1 --set hubble.enabled=false --set encryption.enabled=false \
     --wait --timeout 10m
   kubectl --context "kind-$cluster" wait nodes --all --for=condition=Ready --timeout=5m
+  # cert-manager's own approver is off: approver-policy approves a request only when a CertificateRequestPolicy allows it
+  # and the requester is bound to that policy (MESH_PKI.md, Approval). Every issuer below ships its policies.
   helm upgrade --install cert-manager jetstack/cert-manager --version v1.21.1 --namespace cert-manager --create-namespace \
-    --kube-context "kind-$cluster" --set crds.enabled=true --wait --timeout 5m
+    --kube-context "kind-$cluster" --set crds.enabled=true --set disableAutoApproval=true --wait --timeout 5m
+  helm upgrade --install cert-manager-approver-policy oci://quay.io/jetstack/charts/cert-manager-approver-policy \
+    --version v0.28.0 -n cert-manager --kube-context "kind-$cluster" --wait --timeout 5m
 done
 # Mesh PKI (ADR-011, MESH_PKI.md): cert-manager in cmtc-a, the control cluster, mints the 10-year mesh root; its Secret
 # is copied to cmtc-b; each cluster signs its own <cluster>-clustermesh-intermediate. The CMTC chart adds
@@ -86,6 +90,7 @@ done
 # trust-manager first: the CMTC chart's Bundle needs its CRD. Installed without app.targetNamespaces, so a namespace that
 # opts in later (label trust=enabled) gets the mesh root ConfigMap without a reinstall (MESH_PKI.md, Trust bundle).
 for cluster in cmtc-a cmtc-b; do
+  kubectl --context "kind-$cluster" apply -f config/lab/trust-manager/approval.yaml
   helm upgrade --install trust-manager oci://quay.io/jetstack/charts/trust-manager --version v0.25.0 -n cert-manager \
     --kube-context "kind-$cluster" -f config/lab/trust-manager/values.yaml --wait --timeout 5m
 done
@@ -103,11 +108,14 @@ for cluster in cmtc-a cmtc-b; do
   kubectl --context "kind-$cluster" create namespace cmtc-system --dry-run=client -o yaml | kubectl --context "kind-$cluster" apply -f -
   kubectl --context "kind-$cluster" label namespace cmtc-system security.cmtc.io/platform-protected=true trust=enabled --overwrite
   helm upgrade --install cmtc charts/cmtc -n cmtc-system --kube-context "kind-$cluster" --set "clusterName=$cluster" \
-    "${image_values[@]}" --set namespace.create=false --set trust.enabled=true --wait --timeout 5m
+    "${image_values[@]}" --set namespace.create=false --set trust.enabled=true --set trust.approval.enabled=true \
+    --set "trust.approval.spire.trustDomain=$cluster.mesh.example" --wait --timeout 5m
   kubectl --context "kind-$cluster" wait crd/namespacemtlspolicies.security.cmtc.io --for=condition=Established --timeout=60s
   kubectl --context "kind-$cluster" -n cert-manager wait "certificate/$cluster-spire-intermediate" --for=condition=Ready --timeout=3m
   kubectl --context "kind-$cluster" wait bundle/cmtc-mesh-root --for=condition=Synced --timeout=2m
   kubectl --context "kind-$cluster" apply -f config/samples/namespace-mtls-policy.yaml
+  # A disposable lab: --issue also proves that the SPIRE server's own request is signed.
+  bash scripts/lab/pki/approval-check.sh --issue "$cluster"
 done
 python3 scripts/cilium/verify.py
 bash scripts/lab/monitoring.sh "$ip_a"

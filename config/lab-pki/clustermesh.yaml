@@ -21,3 +21,34 @@ spec:
   # Nothing pins the intermediate key, so cert-manager's default of a new key per renewal is kept.
   privateKey: {algorithm: ECDSA, size: 256, rotationPolicy: Always}
   issuerRef: {name: ${PREFIX}-mesh-root, kind: ClusterIssuer, group: cert-manager.io}
+---
+# approver-policy (see root-control.yaml): from the mesh root, cert-manager's controller may get this cluster's
+# ClusterMesh intermediate only. The CMTC chart allows the SPIRE intermediate (charts/cmtc, trust.approval).
+apiVersion: policy.cert-manager.io/v1alpha1
+kind: CertificateRequestPolicy
+metadata: {name: ${CLUSTER}-clustermesh-intermediate}
+spec:
+  allowed:
+    isCA: true
+    commonName: {value: "${CLUSTER} ClusterMesh intermediate CA", required: true}
+    usages: [digital signature, key encipherment, cert sign, crl sign]
+  constraints: {maxDuration: 26280h}
+  selector:
+    issuerRef: {name: ${PREFIX}-mesh-root, kind: ClusterIssuer, group: cert-manager.io}
+    namespace: {matchNames: [cert-manager]}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata: {name: ${CLUSTER}-clustermesh-intermediate-policy}
+rules:
+  - apiGroups: [policy.cert-manager.io]
+    resources: [certificaterequestpolicies]
+    verbs: [use]
+    resourceNames: [${CLUSTER}-clustermesh-intermediate]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata: {name: ${CLUSTER}-clustermesh-intermediate-policy}
+roleRef: {apiGroup: rbac.authorization.k8s.io, kind: ClusterRole, name: ${CLUSTER}-clustermesh-intermediate-policy}
+subjects:
+  - {kind: ServiceAccount, name: cert-manager, namespace: cert-manager}

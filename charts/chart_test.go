@@ -312,3 +312,65 @@ func TestTrustIsOwnedByTheChart(t *testing.T) {
 	renderFailsWith(t, certManagerOnly, "trust.enabled needs cert-manager and trust-manager installed first (no trust.cert-manager.io/v1alpha1 Bundle API)",
 		"clusterName=cmtc-a", "image.tag=x", "trust.enabled=true")
 }
+
+// ztunnel trusts every CA the SPIRE intermediate signs, so each policy must name its one requester and its one shape.
+func TestTrustApprovalBindsEachPolicyToItsRequester(t *testing.T) {
+	trustAPIs := []string{"--api-versions", "cert-manager.io/v1/Certificate", "--api-versions", "trust.cert-manager.io/v1alpha1/Bundle"}
+	for k := range renderWith(t, trustAPIs, "clusterName=cmtc-a", "image.tag=x", "trust.enabled=true") {
+		if strings.HasPrefix(k, "CertificateRequestPolicy/") || strings.HasSuffix(k, "-policy") {
+			t.Errorf("%s rendered without trust.approval.enabled", k)
+		}
+	}
+	approvalAPIs := append(trustAPIs, "--api-versions", "policy.cert-manager.io/v1alpha1/CertificateRequestPolicy")
+	got := renderWith(t, approvalAPIs, "clusterName=cmtc-a", "image.tag=x", "trust.enabled=true",
+		"trust.approval.enabled=true", "trust.approval.spire.trustDomain=cmtc-a.mesh.example")
+	required := func(value string) object { return object{"value": value, "required": true} }
+	for name, want := range map[string]struct {
+		allowed, selector object
+		maxDuration       string
+		requester         object
+	}{
+		"cmtc-a-spire-intermediate": {
+			allowed: object{"isCA": true, "commonName": required("cmtc-a SPIRE intermediate CA"),
+				"usages": []any{"digital signature", "key encipherment", "cert sign", "crl sign"}},
+			selector: object{"issuerRef": object{"name": "cmtc-mesh-root", "kind": "ClusterIssuer", "group": "cert-manager.io"},
+				"namespace": object{"matchNames": []any{"cert-manager"}}},
+			maxDuration: "26280h",
+			requester:   object{"kind": "ServiceAccount", "name": "cert-manager", "namespace": "cert-manager"},
+		},
+		"cmtc-a-spire-ca": {
+			allowed: object{"isCA": true, "commonName": required("cmtc-a SPIRE CA"),
+				"uris": object{"values": []any{"spiffe://cmtc-a.mesh.example"}, "required": true},
+				"subject": object{"organizations": object{"values": []any{"SPIRE"}}, "countries": object{"values": []any{"US"}},
+					"serialNumber": object{"value": "*"}},
+				"usages": []any{"cert sign", "crl sign"}},
+			selector: object{"issuerRef": object{"name": "cmtc-a-spire-intermediate", "kind": "ClusterIssuer", "group": "cert-manager.io"},
+				"namespace": object{"matchNames": []any{"cilium-spire"}}},
+			maxDuration: "48h",
+			requester:   object{"kind": "ServiceAccount", "name": "spire-server", "namespace": "cilium-spire"},
+		},
+	} {
+		spec := dig(got["CertificateRequestPolicy/"+name], "spec")
+		if !reflect.DeepEqual(dig(spec, "allowed"), want.allowed) {
+			t.Errorf("%s allowed:\ngot  %v\nwant %v", name, dig(spec, "allowed"), want.allowed)
+		}
+		if !reflect.DeepEqual(dig(spec, "selector"), want.selector) {
+			t.Errorf("%s selector: %v", name, dig(spec, "selector"))
+		}
+		if v := dig(spec, "constraints", "maxDuration"); v != want.maxDuration {
+			t.Errorf("%s maxDuration: %v, want %v", name, v, want.maxDuration)
+		}
+		rules := []any{object{"apiGroups": []any{"policy.cert-manager.io"}, "resources": []any{"certificaterequestpolicies"},
+			"verbs": []any{"use"}, "resourceNames": []any{name}}}
+		if r := got["ClusterRole/"+name+"-policy"]["rules"]; !reflect.DeepEqual(r, rules) {
+			t.Errorf("%s ClusterRole rules: %v", name, r)
+		}
+		if s := got["ClusterRoleBinding/"+name+"-policy"]["subjects"]; !reflect.DeepEqual(s, []any{want.requester}) {
+			t.Errorf("%s bound to %v, want only %v", name, s, want.requester)
+		}
+	}
+	renderFailsWith(t, approvalAPIs, "trust.approval.spire.trustDomain is required", "clusterName=cmtc-a", "image.tag=x",
+		"trust.enabled=true", "trust.approval.enabled=true")
+	renderFailsWith(t, trustAPIs, "trust.approval.enabled needs cert-manager approver-policy installed first", "clusterName=cmtc-a",
+		"image.tag=x", "trust.enabled=true", "trust.approval.enabled=true", "trust.approval.spire.trustDomain=cmtc-a.mesh.example")
+}
