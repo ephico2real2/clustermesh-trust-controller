@@ -1,0 +1,48 @@
+# Cilium on the CMTC kind labs: settings shared by every cluster. `python3 scripts/lab/cilium_release.py files` prints
+# the file order: this file, the image lock (.tmp/cilium-image-values.json), the environment's extraCiliumValues and the
+# cluster values (scripts/lab/cilium_cluster_values.py). The strict workload mTLS layer is ztunnel.yaml.
+# scripts/lab/up.sh does not use these files yet: it still sets Cilium's values itself (issue #33).
+ipam:
+  mode: kubernetes
+kubeProxyReplacement: true
+k8sServicePort: 6443
+hubble:
+  enabled: false
+operator:
+  replicas: 1
+# One agent at a time: each restart closes and reopens ztunnel admission on its node.
+updateStrategy:
+  rollingUpdate:
+    maxUnavailable: 1
+# The agent metrics on :9962, scraped by the lab Prometheus (scripts/lab/monitoring.sh).
+prometheus:
+  enabled: true
+  # The labs were qualified without controller-group metrics (the chart default adds three groups).
+  controllerGroupMetrics: []
+# The mesh trust bundle (MESH_PKI.md). Its content is instance data: the generated instance values carry it.
+tls:
+  caBundle:
+    enabled: true
+    name: cmtc-public-root
+    key: ca.crt
+    useSecret: false
+clustermesh:
+  useAPIServer: true
+  apiserver:
+    service:
+      type: NodePort
+    tls:
+      auto:
+        enabled: true
+        method: certmanager
+        # 365 days (MESH_PKI.md, Lifetimes). live-labs.yaml keeps the two current labs at 1 day until they move.
+        certValidityDuration: 365
+        certManagerIssuerRef:
+          group: cert-manager.io
+          kind: ClusterIssuer
+        # A peer's ztunnel-origin-config pins this certificate's key, so renewal keeps the key.
+        server:
+          privateKey:
+            rotationPolicy: Never
+  config:
+    enabled: true

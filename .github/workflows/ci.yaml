@@ -95,6 +95,10 @@ jobs:
           mkdir -p .tmp
           curl -fsSL --retry 4 "$LOCK_URL" -o .tmp/cilium-images.override.json
           echo 'CILIUM_IMAGE_LOCK=.tmp/cilium-images.override.json' >> "$GITHUB_ENV"
+      - name: Push the CMTC image to the local registry
+        run: |
+          bash scripts/lab/local-registry.sh start
+          echo "CMTC_IMAGE=$(bash scripts/lab/local-registry.sh push cmtc:dev cmtc)" >> "$GITHUB_ENV"
       - name: Deploy Cilium, intermediate-backed cert-manager mesh, CMTC and monitoring
         run: |
           set -o pipefail
