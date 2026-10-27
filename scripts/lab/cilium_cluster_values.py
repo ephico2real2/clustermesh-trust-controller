@@ -4,8 +4,9 @@
 The shared settings are files under config/lab/cilium/. This writes what belongs to one cluster:
 
 - its constants, derived from the environment file (config/lab/environments/<env>.yaml) with the names of
-  MESH_PKI.md: cluster name and ID, API server host, ClusterMesh issuer, SPIRE trust domain and delegated socket,
-  and the mesh clusters that ztunnel reaches over HBONE only;
+  MESH_PKI.md: cluster name and ID, API server host, ClusterMesh and Hubble issuer, whether it runs the Hubble Relay
+  and UI (the control cluster only), SPIRE trust domain and delegated socket, and the mesh clusters that ztunnel
+  reaches over HBONE only;
 - its instance data, which exists only once the lab runs: the mesh trust bundle, the ClusterMesh peer addresses,
   and the server-key pins of the remote clustermesh-apiservers that ztunnel's direct-origin reader verifies.
 
@@ -87,11 +88,16 @@ def spki_sha256(cert_pem: str) -> str:
 
 def constants(env: dict, cluster: str) -> dict:
     me = next(c for c in env['clusters'] if c['name'] == cluster)
+    # The Hubble Relay (and the UI behind it) runs in the control cluster only: its peer service lists every node of
+    # the ClusterMesh, so one Relay observes both clusters, and it verifies each agent against the mesh root.
+    control = cluster == env['controlCluster']
     return {
         'cluster': {'name': cluster, 'id': me['id']},
         'k8sServiceHost': f'{cluster}-control-plane',
         'clustermesh': {'apiserver': {'tls': {'auto': {'certManagerIssuerRef': {
             'name': f'{cluster}-clustermesh-intermediate'}}}}},
+        'hubble': {'tls': {'auto': {'certManagerIssuerRef': {'name': f'{cluster}-clustermesh-intermediate'}}},
+                   'relay': {'enabled': control}, 'ui': {'enabled': control}},
         'encryption': {'ztunnel': {
             'spire': {'trustDomain': f'{cluster}.mesh.example',
                       'delegatedSocketPath': f'/run/cmtc-spire/{cluster}/delegated/delegated.sock'},
@@ -152,6 +158,9 @@ def main() -> None:
     mode.add_argument('--fresh', action='store_true')
     mode.add_argument('--from-live', action='store_true')
     mode.add_argument('--constants-only', action='store_true', help='no instance data (first install)')
+    ap.add_argument('--without-ztunnel', action='store_true',
+                    help='leave out the ztunnel constants (encryption.*): the chart refuses them while encryption is '
+                         'off, as on a lab before its strict layer (scripts/lab/up.sh)')
     ap.add_argument('--root', type=pathlib.Path, help='mesh root certificate (PEM), with --fresh')
     ap.add_argument('--kubeconfig')
     args = ap.parse_args()
@@ -166,6 +175,8 @@ def main() -> None:
         values = merge(values, fresh(lab, args.cluster, args.root))
     elif args.from_live:
         values = merge(values, from_live(lab, args.cluster))
+    if args.without_ztunnel:
+        del values['encryption']
     if 'PRIVATE KEY' in json.dumps(values):
         raise SystemExit('refusing to write values that contain a private key')
     args.out.write_text(json.dumps(values, indent=2) + '\n')

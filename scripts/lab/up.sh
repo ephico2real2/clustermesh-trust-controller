@@ -48,6 +48,7 @@ helm repo add jetstack https://charts.jetstack.io --force-update
 helm repo update
 for cluster in cmtc-a cmtc-b; do
   id=1; [ "$cluster" = cmtc-b ] && id=2
+  # Hubble waits for the second upgrade below: its certificates come from cert-manager, which does not exist yet.
   helm install cilium "$cilium_chart" -f .tmp/cilium-image-values.json -n kube-system --kube-context "kind-$cluster" \
     --set "cluster.name=$cluster" --set "cluster.id=$id" --set ipam.mode=kubernetes \
     --set kubeProxyReplacement=true --set "k8sServiceHost=$cluster-control-plane" --set k8sServicePort=6443 \
@@ -78,9 +79,14 @@ values={'tls':{'caBundle':{'enabled':True,'name':'cmtc-public-root','key':'ca.cr
 pathlib.Path('.tmp/mesh-values.json').write_text(json.dumps(values))
 PY
 for cluster in cmtc-a cmtc-b; do
-  # Each cluster's leaves are signed by its own intermediate, so a leaf's issuer names the cluster that signed it.
-  helm upgrade cilium "$cilium_chart" -f .tmp/cilium-image-values.json -n kube-system --kube-context "kind-$cluster" --reuse-values \
-    -f .tmp/mesh-values.json --set "clustermesh.apiserver.tls.auto.certManagerIssuerRef.name=$cluster-clustermesh-intermediate" \
+  # The shared values (config/lab/cilium/base.yaml: Hubble on, with cert-manager TLS) and the cluster's constants
+  # (scripts/lab/cilium_cluster_values.py: each cluster's leaves, ClusterMesh and Hubble, are signed by its own
+  # intermediate; the Relay and the UI run in the control cluster only). The instance values stay in mesh-values.json.
+  # The ztunnel constants wait for the strict layer: the chart refuses them while encryption is off.
+  python3 scripts/lab/cilium_cluster_values.py config/lab/environments/cmtc.yaml "$cluster" ".tmp/cilium-constants-$cluster.json" \
+    --constants-only --without-ztunnel
+  helm upgrade cilium "$cilium_chart" -f config/lab/cilium/base.yaml -f .tmp/cilium-image-values.json -n kube-system \
+    --kube-context "kind-$cluster" --reuse-values -f .tmp/mesh-values.json -f ".tmp/cilium-constants-$cluster.json" \
     --wait --timeout 10m
   kubectl --context "kind-$cluster" -n kube-system wait certificates --all --for=condition=Ready --timeout=3m
 done
