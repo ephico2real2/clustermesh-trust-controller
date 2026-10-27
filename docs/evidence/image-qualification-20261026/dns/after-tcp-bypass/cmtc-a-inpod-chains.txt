@@ -1,0 +1,34 @@
+# nat CILIUM_OUTPUT of each enrolled Pod after the cmtc-a agents moved to a99264f008 (2026-10-26T18:54:50Z); Pods not restarted
+# ip6tables printed "No chain/target/match by that name": the labs are IPv4-only, so the Pods have no IPv6 nat CILIUM_OUTPUT chain.
+== cmtc-a client-worker (cmtc-a-worker) pod uid 2fc93bd6-2103-4083-87dd-1895afb9f433
+-- iptables
+-N CILIUM_OUTPUT
+-A CILIUM_OUTPUT -p tcp -m tcp --dport 53 -j ACCEPT
+-A CILIUM_OUTPUT -p tcp -m mark --mark 0x111/0xfff -j ACCEPT
+-A CILIUM_OUTPUT ! -d 127.0.0.1/32 -o lo -j ACCEPT
+-A CILIUM_OUTPUT ! -d 127.0.0.1/32 -p tcp -m mark ! --mark 0x539/0xfff -j REDIRECT --to-ports 15001
+-- ip6tables
+== cmtc-a client-control-plane (cmtc-a-control-plane) pod uid ccc024c2-a508-4946-9416-76d20e71d200
+-- iptables
+-N CILIUM_OUTPUT
+-A CILIUM_OUTPUT -p tcp -m tcp --dport 53 -j ACCEPT
+-A CILIUM_OUTPUT -p tcp -m mark --mark 0x111/0xfff -j ACCEPT
+-A CILIUM_OUTPUT ! -d 127.0.0.1/32 -o lo -j ACCEPT
+-A CILIUM_OUTPUT ! -d 127.0.0.1/32 -p tcp -m mark ! --mark 0x539/0xfff -j REDIRECT --to-ports 15001
+-- ip6tables
+== cmtc-a server-worker (cmtc-a-worker) pod uid 3aef6668-0a36-4885-9589-193af26eef2a
+-- iptables
+-N CILIUM_OUTPUT
+-A CILIUM_OUTPUT -p tcp -m tcp --dport 53 -j ACCEPT
+-A CILIUM_OUTPUT -p tcp -m mark --mark 0x111/0xfff -j ACCEPT
+-A CILIUM_OUTPUT ! -d 127.0.0.1/32 -o lo -j ACCEPT
+-A CILIUM_OUTPUT ! -d 127.0.0.1/32 -p tcp -m mark ! --mark 0x539/0xfff -j REDIRECT --to-ports 15001
+-- ip6tables
+== cmtc-a server-control-plane (cmtc-a-control-plane) pod uid 232526d3-f410-46e2-abf7-a66d1638d78e
+-- iptables
+-N CILIUM_OUTPUT
+-A CILIUM_OUTPUT -p tcp -m tcp --dport 53 -j ACCEPT
+-A CILIUM_OUTPUT -p tcp -m mark --mark 0x111/0xfff -j ACCEPT
+-A CILIUM_OUTPUT ! -d 127.0.0.1/32 -o lo -j ACCEPT
+-A CILIUM_OUTPUT ! -d 127.0.0.1/32 -p tcp -m mark ! --mark 0x539/0xfff -j REDIRECT --to-ports 15001
+-- ip6tables

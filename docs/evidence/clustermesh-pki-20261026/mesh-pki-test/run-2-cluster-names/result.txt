@@ -1,0 +1,39 @@
+A1 refuse an issuer that points at another Secret
+kind-cmtc-b: ClusterIssuer pkitest-b-spire-intermediate signs from Secret somebody-else, not pkitest-b-spire-intermediate; refusing to repoint it
+A2 refuse an unknown root Secret on the control cluster
+kind-cmtc-a: Secret pkitest-mesh-root-ca exists without its Certificate; refusing to adopt an unknown root
+B1 create
+2026-10-26T12:44:05Z mesh-pki: pkitest-a: root pkitest-mesh-root-ca ready, certificate sha256 1a1a394c197cead2e9fe1fe9f9b5af0f9bdc34a5b005d9df29454820d680e571
+2026-10-26T12:44:05Z mesh-pki: pkitest-b: root copied
+2026-10-26T12:44:06Z mesh-pki: pkitest-a: pkitest-a-clustermesh-intermediate pkitest-a-spire-intermediate chain to the root; their issuers are ready
+2026-10-26T12:44:07Z mesh-pki: pkitest-b: pkitest-b-clustermesh-intermediate pkitest-b-spire-intermediate chain to the root; their issuers are ready
+2026-10-26T12:44:07Z mesh-pki: root certificate written to /private/tmp/claude-501/-Users-olasumbo-gitRepos-clustermest-trust-controller/b744973a-790d-4002-b391-59c175420e0c/scratchpad/mesh-pki-test/root.crt
+took 2s
+B2 rerun
+2026-10-26T12:44:08Z mesh-pki: pkitest-a: root pkitest-mesh-root-ca ready, certificate sha256 1a1a394c197cead2e9fe1fe9f9b5af0f9bdc34a5b005d9df29454820d680e571
+2026-10-26T12:44:08Z mesh-pki: pkitest-b: root copy present
+2026-10-26T12:44:09Z mesh-pki: pkitest-a: pkitest-a-clustermesh-intermediate pkitest-a-spire-intermediate chain to the root; their issuers are ready
+2026-10-26T12:44:10Z mesh-pki: pkitest-b: pkitest-b-clustermesh-intermediate pkitest-b-spire-intermediate chain to the root; their issuers are ready
+2026-10-26T12:44:10Z mesh-pki: root certificate written to /private/tmp/claude-501/-Users-olasumbo-gitRepos-clustermest-trust-controller/b744973a-790d-4002-b391-59c175420e0c/scratchpad/mesh-pki-test/root.crt
+subject=CN=pkitest mesh root CA
+notAfter=Oct 23 12:44:05 2036 GMT
+X509v3 Basic Constraints: critical
+    CA:TRUE
+subject=CN=pkitest-a ClusterMesh intermediate CA issuer=CN=pkitest mesh root CA notAfter=Oct 26 12:44:06 2027 GMT X509v3 Basic Constraints: critical     CA:TRUE 
+subject=CN=pkitest-a SPIRE intermediate CA issuer=CN=pkitest mesh root CA notAfter=Oct 26 12:44:06 2027 GMT X509v3 Basic Constraints: critical     CA:TRUE 
+subject=CN=pkitest-b ClusterMesh intermediate CA issuer=CN=pkitest mesh root CA notAfter=Oct 26 12:44:06 2027 GMT X509v3 Basic Constraints: critical     CA:TRUE 
+subject=CN=pkitest-b SPIRE intermediate CA issuer=CN=pkitest mesh root CA notAfter=Oct 26 12:44:06 2027 GMT X509v3 Basic Constraints: critical     CA:TRUE 
+B3 a leaf from each cluster's ClusterMesh issuer verifies against the root alone, in both clusters
+leaf-a: 2 certs in tls.crt; issuer=CN=pkitest-a ClusterMesh intermediate CA
+leaf-b: 2 certs in tls.crt; issuer=CN=pkitest-b ClusterMesh intermediate CA
+leaf-a verifies against the root held by pkitest-a
+leaf-a verifies against the root held by pkitest-b
+leaf-b verifies against the root held by pkitest-a
+leaf-b verifies against the root held by pkitest-b
+B4 SPIRE depth: an isCA certificate from the SPIRE issuer (SPIRE's own CA), then a leaf below it
+svid tls.crt: 3 certs
+/private/tmp/claude-501/-Users-olasumbo-gitRepos-clustermest-trust-controller/b744973a-790d-4002-b391-59c175420e0c/scratchpad/mesh-pki-test/svid.pem: OK
+B5 issuance count per cluster CA (sum of Certificate status.revision by issuerRef)
+kind-cmtc-a {'pkitest-mesh-root': 2, 'pkitest-a-clustermesh-intermediate': 1, 'pkitest-mesh-root-bootstrap': 1, 'pkitest-a-spire-intermediate': 1, 'pkitest-spire-ca': 1, 'cmtc-lab-intermediate': 15}
+kind-cmtc-b {'pkitest-mesh-root': 2, 'pkitest-b-clustermesh-intermediate': 1, 'cmtc-lab-intermediate': 15}
+PASS

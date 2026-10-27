@@ -1,0 +1,31 @@
+2026-10-26T17:28:44.545+00:00 operator
+{"at": "2026-10-26T17:28:44.728484+00:00", "event": "image-patched", "cluster": "cmtc-b", "object": "kube-system/deploy/cilium-operator", "uid": "3952cb1f-6f18-472c-b271-bc5f28e2f10a", "fromResourceVersion": "248277", "generationBefore": 4, "from": "localhost/cilium-operator:dev-overlay-0ed63bf906", "to": "ghcr.io/ephico2real2/cilium-dev@sha256:533e8ff5483ab6128ca11f23d974a161dbca7440161bb7b97ab02eccc640cb38", "containers": ["containers/cilium-operator"], "pullPolicy": "IfNotPresent", "strategyBefore": {"rollingUpdate": {"maxSurge": "25%", "maxUnavailable": "100%"}, "type": "RollingUpdate"}, "strategyAfter": {"rollingUpdate": {"maxSurge": "25%", "maxUnavailable": "100%"}, "type": "RollingUpdate"}}
+Waiting for deployment "cilium-operator" rollout to finish: 0 of 1 updated replicas are available...
+Waiting for deployment "cilium-operator" rollout to finish: 0 of 1 updated replicas are available...
+deployment "cilium-operator" successfully rolled out
+cmtc-b cmtc-b-worker cilium-operator-757dfdb7c9-nkf7m/cilium-operator ready=True restarts=0 config=sha256:6367e101b925 ok
+cmtc-b kube-system io.cilium/app=operator: 1 pod(s), want 1 -> PASS
+2026-10-26T17:28:46.319+00:00 apiserver
+{"at": "2026-10-26T17:28:46.474113+00:00", "event": "image-patched", "cluster": "cmtc-b", "object": "kube-system/deploy/clustermesh-apiserver", "uid": "585088a9-4cf8-4fd9-b833-0e9547056670", "fromResourceVersion": "451337", "generationBefore": 4, "from": "localhost/cilium-clustermesh-apiserver:dev-overlay-0ed63bf906", "to": "ghcr.io/ephico2real2/cilium-dev@sha256:1e3fc5a8f272dd554c565e45b52854a336632a3d66ae4417133fbaa3813cffc6", "containers": ["initContainers/etcd-init", "containers/etcd", "containers/apiserver", "containers/kvstoremesh"], "pullPolicy": "IfNotPresent", "strategyBefore": {"rollingUpdate": {"maxSurge": 1, "maxUnavailable": 0}, "type": "RollingUpdate"}, "strategyAfter": {"rollingUpdate": {"maxSurge": 1, "maxUnavailable": 0}, "type": "RollingUpdate"}}
+Waiting for deployment "clustermesh-apiserver" rollout to finish: 1 old replicas are pending termination...
+Waiting for deployment "clustermesh-apiserver" rollout to finish: 1 old replicas are pending termination...
+deployment "clustermesh-apiserver" successfully rolled out
+cmtc-b cmtc-b-worker clustermesh-apiserver-657779cb9c-bcw9l/apiserver ready=True restarts=0 config=sha256:33936e60d257 ok
+cmtc-b cmtc-b-worker clustermesh-apiserver-657779cb9c-bcw9l/etcd ready=True restarts=0 config=sha256:33936e60d257 ok
+cmtc-b cmtc-b-worker clustermesh-apiserver-657779cb9c-bcw9l/kvstoremesh ready=True restarts=0 config=sha256:33936e60d257 ok
+cmtc-b kube-system k8s-app=clustermesh-apiserver: 1 pod(s), want 1 -> PASS
+2026-10-26T17:28:49.514+00:00 agents
+{"at": "2026-10-26T17:28:49.675553+00:00", "event": "image-patched", "cluster": "cmtc-b", "object": "kube-system/ds/cilium", "uid": "05cf89b4-9d45-44db-a262-5e7d3b0056a7", "fromResourceVersion": "451942", "generationBefore": 16, "from": "localhost/cilium:dev-overlay-72b5bc3a65", "to": "ghcr.io/ephico2real2/cilium-dev@sha256:1eee77b4fed5cc344e4292990a43aa3450639ce8d1d8162772c5d3352f9b1d51", "containers": ["initContainers/config", "initContainers/mount-cgroup", "initContainers/apply-sysctl-overwrites", "initContainers/mount-bpf-fs", "initContainers/clean-cilium-state", "initContainers/install-cni-binaries", "containers/cilium-agent"], "pullPolicy": "IfNotPresent", "strategyBefore": {"type": "OnDelete"}, "strategyAfter": {"type": "RollingUpdate", "rollingUpdate": {"maxUnavailable": 1, "maxSurge": 0}}}
+Waiting for daemon set "cilium" rollout to finish: 0 out of 2 new pods have been updated...
+Waiting for daemon set "cilium" rollout to finish: 1 out of 2 new pods have been updated...
+Waiting for daemon set "cilium" rollout to finish: 1 out of 2 new pods have been updated...
+Waiting for daemon set "cilium" rollout to finish: 1 of 2 updated pods are available...
+daemon set "cilium" successfully rolled out
+cmtc-b cmtc-b-worker cilium-bf2pb/cilium-agent ready=True restarts=0 config=sha256:4829ca31bd6c ok
+cmtc-b cmtc-b-control-plane cilium-vqfjr/cilium-agent ready=True restarts=0 config=sha256:4829ca31bd6c ok
+cmtc-b kube-system k8s-app=cilium: 2 pod(s), want 2 -> PASS
+2026-10-26T17:29:15.460+00:00 done
+== pod/cilium-bf2pb
+OK
+== pod/cilium-vqfjr
+OK

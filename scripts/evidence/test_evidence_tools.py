@@ -17,7 +17,9 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 import cilium_drop_view as drops  # noqa: E402
+import dns_probes  # noqa: E402
 import join_probes_to_ztunnel as join  # noqa: E402
+import live_mtls_fixture as fixture  # noqa: E402
 import node_clock_offset as clock_offset  # noqa: E402
 import ztunnel_log_view as view  # noqa: E402
 
@@ -307,6 +309,28 @@ class JoinTests(JoinCase, unittest.TestCase):
         self.assertEqual(code, 1)
         self.assertIn("2 ztunnel connections", rows[0]["result"])
 
+    def test_the_client_socket_picks_one_of_two_connections(self):
+        logs = self.good_logs()
+        logs["a-worker"].append(access("23:01:00.030", "outbound", 5556))
+        logs["b-cp"].append(access("23:01:00.032", "inbound", 4445))
+        code, rows = self.run_join(logs, [self.probe() | {"clientAddr": "10.10.1.5:5556"}])
+        self.assertEqual((code, rows[0]["result"]), (0, join.PROVEN))
+        self.assertIn("src.addr=10.10.1.5:5556", rows[0]["lines"][0])
+
+    def test_a_client_socket_with_no_outbound_line_fails_on_its_own_reason(self):
+        code, rows = self.run_join(self.good_logs(), [self.probe() | {"clientAddr": "10.10.1.5:6000"}])
+        self.assertEqual((code, rows[0]["result"]), (1, "FAIL: no ztunnel outbound line from the probe's socket "
+                                                           "10.10.1.5:6000 to this destination in the window"))
+
+    def test_a_name_probe_with_its_socket_is_joined_among_several_backends(self):
+        logs = self.good_logs()
+        logs["a-worker"].append(access("23:01:00.030", "outbound", 5556))
+        logs["b-cp"].append(access("23:01:00.032", "inbound", 4445))
+        probe = self.probe(url="http://server.fx.svc.cluster.local:8080/") | {"clientAddr": "10.10.1.5:5555",
+                                                                             "expectedServer": "cmtc-b/server"}
+        code, rows = self.run_join(logs, [probe])
+        self.assertEqual((code, rows[0]["result"], rows[0]["servedBy"]), (0, join.PROVEN, "cmtc-b/server"))
+
     def test_an_inverted_bound_is_refused(self):
         with self.assertRaises(SystemExit) as stop, contextlib.redirect_stderr(io.StringIO()):
             self.run_join(self.good_logs(), [self.probe()], extra=["--node-clock-offset", "0.1:0.05"])
@@ -411,6 +435,16 @@ class DnsNameTests(JoinCase, unittest.TestCase):
         self.assertTrue(rows[0]["result"].endswith(
             "; Cilium dropped DNS traffic from the client: Policy denied at bpf_lxc.c:1626"))
         self.assertEqual(len(rows[0]["drops"]), 1)
+
+    def test_a_per_pod_name_is_proven_when_its_pod_served_it(self):
+        probe = self.probe(url="http://server.fx.svc.cluster.local:8080/") | {"expectedServer": "cmtc-b/server"}
+        code, rows = self.run_join(self.good_logs(), [probe])
+        self.assertEqual((code, rows[0]["result"], rows[0]["servedBy"]), (0, join.PROVEN, "cmtc-b/server"))
+
+    def test_a_per_pod_name_served_by_another_pod_fails(self):
+        probe = self.probe(url="http://server.fx.svc.cluster.local:8080/") | {"expectedServer": "cmtc-b/other"}
+        code, rows = self.run_join(self.good_logs(), [probe])
+        self.assertEqual((code, rows[0]["result"]), (1, "FAIL: served by cmtc-b/server, expected cmtc-b/other"))
 
     def test_runner_curl_timings_travel_with_the_row(self):
         timings = {"time_namelookup": "0.000000", "remote_ip": "", "exitcode": "28"}
@@ -628,6 +662,153 @@ class DnsCheckScriptTests(unittest.TestCase):
         run, line = self.check('#!/bin/sh\necho "error: container not found" >&2\nexit 1\n')
         self.assertEqual(run.returncode, 1)
         self.assertIn("nameserver=? rc=exec error: container not found", line)
+
+
+class DnsWireTests(unittest.TestCase):
+    QUESTION = b"\x0akubernetes\x07default\x03svc\x07cluster\x05local\x00\x00\x01\x00\x01"
+
+    def reply(self, qid=0x1234, flags=0x8580, answers=b"", count=0):
+        msg = (qid.to_bytes(2, "big") + flags.to_bytes(2, "big") + b"\x00\x01" + count.to_bytes(2, "big")
+               + b"\x00\x00\x00\x00" + self.QUESTION + answers)
+        return len(msg).to_bytes(2, "big") + msg
+
+    @staticmethod
+    def record(rtype, rdata, name=b"\xc0\x0c"):
+        return name + rtype.to_bytes(2, "big") + b"\x00\x01\x00\x00\x00\x05" + len(rdata).to_bytes(2, "big") + rdata
+
+    def test_the_query_is_the_one_that_got_an_answer_on_the_labs(self):
+        # The hand-built query of 2026-10-26 (tcp-dns-before-fix evidence), answered NOERROR by CoreDNS.
+        self.assertEqual(dns_probes.dns_query(dns_probes.KUBERNETES, 0x1234),
+                         b"\x00\x36\x12\x34\x01\x00\x00\x01\x00\x00\x00\x00\x00\x00" + self.QUESTION)
+
+    def test_printf_writes_the_query_bytes_unchanged(self):
+        query = dns_probes.dns_query("a%b.svc.cluster.local", 0x2525)
+        fmt = dns_probes.printf_octal(query)
+        self.assertNotIn("%", fmt)
+        out = subprocess.run(["sh", "-c", 'printf "$1"', "sh", fmt], capture_output=True, check=True).stdout
+        self.assertEqual(out, query)
+
+    def test_an_answer_gives_its_address(self):
+        got = dns_probes.parse_dns_reply(self.reply(answers=self.record(1, bytes([10, 11, 0, 1])), count=1), 0x1234)
+        self.assertEqual(got, {"answered": True, "rcode": "NOERROR", "addresses": ["10.11.0.1"]})
+
+    def test_a_cname_before_the_address_is_skipped(self):
+        cname = self.record(5, b"\x03api\xc0\x0c")
+        address = self.record(1, bytes([10, 21, 0, 1]), name=b"\x03api\xc0\x0c")
+        got = dns_probes.parse_dns_reply(self.reply(answers=cname + address, count=2), 0x1234)
+        self.assertEqual(got["addresses"], ["10.21.0.1"])
+
+    def test_nxdomain_is_an_answer_without_addresses(self):
+        got = dns_probes.parse_dns_reply(self.reply(flags=0x8583), 0x1234)
+        self.assertEqual(got, {"answered": True, "rcode": "NXDOMAIN", "addresses": []})
+
+    def test_what_is_not_an_answer_says_what_arrived(self):
+        cases = {
+            b"": "0 bytes received",
+            self.reply()[:20]: "length prefix",
+            self.reply(qid=0x4321): "not a reply to query 0x1234: id 0x4321",
+            self.reply(flags=0x0100): "flags 0x0100",
+        }
+        for data, reason in cases.items():
+            got = dns_probes.parse_dns_reply(data, 0x1234)
+            self.assertFalse(got["answered"])
+            self.assertIn(reason, got["reason"])
+
+
+class FixtureRunnerTests(unittest.TestCase):
+    """The live fixture runner's probe rows and per-Pod Services, with every kubectl call stubbed."""
+
+    SERVERS = {"server-worker": ("10.10.1.37", "cmtc-a-worker", "u-sw"),
+               "server-control-plane": ("10.10.0.98", "cmtc-a-control-plane", "u-scp")}
+
+    @staticmethod
+    def pod(name, ip, node, uid):
+        return {"metadata": {"name": name, "uid": uid}, "spec": {"nodeName": node}, "status": {"podIP": ip}}
+
+    def lab(self):
+        servers = [self.pod(n, *v) for n, v in self.SERVERS.items()]
+        clients = [self.pod("client-worker", "10.10.1.205", "cmtc-a-worker", "u-cw"),
+                   self.pod("client-control-plane", "10.10.0.2", "cmtc-a-control-plane", "u-ccp")]
+        class Stub(fixture.Lab):
+            def __init__(self):
+                self.run, self.rows = "r1", []
+
+            def owned(self, c, ns):
+                return {}
+
+            def check(self, c):
+                pass
+
+            def get(self, c, *args):
+                if args[-2:] == ("get", "pods"):
+                    return {"items": servers + clients}
+                kind, name = args[-2:]
+                pod = next(p for p in servers if p["metadata"]["name"] == name)
+                svc, ep = fixture.per_pod_service(pod)
+                return svc | {"spec": svc["spec"] | {"clusterIP": "10.11.0.9"}} if kind == "svc" else ep
+
+            def save(self, name, obj):
+                self.rows = obj
+
+            def curl(self, c, ns, pod, url, expected):
+                return {"client": pod, "namespace": ns, "url": url, "positiveMatch": True, "http200": True}
+
+        return Stub()
+
+    def test_client_addr_reads_the_write_out(self):
+        self.assertEqual(fixture.client_addr("HTTP/1.1 200 OK\n\nbody\nCMTC_CLIENT_ADDR=10.10.1.205:59202\n"),
+                         "10.10.1.205:59202")
+
+    def test_client_addr_is_none_without_a_connection(self):
+        for out in ("CMTC_CLIENT_ADDR=:0\n", "CMTC_CLIENT_ADDR=10.10.1.205:0\n", "no marker"):
+            self.assertIsNone(fixture.client_addr(out))
+
+    def test_per_pod_service_has_no_selector_and_names_one_pod(self):
+        svc, ep = fixture.per_pod_service(self.pod("server-worker", "10.10.1.37", "cmtc-a-worker", "u-sw"))
+        self.assertNotIn("selector", svc["spec"])
+        self.assertEqual([p["port"] for p in svc["spec"]["ports"]], list(fixture.PORTS))
+        self.assertEqual(ep["metadata"]["labels"]["kubernetes.io/service-name"], "server-worker")
+        self.assertEqual(ep["endpoints"][0]["addresses"], ["10.10.1.37"])
+        self.assertEqual(ep["endpoints"][0]["targetRef"]["uid"], "u-sw")
+
+    def test_name_scope_probes_same_node_then_cross_node_by_name(self):
+        lab = self.lab()
+        with contextlib.redirect_stdout(io.StringIO()):
+            lab.probe("cmtc-a", "name", "allow", 1)
+        # Three ports per target: the first row of each target names it.
+        hosts = [(r["client"], r["url"].split("/")[2].rsplit(":", 1)[0], r["expectedServer"]) for r in lab.rows[::3]]
+        self.assertEqual(hosts, [
+            ("client-worker", "server-worker.cmtc-live-mtls.svc.cluster.local", "cmtc-a/server-worker"),
+            ("client-worker", "server-control-plane.cmtc-live-mtls.svc.cluster.local", "cmtc-a/server-control-plane"),
+            ("client-control-plane", "server-control-plane.cmtc-live-mtls.svc.cluster.local",
+             "cmtc-a/server-control-plane"),
+            ("client-control-plane", "server-worker.cmtc-live-mtls.svc.cluster.local", "cmtc-a/server-worker")])
+        self.assertEqual(len(lab.rows), 12)
+
+    def test_negative_name_scope_uses_the_unregistered_callers_and_no_expected_server(self):
+        lab = self.lab()
+        lab.curl = lambda c, ns, pod, url, expected: {"client": pod, "namespace": ns, "url": url,
+                                                      "positiveMatch": False, "http200": False}
+        with contextlib.redirect_stdout(io.StringIO()):
+            lab.probe("cmtc-a", "negative-name", "deny", 1)
+        self.assertEqual({(r["client"], r["namespace"]) for r in lab.rows},
+                         {("unregistered-worker", fixture.NEG), ("unregistered-control-plane", fixture.NEG)})
+        self.assertFalse(any("expectedServer" in r for r in lab.rows))
+
+    def test_a_stale_endpoint_slice_is_refused_before_any_probe(self):
+        lab = self.lab()
+        real_get = lab.get
+
+        def stale(c, *args):
+            obj = real_get(c, *args)
+            if args[-2] == "endpointslice":
+                obj = json.loads(json.dumps(obj))
+                obj["endpoints"][0]["addresses"] = ["10.10.1.99"]
+            return obj
+        lab.get = stale
+        with self.assertRaisesRegex(RuntimeError, r"server-worker names \['10\.10\.1\.99'\].*run the services stage"):
+            lab.probe("cmtc-a", "name", "allow", 1)
+        self.assertEqual(lab.rows, [])
 
 
 if __name__ == "__main__":
