@@ -84,9 +84,9 @@ The ADR-010 implementation commits and their test counts are in
 ## Time limit: issuer approval generation 6 expires at 2026-11-25T10:26:41Z
 
 Both clusters publish from `cmtc-system/cmtc-issuer-approval-g6` (read from the ledger at 11:00Z). The controller
-accepts at most 30 days, so a new generation is due before then. No renewal is automated; an
-in-cluster mechanism that follows cert-manager is in design. If no new generation is accepted by then, ztunnel fails
-closed. The lab keeps no host-side stopgap for its uptime (operator, 2026-10-27: "this is lab")
+accepts at most 30 days, so a new generation is due before then. The host renewal job is removed; the issuer
+approval arbiter that replaces it is proposed in [ADR-012](../architecture/adr/ADR-012.md), implemented and
+unit-tested, and in live qualification ([runbook](../development/ARBITER_QUALIFICATION_RUNBOOK.md)); not deployed yet
 ([LOCAL_ISSUER_PROFILE.md, Approval renewal](../../LOCAL_ISSUER_PROFILE.md#approval-renewal)). SPIRE's own CA
 rotations need no new generation. Never reset authority state, floors or the ledger to extend an approval.
 

@@ -42,6 +42,19 @@ helm.sh/chart: {{ printf "%s-%s" .Chart.Name .Chart.Version }}
 {{- toYaml (mergeOverwrite $defaults (deepCopy .Values.securityContext)) -}}
 {{- end }}
 
+{{/* The public objects an issuer approval arbiter reads in a cluster (ADR-012): its own and, as cmtc-peer-reader, a peer's. */}}
+{{- define "cmtc.approvalEvidenceRules" -}}
+- apiGroups: [cert-manager.io]
+  resources: [certificates, certificaterequests, clusterissuers]
+  verbs: [get]
+- apiGroups: [""]
+  resources: [nodes]
+  verbs: [list, watch]
+- apiGroups: [security.cmtc.io]
+  resources: [nodetrustreports]
+  verbs: [get, list, watch]
+{{- end }}
+
 {{- define "cmtc.metricsNamespaces" -}}
 {{- $namespaces := .Values.metrics.networkPolicy.allowedNamespaces -}}
 {{- if not $namespaces -}}

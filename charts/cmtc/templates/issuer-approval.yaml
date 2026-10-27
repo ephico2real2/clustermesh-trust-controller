@@ -1,0 +1,175 @@
+{{- $issuer := .Values.controller.issuerProfile }}
+{{- $approval := .Values.controller.issuerApproval }}
+{{- if $approval.enabled }}
+{{- if not $issuer.enabled }}{{ fail "controller.issuerApproval.enabled needs controller.issuerProfile.enabled: the arbiter names the producer's source" }}{{ end -}}
+{{- if ne (len $approval.slots) 2 }}{{ fail "controller.issuerApproval.slots needs exactly two names" }}{{ end -}}
+{{- if eq (index $approval.slots 0) (index $approval.slots 1) }}{{ fail "controller.issuerApproval.slots must differ" }}{{ end -}}
+{{- range $approval.slots }}{{ if or (eq . $issuer.source) (eq . $issuer.output) }}{{ fail (printf "controller.issuerApproval.slots entry %q collides with the issuer-profile source or output" .) }}{{ end }}{{ end -}}
+{{- $cluster := include "cmtc.clusterName" . -}}
+{{- $local := false -}}
+{{- $clusters := list -}}
+{{- range $approval.clusters }}
+{{-   $name := required "controller.issuerApproval.clusters[].name is required" .name }}
+{{-   $entry := dict "name" $name "trustDomain" (required (printf "controller.issuerApproval.clusters[%s].trustDomain is required" $name) .trustDomain) "certificate" (.certificate | default (printf "%s-spire-intermediate" $name)) "certificateUID" (required (printf "controller.issuerApproval.clusters[%s].certificateUID is required" $name) .certificateUID) }}
+{{-   if eq $name $cluster }}
+{{-     $local = true }}
+{{-     if .peerSecret }}{{ fail (printf "controller.issuerApproval.clusters[%s] is the local cluster and takes no peerSecret" $name) }}{{ end }}
+{{-   else }}
+{{-     $_ := set $entry "kubeconfig" (printf "/etc/cmtc/peers/%s/kubeconfig" $name) }}
+{{-     if not .peerSecret }}{{ fail (printf "controller.issuerApproval.clusters[%s].peerSecret is required: the Secret (key kubeconfig) with the read-only credential of that cluster's API" $name) }}{{ end }}
+{{-   end }}
+{{-   $clusters = append $clusters $entry }}
+{{- end }}
+{{- if not $local }}{{ fail (printf "controller.issuerApproval.clusters must include the local cluster %s" $cluster) }}{{ end -}}
+{{- $config := dict "namespace" .Release.Namespace "slots" $approval.slots "adoptSource" $issuer.source "output" $issuer.output "rootConfigMap" .Values.trust.bundle.name "certManagerNamespace" .Values.trust.certManagerNamespace "rootIssuer" .Values.trust.rootIssuer "spireNamespace" $approval.spire.namespace "spireConfigMap" $approval.spire.configMap "rootSHA256" $issuer.rootSHA256 "minimumGeneration" $issuer.minimumGeneration "horizon" $approval.horizon "renewBefore" $approval.renewBefore "retirementMargin" $approval.retirementMargin "reportMaxAge" $approval.reportMaxAge "clusters" $clusters }}
+# The arbiter's configuration (ADR-012): the long-lived identities the administrator approves. The controller reads it
+# from a file; a change rolls the controller, which re-derives its state from the slots and the publication.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cmtc-issuer-approval-config
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "cmtc.labels" . | nindent 4 }}
+data:
+  config.json: {{ toJson $config | quote }}
+---
+# The arbiter's namespaced access: the slots it writes (create cannot be limited by name in RBAC; the
+# ValidatingAdmissionPolicy cmtc-issuer-approval-slots limits it), the mesh root and its own record.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: cmtc-issuer-approval-arbiter
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "cmtc.labels" . | nindent 4 }}
+rules:
+  - apiGroups: [""]
+    resources: [configmaps]
+    resourceNames: {{ toJson $approval.slots }}
+    verbs: [get, delete]
+  - apiGroups: [""]
+    resources: [configmaps]
+    verbs: [create]
+  - apiGroups: [""]
+    resources: [configmaps]
+    resourceNames: [{{ .Values.trust.bundle.name | quote }}]
+    verbs: [get]
+  - apiGroups: [security.cmtc.io]
+    resources: [issuerapprovals]
+    resourceNames: [cmtc]
+    verbs: [get, update]
+  - apiGroups: [security.cmtc.io]
+    resources: [issuerapprovals]
+    verbs: [create]
+  - apiGroups: [security.cmtc.io]
+    resources: [issuerapprovals/status]
+    resourceNames: [cmtc]
+    verbs: [get, update, patch]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: cmtc-issuer-approval-arbiter
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "cmtc.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: cmtc-issuer-approval-arbiter
+subjects:
+  - kind: ServiceAccount
+    name: cmtc-controller
+    namespace: {{ .Release.Namespace }}
+---
+# SPIRE's server configuration names the upstream the evidence must match.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: cmtc-issuer-approval-spire-config
+  namespace: {{ $approval.spire.namespace }}
+  labels:
+    {{- include "cmtc.labels" . | nindent 4 }}
+rules:
+  - apiGroups: [""]
+    resources: [configmaps]
+    resourceNames: [{{ $approval.spire.configMap | quote }}]
+    verbs: [get]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: cmtc-issuer-approval-spire-config
+  namespace: {{ $approval.spire.namespace }}
+  labels:
+    {{- include "cmtc.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: cmtc-issuer-approval-spire-config
+subjects:
+  - kind: ServiceAccount
+    name: cmtc-controller
+    namespace: {{ .Release.Namespace }}
+---
+# Public evidence (no Secret): cert-manager's objects, the nodes and their reports.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: cmtc-issuer-approval-evidence
+  labels:
+    {{- include "cmtc.labels" . | nindent 4 }}
+rules:
+  {{- include "cmtc.approvalEvidenceRules" . | nindent 2 }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: cmtc-issuer-approval-evidence
+  labels:
+    {{- include "cmtc.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cmtc-issuer-approval-evidence
+subjects:
+  - kind: ServiceAccount
+    name: cmtc-controller
+    namespace: {{ .Release.Namespace }}
+---
+# The arbiter may create only its two slots. RBAC cannot limit create by name; this policy can.
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicy
+metadata:
+  name: cmtc-issuer-approval-slots
+  labels:
+    {{- include "cmtc.labels" . | nindent 4 }}
+spec:
+  failurePolicy: Fail
+  matchConstraints:
+    namespaceSelector:
+      matchLabels: {kubernetes.io/metadata.name: {{ .Release.Namespace }}}
+    resourceRules:
+      - apiGroups: [""]
+        apiVersions: [v1]
+        operations: [CREATE]
+        resources: [configmaps]
+  matchConditions:
+    - name: controller
+      expression: {{ printf "request.userInfo.username == 'system:serviceaccount:%s:cmtc-controller'" .Release.Namespace | quote }}
+  validations:
+    - expression: {{ printf "object.metadata.name in %s" (toJson $approval.slots) | quote }}
+      message: the CMTC controller may create only its issuer approval slots
+      reason: Forbidden
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicyBinding
+metadata:
+  name: cmtc-issuer-approval-slots
+  labels:
+    {{- include "cmtc.labels" . | nindent 4 }}
+spec:
+  policyName: cmtc-issuer-approval-slots
+  validationActions: [Deny]
+{{- end }}

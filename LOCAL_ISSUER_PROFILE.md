@@ -169,24 +169,19 @@ first CA from the intermediate would have activated at about 23:55Z.
 
 ### Approval renewal
 
-Status: **proposed** (an in-cluster mechanism, in design). No renewal is automated.
+Status: the host renewal job is **removed** (`renew_approval.py`, its tests and `renewal-schedule.sh`; operator,
+2026-10-27T12:21Z; no `io.cmtc.issuer-approval-renewal` launchd job is loaded on the operator's host, checked
+2026-10-27T17:50Z). Its replacement, the issuer approval arbiter in the CMTC controller, is **proposed** in
+[ADR-012](docs/architecture/adr/ADR-012.md), **implemented and unit-tested** (controller, node agent, chart values
+`controller.issuerApproval` and `nodeAgent.trustReport`), and in live qualification on the labs
+([runbook](docs/development/ARBITER_QUALIFICATION_RUNBOOK.md)).
 
-An approval lasts at most 30 days: the controller refuses a longer one (`internal/trustprofile/profile.go:316`). The
-current one, generation 6, expires 2026-11-25T10:26:41Z. When it expires, ztunnel refuses every workload handshake
-(fail closed) until a new generation is accepted. SPIRE's own CA rotations need no new generation: they stay under the
-approved intermediate.
+An approval lasts at most 30 days: the controller refuses a longer one (`internal/trustprofile/profile.go:316`).
+Generation 6 expires 2026-11-25T10:26:41Z. Until the arbiter is deployed, nothing renews it, and the labs lose
+workload mTLS at that time; the operator accepted that outage (2026-10-27T12:21Z).
 
-A second failure has the same cause. The `<cluster>-spire-intermediate` Certificates renew on 2027-09-26
-(`renewBefore: 720h`) with `rotationPolicy: Always`, so the renewed intermediate has a new key. ztunnel uses the pinned
-intermediate as the only trust anchor of its trust domain (ztunnel fork `src/tls/domain_anchors.rs`, `path_accepts`).
-SPIRE's next CA, within about one day, is signed by the new key, and the pin refuses it. `renewBefore` gives the old
-certificate 30 more days of validity; it gives the pin no time.
-
-The approval must follow cert-manager in the cluster: approve a renewed intermediate as soon as cert-manager issues
-it, accept the old and the new one during the overlap, and retire the old one after every SPIRE CA under it has
-expired. The design is in progress (2026-10-27, operator request). The constraint it must solve: each cluster's
-approval carries the peer cluster's intermediate, which `publish_issuers.py` reads today from the administrator's host
-with one kubeconfig for both clusters.
+The arbiter also settles the intermediate's own renewal: with `rotationPolicy: Always` the renewed intermediate has a
+new key, and the arbiter approves the old and the new key during the overlap (ADR-012, State machine).
 
 Historical: on 2026-10-27 a host-side renewal (`renew_approval.py`, a launchd job) was written, installed at 12:03Z and
 removed at 12:21Z at the operator's decision. A host job is a lab stopgap, not the production method. The advance's

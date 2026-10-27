@@ -1,4 +1,7 @@
 {{- $issuer := .Values.controller.issuerProfile }}
+{{- $approval := .Values.controller.issuerApproval }}
+{{- $sources := list $issuer.source }}
+{{- if $approval.enabled }}{{ $sources = concat $sources $approval.slots }}{{ end }}
 {{- if $issuer.enabled }}
 # Access only to the two named ConfigMaps. The chart never creates them: an administrator does, and their UIDs are
 # pinned in the controller's arguments.
@@ -12,7 +15,7 @@ metadata:
 rules:
   - apiGroups: [""]
     resources: [configmaps]
-    resourceNames: [{{ $issuer.source | quote }}]
+    resourceNames: {{ toJson $sources }}
     verbs: [get]
   - apiGroups: [""]
     resources: [configmaps]
@@ -46,7 +49,7 @@ metadata:
 rules:
   - apiGroups: [""]
     resources: [configmaps]
-    resourceNames: [{{ $issuer.source | quote }}, {{ $issuer.output | quote }}]
+    resourceNames: {{ toJson (append $sources $issuer.output) }}
     verbs: [get]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
