@@ -48,6 +48,38 @@ controller:
     minimumGeneration: 1
     # ServiceAccounts allowed to read the source and the output, e.g. {namespace: kube-system, name: cilium}.
     readers: []
+  # The issuer approval arbiter (ADR-012): the controller derives each cluster's SPIRE intermediate from public
+  # cert-manager objects, writes the approval into two fixed slots, keeps the old and the new intermediate during a
+  # renewal, retires the old one after the SPIRE CA bound, and renews before expiry. Needs issuerProfile.enabled; the
+  # producer then follows the arbiter's slots, issuerProfile.source names only the approval to adopt, and
+  # issuerProfile.sourceUID is unused.
+  issuerApproval:
+    enabled: false
+    # The two immutable slot ConfigMaps the arbiter alternates between; readers' Roles name them, so they never change.
+    slots: [cmtc-issuer-approval-a, cmtc-issuer-approval-b]
+    # The SPIRE server's configuration ConfigMap (key server.conf) that names the cert-manager upstream.
+    spire: {namespace: cilium-spire, configMap: spire-server}
+    # The approval lasts horizon (at most 29 days; the verifiers refuse 30), is renewed renewBefore before its end, and
+    # an issuer retires retirementMargin after its SPIRE CA bound. A node report older than reportMaxAge blocks.
+    horizon: 696h
+    renewBefore: 168h
+    retirementMargin: 1h
+    reportMaxAge: 2m
+    # Every cluster of the mesh, including this one: the long-lived identities the administrator approves. certificate
+    # defaults to <name>-spire-intermediate and spireCAPolicy to <name>-spire-ca. certificateUID pins the cert-manager
+    # Certificate object (a recreated one is refused). peerSecret, for every cluster but this one, names a Secret in
+    # the release namespace with key kubeconfig: the read-only credential of that cluster's API (its cmtc-peer-reader).
+    clusters: []
+    #  - name: cmtc-a
+    #    trustDomain: cmtc-a.mesh.example
+    #    certificateUID: ""
+    #  - name: cmtc-b
+    #    trustDomain: cmtc-b.mesh.example
+    #    certificateUID: ""
+    #    peerSecret: cmtc-peer-cmtc-b
+    # Renders the ServiceAccount cmtc-peer-reader with the read-only access the other clusters' arbiters need here.
+    peerReader:
+      enabled: false
 
 # The SPIFFE trust of this cluster (ADR-011, MESH_PKI.md "Trust bundle"): its SPIRE intermediate, signed by the mesh
 # root, and the ConfigMap that carries the mesh root to the namespaces that verify mesh certificates. Needs cert-manager
@@ -82,6 +114,17 @@ nodeAgent:
     limits: {memory: 128Mi}
   tolerations:
     - operator: Exists
+  # The node trust report (ADR-012): the agent reads the node's issuer pins file and ztunnel's checkpoint and writes the
+  # NodeTrustReport named after its node; a ValidatingAdmissionPolicy lets it write no other. The pins file and the
+  # checkpoint are root-owned, so the agent then runs as uid 0 with every capability dropped; the checkpoint directory
+  # is mounted read-only. managePins adds rootSHA256 (defaults to controller.issuerProfile.rootSHA256) to the pins file;
+  # the agent never creates the file and never removes a pin.
+  trustReport:
+    enabled: false
+    pinsDir: /etc/cmtc/ztunnel-issuer-pins
+    checkpointDir: /var/lib/cmtc/ztunnel-issuer-checkpoint
+    managePins: false
+    rootSHA256: []
 
 metrics:
   networkPolicy:

@@ -455,3 +455,149 @@ func TestMeshPKIPoliciesAllowTheScriptsCertificates(t *testing.T) {
 	renderChartFails(t, "cmtc-mesh-pki", "cert-manager", policyAPI, "is not a DNS label", "clusterName=Bad_Name",
 		"spire.trustDomain=x.mesh.example")
 }
+
+// The issuer approval arbiter (ADR-012): its configuration file carries the administrator's identities, the producer
+// follows the slots instead of a fixed source, the readers' Role names the two fixed slots, the peer credential is
+// mounted, and the node agent reports from the pins and checkpoint directories as uid 0 with every capability dropped.
+func TestIssuerApprovalArbiterIsConfiguredByTheChart(t *testing.T) {
+	root := strings.Repeat("a", 64)
+	base := []string{"clusterName=cmtc-a", "image.tag=x", "controller.issuerProfile.enabled=true", "controller.issuerProfile.source=cmtc-issuer-approval-g6",
+		"controller.issuerProfile.outputUID=fbc7b3c2-00f1-4787-a149-fca76e274c4e", "controller.issuerProfile.rootSHA256[0]=" + root, "controller.issuerProfile.minimumGeneration=6",
+		"controller.issuerProfile.readers[0].namespace=kube-system", "controller.issuerProfile.readers[0].name=cilium", "controller.issuerApproval.enabled=true",
+		"controller.issuerApproval.clusters[0].name=cmtc-a", "controller.issuerApproval.clusters[0].trustDomain=cmtc-a.mesh.example", "controller.issuerApproval.clusters[0].certificateUID=u-a",
+		"controller.issuerApproval.clusters[1].name=cmtc-b", "controller.issuerApproval.clusters[1].trustDomain=cmtc-b.mesh.example", "controller.issuerApproval.clusters[1].certificateUID=u-b",
+		"controller.issuerApproval.clusters[1].peerSecret=cmtc-peer-cmtc-b", "controller.issuerApproval.peerReader.enabled=true",
+		"nodeAgent.trustReport.enabled=true", "nodeAgent.trustReport.managePins=true"}
+	got := render(t, base...)
+	controller := dig(got["Deployment/cmtc-controller"], "spec", "template", "spec").(object)
+	args := controller["containers"].([]any)[0].(object)["args"]
+	want := []any{"--mode=controller", "--cluster-name=cmtc-a", "--issuer-profile-producer=true", "--issuer-profile-namespace=cmtc-system",
+		"--issuer-profile-output=cmtc-issuer-publication", "--issuer-profile-output-uid=fbc7b3c2-00f1-4787-a149-fca76e274c4e", "--issuer-profile-root-sha256=" + root,
+		"--issuer-profile-minimum-generation=6", "--issuer-approval-config=/etc/cmtc/issuer-approval/config.json"}
+	if !reflect.DeepEqual(args, want) {
+		t.Errorf("controller args:\ngot  %v\nwant %v", args, want)
+	}
+	var config object
+	if err := yaml.Unmarshal([]byte(dig(got["ConfigMap/cmtc-issuer-approval-config"], "data", "config.json").(string)), &config); err != nil {
+		t.Fatal(err)
+	}
+	for path, v := range map[string]any{"namespace": "cmtc-system", "adoptSource": "cmtc-issuer-approval-g6", "output": "cmtc-issuer-publication", "rootConfigMap": "cmtc-mesh-root",
+		"certManagerNamespace": "cert-manager", "rootIssuer": "cmtc-mesh-root", "spireNamespace": "cilium-spire", "spireConfigMap": "spire-server", "minimumGeneration": float64(6),
+		"horizon": "696h", "renewBefore": "168h", "retirementMargin": "1h", "reportMaxAge": "2m"} {
+		if config[path] != v {
+			t.Errorf("config %s: %v, want %v", path, config[path], v)
+		}
+	}
+	if !reflect.DeepEqual(config["slots"], []any{"cmtc-issuer-approval-a", "cmtc-issuer-approval-b"}) || !reflect.DeepEqual(config["rootSHA256"], []any{root}) {
+		t.Errorf("config slots/roots: %v %v", config["slots"], config["rootSHA256"])
+	}
+	clusters := []any{
+		object{"name": "cmtc-a", "trustDomain": "cmtc-a.mesh.example", "certificate": "cmtc-a-spire-intermediate", "certificateUID": "u-a", "spireCAPolicy": "cmtc-a-spire-ca"},
+		object{"name": "cmtc-b", "trustDomain": "cmtc-b.mesh.example", "certificate": "cmtc-b-spire-intermediate", "certificateUID": "u-b", "spireCAPolicy": "cmtc-b-spire-ca", "kubeconfig": "/etc/cmtc/peers/cmtc-b/kubeconfig"},
+	}
+	if !reflect.DeepEqual(config["clusters"], clusters) {
+		t.Errorf("config clusters: %v", config["clusters"])
+	}
+	volumes := controller["volumes"]
+	if !reflect.DeepEqual(volumes, []any{object{"name": "issuer-approval-config", "configMap": object{"name": "cmtc-issuer-approval-config"}},
+		object{"name": "peer-cmtc-b", "secret": object{"secretName": "cmtc-peer-cmtc-b", "items": []any{object{"key": "kubeconfig", "path": "kubeconfig"}}}}}) {
+		t.Errorf("controller volumes: %v", volumes)
+	}
+	slots := []any{"cmtc-issuer-approval-a", "cmtc-issuer-approval-b"}
+	if r := got["Role/cmtc-issuer-profile-access"]["rules"].([]any)[0]; !reflect.DeepEqual(dig(r, "resourceNames"), append([]any{"cmtc-issuer-approval-g6"}, slots...)) {
+		t.Errorf("producer reads the adopted source and the slots: %v", r)
+	}
+	if r := got["Role/cmtc-issuer-profile-readers"]["rules"].([]any)[0]; !reflect.DeepEqual(dig(r, "resourceNames"), []any{"cmtc-issuer-approval-g6", "cmtc-issuer-approval-a", "cmtc-issuer-approval-b", "cmtc-issuer-publication"}) {
+		t.Errorf("readers' Role names the fixed slots: %v", r)
+	}
+	arbiter := got["Role/cmtc-issuer-approval-arbiter"]["rules"].([]any)
+	if !reflect.DeepEqual(dig(arbiter[0], "resourceNames"), slots) || !reflect.DeepEqual(dig(arbiter[0], "verbs"), []any{"get", "delete"}) || !reflect.DeepEqual(dig(arbiter[1], "verbs"), []any{"create"}) {
+		t.Errorf("arbiter Role: %v", arbiter)
+	}
+	for _, name := range []string{"ClusterRole/cmtc-issuer-approval-evidence", "ClusterRole/cmtc-peer-reader"} {
+		rules := got[name]["rules"].([]any)
+		for _, r := range rules {
+			for _, v := range dig(r, "verbs").([]any) {
+				if v != "get" && v != "list" && v != "watch" {
+					t.Errorf("%s grants %v", name, r)
+				}
+			}
+			if reflect.DeepEqual(dig(r, "resources"), []any{"secrets"}) {
+				t.Errorf("%s reads Secrets", name)
+			}
+		}
+	}
+	if s := got["RoleBinding/cmtc-issuer-approval-spire-config"]["metadata"].(object)["namespace"]; s != "cilium-spire" {
+		t.Errorf("SPIRE config RoleBinding namespace: %v", s)
+	}
+	policy := dig(got["ValidatingAdmissionPolicy/cmtc-node-trust-report-owner"], "spec").(object)
+	if e := dig(policy["matchConditions"].([]any)[0], "expression"); e != "request.userInfo.username == 'system:serviceaccount:cmtc-system:cmtc-node-agent'" {
+		t.Errorf("report policy match: %v", e)
+	}
+	if e := dig(policy["validations"].([]any)[1], "expression"); e != "size(variables.nodeNames) == 1 && variables.nodeNames[0] == variables.reportName" {
+		t.Errorf("report policy validation: %v", e)
+	}
+	if v := dig(got["ValidatingAdmissionPolicyBinding/cmtc-node-trust-report-owner"], "spec", "validationActions"); !reflect.DeepEqual(v, []any{"Deny"}) {
+		t.Errorf("report policy binding: %v", v)
+	}
+	if e := dig(dig(got["ValidatingAdmissionPolicy/cmtc-issuer-approval-slots"], "spec", "validations").([]any)[0], "expression"); e != `object.metadata.name in ["cmtc-issuer-approval-a","cmtc-issuer-approval-b"]` {
+		t.Errorf("slot policy validation: %v", e)
+	}
+	if r := got["ClusterRole/cmtc-node-trust-report"]["rules"].([]any)[0]; !reflect.DeepEqual(dig(r, "verbs"), []any{"get", "create", "update"}) {
+		t.Errorf("node agent report verbs: %v", r)
+	}
+	agent := dig(got["DaemonSet/cmtc-node-agent"], "spec", "template", "spec").(object)
+	if sc := agent["securityContext"].(object); sc["runAsUser"] != float64(0) || sc["runAsNonRoot"] != false || dig(sc, "seccompProfile", "type") != "RuntimeDefault" {
+		t.Errorf("node agent pod security context: %v", sc)
+	}
+	container := agent["containers"].([]any)[0].(object)
+	if !reflect.DeepEqual(dig(container, "securityContext", "capabilities", "drop"), []any{"ALL"}) || dig(container, "securityContext", "readOnlyRootFilesystem") != true {
+		t.Errorf("node agent container security context: %v", container["securityContext"])
+	}
+	agentArgs := []any{"--mode=node", "--cluster-name=cmtc-a", "--node-trust-report=true", "--pins-dir=/etc/cmtc/ztunnel-issuer-pins",
+		"--checkpoint-dir=/var/lib/cmtc/ztunnel-issuer-checkpoint", "--manage-pins=true", "--node-root-sha256=" + root}
+	if !reflect.DeepEqual(container["args"], agentArgs) {
+		t.Errorf("node agent args:\ngot  %v\nwant %v", container["args"], agentArgs)
+	}
+	mounts := []any{object{"name": "issuer-pins", "mountPath": "/etc/cmtc/ztunnel-issuer-pins", "readOnly": false},
+		object{"name": "issuer-checkpoint", "mountPath": "/var/lib/cmtc/ztunnel-issuer-checkpoint", "readOnly": true}}
+	if !reflect.DeepEqual(container["volumeMounts"], mounts) {
+		t.Errorf("node agent mounts: %v", container["volumeMounts"])
+	}
+	if v := agent["volumes"]; !reflect.DeepEqual(v, []any{object{"name": "issuer-pins", "hostPath": object{"path": "/etc/cmtc/ztunnel-issuer-pins", "type": "Directory"}},
+		object{"name": "issuer-checkpoint", "hostPath": object{"path": "/var/lib/cmtc/ztunnel-issuer-checkpoint", "type": "Directory"}}}) {
+		t.Errorf("node agent volumes: %v", v)
+	}
+	// Without managePins the pins directory is read-only and the agent stays at the image's user.
+	plain := dig(render(t, "clusterName=cmtc-a", "image.tag=x", "nodeAgent.trustReport.enabled=true")["DaemonSet/cmtc-node-agent"], "spec", "template", "spec").(object)
+	if m := plain["containers"].([]any)[0].(object)["volumeMounts"].([]any)[0]; dig(m, "readOnly") != true {
+		t.Errorf("pins mount without managePins: %v", m)
+	}
+	// Nothing of the arbiter renders when it is off.
+	for k := range render(t, "clusterName=cmtc-a", "image.tag=x") {
+		if strings.Contains(k, "issuer-approval") || strings.Contains(k, "trust-report") || strings.Contains(k, "peer-reader") || strings.HasPrefix(k, "ValidatingAdmissionPolicy") {
+			t.Errorf("%s rendered with the arbiter off", k)
+		}
+	}
+	for _, crd := range []string{"issuerapprovals", "nodetrustreports"} {
+		if dig(got["CustomResourceDefinition/"+crd+".security.cmtc.io"], "metadata", "annotations", "helm.sh/resource-policy") != "keep" {
+			t.Errorf("the %s CRD must carry helm.sh/resource-policy: keep", crd)
+		}
+	}
+	replace := func(old, new string) []string {
+		out := append([]string(nil), base...)
+		for i, s := range out {
+			if s == old {
+				out[i] = new
+			}
+		}
+		return out
+	}
+	renderFails(t, "needs controller.issuerProfile.enabled", replace("controller.issuerProfile.enabled=true", "controller.issuerProfile.enabled=false")...)
+	renderFails(t, "clusters[cmtc-b].peerSecret is required", replace("controller.issuerApproval.clusters[1].peerSecret=cmtc-peer-cmtc-b", "controller.issuerApproval.clusters[1].peerSecret=")...)
+	renderFails(t, "clusters[cmtc-a] is the local cluster and takes no peerSecret", append(base, "controller.issuerApproval.clusters[0].peerSecret=x")...)
+	renderFails(t, "must include the local cluster", append(replace("controller.issuerApproval.clusters[0].name=cmtc-a", "controller.issuerApproval.clusters[0].name=cmtc-c"), "controller.issuerApproval.clusters[0].peerSecret=cmtc-peer-cmtc-c")...)
+	renderFails(t, "clusters[cmtc-b].certificateUID is required", replace("controller.issuerApproval.clusters[1].certificateUID=u-b", "controller.issuerApproval.clusters[1].certificateUID=")...)
+	renderFails(t, "collides with the issuer-profile source", append(base, "controller.issuerApproval.slots[0]=cmtc-issuer-approval-g6", "controller.issuerApproval.slots[1]=cmtc-issuer-approval-b")...)
+	renderFails(t, "managePins needs rootSHA256", "clusterName=cmtc-a", "image.tag=x", "nodeAgent.trustReport.enabled=true", "nodeAgent.trustReport.managePins=true")
+}

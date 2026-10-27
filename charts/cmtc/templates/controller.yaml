@@ -1,4 +1,5 @@
 {{- $issuer := .Values.controller.issuerProfile }}
+{{- $approval := .Values.controller.issuerApproval }}
 {{- if $issuer.enabled }}
 {{-   if not $issuer.rootSHA256 }}
 {{-     fail "controller.issuerProfile.rootSHA256 needs at least one root pin" }}
@@ -39,12 +40,19 @@ spec:
             {{- if $issuer.enabled }}
             - --issuer-profile-producer=true
             - --issuer-profile-namespace={{ .Release.Namespace }}
+            {{- if not $approval.enabled }}
             - --issuer-profile-source={{ $issuer.source }}
+            {{- end }}
             - --issuer-profile-output={{ $issuer.output }}
+            {{- if not $approval.enabled }}
             - --issuer-profile-source-uid={{ required "controller.issuerProfile.sourceUID is required" $issuer.sourceUID }}
+            {{- end }}
             - --issuer-profile-output-uid={{ required "controller.issuerProfile.outputUID is required" $issuer.outputUID }}
             - --issuer-profile-root-sha256={{ $issuer.rootSHA256 | join "," }}
             - --issuer-profile-minimum-generation={{ $issuer.minimumGeneration }}
+            {{- if $approval.enabled }}
+            - --issuer-approval-config=/etc/cmtc/issuer-approval/config.json
+            {{- end }}
             {{- end }}
           ports:
             - {name: metrics, containerPort: 8080}
@@ -55,6 +63,26 @@ spec:
             {{- include "cmtc.securityContext" . | nindent 12 }}
           readinessProbe: {httpGet: {path: /readyz, port: health}}
           livenessProbe: {httpGet: {path: /healthz, port: health}}
+          {{- if $approval.enabled }}
+          volumeMounts:
+            - {name: issuer-approval-config, mountPath: /etc/cmtc/issuer-approval, readOnly: true}
+            {{- range $approval.clusters }}
+            {{- if .peerSecret }}
+            - {name: peer-{{ .name }}, mountPath: /etc/cmtc/peers/{{ .name }}, readOnly: true}
+            {{- end }}
+            {{- end }}
+          {{- end }}
+      {{- if $approval.enabled }}
+      volumes:
+        - name: issuer-approval-config
+          configMap: {name: cmtc-issuer-approval-config}
+        {{- range $approval.clusters }}
+        {{- if .peerSecret }}
+        - name: peer-{{ .name }}
+          secret: {secretName: {{ .peerSecret }}, items: [{key: kubeconfig, path: kubeconfig}]}
+        {{- end }}
+        {{- end }}
+      {{- end }}
 ---
 apiVersion: v1
 kind: Service

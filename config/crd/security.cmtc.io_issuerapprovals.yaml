@@ -1,0 +1,317 @@
+{
+  "apiVersion": "apiextensions.k8s.io/v1",
+  "kind": "CustomResourceDefinition",
+  "metadata": {
+    "name": "issuerapprovals.security.cmtc.io"
+  },
+  "spec": {
+    "group": "security.cmtc.io",
+    "scope": "Namespaced",
+    "names": {
+      "kind": "IssuerApproval",
+      "plural": "issuerapprovals",
+      "singular": "issuerapproval"
+    },
+    "versions": [
+      {
+        "name": "v1alpha1",
+        "served": true,
+        "storage": true,
+        "subresources": {
+          "status": {}
+        },
+        "schema": {
+          "openAPIV3Schema": {
+            "type": "object",
+            "properties": {
+              "apiVersion": {
+                "type": "string"
+              },
+              "kind": {
+                "type": "string"
+              },
+              "metadata": {
+                "type": "object"
+              },
+              "status": {
+                "type": "object",
+                "properties": {
+                  "phase": {
+                    "type": "string",
+                    "enum": [
+                      "Pending",
+                      "Publishing",
+                      "Distributing",
+                      "Overlapping",
+                      "Converged",
+                      "Blocked"
+                    ]
+                  },
+                  "observedAt": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "current": {
+                    "type": "object",
+                    "required": [
+                      "slot",
+                      "uid",
+                      "generation",
+                      "expiresAt"
+                    ],
+                    "properties": {
+                      "slot": {
+                        "type": "string",
+                        "maxLength": 253
+                      },
+                      "uid": {
+                        "type": "string",
+                        "maxLength": 63
+                      },
+                      "generation": {
+                        "type": "integer",
+                        "format": "int64",
+                        "minimum": 1
+                      },
+                      "digest": {
+                        "type": "string",
+                        "pattern": "^[0-9a-f]{64}$"
+                      },
+                      "expiresAt": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "reason": {
+                        "type": "string",
+                        "maxLength": 64
+                      }
+                    }
+                  },
+                  "pending": {
+                    "type": "object",
+                    "required": [
+                      "slot",
+                      "uid",
+                      "generation",
+                      "expiresAt"
+                    ],
+                    "properties": {
+                      "slot": {
+                        "type": "string",
+                        "maxLength": 253
+                      },
+                      "uid": {
+                        "type": "string",
+                        "maxLength": 63
+                      },
+                      "generation": {
+                        "type": "integer",
+                        "format": "int64",
+                        "minimum": 1
+                      },
+                      "digest": {
+                        "type": "string",
+                        "pattern": "^[0-9a-f]{64}$"
+                      },
+                      "expiresAt": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "reason": {
+                        "type": "string",
+                        "maxLength": 64
+                      }
+                    }
+                  },
+                  "clusters": {
+                    "type": "array",
+                    "maxItems": 16,
+                    "items": {
+                      "type": "object",
+                      "required": [
+                        "name",
+                        "trustDomain",
+                        "evidence"
+                      ],
+                      "properties": {
+                        "name": {
+                          "type": "string",
+                          "maxLength": 32
+                        },
+                        "trustDomain": {
+                          "type": "string",
+                          "maxLength": 253
+                        },
+                        "evidence": {
+                          "type": "string",
+                          "enum": [
+                            "Ready",
+                            "Unavailable",
+                            "Refused"
+                          ]
+                        },
+                        "message": {
+                          "type": "string",
+                          "maxLength": 4096
+                        },
+                        "current": {
+                          "type": "string",
+                          "pattern": "^[0-9a-f]{64}$"
+                        },
+                        "issuers": {
+                          "type": "array",
+                          "maxItems": 2,
+                          "items": {
+                            "type": "object",
+                            "required": [
+                              "spkiSHA256",
+                              "notAfter"
+                            ],
+                            "properties": {
+                              "spkiSHA256": {
+                                "type": "string",
+                                "pattern": "^[0-9a-f]{64}$"
+                              },
+                              "notAfter": {
+                                "type": "string",
+                                "format": "date-time"
+                              },
+                              "firstCurrentAt": {
+                                "type": "string",
+                                "format": "date-time"
+                              },
+                              "supersededAt": {
+                                "type": "string",
+                                "format": "date-time"
+                              },
+                              "supersededBy": {
+                                "type": "string",
+                                "pattern": "^[0-9a-f]{64}$"
+                              },
+                              "spireCAMaxDuration": {
+                                "type": "string",
+                                "maxLength": 32
+                              },
+                              "retireAfter": {
+                                "type": "string",
+                                "format": "date-time"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "nodes": {
+                    "type": "array",
+                    "maxItems": 16,
+                    "items": {
+                      "type": "object",
+                      "required": [
+                        "cluster",
+                        "nodes",
+                        "fresh",
+                        "accepting"
+                      ],
+                      "properties": {
+                        "cluster": {
+                          "type": "string",
+                          "maxLength": 32
+                        },
+                        "nodes": {
+                          "type": "integer",
+                          "format": "int32",
+                          "minimum": 0
+                        },
+                        "fresh": {
+                          "type": "integer",
+                          "format": "int32",
+                          "minimum": 0
+                        },
+                        "accepting": {
+                          "type": "integer",
+                          "format": "int32",
+                          "minimum": 0
+                        },
+                        "message": {
+                          "type": "string",
+                          "maxLength": 32768
+                        }
+                      }
+                    }
+                  },
+                  "conditions": {
+                    "type": "array",
+                    "x-kubernetes-list-type": "map",
+                    "x-kubernetes-list-map-keys": [
+                      "type"
+                    ],
+                    "items": {
+                      "type": "object",
+                      "required": [
+                        "type",
+                        "status",
+                        "reason",
+                        "message",
+                        "lastTransitionTime"
+                      ],
+                      "properties": {
+                        "type": {
+                          "type": "string"
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "True",
+                            "False",
+                            "Unknown"
+                          ]
+                        },
+                        "reason": {
+                          "type": "string"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "observedGeneration": {
+                          "type": "integer",
+                          "format": "int64"
+                        },
+                        "lastTransitionTime": {
+                          "type": "string",
+                          "format": "date-time"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "additionalPrinterColumns": [
+          {
+            "name": "Phase",
+            "type": "string",
+            "jsonPath": ".status.phase"
+          },
+          {
+            "name": "Generation",
+            "type": "integer",
+            "jsonPath": ".status.current.generation"
+          },
+          {
+            "name": "Expires",
+            "type": "string",
+            "jsonPath": ".status.current.expiresAt"
+          },
+          {
+            "name": "Blocked",
+            "type": "string",
+            "jsonPath": ".status.conditions[?(@.type=='Blocked')].reason"
+          }
+        ]
+      }
+    ]
+  }
+}

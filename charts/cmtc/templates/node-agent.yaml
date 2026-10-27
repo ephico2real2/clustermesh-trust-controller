@@ -1,3 +1,7 @@
+{{- $report := .Values.nodeAgent.trustReport }}
+{{- $roots := $report.rootSHA256 | default .Values.controller.issuerProfile.rootSHA256 }}
+{{- if and $report.enabled $report.managePins (not $roots) }}{{ fail "nodeAgent.trustReport.managePins needs rootSHA256 (or controller.issuerProfile.rootSHA256)" }}{{ end -}}
+{{- range $roots }}{{ if not (regexMatch "^[0-9a-f]{64}$" .) }}{{ fail (printf "nodeAgent.trustReport.rootSHA256 entry %q is not 64 lowercase hex characters" .) }}{{ end }}{{ end -}}
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
@@ -20,12 +24,32 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       securityContext:
+        {{- if $report.enabled }}
+        {{- /* The pins file and ztunnel's checkpoint are root-owned (0600): uid 0 reads them, with no capability; the
+             administrator's other podSecurityContext keys still apply. On OpenShift this needs an SCC that allows uid 0. */}}
+        {{- $root := mergeOverwrite (deepCopy .Values.podSecurityContext) (dict "runAsUser" 0 "runAsNonRoot" false) }}
+        {{- include "cmtc.podSecurityContext" (dict "Values" (dict "podSecurityContext" $root "global" .Values.global)) | nindent 8 }}
+        {{- else }}
         {{- include "cmtc.podSecurityContext" . | nindent 8 }}
+        {{- end }}
       containers:
         - name: agent
           image: {{ include "cmtc.image" . }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
+          {{- if $report.enabled }}
+          args:
+            - --mode=node
+            - --cluster-name={{ include "cmtc.clusterName" . }}
+            - --node-trust-report=true
+            - --pins-dir={{ $report.pinsDir }}
+            - --checkpoint-dir={{ $report.checkpointDir }}
+            {{- if $report.managePins }}
+            - --manage-pins=true
+            - --node-root-sha256={{ $roots | join "," }}
+            {{- end }}
+          {{- else }}
           args: [--mode=node, --cluster-name={{ include "cmtc.clusterName" . }}]
+          {{- end }}
           env:
             - name: NODE_NAME
               valueFrom: {fieldRef: {fieldPath: spec.nodeName}}
@@ -38,3 +62,13 @@ spec:
             {{- include "cmtc.securityContext" . | nindent 12 }}
           readinessProbe: {httpGet: {path: /readyz, port: health}}
           livenessProbe: {httpGet: {path: /healthz, port: health}}
+          {{- if $report.enabled }}
+          volumeMounts:
+            - {name: issuer-pins, mountPath: {{ $report.pinsDir }}, readOnly: {{ not $report.managePins }}}
+            - {name: issuer-checkpoint, mountPath: {{ $report.checkpointDir }}, readOnly: true}
+      volumes:
+        - name: issuer-pins
+          hostPath: {path: {{ $report.pinsDir }}, type: Directory}
+        - name: issuer-checkpoint
+          hostPath: {path: {{ $report.checkpointDir }}, type: Directory}
+          {{- end }}
