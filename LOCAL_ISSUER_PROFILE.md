@@ -48,9 +48,9 @@ Read [the illustrated PKI flow](PKI_TRUST_FLOW.md) for the full certificate and 
 
 ## SPIRE intermediate mode (issue #34)
 
-Status: **implemented, tested and deployed** (generation 6 on both labs, 2026-10-27T10:27Z); **not
-traffic-qualified**. SPIRE still signs with a CA under the Lab Org Root, so ztunnel refuses every workload certificate
-until SPIRE's first CA from `<cluster>-spire-intermediate` is active ([Rollout](#rollout-2026-10-27)).
+Status: **implemented, tested, deployed and traffic-qualified** (generation 6 on both labs, 2026-10-27T10:27Z;
+SPIRE on `<cluster>-spire-intermediate` since 10:55Z; the matrix at 11:12–11:14Z, [Rollout](#rollout-2026-10-27),
+step 6).
 
 Signer mode approves SPIRE's active 24-hour CA, so every SPIRE CA rotation needs a new generation. The intermediate
 mode approves each cluster's `<cluster>-spire-intermediate` instead, under the mesh root, with `signsSPIRECA: true`
@@ -144,15 +144,94 @@ config dump, is SVID → `cmtc-a SPIRE CA` (valid 2026-10-26T15:55:33Z to 2026-1
 cluster CA` → Lab Org Root: SPIRE's active CA is still from the old upstream, and g6 pins only the new intermediate.
 This is correct fail-closed behavior.
 
-When SPIRE moves: SPIRE prepares the next CA at half of the current CA's lifetime and activates it at five sixths
-(SPIRE `pkg/server/ca/manager/manager.go`, divisors 2 and 6). The SPIRE server restarted with the cert-manager
-upstream at 04:08Z, after the current CA's preparation threshold (03:55Z), and logged no "X509 CA prepared"; its
-rotator prepares only when the next slot is empty (`pkg/server/ca/rotator/rotator.go`). So the next slot holds a CA
-prepared before the switch, under the old chain. Expected, both clusters: that CA activates at about 11:55Z; SPIRE
-requests its first CA from `<cluster>-spire-intermediate` at about 15:55Z, the first live approval by the
-`<cluster>-spire-ca` policy; that CA activates at about 23:55Z, and then the matrix runs. The SPIRE trust bundle
-(`cilium-spire/spire-bundle`) gains the mesh root at that request. No `localauthority` command is used to move it
-sooner.
+Why SPIRE had not moved: SPIRE prepares the next CA at half of the current CA's lifetime and activates it at five
+sixths (SPIRE `pkg/server/ca/manager/manager.go`, divisors 2 and 6). The SPIRE server restarted with the
+cert-manager upstream at 04:08Z, after the current CA's preparation threshold (03:55Z), and logged no "X509 CA
+prepared"; its rotator prepares only when the next slot is empty (`pkg/server/ca/rotator/rotator.go`). `localauthority
+x509 show` confirmed it at 10:49Z: on both clusters the prepared CA's upstream key ID was the old upstream's
+(`9c3af0aa…` on cmtc-a, `14d636dc…` on cmtc-b), not the intermediate's (`78dee534…`, `53d3ad70…`). Left alone, the
+first CA from the intermediate would have activated at about 23:55Z.
+
+5. SPIRE moved on demand, with the operator's permission (10:48Z), by
+   [`local_authority.py rotate`](#spire-local-authority-operations), cmtc-b at 10:52:42Z, cmtc-a at 10:54:07Z.
+   `prepare` replaced the waiting old-chain CA with one from the intermediate; approver-policy logged `Approved by
+   CertificateRequestPolicy: "cmtc-b-spire-ca"` (and `"cmtc-a-spire-ca"`), the first live approval by policy. The
+   SPIRE bundle held the mesh root at once; after 60 seconds `activate` made the new CA the signer
+   (`a1348ce4…` on cmtc-b, `04f6c9ee…` on cmtc-a). Within two minutes the workload certificates in ztunnel's config
+   dump chained to `cmtc mesh root CA`. From here SPIRE rotates on its own under the intermediate: next preparation at
+   about 22:52Z, activation at about 06:52Z on 2026-10-28.
+6. 11:12–11:14Z: the mTLS matrix (`scripts/evidence/run_mtls_matrix.sh`,
+   [evidence](docs/evidence/spire-intermediate-20261027/matrix-g6/README.md)). 95 of 96 allowed probes are joined by
+   client socket to a ztunnel mTLS connection with both SPIFFE identities, in every scope; 36 of 36 unregistered
+   probes are dropped at `bpf_lxc.c:2381`. The 96th returned HTTP 200 from the expected Pod; NAT gave its socket a new
+   source port, so it is joined by destination and time (one candidate) instead.
+
+### Approval renewal
+
+Status: **implemented and tested** (`renew_approval.py`, 6 tests; the advance's agent Role step, 1 new test of 59);
+**the daily schedule is not installed** (it needs the operator; see below).
+
+An approval lasts at most 30 days: the controller refuses a longer one (`internal/trustprofile/profile.go:316`). So a
+new generation must be published before each one expires; the current one, generation 6, expires
+2026-11-25T10:26:41Z. SPIRE's own CA rotations need nothing (they stay under the approved intermediate).
+
+[renew_approval.py](scripts/lab/issuer-profile/renew_approval.py) reads the qualified ledger of `publish_issuers.py`.
+When the approval expires within `--renew-before` (default 7 days), it runs `publish_issuers.py --spire-intermediate
+--advance` with generation + 1, a 29-day horizon and every pin from the ledger's identity: the same command as the
+generation 6 advance except for the generation (compared argument by argument on 2026-10-27). The advance itself now
+moves the Cilium agent's Role (`cmtc-system/cilium-ztunnel-issuer-profile`) to the new source before the producer
+publishes from it, and to the new source alone afterwards (`set_agent_access`); the generation 6 advance needed that
+step by hand.
+
+It refuses, and changes nothing, when the ledger is not qualified, an advance is unfinished, or a cluster's
+`<cluster>-spire-intermediate` has a new revision since the approval's evidence. Exit status: 0 renewed or not due;
+10 due (`--check`); 20 refused; other: the advance failed.
+
+```sh
+# Report only.
+python renew_approval.py --state-dir ~/.local/share/cmtc-issuer-profile/live-a-b \
+  --kubeconfig /private/tmp/cmtc-a-b-20261024.kubeconfig --check
+# Daily at 06:15 local: a launchd agent on macOS, a systemd user timer on Linux. It runs --check first.
+scripts/lab/issuer-profile/renewal-schedule.sh install --state-dir ~/.local/share/cmtc-issuer-profile/live-a-b \
+  --kubeconfig /private/tmp/cmtc-a-b-20261024.kubeconfig --python ~/.local/share/cmtc-issuer-profile/.venv/bin/python
+scripts/lab/issuer-profile/renewal-schedule.sh status
+```
+
+The job's Python needs the `cryptography` package (`python3 -m venv ~/.local/share/cmtc-issuer-profile/.venv` and
+`pip install cryptography==50.0.2`; the tests pass on Python 3.15.0 with it). The kubeconfig path must survive a host
+restart; `/private/tmp` does not.
+
+Open: the intermediate's own renewal. Both `<cluster>-spire-intermediate` Certificates renew on 2027-09-26
+(`renewBefore: 720h`) with `rotationPolicy: Always`, so the renewed intermediate has a new key. SPIRE's active CA stays
+under the old key until its next rotation, and an approval that names only one intermediate refuses one of the two.
+`renew_approval.py` refuses at that point instead of publishing; the move needs an approval that carries both
+intermediates during the overlap, which the publisher does not build yet.
+
+### SPIRE local authority operations
+
+[local_authority.py](scripts/lab/spire/local_authority.py) runs `spire-server localauthority x509` for one cluster,
+through the SPIRE server's private socket in its Pod (container `register-agent-node`, the one `entry create` uses). No
+socket is exposed and no Secret is read. It needs only `kubectl` and `openssl`.
+
+| Command | What it does | Checked first |
+| --- | --- | --- |
+| `show` | the active, prepared and old authorities | — |
+| `prepare` | mints the next CA now, from the configured upstream | after: its upstream key ID is the current `<cluster>-spire-intermediate`'s Subject Key ID; `server.conf` names that issuer |
+| `activate --authority-id ID` | makes the prepared CA the signer now | ID is the prepared one, from the intermediate; the SPIRE trust bundle holds the mesh root |
+| `rotate` | `prepare` (kept when the prepared CA is already from the intermediate), wait for the mesh root in the bundle, wait `--propagation` seconds (60), `activate` | as above |
+| `taint --authority-id ID` | marks the old authority tainted, so agents and workloads move off it | ID is the old authority, not the active or prepared one |
+| `revoke --authority-id ID` | removes a tainted old authority from the bundle | same |
+
+`taint` and `revoke` are never part of `rotate`: they are for a compromised key. `prepare` discards a prepared CA that
+was never active.
+
+```sh
+scripts/lab/spire/local_authority.py --kube-system-uid <uid> --ledger <file> cmtc-b show
+scripts/lab/spire/local_authority.py --kube-system-uid <uid> --ledger <file> cmtc-b rotate
+```
+
+Tested by `test_local_authority.py` (8 tests, with a fake SPIRE; removing the upstream check or the old-authority
+check fails them) and on both labs, `rotate` on 2026-10-27 ([Rollout](#rollout-2026-10-27), step 5).
 
 ## What the producer does
 

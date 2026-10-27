@@ -1,10 +1,13 @@
 # End-to-end local delivery status
 
-**Current state, measured by traffic at 2026-10-26T19:07Z.** Both labs run only published images
-(`ghcr.io/ephico2real2`). Enrolled workload traffic runs over workload mTLS through ztunnel: same node, across nodes
-and across clusters, by Pod IP, by per-Pod name and by Global Service name. Matrix 7 joined all 96 allowed probes to a
-ztunnel HBONE connection that both ztunnels logged, and Cilium dropped all 36 unregistered probes. DNS from enrolled
-Pods works over UDP and TCP, in plain text to CoreDNS only. This is not a `Protected` claim.
+**Current state, measured by traffic at 2026-10-27T11:14Z.** Both labs run only published images
+(`ghcr.io/ephico2real2`). SPIRE's CA on each cluster is issued by `<cluster>-spire-intermediate` under the mesh root,
+and approval generation 6 pins that intermediate ([#34](https://github.com/ephico2real2/clustermesh-trust-controller/issues/34)).
+Enrolled workload traffic runs over workload mTLS through ztunnel: same node, across nodes and across clusters, by
+Pod IP, by per-Pod name and by Global Service name. The matrix at 11:12–11:14Z joined 95 of 96 allowed probes to a
+ztunnel mTLS connection by client socket and the 96th by destination and time; Cilium dropped all 36 unregistered
+probes. DNS from enrolled Pods was last measured on the 2026-10-26 images (UDP and TCP, in plain text to CoreDNS
+only). This is not a `Protected` claim.
 
 **Incident.** Workload mTLS failed closed on both labs from 2026-10-25T23:55Z to 2026-10-26T03:10Z, after a
 SPIRE CA rotation that the issuer approval did not pin. The status in this file at 23:56Z said traffic worked; that
@@ -46,8 +49,9 @@ clusters run the same digests, and every DaemonSet, Deployment and StatefulSet l
 
 On 2026-10-27 (10:25–10:32Z) the CMTC, Cilium agent and ztunnel images moved for the SPIRE intermediate
 approval, generation 6 ([#34](https://github.com/ephico2real2/clustermesh-trust-controller/issues/34),
-[LOCAL_ISSUER_PROFILE.md](../../LOCAL_ISSUER_PROFILE.md#spire-intermediate-mode-issue-34)). They are **deployed, not
-traffic-qualified**: the results below qualified the 2026-10-26 images. The 2026-10-26 images were moved one
+[LOCAL_ISSUER_PROFILE.md](../../LOCAL_ISSUER_PROFILE.md#spire-intermediate-mode-issue-34)). They are **deployed and
+traffic-qualified** for workload mTLS (the matrix below, 11:12–11:14Z); DNS, recovery and the move under traffic were
+not measured on them. The 2026-10-26 images were moved one
 component at a time under traffic; see
 [the image qualification record](../evidence/image-qualification-20261026/README.md). The SPIRE registrar image is
 published but not deployed: making it the live registration owner is the operator's decision.
@@ -59,6 +63,7 @@ a `helm upgrade cilium` would remove them ([#33](https://github.com/ephico2real2
 
 | Result | Evidence |
 | --- | --- |
+| Matrix after generation 6 and the SPIRE rotation onto the intermediate (2026-10-27, 11:12–11:14Z): 95/96 allowed probes joined per connection by client socket, in every scope; the 96th (HTTP 200 from the expected Pod) joined by destination and time because NAT gave its socket a new source port; 36/36 unregistered probes dropped at `bpf_lxc.c:2381`. | [matrix-g6](../evidence/spire-intermediate-20261027/matrix-g6/README.md) |
 | Matrix 7, after the TCP DNS agent (19:05:50–19:07:49Z): 96/96 allowed probes proven per connection (48 by Pod IP, 24 by per-Pod name, each served by its named Pod, 24 by Global Service name); 36/36 unregistered probes dropped at `bpf_lxc.c:2381`. | [matrix 7](../evidence/image-qualification-20261026/matrix-7-tcp-dns/join.txt) |
 | DNS from enrolled Pods: UDP 6/6 and TCP 6/6 names per cluster; unenrolled control 2/2; 9/9 negative probes fail per cluster, with TCP 53 to a non-resolver dropped at `bpf_lxc.c:1630`. Before the TCP rule, TCP was 0/6. | [DNS guide](../../MESH_DNS.md), [DNS evidence](../evidence/image-qualification-20261026/dns/) |
 | Each component moved to its published image under traffic. Steps 1–3 (CMTC, SPIRE agent, SPIRE server): 0 allowed requests failed. Agent restarts (step 5, TCP DNS step): every failure inside the restart window. | [rollout steps](../evidence/image-qualification-20261026/README.md#rollout-steps) |
@@ -68,17 +73,20 @@ a `helm upgrade cilium` would remove them ([#33](https://github.com/ephico2real2
 The ADR-010 implementation commits and their test counts are in
 [ADR-010, implementation status](../architecture/adr/ADR-010.md#implementation-status-2026-10-25).
 
-## Time limit: issuer approval generation 5 expires at 2026-10-27T03:55:28Z
+## Time limit: issuer approval generation 6 expires at 2026-11-25T10:26:41Z
 
-Both clusters publish from `cmtc-system/cmtc-issuer-approval-g5` (`approval.expiresAt` 2026-10-27T03:55:28Z, read
-at 19:10Z). No generation 6 exists. When the approval expires, ztunnel refuses every handshake until a new generation
-is accepted. Publishing it is part of gate 10. Never reset authority state, floors or the ledger to extend an approval.
+Both clusters publish from `cmtc-system/cmtc-issuer-approval-g6` (read from the ledger at 11:00Z). The controller
+accepts at most 30 days, so a new generation is due before then. `renew_approval.py` publishes it when 7 days remain;
+its daily schedule is not installed
+([LOCAL_ISSUER_PROFILE.md, Approval renewal](../../LOCAL_ISSUER_PROFILE.md#approval-renewal)). SPIRE's own CA
+rotations need no new generation. Never reset authority state, floors or the ledger to extend an approval.
 
 ## Open gates
 
-1. **Issuer rotation without reset (gate 10).** Approval generations 3–5 exist on both clusters, and both publish
-   generation 5 (`acceptedGeneration` 5, read at 19:10Z). The next generation is due before 03:55Z on 2026-10-27.
-   The rotation report and ADR-012 are not written.
+1. **Issuer rotation without reset (gate 10).** Both clusters publish generation 6 (2026-10-27), which pins
+   `<cluster>-spire-intermediate`, so SPIRE's CA rotations need no new generation. Open: the daily renewal schedule
+   is not installed; the intermediate's own renewal on 2027-09-26 needs an approval that carries both intermediates;
+   the rotation report and ADR-012 are not written.
 2. **Recovery on the deployed images.** Agent restarts are measured per request above. The ztunnel replacement is
    proven only by the matrix after it (its logs went with the old Pods). Open: node reboot, drain and a lost ACK.
 3. **Restored endpoints before quarantine:** for 1–2 s after an agent restart, an unregistered caller on the same node
@@ -114,7 +122,7 @@ agent's delegation was returned at 18:08:46Z on 2026-10-26.
 | --- | --- | --- |
 | DNS from enrolled Pods (CMTC-603, CMTC-404) | orchestrator | UDP and TCP deployed and traffic-qualified (Cilium `8d7b7accfd`, `a99264f008`) |
 | Evidence tools: client-socket join, per-Pod names, DNS probes | orchestrator | committed (`ed6e004`) |
-| Issuer rotation without reset (gate 10) | orchestrator | generation 5 published; report and ADR-012 not written |
+| Issuer rotation without reset (gate 10) | orchestrator | generation 6 published (SPIRE intermediate); renewal script done, schedule not installed; report and ADR-012 not written |
 | eBPF measurement plane review | none | one patch proposed, not applied; no report |
 | Metrics, CoreDNS scraping and Grafana dashboards v2 | none | rules and tests pass; not deployed; uncommitted |
 
