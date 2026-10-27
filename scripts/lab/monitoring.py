@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Small disposable monitoring fixture with two consolidated dashboards preserving all nine domains."""
+import hashlib
 import json
 from pathlib import Path
 import sys
@@ -60,14 +61,17 @@ prom={'global':{'scrape_interval':'5s','external_labels':{'cluster':cluster}},'s
 if cluster=='cmtc-b':prom['remote_write']=[{'url':f'http://{hub}:30900/api/v1/write'}]
 add('v1','ConfigMap','prometheus',{'data':{'prometheus.yml':json.dumps(prom)}})
 
-def deploy(name,image,args,ports,mounts,volumes,env=None,sa=None):
+# config: text the Pod reads only at start; its hash in the Pod template makes an apply restart the Pod when it changes.
+def deploy(name,image,args,ports,mounts,volumes,env=None,sa=None,config=None):
     container={'name':name,'image':image,'args':args,'ports':[{'containerPort':p} for p in ports],'volumeMounts':mounts,'resources':{'requests':{'cpu':'25m','memory':'64Mi'},'limits':{'memory':'512Mi'}},'readinessProbe':{'httpGet':{'path':'/-/ready' if name=='prometheus' else '/api/health','port':ports[0]}}}
     if env:container['env']=[{'name':k,'value':v} for k,v in env.items()]
     spec={'containers':[container],'volumes':volumes}
     if sa:spec['serviceAccountName']=sa
-    add('apps/v1','Deployment',name,{'spec':{'replicas':1,'selector':{'matchLabels':{'app':name}},'template':{'metadata':{'labels':{'app':name}},'spec':spec}}})
+    meta={'labels':{'app':name}}
+    if config:meta['annotations']={'cmtc.io/config-sha256':hashlib.sha256(config.encode()).hexdigest()}
+    add('apps/v1','Deployment',name,{'spec':{'replicas':1,'selector':{'matchLabels':{'app':name}},'template':{'metadata':meta,'spec':spec}}})
 
-deploy('prometheus','prom/prometheus:v3.7.0',['--config.file=/etc/prometheus/prometheus.yml','--storage.tsdb.retention.time=1h','--web.enable-remote-write-receiver'],[9090],[{'name':'config','mountPath':'/etc/prometheus'},{'name':'data','mountPath':'/prometheus'}],[{'name':'config','configMap':{'name':'prometheus'}},{'name':'data','emptyDir':{}}],sa='prometheus')
+deploy('prometheus','prom/prometheus:v3.7.0',['--config.file=/etc/prometheus/prometheus.yml','--storage.tsdb.retention.time=1h','--web.enable-remote-write-receiver'],[9090],[{'name':'config','mountPath':'/etc/prometheus'},{'name':'data','mountPath':'/prometheus'}],[{'name':'config','configMap':{'name':'prometheus'}},{'name':'data','emptyDir':{}}],sa='prometheus',config=json.dumps(prom))
 add('v1','Service','prometheus',{'spec':{'type':'NodePort','selector':{'app':'prometheus'},'ports':[{'port':9090,'targetPort':9090,'nodePort':30900}]}})
 if cluster=='cmtc-a':
     dashboards={}

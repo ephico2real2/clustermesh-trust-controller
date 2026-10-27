@@ -9,6 +9,13 @@ ztunnel mTLS connection by client socket and the 96th by destination and time; C
 probes. DNS from enrolled Pods was last measured on the 2026-10-26 images (UDP and TCP, in plain text to CoreDNS
 only). This is not a `Protected` claim.
 
+**Update 2026-10-27T17:05Z.** cert-manager's built-in approver approves every request on both labs (operator decision;
+approver-policy removed, [MESH_PKI.md, Approval](../../MESH_PKI.md#approval)). Cilium on cmtc-b is adopted into Helm
+(#33), and both clusters render equal to live at release revision 8. Hubble runs on every agent with TLS from the mesh
+PKI; one Relay and the UI in cmtc-a see 4/4 nodes; Hubble and ztunnel metrics are scraped
+([Hubble evidence](../evidence/hubble-20261027/README.md)). The matrix after these changes: 96/96 allowed probes
+proven over mTLS, 36/36 unregistered probes dropped.
+
 **Incident.** Workload mTLS failed closed on both labs from 2026-10-25T23:55Z to 2026-10-26T03:10Z, after a
 SPIRE CA rotation that the issuer approval did not pin. The status in this file at 23:56Z said traffic worked; that
 was read from readiness, not traffic, and was wrong. See [the incident record](../evidence/issuer-rebootstrap-20261026/INCIDENT.md).
@@ -63,6 +70,7 @@ a `helm upgrade cilium` would remove them ([#33](https://github.com/ephico2real2
 
 | Result | Evidence |
 | --- | --- |
+| Matrix after Hubble on both clusters and the cmtc-b Helm adoption (2026-10-27, 16:57Z): 96/96 allowed probes proven over mTLS, 36/36 unregistered probes dropped, 0 failed. The same result at 16:47Z after the adoption alone. | [Hubble](../evidence/hubble-20261027/README.md), [cmtc-b adoption](../evidence/helm-adoption-cmtc-b-20261027/README.md) |
 | Matrix after generation 6 and the SPIRE rotation onto the intermediate (2026-10-27, 11:12–11:14Z): 95/96 allowed probes joined per connection by client socket, in every scope; the 96th (HTTP 200 from the expected Pod) joined by destination and time because NAT gave its socket a new source port; 36/36 unregistered probes dropped at `bpf_lxc.c:2381`. | [matrix-g6](../evidence/spire-intermediate-20261027/matrix-g6/README.md) |
 | Matrix 7, after the TCP DNS agent (19:05:50–19:07:49Z): 96/96 allowed probes proven per connection (48 by Pod IP, 24 by per-Pod name, each served by its named Pod, 24 by Global Service name); 36/36 unregistered probes dropped at `bpf_lxc.c:2381`. | [matrix 7](../evidence/image-qualification-20261026/matrix-7-tcp-dns/join.txt) |
 | DNS from enrolled Pods: UDP 6/6 and TCP 6/6 names per cluster; unenrolled control 2/2; 9/9 negative probes fail per cluster, with TCP 53 to a non-resolver dropped at `bpf_lxc.c:1630`. Before the TCP rule, TCP was 0/6. | [DNS guide](../../MESH_DNS.md), [DNS evidence](../evidence/image-qualification-20261026/dns/) |

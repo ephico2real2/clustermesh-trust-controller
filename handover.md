@@ -1,5 +1,15 @@
 # CMTC engineering handover
 
+## Update 2026-10-27 17:05 UTC (Claude Code session b744973a)
+
+- cert-manager auto-approves (approver-policy and `charts/cmtc-mesh-pki` removed, `10c9c0a`). AGENTS.md has a
+  Simplicity rule: no unrequested components, gates or policy layers.
+- cmtc-b Cilium adopted into Helm (`0130371`); Hubble on both clusters, Relay and UI in cmtc-a, 4/4 nodes
+  ([evidence](docs/evidence/hubble-20261027/README.md)); both releases at revision 8, 0 drift; matrix 96/96, 36/36.
+- Lab Prometheus now restarts when its configuration changes; the `hubble`, `hubble-relay` and `ztunnel` jobs are up.
+- Open: the arbiter (`feat/approval-follows-cert-manager`) must take the SPIRE CA bound from SPIRE's `ca_ttl`, not the
+  removed `<cluster>-spire-ca` policy (brief amendment 16:45Z); OB3 is reviewing it.
+
 ## Update 2026-10-27 13:50 UTC (Claude Code session b744973a)
 
 Supersedes every update below where they differ. Exact image and source pins are in
