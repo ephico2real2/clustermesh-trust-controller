@@ -377,6 +377,21 @@ class AdvanceTests(unittest.TestCase):
         pub.set_access('cmtc-a',[u.source_name(1),u.source_name(2)]);self.assertEqual(1,len(sent))
         pub.command=lambda argv,timeout=25:b''
         with self.assertRaises(u.Refusal):pub.set_access('cmtc-a',[u.source_name(2)])
+    def test_agent_access_names_both_sources_then_the_new_one_and_needs_the_lab_label(self):
+        pub,c,api=self.setup_advance();path='/apis/rbac.authorization.k8s.io/v1/namespaces/'+u.NS+'/roles/'+u.AGENT_ROLE
+        label={u.AGENT_ROLE_LABEL[0]:u.AGENT_ROLE_LABEL[1]}
+        api.objects[path]={'metadata':{'uid':'agent-role-uid','resourceVersion':'9','labels':label},'rules':u.agent_access_rules([u.source_name(1)])}
+        sent=[]
+        def command(argv,timeout=25):
+            ops=json.loads(argv[argv.index('-p')+1]);sent.append(ops);api.objects[path]['rules']=ops[-1]['value'];return b''
+        pub.command=command;pub.set_agent_access('cmtc-a',[u.source_name(1),u.source_name(2)])
+        both=[{'apiGroups':[''],'resources':['configmaps'],'resourceNames':[u.source_name(1),u.source_name(2),u.OUT],'verbs':['get']}]
+        self.assertEqual([{'op':'test','path':'/metadata/uid','value':'agent-role-uid'},{'op':'test','path':'/metadata/resourceVersion','value':'9'},{'op':'test','path':'/rules','value':u.agent_access_rules([u.source_name(1)])},{'op':'replace','path':'/rules','value':both}],sent[0])
+        pub.set_agent_access('cmtc-a',[u.source_name(1),u.source_name(2)]);self.assertEqual(1,len(sent))
+        pub.command=lambda argv,timeout=25:b''
+        with self.assertRaisesRegex(u.Refusal,'acknowledgment'):pub.set_agent_access('cmtc-a',[u.source_name(2)])
+        api.objects[path]['metadata']['labels']={}
+        with self.assertRaisesRegex(u.Refusal,'lab-managed'):pub.set_agent_access('cmtc-a',[u.source_name(2)])
     def test_await_source_tolerates_the_previous_publication_then_times_out(self):
         pub,c,api=self.setup_advance();api.objects[pub.cm_path(u.OUT)]={'metadata':{'uid':'out-uid','resourceVersion':'1','labels':{u.OWNER:'owner-token',u.OUTPUT:'true'}},'data':{'profile.json':u.compact({'source':{'name':u.source_name(1)}})}}
         reads=[]

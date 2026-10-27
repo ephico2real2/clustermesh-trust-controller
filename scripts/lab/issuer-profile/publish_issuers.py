@@ -31,6 +31,9 @@ DEP='cmtc-controller'
 OUT='cmtc-issuer-publication'
 ACCESS='cmtc-issuer-profile-access'
 ROLLBACK='security.cmtc.io/live-issuer-rollback'
+# The Cilium agent's Role for the issuer profile; the lab bring-up made it and labelled it.
+AGENT_ROLE='cilium-ztunnel-issuer-profile'
+AGENT_ROLE_LABEL=('app.kubernetes.io/managed-by','cmtc-local-qualification')
 MAX=256*1024
 class Refusal(RuntimeError):pass
 
@@ -290,6 +293,9 @@ def source_name(generation):return 'cmtc-issuer-approval-g'+str(generation)
 
 def access_rules(sources):
     return [{'apiGroups':[''],'resources':['configmaps'],'resourceNames':list(sources),'verbs':['get']},{'apiGroups':[''],'resources':['configmaps'],'resourceNames':[OUT],'verbs':['get','update']}]
+
+def agent_access_rules(sources):
+    return [{'apiGroups':[''],'resources':['configmaps'],'resourceNames':list(sources)+[OUT],'verbs':['get']}]
 
 def runtime_image_ids(cri):
     """Content digests a running container may report for this exact CRI image.
@@ -610,6 +616,19 @@ class Publisher:
         self.command(api.argv+['-n',NS,'patch','role',ACCESS,'--type=json','-p',compact(ops),'--request-timeout=12s'])
         again=owned(api.get(path),self.s.data['owner'],c['uids']['Role/'+ACCESS])
         if again.get('rules')!=desired:raise Refusal('Role patch acknowledgment differs')
+    def set_agent_access(self,cluster,sources):
+        """CAS-replace the source names in the Cilium agent's Role.
+
+        The agent reads the approval object that the publication names, by name, so the new source must be
+        readable before the producer publishes from it; otherwise the agent logs 'forbidden' and serves no profile."""
+        api=self.apis[cluster];path='/apis/rbac.authorization.k8s.io/v1/namespaces/'+NS+'/roles/'+AGENT_ROLE
+        role=api.get(path);meta(role);desired=agent_access_rules(sources)
+        if role['metadata'].get('labels',{}).get(AGENT_ROLE_LABEL[0])!=AGENT_ROLE_LABEL[1]:raise Refusal('Cilium agent issuer Role is not the lab-managed Role')
+        if role.get('rules')==desired:return
+        ops=tests(role)+[{'op':'test','path':'/rules','value':role.get('rules')},{'op':'replace','path':'/rules','value':desired}]
+        self.command(api.argv+['-n',NS,'patch','role',AGENT_ROLE,'--type=json','-p',compact(ops),'--request-timeout=12s'])
+        again=api.get(path)
+        if meta(again)['uid']!=meta(role)['uid'] or again.get('rules')!=desired:raise Refusal('Cilium agent Role patch acknowledgment differs')
     def advance_preflight(self,cluster,previous):
         """Pin the live producer to exactly the ledger's previous generation before any write."""
         api=self.apis[cluster];c=self.s.data['clusters'][cluster];self.identity_check(cluster)
@@ -634,7 +653,7 @@ class Publisher:
         out=self.owned_object(cluster,'ConfigMap',OUT,{'metadata':{'labels':{OUTPUT:'true'}},'data':{}})
         # Both names stay readable until the new generation is published, so the
         # running producer never loses its source mid-transition.
-        self.set_access(cluster,[source_name(previous),source])
+        self.set_access(cluster,[source_name(previous),source]);self.set_agent_access(cluster,[source_name(previous),source])
         # A SPIRE rotation between proof and patch would publish a stale signer.
         _,current=self.current_approval(self.identity_check)
         if not same_material(current,self.s.data['approval']):raise Refusal('SPIRE signer changed during advance; explicit recovery required')
@@ -646,7 +665,7 @@ class Publisher:
         if live in (step['from'],step.get('fence')):self.patch_template(cluster,live,desired)
         elif live!=desired:raise Refusal('controller template drifted before the advance patch')
         self.runtime(cluster,desired);self.await_source(cluster,source);self.publications(cluster,source);self.metrics_logs(cluster)
-        self.set_access(cluster,[source]);self.rbac(cluster,source)
+        self.set_access(cluster,[source]);self.set_agent_access(cluster,[source]);self.rbac(cluster,source)
         step['phase']='qualified';c['phase']='publication-qualified-no-consumer';self.s.save()
     def await_source(self,cluster,source,timeout=90):
         """Wait until the output names the new source.
