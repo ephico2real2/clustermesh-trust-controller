@@ -15,9 +15,10 @@ image:
   pullPolicy: IfNotPresent
 
 namespace:
-  # Creates the release namespace with security.cmtc.io/platform-protected=true, which keeps CMTC's own namespace out of
-  # enrollment. Install with -n <namespace> and without --create-namespace. Set false only for a namespace that already
-  # carries that label.
+  # Renders the release namespace with security.cmtc.io/platform-protected=true, which keeps CMTC's own namespace out of
+  # enrollment. This suits tools that apply the rendered manifests (helm template, Argo CD). `helm install` stores its
+  # release in that namespace before it creates anything, so it fails when the namespace does not exist: create and
+  # label the namespace first and set this false (scripts/lab/up.sh does this).
   create: true
 
 crds:

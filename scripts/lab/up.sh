@@ -99,8 +99,11 @@ esac
 for cluster in cmtc-a cmtc-b; do
   cilium clustermesh status --context "kind-$cluster" --wait --wait-duration 10m
   kubectl --context "kind-$cluster" label namespace kube-system trust=enabled --overwrite
+  # Helm stores the release in cmtc-system, so the namespace exists, with the chart's labels, before the install.
+  kubectl --context "kind-$cluster" create namespace cmtc-system --dry-run=client -o yaml | kubectl --context "kind-$cluster" apply -f -
+  kubectl --context "kind-$cluster" label namespace cmtc-system security.cmtc.io/platform-protected=true trust=enabled --overwrite
   helm upgrade --install cmtc charts/cmtc -n cmtc-system --kube-context "kind-$cluster" --set "clusterName=$cluster" \
-    "${image_values[@]}" --set trust.enabled=true --wait --timeout 5m
+    "${image_values[@]}" --set namespace.create=false --set trust.enabled=true --wait --timeout 5m
   kubectl --context "kind-$cluster" wait crd/namespacemtlspolicies.security.cmtc.io --for=condition=Established --timeout=60s
   kubectl --context "kind-$cluster" -n cert-manager wait "certificate/$cluster-spire-intermediate" --for=condition=Ready --timeout=3m
   kubectl --context "kind-$cluster" wait bundle/cmtc-mesh-root --for=condition=Synced --timeout=2m
