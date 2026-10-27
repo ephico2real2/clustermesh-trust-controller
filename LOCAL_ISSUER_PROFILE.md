@@ -169,7 +169,10 @@ first CA from the intermediate would have activated at about 23:55Z.
 ### Approval renewal
 
 Status: **implemented and tested** (`renew_approval.py`, 6 tests; the advance's agent Role step, 1 new test of 59);
-**the daily schedule is not installed** (it needs the operator; see below).
+**the daily schedule is installed** on the operator's host (launchd, 2026-10-27T12:03Z, at the operator's
+instruction). A run through launchd at 12:03:18Z exited 0 and logged `due: false`, 28.93 days left. It has not yet
+renewed an approval; the first renewal is due about 2026-11-18. Open: it reads the kubeconfig from `/private/tmp`,
+which a host restart clears; reinstall it with a persistent `--kubeconfig` path.
 
 An approval lasts at most 30 days: the controller refuses a longer one (`internal/trustprofile/profile.go:316`). So a
 new generation must be published before each one expires; the current one, generation 6, expires

@@ -77,15 +77,16 @@ The ADR-010 implementation commits and their test counts are in
 
 Both clusters publish from `cmtc-system/cmtc-issuer-approval-g6` (read from the ledger at 11:00Z). The controller
 accepts at most 30 days, so a new generation is due before then. `renew_approval.py` publishes it when 7 days remain;
-its daily schedule is not installed
+it runs daily at 06:15 local as a launchd agent on the operator's host, installed 2026-10-27T12:03Z; it has not yet
+renewed (first renewal due about 2026-11-18)
 ([LOCAL_ISSUER_PROFILE.md, Approval renewal](../../LOCAL_ISSUER_PROFILE.md#approval-renewal)). SPIRE's own CA
 rotations need no new generation. Never reset authority state, floors or the ledger to extend an approval.
 
 ## Open gates
 
 1. **Issuer rotation without reset (gate 10).** Both clusters publish generation 6 (2026-10-27), which pins
-   `<cluster>-spire-intermediate`, so SPIRE's CA rotations need no new generation. Open: the daily renewal schedule
-   is not installed; the intermediate's own renewal on 2027-09-26 needs an approval that carries both intermediates;
+   `<cluster>-spire-intermediate`, so SPIRE's CA rotations need no new generation. Open: the daily renewal job
+   (installed 2026-10-27) reads the kubeconfig from `/private/tmp`, which a host restart clears; the intermediate's own renewal on 2027-09-26 needs an approval that carries both intermediates;
    the rotation report and ADR-012 are not written.
 2. **Recovery on the deployed images.** Agent restarts are measured per request above. The ztunnel replacement is
    proven only by the matrix after it (its logs went with the old Pods). Open: node reboot, drain and a lost ACK.
@@ -122,7 +123,7 @@ agent's delegation was returned at 18:08:46Z on 2026-10-26.
 | --- | --- | --- |
 | DNS from enrolled Pods (CMTC-603, CMTC-404) | orchestrator | UDP and TCP deployed and traffic-qualified (Cilium `8d7b7accfd`, `a99264f008`) |
 | Evidence tools: client-socket join, per-Pod names, DNS probes | orchestrator | committed (`ed6e004`) |
-| Issuer rotation without reset (gate 10) | orchestrator | generation 6 published (SPIRE intermediate); renewal script done, schedule not installed; report and ADR-012 not written |
+| Issuer rotation without reset (gate 10) | orchestrator | generation 6 published (SPIRE intermediate); renewal job installed (not yet renewed); report and ADR-012 not written |
 | eBPF measurement plane review | none | one patch proposed, not applied; no report |
 | Metrics, CoreDNS scraping and Grafana dashboards v2 | none | rules and tests pass; not deployed; uncommitted |
 
