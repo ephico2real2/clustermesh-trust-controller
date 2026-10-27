@@ -106,3 +106,33 @@ State after step 5: the arbiter is **deployed** on both labs by digest
 **traffic-qualified** by `matrix-step5`. Steps 6 (forced intermediate renewal, overlap, retirement) and 7 (recovery)
 are not run.
 
+## Step 6: the forced renewal of cmtc-b's SPIRE intermediate (from 20:02Z; in progress)
+
+- Before ([before](step6/before.txt)): `cmtc-b-spire-intermediate` revision 1, notAfter 2027-10-26T12:49:42Z,
+  `rotationPolicy: Always`; both records `Converged` at generation 7. SPIRE's trust bundle on cmtc-b holds two roots:
+  the mesh root and the retired CMTC Lab Organization Root (to 2031-10-24). ztunnel pins only the mesh root; a
+  verifier that uses SPIRE's own bundle still trusts the old root (open item).
+- `cmctl renew` (cmctl v2.6.2, installed from Homebrew for this step) at **T_renew = 20:03:19Z**: revision 2, valid
+  2026-10-27T20:03:19Z to 2027-10-27T20:03:19Z ([renew](step6/renew.txt)). Its CertificateRequest
+  `cmtc-b-spire-intermediate-2` carries the new key, SPKI `3270f5a5…6fed`.
+- Records ([watch](step6/watch-renewal.txt)): both arbiters wrote generation 8, `IssuerAdded`, slot
+  `cmtc-issuer-approval-b`. cmtc-a: pending 20:03:39Z, `Overlapping` 20:03:55Z. cmtc-b: pending 20:03:58Z,
+  `Distributing` 20:04:13Z, `Overlapping` 20:04:29Z. The old key `b9075e42…` "stays until 2026-10-28T21:03:27Z" on
+  cmtc-b (21:03:22Z on cmtc-a): the first read plus 24 h `ca_ttl` plus 1 h margin.
+- Generation 8 ([overlap](step6/overlap.txt)): cmtc-b has two issuers, `3270f5a5…` and `b9075e42…`; cmtc-a's issuer
+  unchanged. Both publications `published 8 cmtc-issuer-approval-b`; every report on both clusters `Accepted` 8 with
+  three trusted SPKIs; 0 `lease fenced`, 0 connections closed.
+- SPIRE ([authority](step6/spire-authority-after-renew.txt), 20:06Z): active CA `a1348ce4…` under the old intermediate
+  key (upstream `53d3ad70…`), expires 2026-10-28T10:52:42Z; no prepared CA. SPIRE prepares the next CA at half of the
+  active CA's lifetime (2026-10-27T22:52:42Z) and activates it at five sixths (2026-10-28T06:52:42Z).
+- [matrix-step6-overlap](matrix-step6-overlap/join.txt), 20:06:35-20:10:38Z: the join tool reports 95 proven over
+  mTLS, 36 dropped, **1 failed**. The failed probe (cmtc-a `name`, `client-worker` to
+  `server-worker.cmtc-live-mtls.svc.cluster.local:80`, 20:06:42.892-.964Z) returned HTTP 200 from the expected server
+  (`curlRC` 0). curl reported its socket as `10.10.1.205:43064`, the port an earlier probe used 3.6 s before; ztunnel
+  logged the connection from `10.10.1.205:20270` (below the ephemeral range: the source port was rewritten). The only
+  outbound line from `client-worker` to `10.10.1.37:80` in the probe's window is that one, at 20:06:42.912Z, mTLS to
+  `spiffe://cmtc-a.mesh.example/ns/cmtc-live-mtls/sa/rebel-base`, and no other probe claims it. So 96 of 96 allowed
+  probes went over mTLS; one is joined by destination and time with one candidate, as in
+  [matrix-g6](../spire-intermediate-20261027/matrix-g6/README.md). The join tool has no such fallback and counts it
+  as failed.
+

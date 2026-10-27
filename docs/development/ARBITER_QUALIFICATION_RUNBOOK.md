@@ -5,7 +5,8 @@ Runbook for the **proposed** behavior of [ADR-012](../architecture/adr/ADR-012.m
 [current delivery status](../agile/DELIVERY_STATUS.md) and [documentation terms](../../DOCUMENTATION_GUIDE.md).
 <!-- /CMTC_DOC_CONTEXT -->
 
-**Status:** written 2026-10-27 from the branch `feat/arbiter-qualification`; **not executed**. Every value below was
+**Status:** written 2026-10-27 from the branch `feat/arbiter-qualification`; steps 2 to 5 executed on 2026-10-27, step 6
+in progress ([record](../evidence/approval-arbiter-20261027/README.md)). Every value below was
 read from the labs on 2026-10-27 with read-only `kubectl get` and `helm list` (`--kubeconfig
 /private/tmp/cmtc-a-b-20261024.kubeconfig`, never printed; no Secret read). The executor records each step's actual
 output under `docs/evidence/approval-arbiter-<date>/` and updates the delivery status.
@@ -206,9 +207,10 @@ it prepares and activates the next one (ADR-012, "Problem, as measured"), so bot
    its own generation 8 (`IssuerAdded`, both cmtc-b keys) and cmtc-a's nodes accept it; every `trustedIssuers` lists
    three SPKIs.
 7. The matrix (`matrix-step6-overlap`) — expected: 96/96 while SPIRE still signs under the old key.
-8. SPIRE's CA under the new key: `kubectl --context kind-cmtc-b -n cilium-spire exec spire-server-0 -c spire-server -- /opt/spire/bin/spire-server bundle show -format spiffe`
-   (the server's own CLI on its local socket; no Admin socket exposed) — expected: the bundle's x509 authorities
-   change from one to two CAs within `ca_ttl`/2 = 12 h (prepare) and the new one becomes the signer by 24 h (activate).
+8. SPIRE's CA under the new key: `venv/bin/python scripts/lab/spire/local_authority.py cmtc-b show` (the server's own
+   CLI on its local socket; no Admin socket exposed) — expected: the `prepared` authority's `upstream` is the renewed
+   intermediate's Subject Key ID at half of the active CA's lifetime, and it becomes `active` at five sixths. (SPIRE's
+   bundle holds the roots, not its CAs, and the new CA chains to the same mesh root, so `bundle show` does not change.)
    Record when the ztunnel logs first show a peer SVID chained to the new intermediate (the ztunnel log view,
    `scripts/evidence/ztunnel_log_view.py`).
 9. The matrix again after the activation (`matrix-step6-new-ca`) — expected: 96/96 with the new chain.
@@ -252,8 +254,8 @@ a peer down is the fail-closed path: the approval then expires and workload mTLS
 
 ## Not run, and open
 
-- This runbook has not been executed; `scripts/lab/pki/peer-reader-credential.sh` has not been run (syntax checked
-  only). Step 3.2 and 4.11 use `curlimages/curl:8.11.1` from Docker Hub: a pull on the lab.
+- Steps 2 to 5 ran on 2026-10-27; step 6 is in progress, step 7 is not run. Step 3.2 and 4.11 use
+  `curlimages/curl:8.11.1` from Docker Hub: a pull on the lab.
 - The forced renewal (step 6) makes SPIRE sign under the new key only after it prepares and activates its next CA
   (up to 24 h); the retirement is due about 25 h after the renewal. The runbook spans two days.
 - What an expired approval does is answered from the code, not measured (ADR-012, Lifecycle). Measuring it stops the
