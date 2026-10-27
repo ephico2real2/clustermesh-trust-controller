@@ -41,8 +41,8 @@ Both labs run in Colima profile `cmtc-cilium`. They are the only clusters that q
 
 ## Deployed images
 
-Read from the workload image fields at 19:25:42Z on 2026-10-27. Both clusters run the same digests except the CMTC
-image, and every DaemonSet, Deployment and StatefulSet listed is fully ready.
+Read from the workload image fields at 19:25:42Z on 2026-10-27; the CMTC row at 20:00:46Z. Both clusters run the same
+digests, and every DaemonSet, Deployment and StatefulSet listed is fully ready.
 
 | Component | Image (`ghcr.io/ephico2real2/…`) | Source |
 | --- | --- | --- |
@@ -53,8 +53,7 @@ image, and every DaemonSet, Deployment and StatefulSet listed is fully ready.
 | ztunnel | `cmtc-ztunnel@sha256:bc4fb925ae90…c87771` | ztunnel fork `68c0282`, branch `feat/root-pin-retirement` (draft PR ephico2real2/ztunnel#2) |
 | SPIRE node agent | `cmtc-spire-agent@sha256:c2d1cbc74d38…a4f1c` | SPIRE fork `0f8fe4d681` |
 | SPIRE server | `cmtc-spire-server@sha256:5d125886ba75…986cab` | SPIRE fork `0f8fe4d681` |
-| CMTC controller and node agent, cmtc-a | `cmtc@sha256:a3efbe8c9824…7623719` | CMTC `bb3cfd5`; Helm release `cmtc` revision 1, arbiter off |
-| CMTC controller and node agent, cmtc-b | `cmtc@sha256:113b94c09da2…e0ac312` | CMTC `5e5d6308f2` |
+| CMTC controller and node agent | `cmtc@sha256:a3efbe8c9824…7623719` | CMTC `bb3cfd5`; Helm release `cmtc` (cmtc-a revision 2, cmtc-b revision 1), issuer approval arbiter on |
 
 On 2026-10-27 (10:25–10:32Z) the CMTC, Cilium agent and ztunnel images moved for the SPIRE intermediate
 approval, generation 6 ([#34](https://github.com/ephico2real2/clustermesh-trust-controller/issues/34),
@@ -89,14 +88,16 @@ on both clusters at 19:14Z (cmtc-a revision 9) and 19:05Z (cmtc-b revision 10).
 The ADR-010 implementation commits and their test counts are in
 [ADR-010, implementation status](../architecture/adr/ADR-010.md#implementation-status-2026-10-25).
 
-## Time limit: issuer approval generation 6 expires at 2026-11-25T10:26:41Z
+## Issuer approval: generation 7, written by the arbiter
 
-Both clusters publish from `cmtc-system/cmtc-issuer-approval-g6` (read from the ledger at 11:00Z). The controller
-accepts at most 30 days, so a new generation is due before then. The host renewal job is removed; the issuer
-approval arbiter that replaces it is proposed in [ADR-012](../architecture/adr/ADR-012.md), implemented and
-unit-tested, and in live qualification ([runbook](../development/ARBITER_QUALIFICATION_RUNBOOK.md)); not deployed yet
-([LOCAL_ISSUER_PROFILE.md, Approval renewal](../../LOCAL_ISSUER_PROFILE.md#approval-renewal)). SPIRE's own CA
-rotations need no new generation. Never reset authority state, floors or the ledger to extend an approval.
+The issuer approval arbiter ([ADR-012](../architecture/adr/ADR-012.md)) is **deployed** on both labs and its adoption
+is **traffic-qualified** ([record](../evidence/approval-arbiter-20261027/README.md)). It adopted g6 on each cluster as
+generation 7 with the same issuers, in `cmtc-system/cmtc-issuer-approval-a` (cmtc-b 19:47:28Z, expires
+2026-11-25T19:47:11Z; cmtc-a 19:56:10Z, expires 2026-11-25T19:55:52Z). Both publications are `published 7`; every
+node accepts generation 7; matrix 96/96 proven, 36/36 dropped (19:56–20:00Z). The arbiter renews 168 h before expiry
+(first due about 2026-11-18T19:47Z); that renewal, the forced intermediate renewal with its overlap and retirement, and
+the recovery tests are runbook steps 6 and 7, **not run yet**. Never reset authority state, floors or the ledger to
+extend an approval.
 
 ## Open gates
 

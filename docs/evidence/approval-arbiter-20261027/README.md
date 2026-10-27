@@ -80,3 +80,29 @@ The root was retired on every node at 19:05-19:21Z
   `not-my-node` got `403`, `denied request: a CMTC node agent may write only the NodeTrustReport named after the node
   its token is bound to`; `get nodetrustreport not-my-node`: `NotFound`.
 
+## Step 5: the arbiter on kind-cmtc-a (19:54-20:00Z)
+
+- Peer credential of kind-cmtc-b on kind-cmtc-a, 19:54:46Z ([output](step5/peer.txt)): `installed
+  cmtc-system/cmtc-peer-cmtc-b on kind-cmtc-a: cmtc-peer-reader of kind-cmtc-b at https://172.18.0.4:6443`; probe from
+  a Pod on cmtc-a to `/version`: `200`.
+- `cmtc_adopt.py plan` ([plan](step5/plan.txt)): 14 changes, 0 kubectl manager entries, 0 refusals; only the
+  controller Deployment's pod template changes (args, the config and `peer-cmtc-b` volumes); the node agents do not
+  roll.
+- `helm upgrade cmtc … --server-side=true --wait`: `REVISION: 2` at 19:55:19Z; controller log
+  `issuerApprovalArbiter=true`.
+- IssuerApproval ([watch](step5/issuerapproval-watch.txt)): `Blocked`, `MeshNotConverged` (stale reports) at
+  19:55:24Z; `Publishing` generation 7 `Adopt` in `cmtc-issuer-approval-a`, digest `f3d0df12…1866`, expires
+  2026-11-25T19:55:52Z, at 19:55:54Z; `Converged` at 19:56:10Z.
+- Both clusters ([after](step5/after.txt)): record `Converged` at generation 7; publication `published 7
+  cmtc-issuer-approval-a`; approval issuers `2dee6086…` (cmtc-a), `b9075e42…` (cmtc-b), as in g6; every report pins
+  `ReadOnly` [`6c12c735…`], ztunnel `Accepted` 7; `lease fenced`: 0 on all four ztunnels; cmtc-a's ztunnels logged
+  `approval-source-succession`, floors carried, no checkpoint reset.
+- [matrix-step5](matrix-step5/join.txt), 19:56:34-20:00:36Z: 96 proven over mTLS, 0 unanswered, 36 dropped, 0 failed.
+  The cmtc-a ztunnels logged 4 client-side "session expired or changed" handshake errors each, the pre-existing
+  observation ([root-pin-retirement-20261027](../root-pin-retirement-20261027/README.md#observations)).
+
+State after step 5: the arbiter is **deployed** on both labs by digest
+`ghcr.io/ephico2real2/cmtc@sha256:a3efbe8c98249fbe931498edd9d35ab821bd7a506f6bbf33fbc0fb3ba7623719`; the adoption is
+**traffic-qualified** by `matrix-step5`. Steps 6 (forced intermediate renewal, overlap, retirement) and 7 (recovery)
+are not run.
+

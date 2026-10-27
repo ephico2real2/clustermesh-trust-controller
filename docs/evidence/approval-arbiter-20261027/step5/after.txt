@@ -1,0 +1,25 @@
+## cmtc-a
+approval 7 2026-11-25T19:55:52Z [('cmtc-a', ['2dee6086']), ('cmtc-b', ['b9075e42'])]
+publication published 7 cmtc-issuer-approval-a 18506
+record Converged 7 cmtc-issuer-approval-a pending=
+  EvidenceReady=True AllClustersRead
+  NodesConverged=True AllNodesAccept
+  Blocked=False NotBlocked
+report cmtc-a-control-plane ReadOnly ['6c12c735'] Accepted 7 f3d0df121a576062 [('cmtc-a.mesh.example', '2dee6086'), ('cmtc-b.mesh.example', 'b9075e42')]
+report cmtc-a-worker ReadOnly ['6c12c735'] Accepted 7 f3d0df121a576062 [('cmtc-a.mesh.example', '2dee6086'), ('cmtc-b.mesh.example', 'b9075e42')]
+pod/ztunnel-cilium-5l4kd lease-fenced(10m)=0
+pod/ztunnel-cilium-fg2qr lease-fenced(10m)=0
+## cmtc-b
+approval 7 2026-11-25T19:47:11Z [('cmtc-a', ['2dee6086']), ('cmtc-b', ['b9075e42'])]
+publication published 7 cmtc-issuer-approval-a 18513
+record Converged 7 cmtc-issuer-approval-a pending=
+  EvidenceReady=True AllClustersRead
+  NodesConverged=True AllNodesAccept
+  Blocked=False NotBlocked
+report cmtc-b-control-plane ReadOnly ['6c12c735'] Accepted 7 e559a303977fba2c [('cmtc-a.mesh.example', '2dee6086'), ('cmtc-b.mesh.example', 'b9075e42')]
+report cmtc-b-worker ReadOnly ['6c12c735'] Accepted 7 e559a303977fba2c [('cmtc-a.mesh.example', '2dee6086'), ('cmtc-b.mesh.example', 'b9075e42')]
+pod/ztunnel-cilium-rxmwb lease-fenced(10m)=0
+pod/ztunnel-cilium-w6hrb lease-fenced(10m)=0
+## cmtc-a ztunnel succession
+2026-10-27T19:55:56.993862Z	info	tls::profile_provider	successor approval object durably accepted; floors carried, no checkpoint reset	component="issuer-profile-provider" stage="approval-source-succession" sequence=18504 logical_generation=7 predecessor=cmtc-i
+2026-10-27T19:55:58.121051Z	info	tls::profile_provider	successor approval object durably accepted; floors carried, no checkpoint reset	component="issuer-profile-provider" stage="approval-source-succession" sequence=18504 logical_generation=7 predecessor=cmtc-i

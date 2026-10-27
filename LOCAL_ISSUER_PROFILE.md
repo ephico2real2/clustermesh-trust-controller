@@ -194,12 +194,15 @@ Status: the host renewal job is **removed** (`renew_approval.py`, its tests and 
 2026-10-27T12:21Z; no `io.cmtc.issuer-approval-renewal` launchd job is loaded on the operator's host, checked
 2026-10-27T17:50Z). Its replacement, the issuer approval arbiter in the CMTC controller, is **proposed** in
 [ADR-012](docs/architecture/adr/ADR-012.md), **implemented and unit-tested** (controller, node agent, chart values
-`controller.issuerApproval` and `nodeAgent.trustReport`), and in live qualification on the labs
-([runbook](docs/development/ARBITER_QUALIFICATION_RUNBOOK.md)).
+`controller.issuerApproval` and `nodeAgent.trustReport`), and **deployed** on both labs since 2026-10-27 (cmtc-b
+19:46Z, cmtc-a 19:55Z). Its adoption of g6 as generation 7 is traffic-qualified
+([record](docs/evidence/approval-arbiter-20261027/README.md)); renewal, the intermediate's key rotation and recovery
+are still to be run ([runbook](docs/development/ARBITER_QUALIFICATION_RUNBOOK.md), steps 6 and 7).
 
 An approval lasts at most 30 days: the controller refuses a longer one (`internal/trustprofile/profile.go:316`).
-Generation 6 expires 2026-11-25T10:26:41Z. Until the arbiter is deployed, nothing renews it, and the labs lose
-workload mTLS at that time; the operator accepted that outage (2026-10-27T12:21Z).
+Generation 6 expires 2026-11-25T10:26:41Z; without a renewal the labs would lose workload mTLS then (the operator
+accepted that outage, 2026-10-27T12:21Z). Since 2026-10-27 both clusters publish generation 7 from the arbiter instead,
+and the arbiter renews it 168 h before its expiry.
 
 The arbiter also settles the intermediate's own renewal: with `rotationPolicy: Always` the renewed intermediate has a
 new key, and the arbiter approves the old and the new key during the overlap (ADR-012, State machine).
