@@ -29,6 +29,13 @@ import (
 const (
 	issuerApprovalPoll        = 15 * time.Second
 	issuerApprovalPassTimeout = 12 * time.Second
+	// PeerRequestTimeout bounds every request to a peer's API, API discovery included: controller-runtime's REST
+	// mapper discovers without a context, so without it an unreachable peer holds a pass for client-go's 30 s dial
+	// timeout. A peer that is down costs a pass two failed requests (its evidence, its publication), within the pass.
+	PeerRequestTimeout = 4 * time.Second
+	// issuerApprovalStatusTimeout bounds the status write. It is not part of the pass budget, so a pass whose evidence
+	// reads used all of it still reports what it saw.
+	issuerApprovalStatusTimeout = 5 * time.Second
 	// pendingPublishWarning is how long a written slot may wait for the producer before the arbiter reports it.
 	pendingPublishWarning = 2 * time.Minute
 	// DefaultReportMaxAge is four node-agent heartbeats (agent.ReportHeartbeat).
@@ -144,6 +151,8 @@ type IssuerApprovalReconciler struct {
 	Options IssuerApprovalOptions
 	Metrics *trustprofile.ArbiterMetrics
 	Now     func() time.Time
+	// PassTimeout bounds one pass's reads and writes; zero means 12 s.
+	PassTimeout time.Duration
 
 	attempt    atomic.Uint64
 	mu         sync.Mutex
@@ -155,6 +164,13 @@ func (r *IssuerApprovalReconciler) now() time.Time {
 		return r.Now().UTC()
 	}
 	return time.Now().UTC()
+}
+
+func (r *IssuerApprovalReconciler) passTimeout() time.Duration {
+	if r.PassTimeout > 0 {
+		return r.PassTimeout
+	}
+	return issuerApprovalPassTimeout
 }
 
 func (r *IssuerApprovalReconciler) key(name string) client.ObjectKey {
@@ -461,7 +477,9 @@ func (m *meshView) trusts(cluster, spki string) bool {
 // slot that was never published, or the predecessor once every local node accepts the current generation; otherwise
 // plan, and write the next generation into the free slot when every gate holds.
 func (r *IssuerApprovalReconciler) Reconcile(ctx context.Context, _ ctrl.Request) (result ctrl.Result, reconcileErr error) {
-	ctx, cancel := context.WithTimeout(ctx, issuerApprovalPassTimeout)
+	// The status write runs on the runner's context, so leader loss still cancels it, but not on the pass deadline.
+	runner := ctx
+	ctx, cancel := context.WithTimeout(ctx, r.passTimeout())
 	defer cancel()
 	started := time.Now()
 	attempt := r.attempt.Add(1)
@@ -572,7 +590,9 @@ func (r *IssuerApprovalReconciler) Reconcile(ctx context.Context, _ ctrl.Request
 	}
 	r.writeStatus(status, st, mesh, holds, planned, localConverged, blocked, now)
 	r.statusMetrics(st, status)
-	if err := r.Client.Status().Update(ctx, &api.IssuerApproval{ObjectMeta: record.ObjectMeta, Status: *status}); err != nil {
+	write, cancelWrite := context.WithTimeout(runner, issuerApprovalStatusTimeout)
+	defer cancelWrite()
+	if err := r.Client.Status().Update(write, &api.IssuerApproval{ObjectMeta: record.ObjectMeta, Status: *status}); err != nil {
 		return next, errors.Join(actionErr, fmt.Errorf("update the IssuerApproval status: %w", err))
 	}
 	switch {

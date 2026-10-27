@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	api "github.com/ephico2real2/clustermesh-trust-controller/api/v1alpha1"
 	"github.com/ephico2real2/clustermesh-trust-controller/internal/agent"
@@ -178,16 +179,9 @@ func issuerApprovalArbiter(mgr ctrl.Manager, scheme *runtime.Scheme, path, clust
 	}
 	peers := map[string]client.Reader{}
 	for name, file := range peerFiles {
-		cfg, err := clientcmd.BuildConfigFromFlags("", file)
+		peer, err := peerReader(name, file, scheme, controller.PeerRequestTimeout)
 		if err != nil {
-			return nil, fmt.Errorf("peer %s kubeconfig: %w", name, err)
-		}
-		if err := validateIssuerAPITransport(cfg); err != nil {
-			return nil, fmt.Errorf("peer %s: %w", name, err)
-		}
-		peer, err := client.New(cfg, client.Options{Scheme: scheme})
-		if err != nil {
-			return nil, fmt.Errorf("peer %s client: %w", name, err)
+			return nil, err
 		}
 		peers[name] = peer
 	}
@@ -196,6 +190,23 @@ func issuerApprovalArbiter(mgr ctrl.Manager, scheme *runtime.Scheme, path, clust
 		return nil, err
 	}
 	return &controller.IssuerApprovalReconciler{Client: mgr.GetClient(), Reader: mgr.GetAPIReader(), Cache: mgr.GetCache(), Peers: peers, Options: options, Metrics: arbiterMetrics}, nil
+}
+
+// peerReader is the client of one peer's API. Every request, API discovery included, ends within timeout.
+func peerReader(name, file string, scheme *runtime.Scheme, timeout time.Duration) (client.Reader, error) {
+	cfg, err := clientcmd.BuildConfigFromFlags("", file)
+	if err != nil {
+		return nil, fmt.Errorf("peer %s kubeconfig: %w", name, err)
+	}
+	if err := validateIssuerAPITransport(cfg); err != nil {
+		return nil, fmt.Errorf("peer %s: %w", name, err)
+	}
+	cfg.Timeout = timeout
+	peer, err := client.New(cfg, client.Options{Scheme: scheme})
+	if err != nil {
+		return nil, fmt.Errorf("peer %s client: %w", name, err)
+	}
+	return peer, nil
 }
 
 func must(err error) {

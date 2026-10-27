@@ -77,7 +77,9 @@ check "$local_server"
 [ "$(kubectl --kubeconfig "$work/kubeconfig" auth can-i get secrets -n cert-manager)" = no ] || { echo "the reader can get Secrets; refusing" >&2; exit 1; }
 check "$server"
 
-# 3. The peer Secret on TARGET, replaced in place (the controller mounts it; a change rolls nothing, the file updates).
+# 3. The peer Secret on TARGET, replaced in place. The controller builds its peer client from the file once, at start,
+#    and the token is inline, so a running controller keeps the old credential until it restarts.
 kubectl --context "$target_ctx" -n "$namespace" create secret generic "$secret" --from-file=kubeconfig="$work/kubeconfig" \
   --dry-run=client -o json | kubectl --context "$target_ctx" apply -f - > /dev/null
 echo "installed $namespace/$secret on $target_ctx: cmtc-peer-reader of $source_ctx at $server (token Secret $namespace/$token_secret on $source_ctx)"
+echo "a controller that already runs on $target_ctx reads it after a restart: kubectl --context $target_ctx -n $namespace rollout restart deployment/cmtc-controller"

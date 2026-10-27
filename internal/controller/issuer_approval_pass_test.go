@@ -314,6 +314,56 @@ func (failingReader) List(context.Context, client.ObjectList, ...client.ListOpti
 	return errors.New("peer API: connection refused")
 }
 
+// hangingReader is a peer API that accepts every request and never answers: each read ends only with its context.
+type hangingReader struct{ client.Reader }
+
+func (hangingReader) Get(ctx context.Context, _ client.ObjectKey, _ client.Object, _ ...client.GetOption) error {
+	<-ctx.Done()
+	return ctx.Err()
+}
+func (hangingReader) List(ctx context.Context, _ client.ObjectList, _ ...client.ListOption) error {
+	<-ctx.Done()
+	return ctx.Err()
+}
+
+// deadlineClient fails a request whose context has ended, as the API client does and the fake client does not.
+type deadlineClient struct{ client.Client }
+
+func (c deadlineClient) Get(ctx context.Context, key client.ObjectKey, o client.Object, opts ...client.GetOption) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	return c.Client.Get(ctx, key, o, opts...)
+}
+func (c deadlineClient) List(ctx context.Context, l client.ObjectList, opts ...client.ListOption) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	return c.Client.List(ctx, l, opts...)
+}
+func (c deadlineClient) Create(ctx context.Context, o client.Object, opts ...client.CreateOption) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	return c.Client.Create(ctx, o, opts...)
+}
+func (c deadlineClient) Delete(ctx context.Context, o client.Object, opts ...client.DeleteOption) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	return c.Client.Delete(ctx, o, opts...)
+}
+func (c deadlineClient) Status() client.SubResourceWriter { return deadlineWriter{c.Client.Status()} }
+
+type deadlineWriter struct{ client.SubResourceWriter }
+
+func (w deadlineWriter) Update(ctx context.Context, o client.Object, opts ...client.SubResourceUpdateOption) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	return w.SubResourceWriter.Update(ctx, o, opts...)
+}
+
 func newArbiter(t *testing.T, m *passMesh, now *time.Time) (*IssuerApprovalReconciler, *IssuerProfileReconciler) {
 	t.Helper()
 	arbiterMetrics, err := trustprofile.NewArbiterMetrics(prometheus.NewRegistry(), "cmtc-a")
@@ -531,6 +581,45 @@ func TestIssuerApprovalArbiterLifecycle(t *testing.T) {
 	var foreign corev1.ConfigMap
 	if err := m.local.Get(context.Background(), client.ObjectKey{Namespace: "cmtc-system", Name: "cmtc-issuer-approval-b"}, &foreign); err != nil || blockedReason(s) != BlockForeignSlot {
 		t.Fatalf("foreign slot: %v %s", err, describe(s))
+	}
+}
+
+// A peer whose API never answers holds every read of the pass until the pass deadline. The pass still writes its
+// status: the peer's evidence unavailable and nothing approved, never the evidence of the pass before (step 7.3 of the
+// arbiter qualification, 2026-10-27).
+func TestIssuerApprovalArbiterReportsAPeerThatNeverAnswers(t *testing.T) {
+	m := newPassMesh(t)
+	now := passNow
+	arbiter, _ := newArbiter(t, m, &now)
+	if s := pass(t, arbiter); !meta.IsStatusConditionTrue(s.Conditions, ConditionEvidenceReady) {
+		t.Fatalf("evidence with the peer up: %s", describe(s))
+	}
+	arbiter.Client = deadlineClient{m.local}
+	arbiter.Reader = deadlineClient{m.local}
+	arbiter.Peers["cmtc-b"] = hangingReader{}
+	arbiter.PassTimeout = 200 * time.Millisecond
+	now = now.Add(15 * time.Second)
+	started := time.Now()
+	if _, err := arbiter.Reconcile(context.Background(), ctrl.Request{}); err != nil {
+		t.Fatalf("pass with a peer that never answers: %v", err)
+	}
+	if elapsed := time.Since(started); elapsed > 2*time.Second {
+		t.Fatalf("the pass took %s", elapsed)
+	}
+	var record api.IssuerApproval
+	if err := m.local.Get(context.Background(), client.ObjectKey{Namespace: "cmtc-system", Name: api.IssuerApprovalName}, &record); err != nil {
+		t.Fatal(err)
+	}
+	s := record.Status
+	ready := meta.FindStatusCondition(s.Conditions, ConditionEvidenceReady)
+	if !s.ObservedAt.Time.Equal(now) || ready == nil || ready.Status != metav1.ConditionFalse || ready.Reason != "EvidenceMissing" || s.Pending != nil ||
+		m.slot("cmtc-issuer-approval-a") != nil || m.slot("cmtc-issuer-approval-b") != nil {
+		t.Fatalf("status after a pass with a peer that never answers: %s", describe(s))
+	}
+	for _, c := range s.Clusters {
+		if c.Name == "cmtc-b" && c.Evidence != "Unavailable" {
+			t.Fatalf("peer evidence: %+v", c)
+		}
 	}
 }
 
