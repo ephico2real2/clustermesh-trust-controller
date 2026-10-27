@@ -87,7 +87,27 @@ Before the advance:
   change it.
 - The issuer approval must not pin the intermediate while cert-manager still approves every request
   ([MESH_PKI.md, Approval](MESH_PKI.md#approval)).
-- Each node's `pins.json` lists the mesh root in `rootPins`. The Cilium agent reads that file at startup.
+- Each node's `pins.json` lists the mesh root in `rootPins`. The Cilium agent and ztunnel read that file at startup.
+- **Blocker (found 2026-10-27T06:28Z; fix implemented and tested, not deployed):** ztunnel's checkpoint binds the installation's root pins as part of its
+  immutable origin (ztunnel fork `1f32bac`, `src/tls/profile_checkpoint.rs`: `Origin.root_pins`, and `validate()`
+  refuses "checkpoint independent origin/root scope differs"). Read on the live nodes: the checkpoints are version 2,
+  `origin.root_pins` = [`0c28af9e…`] only, authority generation 5. Adding the mesh root to `pins.json` therefore puts
+  every existing checkpoint out of scope, and ztunnel fails closed until the checkpoint is reset, which is not allowed.
+  `cee26dd` accepts a root succession only when the new root is already an installation root pin, so it does not cover
+  a lab installed with one root.
+
+  The fix is ztunnel fork `0e92198` (`feat/spire-intermediate-pin`). On load, a stored origin that differs from the
+  installation only by missing root pins is extended in memory, after the integrity check on the stored bytes. Floors,
+  anchor history, fences and cutoffs carry over, and the file keeps the narrower origin until the next distinct durable
+  commit. A new root still gains authority only through a strictly newer approval generation. Dropping a root pin, or
+  adding one together with any other origin change, still fails closed. ztunnel logs
+  `stage="installation-root-pin-extension"`. Tested by the fork's CI (Rust Related Checks, run 40462405566: format,
+  build, `cargo test --benches --tests --bins` passed, with the new
+  `installation_root_pin_extension_continues_the_checkpoint`). Clippy with `-D warnings` passed locally.
+
+  Order on each node: the running ztunnel image predates the fix and would refuse the wider pins after a restart. So
+  write the wider `pins.json` only when that node's ztunnel Pod is replaced with an image built from `0e92198` or later,
+  then restart its Cilium agent, which also reads the file only at startup.
 
 ## What the producer does
 
