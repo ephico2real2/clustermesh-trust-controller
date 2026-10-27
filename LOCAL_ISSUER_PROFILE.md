@@ -168,47 +168,19 @@ first CA from the intermediate would have activated at about 23:55Z.
 
 ### Approval renewal
 
-Status: **implemented and tested** (`renew_approval.py`, 6 tests; the advance's agent Role step, 1 new test of 59);
-**the daily schedule is installed** on the operator's host (launchd, 2026-10-27T12:03Z, at the operator's
-instruction). A run through launchd at 12:03:18Z exited 0 and logged `due: false`, 28.93 days left. It has not yet
-renewed an approval; the first renewal is due about 2026-11-18. Open: it reads the kubeconfig from `/private/tmp`,
-which a host restart clears; reinstall it with a persistent `--kubeconfig` path.
+Status: the host renewal job is **removed** (`renew_approval.py`, its tests and `renewal-schedule.sh`; operator,
+2026-10-27T12:21Z). Its replacement, the issuer approval arbiter in the CMTC controller, is **proposed** in
+[ADR-012](docs/architecture/adr/ADR-012.md) and **partly implemented** on `feat/approval-follows-cert-manager`; it is
+not deployed. Uninstall the job on the operator's host before this branch merges, with the script as it was before
+its removal (`renewal-schedule.sh uninstall` at `5fae43d`): launchd label `io.cmtc.issuer-approval-renewal`, file
+`~/Library/LaunchAgents/io.cmtc.issuer-approval-renewal.plist`.
 
-An approval lasts at most 30 days: the controller refuses a longer one (`internal/trustprofile/profile.go:316`). So a
-new generation must be published before each one expires; the current one, generation 6, expires
-2026-11-25T10:26:41Z. SPIRE's own CA rotations need nothing (they stay under the approved intermediate).
+An approval lasts at most 30 days: the controller refuses a longer one (`internal/trustprofile/profile.go:316`).
+Generation 6 expires 2026-11-25T10:26:41Z. Until the arbiter is deployed, nothing renews it, and the labs lose
+workload mTLS at that time; the operator accepted that outage (2026-10-27T12:21Z).
 
-[renew_approval.py](scripts/lab/issuer-profile/renew_approval.py) reads the qualified ledger of `publish_issuers.py`.
-When the approval expires within `--renew-before` (default 7 days), it runs `publish_issuers.py --spire-intermediate
---advance` with generation + 1, a 29-day horizon and every pin from the ledger's identity: the same command as the
-generation 6 advance except for the generation (compared argument by argument on 2026-10-27). The advance itself now
-moves the Cilium agent's Role (`cmtc-system/cilium-ztunnel-issuer-profile`) to the new source before the producer
-publishes from it, and to the new source alone afterwards (`set_agent_access`); the generation 6 advance needed that
-step by hand.
-
-It refuses, and changes nothing, when the ledger is not qualified, an advance is unfinished, or a cluster's
-`<cluster>-spire-intermediate` has a new revision since the approval's evidence. Exit status: 0 renewed or not due;
-10 due (`--check`); 20 refused; other: the advance failed.
-
-```sh
-# Report only.
-python renew_approval.py --state-dir ~/.local/share/cmtc-issuer-profile/live-a-b \
-  --kubeconfig /private/tmp/cmtc-a-b-20261024.kubeconfig --check
-# Daily at 06:15 local: a launchd agent on macOS, a systemd user timer on Linux. It runs --check first.
-scripts/lab/issuer-profile/renewal-schedule.sh install --state-dir ~/.local/share/cmtc-issuer-profile/live-a-b \
-  --kubeconfig /private/tmp/cmtc-a-b-20261024.kubeconfig --python ~/.local/share/cmtc-issuer-profile/.venv/bin/python
-scripts/lab/issuer-profile/renewal-schedule.sh status
-```
-
-The job's Python needs the `cryptography` package (`python3 -m venv ~/.local/share/cmtc-issuer-profile/.venv` and
-`pip install cryptography==50.0.2`; the tests pass on Python 3.15.0 with it). The kubeconfig path must survive a host
-restart; `/private/tmp` does not.
-
-Open: the intermediate's own renewal. Both `<cluster>-spire-intermediate` Certificates renew on 2027-09-26
-(`renewBefore: 720h`) with `rotationPolicy: Always`, so the renewed intermediate has a new key. SPIRE's active CA stays
-under the old key until its next rotation, and an approval that names only one intermediate refuses one of the two.
-`renew_approval.py` refuses at that point instead of publishing; the move needs an approval that carries both
-intermediates during the overlap, which the publisher does not build yet.
+The arbiter also settles the intermediate's own renewal: with `rotationPolicy: Always` the renewed intermediate has a
+new key, and the arbiter approves the old and the new key during the overlap (ADR-012, State machine).
 
 ### SPIRE local authority operations
 
