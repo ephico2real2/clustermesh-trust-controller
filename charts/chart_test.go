@@ -537,6 +537,15 @@ func TestIssuerApprovalArbiterIsConfiguredByTheChart(t *testing.T) {
 	if e := dig(policy["validations"].([]any)[1], "expression"); e != "size(variables.nodeNames) == 1 && variables.nodeNames[0] == variables.reportName" {
 		t.Errorf("report policy validation: %v", e)
 	}
+	// A denial of authority answers 403 (StatusReasonForbidden), not the policy default 422 (StatusReasonInvalid).
+	for _, v := range policy["validations"].([]any) {
+		if r := dig(v, "reason"); r != "Forbidden" {
+			t.Errorf("report policy validation reason: %v", r)
+		}
+	}
+	if r := dig(dig(got["ValidatingAdmissionPolicy/cmtc-issuer-approval-slots"], "spec", "validations").([]any)[0], "reason"); r != "Forbidden" {
+		t.Errorf("slot policy validation reason: %v", r)
+	}
 	if v := dig(got["ValidatingAdmissionPolicyBinding/cmtc-node-trust-report-owner"], "spec", "validationActions"); !reflect.DeepEqual(v, []any{"Deny"}) {
 		t.Errorf("report policy binding: %v", v)
 	}

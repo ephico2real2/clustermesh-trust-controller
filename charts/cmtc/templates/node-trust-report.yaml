@@ -3,7 +3,8 @@
 # Each node agent writes the NodeTrustReport named after its node (ADR-012). RBAC cannot limit create or update by the
 # writer's node, so the ValidatingAdmissionPolicy below compares the report's name with the node name the API server
 # embedded in the agent's bound ServiceAccount token (authentication.kubernetes.io/node-name, stable since
-# Kubernetes 1.32). Delete is not granted.
+# Kubernetes 1.32). Delete is not granted. Each validation answers with reason Forbidden (HTTP 403, as an RBAC denial);
+# without it the API server answers Invalid (422; k8s.io/api admissionregistration/v1 Validation.Reason).
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
@@ -55,8 +56,10 @@ spec:
   validations:
     - expression: "request.operation != 'DELETE'"
       message: a CMTC node agent never deletes a NodeTrustReport
+      reason: Forbidden
     - expression: "size(variables.nodeNames) == 1 && variables.nodeNames[0] == variables.reportName"
       message: a CMTC node agent may write only the NodeTrustReport named after the node its token is bound to
+      reason: Forbidden
 ---
 apiVersion: admissionregistration.k8s.io/v1
 kind: ValidatingAdmissionPolicyBinding

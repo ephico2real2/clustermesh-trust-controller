@@ -161,6 +161,7 @@ spec:
   validations:
     - expression: {{ printf "object.metadata.name in %s" (toJson $approval.slots) | quote }}
       message: the CMTC controller may create only its issuer approval slots
+      reason: Forbidden
 ---
 apiVersion: admissionregistration.k8s.io/v1
 kind: ValidatingAdmissionPolicyBinding

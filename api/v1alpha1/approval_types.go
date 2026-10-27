@@ -144,10 +144,9 @@ type NodeTrustReportStatus struct {
 	Cluster string `json:"cluster"`
 	// ObservedAt is the node agent's heartbeat. The arbiter does not compare it with its own clock: it counts a report
 	// as fresh only when it saw ObservedAt change recently.
-	ObservedAt metav1.Time        `json:"observedAt"`
-	Pins       PinsReport         `json:"pins"`
-	Ztunnel    ZtunnelReport      `json:"ztunnel"`
-	Conditions []metav1.Condition `json:"conditions,omitempty"`
+	ObservedAt metav1.Time   `json:"observedAt"`
+	Pins       PinsReport    `json:"pins"`
+	Ztunnel    ZtunnelReport `json:"ztunnel"`
 }
 
 // NodeTrustReport is cluster scoped and named after its node. Only that node's CMTC node agent may write it: a
@@ -252,7 +251,6 @@ func (in *NodeTrustReportStatus) DeepCopyInto(out *NodeTrustReportStatus) {
 	out.Pins.RootSHA256 = append([]string(nil), in.Pins.RootSHA256...)
 	out.Ztunnel.LoadedRootSHA256 = append([]string(nil), in.Ztunnel.LoadedRootSHA256...)
 	out.Ztunnel.TrustedIssuers = append([]TrustedIssuer(nil), in.Ztunnel.TrustedIssuers...)
-	out.Conditions = copyConditions(in.Conditions)
 }
 
 func (r *NodeTrustReport) DeepCopy() *NodeTrustReport {

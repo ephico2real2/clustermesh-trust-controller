@@ -303,8 +303,7 @@ func TestReportsAreWrittenOnChangeAndHeartbeat(t *testing.T) {
 		t.Fatal(err)
 	}
 	first := read()
-	if first.Status.Cluster != "cmtc-a" || first.Status.Pins.State != api.PinsAbsent || first.Status.Ztunnel.State != api.ZtunnelAbsent ||
-		len(first.Status.Conditions) != 1 || first.Status.Conditions[0].Status != "Unknown" {
+	if first.Status.Cluster != "cmtc-a" || first.Status.Pins.State != api.PinsAbsent || first.Status.Ztunnel.State != api.ZtunnelAbsent {
 		t.Fatalf("first report: %+v", first.Status)
 	}
 	now = now.Add(ReportInterval)
@@ -326,7 +325,7 @@ func TestReportsAreWrittenOnChangeAndHeartbeat(t *testing.T) {
 	if err := r.Report(ctx); err != nil {
 		t.Fatal(err)
 	}
-	if beat := read(); beat.Status.ObservedAt.Equal(&changed.Status.ObservedAt) || !beat.Status.Conditions[0].LastTransitionTime.Equal(&first.Status.Conditions[0].LastTransitionTime) {
+	if beat := read(); beat.Status.ObservedAt.Equal(&changed.Status.ObservedAt) {
 		t.Fatalf("heartbeat: %+v", beat.Status)
 	}
 }

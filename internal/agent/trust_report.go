@@ -35,10 +35,6 @@ const (
 	ReportHeartbeat = 30 * time.Second
 )
 
-// ConditionDelegateEntry reports whether this node's ztunnel has its SPIRE delegate entry. The node agent cannot see
-// it without the SPIRE Admin API, which it must not have; the SPIRE registrar owns delegate entries.
-const ConditionDelegateEntry = "DelegateEntryObserved"
-
 // Files read and written by the node agent. The Cilium agent and ztunnel read pins.json at startup only (Cilium
 // fork daemon/cmd/ztunnel_issuer_profile.go, ztunnel fork src/xds/issuer_profile.rs load_config); ztunnel commits
 // profile-state.json before it acknowledges a publication (ztunnel fork src/tls/profile_checkpoint.rs).
@@ -121,13 +117,9 @@ func (t *TrustReporter) Start(ctx context.Context) error {
 // Report observes the node and writes its report when the observation changed or a heartbeat is due.
 func (t *TrustReporter) Report(ctx context.Context) error {
 	now := t.now()
+	// The report states only what the agent observes on its node: the pins file and ztunnel's checkpoint. Whether
+	// ztunnel's SPIRE delegate entry exists is not observable here (no SPIRE Admin API), so it is not reported.
 	status := api.NodeTrustReportStatus{Cluster: t.Cluster, Pins: t.pins(), Ztunnel: t.ztunnel(now)}
-	delegate := metav1.Condition{Type: ConditionDelegateEntry, Status: metav1.ConditionUnknown, Reason: "NotObservable",
-		Message: "the node agent has no SPIRE Admin API access; the SPIRE registrar owns ztunnel's delegate entry", LastTransitionTime: metav1.NewTime(now)}
-	if t.last != nil && len(t.last.Conditions) == 1 {
-		delegate.LastTransitionTime = t.last.Conditions[0].LastTransitionTime
-	}
-	status.Conditions = []metav1.Condition{delegate}
 	if t.last != nil && t.last.Cluster == status.Cluster && reflect.DeepEqual(t.last.Pins, status.Pins) && reflect.DeepEqual(t.last.Ztunnel, status.Ztunnel) && now.Sub(t.written) < ReportHeartbeat {
 		return nil
 	}
