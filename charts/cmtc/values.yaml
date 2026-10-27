@@ -66,9 +66,9 @@ controller:
     retirementMargin: 1h
     reportMaxAge: 2m
     # Every cluster of the mesh, including this one: the long-lived identities the administrator approves. certificate
-    # defaults to <name>-spire-intermediate and spireCAPolicy to <name>-spire-ca. certificateUID pins the cert-manager
-    # Certificate object (a recreated one is refused). peerSecret, for every cluster but this one, names a Secret in
-    # the release namespace with key kubeconfig: the read-only credential of that cluster's API (its cmtc-peer-reader).
+    # defaults to <name>-spire-intermediate. certificateUID pins the cert-manager Certificate object (a recreated one
+    # is refused). peerSecret, for every cluster but this one, names a Secret in the release namespace with key
+    # kubeconfig: the read-only credential of that cluster's API (its cmtc-peer-reader).
     clusters: []
     #  - name: cmtc-a
     #    trustDomain: cmtc-a.mesh.example

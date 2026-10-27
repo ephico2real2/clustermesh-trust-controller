@@ -46,7 +46,8 @@ type Evidence struct {
 	Refused bool
 	Reason  string
 	Message string
-	// SPIRECAMaxDuration is the longest SPIRE CA approver-policy allows under this intermediate; zero when unknown.
+	// SPIRECAMaxDuration is the lifetime SPIRE requests for each CA under this intermediate (server.conf ca_ttl);
+	// zero when unknown.
 	SPIRECAMaxDuration time.Duration
 }
 
@@ -59,13 +60,13 @@ type IssuerRecord struct {
 	Superseded time.Time
 	// SupersededBy is the key issued next after this one: the key every node must trust before this one retires.
 	SupersededBy string
-	// SPIRECAMaxDuration is the largest policy bound seen while this key was current or superseded: a SPIRE CA under
-	// it was signed while it was current, under the bound of that time.
+	// SPIRECAMaxDuration is the largest SPIRE CA lifetime seen while this key was current or superseded: a SPIRE CA
+	// under it was signed while it was current, for the lifetime SPIRE requested then.
 	SPIRECAMaxDuration time.Duration
 }
 
-// RetireAfter is when no SPIRE CA signed by this key can still be valid: approver-policy refuses a SPIRE CA longer
-// than SPIRECAMaxDuration, and cert-manager stopped signing with the key before the arbiter read the successor.
+// RetireAfter is when no SPIRE CA signed by this key can still be valid: SPIRE requests each CA for
+// SPIRECAMaxDuration, and cert-manager stopped signing with the key before the arbiter read the successor.
 func (r IssuerRecord) RetireAfter(margin time.Duration) (time.Time, bool) {
 	if r.Superseded.IsZero() || r.SPIRECAMaxDuration <= 0 {
 		return time.Time{}, false
@@ -241,7 +242,8 @@ func PlanApproval(in PlanInput) (Plan, error) {
 			}
 			retireAfter, known := r.RetireAfter(in.RetirementMargin)
 			switch {
-			case !known:
+			// An unknown reading holds even after a known one: SPIRE may run with a ca_ttl the arbiter cannot read.
+			case !known || ev.SPIRECAMaxDuration <= 0:
 				plan.Holds = append(plan.Holds, Hold{Cluster: c.Name, Reason: HoldRetirementWaiting, Message: "the SPIRE CA lifetime bound is unknown; " + p.SPKISHA256 + " stays"})
 			case now.Before(retireAfter):
 				plan.Holds = append(plan.Holds, Hold{Cluster: c.Name, Reason: HoldRetirementWaiting, Message: p.SPKISHA256 + " stays until " + Stamp(retireAfter)})

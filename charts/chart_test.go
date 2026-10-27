@@ -492,8 +492,8 @@ func TestIssuerApprovalArbiterIsConfiguredByTheChart(t *testing.T) {
 		t.Errorf("config slots/roots: %v %v", config["slots"], config["rootSHA256"])
 	}
 	clusters := []any{
-		object{"name": "cmtc-a", "trustDomain": "cmtc-a.mesh.example", "certificate": "cmtc-a-spire-intermediate", "certificateUID": "u-a", "spireCAPolicy": "cmtc-a-spire-ca"},
-		object{"name": "cmtc-b", "trustDomain": "cmtc-b.mesh.example", "certificate": "cmtc-b-spire-intermediate", "certificateUID": "u-b", "spireCAPolicy": "cmtc-b-spire-ca", "kubeconfig": "/etc/cmtc/peers/cmtc-b/kubeconfig"},
+		object{"name": "cmtc-a", "trustDomain": "cmtc-a.mesh.example", "certificate": "cmtc-a-spire-intermediate", "certificateUID": "u-a"},
+		object{"name": "cmtc-b", "trustDomain": "cmtc-b.mesh.example", "certificate": "cmtc-b-spire-intermediate", "certificateUID": "u-b", "kubeconfig": "/etc/cmtc/peers/cmtc-b/kubeconfig"},
 	}
 	if !reflect.DeepEqual(config["clusters"], clusters) {
 		t.Errorf("config clusters: %v", config["clusters"])

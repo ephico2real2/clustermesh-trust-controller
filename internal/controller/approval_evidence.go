@@ -28,14 +28,43 @@ var (
 	certificateGVK  = schema.GroupVersionKind{Group: "cert-manager.io", Version: "v1", Kind: "Certificate"}
 	requestGVK      = schema.GroupVersionKind{Group: "cert-manager.io", Version: "v1", Kind: "CertificateRequest"}
 	clusterIssuerGV = schema.GroupVersionKind{Group: "cert-manager.io", Version: "v1", Kind: "ClusterIssuer"}
-	policyGVK       = schema.GroupVersionKind{Group: "policy.cert-manager.io", Version: "v1alpha1", Kind: "CertificateRequestPolicy"}
 	nodeGVK         = schema.GroupVersionKind{Version: "v1", Kind: "Node"}
 )
 
 var (
 	upstreamAuthority = regexp.MustCompile(`UpstreamAuthority\s+"cert-manager"`)
 	issuerName        = regexp.MustCompile(`(?m)^\s*issuer_name\s*=\s*"([^"]*)"\s*$`)
+	caTTL             = regexp.MustCompile(`(?m)^\s*ca_ttl\s*=\s*"([^"]*)"\s*$`)
 )
+
+// spireDefaultCATTL is SPIRE's CA lifetime when server.conf sets no ca_ttl (SPIRE pkg/server/credtemplate/builder.go
+// DefaultX509CATTL).
+const spireDefaultCATTL = 24 * time.Hour
+
+// spireCALifetime is the lifetime SPIRE requests for every CA it mints under its upstream: ca_ttl
+// (cmd/spire-server/cli/run/run.go parses it with time.ParseDuration; pkg/server/ca/manager/manager.go passes it to
+// MintX509CA), which the cert-manager upstream sends as the CertificateRequest duration
+// (pkg/server/plugin/upstreamauthority/certmanager/api.go). Zero, so no retirement, unless the file states it exactly
+// once on its own line or not at all; a mention after # or // on its line is a comment, as in SPIRE's sample
+// server_full.conf.
+func spireCALifetime(conf string) time.Duration {
+	ttls := caTTL.FindAllStringSubmatch(conf, -1)
+	mentions := 0
+	for _, line := range strings.Split(conf, "\n") {
+		if i := strings.Index(line, "ca_ttl"); i >= 0 && !strings.Contains(line[:i], "#") && !strings.Contains(line[:i], "//") {
+			mentions++
+		}
+	}
+	switch {
+	case mentions == 0:
+		return spireDefaultCATTL
+	case mentions == 1 && len(ttls) == 1:
+		if d, err := time.ParseDuration(ttls[0][1]); err == nil && d > 0 {
+			return d
+		}
+	}
+	return 0
+}
 
 func object(gvk schema.GroupVersionKind) *unstructured.Unstructured {
 	u := &unstructured.Unstructured{}
@@ -152,16 +181,10 @@ func readIntermediate(ctx context.Context, reader client.Reader, o IssuerApprova
 	if trustprofile.Stamp(certNotAfter) != notAfter {
 		return refused("CertificateRequestMismatch", "the issued certificate's notAfter differs from the Certificate status")
 	}
-	evidence := trustprofile.Evidence{Issuer: &derived, Message: fmt.Sprintf("revision %d, CertificateRequest %s", revision, request.GetUID())}
-	policy := object(policyGVK)
-	if err := reader.Get(ctx, client.ObjectKey{Name: c.SPIRECAPolicy}, policy); err == nil {
-		value, _, _ := unstructured.NestedString(policy.Object, "spec", "constraints", "maxDuration")
-		if d, err := time.ParseDuration(value); err == nil && d > 0 {
-			evidence.SPIRECAMaxDuration = d
-		}
-	}
+	evidence := trustprofile.Evidence{Issuer: &derived, Message: fmt.Sprintf("revision %d, CertificateRequest %s", revision, request.GetUID()),
+		SPIRECAMaxDuration: spireCALifetime(conf)}
 	if evidence.SPIRECAMaxDuration == 0 {
-		evidence.Message += "; SPIRE CA maxDuration of " + c.SPIRECAPolicy + " unknown, so no retirement"
+		evidence.Message += "; SPIRE server.conf ca_ttl is not one readable duration, so no retirement"
 	}
 	return evidence
 }
@@ -175,14 +198,17 @@ type nodeView struct {
 
 type heartbeat struct {
 	observedAt metav1.Time
-	seenAt     time.Time
-	changed    bool
+	// readAt is the last pass that read this report.
+	readAt time.Time
+	// movedAfter is the read before the one that saw the heartbeat move: the move happened after it.
+	movedAfter time.Time
+	moved      bool
 }
 
 // readNodes lists a cluster's nodes (metadata only) and its node reports, and marks each report fresh when this
-// process saw its heartbeat change within the allowed age. The node agent's clock is never compared with this one,
-// as Kubernetes' node lifecycle controller does with node Leases: after a restart a report counts again only once its
-// heartbeat has moved.
+// process saw its heartbeat move after a read that lies within the allowed age. The node agent's clock is never
+// compared with this one, as Kubernetes' node lifecycle controller does with node Leases: after a restart, or after
+// passes that did not read the cluster, a report counts again only once its heartbeat has moved between two reads.
 func (r *IssuerApprovalReconciler) readNodes(ctx context.Context, cluster string, reader client.Reader, now time.Time) ([]nodeView, error) {
 	nodes := &metav1.PartialObjectMetadataList{}
 	nodes.SetGroupVersionKind(nodeGVK)
@@ -212,12 +238,15 @@ func (r *IssuerApprovalReconciler) readNodes(ctx context.Context, cluster string
 			h, seen := r.heartbeats[key]
 			switch {
 			case !seen:
-				h = heartbeat{observedAt: view.report.Status.ObservedAt, seenAt: now}
+				h = heartbeat{observedAt: view.report.Status.ObservedAt}
 			case !h.observedAt.Equal(&view.report.Status.ObservedAt):
-				h = heartbeat{observedAt: view.report.Status.ObservedAt, seenAt: now, changed: true}
+				// The move happened after the previous read, which is long ago when no gate asked for this cluster or
+				// the reads failed: the previous read, not this one, bounds the heartbeat's age.
+				h = heartbeat{observedAt: view.report.Status.ObservedAt, movedAfter: h.readAt, moved: true}
 			}
+			h.readAt = now
 			r.heartbeats[key] = h
-			view.fresh = h.changed && now.Sub(h.seenAt) <= r.Options.ReportMaxAge
+			view.fresh = h.moved && now.Sub(h.movedAfter) <= r.Options.ReportMaxAge
 		}
 		views = append(views, view)
 	}

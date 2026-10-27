@@ -67,8 +67,6 @@ type ApprovalCluster struct {
 	TrustDomain    string    `json:"trustDomain"`
 	Certificate    string    `json:"certificate"`
 	CertificateUID types.UID `json:"certificateUID"`
-	// SPIRECAPolicy is the approver-policy CertificateRequestPolicy that bounds the cluster's SPIRE CA lifetime.
-	SPIRECAPolicy string `json:"spireCAPolicy"`
 }
 
 // IssuerApprovalOptions configure the arbiter. Every cluster of the mesh runs the same chart, so the namespaces and
@@ -118,8 +116,8 @@ func (o IssuerApprovalOptions) Validate() error {
 	}
 	seen, local := map[string]bool{}, false
 	for _, c := range o.Clusters {
-		if !trustprofile.ClusterValid(c.Name) || seen[c.Name] || c.TrustDomain == "" || c.Certificate == "" || c.CertificateUID == "" || c.SPIRECAPolicy == "" {
-			return fmt.Errorf("cluster %q must be unique and needs a trust domain, its intermediate Certificate name and UID and its SPIRE CA policy", c.Name)
+		if !trustprofile.ClusterValid(c.Name) || seen[c.Name] || c.TrustDomain == "" || c.Certificate == "" || c.CertificateUID == "" {
+			return fmt.Errorf("cluster %q must be unique and needs a trust domain and its intermediate Certificate name and UID", c.Name)
 		}
 		seen[c.Name] = true
 		local = local || c.Name == o.LocalCluster

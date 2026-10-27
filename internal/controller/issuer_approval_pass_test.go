@@ -109,8 +109,8 @@ func passOptions(m *passMesh) IssuerApprovalOptions {
 		RootConfigMap: "cmtc-mesh-root", CertManagerNamespace: "cert-manager", RootIssuer: "cmtc-mesh-root", SPIRENamespace: "cilium-spire", SPIREConfigMap: "spire-server",
 		LocalCluster: "cmtc-a", RootPins: []string{trustprofile.SHA(m.root.cert.Raw)}, MinimumGeneration: 7,
 		Clusters: []ApprovalCluster{
-			{Name: "cmtc-a", TrustDomain: "cmtc-a.mesh.example", Certificate: "cmtc-a-spire-intermediate", CertificateUID: m.uids["cmtc-a"], SPIRECAPolicy: "cmtc-a-spire-ca"},
-			{Name: "cmtc-b", TrustDomain: "cmtc-b.mesh.example", Certificate: "cmtc-b-spire-intermediate", CertificateUID: m.uids["cmtc-b"], SPIRECAPolicy: "cmtc-b-spire-ca"}},
+			{Name: "cmtc-a", TrustDomain: "cmtc-a.mesh.example", Certificate: "cmtc-a-spire-intermediate", CertificateUID: m.uids["cmtc-a"]},
+			{Name: "cmtc-b", TrustDomain: "cmtc-b.mesh.example", Certificate: "cmtc-b-spire-intermediate", CertificateUID: m.uids["cmtc-b"]}},
 		Horizon: trustprofile.MaxHorizon, RenewBefore: 7 * 24 * time.Hour, RetirementMargin: time.Hour, ReportMaxAge: DefaultReportMaxAge}
 }
 
@@ -169,9 +169,8 @@ func newPassMesh(t *testing.T) *passMesh {
 		objects := []client.Object{
 			&corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Namespace: "cmtc-system", Name: "cmtc-mesh-root"}, Data: map[string]string{"ca.crt": m.root.pem()}},
 			&corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Namespace: "cmtc-system", Name: "cmtc-issuer-publication", UID: types.UID(cluster + "-output"), Labels: map[string]string{trustprofile.OutputLabel: "true"}}},
-			&corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Namespace: "cilium-spire", Name: "spire-server"}, Data: map[string]string{"server.conf": "server {}\nUpstreamAuthority \"cert-manager\" {\n  plugin_data {\n    namespace = \"cilium-spire\"\n    issuer_name = \"" + name + "\"\n  }\n}\n"}},
+			&corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Namespace: "cilium-spire", Name: "spire-server"}, Data: map[string]string{"server.conf": "server {\n  ca_ttl = \"48h\"\n}\nUpstreamAuthority \"cert-manager\" {\n  plugin_data {\n    namespace = \"cilium-spire\"\n    issuer_name = \"" + name + "\"\n  }\n}\n"}},
 			unstructuredObject("cert-manager.io/v1/ClusterIssuer", "", name, types.UID(name+"-issuer"), map[string]any{"ca": map[string]any{"secretName": name}}, nil),
-			unstructuredObject("policy.cert-manager.io/v1alpha1/CertificateRequestPolicy", "", cluster+"-spire-ca", types.UID(cluster+"-policy"), map[string]any{"constraints": map[string]any{"maxDuration": "48h"}}, nil),
 			&corev1.Node{ObjectMeta: metav1.ObjectMeta{Name: cluster + "-control-plane"}},
 			&corev1.Node{ObjectMeta: metav1.ObjectMeta{Name: cluster + "-worker"}},
 		}
@@ -455,8 +454,11 @@ func TestIssuerApprovalArbiterLifecycle(t *testing.T) {
 		t.Fatalf("overlapping: %s", describe(s))
 	}
 
-	// Retirement waits for the SPIRE CA bound (48h policy + 1h margin after the pass that read the successor).
-	now = switched.Add(48*time.Hour + time.Hour - time.Second)
+	// Retirement waits for the SPIRE CA bound (48h ca_ttl + 1h margin after the pass that read the successor). The
+	// arbiter polls every 15 s, so after the jump one pass reads the nodes before their next heartbeat.
+	now = switched.Add(48*time.Hour + time.Hour - 31*time.Second)
+	pass(t, arbiter)
+	now = now.Add(30 * time.Second)
 	m.accept(now, p)
 	if s := pass(t, arbiter); s.Pending != nil || s.Phase != api.ApprovalOverlapping {
 		t.Fatalf("retired before the bound: %s", describe(s))
@@ -537,8 +539,8 @@ func TestApprovalConfigIsStrict(t *testing.T) {
 	good := `{"namespace":"cmtc-system","slots":["cmtc-issuer-approval-a","cmtc-issuer-approval-b"],"adoptSource":"cmtc-issuer-approval-g6","output":"cmtc-issuer-publication",
 "rootConfigMap":"cmtc-mesh-root","certManagerNamespace":"cert-manager","rootIssuer":"cmtc-mesh-root","spireNamespace":"cilium-spire","spireConfigMap":"spire-server",
 "rootSHA256":["` + strings.Repeat("a", 64) + `"],"minimumGeneration":6,"horizon":"696h","renewBefore":"168h","retirementMargin":"1h","reportMaxAge":"2m",
-"clusters":[{"name":"cmtc-a","trustDomain":"cmtc-a.mesh.example","certificate":"cmtc-a-spire-intermediate","certificateUID":"u1","spireCAPolicy":"cmtc-a-spire-ca"},
-{"name":"cmtc-b","trustDomain":"cmtc-b.mesh.example","certificate":"cmtc-b-spire-intermediate","certificateUID":"u2","spireCAPolicy":"cmtc-b-spire-ca","kubeconfig":"/etc/cmtc/peers/cmtc-b/kubeconfig"}]}`
+"clusters":[{"name":"cmtc-a","trustDomain":"cmtc-a.mesh.example","certificate":"cmtc-a-spire-intermediate","certificateUID":"u1"},
+{"name":"cmtc-b","trustDomain":"cmtc-b.mesh.example","certificate":"cmtc-b-spire-intermediate","certificateUID":"u2","kubeconfig":"/etc/cmtc/peers/cmtc-b/kubeconfig"}]}`
 	o, peers, err := DecodeApprovalConfig([]byte(good), "cmtc-a")
 	if err != nil || o.Horizon != 696*time.Hour || o.MinimumGeneration != 6 || len(o.Clusters) != 2 || peers["cmtc-b"] != "/etc/cmtc/peers/cmtc-b/kubeconfig" || len(peers) != 1 {
 		t.Fatalf("good config: %v %+v %v", err, o, peers)
@@ -547,7 +549,7 @@ func TestApprovalConfigIsStrict(t *testing.T) {
 		"unknown field":           strings.Replace(good, `"namespace"`, `"extra":1,"namespace"`, 1),
 		"peer without kubeconfig": strings.Replace(good, `,"kubeconfig":"/etc/cmtc/peers/cmtc-b/kubeconfig"`, ``, 1),
 		"relative kubeconfig":     strings.Replace(good, `/etc/cmtc/peers/cmtc-b/kubeconfig`, `peers/kubeconfig`, 1),
-		"local with kubeconfig":   strings.Replace(good, `"spireCAPolicy":"cmtc-a-spire-ca"}`, `"spireCAPolicy":"cmtc-a-spire-ca","kubeconfig":"/x"}`, 1),
+		"local with kubeconfig":   strings.Replace(good, `"certificateUID":"u1"}`, `"certificateUID":"u1","kubeconfig":"/x"}`, 1),
 		"one slot":                strings.Replace(good, `,"cmtc-issuer-approval-b"`, ``, 1),
 		"bad duration":            strings.Replace(good, `"horizon":"696h"`, `"horizon":"29 days"`, 1),
 		"horizon over the limit":  strings.Replace(good, `"horizon":"696h"`, `"horizon":"720h"`, 1),

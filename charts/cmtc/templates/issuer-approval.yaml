@@ -10,7 +10,7 @@
 {{- $clusters := list -}}
 {{- range $approval.clusters }}
 {{-   $name := required "controller.issuerApproval.clusters[].name is required" .name }}
-{{-   $entry := dict "name" $name "trustDomain" (required (printf "controller.issuerApproval.clusters[%s].trustDomain is required" $name) .trustDomain) "certificate" (.certificate | default (printf "%s-spire-intermediate" $name)) "certificateUID" (required (printf "controller.issuerApproval.clusters[%s].certificateUID is required" $name) .certificateUID) "spireCAPolicy" (.spireCAPolicy | default (printf "%s-spire-ca" $name)) }}
+{{-   $entry := dict "name" $name "trustDomain" (required (printf "controller.issuerApproval.clusters[%s].trustDomain is required" $name) .trustDomain) "certificate" (.certificate | default (printf "%s-spire-intermediate" $name)) "certificateUID" (required (printf "controller.issuerApproval.clusters[%s].certificateUID is required" $name) .certificateUID) }}
 {{-   if eq $name $cluster }}
 {{-     $local = true }}
 {{-     if .peerSecret }}{{ fail (printf "controller.issuerApproval.clusters[%s] is the local cluster and takes no peerSecret" $name) }}{{ end }}
