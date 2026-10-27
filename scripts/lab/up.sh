@@ -44,6 +44,20 @@ EOF
     localhost:5001/*) bash scripts/lab/local-registry.sh nodes "$cluster" ;;
   esac
 done
+# helm --wait returns when approver-policy's Pod is Ready, before the API server can route to its webhook Service (CI,
+# 2026-10-27: "dial tcp ...:443: connect: no route to host" 50 ms later). A server-side dry run sends the request
+# through that webhook, so it succeeds only once the API server can call it.
+approver_policy_serving() {
+  local cluster=$1 control=$2 rendered error
+  rendered=$(helm template cmtc-mesh-pki charts/cmtc-mesh-pki -n cert-manager --set "clusterName=$cluster" \
+    --set "control=$control" --api-versions policy.cert-manager.io/v1alpha1/CertificateRequestPolicy)
+  for _ in $(seq 60); do
+    error=$(kubectl --context "kind-$cluster" apply --dry-run=server -f - <<<"$rendered" 2>&1 >/dev/null) && return 0
+    sleep 2
+  done
+  echo "approver-policy's webhook in kind-$cluster still refuses a dry run after 120 s: $error" >&2
+  return 1
+}
 helm repo add jetstack https://charts.jetstack.io --force-update
 helm repo update
 for cluster in cmtc-a cmtc-b; do
@@ -62,6 +76,7 @@ for cluster in cmtc-a cmtc-b; do
     --version v0.28.0 -n cert-manager --kube-context "kind-$cluster" --wait --timeout 5m
   # The mesh PKI's policies, before mesh-pki.sh waits for its Certificates; cmtc-a, the control cluster, mints the root.
   control=false; [ "$cluster" = cmtc-a ] && control=true
+  approver_policy_serving "$cluster" "$control"
   helm upgrade --install cmtc-mesh-pki charts/cmtc-mesh-pki -n cert-manager --kube-context "kind-$cluster" \
     --set "clusterName=$cluster" --set "control=$control" --wait --timeout 2m
 done

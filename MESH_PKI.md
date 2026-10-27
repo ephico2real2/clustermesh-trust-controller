@@ -247,7 +247,9 @@ Install order (`scripts/lab/up.sh`), per cluster:
 
 1. cert-manager with `disableAutoApproval=true`.
 2. approver-policy v0.28.0 (`oci://quay.io/jetstack/charts/cert-manager-approver-policy`). It serves the policy CRD,
-   and its webhook uses a certificate it makes itself, so it needs no approval.
+   and its webhook uses a certificate it makes itself, so it needs no approval. `helm --wait` returns when its Pod is
+   Ready, which can be before the API server can route to its webhook (CI, 2026-10-27: `no route to host`), so
+   `up.sh` waits until a server-side dry run of the policies passes through the webhook.
 3. `charts/cmtc-mesh-pki`: `--set clusterName=<cluster>`, and `--set control=true` in the control cluster. It must come
    before `mesh-pki.sh`, which waits for its Certificates; without the policies they stay pending and the wait times
    out.
