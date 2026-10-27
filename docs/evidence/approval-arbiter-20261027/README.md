@@ -136,3 +136,64 @@ are not run.
   [matrix-g6](../spire-intermediate-20261027/matrix-g6/README.md). The join tool has no such fallback and counts it
   as failed.
 
+
+## Step 7: recovery tests on kind-cmtc-b (20:12-20:27Z)
+
+Run during the generation 8 overlap of step 6. Both ztunnels on cmtc-b logged 0 `fenced` lines in every window.
+
+### 7.1 Controller restart (20:12:38Z)
+
+[Record](step7/controller-restart.txt). The successor logged "Attempting to acquire leader lease" at 20:12:39.54Z and
+"Successfully acquired lease" at 20:12:41.13Z (1.6 s). The publication kept sequence 18612 through the rollout, then
+moved to 18613 at 20:12:46Z and on every 10 s. The record stayed `Overlapping`, current 8 in
+`cmtc-issuer-approval-b`, nothing pending.
+
+### 7.2 Node agent restart (20:13:38Z)
+
+[Record](step7/node-agent-restart.txt). Both reports moved: `observedAt` 20:13:34Z and 20:13:35Z before, 20:13:39Z and
+20:13:40Z after the rollout, with new `resourceVersion`s; at 20:14:57Z they were 20:14:49Z and 20:14:40Z. The record
+stayed `Overlapping` 8, `NodesConverged=True` (`AllNodesAccept`). No report became older than `reportMaxAge` (2 min),
+so the `Blocked` branch for a stale report was not exercised.
+
+### 7.3 Peer unreachable: a defect found
+
+The policy is a [CiliumNetworkPolicy](step7/no-peer-policy.yaml) on the controller Pod that allows egress only to
+cmtc-b's own API (`toEntities: [kube-apiserver]`) and to kube-dns. A `NetworkPolicy` with an `ipBlock` cannot express
+it here: CIDR selectors do not select cluster nodes unless `policy-cidr-match-mode` includes `nodes`
+([Cilium Layer 3 policies](https://docs.cilium.io/en/stable/security/policy/layer3/)), the option is unset on both labs,
+and both API endpoints are node IPs.
+
+- **Run 1** ([record](step7/peer-unreachable.txt), policy 20:16:36-20:20:39Z, controller running): the record kept
+  `EvidenceReady=True` (`AllClustersRead`) to the end. The controller's connection to cmtc-a's API, open before the
+  policy, was not cut, so the run tested nothing. [matrix-step7-no-peer](matrix-step7-no-peer/join.txt),
+  20:16:40-20:18:40Z: 96 proven over mTLS, 0 unanswered, 36 dropped by Cilium, 0 failed.
+- **Run 2** ([record](step7/peer-unreachable-run2.txt), policy 20:22:41Z, then a controller restart, policy deleted
+  20:24:46Z): the new controller opens a new connection, which the policy drops. The record kept the previous pass's
+  `EvidenceReady=True` for the whole window. The [arbiter log](step7/peer-unreachable-run2-arbiter-log.jsonl) shows
+  why: passes 1 to 3 each ran 30.0-30.2 s, longer than the 12 s pass timeout, and each ended `update the
+  IssuerApproval status: context deadline exceeded`. Pass 4, at 20:24:59Z after the policy was deleted, was `idle` in
+  0.023 s. Safety held: no slot written, current unchanged at 8, 0 fences; the producer kept publishing (sequence
+  18673 to 18685).
+
+**Cause.** The peer client is `client.New`, whose REST mapper discovers the API on a cache miss with
+`GroupsAndMaybeResources()`, a call that takes no context (controller-runtime v0.24.1 `pkg/client/apiutil/restmapper.go:285`).
+A fresh client has an empty cache, so the first read of a peer whose connection is dropped waits for client-go's 30 s
+dial timeout (`k8s.io/client-go@v0.36.0/transport/cache.go:122`) while the pass deadline passes. The status write then
+ran on the expired pass context. A peer that is down made the record report stale evidence as current.
+
+**Fix** (implemented and unit-tested; not yet deployed):
+
+- `cmd/cmtc/main.go` `peerReader`: the peer client's `rest.Config.Timeout` is `controller.PeerRequestTimeout` (4 s), so
+  every request, discovery included, ends within 4 s. Discovery stops at its first failed request, and each read site
+  stops at its first failed read, so a down peer costs a pass at most two requests (8 s of the 12 s).
+- `internal/controller/issuer_approval.go` `Reconcile`: the status write has its own 5 s deadline on the runner's
+  context (leader loss still cancels it), not the pass deadline.
+- Tests: `cmd/cmtc/peer_reader_test.go` (a TLS peer that never answers: the first request is discovery, and it fails
+  in 0.31 s at a 300 ms timeout; without the timeout the test hangs to the test deadline) and
+  `TestIssuerApprovalArbiterReportsAPeerThatNeverAnswers` (a pass with a hanging peer and a 200 ms pass timeout writes
+  `EvidenceReady=False` / `EvidenceMissing`, the peer's evidence `Unavailable`, no slot; with the status write on the
+  pass context it fails with `update the IssuerApproval status: context deadline exceeded`).
+
+A second finding of the same read: the peer client is built once, at start, from a kubeconfig with an inline token.
+A replaced peer credential takes effect only after a controller restart; `scripts/lab/pki/peer-reader-credential.sh`
+now says so.

@@ -5,8 +5,8 @@ Runbook for the **proposed** behavior of [ADR-012](../architecture/adr/ADR-012.m
 [current delivery status](../agile/DELIVERY_STATUS.md) and [documentation terms](../../DOCUMENTATION_GUIDE.md).
 <!-- /CMTC_DOC_CONTEXT -->
 
-**Status:** written 2026-10-27 from the branch `feat/arbiter-qualification`; steps 2 to 5 executed on 2026-10-27, step 6
-in progress ([record](../evidence/approval-arbiter-20261027/README.md)). Every value below was
+**Status:** written 2026-10-27 from the branch `feat/arbiter-qualification`; steps 2 to 5 and 7.1 to 7.2 executed on 2026-10-27,
+step 6 in progress, 7.3 found a defect (fix in deployment) ([record](../evidence/approval-arbiter-20261027/README.md)). Every value below was
 read from the labs on 2026-10-27 with read-only `kubectl get` and `helm list` (`--kubeconfig
 /private/tmp/cmtc-a-b-20261024.kubeconfig`, never printed; no Secret read). The executor records each step's actual
 output under `docs/evidence/approval-arbiter-<date>/` and updates the delivery status.
@@ -233,13 +233,23 @@ it prepares and activates the next one (ADR-012, "Problem, as measured"), so bot
    expected: the reports' `observedAt` pause and resume; `resourceVersion` changes; no generation is written; with a
    report older than `reportMaxAge` (2 min) the record shows `Blocked` (`NodesConverged=False`) and recovers when the
    agent reports again. Traffic unaffected (matrix optional).
-3. **Peer unreachable.** Deny the controller's egress to cmtc-a's API for 3 min with a NetworkPolicy, then remove it:
-   `kubectl --context kind-cmtc-b -n cmtc-system apply -f - <<'EOF'` … a `NetworkPolicy` named `cmtc-qualify-no-peer`
-   selecting `app.kubernetes.io/name: cmtc-controller`, `policyTypes: [Egress]`, egress to everything except
-   `172.18.0.3/32` (`ipBlock` with `except`) … `EOF` — expected within one pass: `EvidenceReady=False` with reason
-   `EvidenceUnavailable` for `cmtc-a` on cmtc-b's record; `status.current` unchanged; no slot written; the matrix
-   96/96 (a peer down never changes what is approved, ADR-012 Lifecycle). `kubectl --context kind-cmtc-b -n cmtc-system delete networkpolicy cmtc-qualify-no-peer`
-   — expected: `EvidenceReady=True` within one pass plus one heartbeat.
+3. **Peer unreachable.** The controller must open a new connection while the policy is in place, so apply the policy,
+   then restart the controller: an open connection is not cut by a new policy (measured 2026-10-27, run 1). Use a
+   `CiliumNetworkPolicy`: an `ipBlock` cannot exclude the peer's API, because CIDR selectors do not select cluster
+   nodes while `policy-cidr-match-mode` is unset, and both API endpoints are node IPs.
+   1. `kubectl --context kind-cmtc-b apply -f docs/evidence/approval-arbiter-20261027/step7/no-peer-policy.yaml` (egress
+      only to `kube-apiserver` and kube-dns) — expected: `created`.
+   2. `kubectl --context kind-cmtc-b -n cmtc-system rollout restart deploy/cmtc-controller && kubectl --context
+      kind-cmtc-b -n cmtc-system rollout status deploy/cmtc-controller` — expected: rolled out.
+   3. Within one pass (15 s) plus 8 s: cmtc-b's record shows `EvidenceReady=False`, reason `EvidenceMissing`, and
+      `status.clusters[cmtc-a].evidence` `Unavailable`; `status.current` unchanged; no slot written; every arbiter
+      pass log line has `elapsed` under 12 s. Matrix: 96/96 (a peer down never changes what is approved, ADR-012
+      Lifecycle).
+   4. `kubectl --context kind-cmtc-b -n cmtc-system delete ciliumnetworkpolicy cmtc-qualify-no-peer` — expected:
+      `EvidenceReady=True` within one pass.
+
+   Images before the fix in [the 7.3 record](../evidence/approval-arbiter-20261027/README.md) fail step 3: each pass
+   waited 30 s in API discovery, then could not write its status, and the record kept the stale `EvidenceReady=True`.
 
 ## Renewal of generation 6 before 2026-11-25
 
@@ -254,7 +264,8 @@ a peer down is the fail-closed path: the approval then expires and workload mTLS
 
 ## Not run, and open
 
-- Steps 2 to 5 ran on 2026-10-27; step 6 is in progress, step 7 is not run. Step 3.2 and 4.11 use
+- Steps 2 to 5, 7.1 and 7.2 ran on 2026-10-27; step 6 is in progress; 7.3 found a defect, and its rerun waits for
+  the fixed image. The stale-report branch of 7.2 (a report older than 2 min) was not exercised. Step 3.2 and 4.11 use
   `curlimages/curl:8.11.1` from Docker Hub: a pull on the lab.
 - The forced renewal (step 6) makes SPIRE sign under the new key only after it prepares and activates its next CA
   (up to 24 h); the retirement is due about 25 h after the renewal. The runbook spans two days.
