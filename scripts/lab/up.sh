@@ -11,6 +11,10 @@ mkdir -p .tmp artifacts
 for tool in docker kind kubectl helm openssl python3 cilium; do
   command -v "$tool" >/dev/null || { echo "up.sh needs $tool on PATH" >&2; exit 1; }
 done
+# The lab helpers that read YAML need PyYAML: the repository venv has it (docs/development/LAB_SCRIPTS.md); without a
+# venv, python3 must have it (macOS's python3 does not).
+py=python3; [ -x venv/bin/python ] && py=venv/bin/python
+"$py" -c 'import yaml' 2>/dev/null || { echo "up.sh needs PyYAML for $py (create the repository venv)" >&2; exit 1; }
 docker info >/dev/null
 # A Colima guest needs a single wall-clock owner before mesh TLS runs on it; a no-op elsewhere.
 bash scripts/lab/colima-timekeeping.sh --apply
@@ -83,7 +87,7 @@ for cluster in cmtc-a cmtc-b; do
   # (scripts/lab/cilium_cluster_values.py: each cluster's leaves, ClusterMesh and Hubble, are signed by its own
   # intermediate; the Relay and the UI run in the control cluster only). The instance values stay in mesh-values.json.
   # The ztunnel constants wait for the strict layer: the chart refuses them while encryption is off.
-  python3 scripts/lab/cilium_cluster_values.py config/lab/environments/cmtc.yaml "$cluster" ".tmp/cilium-constants-$cluster.json" \
+  "$py" scripts/lab/cilium_cluster_values.py config/lab/environments/cmtc.yaml "$cluster" ".tmp/cilium-constants-$cluster.json" \
     --constants-only --without-ztunnel
   helm upgrade cilium "$cilium_chart" -f config/lab/cilium/base.yaml -f .tmp/cilium-image-values.json -n kube-system \
     --kube-context "kind-$cluster" --reuse-values -f .tmp/mesh-values.json -f ".tmp/cilium-constants-$cluster.json" \
