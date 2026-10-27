@@ -1,0 +1,45 @@
+Apply failed with 1 conflict: conflict with "kubectl-patch" using rbac.authorization.k8s.io/v1: .rules
+Please review the fields above--they currently have other managers. Here
+are the ways you can resolve this warning:
+* If you intend to manage all of these fields, please re-run the apply
+  command with the `--force-conflicts` flag.
+* If you do not intend to manage all of the fields, please edit your
+  manifest to remove references to the fields that should keep their
+  current managers.
+* You may co-own fields by updating your manifest to match the existing
+  value; in this case, you'll become the manager if the other manager(s)
+  stop managing the field (remove it from their configuration).
+See https://kubernetes.io/docs/reference/using-api/server-side-apply/#conflicts
+Apply failed with 5 conflicts: conflicts with "kubectl-client-side-apply" using apps/v1:
+- .spec.template.spec.containers[name="agent"].args
+- .spec.template.spec.containers[name="agent"].env[name="NODE_NAME"].valueFrom.fieldRef
+- .spec.template.spec.securityContext.runAsNonRoot
+- .spec.template.spec.securityContext.runAsUser
+conflicts with "kubectl-patch" using apps/v1:
+- .spec.template.spec.containers[name="agent"].image
+Please review the fields above--they currently have other managers. Here
+are the ways you can resolve this warning:
+* If you intend to manage all of these fields, please re-run the apply
+  command with the `--force-conflicts` flag.
+* If you do not intend to manage all of the fields, please edit your
+  manifest to remove references to the fields that should keep their
+  current managers.
+* You may co-own fields by updating your manifest to match the existing
+  value; in this case, you'll become the manager if the other manager(s)
+  stop managing the field (remove it from their configuration).
+See https://kubernetes.io/docs/reference/using-api/server-side-apply/#conflicts
+Apply failed with 2 conflicts: conflicts with "kubectl-patch" using apps/v1:
+- .spec.template.spec.containers[name="controller"].args
+- .spec.template.spec.containers[name="controller"].image
+Please review the fields above--they currently have other managers. Here
+are the ways you can resolve this warning:
+* If you intend to manage all of these fields, please re-run the apply
+  command with the `--force-conflicts` flag.
+* If you do not intend to manage all of the fields, please edit your
+  manifest to remove references to the fields that should keep their
+  current managers.
+* You may co-own fields by updating your manifest to match the existing
+  value; in this case, you'll become the manager if the other manager(s)
+  stop managing the field (remove it from their configuration).
+See https://kubernetes.io/docs/reference/using-api/server-side-apply/#conflicts
+cmtc-b: the apply would fail (conflicts above); helm upgrade stops on the same conflicts

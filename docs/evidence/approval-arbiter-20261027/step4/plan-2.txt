@@ -1,0 +1,253 @@
+NetworkPolicy.networking.k8s.io/cmtc-system/cmtc-metrics: .metadata.annotations.kubectl.kubernetes.io/last-applied-configuration
+    live ="{\"apiVersion\":\"networking.k8s.io/v1\",\"kind\":\"NetworkPolicy\",\"metadata\":{\"annotations\":{},\"name\":\"cmtc-metrics\",\"namespace\":\"cmtc-system\"},\"spec\":{\"ingress\":[{\"from\":[{\"namespaceSelector\":{\"matchLabels\":{\"kubernetes.io/metadata.name\":\"monitoring\"}}},{\"namespaceSele
+    after="<absent>"
+NetworkPolicy.networking.k8s.io/cmtc-system/cmtc-metrics: .metadata.annotations.meta.helm.sh/release-name
+    live ="<absent>"
+    after="cmtc"
+NetworkPolicy.networking.k8s.io/cmtc-system/cmtc-metrics: .metadata.annotations.meta.helm.sh/release-namespace
+    live ="<absent>"
+    after="cmtc-system"
+NetworkPolicy.networking.k8s.io/cmtc-system/cmtc-metrics: .metadata.labels
+    live ="<absent>"
+    after={"app.kubernetes.io/instance": "cmtc", "app.kubernetes.io/managed-by": "Helm", "app.kubernetes.io/part-of": "cmtc", "helm.sh/chart": "cmtc-0.1.0"}
+ServiceAccount/cmtc-system/cmtc-peer-reader: created
+ServiceAccount/cmtc-system/cmtc-controller: .metadata.annotations.kubectl.kubernetes.io/last-applied-configuration
+    live ="{\"apiVersion\":\"v1\",\"kind\":\"ServiceAccount\",\"metadata\":{\"annotations\":{},\"name\":\"cmtc-controller\",\"namespace\":\"cmtc-system\"}}\n"
+    after="<absent>"
+ServiceAccount/cmtc-system/cmtc-controller: .metadata.annotations.meta.helm.sh/release-name
+    live ="<absent>"
+    after="cmtc"
+ServiceAccount/cmtc-system/cmtc-controller: .metadata.annotations.meta.helm.sh/release-namespace
+    live ="<absent>"
+    after="cmtc-system"
+ServiceAccount/cmtc-system/cmtc-controller: .metadata.labels
+    live ="<absent>"
+    after={"app.kubernetes.io/instance": "cmtc", "app.kubernetes.io/managed-by": "Helm", "app.kubernetes.io/part-of": "cmtc", "helm.sh/chart": "cmtc-0.1.0"}
+ServiceAccount/cmtc-system/cmtc-node-agent: .metadata.annotations.kubectl.kubernetes.io/last-applied-configuration
+    live ="{\"apiVersion\":\"v1\",\"kind\":\"ServiceAccount\",\"metadata\":{\"annotations\":{},\"name\":\"cmtc-node-agent\",\"namespace\":\"cmtc-system\"}}\n"
+    after="<absent>"
+ServiceAccount/cmtc-system/cmtc-node-agent: .metadata.annotations.meta.helm.sh/release-name
+    live ="<absent>"
+    after="cmtc"
+ServiceAccount/cmtc-system/cmtc-node-agent: .metadata.annotations.meta.helm.sh/release-namespace
+    live ="<absent>"
+    after="cmtc-system"
+ServiceAccount/cmtc-system/cmtc-node-agent: .metadata.labels
+    live ="<absent>"
+    after={"app.kubernetes.io/instance": "cmtc", "app.kubernetes.io/managed-by": "Helm", "app.kubernetes.io/part-of": "cmtc", "helm.sh/chart": "cmtc-0.1.0"}
+ConfigMap/cmtc-system/cmtc-issuer-approval-config: created
+CustomResourceDefinition.apiextensions.k8s.io/issuerapprovals.security.cmtc.io: created
+CustomResourceDefinition.apiextensions.k8s.io/namespacemtlspolicies.security.cmtc.io: .metadata.annotations.helm.sh/resource-policy
+    live ="<absent>"
+    after="keep"
+CustomResourceDefinition.apiextensions.k8s.io/namespacemtlspolicies.security.cmtc.io: .metadata.annotations.kubectl.kubernetes.io/last-applied-configuration
+    live ="{\"apiVersion\":\"apiextensions.k8s.io/v1\",\"kind\":\"CustomResourceDefinition\",\"metadata\":{\"annotations\":{},\"name\":\"namespacemtlspolicies.security.cmtc.io\"},\"spec\":{\"group\":\"security.cmtc.io\",\"names\":{\"kind\":\"NamespaceMTLSPolicy\",\"plural\":\"namespacemtlspolicies\",\"shortNa
+    after="<absent>"
+CustomResourceDefinition.apiextensions.k8s.io/namespacemtlspolicies.security.cmtc.io: .metadata.annotations.meta.helm.sh/release-name
+    live ="<absent>"
+    after="cmtc"
+CustomResourceDefinition.apiextensions.k8s.io/namespacemtlspolicies.security.cmtc.io: .metadata.annotations.meta.helm.sh/release-namespace
+    live ="<absent>"
+    after="cmtc-system"
+CustomResourceDefinition.apiextensions.k8s.io/namespacemtlspolicies.security.cmtc.io: .metadata.labels
+    live ="<absent>"
+    after={"app.kubernetes.io/managed-by": "Helm"}
+CustomResourceDefinition.apiextensions.k8s.io/nodetrustreports.security.cmtc.io: created
+ClusterRole.rbac.authorization.k8s.io/cmtc-issuer-approval-evidence: created
+ClusterRole.rbac.authorization.k8s.io/cmtc-node-trust-report: created
+ClusterRole.rbac.authorization.k8s.io/cmtc-peer-reader: created
+ClusterRole.rbac.authorization.k8s.io/cmtc-controller: .metadata.annotations.kubectl.kubernetes.io/last-applied-configuration
+    live ="{\"apiVersion\":\"rbac.authorization.k8s.io/v1\",\"kind\":\"ClusterRole\",\"metadata\":{\"annotations\":{},\"name\":\"cmtc-controller\"},\"rules\":[{\"apiGroups\":[\"\"],\"resources\":[\"namespaces\"],\"verbs\":[\"get\",\"list\",\"watch\"]},{\"apiGroups\":[\"security.cmtc.io\"],\"resources\":[\"nam
+    after="<absent>"
+ClusterRole.rbac.authorization.k8s.io/cmtc-controller: .metadata.annotations.meta.helm.sh/release-name
+    live ="<absent>"
+    after="cmtc"
+ClusterRole.rbac.authorization.k8s.io/cmtc-controller: .metadata.annotations.meta.helm.sh/release-namespace
+    live ="<absent>"
+    after="cmtc-system"
+ClusterRole.rbac.authorization.k8s.io/cmtc-controller: .metadata.labels
+    live ="<absent>"
+    after={"app.kubernetes.io/instance": "cmtc", "app.kubernetes.io/managed-by": "Helm", "app.kubernetes.io/part-of": "cmtc", "helm.sh/chart": "cmtc-0.1.0"}
+ClusterRole.rbac.authorization.k8s.io/cmtc-node-agent: .metadata.annotations.kubectl.kubernetes.io/last-applied-configuration
+    live ="{\"apiVersion\":\"rbac.authorization.k8s.io/v1\",\"kind\":\"ClusterRole\",\"metadata\":{\"annotations\":{},\"name\":\"cmtc-node-agent\"},\"rules\":[{\"apiGroups\":[\"\"],\"resources\":[\"pods\"],\"verbs\":[\"get\",\"list\",\"watch\"]}]}\n"
+    after="<absent>"
+ClusterRole.rbac.authorization.k8s.io/cmtc-node-agent: .metadata.annotations.meta.helm.sh/release-name
+    live ="<absent>"
+    after="cmtc"
+ClusterRole.rbac.authorization.k8s.io/cmtc-node-agent: .metadata.annotations.meta.helm.sh/release-namespace
+    live ="<absent>"
+    after="cmtc-system"
+ClusterRole.rbac.authorization.k8s.io/cmtc-node-agent: .metadata.labels
+    live ="<absent>"
+    after={"app.kubernetes.io/instance": "cmtc", "app.kubernetes.io/managed-by": "Helm", "app.kubernetes.io/part-of": "cmtc", "helm.sh/chart": "cmtc-0.1.0"}
+ClusterRoleBinding.rbac.authorization.k8s.io/cmtc-issuer-approval-evidence: created
+ClusterRoleBinding.rbac.authorization.k8s.io/cmtc-node-trust-report: created
+ClusterRoleBinding.rbac.authorization.k8s.io/cmtc-peer-reader: created
+ClusterRoleBinding.rbac.authorization.k8s.io/cmtc-controller: .metadata.annotations.kubectl.kubernetes.io/last-applied-configuration
+    live ="{\"apiVersion\":\"rbac.authorization.k8s.io/v1\",\"kind\":\"ClusterRoleBinding\",\"metadata\":{\"annotations\":{},\"name\":\"cmtc-controller\"},\"roleRef\":{\"apiGroup\":\"rbac.authorization.k8s.io\",\"kind\":\"ClusterRole\",\"name\":\"cmtc-controller\"},\"subjects\":[{\"kind\":\"ServiceAccount\",\
+    after="<absent>"
+ClusterRoleBinding.rbac.authorization.k8s.io/cmtc-controller: .metadata.annotations.meta.helm.sh/release-name
+    live ="<absent>"
+    after="cmtc"
+ClusterRoleBinding.rbac.authorization.k8s.io/cmtc-controller: .metadata.annotations.meta.helm.sh/release-namespace
+    live ="<absent>"
+    after="cmtc-system"
+ClusterRoleBinding.rbac.authorization.k8s.io/cmtc-controller: .metadata.labels
+    live ="<absent>"
+    after={"app.kubernetes.io/instance": "cmtc", "app.kubernetes.io/managed-by": "Helm", "app.kubernetes.io/part-of": "cmtc", "helm.sh/chart": "cmtc-0.1.0"}
+ClusterRoleBinding.rbac.authorization.k8s.io/cmtc-node-agent: .metadata.annotations.kubectl.kubernetes.io/last-applied-configuration
+    live ="{\"apiVersion\":\"rbac.authorization.k8s.io/v1\",\"kind\":\"ClusterRoleBinding\",\"metadata\":{\"annotations\":{},\"name\":\"cmtc-node-agent\"},\"roleRef\":{\"apiGroup\":\"rbac.authorization.k8s.io\",\"kind\":\"ClusterRole\",\"name\":\"cmtc-node-agent\"},\"subjects\":[{\"kind\":\"ServiceAccount\",\
+    after="<absent>"
+ClusterRoleBinding.rbac.authorization.k8s.io/cmtc-node-agent: .metadata.annotations.meta.helm.sh/release-name
+    live ="<absent>"
+    after="cmtc"
+ClusterRoleBinding.rbac.authorization.k8s.io/cmtc-node-agent: .metadata.annotations.meta.helm.sh/release-namespace
+    live ="<absent>"
+    after="cmtc-system"
+ClusterRoleBinding.rbac.authorization.k8s.io/cmtc-node-agent: .metadata.labels
+    live ="<absent>"
+    after={"app.kubernetes.io/instance": "cmtc", "app.kubernetes.io/managed-by": "Helm", "app.kubernetes.io/part-of": "cmtc", "helm.sh/chart": "cmtc-0.1.0"}
+Role.rbac.authorization.k8s.io/cmtc-system/cmtc-issuer-approval-arbiter: created
+Role.rbac.authorization.k8s.io/cilium-spire/cmtc-issuer-approval-spire-config: created
+Role.rbac.authorization.k8s.io/cmtc-system/cmtc-issuer-profile-access: .metadata.annotations
+    live ="<absent>"
+    after={"meta.helm.sh/release-name": "cmtc", "meta.helm.sh/release-namespace": "cmtc-system"}
+Role.rbac.authorization.k8s.io/cmtc-system/cmtc-issuer-profile-access: .metadata.labels.app.kubernetes.io/instance
+    live ="<absent>"
+    after="cmtc"
+Role.rbac.authorization.k8s.io/cmtc-system/cmtc-issuer-profile-access: .metadata.labels.app.kubernetes.io/managed-by
+    live ="<absent>"
+    after="Helm"
+Role.rbac.authorization.k8s.io/cmtc-system/cmtc-issuer-profile-access: .metadata.labels.app.kubernetes.io/part-of
+    live ="<absent>"
+    after="cmtc"
+Role.rbac.authorization.k8s.io/cmtc-system/cmtc-issuer-profile-access: .metadata.labels.helm.sh/chart
+    live ="<absent>"
+    after="cmtc-0.1.0"
+Role.rbac.authorization.k8s.io/cmtc-system/cmtc-issuer-profile-access: .rules[0].resourceNames
+    live =["cmtc-issuer-approval-g6"]
+    after=["cmtc-issuer-approval-g6", "cmtc-issuer-approval-a", "cmtc-issuer-approval-b"]
+Role.rbac.authorization.k8s.io/cmtc-system/cmtc-issuer-profile-readers: created
+Role.rbac.authorization.k8s.io/cmtc-system/cmtc-peer-reader: created
+Role.rbac.authorization.k8s.io/cilium-spire/cmtc-peer-reader-spire-config: created
+Role.rbac.authorization.k8s.io/cmtc-system/cmtc-leader-election: .metadata.annotations.kubectl.kubernetes.io/last-applied-configuration
+    live ="{\"apiVersion\":\"rbac.authorization.k8s.io/v1\",\"kind\":\"Role\",\"metadata\":{\"annotations\":{},\"name\":\"cmtc-leader-election\",\"namespace\":\"cmtc-system\"},\"rules\":[{\"apiGroups\":[\"coordination.k8s.io\"],\"resources\":[\"leases\"],\"verbs\":[\"get\",\"list\",\"watch\",\"create\",\"upda
+    after="<absent>"
+Role.rbac.authorization.k8s.io/cmtc-system/cmtc-leader-election: .metadata.annotations.meta.helm.sh/release-name
+    live ="<absent>"
+    after="cmtc"
+Role.rbac.authorization.k8s.io/cmtc-system/cmtc-leader-election: .metadata.annotations.meta.helm.sh/release-namespace
+    live ="<absent>"
+    after="cmtc-system"
+Role.rbac.authorization.k8s.io/cmtc-system/cmtc-leader-election: .metadata.labels
+    live ="<absent>"
+    after={"app.kubernetes.io/instance": "cmtc", "app.kubernetes.io/managed-by": "Helm", "app.kubernetes.io/part-of": "cmtc", "helm.sh/chart": "cmtc-0.1.0"}
+RoleBinding.rbac.authorization.k8s.io/cmtc-system/cmtc-issuer-approval-arbiter: created
+RoleBinding.rbac.authorization.k8s.io/cilium-spire/cmtc-issuer-approval-spire-config: created
+RoleBinding.rbac.authorization.k8s.io/cmtc-system/cmtc-issuer-profile-access: .metadata.annotations
+    live ="<absent>"
+    after={"meta.helm.sh/release-name": "cmtc", "meta.helm.sh/release-namespace": "cmtc-system"}
+RoleBinding.rbac.authorization.k8s.io/cmtc-system/cmtc-issuer-profile-access: .metadata.labels.app.kubernetes.io/instance
+    live ="<absent>"
+    after="cmtc"
+RoleBinding.rbac.authorization.k8s.io/cmtc-system/cmtc-issuer-profile-access: .metadata.labels.app.kubernetes.io/managed-by
+    live ="<absent>"
+    after="Helm"
+RoleBinding.rbac.authorization.k8s.io/cmtc-system/cmtc-issuer-profile-access: .metadata.labels.app.kubernetes.io/part-of
+    live ="<absent>"
+    after="cmtc"
+RoleBinding.rbac.authorization.k8s.io/cmtc-system/cmtc-issuer-profile-access: .metadata.labels.helm.sh/chart
+    live ="<absent>"
+    after="cmtc-0.1.0"
+RoleBinding.rbac.authorization.k8s.io/cmtc-system/cmtc-issuer-profile-readers: created
+RoleBinding.rbac.authorization.k8s.io/cmtc-system/cmtc-peer-reader: created
+RoleBinding.rbac.authorization.k8s.io/cilium-spire/cmtc-peer-reader-spire-config: created
+RoleBinding.rbac.authorization.k8s.io/cmtc-system/cmtc-leader-election: .metadata.annotations.kubectl.kubernetes.io/last-applied-configuration
+    live ="{\"apiVersion\":\"rbac.authorization.k8s.io/v1\",\"kind\":\"RoleBinding\",\"metadata\":{\"annotations\":{},\"name\":\"cmtc-leader-election\",\"namespace\":\"cmtc-system\"},\"roleRef\":{\"apiGroup\":\"rbac.authorization.k8s.io\",\"kind\":\"Role\",\"name\":\"cmtc-leader-election\"},\"subjects\":[{\"k
+    after="<absent>"
+RoleBinding.rbac.authorization.k8s.io/cmtc-system/cmtc-leader-election: .metadata.annotations.meta.helm.sh/release-name
+    live ="<absent>"
+    after="cmtc"
+RoleBinding.rbac.authorization.k8s.io/cmtc-system/cmtc-leader-election: .metadata.annotations.meta.helm.sh/release-namespace
+    live ="<absent>"
+    after="cmtc-system"
+RoleBinding.rbac.authorization.k8s.io/cmtc-system/cmtc-leader-election: .metadata.labels
+    live ="<absent>"
+    after={"app.kubernetes.io/instance": "cmtc", "app.kubernetes.io/managed-by": "Helm", "app.kubernetes.io/part-of": "cmtc", "helm.sh/chart": "cmtc-0.1.0"}
+Service/cmtc-system/cmtc-controller: .metadata.annotations.kubectl.kubernetes.io/last-applied-configuration
+    live ="{\"apiVersion\":\"v1\",\"kind\":\"Service\",\"metadata\":{\"annotations\":{},\"name\":\"cmtc-controller\",\"namespace\":\"cmtc-system\"},\"spec\":{\"ports\":[{\"name\":\"metrics\",\"port\":8080,\"targetPort\":\"metrics\"}],\"selector\":{\"app.kubernetes.io/name\":\"cmtc-controller\"}}}\n"
+    after="<absent>"
+Service/cmtc-system/cmtc-controller: .metadata.annotations.meta.helm.sh/release-name
+    live ="<absent>"
+    after="cmtc"
+Service/cmtc-system/cmtc-controller: .metadata.annotations.meta.helm.sh/release-namespace
+    live ="<absent>"
+    after="cmtc-system"
+Service/cmtc-system/cmtc-controller: .metadata.labels
+    live ="<absent>"
+    after={"app.kubernetes.io/instance": "cmtc", "app.kubernetes.io/managed-by": "Helm", "app.kubernetes.io/part-of": "cmtc", "helm.sh/chart": "cmtc-0.1.0"}
+DaemonSet.apps/cmtc-system/cmtc-node-agent: .metadata.annotations.deprecated.daemonset.template.generation
+    live ="10"
+    after="11"
+DaemonSet.apps/cmtc-system/cmtc-node-agent: .metadata.annotations.kubectl.kubernetes.io/last-applied-configuration
+    live ="{\"apiVersion\":\"apps/v1\",\"kind\":\"DaemonSet\",\"metadata\":{\"annotations\":{},\"name\":\"cmtc-node-agent\",\"namespace\":\"cmtc-system\"},\"spec\":{\"selector\":{\"matchLabels\":{\"app.kubernetes.io/name\":\"cmtc-node-agent\"}},\"template\":{\"metadata\":{\"labels\":{\"app.kubernetes.io/name\
+    after="<absent>"
+DaemonSet.apps/cmtc-system/cmtc-node-agent: .metadata.annotations.meta.helm.sh/release-name
+    live ="<absent>"
+    after="cmtc"
+DaemonSet.apps/cmtc-system/cmtc-node-agent: .metadata.annotations.meta.helm.sh/release-namespace
+    live ="<absent>"
+    after="cmtc-system"
+DaemonSet.apps/cmtc-system/cmtc-node-agent: .metadata.labels
+    live ="<absent>"
+    after={"app.kubernetes.io/instance": "cmtc", "app.kubernetes.io/managed-by": "Helm", "app.kubernetes.io/part-of": "cmtc", "helm.sh/chart": "cmtc-0.1.0"}
+DaemonSet.apps/cmtc-system/cmtc-node-agent: .spec.template.spec.containers[name="agent"].args
+    live =["--mode=node", "--cluster-name=cmtc-b"]
+    after=["--mode=node", "--cluster-name=cmtc-b", "--node-trust-report=true", "--pins-dir=/etc/cmtc/ztunnel-issuer-pins", "--checkpoint-dir=/var/lib/cmtc/ztunnel-issuer-checkpoint"]
+DaemonSet.apps/cmtc-system/cmtc-node-agent: .spec.template.spec.containers[name="agent"].image
+    live ="ghcr.io/ephico2real2/cmtc@sha256:113b94c09da2cd0683a5e9f7af01c526941c928129f7cbb3679026a2ce0ac312"
+    after="ghcr.io/ephico2real2/cmtc@sha256:a3efbe8c98249fbe931498edd9d35ab821bd7a506f6bbf33fbc0fb3ba7623719"
+DaemonSet.apps/cmtc-system/cmtc-node-agent: .spec.template.spec.containers[name="agent"].volumeMounts
+    live ="<absent>"
+    after=[{"mountPath": "/etc/cmtc/ztunnel-issuer-pins", "name": "issuer-pins", "readOnly": true}, {"mountPath": "/var/lib/cmtc/ztunnel-issuer-checkpoint", "name": "issuer-checkpoint", "readOnly": true}]
+DaemonSet.apps/cmtc-system/cmtc-node-agent: .spec.template.spec.securityContext.runAsNonRoot
+    live =true
+    after=false
+DaemonSet.apps/cmtc-system/cmtc-node-agent: .spec.template.spec.securityContext.runAsUser
+    live =65532
+    after=0
+DaemonSet.apps/cmtc-system/cmtc-node-agent: .spec.template.spec.volumes
+    live ="<absent>"
+    after=[{"hostPath": {"path": "/etc/cmtc/ztunnel-issuer-pins", "type": "Directory"}, "name": "issuer-pins"}, {"hostPath": {"path": "/var/lib/cmtc/ztunnel-issuer-checkpoint", "type": "Directory"}, "name": "issuer-checkpoint"}]
+Deployment.apps/cmtc-system/cmtc-controller: .metadata.annotations.kubectl.kubernetes.io/last-applied-configuration
+    live ="{\"apiVersion\":\"apps/v1\",\"kind\":\"Deployment\",\"metadata\":{\"annotations\":{},\"name\":\"cmtc-controller\",\"namespace\":\"cmtc-system\"},\"spec\":{\"replicas\":1,\"selector\":{\"matchLabels\":{\"app.kubernetes.io/name\":\"cmtc-controller\"}},\"template\":{\"metadata\":{\"labels\":{\"app.kub
+    after="<absent>"
+Deployment.apps/cmtc-system/cmtc-controller: .metadata.annotations.meta.helm.sh/release-name
+    live ="<absent>"
+    after="cmtc"
+Deployment.apps/cmtc-system/cmtc-controller: .metadata.annotations.meta.helm.sh/release-namespace
+    live ="<absent>"
+    after="cmtc-system"
+Deployment.apps/cmtc-system/cmtc-controller: .metadata.labels
+    live ="<absent>"
+    after={"app.kubernetes.io/instance": "cmtc", "app.kubernetes.io/managed-by": "Helm", "app.kubernetes.io/part-of": "cmtc", "helm.sh/chart": "cmtc-0.1.0"}
+Deployment.apps/cmtc-system/cmtc-controller: .spec.template.metadata.annotations.security.cmtc.io/live-issuer-owner
+    live ="2da2ac158fa44e1e9767002afcbc9aba"
+    after="<absent>"
+Deployment.apps/cmtc-system/cmtc-controller: .spec.template.spec.containers[name="controller"].args
+    live =["--mode=controller", "--cluster-name=cmtc-b", "--issuer-profile-producer=true", "--issuer-profile-namespace=cmtc-system", "--issuer-profile-source=cmtc-issuer-approval-g6", "--issuer-profile-output=cmtc-issuer-publication", "--issuer-profile-source-uid=cf026f16-e023-4d88-8dd7-30f1e1e5c1b8", "--issu
+    after=["--mode=controller", "--cluster-name=cmtc-b", "--issuer-profile-producer=true", "--issuer-profile-namespace=cmtc-system", "--issuer-profile-output=cmtc-issuer-publication", "--issuer-profile-output-uid=cb6e0317-d887-49be-b265-d24d896c35ef", "--issuer-profile-root-sha256=6c12c7353967466f9177847c3c1e
+Deployment.apps/cmtc-system/cmtc-controller: .spec.template.spec.containers[name="controller"].image
+    live ="ghcr.io/ephico2real2/cmtc@sha256:113b94c09da2cd0683a5e9f7af01c526941c928129f7cbb3679026a2ce0ac312"
+    after="ghcr.io/ephico2real2/cmtc@sha256:a3efbe8c98249fbe931498edd9d35ab821bd7a506f6bbf33fbc0fb3ba7623719"
+Deployment.apps/cmtc-system/cmtc-controller: .spec.template.spec.containers[name="controller"].volumeMounts
+    live ="<absent>"
+    after=[{"mountPath": "/etc/cmtc/issuer-approval", "name": "issuer-approval-config", "readOnly": true}, {"mountPath": "/etc/cmtc/peers/cmtc-a", "name": "peer-cmtc-a", "readOnly": true}]
+Deployment.apps/cmtc-system/cmtc-controller: .spec.template.spec.volumes
+    live ="<absent>"
+    after=[{"configMap": {"defaultMode": 420, "name": "cmtc-issuer-approval-config"}, "name": "issuer-approval-config"}, {"name": "peer-cmtc-a", "secret": {"defaultMode": 420, "items": [{"key": "kubeconfig", "path": "kubeconfig"}], "secretName": "cmtc-peer-cmtc-a"}}]
+ValidatingAdmissionPolicy.admissionregistration.k8s.io/cmtc-issuer-approval-slots: created
+ValidatingAdmissionPolicy.admissionregistration.k8s.io/cmtc-node-trust-report-owner: created
+ValidatingAdmissionPolicyBinding.admissionregistration.k8s.io/cmtc-issuer-approval-slots: created
+ValidatingAdmissionPolicyBinding.admissionregistration.k8s.io/cmtc-node-trust-report-owner: created
+cmtc-b: 100 change(s); 0 kubectl manager entr(ies) left; 0 refusal(s)

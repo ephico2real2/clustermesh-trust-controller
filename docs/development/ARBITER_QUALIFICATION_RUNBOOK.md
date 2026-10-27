@@ -150,7 +150,8 @@ kubeconfig with the source's CA and the endpoint the target's Pods reach, checke
    `kubectl --context kind-cmtc-b -n cmtc-system get issuerapproval cmtc -o yaml` — expected, in order:
    `EvidenceReady=True` for both clusters; `NodesConverged=True`; then `status.pending` names
    `cmtc-issuer-approval-a` with generation 7, reason `Adopt`; then `status.current` is that slot and
-   `status.pending` is empty once the publication names it (phase `Distributing` then `Converged`). `Blocked=True`
+   `status.pending` is empty once the publication names it (phase `Publishing`, `Distributing`, then `Converged`;
+   `Distributing` is not seen when every node accepts within one pass, as on cmtc-b on 2026-10-27). `Blocked=True`
    with a reason names the gate that refuses: record it and stop.
 6. `kubectl --context kind-cmtc-b -n cmtc-system get cm cmtc-issuer-approval-a -o jsonpath='{.data.approval\.json}' | python3 -c 'import json,sys; a=json.load(sys.stdin); print(a["generation"], a["expiresAt"], [(c["clusterID"], [i["spkiSHA256"] for i in c["issuers"]]) for c in a["clusters"]])'`
    — expected: `7 <now + 696h, UTC, whole seconds> [('cmtc-a', ['2dee6086…e3d5']), ('cmtc-b', ['b9075e42…a006'])]`:

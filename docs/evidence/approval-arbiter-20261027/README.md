@@ -48,3 +48,35 @@ The root was retired on every node at 19:05-19:21Z
   anonymous requests; RBAC refuses `system:anonymous`). Both prove TLS to `172.18.0.3:6443` verified with cmtc-a's CA.
   The runbook now expects `200`.
 
+## Step 4: the arbiter on kind-cmtc-b (19:45-19:53Z)
+
+- `cmtc_adopt.py plan`: 2 conflicts with `kubectl-patch` (controller args and image). `transfer`: 14 objects,
+  managedFields only (backup `/private/tmp/cmtc-opus-final-20261025/review/cmtc-adoption-cmtc-b-20261027T1950Z/`).
+  Second plan ([plan-2](step4/plan-2.txt)): 100 changes, 24 objects created, 0 kubectl manager entries, 0 refusals.
+  The spec changes: the image on both workloads; the node agent's trust-report args, read-only mounts and uid 0; the
+  controller's args lose `--issuer-profile-source` and `--issuer-profile-source-uid` and end with
+  `--issuer-approval-config=/etc/cmtc/issuer-approval/config.json` (`adoptSource` `cmtc-issuer-approval-g6`); its
+  volumes `issuer-approval-config` and `peer-cmtc-a`; the Role `cmtc-issuer-profile-access` names g6 and both slots.
+- `helm upgrade --install cmtc … --server-side=true --take-ownership --wait`: `STATUS: deployed`, `REVISION: 1`,
+  19:46:20-19:46:25Z. Controller log: `issuerApprovalArbiter=true`; no peer kubeconfig error.
+- IssuerApproval `cmtc` ([watch](step4/issuerapproval-watch.txt), sampled every 3 s):
+  - 19:46:36Z `Blocked`, `MeshNotConverged`: no node report fresh yet on either cluster (freshness needs a heartbeat
+    seen by this controller);
+  - 19:46:57Z the local nodes converged at generation 6; cmtc-a's control-plane report still stale;
+  - 19:47:12Z `Publishing`: pending generation 7, reason `Adopt`, slot `cmtc-issuer-approval-a`, digest
+    `e559a303…f3e1`, expires 2026-11-25T19:47:11Z;
+  - 19:47:28Z `Converged`: current is that slot, pending empty, both local nodes accept generation 7.
+- Approval `cmtc-issuer-approval-a` ([after](step4/after.txt)): generation 7, the same issuers as g6 (`2dee6086…` for
+  cmtc-a, `b9075e42…` for cmtc-b). Generation 7 renews g6 (g6 expires 2026-11-25T10:26:41Z); the next renewal is due
+  168 h before 2026-11-25T19:47:11Z, at 2026-11-18T19:47:11Z.
+- Publication: `published 7 cmtc-issuer-approval-a`. cmtc-a still publishes g6.
+- ztunnel, both nodes, 19:47:16.154Z: `approval-source-succession` from g6 to the slot, floors carried, no checkpoint
+  reset. The in-session update is NACKed by design ("durable material change requires complete native ADS resync and
+  drain"); the next session committed generation 7 19.5 ms later; `closed_connections=0`. `lease fenced`: 0 on both.
+- NodeTrustReports: pins `ReadOnly` [`6c12c735…`], ztunnel `Accepted`, generation 7, digest `e559a303…`, trusted
+  issuers unchanged.
+- [matrix-step4](matrix-step4/join.txt), 19:49:18-19:53:20Z: 96 proven over mTLS, 0 unanswered, 36 dropped, 0 failed.
+- Node report write restriction ([probe](step4/vap-probe.txt)): a Pod as `cmtc-node-agent` on `cmtc-b-worker` writing
+  `not-my-node` got `403`, `denied request: a CMTC node agent may write only the NodeTrustReport named after the node
+  its token is bound to`; `get nodetrustreport not-my-node`: `NotFound`.
+
