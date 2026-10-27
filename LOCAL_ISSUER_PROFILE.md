@@ -4,7 +4,12 @@
 Evidence scope: results apply to the recorded source, image and fixture. Read [current delivery status](docs/agile/DELIVERY_STATUS.md) and [documentation terms](DOCUMENTATION_GUIDE.md).
 <!-- /CMTC_DOC_CONTEXT -->
 
-**Current state (read 2026-10-25T23:13Z):** the issuer-profile producer is enabled on the CMTC controller in both
+**Update, 2026-10-27:** generations 2 to 5 followed generation 1 on the same ledger. Generation 5 pinned SPIRE's
+24-hour signer and expired at 03:55:28Z; both producers then report `withdrawn SourceExpired`, and ztunnel fails
+closed. The next generation uses the SPIRE intermediate mode below (issue #34). The two paragraphs that follow are
+historical.
+
+**Historical state (read 2026-10-25T23:13Z):** the issuer-profile producer is enabled on the CMTC controller in both
 clusters (`--issuer-profile-producer=true`, source `cmtc-issuer-approval-g1`, minimum generation 1). The controller
 now runs `localhost/cmtc:current-46d01e91ce`, which includes the leader-handover fix (`46d01e9`); exact pins are in
 [delivery status](docs/agile/DELIVERY_STATUS.md). CMTC policy stays in Observe mode. Ztunnel now runs in both
@@ -40,6 +45,49 @@ Do not run the old trial cleanup against this persistent activation.
 A failed activation uses a resourceVersion-changing rollback fence. It does not adopt foreign resources or remove authority state.
 
 Read [the illustrated PKI flow](PKI_TRUST_FLOW.md) for the full certificate and verification path. Read [the build steps](LOCAL_IMAGE_BUILD.md) for component builds.
+
+## SPIRE intermediate mode (issue #34)
+
+Status: **implemented and tested** (`publish_issuers.py --spire-intermediate`, 58 local tests); **not deployed**.
+
+Signer mode approves SPIRE's active 24-hour CA, so every SPIRE CA rotation needs a new generation. The intermediate
+mode approves each cluster's `<cluster>-spire-intermediate` instead, under the mesh root, with `signsSPIRECA: true`
+and no chain. The verifiers then accept exactly one CA below that intermediate, for the cluster's trust domain
+(CMTC `internal/trustprofile`, the Cilium fork's `pkg/ztunnel/issuerprofile`, the ztunnel fork's
+`src/tls/domain_anchors.rs`). SPIRE's rotations need no new generation; the approval lasts up to 30 days
+(`--horizon`, the controller's limit).
+
+The evidence comes from public API objects; no Secret is read:
+
+1. The Certificate `cert-manager/<cluster>-spire-intermediate` has the pinned UID (`--intermediate-pin`), is Ready and
+   is a CA from ClusterIssuer `cmtc-mesh-root`.
+2. Its CertificateRequest of the current revision is Approved and Ready. Its certificate's `notAfter` equals the
+   Certificate's status.
+3. ClusterIssuer `<cluster>-spire-intermediate` signs from that Certificate's Secret.
+4. SPIRE's `server.conf` (`cilium-spire/spire-server`) names that ClusterIssuer as its one cert-manager upstream issuer.
+5. The ConfigMap `cmtc-system/cmtc-mesh-root` holds the root that `--root-sha256` pins. trust-manager writes it without
+   the final newline; only that newline is added before the strict parse.
+
+The intermediate and the root are checked with the verifiers' own CA rules: critical basic constraints with CA set,
+Cert Sign, only the basic-constraints, key-usage and key-identifier extensions, and path depth for the CAs below. CRL
+Sign is not required; cert-manager's CAs do not have it.
+
+The move from signer mode is one `--advance`. Only that advance may change the root and replace the SPIRE proof pins
+(`--approval-pin`, `--server-image`) with `--intermediate-pin`. Its preflight checks the live producer against the
+previous generation's root. Later advances keep the old rule: generation +1 and the controller image only.
+
+Dry run on the live labs, 2026-10-27T06:10Z, read-only: the generation-6 approval built from the live objects has the
+mesh root (`6c12c735…`) and one issuer per cluster. CMTC's `trustprofile.Validate` and the Cilium fork's
+`issuerprofile.Validate` (`823d30c51b`) accept it for both clusters (digest `ea2aa6dc…`). CMTC refuses it under the old
+root pin (`0c28af9e…`).
+
+Before the advance:
+
+- The controller runs an image with `signsSPIRECA` (`c05755d` or later). The advance verifies the image; it does not
+  change it.
+- The issuer approval must not pin the intermediate while cert-manager still approves every request
+  ([MESH_PKI.md, Approval](MESH_PKI.md#approval)).
+- Each node's `pins.json` lists the mesh root in `rootPins`. The Cilium agent reads that file at startup.
 
 ## What the producer does
 

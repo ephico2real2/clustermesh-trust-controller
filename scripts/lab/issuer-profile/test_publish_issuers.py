@@ -444,4 +444,144 @@ class RuntimeAndCASTests(unittest.TestCase):
         with self.assertRaises(u.Refusal):pub.patch_template('cmtc-a',baseline(),desired)
         self.assertEqual(1,len(calls))
 
+def cm_cert(k,name,parent=None,pk=None,path_length=None,usage=True,extra=None,hours=2,san=None):
+    """A CA shaped like cert-manager's: no path length, Digital Signature, Key Encipherment and Cert Sign, key identifiers."""
+    subject=x509.Name([x509.NameAttribute(NameOID.COMMON_NAME,name)])
+    b=(x509.CertificateBuilder().subject_name(subject).issuer_name(parent.subject if parent else subject).public_key(k.public_key())
+       .serial_number(x509.random_serial_number()).not_valid_before(NOW-dt.timedelta(hours=3)).not_valid_after(NOW+dt.timedelta(hours=hours))
+       .add_extension(x509.BasicConstraints(ca=True,path_length=path_length),critical=True)
+       .add_extension(x509.KeyUsage(digital_signature=True,content_commitment=False,key_encipherment=True,data_encipherment=False,key_agreement=False,key_cert_sign=usage,crl_sign=False,encipher_only=None,decipher_only=None),critical=True)
+       .add_extension(x509.SubjectKeyIdentifier.from_public_key(k.public_key()),critical=False))
+    if parent:b=b.add_extension(x509.AuthorityKeyIdentifier.from_issuer_public_key((pk or k).public_key()),critical=False)
+    if san:b=b.add_extension(x509.SubjectAlternativeName([x509.UniformResourceIdentifier(san)]),critical=False)
+    if extra:b=b.add_extension(extra,critical=False)
+    return b.sign(pk or k,hashes.SHA256())
+
+# A refusal from the shared certificate helpers (public_proof) is a refusal too.
+REFUSED=(u.Refusal,q.Refusal)
+
+class Mesh:
+    """The mesh root and each cluster's SPIRE intermediate, and the Kubernetes objects that publish them."""
+    def __init__(self):
+        self.root_key=key();self.root=cm_cert(self.root_key,'cmtc mesh root CA',hours=24*400);self.rootpin=q.sha(q.der(self.root))
+        self.keys={c:key() for c in q.DOMAINS};self.intermediates={c:cm_cert(self.keys[c],c+' SPIRE intermediate CA',self.root,self.root_key,hours=24*20) for c in q.DOMAINS}
+    def evidence(self,cluster,intermediate=None,root=None,observed=None):
+        return {'cluster':cluster,'source':'kubernetes-api-public-certificate-objects','protected':False,'observedAt':(observed or NOW).isoformat(),
+                'intermediatePEM':q.pem(intermediate or self.intermediates[cluster]),'rootPEM':q.pem(root or self.root)}
+    def objects(self,cluster):
+        import base64
+        name=cluster+'-spire-intermediate';ref={'name':'cmtc-mesh-root','kind':'ClusterIssuer','group':'cert-manager.io'};cert=self.intermediates[cluster]
+        return {
+            '/apis/cert-manager.io/v1/namespaces/cert-manager/certificates/'+name:{'metadata':{'uid':name+'-uid','resourceVersion':'1'},'spec':{'isCA':True,'secretName':name,'issuerRef':ref},
+                'status':{'revision':2,'notAfter':u.stamp(cert.not_valid_after_utc),'conditions':[{'type':'Ready','status':'True'}]}},
+            '/apis/cert-manager.io/v1/namespaces/cert-manager/certificaterequests':{'items':[
+                {'metadata':{'uid':'old-cr','resourceVersion':'1','annotations':{'cert-manager.io/certificate-revision':'1'},'ownerReferences':[{'kind':'Certificate','uid':name+'-uid','controller':True}]},
+                 'spec':{'issuerRef':ref},'status':{'certificate':'bm90IGEgY2VydGlmaWNhdGU=','conditions':[{'type':'Approved','status':'True'},{'type':'Ready','status':'True'}]}},
+                {'metadata':{'uid':'cr-uid','resourceVersion':'1','annotations':{'cert-manager.io/certificate-revision':'2'},'ownerReferences':[{'kind':'Certificate','uid':name+'-uid','controller':True}]},
+                 'spec':{'issuerRef':ref},'status':{'certificate':base64.b64encode(q.pem(cert).encode()).decode(),'conditions':[{'type':'Approved','status':'True'},{'type':'Ready','status':'True'}]}}]},
+            '/apis/cert-manager.io/v1/clusterissuers/'+name:{'metadata':{'uid':'ci-uid','resourceVersion':'1'},'spec':{'ca':{'secretName':name}}},
+            # trust-manager writes ca.crt without its last newline.
+            '/api/v1/namespaces/'+u.NS+'/configmaps/cmtc-mesh-root':{'metadata':{'uid':'root-cm','resourceVersion':'1'},'data':{'ca.crt':q.pem(self.root).rstrip('\n')}},
+            '/api/v1/namespaces/cilium-spire/configmaps/spire-server':{'metadata':{'uid':'spire-cm','resourceVersion':'1'},'data':{'server.conf':
+                'plugins {\n  UpstreamAuthority "cert-manager" {\n    plugin_data {\n      namespace = "cilium-spire"\n      issuer_name = "'+name+'"\n      issuer_kind = "ClusterIssuer"\n    }\n  }\n}\n'}}}
+
+class SPIREIntermediateTests(unittest.TestCase):
+    """Issue #34: each cluster's SPIRE intermediate under the mesh root replaces SPIRE's 24-hour signer."""
+    @classmethod
+    def setUpClass(cls):cls.m=Mesh()
+    def build(self,evidence=None,horizon=3600):
+        return u.build_intermediate_approval(evidence or {c:self.m.evidence(c) for c in q.DOMAINS},q,6,NOW,horizon)
+    def test_each_cluster_has_its_intermediate_as_its_one_issuer_under_one_root(self):
+        a=self.build()
+        self.assertEqual([{'certificatePEM':q.pem(self.m.root),'sha256':self.m.rootpin}],a['roots'])
+        for c in a['clusters']:
+            i=self.m.intermediates[c['clusterID']]
+            self.assertEqual(q.DOMAINS[c['clusterID']],c['trustDomain'])
+            self.assertEqual([{'certificatePEM':q.pem(i),'spkiSHA256':q.sha(q.spki(i)),'rootSHA256':self.m.rootpin,'signsSPIRECA':True}],c['issuers'])
+        self.assertEqual(u.stamp(NOW+dt.timedelta(seconds=3600)),a['expiresAt'])
+    def test_expiry_is_bounded_by_the_certificates_and_a_horizon_of_at_most_30_days(self):
+        self.assertEqual(u.stamp(self.m.intermediates['cmtc-a'].not_valid_after_utc),self.build(horizon=30*86400)['expiresAt'])
+        for horizon in (119,30*86400+1):
+            with self.subTest(horizon=horizon),self.assertRaises(REFUSED):self.build(horizon=horizon)
+    def test_refuses_what_the_verifiers_refuse(self):
+        m=self.m;k=key();other=key();other_root=cm_cert(other,'other root')
+        bad={
+            'not signed by the root':cm_cert(k,'cmtc-a SPIRE intermediate CA',other_root,other),
+            'wrong common name':cm_cert(k,'cmtc-b SPIRE intermediate CA',m.root,m.root_key),
+            'no room for a SPIRE CA':cm_cert(k,'cmtc-a SPIRE intermediate CA',m.root,m.root_key,path_length=0),
+            'not a signing CA':cm_cert(k,'cmtc-a SPIRE intermediate CA',m.root,m.root_key,usage=False),
+            'a SAN':cm_cert(k,'cmtc-a SPIRE intermediate CA',m.root,m.root_key,san='spiffe://cmtc-a.mesh.example'),
+            'another extension':cm_cert(k,'cmtc-a SPIRE intermediate CA',m.root,m.root_key,extra=x509.ExtendedKeyUsage([x509.oid.ExtendedKeyUsageOID.SERVER_AUTH])),
+            'expired':cm_cert(k,'cmtc-a SPIRE intermediate CA',m.root,m.root_key,hours=-1),
+            'the other cluster key':cm_cert(m.keys['cmtc-b'],'cmtc-a SPIRE intermediate CA',m.root,m.root_key),
+        }
+        for why,cert in bad.items():
+            with self.subTest(why),self.assertRaises(REFUSED):self.build({'cmtc-a':m.evidence('cmtc-a',cert),'cmtc-b':m.evidence('cmtc-b')})
+        shallow=cm_cert(other,'cmtc mesh root CA',path_length=1)
+        with self.subTest('root with no room for the intermediate and a SPIRE CA'),self.assertRaises(REFUSED):
+            self.build({'cmtc-a':m.evidence('cmtc-a',cm_cert(k,'cmtc-a SPIRE intermediate CA',shallow,other),shallow),'cmtc-b':m.evidence('cmtc-b')})
+        with self.subTest('two roots'),self.assertRaises(REFUSED):
+            self.build({'cmtc-a':m.evidence('cmtc-a',cm_cert(k,'cmtc-a SPIRE intermediate CA',other_root,other),other_root),'cmtc-b':m.evidence('cmtc-b')})
+        with self.subTest('stale evidence'),self.assertRaises(REFUSED):
+            self.build({'cmtc-a':m.evidence('cmtc-a',observed=NOW-dt.timedelta(minutes=5)),'cmtc-b':m.evidence('cmtc-b')})
+        with self.subTest('one cluster'),self.assertRaises(REFUSED):self.build({'cmtc-a':m.evidence('cmtc-a')})
+    def publisher(self):
+        pub=publisher();pub.a.issuer_mode=u.INTERMEDIATE;pub.a.root_sha256=self.m.rootpin;pub.a.generation=6;pub.a.horizon=3600
+        pub.a.root_issuer='cmtc-mesh-root';pub.a.root_configmap='cmtc-mesh-root';pub.a.cert_manager_namespace='cert-manager'
+        pub.a.intermediate_pins={c:c+'-spire-intermediate-uid' for c in q.DOMAINS}
+        pub.apis={c:API() for c in q.DOMAINS}
+        for c in q.DOMAINS:pub.apis[c].objects.update(self.m.objects(c))
+        return pub
+    def test_evidence_comes_from_public_objects_of_the_current_revision_and_no_secret(self):
+        pub=self.publisher();evidence,approval=pub.current_approval(lambda c:None)
+        self.assertEqual(approval['clusters'],self.build()['clusters'])
+        self.assertEqual('cr-uid',evidence['cmtc-a']['certificateRequestUID']);self.assertEqual(2,evidence['cmtc-a']['revision'])
+        self.assertFalse([c for api in pub.apis.values() for c in api.calls if '/secrets' in c[1]])
+    def test_evidence_refuses_each_broken_binding(self):
+        def edit(path,f):
+            def apply(objects):f(objects[path])
+            return apply
+        cert='/apis/cert-manager.io/v1/namespaces/cert-manager/certificates/cmtc-a-spire-intermediate'
+        crs='/apis/cert-manager.io/v1/namespaces/cert-manager/certificaterequests'
+        cases={
+            'a replaced Certificate':edit(cert,lambda o:o['metadata'].update(uid='other')),
+            'not Ready':edit(cert,lambda o:o['status'].update(conditions=[{'type':'Ready','status':'False'}])),
+            'another issuer':edit(cert,lambda o:o['spec']['issuerRef'].update(name='cmtc-spire-issuer')),
+            'a status that is not the issued certificate':edit(cert,lambda o:o['status'].update(notAfter='2030-01-01T00:00:00Z')),
+            'no request of the current revision':edit(crs,lambda o:o['items'].pop()),
+            'a request that was not approved':edit(crs,lambda o:o['items'][1]['status'].update(conditions=[{'type':'Ready','status':'True'}])),
+            'an issuer of another Secret':edit('/apis/cert-manager.io/v1/clusterissuers/cmtc-a-spire-intermediate',lambda o:o['spec']['ca'].update(secretName='x')),
+            'another root':edit('/api/v1/namespaces/'+u.NS+'/configmaps/cmtc-mesh-root',lambda o:o['data'].update({'ca.crt':q.pem(cm_cert(key(),'other'))})),
+            'SPIRE on another issuer':edit('/api/v1/namespaces/cilium-spire/configmaps/spire-server',lambda o:o['data'].update({'server.conf':o['data']['server.conf'].replace('cmtc-a-spire-intermediate','cmtc-spire-issuer')})),
+        }
+        for why,mutate in cases.items():
+            with self.subTest(why):
+                pub=self.publisher();mutate(pub.apis['cmtc-a'].objects)
+                with self.assertRaises(REFUSED):pub.current_approval(lambda c:None)
+    def test_spire_issuer_name_needs_exactly_one_cert_manager_upstream(self):
+        conf=self.m.objects('cmtc-a')['/api/v1/namespaces/cilium-spire/configmaps/spire-server']['data']['server.conf']
+        self.assertEqual('cmtc-a-spire-intermediate',u.spire_issuer_name(conf))
+        for bad in ('',conf.replace('"cert-manager"','"disk"'),conf+conf):
+            with self.assertRaises(REFUSED):u.spire_issuer_name(bad)
+    def test_the_succession_advance_alone_may_change_the_root_and_the_evidence_pins(self):
+        signer={'generation':5,'image':'a','imageConfig':'c','sourceRevision':'s','rootSHA256':'old','clusterPins':{'cmtc-a':'x'},'approvalPins':{'cmtc-a':'p'},'spireServerImage':'i'}
+        succession={'generation':6,'image':'b','imageConfig':'d','sourceRevision':'t','rootSHA256':'mesh','clusterPins':{'cmtc-a':'x'},'issuerMode':u.INTERMEDIATE,'intermediatePins':{'cmtc-a':'q'}}
+        u.advanced_identity(signer,succession)
+        u.advanced_identity(succession,dict(succession,generation=7,image='c'))
+        for old,new in ((signer,dict(signer,generation=6,rootSHA256='mesh')),(succession,dict(succession,generation=7,rootSHA256='other')),
+                        (succession,dict(succession,generation=7,intermediatePins={'cmtc-a':'r'})),(signer,dict(succession,clusterPins={'cmtc-a':'y'})),(signer,dict(succession,generation=7))):
+            with self.subTest(new=new),self.assertRaises(REFUSED):u.advanced_identity(old,new)
+    def test_preflight_matches_the_live_producer_against_the_previous_root(self):
+        fx=Fixtures();t=baseline();t['spec']['containers'][0]['image']='localhost/cmtc:current'
+        live=u.enabled_template(t,'owner-token','cmtc-a',u.source_name(5),'src5-uid','out-uid',fx.rootpin,5)
+        pub=publisher();pub.a.generation=6;pub.a.image='localhost/cmtc:current';pub.a.root_sha256=self.m.rootpin;pub.a.previous_root_sha256=fx.rootpin
+        pub.a.cluster_pins={'cmtc-a':'ks-uid'};pub.inspect_image=lambda cluster,node:None
+        c=pub.s.data['clusters']['cmtc-a'];c.update(deploymentUID='deployment-uid',saUID='sa-uid');c['uids'].update({'ConfigMap/'+u.source_name(5):'src5-uid','ConfigMap/'+u.OUT:'out-uid'})
+        api=pub.apis['cmtc-a'];api.objects['/api/v1/namespaces/kube-system']={'metadata':{'uid':'ks-uid','resourceVersion':'1'}}
+        api.objects['/api/v1/namespaces/'+u.NS+'/serviceaccounts/cmtc-controller']={'metadata':{'uid':'sa-uid','resourceVersion':'1'}}
+        api.objects['/apis/apps/v1/namespaces/'+u.NS+'/deployments/'+u.DEP]=deployment(live)
+        pub.advance_preflight('cmtc-a',5);self.assertEqual(live,c['advance']['from'])
+        pub.a.previous_root_sha256=self.m.rootpin;c.pop('advance')
+        with self.assertRaises(REFUSED):pub.advance_preflight('cmtc-a',5)
+
 if __name__=='__main__':unittest.main()

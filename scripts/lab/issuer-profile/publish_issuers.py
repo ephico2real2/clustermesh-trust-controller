@@ -182,6 +182,73 @@ def build_approval(proofs,parents,q,generation,now,horizon,prepared=None):
     if len(compact(approval).encode())>65536:raise Refusal('approval size bound')
     return approval
 
+INTERMEDIATE='spire-intermediate'
+CA_EXTENSIONS=('2.5.29.19','2.5.29.15','2.5.29.14','2.5.29.35')
+MAX_INTERMEDIATE_HORIZON=30*86400
+def controller_ca(cert,below,now):
+    """The controller's and ztunnel's CA rules (internal/trustprofile caCurrentForDomain, caDepthAllows;
+    ztunnel ca_material, ca_depth_allows): critical basic constraints with CA set, Cert Sign, only these
+    extensions, and a path length that leaves room for `below` CAs. CRL Sign is not required."""
+    from cryptography import x509
+    if not cert.not_valid_before_utc<=now<cert.not_valid_after_utc:raise Refusal('CA certificate is not current')
+    if any(e.oid.dotted_string not in CA_EXTENSIONS for e in cert.extensions):raise Refusal('CA extension outside the verifier profile')
+    try:bc=cert.extensions.get_extension_for_class(x509.BasicConstraints);ku=cert.extensions.get_extension_for_class(x509.KeyUsage)
+    except x509.ExtensionNotFound as e:raise Refusal('CA basic constraints or key usage absent') from e
+    if not bc.critical or not bc.value.ca or not ku.value.key_cert_sign:raise Refusal('not an explicit signing CA')
+    if bc.value.path_length is not None and bc.value.path_length<below:raise Refusal('CA path length leaves no room for the CAs below it')
+
+def spire_intermediate_issuer(q,cluster,intermediate,root,now):
+    """A cluster's SPIRE intermediate, signed by the mesh root, approved to sign exactly one rotating SPIRE CA."""
+    from cryptography.x509.oid import NameOID
+    controller_ca(root,2,now);controller_ca(intermediate,1,now)
+    if root.subject!=root.issuer:raise Refusal('mesh root is not self-issued')
+    q.issued(root,root);q.issued(intermediate,root)
+    names=intermediate.subject.get_attributes_for_oid(NameOID.COMMON_NAME)
+    if [n.value for n in names]!=[cluster+' SPIRE intermediate CA']:raise Refusal('SPIRE intermediate common name differs from its cluster')
+    if q.spki(intermediate)==q.spki(root):raise Refusal('SPIRE intermediate reuses the root key')
+    return {'certificatePEM':q.pem(intermediate),'spkiSHA256':q.sha(q.spki(intermediate)),'rootSHA256':q.sha(q.der(root)),'signsSPIRECA':True}
+
+def build_intermediate_approval(evidence,q,generation,now,horizon):
+    """Each cluster's SPIRE intermediate as its one issuer, under one common mesh root (issue #34).
+
+    No chain and no SPIRE CA: the verifiers accept exactly one CA below the intermediate, for the cluster's
+    trust domain, so SPIRE's 24-hour CA rotations need no new approval."""
+    if type(generation)is not int or not 1<=generation<2**64 or not 120<=horizon<=MAX_INTERMEDIATE_HORIZON:raise Refusal('invalid administered generation/horizon')
+    if set(evidence)!={'cmtc-a','cmtc-b'}:raise Refusal('both exact clusters required')
+    roots={};clusters=[];keys=set()
+    certificates=dt.datetime.max.replace(tzinfo=dt.timezone.utc)
+    for cluster in sorted(evidence):
+        e=evidence[cluster]
+        if e.get('cluster')!=cluster or e.get('source')!='kubernetes-api-public-certificate-objects' or e.get('protected') is not False:raise Refusal('wrong public evidence source/binding')
+        observed=dt.datetime.fromisoformat(e['observedAt'])
+        if not -2<=(now-observed).total_seconds()<=90:raise Refusal('intermediate evidence is not fresh')
+        intermediate=q.certs(e['intermediatePEM']);root=q.certs(e['rootPEM'])
+        if len(intermediate)!=1 or len(root)!=1:raise Refusal('evidence must hold exactly one intermediate and one root')
+        intermediate,root=intermediate[0],root[0]
+        issuer=spire_intermediate_issuer(q,cluster,intermediate,root,now)
+        if issuer['spkiSHA256'] in keys:raise Refusal('cross-cluster intermediate key reuse')
+        keys.add(issuer['spkiSHA256']);roots[issuer['rootSHA256']]={'certificatePEM':q.pem(root),'sha256':issuer['rootSHA256']}
+        certificates=min(certificates,intermediate.not_valid_after_utc,root.not_valid_after_utc)
+        clusters.append({'clusterID':cluster,'trustDomain':q.DOMAINS[cluster],'issuers':[issuer]})
+    if any(q.sha(q.spki(q.certs(r['certificatePEM'])[0])) in keys for r in roots.values()):raise Refusal('an intermediate key is also the root key')
+    expiry=min(certificates,now+dt.timedelta(seconds=horizon))
+    if len(roots)!=1 or (expiry-now).total_seconds()<120:raise Refusal('one common approved root and at least120seconds remaining required')
+    approval={'schemaVersion':1,'generation':generation,'expiresAt':stamp(expiry),'roots':list(roots.values()),'clusters':clusters}
+    if len(compact(approval).encode())>65536:raise Refusal('approval size bound')
+    return approval
+
+def pem_text(raw):
+    """Public PEM text, ending in one newline: trust-manager writes ca.crt without the last one. The strict parse
+    (public_proof.certs) then accepts only canonical certificate blocks."""
+    text=public(raw).decode()
+    return text if text.endswith('\n') else text+'\n'
+
+def spire_issuer_name(conf):
+    """The issuer_name of SPIRE's UpstreamAuthority "cert-manager" in server.conf, or a refusal."""
+    names=re.findall(r'^\s*issuer_name\s*=\s*"([^"]*)"\s*$',conf,re.M)
+    if len(re.findall(r'UpstreamAuthority\s+"cert-manager"',conf))!=1 or len(names)!=1:raise Refusal('SPIRE server.conf must name exactly one cert-manager upstream issuer')
+    return names[0]
+
 def same_material(a,b):
     return {k:a[k] for k in ('schemaVersion','generation','roots','clusters')}=={k:b[k] for k in ('schemaVersion','generation','roots','clusters')}
 
@@ -208,9 +275,15 @@ def producer_disabled(template,owner):
     return t
 
 ADVANCE_FIELDS=('generation','image','imageConfig','sourceRevision')
+# The one-time move from SPIRE's 24-hour signer to the cluster's SPIRE intermediate (issue #34) also moves the root
+# (Lab Organization Root -> mesh root) and drops the in-pod SPIRE proof pins, which that mode does not use.
+SUCCESSION_FIELDS=('rootSHA256','approvalPins','spireServerImage','issuerMode','intermediatePins')
 def advanced_identity(old,new):
-    """An advance may change only the administered generation (+1) and the verified controller image."""
-    keep=lambda i:{k:v for k,v in i.items() if k not in ADVANCE_FIELDS}
+    """An advance may change only the administered generation (+1) and the verified controller image, and once,
+    from the signer mode to the intermediate mode, the root and the evidence pins."""
+    fields=ADVANCE_FIELDS
+    if new.get('issuerMode')==INTERMEDIATE and old.get('issuerMode')!=INTERMEDIATE:fields+=SUCCESSION_FIELDS
+    keep=lambda i:{k:v for k,v in i.items() if k not in fields}
     if keep(old)!=keep(new) or new['generation']!=old['generation']+1:raise Refusal('advance changes only generation (+1) and the verified controller image')
 
 def source_name(generation):return 'cmtc-issuer-approval-g'+str(generation)
@@ -314,8 +387,43 @@ class Publisher:
             c.update(baseline=baseline,deploymentUID=meta(d)['uid']);self.s.save()
         if d['spec']['template'] not in (c['baseline'],c.get('active')):raise Refusal('unowned Deployment template')
         return d
+    def intermediate_evidence(self,cluster):
+        """Public evidence that SPIRE signs under this exact SPIRE intermediate: no Secret is read.
+
+        The pinned Certificate is Ready; its CertificateRequest of the current revision holds the certificate
+        and the mesh root ConfigMap holds the pinned root; the ClusterIssuer signs from that Certificate's
+        Secret; SPIRE's server.conf names that ClusterIssuer."""
+        api=self.apis[cluster];name=cluster+'-spire-intermediate';cm=self.a.cert_manager_namespace
+        c=api.get('/apis/cert-manager.io/v1/namespaces/'+cm+'/certificates/'+name);m=meta(c);st=c.get('status',{})
+        if m['uid']!=self.a.intermediate_pins[cluster]:raise Refusal('SPIRE intermediate Certificate UID differs from its pin')
+        ref=c['spec'].get('issuerRef',{})
+        if c['spec'].get('isCA') is not True or ref!={'name':self.a.root_issuer,'kind':'ClusterIssuer','group':'cert-manager.io'}:raise Refusal('SPIRE intermediate is not a CA from the mesh root issuer')
+        if not any(x.get('type')=='Ready' and x.get('status')=='True' for x in st.get('conditions',[])) or type(st.get('revision')) is not int:raise Refusal('SPIRE intermediate Certificate is not Ready')
+        crs=[r for r in api.get('/apis/cert-manager.io/v1/namespaces/'+cm+'/certificaterequests')['items']
+             if any(o.get('kind')=='Certificate' and o.get('uid')==m['uid'] and o.get('controller') for o in r['metadata'].get('ownerReferences',[]))
+             and r['metadata'].get('annotations',{}).get('cert-manager.io/certificate-revision')==str(st['revision'])]
+        if len(crs)!=1:raise Refusal('expected exactly one CertificateRequest for the current intermediate revision')
+        cr=crs[0];meta(cr)
+        if cr['spec'].get('issuerRef')!=ref or not all(any(x.get('type')==t and x.get('status')=='True' for x in cr.get('status',{}).get('conditions',[])) for t in ('Approved','Ready')):raise Refusal('intermediate CertificateRequest is not approved and issued by the mesh root issuer')
+        import base64
+        intermediate=pem_text(base64.b64decode(cr['status']['certificate'],validate=True))
+        chain=self.q.certs(intermediate)
+        if len(chain)!=1 or stamp(chain[0].not_valid_after_utc)!=st.get('notAfter'):raise Refusal('issued intermediate differs from the Certificate status')
+        issuer=api.get('/apis/cert-manager.io/v1/clusterissuers/'+name);meta(issuer)
+        if issuer.get('spec')!={'ca':{'secretName':c['spec'].get('secretName')}}:raise Refusal('SPIRE intermediate ClusterIssuer does not sign from that Certificate')
+        root_cm=api.get('/api/v1/namespaces/'+NS+'/configmaps/'+self.a.root_configmap);meta(root_cm)
+        root=pem_text(root_cm.get('data',{}).get('ca.crt',''));roots=self.q.certs(root)
+        if len(roots)!=1 or self.q.sha(self.q.der(roots[0]))!=self.a.root_sha256:raise Refusal('mesh root ConfigMap differs from the root pin')
+        spire=api.get('/api/v1/namespaces/cilium-spire/configmaps/spire-server');meta(spire)
+        if spire_issuer_name(spire.get('data',{}).get('server.conf',''))!=name:raise Refusal('SPIRE does not request its CA from this intermediate')
+        return {'cluster':cluster,'source':'kubernetes-api-public-certificate-objects','protected':False,'observedAt':dt.datetime.now(dt.timezone.utc).isoformat(),
+                'certificateUID':m['uid'],'revision':st['revision'],'certificateRequestUID':meta(cr)['uid'],'intermediatePEM':intermediate,'rootPEM':root}
     def current_approval(self,check):
         """Mint fresh public proofs from both exact SPIRE servers and build the administered approval."""
+        if getattr(self.a,'issuer_mode',None)==INTERMEDIATE:
+            evidence={}
+            for cluster in sorted(self.apis):check(cluster);evidence[cluster]=self.intermediate_evidence(cluster)
+            return evidence,build_intermediate_approval(evidence,self.q,self.a.generation,dt.datetime.now(dt.timezone.utc),self.a.horizon)
         server_image=self.q.approved_server_image(getattr(self.a,'spire_server_image',self.q.SERVER_IMAGE))
         proofs={};parents={}
         for cluster in sorted(self.apis):
@@ -516,7 +624,8 @@ class Publisher:
             if live not in (step['from'],step.get('to'),step.get('fence')):raise Refusal('controller template drifted during an unfinished advance')
             return
         disabled=producer_disabled(live,self.s.data['owner'])
-        expected=enabled_template(disabled,self.s.data['owner'],cluster,source_name(previous),c['uids']['ConfigMap/'+source_name(previous)],c['uids']['ConfigMap/'+OUT],self.a.root_sha256,previous)
+        # The live producer still pins the previous generation's root; a succession advance changes it.
+        expected=enabled_template(disabled,self.s.data['owner'],cluster,source_name(previous),c['uids']['ConfigMap/'+source_name(previous)],c['uids']['ConfigMap/'+OUT],getattr(self.a,'previous_root_sha256',self.a.root_sha256),previous)
         if live!=expected:raise Refusal('live producer is not exactly the ledger previous generation')
         c['advance']={'generation':self.a.generation,'from':live,'disabled':disabled,'phase':'preflighted'};self.s.save()
     def advance_cluster(self,cluster,previous):
@@ -638,7 +747,11 @@ def prepared_pins(files,skis,clusters):
 def main():
     p=argparse.ArgumentParser(description=__doc__)
     for name in ('kubeconfig','state-dir','root-sha256','image','image-config','source-sha','pki-module','proof-module','publication-module'):p.add_argument('--'+name,required=True)
-    for name in ('cluster-pin','approval-pin','deployment-pin','node-pin'):p.add_argument('--'+name,action='append',required=True)
+    for name in ('cluster-pin','deployment-pin','node-pin'):p.add_argument('--'+name,action='append',required=True)
+    p.add_argument('--approval-pin',action='append',default=[],help='CLUSTER=UID of cert-manager/cmtc-spire-cluster-ca-approval (signer mode)')
+    p.add_argument('--spire-intermediate',action='store_true',help="Approve each cluster's <cluster>-spire-intermediate under the mesh root instead of SPIRE's active signer (issue #34)")
+    p.add_argument('--intermediate-pin',action='append',default=[],help='CLUSTER=UID of the Certificate cert-manager/<cluster>-spire-intermediate (with --spire-intermediate)')
+    p.add_argument('--root-issuer',default='cmtc-mesh-root');p.add_argument('--root-configmap',default='cmtc-mesh-root');p.add_argument('--cert-manager-namespace',default='cert-manager')
     p.add_argument('--server-image',dest='spire_server_image',default=None,help='Independent approved digest-qualified SPIRE server/CLI image; first verify source/config and all-node CRI imports')
     p.add_argument('--generation',type=int,required=True);p.add_argument('--horizon',type=int,default=3600)
     p.add_argument('--advance',action='store_true',help='Move the qualified live producer from generation N-1 to N; keeps the ledger owner, output and floors')
@@ -646,18 +759,32 @@ def main():
     p.add_argument('--prepared-issuer-ski',action='append',default=[],metavar='CLUSTER=HEX',help='Key identifier of that CA: the local_authority_id of SPIRE\'s "X509 CA prepared" log line')
     p.add_argument('--colima-profile',default='cmtc-cilium');p.add_argument('--prometheus-a',default='http://127.0.0.1:13000/api/datasources/proxy/uid/cmtc-prom');p.add_argument('--prometheus-b',default='http://127.0.0.1:19091')
     a=p.parse_args();clusters=['cmtc-a','cmtc-b']
-    a.cluster_pins=pairs(a.cluster_pin,clusters);a.approval_pins=pairs(a.approval_pin,clusters);a.deployment_pins=pairs(a.deployment_pin,clusters)
+    a.cluster_pins=pairs(a.cluster_pin,clusters);a.deployment_pins=pairs(a.deployment_pin,clusters)
+    if a.spire_intermediate:
+        if a.approval_pin or a.prepared_issuer or a.spire_server_image is not None:p.error('--spire-intermediate uses no SPIRE proof: no --approval-pin, --prepared-issuer or --server-image')
+        a.issuer_mode=INTERMEDIATE;a.intermediate_pins=pairs(a.intermediate_pin,clusters)
+    else:
+        if a.intermediate_pin:p.error('--intermediate-pin needs --spire-intermediate')
+        a.issuer_mode=None;a.approval_pins=pairs(a.approval_pin,clusters)
     a.node_pins=pairs(a.node_pin,[c+'/'+c+'-'+n for c in clusters for n in ('worker','control-plane')]);a.prometheus={'cmtc-a':a.prometheus_a,'cmtc-b':a.prometheus_b}
     a.prepared=prepared_pins(a.prepared_issuer,a.prepared_issuer_ski,clusters)
     if not re.fullmatch('[0-9a-f]{64}',a.root_sha256) or not re.fullmatch('sha256:[0-9a-f]{64}',a.image_config) or not re.fullmatch('[0-9a-f]{40}',a.source_sha):p.error('exact root/config/source pins required')
     pki=load(a.pki_module,'accepted_pki');q=load(a.proof_module,'accepted_public_proof');lab=load(a.publication_module,'accepted_publication_parser')
     # Refuse a wrong file or identifier before the ledger or the API is touched.
     for cluster,(raw,ski) in a.prepared.items():prepared_identity(q,cluster,raw,ski)
-    a.spire_server_image=q.approved_server_image(a.spire_server_image if a.spire_server_image is not None else q.SERVER_IMAGE)
-    identity={'spireServerImage':a.spire_server_image,'schemaVersion':1,'rootSHA256':a.root_sha256,'generation':a.generation,'clusterPins':a.cluster_pins,'approvalPins':a.approval_pins,'deploymentPins':a.deployment_pins,'nodePins':a.node_pins,'image':a.image,'imageConfig':a.image_config,'sourceRevision':a.source_sha}
+    identity={'schemaVersion':1,'rootSHA256':a.root_sha256,'generation':a.generation,'clusterPins':a.cluster_pins,'deploymentPins':a.deployment_pins,'nodePins':a.node_pins,'image':a.image,'imageConfig':a.image_config,'sourceRevision':a.source_sha}
+    if a.issuer_mode==INTERMEDIATE:identity.update(issuerMode=INTERMEDIATE,intermediatePins=a.intermediate_pins)
+    else:
+        a.spire_server_image=q.approved_server_image(a.spire_server_image if a.spire_server_image is not None else q.SERVER_IMAGE)
+        identity.update(spireServerImage=a.spire_server_image,approvalPins=a.approval_pins)
     with State(a.state_dir,pki) as state,contextlib.ExitStack() as stack:
         if a.advance:
             if state.data is None:raise Refusal('advance requires an existing qualified ledger')
+            # The previous generation's root, for the preflight: from the identity this advance replaces, or, on a
+            # resume after the identity was recorded, from the one before it.
+            recorded=state.data['identity']
+            before=recorded if recorded.get('generation')!=a.generation else (state.data.get('identityHistory') or [recorded])[-1]
+            a.previous_root_sha256=before['rootSHA256']
             if state.data.get('identity')!=identity:
                 advanced_identity(state.data['identity'],identity)
                 state.data.setdefault('identityHistory',[]).append(state.data['identity']);state.data['identity']=identity;state.save()
