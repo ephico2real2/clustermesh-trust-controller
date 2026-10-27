@@ -66,7 +66,6 @@ trust:
     # 3 years, renewed 1 year early, which covers the longest certificate it signs (ADR-011, Lifetimes).
     duration: 26280h
     renewBefore: 8760h
-  # Its approver-policy policy, and the SPIRE server's, are in charts/cmtc-mesh-pki (MESH_PKI.md, Approval).
   bundle:
     # The trust-manager Bundle, and the ConfigMap it writes (key ca.crt): the mesh root, read from the intermediate
     # Secret's ca.crt. Only that key is copied; trust-manager's watch still receives the whole Secret (ADR-011, Accepted

@@ -23,8 +23,9 @@ restart and reboot recovery. This is not a `Protected` claim.
   10:52Z (cmtc-b) and 10:54Z (cmtc-a). It was moved on demand with
   [`scripts/lab/spire/local_authority.py rotate`](scripts/lab/spire/local_authority.py); SPIRE rotates on its own
   from there.
-- cert-manager approval is by policy (approver-policy): every SPIRE intermediate and SPIRE CA request is approved by
-  its `CertificateRequestPolicy`.
+- cert-manager approves every request with its built-in approver (operator decision, 2026-10-27T16:25Z: trusted,
+  access-gated clusters, no extra approval layer). approver-policy and `charts/cmtc-mesh-pki` were removed
+  ([MESH_PKI.md](MESH_PKI.md), Approval).
 - Issuer approval generation 6 (`cmtc-system/cmtc-issuer-approval-g6`) pins each cluster's intermediate and the mesh
   root. It expires **2026-11-25T10:26:41Z**. No renewal is automated. At expiry ztunnel refuses every workload
   handshake (fail closed). The operator removed the host-side renewal job at 12:21Z ("this is lab"): no stopgap for

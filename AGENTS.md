@@ -29,6 +29,10 @@ Keep source, compiler and lab leases explicit. Preserve unrelated applications, 
 - Readiness, authenticated SPIRE responses, registrations, SVID validation, xDS ACKs and actual traffic protection are separate evidence. Keep the existing security gates and never infer `Protected` from a label or ACK.
 - For Grafana presentation, apply the user's [diagram-kit dashboard skill](https://github.com/ephico2real2/diagram-kit/blob/26b7c19791159929c76a264ea3d5274bef72e9f6/skill/dashboard/SKILL.md): inventory actual metrics, explain counter/window semantics, use fixed Tableau colours and lower legends, validate real queries, and inspect both-theme screenshots after load. Keep attempts, policy rejections, HTTP requests and TLS handshakes distinct; pie outcomes must partition one stated denominator without double counting.
 
+## Simplicity — no unrequested complexity (operator, 2026-10-27)
+
+We are building an automated system. Keep it as simple as the stated goal allows. The labs are trusted clusters: only trusted operators can reach them, so do not design against in-cluster users who can create Certificates, RBAC or other objects. Use platform defaults (for example, cert-manager's built-in auto-approval) unless the operator asks for something else. Do not add a component, controller, policy engine, webhook, gate script or approval step on your own initiative; ask in one line first. Before calling a setting "the design", check `git log -S` and the operator's decisions; an earlier agent's choice is not a requirement. Removing unrequested complexity is in scope.
+
 ## Grok adversarial review and Opus implementation
 
 For CMTC security increments, use Grok as an adversarial reviewer of the exact implemented commit. Give it the source SHA, complete diff, current failures and real test counts, prior fixes, lab state and ownership constraints. Require concrete failure sequences, technical rationale, complete implementation-ready patches, and complete deterministic negative and recovery tests. Separate demonstrated defects from assumptions. Keep Grok proposal-only unless the user assigns scoped source ownership.

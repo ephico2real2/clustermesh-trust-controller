@@ -44,21 +44,6 @@ EOF
     localhost:5001/*) bash scripts/lab/local-registry.sh nodes "$cluster" ;;
   esac
 done
-# helm --wait returns when approver-policy's Pod is Ready, before the API server can route to its webhook Service (CI,
-# 2026-10-27: "dial tcp ...:443: connect: no route to host" 50 ms later). A server-side dry run sends the request
-# through that webhook, so it succeeds only once the API server can call it.
-approver_policy_serving() {
-  local cluster=$1 control=$2 rendered error
-  rendered=$(helm template cmtc-mesh-pki charts/cmtc-mesh-pki -n cert-manager --set "clusterName=$cluster" \
-    --set "control=$control" --set "spire.trustDomain=$cluster.mesh.example" \
-    --api-versions policy.cert-manager.io/v1alpha1/CertificateRequestPolicy)
-  for _ in $(seq 60); do
-    error=$(kubectl --context "kind-$cluster" apply --dry-run=server -f - <<<"$rendered" 2>&1 >/dev/null) && return 0
-    sleep 2
-  done
-  echo "approver-policy's webhook in kind-$cluster still refuses a dry run after 120 s: $error" >&2
-  return 1
-}
 helm repo add jetstack https://charts.jetstack.io --force-update
 helm repo update
 for cluster in cmtc-a cmtc-b; do
@@ -69,18 +54,9 @@ for cluster in cmtc-a cmtc-b; do
     --set operator.replicas=1 --set hubble.enabled=false --set encryption.enabled=false \
     --wait --timeout 10m
   kubectl --context "kind-$cluster" wait nodes --all --for=condition=Ready --timeout=5m
-  # cert-manager's own approver is off: approver-policy approves a request only when a CertificateRequestPolicy allows it
-  # and the requester is bound to that policy (MESH_PKI.md, Approval). Every issuer below ships its policies.
+  # cert-manager's built-in approver approves every request (MESH_PKI.md, Approval).
   helm upgrade --install cert-manager jetstack/cert-manager --version v1.21.1 --namespace cert-manager --create-namespace \
-    --kube-context "kind-$cluster" --set crds.enabled=true --set disableAutoApproval=true --wait --timeout 5m
-  helm upgrade --install cert-manager-approver-policy oci://quay.io/jetstack/charts/cert-manager-approver-policy \
-    --version v0.28.0 -n cert-manager --kube-context "kind-$cluster" --wait --timeout 5m
-  # The mesh PKI's policies, before mesh-pki.sh and the CMTC chart wait for their Certificates; cmtc-a, the control
-  # cluster, mints the root.
-  control=false; [ "$cluster" = cmtc-a ] && control=true
-  approver_policy_serving "$cluster" "$control"
-  helm upgrade --install cmtc-mesh-pki charts/cmtc-mesh-pki -n cert-manager --kube-context "kind-$cluster" \
-    --set "clusterName=$cluster" --set "control=$control" --set "spire.trustDomain=$cluster.mesh.example" --wait --timeout 2m
+    --kube-context "kind-$cluster" --set crds.enabled=true --wait --timeout 5m
 done
 # Mesh PKI (ADR-011, MESH_PKI.md): cert-manager in cmtc-a, the control cluster, mints the 10-year mesh root; its Secret
 # is copied to cmtc-b; each cluster signs its own <cluster>-clustermesh-intermediate. The CMTC chart adds
@@ -133,8 +109,6 @@ for cluster in cmtc-a cmtc-b; do
   kubectl --context "kind-$cluster" -n cert-manager wait "certificate/$cluster-spire-intermediate" --for=condition=Ready --timeout=3m
   kubectl --context "kind-$cluster" wait bundle/cmtc-mesh-root --for=condition=Synced --timeout=2m
   kubectl --context "kind-$cluster" apply -f config/samples/namespace-mtls-policy.yaml
-  # A disposable lab: --issue also proves that the SPIRE server's own request is signed.
-  bash scripts/lab/pki/approval-check.sh --issue "$cluster"
 done
 python3 scripts/cilium/verify.py
 bash scripts/lab/monitoring.sh "$ip_a"

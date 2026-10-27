@@ -120,7 +120,8 @@ Run by the live-writer session under the operator's permission, cmtc-b first, th
 
 1. 10:19–10:21Z: approval by policy ([MESH_PKI.md, Approval](MESH_PKI.md#approval)). cert-manager runs
    `--controllers=-certificaterequests-approver`; every CertificateRequestPolicy is Ready; the four refusal cases of
-   `approval-check.sh` pass on each cluster. clustermesh-apiserver did not restart.
+   `approval-check.sh` pass on each cluster. clustermesh-apiserver did not restart. (Historical: the operator removed
+   approval by policy at 16:25Z; cert-manager's built-in approver approves every request again.)
 2. 10:25Z: the CMTC controller and node agent to `cmtc@sha256:113b94c09da2…e0ac312` (`5e5d6308f2`, `signsSPIRECA`).
 3. 10:26:40–10:27:13Z: `publish_issuers.py --spire-intermediate --advance --generation 6 --horizon 2505600` (29 days,
    one day under the controller's limit for clock skew). Both publications are `published`, `Validated`, generation 6,

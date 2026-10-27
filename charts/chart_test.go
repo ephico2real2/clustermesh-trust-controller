@@ -1,6 +1,5 @@
 // Package charts tests the CMTC Helm charts by rendering them with the helm CLI: the cmtc chart against config/default
-// (rendered by kubectl kustomize), the manifests it replaces, and cmtc-mesh-pki against the Certificates that
-// scripts/lab/pki/mesh-pki.sh renders.
+// (rendered by kubectl kustomize) and the manifests it replaces.
 package charts
 
 import (
@@ -22,7 +21,7 @@ type object = map[string]any
 // without this an edited template would reuse a cached pass.
 func trackInputs(t *testing.T) {
 	t.Helper()
-	for _, dir := range []string{"cmtc", "cmtc-mesh-pki", "../config/default", "../config/crd", "../config/lab-pki", "../scripts/lab/pki/mesh-pki.sh"} {
+	for _, dir := range []string{"cmtc", "../config/default", "../config/crd"} {
 		err := filepath.WalkDir(dir, func(path string, d fs.DirEntry, err error) error {
 			if err != nil || d.IsDir() {
 				return err
@@ -322,136 +321,4 @@ func TestTrustIsOwnedByTheChart(t *testing.T) {
 	certManagerOnly := []string{"--api-versions", "cert-manager.io/v1/Certificate"}
 	renderFailsWith(t, certManagerOnly, "trust.enabled needs cert-manager and trust-manager installed first (no trust.cert-manager.io/v1alpha1 Bundle API)",
 		"clusterName=cmtc-a", "image.tag=x", "trust.enabled=true")
-}
-
-// ztunnel trusts every CA the SPIRE intermediate signs, so each SPIRE policy must name its one requester and its one
-// shape, and the CMTC chart's intermediate must fit its policy.
-func TestSPIREApprovalBindsEachPolicyToItsRequester(t *testing.T) {
-	policyAPI := []string{"--api-versions", "policy.cert-manager.io/v1alpha1/CertificateRequestPolicy"}
-	got := renderChart(t, "cmtc-mesh-pki", "cert-manager", policyAPI, "clusterName=cmtc-a", "spire.trustDomain=cmtc-a.mesh.example")
-	required := func(value string) object { return object{"value": value, "required": true} }
-	for name, want := range map[string]struct {
-		allowed, selector object
-		maxDuration       string
-		requester         object
-	}{
-		"cmtc-a-spire-intermediate": {
-			allowed: object{"isCA": true, "commonName": required("cmtc-a SPIRE intermediate CA"),
-				"usages": []any{"digital signature", "key encipherment", "cert sign", "crl sign"}},
-			selector: object{"issuerRef": object{"name": "cmtc-mesh-root", "kind": "ClusterIssuer", "group": "cert-manager.io"},
-				"namespace": object{"matchNames": []any{"cert-manager"}}},
-			maxDuration: "26280h",
-			requester:   object{"kind": "ServiceAccount", "name": "cert-manager", "namespace": "cert-manager"},
-		},
-		"cmtc-a-spire-ca": {
-			allowed: object{"isCA": true, "commonName": required("cmtc-a SPIRE CA"),
-				"uris": object{"values": []any{"spiffe://cmtc-a.mesh.example"}, "required": true},
-				"subject": object{"organizations": object{"values": []any{"SPIRE"}}, "countries": object{"values": []any{"US"}},
-					"serialNumber": object{"value": "*"}},
-				"usages": []any{"cert sign", "crl sign"}},
-			selector: object{"issuerRef": object{"name": "cmtc-a-spire-intermediate", "kind": "ClusterIssuer", "group": "cert-manager.io"},
-				"namespace": object{"matchNames": []any{"cilium-spire"}}},
-			maxDuration: "48h",
-			requester:   object{"kind": "ServiceAccount", "name": "spire-server", "namespace": "cilium-spire"},
-		},
-	} {
-		spec := dig(got["CertificateRequestPolicy/"+name], "spec")
-		if !reflect.DeepEqual(dig(spec, "allowed"), want.allowed) {
-			t.Errorf("%s allowed:\ngot  %v\nwant %v", name, dig(spec, "allowed"), want.allowed)
-		}
-		if !reflect.DeepEqual(dig(spec, "selector"), want.selector) {
-			t.Errorf("%s selector: %v", name, dig(spec, "selector"))
-		}
-		if v := dig(spec, "constraints", "maxDuration"); v != want.maxDuration {
-			t.Errorf("%s maxDuration: %v, want %v", name, v, want.maxDuration)
-		}
-		rules := []any{object{"apiGroups": []any{"policy.cert-manager.io"}, "resources": []any{"certificaterequestpolicies"},
-			"verbs": []any{"use"}, "resourceNames": []any{name}}}
-		if r := got["ClusterRole/"+name+"-policy"]["rules"]; !reflect.DeepEqual(r, rules) {
-			t.Errorf("%s ClusterRole rules: %v", name, r)
-		}
-		if s := got["ClusterRoleBinding/"+name+"-policy"]["subjects"]; !reflect.DeepEqual(s, []any{want.requester}) {
-			t.Errorf("%s bound to %v, want only %v", name, s, want.requester)
-		}
-	}
-	trustAPIs := []string{"--api-versions", "cert-manager.io/v1/Certificate", "--api-versions", "trust.cert-manager.io/v1alpha1/Bundle"}
-	cmtc := renderWith(t, trustAPIs, "clusterName=cmtc-a", "image.tag=x", "trust.enabled=true")
-	for k := range cmtc {
-		if strings.HasPrefix(k, "CertificateRequestPolicy/") || strings.HasSuffix(k, "-policy") {
-			t.Errorf("the CMTC chart renders %s; every policy belongs to charts/cmtc-mesh-pki", k)
-		}
-	}
-	cert := dig(cmtc["Certificate/cmtc-a-spire-intermediate"], "spec").(object)
-	policy := dig(got["CertificateRequestPolicy/cmtc-a-spire-intermediate"], "spec").(object)
-	if dig(policy, "allowed", "commonName", "value") != cert["commonName"] || dig(policy, "allowed", "isCA") != cert["isCA"] ||
-		dig(policy, "selector", "issuerRef", "name") != dig(cert, "issuerRef", "name") ||
-		dig(policy, "constraints", "maxDuration") != cert["duration"] {
-		t.Errorf("the CMTC chart's SPIRE intermediate %v does not fit its policy %v", cert, policy)
-	}
-	renderChartFails(t, "cmtc-mesh-pki", "cert-manager", policyAPI, "spire.trustDomain is required", "clusterName=cmtc-a")
-}
-
-// Every Certificate that mesh-pki.sh renders is allowed by exactly the policy for its issuer, bound to cert-manager's
-// controller only, so the chart and the script cannot drift apart.
-func TestMeshPKIPoliciesAllowTheScriptsCertificates(t *testing.T) {
-	policyAPI := []string{"--api-versions", "policy.cert-manager.io/v1alpha1/CertificateRequestPolicy"}
-	member := renderChart(t, "cmtc-mesh-pki", "cert-manager", policyAPI, "clusterName=cmtc-b", "spire.trustDomain=cmtc-b.mesh.example")
-	if _, ok := member["CertificateRequestPolicy/cmtc-mesh-root-ca"]; ok {
-		t.Error("a member cluster must not allow the mesh root")
-	}
-	got := renderChart(t, "cmtc-mesh-pki", "cert-manager", policyAPI, "clusterName=cmtc-a", "control=true",
-		"spire.trustDomain=cmtc-a.mesh.example")
-	if len(got) != 15 {
-		t.Errorf("want 5 policies with a ClusterRole and a ClusterRoleBinding each, got %d objects", len(got))
-	}
-	script, err := run(t, "bash", "../scripts/lab/pki/mesh-pki.sh", "--render", "cmtc-a")
-	if err != nil {
-		t.Fatalf("mesh-pki.sh --render: %v\n%s", err, script)
-	}
-	issuers := map[string]string{"Issuer/cmtc-mesh-root-bootstrap": "cmtc-mesh-root-ca",
-		"ClusterIssuer/cmtc-mesh-root": "cmtc-a-clustermesh-intermediate"}
-	certificates := 0
-	for _, o := range parse(t, script) {
-		if o["kind"] != "Certificate" {
-			continue
-		}
-		certificates++
-		ref := dig(o, "spec", "issuerRef").(object)
-		name := issuers[ref["kind"].(string)+"/"+ref["name"].(string)]
-		spec := dig(got["CertificateRequestPolicy/"+name], "spec")
-		if spec == nil {
-			t.Errorf("%s: no policy for issuer %v", key(o), ref)
-			continue
-		}
-		if v := dig(spec, "allowed", "commonName"); !reflect.DeepEqual(v, object{"value": dig(o, "spec", "commonName"), "required": true}) {
-			t.Errorf("%s: policy %s commonName %v", key(o), name, v)
-		}
-		if dig(spec, "allowed", "isCA") != dig(o, "spec", "isCA") || dig(spec, "selector", "issuerRef", "name") != ref["name"] {
-			t.Errorf("%s: policy %s isCA or issuer differ", key(o), name)
-		}
-		if dig(spec, "constraints", "maxDuration") != dig(o, "spec", "duration") {
-			t.Errorf("%s: duration %v, policy %s allows %v", key(o), dig(o, "spec", "duration"), name, dig(spec, "constraints", "maxDuration"))
-		}
-	}
-	if certificates != 2 {
-		t.Errorf("mesh-pki.sh rendered %d Certificates for the control cluster, want the root and the intermediate", certificates)
-	}
-	leaves := dig(got["CertificateRequestPolicy/cmtc-a-clustermesh-leaves"], "spec").(object)
-	if dig(leaves, "allowed", "isCA") != false || dig(leaves, "selector", "issuerRef", "name") != "cmtc-a-clustermesh-intermediate" ||
-		!reflect.DeepEqual(dig(leaves, "selector", "namespace", "matchNames"), []any{"kube-system"}) {
-		t.Errorf("leaf policy: %v", leaves)
-	}
-	for _, name := range []string{"cmtc-mesh-root-ca", "cmtc-a-clustermesh-intermediate", "cmtc-a-clustermesh-leaves"} {
-		subjects := []any{object{"kind": "ServiceAccount", "name": "cert-manager", "namespace": "cert-manager"}}
-		if s := got["ClusterRoleBinding/"+name+"-policy"]["subjects"]; !reflect.DeepEqual(s, subjects) {
-			t.Errorf("%s bound to %v", name, s)
-		}
-		if r := dig(got["ClusterRole/"+name+"-policy"]["rules"].([]any)[0], "resourceNames"); !reflect.DeepEqual(r, []any{name}) {
-			t.Errorf("%s ClusterRole names %v", name, r)
-		}
-	}
-	renderChartFails(t, "cmtc-mesh-pki", "cert-manager", nil, "needs cert-manager approver-policy installed first", "clusterName=cmtc-a")
-	renderChartFails(t, "cmtc-mesh-pki", "cert-manager", policyAPI, "clusterName is required")
-	renderChartFails(t, "cmtc-mesh-pki", "cert-manager", policyAPI, "is not a DNS label", "clusterName=Bad_Name",
-		"spire.trustDomain=x.mesh.example")
 }

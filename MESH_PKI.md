@@ -8,7 +8,7 @@ and one cluster's CA can be renewed or revoked without touching the others.
 
 | State | ClusterMesh and ztunnel control-plane certificates | SPIRE workload certificates |
 |---|---|---|
-| Implemented | `config/lab-pki/*.yaml`, `scripts/lab/pki/mesh-pki.sh`, `charts/cmtc-mesh-pki` (approval), `charts/cmtc` (`trust.*`), `scripts/lab/up.sh` | Intermediates only (`<cluster>-spire-intermediate`) |
+| Implemented | `config/lab-pki/*.yaml`, `scripts/lab/pki/mesh-pki.sh`, `charts/cmtc` (`trust.*`), `scripts/lab/up.sh` | Intermediates only (`<cluster>-spire-intermediate`) |
 | Tested | Functional test on both labs: refusals, create, rerun, cross-cluster verification, SVID-depth chain ([run 2](docs/evidence/clustermesh-pki-20261026/mesh-pki-test/run-2-cluster-names/result.txt)) | The SVID-depth chain (test B4) verifies against the root |
 | Deployed | kind-cmtc-a and kind-cmtc-b, 2026-10-26 12:49-13:51Z ([cutover evidence](docs/evidence/clustermesh-pki-20261026/cutover/)) | Not deployed: SPIRE still signs under `CMTC Lab Organization Root` |
 | Traffic-qualified | Matrix after the cutover: 48 requests proven over mTLS, 12 denials as expected | Not yet |
@@ -216,84 +216,26 @@ The live labs were moved in place; the procedure as run is in the
 
 ## Approval
 
-cert-manager signs a CertificateRequest only after it is approved. Its built-in approver approves every request to a
-cert-manager issuer, so anyone who can create a CertificateRequest, or a Certificate that cert-manager turns into one,
-gets a certificate from any ClusterIssuer. That matters most for `<cluster>-spire-intermediate`: once the issuer
-approval pins that intermediate (issue #34), ztunnel trusts every CA it signs for the trust domain.
+cert-manager signs a CertificateRequest only after it is approved. The labs use cert-manager's built-in approver
+(`disableAutoApproval=false`, the chart default): it approves every request to a cert-manager issuer, so every
+Certificate is issued and renewed with no manual step.
 
-So the built-in approver is off (`disableAutoApproval=true`) and
-[approver-policy](https://cert-manager.io/docs/policy/approval/approver-policy/) v0.28.0 decides. A request is approved
-only when a CertificateRequestPolicy selects its issuer and namespace, the requester is bound to that policy with the
-verb `use`, and every field of the request is allowed. A request that no bound policy selects stays pending and is
-never signed (approver-policy records the event `Unprocessed`). A request that a bound policy refuses is `Denied`.
+Operator decision, 2026-10-27: access to the clusters is gated, and only trusted operators can reach them. That gate
+is the operator's to set, so the PKI adds no approval policy of its own. `scripts/lab/up.sh` installs cert-manager with
+its defaults (`crds.enabled=true` only).
 
-Every policy is rendered by Helm, so a bring-up installs the same policies each time:
+Deployed on both labs, 2026-10-27, cmtc-b 16:33Z to 16:36Z, then cmtc-a to 16:37Z: cert-manager v1.21.1 upgraded
+without `--controllers=-certificaterequests-approver`, trust-manager v0.25.0 upgraded without its policy, the releases
+`cmtc-mesh-pki` and `cert-manager-approver-policy` uninstalled and the CRD
+`certificaterequestpolicies.policy.cert-manager.io` deleted. After it every Certificate was Ready (11 on cmtc-a, 10 on
+cmtc-b), clustermesh-apiserver did not restart, and a new Certificate from a throwaway self-signed Issuer was
+`Approved=True`, reason `cert-manager.io`, and issued on each cluster.
 
-| Policy | Requester | Issuer, namespace | Allows | Helm source |
-|---|---|---|---|---|
-| `cmtc-mesh-root-ca` (control cluster) | cert-manager | Issuer `cmtc-mesh-root-bootstrap`, cert-manager | The root CA, 10 years | `charts/cmtc-mesh-pki` (`control: true`) |
-| `<cluster>-clustermesh-intermediate` | cert-manager | `cmtc-mesh-root`, cert-manager | The ClusterMesh intermediate, 3 years | `charts/cmtc-mesh-pki` |
-| `<cluster>-clustermesh-leaves` | cert-manager | `<cluster>-clustermesh-intermediate`, kube-system | No CA; the ClusterMesh API server and ztunnel names; 1 year | `charts/cmtc-mesh-pki` (`clusterMeshLeaves`) |
-| `<cluster>-spire-intermediate` | cert-manager | `cmtc-mesh-root`, cert-manager | The SPIRE intermediate, 3 years | `charts/cmtc-mesh-pki` (`spireIntermediate`) |
-| `<cluster>-spire-ca` | SPIRE server (`cilium-spire/spire-server`) | `<cluster>-spire-intermediate`, cilium-spire | A CA with the one URI `spiffe://<trust domain>` and SPIRE's `ca_subject`, 48 hours | `charts/cmtc-mesh-pki` (`spire`) |
-| `trust-manager-policy` | cert-manager | Issuer `trust-manager`, any namespace | trust-manager's webhook serving certificate | trust-manager chart, `app.webhook.tls.approverPolicy.enabled` in `config/lab/trust-manager/values.yaml` |
-
-`charts/cmtc-mesh-pki` holds every policy of ours. `scripts/lab/pki/mesh-pki.sh` still creates the root, the
-ClusterMesh intermediate and their issuers (it copies the root Secret between clusters); the CMTC chart creates the
-SPIRE intermediate (`trust.*`). The policies are kept out of the CMTC chart so that a cluster can switch to approval by
-policy without adopting the CMTC application into Helm. `TestSPIREApprovalBindsEachPolicyToItsRequester` checks that the
-CMTC chart's SPIRE intermediate fits its policy. trust-manager's chart has its own policy, so the lab uses that value
-instead of a manifest of ours.
-
-Install order (`scripts/lab/up.sh`), per cluster:
-
-1. cert-manager with `disableAutoApproval=true`.
-2. approver-policy v0.28.0 (`oci://quay.io/jetstack/charts/cert-manager-approver-policy`). It serves the policy CRD,
-   and its webhook uses a certificate it makes itself, so it needs no approval. `helm --wait` returns when its Pod is
-   Ready, which can be before the API server can route to its webhook (CI, 2026-10-27: `no route to host`), so
-   `up.sh` waits until a server-side dry run of the policies passes through the webhook.
-3. `charts/cmtc-mesh-pki`: `--set clusterName=<cluster>`, `--set spire.trustDomain=<cluster>.mesh.example`, and
-   `--set control=true` in the control cluster. It must come before `mesh-pki.sh` and the CMTC chart, which wait for
-   their Certificates; without the policies they stay pending and the waits time out.
-4. `mesh-pki.sh`, the Cilium ClusterMesh upgrade, trust-manager with its values file.
-5. The CMTC chart with `trust.enabled=true`.
-6. `scripts/lab/pki/approval-check.sh --issue <cluster>`.
-
-Two rules of approver-policy shape these policies (read in its v0.28.0 source, `pkg/internal/approver`):
-
-- A subject field the policy does not name is refused (`allowed/evaluator.go`, `SerialNumber` and `evaluateString`:
-  "no allowed value"). SPIRE puts the CA's random serial number into the subject (`serialNumber`,
-  `pkg/server/credtemplate/builder.go` of SPIRE v1.15.5). Without an allowance, every SPIRE CA request would be
-  `Denied`, SPIRE could not get its next CA, and workload mTLS would fail closed once its current CA expired. So
-  `<cluster>-spire-ca` allows any value there. The trust decision does not use that field: the URI SAN, the common
-  name, the organization and the country stay fixed.
-- With `maxDuration` set, a request without a duration is refused (`constraints/evaluator.go`). trust-manager's webhook
-  Certificate names no duration, and trust-manager's policy sets no `maxDuration`. The ClusterMesh leaves all name
-  theirs (the Cilium chart's `certValidityDuration`, 24 h in `config/lab/cilium/ztunnel.yaml`).
-
-A cluster administrator (`system:masters`) passes every `use` check and can still get any certificate. The policies
-limit service accounts and the Certificate objects that other users create.
-
-Check it: `scripts/lab/pki/approval-check.sh CLUSTER` submits SPIRE-shaped CA requests and expects `Denied` for another
-trust domain and `Unprocessed` from the wrong requester, namespace or issuer. It refuses to run while the built-in
-approver is on. `--issue` also expects the SPIRE server's own request to be signed; `up.sh` runs it on its new clusters.
-
-Status:
-
-- **Implemented** in the charts and `up.sh`.
-- **Tested** by the chart tests `TestSPIREApprovalBindsEachPolicyToItsRequester` and
-  `TestMeshPKIPoliciesAllowTheScriptsCertificates`. The second renders `mesh-pki.sh` and checks that each of its
-  Certificates is allowed by the policy for its issuer: same common name, same CA flag, its duration as the bound.
-- The CI bring-up of this change is to be checked.
-- **Not deployed:** the labs still use cert-manager's built-in approver. Moving them: install approver-policy and the
-  policies first, then turn the built-in approver off, one cluster at a time, then run `approval-check.sh` (without
-  `--issue`) and watch the next renewals.
-- The live labs' requests fit the policies (read 2026-10-27T06:20Z from the latest CertificateRequest of each live
-  Certificate, both clusters). The ClusterMesh API server certificates ask for 24 hours with no usages; their common
-  names are `admin-`, `local-`, `remote-<cluster>` and `clustermesh-apiserver.kube-system.svc`, and their SANs are in
-  `clusterMeshLeaves`. The ztunnel ADS, membership-writer and origin-reader certificates ask for 24 hours with
-  `digital signature` and `server auth` or `client auth`. The live SPIRE intermediates are 1 year (8760 h; they were
-  applied with kubectl, not by the CMTC chart), within the 3-year bound.
+Historical: from 2026-10-27T05:40Z (commit `4913117`, an agent session, not an operator request) the built-in approver
+was off and approver-policy v0.28.0 approved requests through CertificateRequestPolicies from `charts/cmtc-mesh-pki`,
+checked by `scripts/lab/pki/approval-check.sh`. The operator rejected that layer at 16:25Z; the chart, the policies and
+the script were removed. The SPIRE CA succession of 10:52Z to 10:55Z ran under those policies
+([LOCAL_ISSUER_PROFILE.md](LOCAL_ISSUER_PROFILE.md), Rollout).
 
 ## Trust bundle
 
@@ -436,10 +378,8 @@ ztunnel), one at a time with the traffic matrix after each.
    root pins together in `pins.json` and the issuer approval.
 5. Decide the SVID TTL (registrar 120 s today; SPIRE default 1 h; Istio 24 h).
 6. Fix the local source-membership watch (finding 1).
-7. Move the labs to approval by policy ([Approval](#approval)), one cluster at a time, before the issuer approval pins
-   `<cluster>-spire-intermediate`.
-8. Move the root, the ClusterMesh intermediate and their issuers from `mesh-pki.sh` into `charts/cmtc-mesh-pki`
-   (Helm-first, #33). The script then copies only the root Secret, which is instance data.
+7. Move the root, the ClusterMesh intermediate and their issuers from `mesh-pki.sh` into a chart (Helm-first, #33).
+   The script then copies only the root Secret, which is instance data.
 
 ## Diagram sources
 
