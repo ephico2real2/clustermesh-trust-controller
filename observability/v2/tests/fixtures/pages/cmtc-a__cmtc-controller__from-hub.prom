@@ -1,0 +1,40 @@
+# Fixture for metrics/contract.json: the cmtc-a controller's series read back from the hub at 2026-10-27T01:13:14Z (instant query per metric with job="cmtc", component="cmtc-controller"), the job's target labels removed and exported_cluster restored as cluster; HELP and TYPE from /api/v1/metadata. The pod proxy cannot reach the controller (NetworkPolicy cmtc-metrics).
+# HELP cmtc_namespace_decisions Current namespace policy decisions; selection is intent, not enforcement.
+# TYPE cmtc_namespace_decisions gauge
+cmtc_namespace_decisions{cluster="cmtc-a",decision="excluded"} 1
+cmtc_namespace_decisions{cluster="cmtc-a",decision="platform"} 10
+cmtc_namespace_decisions{cluster="cmtc-a",decision="selected"} 4
+cmtc_namespace_decisions{cluster="cmtc-a",decision="unselected"} 3
+# HELP cmtc_namespaces_eligible Observed non-platform namespaces, including explicit exclusions.
+# TYPE cmtc_namespaces_eligible gauge
+cmtc_namespaces_eligible{cluster="cmtc-a"} 8
+# HELP cmtc_namespaces_enrolled Namespaces carrying the enrollment label from any actor; not protection proof.
+# TYPE cmtc_namespaces_enrolled gauge
+cmtc_namespaces_enrolled{cluster="cmtc-a"} 1
+# HELP cmtc_namespaces_selected Namespaces selected by the current singleton policy; labels are not modified.
+# TYPE cmtc_namespaces_selected gauge
+cmtc_namespaces_selected{cluster="cmtc-a"} 4
+# HELP cmtc_enforcement_available Whether CMTC can verify required datapath enforcement; always zero in Observe mode.
+# TYPE cmtc_enforcement_available gauge
+cmtc_enforcement_available{cluster="cmtc-a"} 0
+# HELP cmtc_policy_evaluations_total Successful policy evaluations.
+# TYPE cmtc_policy_evaluations_total counter
+cmtc_policy_evaluations_total{cluster="cmtc-a"} 1087
+# HELP cmtc_issuer_profile_validation_attempts_total Source validation attempts including retries; not trust consumption or traffic enforcement.
+# TYPE cmtc_issuer_profile_validation_attempts_total counter
+cmtc_issuer_profile_validation_attempts_total{cluster="cmtc-a",result="accepted"} 6414
+# HELP cmtc_issuer_profile_publication_writes_total Output API write responses by state and acknowledged/error result; not exact globally unique publications.
+# TYPE cmtc_issuer_profile_publication_writes_total counter
+cmtc_issuer_profile_publication_writes_total{cluster="cmtc-a",result="acknowledged",state="published"} 3220
+# HELP cmtc_issuer_profile_source_checked_timestamp_seconds Last successful uncached source API read timestamp, whether or not validation succeeded.
+# TYPE cmtc_issuer_profile_source_checked_timestamp_seconds gauge
+cmtc_issuer_profile_source_checked_timestamp_seconds{cluster="cmtc-a"} 1793063585
+# HELP cmtc_issuer_profile_acknowledged_valid_until_timestamp_seconds Last API-acknowledged local publication lease expiry, zero after acknowledged withdrawal; not consumer readiness.
+# TYPE cmtc_issuer_profile_acknowledged_valid_until_timestamp_seconds gauge
+cmtc_issuer_profile_acknowledged_valid_until_timestamp_seconds{cluster="cmtc-a"} 1793063615
+# HELP controller_runtime_reconcile_errors_total Total number of reconciliation errors per controller
+# TYPE controller_runtime_reconcile_errors_total counter
+controller_runtime_reconcile_errors_total{controller="namespacemtlspolicy"} 0
+# HELP leader_election_master_status Gauge of if the reporting system is master of the relevant lease, 0 indicates backup, 1 indicates master. 'name' is the string used to identify the lease. Please make sure to group by name.
+# TYPE leader_election_master_status gauge
+leader_election_master_status{name="cmtc-controller.security.cmtc.io"} 1

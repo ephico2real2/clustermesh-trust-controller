@@ -1,0 +1,76 @@
+# Status: tested here with promtool 3.7.0 (rules/run-promtool.sh, tests/cmtc-controller.test.yaml). Not
+# deployed: the labs load no rule files (2026-10-27); the cmtc job they read is scraped today.
+#
+# The CMTC controller and node agent (job "cmtc"). Evaluated on the hub. The issuer-profile
+# lease alerts are evaluated in each cluster instead (rules/cmtc-local.rules.yaml), because a lapse
+# drains workload TLS and must not wait for remote_write.
+#
+# The CMTC exporters set their own "cluster" and "node" labels (internal/telemetry/metrics.go:15,
+# :30-31). The scrape sets the same names from discovery, so Prometheus keeps the target's values
+# and renames the exporter's to exported_cluster and exported_node. Rules use the target labels.
+groups:
+- name: cmtc-controller
+  rules:
+  # Namespace intent: selected by policy, labelled by any actor. Intent, not protection.
+  - record: cmtc:namespace_decisions:sum
+    expr: sum by (cluster, decision) (cmtc_namespace_decisions{job="cmtc", component="cmtc-controller"})
+
+  - alert: CMTCReconcileErrors
+    expr: |-
+      sum by (cluster, component, controller) (rate(controller_runtime_reconcile_errors_total{job="cmtc"}[5m])) > 0
+    for: 15m
+    labels:
+      severity: warning
+      owner: '{{ $labels.component }}'
+    annotations:
+      summary: 'The {{ $labels.controller }} reconciler of {{ $labels.component }} in {{ $labels.cluster }} has failed for 15 minutes'
+      runbook: 'Retries are not recovering. Read the controller log for the reconcile error; namespace decisions and issuer-profile publication may be out of date.'
+
+  - alert: CMTCNodeAgentNotReady
+    expr: cmtc_node_agent_ready{job="cmtc", component="cmtc-node-agent"} == 0
+    for: 5m
+    labels:
+      severity: warning
+      owner: cmtc-node-agent
+    annotations:
+      summary: 'The CMTC node agent on {{ $labels.node }} ({{ $labels.cluster }}) cannot read its node''s Pods'
+      runbook: 'Pod inventory for this node is stale. The agent observes only; enforcement is not affected. Check the agent log for API errors and its RBAC (list Pods with a spec.nodeName field selector).'
+
+  # The controller and agents name their cluster with --cluster-name (cmd/cmtc/main.go:40). A
+  # wrong name also reaches the issuer profile (main.go:53, LocalCluster). This compares the name
+  # each exporter claims with the cluster and node Prometheus discovered it in.
+  - alert: CMTCClusterNameMismatch
+    expr: |-
+      (
+        cmtc_node_agent_ready{job="cmtc"}
+        unless on (cluster, node, exported_cluster, exported_node)
+        label_replace(label_replace(cmtc_node_agent_ready{job="cmtc"}, "exported_cluster", "$1", "cluster", "(.*)"), "exported_node", "$1", "node", "(.*)")
+      )
+      or
+      (
+        cmtc_enforcement_available{job="cmtc"}
+        unless on (cluster, exported_cluster)
+        label_replace(cmtc_enforcement_available{job="cmtc"}, "exported_cluster", "$1", "cluster", "(.*)")
+      )
+    for: 5m
+    labels:
+      severity: warning
+      owner: '{{ $labels.component }}'
+    annotations:
+      summary: '{{ $labels.component }} scraped in {{ $labels.cluster }} on node {{ $labels.node }} reports itself as cluster {{ $labels.exported_cluster }}{{ with $labels.exported_node }}, node {{ . }}{{ end }}'
+      runbook: 'The process was started with the wrong --cluster-name or --node-name. Fix the Deployment or DaemonSet arguments; its metrics and its issuer-profile cluster are wrong until then.'
+
+  # Only a scraped controller can say it has no leader; a missing controller is
+  # CMTCControllerNotScraped.
+  - alert: CMTCControllerNoLeader
+    expr: |-
+      group by (cluster) (up{job="cmtc", component="cmtc-controller"} == 1)
+      unless on (cluster)
+      max by (cluster) (leader_election_master_status{job="cmtc", component="cmtc-controller", name="cmtc-controller.security.cmtc.io"} == 1)
+    for: 2m
+    labels:
+      severity: warning
+      owner: cmtc-controller
+    annotations:
+      summary: 'No CMTC controller replica in {{ $labels.cluster }} holds the leader lease'
+      runbook: 'Namespace decisions and issuer-profile publication have stopped. A handover takes at most 9 seconds after a crash (internal/controller/issuer_profile.go:23, :31-33); check the Lease cmtc-controller.security.cmtc.io in cmtc-system and the controller log.'

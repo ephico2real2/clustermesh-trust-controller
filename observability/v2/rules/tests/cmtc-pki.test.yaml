@@ -1,0 +1,170 @@
+# promtool test rules for rules/cmtc-pki.rules.yaml. Series shapes are those of the cert-manager v1.21.1 and
+# trust-manager pages captured on 2026-10-27T00:06:53Z (review inventory live-20261027/pages), with the
+# scrape labels deploy/ adds (job, cluster, node, namespace and pod of the exporter Pod; the Certificate's
+# own namespace renamed to exported_namespace). promtool starts at time 0: timestamps here are seconds
+# from the test start.
+rule_files:
+- ../cmtc-collection.rules.yaml
+- ../cmtc-pki.rules.yaml
+evaluation_interval: 1m
+group_eval_order:
+- cmtc-collection
+- cmtc-pki
+
+tests:
+- name: a ready intermediate far from renewal raises nothing
+  interval: 1m
+  input_series:
+  - series: 'certmanager_certificate_expiration_timestamp_seconds{job="cert-manager", component="cert-manager", cluster="cmtc-a", node="cmtc-a-worker", namespace="cert-manager", pod="cert-manager-689c4c5575-ws5z9", exported_namespace="cert-manager", name="cmtc-a-spire-intermediate", issuer_group="cert-manager.io", issuer_kind="ClusterIssuer", issuer_name="cmtc-mesh-root"}'
+    values: '31536000x30'
+  - series: 'certmanager_certificate_renewal_timestamp_seconds{job="cert-manager", component="cert-manager", cluster="cmtc-a", node="cmtc-a-worker", namespace="cert-manager", pod="cert-manager-689c4c5575-ws5z9", exported_namespace="cert-manager", name="cmtc-a-spire-intermediate", issuer_group="cert-manager.io", issuer_kind="ClusterIssuer", issuer_name="cmtc-mesh-root"}'
+    values: '28944000x30'
+  - series: 'certmanager_certificate_ready_status{job="cert-manager", component="cert-manager", cluster="cmtc-a", node="cmtc-a-worker", namespace="cert-manager", pod="cert-manager-689c4c5575-ws5z9", exported_namespace="cert-manager", name="cmtc-a-spire-intermediate", condition="True", issuer_group="cert-manager.io", issuer_kind="ClusterIssuer", issuer_name="cmtc-mesh-root"}'
+    values: '1x30'
+  - series: 'certmanager_certificate_ready_status{job="cert-manager", component="cert-manager", cluster="cmtc-a", node="cmtc-a-worker", namespace="cert-manager", pod="cert-manager-689c4c5575-ws5z9", exported_namespace="cert-manager", name="cmtc-a-spire-intermediate", condition="False", issuer_group="cert-manager.io", issuer_kind="ClusterIssuer", issuer_name="cmtc-mesh-root"}'
+    values: '0x30'
+  - series: 'up{job="cert-manager", component="cert-manager", cluster="cmtc-a", node="cmtc-a-worker", namespace="cert-manager", pod="cert-manager-689c4c5575-ws5z9"}'
+    values: '1x30'
+  - series: 'up{job="cert-manager", component="cert-manager", cluster="cmtc-b", node="cmtc-b-worker", namespace="cert-manager", pod="cert-manager-689c4c5575-477xj"}'
+    values: '1x30'
+  - series: 'up{job="trust-manager", component="trust-manager", cluster="cmtc-a", node="cmtc-a-worker", namespace="cert-manager", pod="trust-manager-64d55f948d-64494"}'
+    values: '1x30'
+  - series: 'up{job="trust-manager", component="trust-manager", cluster="cmtc-b", node="cmtc-b-worker", namespace="cert-manager", pod="trust-manager-64d55f948d-bmdj6"}'
+    values: '1x30'
+  promql_expr_test:
+  # One year minus 10 minutes at minute 10.
+  - expr: cmtc:certificate_expiry:seconds
+    eval_time: 10m
+    exp_samples:
+    - labels: 'cmtc:certificate_expiry:seconds{cluster="cmtc-a", exported_namespace="cert-manager", name="cmtc-a-spire-intermediate", issuer_name="cmtc-mesh-root"}'
+      value: 31535400
+  alert_rule_test:
+  - eval_time: 30m
+    alertname: CMTCCertificateNotReady
+    exp_alerts: []
+  - eval_time: 30m
+    alertname: CMTCCertificateRenewalOverdue
+    exp_alerts: []
+  - eval_time: 30m
+    alertname: CMTCCertificateExpiring
+    exp_alerts: []
+  - eval_time: 30m
+    alertname: CMTCCertManagerNotScraped
+    exp_alerts: []
+  - eval_time: 30m
+    alertname: CMTCTrustManagerNotScraped
+    exp_alerts: []
+
+# A 1-day ClusterMesh leaf whose renewal (due at minute 10) fails: the renewal time stays in the past and
+# the expiry comes closer. It is first overdue at minute 11 and fires 10 minutes later; at minute 46 less
+# than 15 minutes remain.
+- name: a failed renewal warns, then the expiry pages
+  interval: 1m
+  input_series:
+  - series: 'certmanager_certificate_renewal_timestamp_seconds{job="cert-manager", cluster="cmtc-b", namespace="cert-manager", pod="cert-manager-689c4c5575-477xj", exported_namespace="kube-system", name="clustermesh-apiserver-server-cert", issuer_group="cert-manager.io", issuer_kind="ClusterIssuer", issuer_name="cmtc-b-clustermesh-intermediate"}'
+    values: '600x60'
+  - series: 'certmanager_certificate_expiration_timestamp_seconds{job="cert-manager", cluster="cmtc-b", namespace="cert-manager", pod="cert-manager-689c4c5575-477xj", exported_namespace="kube-system", name="clustermesh-apiserver-server-cert", issuer_group="cert-manager.io", issuer_kind="ClusterIssuer", issuer_name="cmtc-b-clustermesh-intermediate"}'
+    values: '3600x60'
+  alert_rule_test:
+  - eval_time: 20m
+    alertname: CMTCCertificateRenewalOverdue
+    exp_alerts: []
+  - eval_time: 21m
+    alertname: CMTCCertificateRenewalOverdue
+    exp_alerts:
+    - exp_labels: {severity: warning, owner: cert-manager, cluster: cmtc-b, exported_namespace: kube-system, name: clustermesh-apiserver-server-cert}
+      exp_annotations:
+        summary: 'cert-manager in cmtc-b has not renewed kube-system/clustermesh-apiserver-server-cert, due since 1970-01-01 00:10:00 +0000 UTC'
+        runbook: 'The certificate still works until it expires (the trust dashboard shows the time left). Read the Certificate''s events and the cert-manager log for the failed CertificateRequest.'
+  # Minute 45: 900 s left, not below 900. Minute 46: 840 s left, pending. Minute 47: firing with 780 s.
+  - eval_time: 46m
+    alertname: CMTCCertificateExpiring
+    exp_alerts: []
+  - eval_time: 47m
+    alertname: CMTCCertificateExpiring
+    exp_alerts:
+    - exp_labels: {severity: critical, owner: cert-manager, cluster: cmtc-b, exported_namespace: kube-system, name: clustermesh-apiserver-server-cert, issuer_name: cmtc-b-clustermesh-intermediate}
+      exp_annotations:
+        summary: 'Certificate kube-system/clustermesh-apiserver-server-cert in cmtc-b expires in 13m 0s'
+        runbook: 'A negative value means it has expired: every TLS connection that presents it fails. Renew it now (cmctl renew), then find why the renewal failed (CMTCCertificateRenewalOverdue).'
+
+# A certificate that has never been issued reports expiration 0 and no renewal time: no expiry alert, but
+# its Ready condition is False.
+- name: a certificate that is not ready
+  interval: 1m
+  input_series:
+  - series: 'certmanager_certificate_expiration_timestamp_seconds{job="cert-manager", cluster="cmtc-a", namespace="cert-manager", pod="cert-manager-689c4c5575-ws5z9", exported_namespace="kube-system", name="cmtc-ztunnel-ads-server", issuer_group="cert-manager.io", issuer_kind="ClusterIssuer", issuer_name="cmtc-a-clustermesh-intermediate"}'
+    values: '0x20'
+  - series: 'certmanager_certificate_ready_status{job="cert-manager", cluster="cmtc-a", namespace="cert-manager", pod="cert-manager-689c4c5575-ws5z9", exported_namespace="kube-system", name="cmtc-ztunnel-ads-server", condition="False", issuer_group="cert-manager.io", issuer_kind="ClusterIssuer", issuer_name="cmtc-a-clustermesh-intermediate"}'
+    values: '1x20'
+  - series: 'certmanager_certificate_ready_status{job="cert-manager", cluster="cmtc-a", namespace="cert-manager", pod="cert-manager-689c4c5575-ws5z9", exported_namespace="kube-system", name="cmtc-ztunnel-ads-server", condition="True", issuer_group="cert-manager.io", issuer_kind="ClusterIssuer", issuer_name="cmtc-a-clustermesh-intermediate"}'
+    values: '0x20'
+  - series: 'certmanager_clusterissuer_ready_status{job="cert-manager", cluster="cmtc-a", namespace="cert-manager", pod="cert-manager-689c4c5575-ws5z9", name="cmtc-a-clustermesh-intermediate", condition="False"}'
+    values: '0 0 0 0 0 1x15'
+  - series: 'certmanager_clusterissuer_ready_status{job="cert-manager", cluster="cmtc-a", namespace="cert-manager", pod="cert-manager-689c4c5575-ws5z9", name="cmtc-a-clustermesh-intermediate", condition="True"}'
+    values: '1 1 1 1 1 0x15'
+  alert_rule_test:
+  - eval_time: 9m
+    alertname: CMTCCertificateNotReady
+    exp_alerts: []
+  - eval_time: 10m
+    alertname: CMTCCertificateNotReady
+    exp_alerts:
+    - exp_labels: {severity: warning, owner: cert-manager, cluster: cmtc-a, exported_namespace: kube-system, name: cmtc-ztunnel-ads-server, condition: 'False'}
+      exp_annotations:
+        summary: 'Certificate kube-system/cmtc-ztunnel-ads-server in cmtc-a is not Ready (False) for 10 minutes'
+        runbook: 'cert-manager cannot issue or renew it. Read the Certificate''s Ready condition and its latest CertificateRequest (kubectl describe certificate); check that its issuer is Ready (CMTCClusterIssuerNotReady).'
+  - eval_time: 10m
+    alertname: CMTCCertificateExpiring
+    exp_alerts: []
+  - eval_time: 14m
+    alertname: CMTCClusterIssuerNotReady
+    exp_alerts: []
+  - eval_time: 15m
+    alertname: CMTCClusterIssuerNotReady
+    exp_alerts:
+    - exp_labels: {severity: warning, owner: cert-manager, cluster: cmtc-a, name: cmtc-a-clustermesh-intermediate, condition: 'False'}
+      exp_annotations:
+        summary: 'ClusterIssuer cmtc-a-clustermesh-intermediate in cmtc-a is not Ready (False)'
+        runbook: 'Certificates and SPIRE CA requests signed by it cannot be issued. Check the issuer''s CA Secret in namespace cert-manager (MESH_PKI.md names each one) and its Ready condition.'
+
+# Bundle reconciles fail from minute 5 (one error a minute); cmtc-b has no trust-manager or cert-manager
+# target at all: unavailable, not healthy.
+- name: trust-manager keeps failing, and cmtc-b is not scraped
+  interval: 1m
+  input_series:
+  - series: 'controller_runtime_reconcile_errors_total{job="trust-manager", component="trust-manager", cluster="cmtc-a", namespace="cert-manager", pod="trust-manager-64d55f948d-64494", controller="bundles"}'
+    values: '0 0 0 0 0 1+1x30'
+  - series: 'up{job="trust-manager", component="trust-manager", cluster="cmtc-a", namespace="cert-manager", pod="trust-manager-64d55f948d-64494"}'
+    values: '1x35'
+  - series: 'up{job="cert-manager", component="cert-manager", cluster="cmtc-a", namespace="cert-manager", pod="cert-manager-689c4c5575-ws5z9"}'
+    values: '1x35'
+  alert_rule_test:
+  # The first error sample is at minute 5: the rate is above 0 from then, and the alert fires 15 minutes later.
+  - eval_time: 19m
+    alertname: CMTCTrustBundleReconcileFailing
+    exp_alerts: []
+  - eval_time: 20m
+    alertname: CMTCTrustBundleReconcileFailing
+    exp_alerts:
+    - exp_labels: {severity: warning, owner: trust-manager, cluster: cmtc-a}
+      exp_annotations:
+        summary: 'trust-manager in cmtc-a has failed to reconcile Bundles for 15 minutes'
+        runbook: 'The mesh root ConfigMap cmtc-mesh-root may be missing or stale in the namespaces labelled trust: enabled. Read the trust-manager log and the Bundle cmtc-mesh-root status.'
+  - eval_time: 4m
+    alertname: CMTCCertManagerNotScraped
+    exp_alerts: []
+  - eval_time: 5m
+    alertname: CMTCCertManagerNotScraped
+    exp_alerts:
+    - exp_labels: {severity: warning, owner: cert-manager, cluster: cmtc-b}
+      exp_annotations:
+        summary: 'No cert-manager scrape target in cmtc-b'
+        runbook: 'Certificate expiry and readiness panels are unavailable for this cluster, not healthy. Check the cert-manager controller Pod (port http-metrics 9402) and the cert-manager scrape job.'
+  - eval_time: 5m
+    alertname: CMTCTrustManagerNotScraped
+    exp_alerts:
+    - exp_labels: {severity: warning, owner: trust-manager, cluster: cmtc-b}
+      exp_annotations:
+        summary: 'No trust-manager scrape target in cmtc-b'
+        runbook: 'The Bundle reconcile panel is unavailable for this cluster, not healthy. Check the trust-manager Pod (port metrics 9402) and the trust-manager scrape job.'

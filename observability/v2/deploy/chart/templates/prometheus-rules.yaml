@@ -1,0 +1,37 @@
+{{- if .Values.rules.enabled }}
+{{- $files := include "cmtc-obs.ruleFiles" . | fromYaml }}
+{{- if not .Values.global.openshift }}
+{{- if .Values.hub.enabled }}
+# kind hub: the rule files of files/rules/ (copies of observability/v2/rules/), rendered by cmtc-obs.ruleFiles.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-prometheus-rules
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "cmtc-obs.labels" . | nindent 4 }}
+data:
+  {{- range $name, $content := $files }}
+  {{ $name }}: |
+    {{- $content | trimSuffix "\n" | nindent 4 }}
+  {{- end }}
+{{- end }}
+{{- else }}
+# OpenShift: every group of every rule file in one PrometheusRule. User workload monitoring's Thanos Ruler evaluates
+# it through Thanos Querier, which also holds the platform's CoreDNS, kubelet and kube-state-metrics series. The
+# rules read several namespaces: the release namespace must be listed in namespacesWithoutLabelEnforcement
+# (ConfigMap user-workload-monitoring-config), or every query is limited to this namespace.
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: {{ .Release.Name }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "cmtc-obs.labels" . | nindent 4 }}
+spec:
+  groups:
+    {{- range $name, $content := $files }}
+    {{- toYaml (fromYaml $content).groups | nindent 4 }}
+    {{- end }}
+{{- end }}
+{{- end }}

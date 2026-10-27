@@ -1,0 +1,141 @@
+# Status: tested here with promtool 3.7.0 (rules/run-promtool.sh, tests/spire-telemetry.test.yaml);
+# returns nothing on the labs. Needs source-patches/cmtc/0002 (a telemetry block in the SPIRE server.conf
+# and agent.conf that scripts/lab/spire/render_spire.py renders; no SPIRE code change), the spire-server
+# and spire-agent scrape jobs of deploy/ (values jobs.spireServer and jobs.spireAgent), and, for the CA
+# comparison, source-patches/cmtc/0001. Evaluated on the hub.
+#
+# SPIRE server 0f8fe4d681 (the deployed fork commit, docs/agile/DELIVERY_STATUS.md:43-44) sets, per trust
+# domain (pkg/common/telemetry/server/ca_manager.go:42-55 and :66-73):
+#   manager.x509_ca.rotate.expiration      the active CA's notAfter, at activation
+#                                          (pkg/server/ca/manager/manager.go:793, in activateX509CA)
+#   manager.x509_ca.rotate.max_expiration  the latest notAfter of the active and the prepared CA, at
+#                                          start, preparation and activation (manager.go:218, :324,
+#                                          :794, all through setX509CARotateMaxTTLGauge at :803-816)
+# The Prometheus names below are those keys joined by "_" under the "spire_server" prefix. They are
+# derived from source and were not scraped (SPIRE runs no telemetry on the lab): confirm them on the
+# first scrape before enabling these rules. The scrape adds "cluster", the cluster SPIRE runs in.
+#
+# The comparison is by notAfter: SPIRE gives each CA its own notAfter, 12 h apart on the lab, and
+# the approval's pins carry the same certificates. It is exact for SPIRE's own rotation; it cannot
+# tell two CAs with the same notAfter apart.
+groups:
+- name: cmtc-spire-proposed
+  rules:
+  # SPIRE's CA times, renamed to the approval_cluster they sign for.
+  - record: cmtc:spire_x509_ca_active_not_after:timestamp_seconds
+    expr: |-
+      label_replace(
+        max by (cluster) (spire_server_manager_x509_ca_rotate_expiration{job="spire-server"}),
+        "approval_cluster", "$1", "cluster", "(.*)"
+      )
+  - record: cmtc:spire_x509_ca_latest_not_after:timestamp_seconds
+    expr: |-
+      label_replace(
+        max by (cluster) (spire_server_manager_x509_ca_rotate_max_expiration{job="spire-server"}),
+        "approval_cluster", "$1", "cluster", "(.*)"
+      )
+
+  # SPIRE holds a CA (prepared, or already active) that expires after every issuer the approval in
+  # "cluster" pins for approval_cluster: that CA is not approved.
+  - alert: CMTCSPIRECANotApproved
+    expr: |-
+      (
+        max by (approval_cluster) (cmtc:spire_x509_ca_latest_not_after:timestamp_seconds)
+        - on (approval_cluster) group_right ()
+        max by (cluster, approval_cluster) (cmtc_issuer_profile_approved_issuer_not_after_timestamp_seconds{job="cmtc", component="cmtc-controller", position="newest"} > 0)
+      ) > 0
+    for: 5m
+    labels:
+      severity: warning
+      owner: spire-server
+    annotations:
+      summary: 'SPIRE of {{ $labels.approval_cluster }} holds a CA valid {{ $value | humanizeDuration }} past the newest issuer the approval in {{ $labels.cluster }} pins'
+      runbook: 'SPIRE prepared its next CA. Pin it in a new approval generation in every cluster before SPIRE activates it; CMTCIssuerSuccessionImminent gives the time left.'
+
+  # The CA SPIRE signs with now is neither of the pinned issuers: workload certificates of
+  # approval_cluster are refused by every ztunnel that uses the approval in "cluster".
+  - alert: CMTCSPIREActiveCANotApproved
+    expr: |-
+      (
+        max by (approval_cluster) (cmtc:spire_x509_ca_active_not_after:timestamp_seconds)
+        * on (approval_cluster) group_right ()
+        (group by (cluster, approval_cluster) (cmtc_issuer_profile_approved_issuer_not_after_timestamp_seconds{job="cmtc", component="cmtc-controller"} > 0))
+      )
+      unless on (cluster, approval_cluster)
+      (
+        max by (approval_cluster) (cmtc:spire_x509_ca_active_not_after:timestamp_seconds)
+        == on (approval_cluster) group_right ()
+        max by (cluster, approval_cluster, position) (cmtc_issuer_profile_approved_issuer_not_after_timestamp_seconds{job="cmtc", component="cmtc-controller"} > 0)
+      )
+    for: 1m
+    labels:
+      severity: critical
+      owner: spire-server
+    annotations:
+      summary: 'SPIRE of {{ $labels.approval_cluster }} signs with a CA that the approval in {{ $labels.cluster }} does not pin'
+      runbook: 'Workload mTLS is failing closed now (CMTCTrustProfileRefusingConnections shows the refusals). Publish an approval generation that pins the active CA; INCIDENT.md of 2026-10-26 records the re-bootstrap used once, by the operator''s decision.'
+
+  # SPIRE stopped reporting: the comparison above is unavailable, not passing.
+  - alert: CMTCSPIREServerNotScraped
+    expr: |-
+      cmtc:expected_cluster:info
+      unless on (cluster)
+      group by (cluster) (up{job="spire-server"} == 1)
+    for: 5m
+    labels:
+      severity: warning
+      owner: spire-server
+    annotations:
+      summary: 'No SPIRE server metrics from {{ $labels.cluster }}'
+      runbook: 'Check the spire-server Pod in cilium-spire, the telemetry block of server.conf (Prometheus port 9988) and the spire-server scrape job.'
+
+# Issue #42: ztunnel fetches workload certificates from the SPIRE agent in bursts (up to 4,317 a minute on
+# a node with 2 workloads, 2026-10-26 11:52-11:57Z). Each fetch is one DelegatedIdentity
+# SubscribeToX509SVIDs stream that ztunnel closes after the first answer (ztunnel 47956afb33
+# src/identity/spireclient.rs:227-245 and :258-304). The SPIRE agent counts every call of its admin API
+# when telemetry is on (SPIRE 0f8fe4d681 pkg/agent/api/endpoints.go wraps the server in
+# endpoints.Middleware, pkg/agent/endpoints/middleware.go:25 adds middleware.WithMetrics): the key is
+# rpc.delegated_identity.subscribe_to_x509_svids (pkg/common/api/middleware/names.go, makeNames) with a
+# "status" label, counted when the stream ends. The Prometheus sink may or may not add "_total" to the
+# counter name, so the selector accepts both; confirm the name on the first scrape.
+#
+# The expected rate is one fetch per workload per half SVID TTL: the registrar sets a 120 s TTL
+# (MESH_PKI.md open item 5), so about one a minute for each in-Pod proxy ztunnel runs on the node.
+- name: cmtc-spire-agent-proposed
+  rules:
+  - record: cmtc:spire_agent_svid_subscriptions:rate5m
+    expr: |-
+      sum by (cluster, node, status) (
+        rate({__name__=~"spire_agent_rpc_delegated_identity_subscribe_to_x509_svids(_total)?", job="spire-agent"}[5m])
+      )
+
+  # Fetches per in-Pod proxy on the node, per second. 0.5 a second is 30 a minute: 30 times the expected
+  # rate. A node with fetches and no in-Pod proxy counts as one proxy.
+  - alert: CMTCSVIDFetchStorm
+    expr: |-
+      sum by (cluster, node) (
+        rate({__name__=~"spire_agent_rpc_delegated_identity_subscribe_to_x509_svids(_total)?", job="spire-agent"}[5m])
+      )
+      / on (cluster, node)
+      clamp_min(max by (cluster, node) (workload_manager_active_proxy_count{job="ztunnel"}), 1)
+      > 0.5
+    for: 10m
+    labels:
+      severity: warning
+      owner: ztunnel
+    annotations:
+      summary: 'ztunnel on {{ $labels.node }} ({{ $labels.cluster }}) fetches {{ printf "%.1f" $value }} workload certificates a second per in-Pod proxy from the SPIRE agent'
+      runbook: 'The expected rate is about one a minute per workload (#42). Read the ztunnel log lines "Fetching PID for workload UID" on the node to find the workload and the caller; the SPIRE agent and the node CPU carry the load.'
+
+  - alert: CMTCSPIREAgentNotScraped
+    expr: |-
+      cmtc:expected_node:info
+      unless on (cluster, node)
+      group by (cluster, node) (up{job="spire-agent"})
+    for: 5m
+    labels:
+      severity: warning
+      owner: spire-agent
+    annotations:
+      summary: 'No SPIRE agent scrape target on node {{ $labels.node }} in {{ $labels.cluster }}'
+      runbook: 'Certificate fetch panels for this node are unavailable, not healthy. Check the spire-agent Pod in cilium-spire, the telemetry block of agent.conf (Prometheus port 9988) and the spire-agent scrape job.'

@@ -1,0 +1,455 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "contract.schema.json",
+  "title": "CMTC observability v2 metric contract",
+  "description": "One entry per metric that v2 collects, alerts on or draws, and per metric a CMTC component owns, keyed by name and component. Recording rules are not entries: tests read them from rules/. tests/test_contract.py enforces this schema (with the keywords tests/schema.py implements) and the cross-checks a schema cannot express.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "version",
+    "captured",
+    "statuses",
+    "collections",
+    "questions",
+    "stages",
+    "components",
+    "metrics"
+  ],
+  "properties": {
+    "version": {
+      "const": 2
+    },
+    "captured": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "at",
+        "how",
+        "pins"
+      ],
+      "properties": {
+        "at": {
+          "type": "string",
+          "pattern": "^20[0-9]{2}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$"
+        },
+        "how": {
+          "type": "string",
+          "minLength": 20
+        },
+        "pins": {
+          "type": "object",
+          "minProperties": 1,
+          "additionalProperties": {
+            "type": "string",
+            "minLength": 5
+          }
+        }
+      }
+    },
+    "statuses": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "emitted",
+        "needs-source-change",
+        "planned"
+      ],
+      "properties": {
+        "emitted": {
+          "type": "string",
+          "minLength": 20
+        },
+        "needs-source-change": {
+          "type": "string",
+          "minLength": 20
+        },
+        "planned": {
+          "type": "string",
+          "minLength": 20
+        }
+      }
+    },
+    "collections": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "scraped",
+        "not-scraped",
+        "dropped-at-ingestion",
+        "not-deployed",
+        "not-configured"
+      ],
+      "properties": {
+        "scraped": {
+          "type": "string",
+          "minLength": 20
+        },
+        "not-scraped": {
+          "type": "string",
+          "minLength": 20
+        },
+        "dropped-at-ingestion": {
+          "type": "string",
+          "minLength": 20
+        },
+        "not-deployed": {
+          "type": "string",
+          "minLength": 20
+        },
+        "not-configured": {
+          "type": "string",
+          "minLength": 20
+        }
+      }
+    },
+    "questions": {
+      "type": "object",
+      "minProperties": 3,
+      "additionalProperties": false,
+      "patternProperties": {
+        "^(OP|SEC|OC|DNS)[0-9]$": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "reader",
+            "question",
+            "sections"
+          ],
+          "properties": {
+            "reader": {
+              "enum": [
+                "operator",
+                "security reviewer",
+                "on-call"
+              ]
+            },
+            "question": {
+              "type": "string",
+              "minLength": 10
+            },
+            "sections": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "dashboard",
+                  "section"
+                ],
+                "properties": {
+                  "dashboard": {
+                    "type": "string",
+                    "pattern": "^cmtc-v2-[a-z-]+$"
+                  },
+                  "section": {
+                    "type": "string",
+                    "minLength": 5
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "stages": {
+      "type": "object",
+      "minProperties": 10,
+      "additionalProperties": {
+        "type": "string",
+        "minLength": 10
+      }
+    },
+    "components": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "job",
+          "owner",
+          "endpoint",
+          "deployed",
+          "scraped",
+          "pin",
+          "target_labels"
+        ],
+        "properties": {
+          "job": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9-]*$"
+          },
+          "owner": {
+            "type": "string",
+            "minLength": 5
+          },
+          "endpoint": {
+            "type": "string",
+            "minLength": 5
+          },
+          "deployed": {
+            "type": "boolean"
+          },
+          "scraped": {
+            "type": "boolean"
+          },
+          "pin": {
+            "type": "string",
+            "minLength": 3
+          },
+          "target_labels": {
+            "type": "array",
+            "minItems": 3,
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "pattern": "^[a-z_]+$"
+            }
+          },
+          "notes": {
+            "type": "string"
+          },
+          "dropped_labels": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "pattern": "^[a-z_]+$"
+            }
+          }
+        }
+      }
+    },
+    "metrics": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "name",
+          "type",
+          "unit",
+          "help",
+          "component",
+          "owner",
+          "source",
+          "status",
+          "collection",
+          "labels",
+          "cardinality",
+          "stage",
+          "questions",
+          "zero_initialized"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "pattern": "^[a-zA-Z_:][a-zA-Z0-9_:]*$"
+          },
+          "type": {
+            "enum": [
+              "counter",
+              "gauge",
+              "histogram",
+              "summary",
+              "info",
+              "unknown"
+            ]
+          },
+          "unit": {
+            "type": "string",
+            "minLength": 1
+          },
+          "help": {
+            "type": "string",
+            "minLength": 20
+          },
+          "component": {
+            "type": "string"
+          },
+          "owner": {
+            "type": "string",
+            "minLength": 5
+          },
+          "source": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "repo",
+              "ref",
+              "file",
+              "function"
+            ],
+            "dependentRequired": {
+              "line": [
+                "token"
+              ],
+              "token": [
+                "line"
+              ],
+              "occurrence": [
+                "token"
+              ]
+            },
+            "properties": {
+              "repo": {
+                "enum": [
+                  "cmtc",
+                  "cilium",
+                  "ztunnel",
+                  "spire",
+                  "coredns",
+                  "prometheus",
+                  "cadvisor",
+                  "cert-manager",
+                  "controller-runtime",
+                  "client_golang"
+                ]
+              },
+              "ref": {
+                "type": "string",
+                "minLength": 4
+              },
+              "file": {
+                "type": "string",
+                "minLength": 3
+              },
+              "function": {
+                "type": "string",
+                "minLength": 2
+              },
+              "line": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "token": {
+                "type": "string",
+                "minLength": 4
+              },
+              "occurrence": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "patch": {
+                "type": "string",
+                "pattern": "^source-patches/[a-z]+/[0-9]{4}-[a-z0-9-]+\\.patch$"
+              },
+              "change": {
+                "type": "string",
+                "minLength": 10
+              }
+            }
+          },
+          "status": {
+            "enum": [
+              "emitted",
+              "needs-source-change",
+              "planned"
+            ]
+          },
+          "collection": {
+            "enum": [
+              "scraped",
+              "not-scraped",
+              "dropped-at-ingestion",
+              "not-deployed",
+              "not-configured"
+            ]
+          },
+          "labels": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "name"
+              ],
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$"
+                },
+                "values": {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": {
+                    "type": "string"
+                  },
+                  "uniqueItems": true
+                },
+                "bound": {
+                  "type": "string",
+                  "minLength": 3
+                },
+                "proposed_values": {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": {
+                    "type": "string"
+                  },
+                  "uniqueItems": true
+                },
+                "proposed_by": {
+                  "type": "string",
+                  "pattern": "^source-patches/[a-z]+/[0-9]{4}-[a-z0-9-]+\\.patch$"
+                }
+              },
+              "dependentRequired": {
+                "proposed_values": [
+                  "proposed_by"
+                ],
+                "proposed_by": [
+                  "proposed_values"
+                ]
+              }
+            }
+          },
+          "cardinality": {
+            "type": "string",
+            "minLength": 3
+          },
+          "stage": {
+            "type": "string"
+          },
+          "questions": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string",
+              "pattern": "^(OP|SEC|OC|DNS)[0-9]$"
+            },
+            "uniqueItems": true
+          },
+          "zero_initialized": {
+            "type": "boolean"
+          },
+          "observed": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "fixture",
+              "series"
+            ],
+            "properties": {
+              "fixture": {
+                "type": "string",
+                "pattern": "^tests/fixtures/pages/[a-z0-9_.-]+\\.prom$"
+              },
+              "series": {
+                "type": "integer",
+                "minimum": 0
+              }
+            }
+          },
+          "notes": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

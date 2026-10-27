@@ -1,0 +1,4040 @@
+{
+  "version": 2,
+  "captured": {
+    "at": "2026-10-27T01:23:59Z",
+    "how": "Source lines read at the deployed refs below (checks/gen_contract_v2.py in the review directory); collection checked against the hub's name list at captured.at and the fixture pages in tests/fixtures/pages/.",
+    "pins": {
+      "cmtc": "1c3db28a58ac5b2618d4635a793683e735643d8f",
+      "cilium-agent": "a99264f0082afa5aba2c3502f3d9a0ca0d46a54d",
+      "ztunnel": "47956afb333b734df2af6a1b06dc5a8afaefbfe2",
+      "spire": "0f8fe4d6812c388be9ffd7b6d160e67b59163d95",
+      "coredns": "v1.14.2",
+      "cert-manager": "v1.21.1",
+      "trust-manager": "v0.25.0",
+      "kubelet": "v1.36.4",
+      "prometheus": "v3.7.0",
+      "measurement-plane": "contract.go sha256 922b4479ab315cf30f16fed2efddc887cc276e21b05a1d9f108a425600d9050f"
+    }
+  },
+  "statuses": {
+    "emitted": "The exporter at the deployed commit defines the metric; source names the file and line.",
+    "needs-source-change": "A source change adds the metric: source.patch names it in source-patches/ (UNEXECUTED), or source.change names the branch that carries it.",
+    "planned": "Defined here, with no source change written yet; the definition is the proposal."
+  },
+  "collections": {
+    "scraped": "In the hub Prometheus today (its /api/v1/label/__name__/values at captured.at).",
+    "not-scraped": "The exporter serves it (a fixture page shows it), but no job of the lab's Prometheus scrapes the exporter; the v2 job of deploy/ does.",
+    "dropped-at-ingestion": "A lab job scrapes the exporter and its metric_relabel_configs keep list drops the metric; the v2 keep list of deploy/ keeps it.",
+    "not-deployed": "The source that emits it is not deployed on the labs.",
+    "not-configured": "The deployed exporter can emit it, but its configuration does not enable it."
+  },
+  "questions": {
+    "OC1": {
+      "reader": "on-call",
+      "question": "Can these numbers be trusted: is every exporter scraped, and does the hub receive cmtc-b?",
+      "sections": [
+        {
+          "dashboard": "cmtc-v2-on-call",
+          "section": "Can these numbers be trusted?"
+        }
+      ]
+    },
+    "OC2": {
+      "reader": "on-call",
+      "question": "Which alerts are firing, and which component owns them?",
+      "sections": [
+        {
+          "dashboard": "cmtc-v2-on-call",
+          "section": "Which alerts are firing, and which component owns them?"
+        }
+      ]
+    },
+    "OC3": {
+      "reader": "on-call",
+      "question": "Will workload mTLS keep working: is the issuer profile published, does the approval pin the CA SPIRE signs with, and do connections succeed?",
+      "sections": [
+        {
+          "dashboard": "cmtc-v2-on-call",
+          "section": "Will workload mTLS keep working?"
+        },
+        {
+          "dashboard": "cmtc-v2-trust",
+          "section": "Is the issuer profile published and renewed?"
+        },
+        {
+          "dashboard": "cmtc-v2-trust",
+          "section": "Which issuers does each approval pin, and until when?"
+        },
+        {
+          "dashboard": "cmtc-v2-trust",
+          "section": "When does SPIRE switch to a CA the approval does not pin?"
+        },
+        {
+          "dashboard": "cmtc-v2-trust",
+          "section": "Did ztunnel apply the profile, or refuse connections over it?"
+        }
+      ]
+    },
+    "OC4": {
+      "reader": "on-call",
+      "question": "Are the mesh certificates and processes healthy?",
+      "sections": [
+        {
+          "dashboard": "cmtc-v2-on-call",
+          "section": "Are the mesh certificates and processes healthy?"
+        },
+        {
+          "dashboard": "cmtc-v2-trust",
+          "section": "Will the mesh certificates stay valid, and does the mesh root reach its namespaces?"
+        }
+      ]
+    },
+    "OC5": {
+      "reader": "on-call",
+      "question": "Do the service objectives hold?",
+      "sections": [
+        {
+          "dashboard": "cmtc-v2-on-call",
+          "section": "Do the service objectives hold?"
+        }
+      ]
+    },
+    "OP1": {
+      "reader": "operator",
+      "question": "Which namespaces are meant to be protected, and is every Required workload released?",
+      "sections": [
+        {
+          "dashboard": "cmtc-v2-protection",
+          "section": "Which namespaces are meant to be protected?"
+        },
+        {
+          "dashboard": "cmtc-v2-protection",
+          "section": "Is every Required workload released, and if not, why not?"
+        }
+      ]
+    },
+    "OP2": {
+      "reader": "operator",
+      "question": "Are Pods captured and enrolled in ztunnel?",
+      "sections": [
+        {
+          "dashboard": "cmtc-v2-protection",
+          "section": "Are Pods captured and enrolled?"
+        },
+        {
+          "dashboard": "cmtc-v2-on-call",
+          "section": "Are enrollment and policy publication working?"
+        }
+      ]
+    },
+    "OP3": {
+      "reader": "operator",
+      "question": "Which callers are admitted as policy sources, and are their plans published and acknowledged?",
+      "sections": [
+        {
+          "dashboard": "cmtc-v2-protection",
+          "section": "Which callers are admitted as policy sources?"
+        },
+        {
+          "dashboard": "cmtc-v2-protection",
+          "section": "Are plans published to ztunnel and acknowledged?"
+        }
+      ]
+    },
+    "OP4": {
+      "reader": "operator",
+      "question": "Does every node know the peer cluster's workloads?",
+      "sections": [
+        {
+          "dashboard": "cmtc-v2-protection",
+          "section": "Does every node know the peer cluster's workloads?"
+        }
+      ]
+    },
+    "OP5": {
+      "reader": "operator",
+      "question": "Is protected traffic flowing?",
+      "sections": [
+        {
+          "dashboard": "cmtc-v2-protection",
+          "section": "Is protected traffic flowing?"
+        }
+      ]
+    },
+    "OP6": {
+      "reader": "operator",
+      "question": "Do in-Pod proxies fetch workload certificates at a normal rate?",
+      "sections": [
+        {
+          "dashboard": "cmtc-v2-protection",
+          "section": "Do in-Pod proxies fetch workload certificates at a normal rate?"
+        }
+      ]
+    },
+    "SEC1": {
+      "reader": "security reviewer",
+      "question": "What did policy deny, and where?",
+      "sections": [
+        {
+          "dashboard": "cmtc-v2-security",
+          "section": "What did policy deny?"
+        },
+        {
+          "dashboard": "cmtc-v2-security",
+          "section": "What did the Cilium datapath drop?"
+        }
+      ]
+    },
+    "SEC2": {
+      "reader": "security reviewer",
+      "question": "What was revoked, was it presented, and how long did the revocation take?",
+      "sections": [
+        {
+          "dashboard": "cmtc-v2-security",
+          "section": "Which certificates were revoked, and were they presented?"
+        },
+        {
+          "dashboard": "cmtc-v2-security",
+          "section": "How long did a revocation take to reach ztunnel?"
+        }
+      ]
+    },
+    "SEC3": {
+      "reader": "security reviewer",
+      "question": "Were connections refused over trust or identity?",
+      "sections": [
+        {
+          "dashboard": "cmtc-v2-security",
+          "section": "Were connections refused over trust or identity?"
+        }
+      ]
+    },
+    "DNS1": {
+      "reader": "on-call",
+      "question": "Is CoreDNS answering, and with which response codes?",
+      "sections": [
+        {
+          "dashboard": "cmtc-v2-dns",
+          "section": "Is CoreDNS answering?"
+        },
+        {
+          "dashboard": "cmtc-v2-on-call",
+          "section": "Is DNS working?"
+        }
+      ]
+    },
+    "DNS2": {
+      "reader": "on-call",
+      "question": "Is CoreDNS fast, and are its upstream resolvers healthy?",
+      "sections": [
+        {
+          "dashboard": "cmtc-v2-dns",
+          "section": "Is CoreDNS fast?"
+        },
+        {
+          "dashboard": "cmtc-v2-dns",
+          "section": "Are the upstream resolvers healthy?"
+        }
+      ]
+    },
+    "DNS3": {
+      "reader": "on-call",
+      "question": "Do enrolled Pods get answers to their DNS queries, or are the queries dropped first?",
+      "sections": [
+        {
+          "dashboard": "cmtc-v2-dns",
+          "section": "Do enrolled Pods get answers?"
+        },
+        {
+          "dashboard": "cmtc-v2-dns",
+          "section": "Is Cilium dropping traffic?"
+        }
+      ]
+    }
+  },
+  "stages": {
+    "intent": "Namespace intent: which namespaces CMTC selects for protection (controller).",
+    "inventory": "What the node agent observes on its node; never enforcement.",
+    "enrollment": "Capture and ZDS enrollment of a Pod into ztunnel, and the in-Pod proxies that serve it.",
+    "identity": "SPIRE identity: the workload certificates ztunnel fetches and the CA that signs them.",
+    "admission": "Policy sources: the callers the Cilium agent admits into effective plans, local and remote.",
+    "publication": "Effective plans published to ztunnel over xDS, and ztunnel's acknowledgment.",
+    "release": "Quarantine release of a Required workload once its plan is acknowledged.",
+    "traffic": "Connection outcomes: opened, failed by response flag, TLS handshakes, datapath drops.",
+    "revocation": "Certificate revocation (CRL) and policy narrowing reaching the datapath.",
+    "trust": "The issuer profile CMTC publishes and the approval it pins (ADR-010).",
+    "pki": "The mesh PKI of ADR-011: cert-manager Certificates and the trust-manager Bundle.",
+    "dns": "DNS: CoreDNS on the server side, the measurement plane on the client side.",
+    "measurement": "The observe-only eBPF measurement plane of ADR-005 (#36) itself.",
+    "collection": "The measurement pipeline: scrapes, remote write to the hub, alert evaluation.",
+    "platform": "Process and controller health of the mesh components: PIDs, reconcile errors, leadership."
+  },
+  "components": {
+    "cmtc-controller": {
+      "job": "cmtc",
+      "owner": "CMTC controller, Deployment cmtc-controller in cmtc-system (leader-elected)",
+      "endpoint": "Pod port metrics (8080) /metrics over HTTP; NetworkPolicy cmtc-metrics admits only the monitoring namespaces (charts/cmtc/templates/networkpolicy.yaml)",
+      "deployed": true,
+      "scraped": true,
+      "pin": "CMTC 1c3db28a58, cmtc@sha256:e2f036654104 (docs/agile/DELIVERY_STATUS.md:45)",
+      "target_labels": [
+        "job",
+        "instance",
+        "cluster",
+        "node",
+        "namespace",
+        "pod",
+        "component"
+      ],
+      "notes": "The API server's pod proxy cannot reach it (the NetworkPolicy admits no node), so its fixture is read back from the hub."
+    },
+    "cmtc-node-agent": {
+      "job": "cmtc",
+      "owner": "CMTC node agent, DaemonSet cmtc-node-agent in cmtc-system",
+      "endpoint": "Pod port metrics (8080) /metrics over HTTP, same NetworkPolicy",
+      "deployed": true,
+      "scraped": true,
+      "pin": "CMTC 1c3db28a58, the controller's image",
+      "target_labels": [
+        "job",
+        "instance",
+        "cluster",
+        "node",
+        "namespace",
+        "pod",
+        "component"
+      ],
+      "notes": "Exports the measurement plane of #36 once that branch merges."
+    },
+    "cilium-agent": {
+      "job": "cilium-native",
+      "owner": "Cilium agent (fork), DaemonSet cilium in kube-system",
+      "endpoint": "hostNetwork port prometheus (9962) /metrics over HTTP",
+      "deployed": true,
+      "scraped": true,
+      "pin": "Cilium fork a99264f008, cilium-dev@sha256:708656877bb2 (docs/agile/DELIVERY_STATUS.md:39)",
+      "target_labels": [
+        "job",
+        "instance",
+        "cluster",
+        "node",
+        "namespace",
+        "pod",
+        "component"
+      ],
+      "notes": "The lab job keeps only cilium_ztunnel_.*|cmtc_.* (a hand patch, not in scripts/lab/monitoring.py) and labels the component cilium; the v2 job labels it cilium-agent."
+    },
+    "ztunnel": {
+      "job": "ztunnel",
+      "owner": "ztunnel (fork), DaemonSet ztunnel-cilium in kube-system",
+      "endpoint": "Pod IP port 15020 /stats/prometheus over HTTP (the container declares no port)",
+      "deployed": true,
+      "scraped": false,
+      "pin": "ztunnel fork 47956afb33, cmtc-ztunnel@sha256:cf4c4d2e5957 (docs/agile/DELIVERY_STATUS.md:42)",
+      "target_labels": [
+        "job",
+        "instance",
+        "cluster",
+        "node",
+        "namespace",
+        "pod",
+        "component"
+      ],
+      "notes": "scripts/lab/monitoring.py defines a ztunnel job; the live configuration of both labs has none.",
+      "dropped_labels": [
+        "source_region",
+        "source_zone",
+        "destination_region",
+        "destination_zone"
+      ]
+    },
+    "coredns": {
+      "job": "coredns",
+      "owner": "CoreDNS, Deployment coredns in kube-system (k8s-app=kube-dns)",
+      "endpoint": "Pod port metrics (9153) /metrics over HTTP",
+      "deployed": true,
+      "scraped": false,
+      "pin": "registry.k8s.io/coredns/coredns:v1.14.2",
+      "target_labels": [
+        "job",
+        "instance",
+        "cluster",
+        "node",
+        "namespace",
+        "pod",
+        "component"
+      ]
+    },
+    "cert-manager": {
+      "job": "cert-manager",
+      "owner": "cert-manager controller, Deployment cert-manager in cert-manager",
+      "endpoint": "Pod port http-metrics (9402) /metrics over HTTP",
+      "deployed": true,
+      "scraped": false,
+      "pin": "quay.io/jetstack/cert-manager-controller:v1.21.1",
+      "target_labels": [
+        "job",
+        "instance",
+        "cluster",
+        "node",
+        "namespace",
+        "pod",
+        "component"
+      ]
+    },
+    "trust-manager": {
+      "job": "trust-manager",
+      "owner": "trust-manager, Deployment trust-manager in cert-manager",
+      "endpoint": "Pod port 9402 /metrics over HTTP",
+      "deployed": true,
+      "scraped": false,
+      "pin": "trust-manager v0.25.0 (config/lab/trust-manager/values.yaml:9-10)",
+      "target_labels": [
+        "job",
+        "instance",
+        "cluster",
+        "node",
+        "namespace",
+        "pod",
+        "component"
+      ]
+    },
+    "kubelet": {
+      "job": "cadvisor",
+      "owner": "kubelet's embedded cAdvisor, on every node",
+      "endpoint": "node port 10250 /metrics/cadvisor over HTTPS, bearer token with nodes/metrics",
+      "deployed": true,
+      "scraped": false,
+      "pin": "kubelet v1.36.4 (cAdvisor v0.56.2, go.mod:32)",
+      "target_labels": [
+        "job",
+        "instance",
+        "cluster",
+        "node",
+        "component"
+      ],
+      "dropped_labels": [
+        "id",
+        "image",
+        "name"
+      ]
+    },
+    "prometheus": {
+      "job": "prometheus",
+      "owner": "Prometheus of each cluster (monitoring namespace)",
+      "endpoint": "localhost:9090 /metrics over HTTP",
+      "deployed": true,
+      "scraped": false,
+      "pin": "prom/prometheus:v3.7.0 (sha256:29c1e0b48ad8)",
+      "target_labels": [
+        "job",
+        "instance",
+        "cluster",
+        "node",
+        "namespace",
+        "pod",
+        "component"
+      ],
+      "notes": "Also the evaluator of the rules: up and ALERTS are its own series."
+    },
+    "spire-server": {
+      "job": "spire-server",
+      "owner": "SPIRE server (fork), StatefulSet spire-server in cilium-spire",
+      "endpoint": "none: server.conf has no telemetry block; source-patches/cmtc/0002 adds Prometheus on 9988, the container port prom",
+      "deployed": true,
+      "scraped": false,
+      "pin": "SPIRE fork 0f8fe4d681, cmtc-spire-server@sha256:5d125886ba75 (docs/agile/DELIVERY_STATUS.md:44)",
+      "target_labels": [
+        "job",
+        "instance",
+        "cluster",
+        "node",
+        "namespace",
+        "pod",
+        "component"
+      ]
+    },
+    "spire-agent": {
+      "job": "spire-agent",
+      "owner": "SPIRE agent (fork), DaemonSet spire-agent in cilium-spire",
+      "endpoint": "none: agent.conf has no telemetry block; source-patches/cmtc/0002 adds Prometheus on 9988, the container port prom",
+      "deployed": true,
+      "scraped": false,
+      "pin": "SPIRE fork 0f8fe4d681, cmtc-spire-agent@sha256:c2d1cbc74d38 (docs/agile/DELIVERY_STATUS.md:43)",
+      "target_labels": [
+        "job",
+        "instance",
+        "cluster",
+        "node",
+        "namespace",
+        "pod",
+        "component"
+      ]
+    }
+  },
+  "metrics": [
+    {
+      "name": "cmtc_namespace_decisions",
+      "type": "gauge",
+      "unit": "namespaces",
+      "help": "Current namespace policy decisions by decision; selection is intent, not enforcement.",
+      "component": "cmtc-controller",
+      "owner": "CMTC controller, Deployment cmtc-controller in cmtc-system (leader-elected)",
+      "source": {
+        "repo": "cmtc",
+        "ref": "1c3db28a58",
+        "file": "internal/telemetry/metrics.go",
+        "function": "telemetry.New",
+        "line": 20,
+        "token": "\"cmtc_namespace_decisions\""
+      },
+      "status": "emitted",
+      "collection": "scraped",
+      "labels": [
+        {
+          "name": "cluster",
+          "bound": "constant label: the --cluster-name flag, one value per process"
+        },
+        {
+          "name": "decision",
+          "values": [
+            "selected",
+            "excluded",
+            "platform",
+            "unselected"
+          ]
+        }
+      ],
+      "cardinality": "4 per cluster",
+      "stage": "intent",
+      "questions": [
+        "OP1"
+      ],
+      "zero_initialized": true,
+      "observed": {
+        "fixture": "tests/fixtures/pages/cmtc-a__cmtc-controller__from-hub.prom",
+        "series": 4
+      }
+    },
+    {
+      "name": "cmtc_namespaces_eligible",
+      "type": "gauge",
+      "unit": "namespaces",
+      "help": "Observed non-platform namespaces, including explicit exclusions.",
+      "component": "cmtc-controller",
+      "owner": "CMTC controller, Deployment cmtc-controller in cmtc-system (leader-elected)",
+      "source": {
+        "repo": "cmtc",
+        "ref": "1c3db28a58",
+        "file": "internal/telemetry/metrics.go",
+        "function": "telemetry.New",
+        "line": 21,
+        "token": "\"cmtc_namespaces_eligible\""
+      },
+      "status": "emitted",
+      "collection": "scraped",
+      "labels": [
+        {
+          "name": "cluster",
+          "bound": "constant label: the --cluster-name flag, one value per process"
+        }
+      ],
+      "cardinality": "1 per cluster",
+      "stage": "intent",
+      "questions": [
+        "OP1"
+      ],
+      "zero_initialized": true,
+      "observed": {
+        "fixture": "tests/fixtures/pages/cmtc-a__cmtc-controller__from-hub.prom",
+        "series": 1
+      }
+    },
+    {
+      "name": "cmtc_namespaces_enrolled",
+      "type": "gauge",
+      "unit": "namespaces",
+      "help": "Namespaces carrying the enrollment label from any actor; not protection proof.",
+      "component": "cmtc-controller",
+      "owner": "CMTC controller, Deployment cmtc-controller in cmtc-system (leader-elected)",
+      "source": {
+        "repo": "cmtc",
+        "ref": "1c3db28a58",
+        "file": "internal/telemetry/metrics.go",
+        "function": "telemetry.New",
+        "line": 22,
+        "token": "\"cmtc_namespaces_enrolled\""
+      },
+      "status": "emitted",
+      "collection": "scraped",
+      "labels": [
+        {
+          "name": "cluster",
+          "bound": "constant label: the --cluster-name flag, one value per process"
+        }
+      ],
+      "cardinality": "1 per cluster",
+      "stage": "intent",
+      "questions": [
+        "OP1"
+      ],
+      "zero_initialized": true,
+      "observed": {
+        "fixture": "tests/fixtures/pages/cmtc-a__cmtc-controller__from-hub.prom",
+        "series": 1
+      }
+    },
+    {
+      "name": "cmtc_namespaces_selected",
+      "type": "gauge",
+      "unit": "namespaces",
+      "help": "Namespaces selected by the current singleton policy; labels are not modified.",
+      "component": "cmtc-controller",
+      "owner": "CMTC controller, Deployment cmtc-controller in cmtc-system (leader-elected)",
+      "source": {
+        "repo": "cmtc",
+        "ref": "1c3db28a58",
+        "file": "internal/telemetry/metrics.go",
+        "function": "telemetry.New",
+        "line": 23,
+        "token": "\"cmtc_namespaces_selected\""
+      },
+      "status": "emitted",
+      "collection": "scraped",
+      "labels": [
+        {
+          "name": "cluster",
+          "bound": "constant label: the --cluster-name flag, one value per process"
+        }
+      ],
+      "cardinality": "1 per cluster",
+      "stage": "intent",
+      "questions": [
+        "OP1"
+      ],
+      "zero_initialized": true,
+      "observed": {
+        "fixture": "tests/fixtures/pages/cmtc-a__cmtc-controller__from-hub.prom",
+        "series": 1
+      }
+    },
+    {
+      "name": "cmtc_enforcement_available",
+      "type": "gauge",
+      "unit": "boolean",
+      "help": "Whether CMTC can verify required datapath enforcement; always 0 in Observe mode (SetDecisions).",
+      "component": "cmtc-controller",
+      "owner": "CMTC controller, Deployment cmtc-controller in cmtc-system (leader-elected)",
+      "source": {
+        "repo": "cmtc",
+        "ref": "1c3db28a58",
+        "file": "internal/telemetry/metrics.go",
+        "function": "telemetry.New",
+        "line": 24,
+        "token": "\"cmtc_enforcement_available\""
+      },
+      "status": "emitted",
+      "collection": "scraped",
+      "labels": [
+        {
+          "name": "cluster",
+          "bound": "constant label: the --cluster-name flag, one value per process"
+        }
+      ],
+      "cardinality": "1 per cluster",
+      "stage": "intent",
+      "questions": [
+        "OP1"
+      ],
+      "zero_initialized": true,
+      "observed": {
+        "fixture": "tests/fixtures/pages/cmtc-a__cmtc-controller__from-hub.prom",
+        "series": 1
+      },
+      "notes": "Always 0 at 1c3db28a58: a panel must never read it as a protection verdict."
+    },
+    {
+      "name": "cmtc_policy_evaluations_total",
+      "type": "counter",
+      "unit": "evaluations",
+      "help": "Successful policy evaluations.",
+      "component": "cmtc-controller",
+      "owner": "CMTC controller, Deployment cmtc-controller in cmtc-system (leader-elected)",
+      "source": {
+        "repo": "cmtc",
+        "ref": "1c3db28a58",
+        "file": "internal/telemetry/metrics.go",
+        "function": "telemetry.New",
+        "line": 25,
+        "token": "\"cmtc_policy_evaluations_total\""
+      },
+      "status": "emitted",
+      "collection": "scraped",
+      "labels": [
+        {
+          "name": "cluster",
+          "bound": "constant label: the --cluster-name flag, one value per process"
+        }
+      ],
+      "cardinality": "1 per cluster",
+      "stage": "intent",
+      "questions": [
+        "OP1"
+      ],
+      "zero_initialized": true,
+      "observed": {
+        "fixture": "tests/fixtures/pages/cmtc-a__cmtc-controller__from-hub.prom",
+        "series": 1
+      },
+      "notes": "Owned by CMTC; no v2 panel draws it. Kept so that a stalled controller loop is visible in Explore."
+    },
+    {
+      "name": "cmtc_issuer_profile_validation_attempts_total",
+      "type": "counter",
+      "unit": "attempts",
+      "help": "Source validation attempts including retries; not trust consumption or traffic enforcement.",
+      "component": "cmtc-controller",
+      "owner": "CMTC controller, Deployment cmtc-controller in cmtc-system (leader-elected)",
+      "source": {
+        "repo": "cmtc",
+        "ref": "1c3db28a58",
+        "file": "internal/trustprofile/metrics.go",
+        "function": "trustprofile.NewMetrics",
+        "line": 19,
+        "token": "\"cmtc_issuer_profile_validation_attempts_total\""
+      },
+      "status": "emitted",
+      "collection": "scraped",
+      "labels": [
+        {
+          "name": "cluster",
+          "bound": "constant label: the --cluster-name flag, one value per process"
+        },
+        {
+          "name": "result",
+          "values": [
+            "accepted",
+            "rejected",
+            "unavailable"
+          ]
+        }
+      ],
+      "cardinality": "3 per cluster",
+      "stage": "trust",
+      "questions": [
+        "OC3"
+      ],
+      "zero_initialized": false,
+      "observed": {
+        "fixture": "tests/fixtures/pages/cmtc-a__cmtc-controller__from-hub.prom",
+        "series": 1
+      }
+    },
+    {
+      "name": "cmtc_issuer_profile_publication_writes_total",
+      "type": "counter",
+      "unit": "writes",
+      "help": "Output API write responses by state and acknowledged/error result; not exact globally unique publications.",
+      "component": "cmtc-controller",
+      "owner": "CMTC controller, Deployment cmtc-controller in cmtc-system (leader-elected)",
+      "source": {
+        "repo": "cmtc",
+        "ref": "1c3db28a58",
+        "file": "internal/trustprofile/metrics.go",
+        "function": "trustprofile.NewMetrics",
+        "line": 20,
+        "token": "\"cmtc_issuer_profile_publication_writes_total\""
+      },
+      "status": "emitted",
+      "collection": "scraped",
+      "labels": [
+        {
+          "name": "cluster",
+          "bound": "constant label: the --cluster-name flag, one value per process"
+        },
+        {
+          "name": "state",
+          "values": [
+            "published",
+            "withdrawn"
+          ]
+        },
+        {
+          "name": "result",
+          "values": [
+            "acknowledged",
+            "error"
+          ]
+        }
+      ],
+      "cardinality": "4 per cluster",
+      "stage": "trust",
+      "questions": [
+        "OC3"
+      ],
+      "zero_initialized": false,
+      "observed": {
+        "fixture": "tests/fixtures/pages/cmtc-a__cmtc-controller__from-hub.prom",
+        "series": 1
+      }
+    },
+    {
+      "name": "cmtc_issuer_profile_source_checked_timestamp_seconds",
+      "type": "gauge",
+      "unit": "seconds (Unix time)",
+      "help": "Last successful uncached source API read timestamp, whether or not validation succeeded.",
+      "component": "cmtc-controller",
+      "owner": "CMTC controller, Deployment cmtc-controller in cmtc-system (leader-elected)",
+      "source": {
+        "repo": "cmtc",
+        "ref": "1c3db28a58",
+        "file": "internal/trustprofile/metrics.go",
+        "function": "trustprofile.NewMetrics",
+        "line": 21,
+        "token": "\"cmtc_issuer_profile_source_checked_timestamp_seconds\""
+      },
+      "status": "emitted",
+      "collection": "scraped",
+      "labels": [
+        {
+          "name": "cluster",
+          "bound": "constant label: the --cluster-name flag, one value per process"
+        }
+      ],
+      "cardinality": "1 per cluster",
+      "stage": "trust",
+      "questions": [
+        "OC3"
+      ],
+      "zero_initialized": true,
+      "observed": {
+        "fixture": "tests/fixtures/pages/cmtc-a__cmtc-controller__from-hub.prom",
+        "series": 1
+      }
+    },
+    {
+      "name": "cmtc_issuer_profile_acknowledged_valid_until_timestamp_seconds",
+      "type": "gauge",
+      "unit": "seconds (Unix time)",
+      "help": "Last API-acknowledged local publication lease expiry, 0 after an acknowledged withdrawal; not consumer readiness.",
+      "component": "cmtc-controller",
+      "owner": "CMTC controller, Deployment cmtc-controller in cmtc-system (leader-elected)",
+      "source": {
+        "repo": "cmtc",
+        "ref": "1c3db28a58",
+        "file": "internal/trustprofile/metrics.go",
+        "function": "trustprofile.NewMetrics",
+        "line": 22,
+        "token": "\"cmtc_issuer_profile_acknowledged_valid_until_timestamp_seconds\""
+      },
+      "status": "emitted",
+      "collection": "scraped",
+      "labels": [
+        {
+          "name": "cluster",
+          "bound": "constant label: the --cluster-name flag, one value per process"
+        }
+      ],
+      "cardinality": "1 per cluster",
+      "stage": "trust",
+      "questions": [
+        "OC3",
+        "OC5"
+      ],
+      "zero_initialized": true,
+      "observed": {
+        "fixture": "tests/fixtures/pages/cmtc-a__cmtc-controller__from-hub.prom",
+        "series": 1
+      },
+      "notes": "Read 24 s of lease left during the outage of #34: a published profile is not working mTLS."
+    },
+    {
+      "name": "cmtc_issuer_profile_approval_generation",
+      "type": "gauge",
+      "unit": "generation",
+      "help": "Generation of the approval in the last API-acknowledged publication; zero after an acknowledged withdrawal or before the first publication.",
+      "component": "cmtc-controller",
+      "owner": "CMTC controller, Deployment cmtc-controller in cmtc-system (leader-elected)",
+      "source": {
+        "repo": "cmtc",
+        "ref": "1c3db28a58",
+        "file": "internal/trustprofile/metrics.go",
+        "function": "trustprofile.NewMetrics",
+        "patch": "source-patches/cmtc/0001-issuer-approval-metrics.patch"
+      },
+      "status": "needs-source-change",
+      "collection": "not-deployed",
+      "labels": [
+        {
+          "name": "cluster",
+          "bound": "constant label: the --cluster-name flag, one value per process"
+        }
+      ],
+      "cardinality": "1 per cluster",
+      "stage": "trust",
+      "questions": [
+        "OC3"
+      ],
+      "zero_initialized": true
+    },
+    {
+      "name": "cmtc_issuer_profile_approval_valid_until_timestamp_seconds",
+      "type": "gauge",
+      "unit": "seconds (Unix time)",
+      "help": "End of the approval in the last API-acknowledged publication: its expiresAt or the earliest notAfter it pins; zero when none is published.",
+      "component": "cmtc-controller",
+      "owner": "CMTC controller, Deployment cmtc-controller in cmtc-system (leader-elected)",
+      "source": {
+        "repo": "cmtc",
+        "ref": "1c3db28a58",
+        "file": "internal/trustprofile/metrics.go",
+        "function": "trustprofile.NewMetrics",
+        "patch": "source-patches/cmtc/0001-issuer-approval-metrics.patch"
+      },
+      "status": "needs-source-change",
+      "collection": "not-deployed",
+      "labels": [
+        {
+          "name": "cluster",
+          "bound": "constant label: the --cluster-name flag, one value per process"
+        }
+      ],
+      "cardinality": "1 per cluster",
+      "stage": "trust",
+      "questions": [
+        "OC3"
+      ],
+      "zero_initialized": true
+    },
+    {
+      "name": "cmtc_issuer_profile_approved_issuer_not_after_timestamp_seconds",
+      "type": "gauge",
+      "unit": "seconds (Unix time)",
+      "help": "notAfter of the newest and the oldest issuer the published approval pins for each of its clusters (a single issuer at both positions).",
+      "component": "cmtc-controller",
+      "owner": "CMTC controller, Deployment cmtc-controller in cmtc-system (leader-elected)",
+      "source": {
+        "repo": "cmtc",
+        "ref": "1c3db28a58",
+        "file": "internal/trustprofile/metrics.go",
+        "function": "trustprofile.NewMetrics",
+        "patch": "source-patches/cmtc/0001-issuer-approval-metrics.patch"
+      },
+      "status": "needs-source-change",
+      "collection": "not-deployed",
+      "labels": [
+        {
+          "name": "cluster",
+          "bound": "constant label: the --cluster-name flag, one value per process"
+        },
+        {
+          "name": "approval_cluster",
+          "bound": "a cluster ID of the published approval, at most 16 (internal/trustprofile/profile.go:300); the series exist while an approval is published"
+        },
+        {
+          "name": "position",
+          "values": [
+            "newest",
+            "oldest"
+          ]
+        }
+      ],
+      "cardinality": "at most 32 per cluster (16 clusters x 2 issuers)",
+      "stage": "trust",
+      "questions": [
+        "OC3"
+      ],
+      "zero_initialized": false
+    },
+    {
+      "name": "cmtc_issuer_profile_approved_issuer_not_before_timestamp_seconds",
+      "type": "gauge",
+      "unit": "seconds (Unix time)",
+      "help": "notBefore of the newest and the oldest issuer the published approval pins for each of its clusters (a single issuer at both positions).",
+      "component": "cmtc-controller",
+      "owner": "CMTC controller, Deployment cmtc-controller in cmtc-system (leader-elected)",
+      "source": {
+        "repo": "cmtc",
+        "ref": "1c3db28a58",
+        "file": "internal/trustprofile/metrics.go",
+        "function": "trustprofile.NewMetrics",
+        "patch": "source-patches/cmtc/0001-issuer-approval-metrics.patch"
+      },
+      "status": "needs-source-change",
+      "collection": "not-deployed",
+      "labels": [
+        {
+          "name": "cluster",
+          "bound": "constant label: the --cluster-name flag, one value per process"
+        },
+        {
+          "name": "approval_cluster",
+          "bound": "a cluster ID of the published approval, at most 16 (internal/trustprofile/profile.go:300); the series exist while an approval is published"
+        },
+        {
+          "name": "position",
+          "values": [
+            "newest",
+            "oldest"
+          ]
+        }
+      ],
+      "cardinality": "at most 32 per cluster",
+      "stage": "trust",
+      "questions": [
+        "OC3"
+      ],
+      "zero_initialized": false
+    },
+    {
+      "name": "cmtc_issuer_profile_publication_reason",
+      "type": "gauge",
+      "unit": "boolean",
+      "help": "1 for the reason of the producer's last publication decision, 0 for every other reason; Validated publishes, the others withdraw.",
+      "component": "cmtc-controller",
+      "owner": "CMTC controller, Deployment cmtc-controller in cmtc-system (leader-elected)",
+      "source": {
+        "repo": "cmtc",
+        "ref": "1c3db28a58",
+        "file": "internal/trustprofile/metrics.go",
+        "function": "trustprofile.NewMetrics",
+        "patch": "source-patches/cmtc/0001-issuer-approval-metrics.patch"
+      },
+      "status": "needs-source-change",
+      "collection": "not-deployed",
+      "labels": [
+        {
+          "name": "cluster",
+          "bound": "constant label: the --cluster-name flag, one value per process"
+        },
+        {
+          "name": "reason",
+          "values": [
+            "Validated",
+            "SourceInvalid",
+            "SourceExpired",
+            "SourceDeleted",
+            "SourceUnavailable",
+            "SourceUIDMismatch",
+            "SourceChanged",
+            "GenerationRollback"
+          ]
+        }
+      ],
+      "cardinality": "8 per cluster (trustprofile.Reasons)",
+      "stage": "trust",
+      "questions": [
+        "OC3"
+      ],
+      "zero_initialized": true
+    },
+    {
+      "name": "controller_runtime_reconcile_errors_total",
+      "type": "counter",
+      "unit": "errors",
+      "help": "Total number of reconciliation errors per controller (controller-runtime v0.24.1, CMTC go.mod:20).",
+      "component": "cmtc-controller",
+      "owner": "CMTC controller, Deployment cmtc-controller in cmtc-system (leader-elected)",
+      "source": {
+        "repo": "controller-runtime",
+        "ref": "v0.24.1",
+        "file": "pkg/internal/controller/metrics/metrics.go",
+        "function": "metrics (package var)",
+        "line": 40,
+        "token": "\"controller_runtime_reconcile_errors_total\""
+      },
+      "status": "emitted",
+      "collection": "scraped",
+      "labels": [
+        {
+          "name": "controller",
+          "bound": "one per controller-runtime controller of the process"
+        }
+      ],
+      "cardinality": "1 per controller",
+      "stage": "platform",
+      "questions": [
+        "OC4"
+      ],
+      "zero_initialized": true,
+      "observed": {
+        "fixture": "tests/fixtures/pages/cmtc-a__cmtc-controller__from-hub.prom",
+        "series": 1
+      }
+    },
+    {
+      "name": "leader_election_master_status",
+      "type": "gauge",
+      "unit": "boolean",
+      "help": "1 while this replica leads; the lease name is the leader election ID of cmd/cmtc/main.go.",
+      "component": "cmtc-controller",
+      "owner": "CMTC controller, Deployment cmtc-controller in cmtc-system (leader-elected)",
+      "source": {
+        "repo": "controller-runtime",
+        "ref": "v0.24.1",
+        "file": "pkg/metrics/leaderelection.go",
+        "function": "metrics (package var)",
+        "line": 14,
+        "token": "\"leader_election_master_status\""
+      },
+      "status": "emitted",
+      "collection": "scraped",
+      "labels": [
+        {
+          "name": "name",
+          "values": [
+            "cmtc-controller.security.cmtc.io"
+          ]
+        }
+      ],
+      "cardinality": "1 per controller replica",
+      "stage": "platform",
+      "questions": [
+        "OC4"
+      ],
+      "zero_initialized": false,
+      "observed": {
+        "fixture": "tests/fixtures/pages/cmtc-a__cmtc-controller__from-hub.prom",
+        "series": 1
+      }
+    },
+    {
+      "name": "cmtc_node_agent_ready",
+      "type": "gauge",
+      "unit": "boolean",
+      "help": "Successful local inventory observation; not enforcement readiness.",
+      "component": "cmtc-node-agent",
+      "owner": "CMTC node agent, DaemonSet cmtc-node-agent in cmtc-system",
+      "source": {
+        "repo": "cmtc",
+        "ref": "1c3db28a58",
+        "file": "internal/telemetry/metrics.go",
+        "function": "telemetry.New",
+        "line": 30,
+        "token": "\"cmtc_node_agent_ready\""
+      },
+      "status": "emitted",
+      "collection": "scraped",
+      "labels": [
+        {
+          "name": "cluster",
+          "bound": "constant label: the --cluster-name flag, one value per process"
+        },
+        {
+          "name": "node",
+          "bound": "constant label: the node the agent runs on, one value per process"
+        }
+      ],
+      "cardinality": "1 per node",
+      "stage": "inventory",
+      "questions": [
+        "OC1"
+      ],
+      "zero_initialized": true,
+      "observed": {
+        "fixture": "tests/fixtures/pages/cmtc-a__cmtc-node-agent__cmtc-a-control-plane.prom",
+        "series": 1
+      }
+    },
+    {
+      "name": "cmtc_pods_observed",
+      "type": "gauge",
+      "unit": "Pods",
+      "help": "Observed local Pods by network category; not protected Pod counts.",
+      "component": "cmtc-node-agent",
+      "owner": "CMTC node agent, DaemonSet cmtc-node-agent in cmtc-system",
+      "source": {
+        "repo": "cmtc",
+        "ref": "1c3db28a58",
+        "file": "internal/telemetry/metrics.go",
+        "function": "telemetry.New",
+        "line": 31,
+        "token": "\"cmtc_pods_observed\""
+      },
+      "status": "emitted",
+      "collection": "scraped",
+      "labels": [
+        {
+          "name": "cluster",
+          "bound": "constant label: the --cluster-name flag, one value per process"
+        },
+        {
+          "name": "node",
+          "bound": "constant label: the node the agent runs on, one value per process"
+        },
+        {
+          "name": "network",
+          "values": [
+            "pod",
+            "host"
+          ]
+        }
+      ],
+      "cardinality": "2 per node",
+      "stage": "inventory",
+      "questions": [
+        "OP2"
+      ],
+      "zero_initialized": false,
+      "observed": {
+        "fixture": "tests/fixtures/pages/cmtc-a__cmtc-node-agent__cmtc-a-control-plane.prom",
+        "series": 2
+      }
+    },
+    {
+      "name": "cmtc_measurement_ready",
+      "type": "gauge",
+      "unit": "boolean",
+      "help": "1 when the loader's snapshot is fresh, both programs are loaded and every required enrolled Pod is attached; never a verdict or a proof of mTLS.",
+      "component": "cmtc-node-agent",
+      "owner": "CMTC node agent, DaemonSet cmtc-node-agent in cmtc-system",
+      "source": {
+        "repo": "cmtc",
+        "ref": "feat/measurement-plane worktree of #36, uncommitted (contract.go sha256 922b4479ab31)",
+        "file": "internal/measurement/contract.go",
+        "function": "measurement (metric names)",
+        "line": 22,
+        "token": "\"cmtc_measurement_ready\"",
+        "change": "issue #36, branch feat/measurement-plane (not merged); names from internal/measurement/contract.go"
+      },
+      "status": "needs-source-change",
+      "collection": "not-deployed",
+      "labels": [
+        {
+          "name": "cluster",
+          "bound": "constant label: the --cluster-name flag, one value per process"
+        },
+        {
+          "name": "node",
+          "bound": "constant label: the node the agent runs on, one value per process"
+        }
+      ],
+      "cardinality": "1 per node",
+      "stage": "measurement",
+      "questions": [
+        "DNS3",
+        "OC1"
+      ],
+      "zero_initialized": true
+    },
+    {
+      "name": "cmtc_measurement_hook_available",
+      "type": "gauge",
+      "unit": "boolean",
+      "help": "1 when the loader has this hook.",
+      "component": "cmtc-node-agent",
+      "owner": "CMTC node agent, DaemonSet cmtc-node-agent in cmtc-system",
+      "source": {
+        "repo": "cmtc",
+        "ref": "feat/measurement-plane worktree of #36, uncommitted (contract.go sha256 922b4479ab31)",
+        "file": "internal/measurement/contract.go",
+        "function": "measurement (metric names)",
+        "line": 25,
+        "token": "\"cmtc_measurement_hook_available\"",
+        "change": "issue #36, branch feat/measurement-plane (not merged); names from internal/measurement/contract.go"
+      },
+      "status": "needs-source-change",
+      "collection": "not-deployed",
+      "labels": [
+        {
+          "name": "cluster",
+          "bound": "constant label: the --cluster-name flag, one value per process"
+        },
+        {
+          "name": "node",
+          "bound": "constant label: the node the agent runs on, one value per process"
+        },
+        {
+          "name": "hook",
+          "values": [
+            "cgroup_skb_egress",
+            "cgroup_skb_ingress",
+            "node_addresses",
+            "program_stats"
+          ]
+        }
+      ],
+      "cardinality": "4 per node",
+      "stage": "measurement",
+      "questions": [
+        "DNS3"
+      ],
+      "zero_initialized": true
+    },
+    {
+      "name": "cmtc_measurement_workloads",
+      "type": "gauge",
+      "unit": "Pods",
+      "help": "Enrolled Pods of the node by measurement state.",
+      "component": "cmtc-node-agent",
+      "owner": "CMTC node agent, DaemonSet cmtc-node-agent in cmtc-system",
+      "source": {
+        "repo": "cmtc",
+        "ref": "feat/measurement-plane worktree of #36, uncommitted (contract.go sha256 922b4479ab31)",
+        "file": "internal/measurement/contract.go",
+        "function": "measurement (metric names)",
+        "line": 27,
+        "token": "\"cmtc_measurement_workloads\"",
+        "change": "issue #36, branch feat/measurement-plane (not merged); names from internal/measurement/contract.go"
+      },
+      "status": "needs-source-change",
+      "collection": "not-deployed",
+      "labels": [
+        {
+          "name": "cluster",
+          "bound": "constant label: the --cluster-name flag, one value per process"
+        },
+        {
+          "name": "node",
+          "bound": "constant label: the node the agent runs on, one value per process"
+        },
+        {
+          "name": "state",
+          "values": [
+            "attached",
+            "waiting",
+            "unavailable"
+          ]
+        }
+      ],
+      "cardinality": "3 per node",
+      "stage": "measurement",
+      "questions": [
+        "DNS3"
+      ],
+      "zero_initialized": true
+    },
+    {
+      "name": "cmtc_measurement_packets_total",
+      "type": "counter",
+      "unit": "packets",
+      "help": "Packets of the enrolled Pods' sockets at the cgroup socket layer, before Cilium's egress gate.",
+      "component": "cmtc-node-agent",
+      "owner": "CMTC node agent, DaemonSet cmtc-node-agent in cmtc-system",
+      "source": {
+        "repo": "cmtc",
+        "ref": "feat/measurement-plane worktree of #36, uncommitted (contract.go sha256 922b4479ab31)",
+        "file": "internal/measurement/contract.go",
+        "function": "measurement (metric names)",
+        "line": 30,
+        "token": "\"cmtc_measurement_packets_total\"",
+        "change": "issue #36, branch feat/measurement-plane (not merged); names from internal/measurement/contract.go"
+      },
+      "status": "needs-source-change",
+      "collection": "not-deployed",
+      "labels": [
+        {
+          "name": "cluster",
+          "bound": "constant label: the --cluster-name flag, one value per process"
+        },
+        {
+          "name": "node",
+          "bound": "constant label: the node the agent runs on, one value per process"
+        },
+        {
+          "name": "namespace",
+          "bound": "namespaces with an enrolled Pod on the node, at most the node's Pods (MaxSlots 256); stored as exported_namespace"
+        },
+        {
+          "name": "direction",
+          "values": [
+            "egress",
+            "ingress"
+          ]
+        },
+        {
+          "name": "path",
+          "values": [
+            "loopback",
+            "pod_network"
+          ]
+        },
+        {
+          "name": "protocol",
+          "values": [
+            "tcp",
+            "udp",
+            "dns",
+            "icmp",
+            "fragment",
+            "other"
+          ]
+        }
+      ],
+      "cardinality": "24 per namespace on a node",
+      "stage": "measurement",
+      "questions": [
+        "OP5"
+      ],
+      "zero_initialized": false
+    },
+    {
+      "name": "cmtc_measurement_bytes_total",
+      "type": "counter",
+      "unit": "bytes",
+      "help": "Bytes of the packets of cmtc_measurement_packets_total.",
+      "component": "cmtc-node-agent",
+      "owner": "CMTC node agent, DaemonSet cmtc-node-agent in cmtc-system",
+      "source": {
+        "repo": "cmtc",
+        "ref": "feat/measurement-plane worktree of #36, uncommitted (contract.go sha256 922b4479ab31)",
+        "file": "internal/measurement/contract.go",
+        "function": "measurement (metric names)",
+        "line": 31,
+        "token": "\"cmtc_measurement_bytes_total\"",
+        "change": "issue #36, branch feat/measurement-plane (not merged); names from internal/measurement/contract.go"
+      },
+      "status": "needs-source-change",
+      "collection": "not-deployed",
+      "labels": [
+        {
+          "name": "cluster",
+          "bound": "constant label: the --cluster-name flag, one value per process"
+        },
+        {
+          "name": "node",
+          "bound": "constant label: the node the agent runs on, one value per process"
+        },
+        {
+          "name": "namespace",
+          "bound": "namespaces with an enrolled Pod on the node, at most the node's Pods (MaxSlots 256); stored as exported_namespace"
+        },
+        {
+          "name": "direction",
+          "values": [
+            "egress",
+            "ingress"
+          ]
+        },
+        {
+          "name": "path",
+          "values": [
+            "loopback",
+            "pod_network"
+          ]
+        },
+        {
+          "name": "protocol",
+          "values": [
+            "tcp",
+            "udp",
+            "dns",
+            "icmp",
+            "fragment",
+            "other"
+          ]
+        }
+      ],
+      "cardinality": "24 per namespace on a node",
+      "stage": "measurement",
+      "questions": [
+        "OP5"
+      ],
+      "zero_initialized": false
+    },
+    {
+      "name": "cmtc_measurement_dns_queries_total",
+      "type": "counter",
+      "unit": "queries",
+      "help": "Standard DNS queries the enrolled Pods sent, by transport and server locality.",
+      "component": "cmtc-node-agent",
+      "owner": "CMTC node agent, DaemonSet cmtc-node-agent in cmtc-system",
+      "source": {
+        "repo": "cmtc",
+        "ref": "feat/measurement-plane worktree of #36, uncommitted (contract.go sha256 922b4479ab31)",
+        "file": "internal/measurement/contract.go",
+        "function": "measurement (metric names)",
+        "line": 33,
+        "token": "\"cmtc_measurement_dns_queries_total\"",
+        "change": "issue #36, branch feat/measurement-plane (not merged); names from internal/measurement/contract.go"
+      },
+      "status": "needs-source-change",
+      "collection": "not-deployed",
+      "labels": [
+        {
+          "name": "cluster",
+          "bound": "constant label: the --cluster-name flag, one value per process"
+        },
+        {
+          "name": "node",
+          "bound": "constant label: the node the agent runs on, one value per process"
+        },
+        {
+          "name": "namespace",
+          "bound": "namespaces with an enrolled Pod on the node, at most the node's Pods (MaxSlots 256); stored as exported_namespace"
+        },
+        {
+          "name": "transport",
+          "values": [
+            "udp",
+            "tcp"
+          ]
+        },
+        {
+          "name": "locality",
+          "values": [
+            "in_pod",
+            "same_node",
+            "off_node"
+          ]
+        }
+      ],
+      "cardinality": "6 per namespace on a node",
+      "stage": "dns",
+      "questions": [
+        "DNS3"
+      ],
+      "zero_initialized": false
+    },
+    {
+      "name": "cmtc_measurement_dns_answers_total",
+      "type": "counter",
+      "unit": "answers",
+      "help": "DNS answers the enrolled Pods received, by transport, server locality and response code.",
+      "component": "cmtc-node-agent",
+      "owner": "CMTC node agent, DaemonSet cmtc-node-agent in cmtc-system",
+      "source": {
+        "repo": "cmtc",
+        "ref": "feat/measurement-plane worktree of #36, uncommitted (contract.go sha256 922b4479ab31)",
+        "file": "internal/measurement/contract.go",
+        "function": "measurement (metric names)",
+        "line": 35,
+        "token": "\"cmtc_measurement_dns_answers_total\"",
+        "change": "issue #36, branch feat/measurement-plane (not merged); names from internal/measurement/contract.go"
+      },
+      "status": "needs-source-change",
+      "collection": "not-deployed",
+      "labels": [
+        {
+          "name": "cluster",
+          "bound": "constant label: the --cluster-name flag, one value per process"
+        },
+        {
+          "name": "node",
+          "bound": "constant label: the node the agent runs on, one value per process"
+        },
+        {
+          "name": "namespace",
+          "bound": "namespaces with an enrolled Pod on the node, at most the node's Pods (MaxSlots 256); stored as exported_namespace"
+        },
+        {
+          "name": "transport",
+          "values": [
+            "udp",
+            "tcp"
+          ]
+        },
+        {
+          "name": "locality",
+          "values": [
+            "in_pod",
+            "same_node",
+            "off_node"
+          ]
+        },
+        {
+          "name": "rcode",
+          "values": [
+            "noerror",
+            "formerr",
+            "servfail",
+            "nxdomain",
+            "notimp",
+            "refused",
+            "other"
+          ]
+        }
+      ],
+      "cardinality": "42 per namespace on a node",
+      "stage": "dns",
+      "questions": [
+        "DNS3"
+      ],
+      "zero_initialized": false
+    },
+    {
+      "name": "cmtc_measurement_dns_answer_duration_seconds",
+      "type": "histogram",
+      "unit": "seconds",
+      "help": "Time from a DNS query to its answer on the same socket, DNS ID and transport; node-wide.",
+      "component": "cmtc-node-agent",
+      "owner": "CMTC node agent, DaemonSet cmtc-node-agent in cmtc-system",
+      "source": {
+        "repo": "cmtc",
+        "ref": "feat/measurement-plane worktree of #36, uncommitted (contract.go sha256 922b4479ab31)",
+        "file": "internal/measurement/contract.go",
+        "function": "measurement (metric names)",
+        "line": 37,
+        "token": "\"cmtc_measurement_dns_answer_duration_seconds\"",
+        "change": "issue #36, branch feat/measurement-plane (not merged); names from internal/measurement/contract.go"
+      },
+      "status": "needs-source-change",
+      "collection": "not-deployed",
+      "labels": [
+        {
+          "name": "cluster",
+          "bound": "constant label: the --cluster-name flag, one value per process"
+        },
+        {
+          "name": "node",
+          "bound": "constant label: the node the agent runs on, one value per process"
+        },
+        {
+          "name": "transport",
+          "values": [
+            "udp",
+            "tcp"
+          ]
+        },
+        {
+          "name": "locality",
+          "values": [
+            "in_pod",
+            "same_node",
+            "off_node"
+          ]
+        },
+        {
+          "name": "le",
+          "bound": "13 bounds, 0.0005 to 5 s (DNSDurationBuckets), and +Inf"
+        }
+      ],
+      "cardinality": "6 x 16 series per node (buckets, sum, count)",
+      "stage": "dns",
+      "questions": [
+        "DNS3"
+      ],
+      "zero_initialized": false
+    },
+    {
+      "name": "cmtc_measurement_dns_unmatched_answers_total",
+      "type": "counter",
+      "unit": "answers",
+      "help": "DNS answers with no waiting query.",
+      "component": "cmtc-node-agent",
+      "owner": "CMTC node agent, DaemonSet cmtc-node-agent in cmtc-system",
+      "source": {
+        "repo": "cmtc",
+        "ref": "feat/measurement-plane worktree of #36, uncommitted (contract.go sha256 922b4479ab31)",
+        "file": "internal/measurement/contract.go",
+        "function": "measurement (metric names)",
+        "line": 39,
+        "token": "\"cmtc_measurement_dns_unmatched_answers_total\"",
+        "change": "issue #36, branch feat/measurement-plane (not merged); names from internal/measurement/contract.go"
+      },
+      "status": "needs-source-change",
+      "collection": "not-deployed",
+      "labels": [
+        {
+          "name": "cluster",
+          "bound": "constant label: the --cluster-name flag, one value per process"
+        },
+        {
+          "name": "node",
+          "bound": "constant label: the node the agent runs on, one value per process"
+        },
+        {
+          "name": "transport",
+          "values": [
+            "udp",
+            "tcp"
+          ]
+        }
+      ],
+      "cardinality": "2 per node",
+      "stage": "dns",
+      "questions": [
+        "DNS3"
+      ],
+      "zero_initialized": false
+    },
+    {
+      "name": "cmtc_measurement_dns_pending_replaced_total",
+      "type": "counter",
+      "unit": "queries",
+      "help": "DNS queries sent again with an ID still waiting on the same socket, normally a retry.",
+      "component": "cmtc-node-agent",
+      "owner": "CMTC node agent, DaemonSet cmtc-node-agent in cmtc-system",
+      "source": {
+        "repo": "cmtc",
+        "ref": "feat/measurement-plane worktree of #36, uncommitted (contract.go sha256 922b4479ab31)",
+        "file": "internal/measurement/contract.go",
+        "function": "measurement (metric names)",
+        "line": 41,
+        "token": "\"cmtc_measurement_dns_pending_replaced_total\"",
+        "change": "issue #36, branch feat/measurement-plane (not merged); names from internal/measurement/contract.go"
+      },
+      "status": "needs-source-change",
+      "collection": "not-deployed",
+      "labels": [
+        {
+          "name": "cluster",
+          "bound": "constant label: the --cluster-name flag, one value per process"
+        },
+        {
+          "name": "node",
+          "bound": "constant label: the node the agent runs on, one value per process"
+        },
+        {
+          "name": "transport",
+          "values": [
+            "udp",
+            "tcp"
+          ]
+        }
+      ],
+      "cardinality": "2 per node",
+      "stage": "dns",
+      "questions": [
+        "DNS3"
+      ],
+      "zero_initialized": false
+    },
+    {
+      "name": "cmtc_measurement_program_run_seconds_total",
+      "type": "counter",
+      "unit": "seconds",
+      "help": "Kernel run time of the plane's programs; only while kernel.bpf_stats_enabled=1.",
+      "component": "cmtc-node-agent",
+      "owner": "CMTC node agent, DaemonSet cmtc-node-agent in cmtc-system",
+      "source": {
+        "repo": "cmtc",
+        "ref": "feat/measurement-plane worktree of #36, uncommitted (contract.go sha256 922b4479ab31)",
+        "file": "internal/measurement/contract.go",
+        "function": "measurement (metric names)",
+        "line": 44,
+        "token": "\"cmtc_measurement_program_run_seconds_total\"",
+        "change": "issue #36, branch feat/measurement-plane (not merged); names from internal/measurement/contract.go"
+      },
+      "status": "needs-source-change",
+      "collection": "not-deployed",
+      "labels": [
+        {
+          "name": "cluster",
+          "bound": "constant label: the --cluster-name flag, one value per process"
+        },
+        {
+          "name": "node",
+          "bound": "constant label: the node the agent runs on, one value per process"
+        },
+        {
+          "name": "direction",
+          "values": [
+            "egress",
+            "ingress"
+          ]
+        }
+      ],
+      "cardinality": "2 per node",
+      "stage": "measurement",
+      "questions": [
+        "OC4"
+      ],
+      "zero_initialized": false
+    },
+    {
+      "name": "cmtc_measurement_program_runs_total",
+      "type": "counter",
+      "unit": "runs",
+      "help": "Kernel run count of the plane's programs; only while kernel.bpf_stats_enabled=1.",
+      "component": "cmtc-node-agent",
+      "owner": "CMTC node agent, DaemonSet cmtc-node-agent in cmtc-system",
+      "source": {
+        "repo": "cmtc",
+        "ref": "feat/measurement-plane worktree of #36, uncommitted (contract.go sha256 922b4479ab31)",
+        "file": "internal/measurement/contract.go",
+        "function": "measurement (metric names)",
+        "line": 45,
+        "token": "\"cmtc_measurement_program_runs_total\"",
+        "change": "issue #36, branch feat/measurement-plane (not merged); names from internal/measurement/contract.go"
+      },
+      "status": "needs-source-change",
+      "collection": "not-deployed",
+      "labels": [
+        {
+          "name": "cluster",
+          "bound": "constant label: the --cluster-name flag, one value per process"
+        },
+        {
+          "name": "node",
+          "bound": "constant label: the node the agent runs on, one value per process"
+        },
+        {
+          "name": "direction",
+          "values": [
+            "egress",
+            "ingress"
+          ]
+        }
+      ],
+      "cardinality": "2 per node",
+      "stage": "measurement",
+      "questions": [
+        "OC4"
+      ],
+      "zero_initialized": false
+    },
+    {
+      "name": "cilium_ztunnel_xds_effective_policy_events_total",
+      "type": "counter",
+      "unit": "events",
+      "help": "Effective policy publication and quarantine release events by event (effective_policy.go: o.event).",
+      "component": "cilium-agent",
+      "owner": "Cilium agent (fork), DaemonSet cilium in kube-system",
+      "source": {
+        "repo": "cilium",
+        "ref": "a99264f008",
+        "file": "pkg/ztunnel/xds/metrics.go",
+        "function": "xds.NewMetrics",
+        "line": 59,
+        "token": "\"effective_policy_events_total\""
+      },
+      "status": "emitted",
+      "collection": "scraped",
+      "labels": [
+        {
+          "name": "event",
+          "values": [
+            "published",
+            "acknowledged",
+            "compile_failed",
+            "released",
+            "release_refused"
+          ]
+        }
+      ],
+      "cardinality": "5 per node",
+      "stage": "publication",
+      "questions": [
+        "OP3",
+        "OP1"
+      ],
+      "zero_initialized": false,
+      "observed": {
+        "fixture": "tests/fixtures/pages/cmtc-a__cilium-agent__cmtc-a-worker.prom",
+        "series": 3
+      }
+    },
+    {
+      "name": "cilium_ztunnel_xds_effective_policy_sources",
+      "type": "gauge",
+      "unit": "callers",
+      "help": "Callers the last reconcile admitted into effective plans, by origin (effective_sources.go logSources).",
+      "component": "cilium-agent",
+      "owner": "Cilium agent (fork), DaemonSet cilium in kube-system",
+      "source": {
+        "repo": "cilium",
+        "ref": "a99264f008",
+        "file": "pkg/ztunnel/xds/metrics.go",
+        "function": "xds.NewMetrics",
+        "line": 64,
+        "token": "\"effective_policy_sources\""
+      },
+      "status": "emitted",
+      "collection": "scraped",
+      "labels": [
+        {
+          "name": "origin",
+          "values": [
+            "node",
+            "cluster",
+            "peer"
+          ]
+        }
+      ],
+      "cardinality": "3 per node",
+      "stage": "admission",
+      "questions": [
+        "OP3"
+      ],
+      "zero_initialized": false,
+      "observed": {
+        "fixture": "tests/fixtures/pages/cmtc-a__cilium-agent__cmtc-a-worker.prom",
+        "series": 3
+      }
+    },
+    {
+      "name": "cilium_ztunnel_xds_remote_projection_events_total",
+      "type": "counter",
+      "unit": "events",
+      "help": "Remote workload projection changes on ztunnel streams by event.",
+      "component": "cilium-agent",
+      "owner": "Cilium agent (fork), DaemonSet cilium in kube-system",
+      "source": {
+        "repo": "cilium",
+        "ref": "a99264f008",
+        "file": "pkg/ztunnel/xds/metrics.go",
+        "function": "xds.NewMetrics",
+        "line": 69,
+        "token": "\"remote_projection_events_total\""
+      },
+      "status": "emitted",
+      "collection": "scraped",
+      "labels": [
+        {
+          "name": "event",
+          "values": [
+            "projected",
+            "withdrawn",
+            "withdrawn_local_collision",
+            "stream_reset_for_recovery"
+          ]
+        }
+      ],
+      "cardinality": "4 per node",
+      "stage": "admission",
+      "questions": [
+        "OP4"
+      ],
+      "zero_initialized": false,
+      "observed": {
+        "fixture": "tests/fixtures/pages/cmtc-a__cilium-agent__cmtc-a-worker.prom",
+        "series": 1
+      }
+    },
+    {
+      "name": "cilium_ztunnel_xds_remote_workloads",
+      "type": "gauge",
+      "unit": "workloads",
+      "help": "Remote workloads last published by a stream, by peer cluster; absent before the first projection.",
+      "component": "cilium-agent",
+      "owner": "Cilium agent (fork), DaemonSet cilium in kube-system",
+      "source": {
+        "repo": "cilium",
+        "ref": "a99264f008",
+        "file": "pkg/ztunnel/xds/metrics.go",
+        "function": "xds.NewMetrics",
+        "line": 74,
+        "token": "\"remote_workloads\""
+      },
+      "status": "emitted",
+      "collection": "scraped",
+      "labels": [
+        {
+          "name": "peer_cluster",
+          "bound": "one per peer cluster of the mesh"
+        }
+      ],
+      "cardinality": "1 per peer cluster, per node",
+      "stage": "admission",
+      "questions": [
+        "OP4"
+      ],
+      "zero_initialized": false,
+      "observed": {
+        "fixture": "tests/fixtures/pages/cmtc-a__cilium-agent__cmtc-a-worker.prom",
+        "series": 1
+      }
+    },
+    {
+      "name": "cilium_ztunnel_xds_authorization_events_total",
+      "type": "counter",
+      "unit": "events",
+      "help": "Authorization resource protocol events on the ztunnel ADS stream; not policy enforcement.",
+      "component": "cilium-agent",
+      "owner": "Cilium agent (fork), DaemonSet cilium in kube-system",
+      "source": {
+        "repo": "cilium",
+        "ref": "a99264f008",
+        "file": "pkg/ztunnel/xds/metrics.go",
+        "function": "xds.NewMetrics",
+        "line": 79,
+        "token": "\"authorization_events_total\""
+      },
+      "status": "emitted",
+      "collection": "scraped",
+      "labels": [
+        {
+          "name": "status",
+          "values": [
+            "ack",
+            "nack",
+            "cancel",
+            "send_failed"
+          ]
+        }
+      ],
+      "cardinality": "4 per node",
+      "stage": "publication",
+      "questions": [
+        "OP3",
+        "SEC1"
+      ],
+      "zero_initialized": false,
+      "observed": {
+        "fixture": "tests/fixtures/pages/cmtc-a__cilium-agent__cmtc-a-worker.prom",
+        "series": 1
+      }
+    },
+    {
+      "name": "cilium_ztunnel_xds_enrollment_failures_total",
+      "type": "counter",
+      "unit": "failures",
+      "help": "Workload enrollment failures to ztunnel over xDS by status.",
+      "component": "cilium-agent",
+      "owner": "Cilium agent (fork), DaemonSet cilium in kube-system",
+      "source": {
+        "repo": "cilium",
+        "ref": "a99264f008",
+        "file": "pkg/ztunnel/xds/metrics.go",
+        "function": "xds.NewMetrics",
+        "line": 87,
+        "token": "\"enrollment_failures_total\""
+      },
+      "status": "emitted",
+      "collection": "scraped",
+      "labels": [
+        {
+          "name": "status",
+          "values": [
+            "send_failed",
+            "nack_received",
+            "invalid_workload_snapshot",
+            "invalid_workload_event"
+          ]
+        }
+      ],
+      "cardinality": "4 per node",
+      "stage": "enrollment",
+      "questions": [
+        "OP2"
+      ],
+      "zero_initialized": false,
+      "observed": {
+        "fixture": "tests/fixtures/pages/cmtc-a__cilium-agent__cmtc-a-worker.prom",
+        "series": 0
+      },
+      "notes": "No series until the first failure: an empty query is no failure since the agent started, when up{job=\"cilium-native\"} is 1."
+    },
+    {
+      "name": "cilium_ztunnel_zds_enrollment_total",
+      "type": "counter",
+      "unit": "enrollments",
+      "help": "Pods enrolled into ztunnel over ZDS.",
+      "component": "cilium-agent",
+      "owner": "Cilium agent (fork), DaemonSet cilium in kube-system",
+      "source": {
+        "repo": "cilium",
+        "ref": "a99264f008",
+        "file": "pkg/ztunnel/zds/metrics.go",
+        "function": "zds.newMetrics",
+        "line": 40,
+        "token": "\"enrollment_total\""
+      },
+      "status": "emitted",
+      "collection": "scraped",
+      "labels": [],
+      "cardinality": "1 per node",
+      "stage": "enrollment",
+      "questions": [
+        "OP2"
+      ],
+      "zero_initialized": true,
+      "observed": {
+        "fixture": "tests/fixtures/pages/cmtc-a__cilium-agent__cmtc-a-worker.prom",
+        "series": 1
+      }
+    },
+    {
+      "name": "cilium_ztunnel_zds_enrollment_failures_total",
+      "type": "counter",
+      "unit": "failures",
+      "help": "ZDS enrollment failures by status.",
+      "component": "cilium-agent",
+      "owner": "Cilium agent (fork), DaemonSet cilium in kube-system",
+      "source": {
+        "repo": "cilium",
+        "ref": "a99264f008",
+        "file": "pkg/ztunnel/zds/metrics.go",
+        "function": "zds.newMetrics",
+        "line": 50,
+        "token": "\"enrollment_failures_total\""
+      },
+      "status": "emitted",
+      "collection": "scraped",
+      "labels": [
+        {
+          "name": "status",
+          "values": [
+            "send_failed",
+            "conversion_failed",
+            "netns_failed",
+            "iptables_failed",
+            "uid_mismatch"
+          ]
+        }
+      ],
+      "cardinality": "5 per node",
+      "stage": "enrollment",
+      "questions": [
+        "OP2"
+      ],
+      "zero_initialized": false,
+      "observed": {
+        "fixture": "tests/fixtures/pages/cmtc-a__cilium-agent__cmtc-a-worker.prom",
+        "series": 0
+      },
+      "notes": "No series until the first failure."
+    },
+    {
+      "name": "cilium_ztunnel_zds_connection_active",
+      "type": "gauge",
+      "unit": "connections",
+      "help": "1 while ztunnel holds its ZDS connection to the agent.",
+      "component": "cilium-agent",
+      "owner": "Cilium agent (fork), DaemonSet cilium in kube-system",
+      "source": {
+        "repo": "cilium",
+        "ref": "a99264f008",
+        "file": "pkg/ztunnel/zds/metrics.go",
+        "function": "zds.newMetrics",
+        "line": 61,
+        "token": "\"connection_active\""
+      },
+      "status": "emitted",
+      "collection": "scraped",
+      "labels": [],
+      "cardinality": "1 per node",
+      "stage": "enrollment",
+      "questions": [
+        "OP2"
+      ],
+      "zero_initialized": true,
+      "observed": {
+        "fixture": "tests/fixtures/pages/cmtc-a__cilium-agent__cmtc-a-worker.prom",
+        "series": 1
+      }
+    },
+    {
+      "name": "cilium_ztunnel_xds_effective_policy_sources_refused",
+      "type": "gauge",
+      "unit": "callers",
+      "help": "Callers the last reconcile refused as policy sources, by origin and reason class (the refuse() calls of effective_sources.go, grouped).",
+      "component": "cilium-agent",
+      "owner": "Cilium agent (fork), DaemonSet cilium in kube-system",
+      "source": {
+        "repo": "cilium",
+        "ref": "a99264f008",
+        "file": "pkg/ztunnel/xds/metrics.go",
+        "function": "xds.NewMetrics",
+        "patch": "source-patches/cilium/0001-effective-policy-signals.patch"
+      },
+      "status": "needs-source-change",
+      "collection": "not-deployed",
+      "labels": [
+        {
+          "name": "origin",
+          "values": [
+            "cluster",
+            "peer"
+          ]
+        },
+        {
+          "name": "reason",
+          "values": [
+            "leases",
+            "wrong_cluster",
+            "node_discovery",
+            "peer_not_projected",
+            "peer_claims_local",
+            "trust_domain",
+            "not_captured",
+            "no_egress_policy",
+            "policy_invalid",
+            "ipcache",
+            "conflict"
+          ]
+        }
+      ],
+      "cardinality": "at most 22 per node",
+      "stage": "admission",
+      "questions": [
+        "OP3"
+      ],
+      "zero_initialized": false
+    },
+    {
+      "name": "cilium_ztunnel_xds_effective_policy_publications_total",
+      "type": "counter",
+      "unit": "publications",
+      "help": "Effective plans published, by what changed; caller_removed is a narrowing (a policy revocation).",
+      "component": "cilium-agent",
+      "owner": "Cilium agent (fork), DaemonSet cilium in kube-system",
+      "source": {
+        "repo": "cilium",
+        "ref": "a99264f008",
+        "file": "pkg/ztunnel/xds/metrics.go",
+        "function": "xds.NewMetrics",
+        "patch": "source-patches/cilium/0001-effective-policy-signals.patch"
+      },
+      "status": "needs-source-change",
+      "collection": "not-deployed",
+      "labels": [
+        {
+          "name": "cause",
+          "values": [
+            "initial",
+            "address",
+            "native_policy",
+            "caller_removed",
+            "plan_changed"
+          ]
+        }
+      ],
+      "cardinality": "5 per node",
+      "stage": "publication",
+      "questions": [
+        "OP3",
+        "SEC2"
+      ],
+      "zero_initialized": true
+    },
+    {
+      "name": "cilium_ztunnel_xds_effective_policy_ack_duration_seconds",
+      "type": "histogram",
+      "unit": "seconds",
+      "help": "Time from a plan's publication to ztunnel's acknowledgment of it on the same ADS stream.",
+      "component": "cilium-agent",
+      "owner": "Cilium agent (fork), DaemonSet cilium in kube-system",
+      "source": {
+        "repo": "cilium",
+        "ref": "a99264f008",
+        "file": "pkg/ztunnel/xds/metrics.go",
+        "function": "xds.NewMetrics",
+        "patch": "source-patches/cilium/0001-effective-policy-signals.patch"
+      },
+      "status": "needs-source-change",
+      "collection": "not-deployed",
+      "labels": [
+        {
+          "name": "cause",
+          "values": [
+            "initial",
+            "address",
+            "native_policy",
+            "caller_removed",
+            "plan_changed"
+          ]
+        },
+        {
+          "name": "le",
+          "bound": "11 bounds, 0.005 to 300 s, and +Inf"
+        }
+      ],
+      "cardinality": "5 x 14 series per node",
+      "stage": "publication",
+      "questions": [
+        "OP3",
+        "SEC2"
+      ],
+      "zero_initialized": true
+    },
+    {
+      "name": "cilium_ztunnel_xds_effective_policy_oldest_unacknowledged_timestamp_seconds",
+      "type": "gauge",
+      "unit": "seconds (Unix time)",
+      "help": "Publication time of the oldest plan ztunnel has not acknowledged; 0 when none waits.",
+      "component": "cilium-agent",
+      "owner": "Cilium agent (fork), DaemonSet cilium in kube-system",
+      "source": {
+        "repo": "cilium",
+        "ref": "a99264f008",
+        "file": "pkg/ztunnel/xds/metrics.go",
+        "function": "xds.NewMetrics",
+        "patch": "source-patches/cilium/0001-effective-policy-signals.patch"
+      },
+      "status": "needs-source-change",
+      "collection": "not-deployed",
+      "labels": [],
+      "cardinality": "1 per node",
+      "stage": "publication",
+      "questions": [
+        "OP3"
+      ],
+      "zero_initialized": true
+    },
+    {
+      "name": "cilium_ztunnel_xds_effective_policy_destinations",
+      "type": "gauge",
+      "unit": "workloads",
+      "help": "Required local workloads by the step of the effective policy reconcile they are on; released is the control plane's verdict, never \"Protected\".",
+      "component": "cilium-agent",
+      "owner": "Cilium agent (fork), DaemonSet cilium in kube-system",
+      "source": {
+        "repo": "cilium",
+        "ref": "a99264f008",
+        "file": "pkg/ztunnel/xds/metrics.go",
+        "function": "xds.NewMetrics",
+        "patch": "source-patches/cilium/0002-required-workload-states.patch"
+      },
+      "status": "needs-source-change",
+      "collection": "not-deployed",
+      "labels": [
+        {
+          "name": "state",
+          "values": [
+            "capture_pending",
+            "endpoint_mismatch",
+            "policy_not_realized",
+            "publication_pending",
+            "address_unacknowledged",
+            "compile_failed",
+            "plan_unacknowledged",
+            "callers_pending",
+            "release_refused",
+            "released"
+          ]
+        }
+      ],
+      "cardinality": "10 per node",
+      "stage": "release",
+      "questions": [
+        "OP1"
+      ],
+      "zero_initialized": true
+    },
+    {
+      "name": "cilium_drop_count_total",
+      "type": "counter",
+      "unit": "packets",
+      "help": "Total dropped packets by drop reason and direction. No port label: it cannot isolate DNS.",
+      "component": "cilium-agent",
+      "owner": "Cilium agent (fork), DaemonSet cilium in kube-system",
+      "source": {
+        "repo": "cilium",
+        "ref": "a99264f008",
+        "file": "pkg/maps/metricsmap/metricsmap.go",
+        "function": "newMetricsMapCollector",
+        "line": 253,
+        "token": "\"drop_count_total\""
+      },
+      "status": "emitted",
+      "collection": "dropped-at-ingestion",
+      "labels": [
+        {
+          "name": "reason",
+          "bound": "Cilium drop reasons (pkg/monitor/api/drop.go), about 80"
+        },
+        {
+          "name": "direction",
+          "values": [
+            "INGRESS",
+            "EGRESS"
+          ]
+        }
+      ],
+      "cardinality": "the reasons seen on the node x 2",
+      "stage": "traffic",
+      "questions": [
+        "SEC1",
+        "DNS3"
+      ],
+      "zero_initialized": false,
+      "observed": {
+        "fixture": "tests/fixtures/pages/cmtc-a__cilium-agent__cmtc-a-worker.prom",
+        "series": 4
+      }
+    },
+    {
+      "name": "cilium_forward_count_total",
+      "type": "counter",
+      "unit": "packets",
+      "help": "Total forwarded packets by direction; the denominator of the drop share.",
+      "component": "cilium-agent",
+      "owner": "Cilium agent (fork), DaemonSet cilium in kube-system",
+      "source": {
+        "repo": "cilium",
+        "ref": "a99264f008",
+        "file": "pkg/maps/metricsmap/metricsmap.go",
+        "function": "newMetricsMapCollector",
+        "line": 258,
+        "token": "\"forward_count_total\""
+      },
+      "status": "emitted",
+      "collection": "dropped-at-ingestion",
+      "labels": [
+        {
+          "name": "direction",
+          "values": [
+            "INGRESS",
+            "EGRESS"
+          ]
+        }
+      ],
+      "cardinality": "2 per node",
+      "stage": "traffic",
+      "questions": [
+        "DNS3"
+      ],
+      "zero_initialized": false,
+      "observed": {
+        "fixture": "tests/fixtures/pages/cmtc-a__cilium-agent__cmtc-a-worker.prom",
+        "series": 2
+      }
+    },
+    {
+      "name": "istio_tcp_connections_opened_total",
+      "type": "counter",
+      "unit": "connections",
+      "help": "TCP connections opened, counted when ztunnel builds its connection result, before the handshake (metrics.rs:752-792).",
+      "component": "ztunnel",
+      "owner": "ztunnel (fork), DaemonSet ztunnel-cilium in kube-system",
+      "source": {
+        "repo": "ztunnel",
+        "ref": "47956afb33",
+        "file": "src/proxy/metrics.rs",
+        "function": "Metrics::new",
+        "line": 422,
+        "token": "\"tcp_connections_opened\""
+      },
+      "status": "emitted",
+      "collection": "not-scraped",
+      "labels": [
+        {
+          "name": "reporter",
+          "values": [
+            "source",
+            "destination"
+          ]
+        },
+        {
+          "name": "connection_security_policy",
+          "values": [
+            "mutual_tls",
+            "unknown"
+          ]
+        },
+        {
+          "name": "response_flags",
+          "values": [
+            "-"
+          ]
+        },
+        {
+          "name": "source_workload",
+          "bound": "one value per workload, service or identity at that end of the connection"
+        },
+        {
+          "name": "source_canonical_service",
+          "bound": "one value per workload, service or identity at that end of the connection"
+        },
+        {
+          "name": "source_canonical_revision",
+          "bound": "one value per workload, service or identity at that end of the connection"
+        },
+        {
+          "name": "source_workload_namespace",
+          "bound": "one value per workload, service or identity at that end of the connection"
+        },
+        {
+          "name": "source_principal",
+          "bound": "one value per workload, service or identity at that end of the connection"
+        },
+        {
+          "name": "source_app",
+          "bound": "one value per workload, service or identity at that end of the connection"
+        },
+        {
+          "name": "source_version",
+          "bound": "one value per workload, service or identity at that end of the connection"
+        },
+        {
+          "name": "source_cluster",
+          "bound": "one value per workload, service or identity at that end of the connection"
+        },
+        {
+          "name": "destination_workload",
+          "bound": "one value per workload, service or identity at that end of the connection"
+        },
+        {
+          "name": "destination_canonical_service",
+          "bound": "one value per workload, service or identity at that end of the connection"
+        },
+        {
+          "name": "destination_canonical_revision",
+          "bound": "one value per workload, service or identity at that end of the connection"
+        },
+        {
+          "name": "destination_workload_namespace",
+          "bound": "one value per workload, service or identity at that end of the connection"
+        },
+        {
+          "name": "destination_principal",
+          "bound": "one value per workload, service or identity at that end of the connection"
+        },
+        {
+          "name": "destination_app",
+          "bound": "one value per workload, service or identity at that end of the connection"
+        },
+        {
+          "name": "destination_version",
+          "bound": "one value per workload, service or identity at that end of the connection"
+        },
+        {
+          "name": "destination_cluster",
+          "bound": "one value per workload, service or identity at that end of the connection"
+        },
+        {
+          "name": "destination_service",
+          "bound": "one value per destination service"
+        },
+        {
+          "name": "destination_service_namespace",
+          "bound": "one value per destination service"
+        },
+        {
+          "name": "destination_service_name",
+          "bound": "one value per destination service"
+        },
+        {
+          "name": "request_protocol",
+          "values": [
+            "tcp",
+            "http"
+          ]
+        }
+      ],
+      "cardinality": "per pair of workloads that connected, per node: bounded by the workloads that talk, not by connections",
+      "stage": "traffic",
+      "questions": [
+        "OP5",
+        "OC3"
+      ],
+      "zero_initialized": false,
+      "observed": {
+        "fixture": "tests/fixtures/pages/cmtc-a__ztunnel__cmtc-a-worker.prom",
+        "series": 5
+      }
+    },
+    {
+      "name": "istio_tcp_connections_failed_total",
+      "type": "counter",
+      "unit": "connections",
+      "help": "TCP connections that failed to establish, by response flag (extract_failure_reason, metrics.rs:852-875).",
+      "component": "ztunnel",
+      "owner": "ztunnel (fork), DaemonSet ztunnel-cilium in kube-system",
+      "source": {
+        "repo": "ztunnel",
+        "ref": "47956afb33",
+        "file": "src/proxy/metrics.rs",
+        "function": "Metrics::new",
+        "line": 454,
+        "token": "\"tcp_connections_failed\""
+      },
+      "status": "emitted",
+      "collection": "not-scraped",
+      "labels": [
+        {
+          "name": "reporter",
+          "values": [
+            "source",
+            "destination"
+          ]
+        },
+        {
+          "name": "connection_security_policy",
+          "values": [
+            "mutual_tls",
+            "unknown"
+          ]
+        },
+        {
+          "name": "response_flags",
+          "values": [
+            "DENY",
+            "CONNECT",
+            "TLS_FAILURE",
+            "H2_HANDSHAKE_FAILURE",
+            "NETWORK_POLICY",
+            "IDENTITY_ERROR",
+            "CERT_REVOKED"
+          ],
+          "proposed_values": [
+            "TRUST_PROFILE",
+            "PEER_DENIED"
+          ],
+          "proposed_by": "source-patches/ztunnel/0001-trust-and-peer-denial-flags.patch"
+        },
+        {
+          "name": "source_workload",
+          "bound": "one value per workload, service or identity at that end of the connection"
+        },
+        {
+          "name": "source_canonical_service",
+          "bound": "one value per workload, service or identity at that end of the connection"
+        },
+        {
+          "name": "source_canonical_revision",
+          "bound": "one value per workload, service or identity at that end of the connection"
+        },
+        {
+          "name": "source_workload_namespace",
+          "bound": "one value per workload, service or identity at that end of the connection"
+        },
+        {
+          "name": "source_principal",
+          "bound": "one value per workload, service or identity at that end of the connection"
+        },
+        {
+          "name": "source_app",
+          "bound": "one value per workload, service or identity at that end of the connection"
+        },
+        {
+          "name": "source_version",
+          "bound": "one value per workload, service or identity at that end of the connection"
+        },
+        {
+          "name": "source_cluster",
+          "bound": "one value per workload, service or identity at that end of the connection"
+        },
+        {
+          "name": "destination_workload",
+          "bound": "one value per workload, service or identity at that end of the connection"
+        },
+        {
+          "name": "destination_canonical_service",
+          "bound": "one value per workload, service or identity at that end of the connection"
+        },
+        {
+          "name": "destination_canonical_revision",
+          "bound": "one value per workload, service or identity at that end of the connection"
+        },
+        {
+          "name": "destination_workload_namespace",
+          "bound": "one value per workload, service or identity at that end of the connection"
+        },
+        {
+          "name": "destination_principal",
+          "bound": "one value per workload, service or identity at that end of the connection"
+        },
+        {
+          "name": "destination_app",
+          "bound": "one value per workload, service or identity at that end of the connection"
+        },
+        {
+          "name": "destination_version",
+          "bound": "one value per workload, service or identity at that end of the connection"
+        },
+        {
+          "name": "destination_cluster",
+          "bound": "one value per workload, service or identity at that end of the connection"
+        },
+        {
+          "name": "destination_service",
+          "bound": "one value per destination service"
+        },
+        {
+          "name": "destination_service_namespace",
+          "bound": "one value per destination service"
+        },
+        {
+          "name": "destination_service_name",
+          "bound": "one value per destination service"
+        },
+        {
+          "name": "request_protocol",
+          "values": [
+            "tcp",
+            "http"
+          ]
+        }
+      ],
+      "cardinality": "per pair of workloads that connected, per node: bounded by the workloads that talk, not by connections, x 7 response flags",
+      "stage": "traffic",
+      "questions": [
+        "OP5",
+        "OC3",
+        "SEC1",
+        "SEC3"
+      ],
+      "zero_initialized": false,
+      "observed": {
+        "fixture": "tests/fixtures/pages/cmtc-a__ztunnel__cmtc-a-worker.prom",
+        "series": 9
+      },
+      "notes": "Connections refused before the connection result is built are not counted (src/proxy/outbound.rs:193-226, log_early_deny); source-patches/ztunnel/0001 adds TRUST_PROFILE and PEER_DENIED, which read as CONNECT today."
+    },
+    {
+      "name": "istio_tls_handshakes_total",
+      "type": "counter",
+      "unit": "handshakes",
+      "help": "Completed workload TLS handshakes at the ztunnel accept/connect boundary, by reporter and result.",
+      "component": "ztunnel",
+      "owner": "ztunnel (fork), DaemonSet ztunnel-cilium in kube-system",
+      "source": {
+        "repo": "ztunnel",
+        "ref": "47956afb33",
+        "file": "src/proxy/metrics.rs",
+        "function": "Metrics::new",
+        "line": 482,
+        "token": "\"tls_handshakes\""
+      },
+      "status": "emitted",
+      "collection": "not-scraped",
+      "labels": [
+        {
+          "name": "reporter",
+          "values": [
+            "source",
+            "destination"
+          ]
+        },
+        {
+          "name": "result",
+          "values": [
+            "success",
+            "peer_verification_failed",
+            "protocol_error",
+            "timeout"
+          ]
+        }
+      ],
+      "cardinality": "8 per node",
+      "stage": "traffic",
+      "questions": [
+        "SEC3"
+      ],
+      "zero_initialized": true,
+      "observed": {
+        "fixture": "tests/fixtures/pages/cmtc-a__ztunnel__cmtc-a-worker.prom",
+        "series": 8
+      }
+    },
+    {
+      "name": "istio_crl_policy_rejections_total",
+      "type": "counter",
+      "unit": "connections",
+      "help": "Connections rejected because a CRL revoked the certificate.",
+      "component": "ztunnel",
+      "owner": "ztunnel (fork), DaemonSet ztunnel-cilium in kube-system",
+      "source": {
+        "repo": "ztunnel",
+        "ref": "47956afb33",
+        "file": "src/proxy/metrics.rs",
+        "function": "Metrics::new",
+        "line": 468,
+        "token": "\"crl_policy_rejections\""
+      },
+      "status": "emitted",
+      "collection": "not-scraped",
+      "labels": [
+        {
+          "name": "reporter",
+          "values": [
+            "source",
+            "destination"
+          ]
+        }
+      ],
+      "cardinality": "2 per node",
+      "stage": "revocation",
+      "questions": [
+        "SEC2"
+      ],
+      "zero_initialized": false,
+      "observed": {
+        "fixture": "tests/fixtures/pages/cmtc-a__ztunnel__cmtc-a-worker.prom",
+        "series": 0
+      },
+      "notes": "The Rust client omits an empty family, so no series exists until the first rejection."
+    },
+    {
+      "name": "istio_crl_untracked_connections_total",
+      "type": "counter",
+      "unit": "connections",
+      "help": "Connections not tracked for CRL enforcement: a revocation cannot close them.",
+      "component": "ztunnel",
+      "owner": "ztunnel (fork), DaemonSet ztunnel-cilium in kube-system",
+      "source": {
+        "repo": "ztunnel",
+        "ref": "47956afb33",
+        "file": "src/proxy/metrics.rs",
+        "function": "Metrics::new",
+        "line": 475,
+        "token": "\"crl_untracked_connections\""
+      },
+      "status": "emitted",
+      "collection": "not-scraped",
+      "labels": [
+        {
+          "name": "reporter",
+          "values": [
+            "source",
+            "destination"
+          ]
+        }
+      ],
+      "cardinality": "2 per node",
+      "stage": "revocation",
+      "questions": [
+        "SEC2"
+      ],
+      "zero_initialized": false,
+      "observed": {
+        "fixture": "tests/fixtures/pages/cmtc-a__ztunnel__cmtc-a-worker.prom",
+        "series": 0
+      },
+      "notes": "No series until the first untracked connection."
+    },
+    {
+      "name": "istio_crl_enforcement_delay_seconds",
+      "type": "histogram",
+      "unit": "seconds",
+      "help": "Time from the thisUpdate of the CRL that revoked a certificate to the moment ztunnel refused or closed the connection that presented it.",
+      "component": "ztunnel",
+      "owner": "ztunnel (fork), DaemonSet ztunnel-cilium in kube-system",
+      "source": {
+        "repo": "ztunnel",
+        "ref": "47956afb33",
+        "file": "src/proxy/metrics.rs",
+        "function": "Metrics::new"
+      },
+      "status": "planned",
+      "collection": "not-deployed",
+      "labels": [
+        {
+          "name": "reporter",
+          "values": [
+            "source",
+            "destination"
+          ]
+        },
+        {
+          "name": "le",
+          "bound": "12 bounds, 0.1 to 3600 s, and +Inf"
+        }
+      ],
+      "cardinality": "2 x 15 series per node",
+      "stage": "revocation",
+      "questions": [
+        "SEC2"
+      ],
+      "zero_initialized": true,
+      "notes": "No ztunnel metric measures this; the definition is the proposal for a ztunnel change."
+    },
+    {
+      "name": "istio_xds_message_total",
+      "type": "counter",
+      "unit": "messages",
+      "help": "xDS messages ztunnel received, by type URL.",
+      "component": "ztunnel",
+      "owner": "ztunnel (fork), DaemonSet ztunnel-cilium in kube-system",
+      "source": {
+        "repo": "ztunnel",
+        "ref": "47956afb33",
+        "file": "src/xds/metrics.rs",
+        "function": "Metrics::new (xds)",
+        "line": 60,
+        "token": "\"xds_message\",",
+        "occurrence": 1
+      },
+      "status": "emitted",
+      "collection": "not-scraped",
+      "labels": [
+        {
+          "name": "url",
+          "bound": "the xDS type URLs ztunnel subscribes to, about 5"
+        }
+      ],
+      "cardinality": "about 5 per node",
+      "stage": "publication",
+      "questions": [
+        "OC3"
+      ],
+      "zero_initialized": false,
+      "observed": {
+        "fixture": "tests/fixtures/pages/cmtc-a__ztunnel__cmtc-a-worker.prom",
+        "series": 3
+      }
+    },
+    {
+      "name": "workload_manager_active_proxy_count",
+      "type": "gauge",
+      "unit": "proxies",
+      "help": "In-Pod proxies ztunnel runs on the node.",
+      "component": "ztunnel",
+      "owner": "ztunnel (fork), DaemonSet ztunnel-cilium in kube-system",
+      "source": {
+        "repo": "ztunnel",
+        "ref": "47956afb33",
+        "file": "src/inpod/metrics.rs",
+        "function": "Metrics::new (inpod)",
+        "line": 31,
+        "token": "\"active_proxy_count\""
+      },
+      "status": "emitted",
+      "collection": "not-scraped",
+      "labels": [],
+      "cardinality": "1 per node",
+      "stage": "enrollment",
+      "questions": [
+        "OP2",
+        "OP6"
+      ],
+      "zero_initialized": true,
+      "observed": {
+        "fixture": "tests/fixtures/pages/cmtc-a__ztunnel__cmtc-a-worker.prom",
+        "series": 1
+      }
+    },
+    {
+      "name": "workload_manager_pending_proxy_count",
+      "type": "gauge",
+      "unit": "proxies",
+      "help": "In-Pod proxies waiting to start.",
+      "component": "ztunnel",
+      "owner": "ztunnel (fork), DaemonSet ztunnel-cilium in kube-system",
+      "source": {
+        "repo": "ztunnel",
+        "ref": "47956afb33",
+        "file": "src/inpod/metrics.rs",
+        "function": "Metrics::new (inpod)",
+        "line": 36,
+        "token": "\"pending_proxy_count\""
+      },
+      "status": "emitted",
+      "collection": "not-scraped",
+      "labels": [],
+      "cardinality": "1 per node",
+      "stage": "enrollment",
+      "questions": [
+        "OP2"
+      ],
+      "zero_initialized": true,
+      "observed": {
+        "fixture": "tests/fixtures/pages/cmtc-a__ztunnel__cmtc-a-worker.prom",
+        "series": 1
+      }
+    },
+    {
+      "name": "spire_server_manager_x509_ca_rotate_expiration",
+      "type": "gauge",
+      "unit": "seconds (Unix time)",
+      "help": "notAfter of the X509 CA the server activated last (set by activateX509CA, manager.go:793).",
+      "component": "spire-server",
+      "owner": "SPIRE server (fork), StatefulSet spire-server in cilium-spire",
+      "source": {
+        "repo": "spire",
+        "ref": "0f8fe4d681",
+        "file": "pkg/common/telemetry/server/ca_manager.go",
+        "function": "SetX509CARotateGauge",
+        "line": 44,
+        "token": "telemetry.Rotate, telemetry.Expiration",
+        "patch": "source-patches/cmtc/0002-spire-telemetry.patch"
+      },
+      "status": "emitted",
+      "collection": "not-configured",
+      "labels": [
+        {
+          "name": "trust_domain_id",
+          "bound": "one value per SPIRE server: its trust domain"
+        },
+        {
+          "name": "host",
+          "bound": "the process's hostname, one value per process: the node name for the agent (hostNetwork), the Pod name for the server (SPIRE turns EnableHostnameLabel on by default, pkg/common/telemetry/metrics.go; go-metrics v0.7.0 names the label host)"
+        }
+      ],
+      "cardinality": "1 per SPIRE server",
+      "stage": "identity",
+      "questions": [
+        "OC3"
+      ],
+      "zero_initialized": false
+    },
+    {
+      "name": "spire_server_manager_x509_ca_rotate_max_expiration",
+      "type": "gauge",
+      "unit": "seconds (Unix time)",
+      "help": "The later notAfter of the current and the prepared X509 CA (setX509CARotateMaxTTLGauge, manager.go:803-816).",
+      "component": "spire-server",
+      "owner": "SPIRE server (fork), StatefulSet spire-server in cilium-spire",
+      "source": {
+        "repo": "spire",
+        "ref": "0f8fe4d681",
+        "file": "pkg/common/telemetry/server/ca_manager.go",
+        "function": "SetX509CARotateMaxExpirationGauge",
+        "line": 68,
+        "token": "telemetry.Rotate, telemetry.MaxExpiration",
+        "patch": "source-patches/cmtc/0002-spire-telemetry.patch"
+      },
+      "status": "emitted",
+      "collection": "not-configured",
+      "labels": [
+        {
+          "name": "trust_domain_id",
+          "bound": "one value per SPIRE server: its trust domain"
+        },
+        {
+          "name": "host",
+          "bound": "the process's hostname, one value per process: the node name for the agent (hostNetwork), the Pod name for the server (SPIRE turns EnableHostnameLabel on by default, pkg/common/telemetry/metrics.go; go-metrics v0.7.0 names the label host)"
+        }
+      ],
+      "cardinality": "1 per SPIRE server",
+      "stage": "identity",
+      "questions": [
+        "OC3"
+      ],
+      "zero_initialized": false
+    },
+    {
+      "name": "spire_agent_rpc_delegated_identity_subscribe_to_x509_svids",
+      "type": "counter",
+      "unit": "calls",
+      "help": "Delegated Identity API SubscribeToX509SVIDs calls by gRPC status: ztunnel opens one per in-Pod proxy (#42, the fetch storm). The key is [delegated_identity subscribe_to_x509_svids] (middleware/names_test.go:105); the OpenMetrics form adds _total.",
+      "component": "spire-agent",
+      "owner": "SPIRE agent (fork), DaemonSet spire-agent in cilium-spire",
+      "source": {
+        "repo": "spire",
+        "ref": "0f8fe4d681",
+        "file": "pkg/common/api/middleware/metrics.go",
+        "function": "metricsMiddleware.Preprocess",
+        "line": 27,
+        "token": "telemetry.StartCall(m.metrics, \"rpc\"",
+        "patch": "source-patches/cmtc/0002-spire-telemetry.patch"
+      },
+      "status": "emitted",
+      "collection": "not-configured",
+      "labels": [
+        {
+          "name": "status",
+          "bound": "the gRPC status code name of the call (OK, PermissionDenied, ...), 17 values"
+        },
+        {
+          "name": "host",
+          "bound": "the process's hostname, one value per process: the node name for the agent (hostNetwork), the Pod name for the server (SPIRE turns EnableHostnameLabel on by default, pkg/common/telemetry/metrics.go; go-metrics v0.7.0 names the label host)"
+        }
+      ],
+      "cardinality": "at most 17 per node",
+      "stage": "identity",
+      "questions": [
+        "OP6"
+      ],
+      "zero_initialized": false
+    },
+    {
+      "name": "coredns_dns_requests_total",
+      "type": "counter",
+      "unit": "requests",
+      "help": "DNS requests by protocol, address family and query type.",
+      "component": "coredns",
+      "owner": "CoreDNS, Deployment coredns in kube-system (k8s-app=kube-dns)",
+      "source": {
+        "repo": "coredns",
+        "ref": "v1.14.2",
+        "file": "plugin/metrics/vars/vars.go",
+        "function": "vars (package var RequestCount)",
+        "line": 15,
+        "token": "\"requests_total\""
+      },
+      "status": "emitted",
+      "collection": "not-scraped",
+      "labels": [
+        {
+          "name": "server",
+          "bound": "one per server block, dns://:53 on the labs"
+        },
+        {
+          "name": "zone",
+          "bound": "the zones of the Corefile, 1 on the labs (.)"
+        },
+        {
+          "name": "view",
+          "bound": "the views of the Corefile, empty on the labs"
+        },
+        {
+          "name": "proto",
+          "values": [
+            "udp",
+            "tcp"
+          ]
+        },
+        {
+          "name": "family",
+          "values": [
+            "1",
+            "2"
+          ]
+        },
+        {
+          "name": "type",
+          "bound": "the query types CoreDNS counts by name, about 15, others as other"
+        }
+      ],
+      "cardinality": "about 60 per replica",
+      "stage": "dns",
+      "questions": [
+        "DNS1"
+      ],
+      "zero_initialized": false,
+      "observed": {
+        "fixture": "tests/fixtures/pages/cmtc-a__coredns__cmtc-a-control-plane.prom",
+        "series": 5
+      }
+    },
+    {
+      "name": "coredns_dns_responses_total",
+      "type": "counter",
+      "unit": "responses",
+      "help": "DNS responses by response code and the plugin that wrote them.",
+      "component": "coredns",
+      "owner": "CoreDNS, Deployment coredns in kube-system (k8s-app=kube-dns)",
+      "source": {
+        "repo": "coredns",
+        "ref": "v1.14.2",
+        "file": "plugin/metrics/vars/vars.go",
+        "function": "vars (package var ResponseRcode)",
+        "line": 56,
+        "token": "\"responses_total\""
+      },
+      "status": "emitted",
+      "collection": "not-scraped",
+      "labels": [
+        {
+          "name": "server",
+          "bound": "one per server block, dns://:53 on the labs"
+        },
+        {
+          "name": "zone",
+          "bound": "the zones of the Corefile, 1 on the labs (.)"
+        },
+        {
+          "name": "view",
+          "bound": "the views of the Corefile, empty on the labs"
+        },
+        {
+          "name": "rcode",
+          "bound": "DNS response codes seen, about 6"
+        },
+        {
+          "name": "plugin",
+          "bound": "the plugin that wrote the response, about 5"
+        }
+      ],
+      "cardinality": "about 30 per replica",
+      "stage": "dns",
+      "questions": [
+        "DNS1",
+        "OC5"
+      ],
+      "zero_initialized": false,
+      "observed": {
+        "fixture": "tests/fixtures/pages/cmtc-a__coredns__cmtc-a-control-plane.prom",
+        "series": 2
+      }
+    },
+    {
+      "name": "coredns_dns_request_duration_seconds",
+      "type": "histogram",
+      "unit": "seconds",
+      "help": "Time to process each query.",
+      "component": "coredns",
+      "owner": "CoreDNS, Deployment coredns in kube-system (k8s-app=kube-dns)",
+      "source": {
+        "repo": "coredns",
+        "ref": "v1.14.2",
+        "file": "plugin/metrics/vars/vars.go",
+        "function": "vars (package var RequestDuration)",
+        "line": 22,
+        "token": "\"request_duration_seconds\""
+      },
+      "status": "emitted",
+      "collection": "not-scraped",
+      "labels": [
+        {
+          "name": "server",
+          "bound": "one per server block, dns://:53 on the labs"
+        },
+        {
+          "name": "zone",
+          "bound": "the zones of the Corefile, 1 on the labs (.)"
+        },
+        {
+          "name": "view",
+          "bound": "the views of the Corefile, empty on the labs"
+        },
+        {
+          "name": "le",
+          "bound": "plugin.TimeBuckets, 16 bounds, and +Inf"
+        }
+      ],
+      "cardinality": "about 20 per replica",
+      "stage": "dns",
+      "questions": [
+        "DNS2",
+        "OC5"
+      ],
+      "zero_initialized": false,
+      "observed": {
+        "fixture": "tests/fixtures/pages/cmtc-a__coredns__cmtc-a-control-plane.prom",
+        "series": 1
+      }
+    },
+    {
+      "name": "coredns_panics_total",
+      "type": "counter",
+      "unit": "panics",
+      "help": "Panics CoreDNS recovered from.",
+      "component": "coredns",
+      "owner": "CoreDNS, Deployment coredns in kube-system (k8s-app=kube-dns)",
+      "source": {
+        "repo": "coredns",
+        "ref": "v1.14.2",
+        "file": "plugin/metrics/vars/vars.go",
+        "function": "vars (package var Panic)",
+        "line": 62,
+        "token": "\"panics_total\""
+      },
+      "status": "emitted",
+      "collection": "not-scraped",
+      "labels": [],
+      "cardinality": "1 per replica",
+      "stage": "dns",
+      "questions": [
+        "DNS1"
+      ],
+      "zero_initialized": true,
+      "observed": {
+        "fixture": "tests/fixtures/pages/cmtc-a__coredns__cmtc-a-control-plane.prom",
+        "series": 1
+      }
+    },
+    {
+      "name": "coredns_cache_requests_total",
+      "type": "counter",
+      "unit": "requests",
+      "help": "Requests the cache plugin saw.",
+      "component": "coredns",
+      "owner": "CoreDNS, Deployment coredns in kube-system (k8s-app=kube-dns)",
+      "source": {
+        "repo": "coredns",
+        "ref": "v1.14.2",
+        "file": "plugin/cache/metrics.go",
+        "function": "cache (package var requests)",
+        "line": 22,
+        "token": "\"requests_total\""
+      },
+      "status": "emitted",
+      "collection": "not-scraped",
+      "labels": [
+        {
+          "name": "server",
+          "bound": "one per server block, dns://:53 on the labs"
+        },
+        {
+          "name": "zones",
+          "bound": "the cache plugin's zones"
+        },
+        {
+          "name": "view",
+          "bound": "the views of the Corefile, empty on the labs"
+        }
+      ],
+      "cardinality": "1 per server block",
+      "stage": "dns",
+      "questions": [
+        "DNS2"
+      ],
+      "zero_initialized": false,
+      "observed": {
+        "fixture": "tests/fixtures/pages/cmtc-a__coredns__cmtc-a-control-plane.prom",
+        "series": 1
+      }
+    },
+    {
+      "name": "coredns_cache_hits_total",
+      "type": "counter",
+      "unit": "hits",
+      "help": "Cache hits by cache type.",
+      "component": "coredns",
+      "owner": "CoreDNS, Deployment coredns in kube-system (k8s-app=kube-dns)",
+      "source": {
+        "repo": "coredns",
+        "ref": "v1.14.2",
+        "file": "plugin/cache/metrics.go",
+        "function": "cache (package var cacheHits)",
+        "line": 29,
+        "token": "\"hits_total\""
+      },
+      "status": "emitted",
+      "collection": "not-scraped",
+      "labels": [
+        {
+          "name": "server",
+          "bound": "one per server block, dns://:53 on the labs"
+        },
+        {
+          "name": "type",
+          "values": [
+            "success",
+            "denial"
+          ]
+        },
+        {
+          "name": "zones",
+          "bound": "the cache plugin's zones"
+        },
+        {
+          "name": "view",
+          "bound": "the views of the Corefile, empty on the labs"
+        }
+      ],
+      "cardinality": "2 per server block",
+      "stage": "dns",
+      "questions": [
+        "DNS2"
+      ],
+      "zero_initialized": false,
+      "observed": {
+        "fixture": "tests/fixtures/pages/cmtc-a__coredns__cmtc-a-control-plane.prom",
+        "series": 1
+      }
+    },
+    {
+      "name": "coredns_forward_healthcheck_broken_total",
+      "type": "counter",
+      "unit": "events",
+      "help": "Times every upstream of the forward plugin was unhealthy at once.",
+      "component": "coredns",
+      "owner": "CoreDNS, Deployment coredns in kube-system (k8s-app=kube-dns)",
+      "source": {
+        "repo": "coredns",
+        "ref": "v1.14.2",
+        "file": "plugin/forward/metrics.go",
+        "function": "forward (package var HealthcheckBrokenCount)",
+        "line": 15,
+        "token": "\"healthcheck_broken_total\""
+      },
+      "status": "emitted",
+      "collection": "not-scraped",
+      "labels": [],
+      "cardinality": "1 per replica",
+      "stage": "dns",
+      "questions": [
+        "DNS2"
+      ],
+      "zero_initialized": false,
+      "observed": {
+        "fixture": "tests/fixtures/pages/cmtc-a__coredns__cmtc-a-control-plane.prom",
+        "series": 1
+      }
+    },
+    {
+      "name": "coredns_forward_max_concurrent_rejects_total",
+      "type": "counter",
+      "unit": "queries",
+      "help": "Queries refused because the forward plugin reached max_concurrent.",
+      "component": "coredns",
+      "owner": "CoreDNS, Deployment coredns in kube-system (k8s-app=kube-dns)",
+      "source": {
+        "repo": "coredns",
+        "ref": "v1.14.2",
+        "file": "plugin/forward/metrics.go",
+        "function": "forward (package var MaxConcurrentRejectCount)",
+        "line": 22,
+        "token": "\"max_concurrent_rejects_total\""
+      },
+      "status": "emitted",
+      "collection": "not-scraped",
+      "labels": [],
+      "cardinality": "1 per replica",
+      "stage": "dns",
+      "questions": [
+        "DNS2"
+      ],
+      "zero_initialized": false,
+      "observed": {
+        "fixture": "tests/fixtures/pages/cmtc-a__coredns__cmtc-a-control-plane.prom",
+        "series": 1
+      }
+    },
+    {
+      "name": "coredns_proxy_request_duration_seconds",
+      "type": "histogram",
+      "unit": "seconds",
+      "help": "Time an upstream took to answer, by upstream and response code.",
+      "component": "coredns",
+      "owner": "CoreDNS, Deployment coredns in kube-system (k8s-app=kube-dns)",
+      "source": {
+        "repo": "coredns",
+        "ref": "v1.14.2",
+        "file": "plugin/pkg/proxy/metrics.go",
+        "function": "proxy (package var requestDuration)",
+        "line": 15,
+        "token": "\"request_duration_seconds\""
+      },
+      "status": "emitted",
+      "collection": "not-scraped",
+      "labels": [
+        {
+          "name": "proxy_name",
+          "values": [
+            "forward"
+          ]
+        },
+        {
+          "name": "to",
+          "bound": "one per upstream address"
+        },
+        {
+          "name": "rcode",
+          "bound": "response codes from the upstream, about 6"
+        },
+        {
+          "name": "le",
+          "bound": "plugin.TimeBuckets, 16 bounds, and +Inf"
+        }
+      ],
+      "cardinality": "about 120 per upstream",
+      "stage": "dns",
+      "questions": [
+        "DNS2"
+      ],
+      "zero_initialized": false,
+      "observed": {
+        "fixture": "tests/fixtures/pages/cmtc-a__coredns__cmtc-a-control-plane.prom",
+        "series": 2
+      }
+    },
+    {
+      "name": "coredns_reload_failed_total",
+      "type": "counter",
+      "unit": "reloads",
+      "help": "Corefile reloads that failed.",
+      "component": "coredns",
+      "owner": "CoreDNS, Deployment coredns in kube-system (k8s-app=kube-dns)",
+      "source": {
+        "repo": "coredns",
+        "ref": "v1.14.2",
+        "file": "plugin/reload/metrics.go",
+        "function": "reload (package var FailedCount)",
+        "line": 16,
+        "token": "\"failed_total\""
+      },
+      "status": "emitted",
+      "collection": "not-scraped",
+      "labels": [],
+      "cardinality": "1 per replica",
+      "stage": "dns",
+      "questions": [
+        "DNS1"
+      ],
+      "zero_initialized": false,
+      "observed": {
+        "fixture": "tests/fixtures/pages/cmtc-a__coredns__cmtc-a-control-plane.prom",
+        "series": 1
+      }
+    },
+    {
+      "name": "process_cpu_seconds_total",
+      "type": "counter",
+      "unit": "seconds",
+      "help": "User and system CPU time of the CoreDNS process (client_golang v1.23.0, CoreDNS go.mod:33).",
+      "component": "coredns",
+      "owner": "CoreDNS, Deployment coredns in kube-system (k8s-app=kube-dns)",
+      "source": {
+        "repo": "client_golang",
+        "ref": "v1.23.0",
+        "file": "prometheus/process_collector.go",
+        "function": "NewProcessCollector",
+        "line": 71,
+        "token": "ns+\"process_cpu_seconds_total\""
+      },
+      "status": "emitted",
+      "collection": "not-scraped",
+      "labels": [],
+      "cardinality": "1 per replica",
+      "stage": "dns",
+      "questions": [
+        "DNS2"
+      ],
+      "zero_initialized": true,
+      "observed": {
+        "fixture": "tests/fixtures/pages/cmtc-a__coredns__cmtc-a-control-plane.prom",
+        "series": 1
+      },
+      "notes": "The v2 keep lists collect process_* only for CoreDNS."
+    },
+    {
+      "name": "process_resident_memory_bytes",
+      "type": "gauge",
+      "unit": "bytes",
+      "help": "Resident memory of the CoreDNS process.",
+      "component": "coredns",
+      "owner": "CoreDNS, Deployment coredns in kube-system (k8s-app=kube-dns)",
+      "source": {
+        "repo": "client_golang",
+        "ref": "v1.23.0",
+        "file": "prometheus/process_collector.go",
+        "function": "NewProcessCollector",
+        "line": 96,
+        "token": "ns+\"process_resident_memory_bytes\""
+      },
+      "status": "emitted",
+      "collection": "not-scraped",
+      "labels": [],
+      "cardinality": "1 per replica",
+      "stage": "dns",
+      "questions": [
+        "DNS2"
+      ],
+      "zero_initialized": true,
+      "observed": {
+        "fixture": "tests/fixtures/pages/cmtc-a__coredns__cmtc-a-control-plane.prom",
+        "series": 1
+      }
+    },
+    {
+      "name": "certmanager_certificate_expiration_timestamp_seconds",
+      "type": "gauge",
+      "unit": "seconds (Unix time)",
+      "help": "The time after which the certificate expires.",
+      "component": "cert-manager",
+      "owner": "cert-manager controller, Deployment cert-manager in cert-manager",
+      "source": {
+        "repo": "cert-manager",
+        "ref": "v1.21.1",
+        "file": "internal/collectors/certificate_collector.go",
+        "function": "certificate collector descriptors",
+        "line": 33,
+        "token": "\"certmanager_certificate_expiration_timestamp_seconds\""
+      },
+      "status": "emitted",
+      "collection": "not-scraped",
+      "labels": [
+        {
+          "name": "name",
+          "bound": "one per Certificate; 11 on cmtc-a at 2026-10-27T00:06:53Z"
+        },
+        {
+          "name": "namespace",
+          "bound": "the Certificate's namespace; stored as exported_namespace"
+        },
+        {
+          "name": "issuer_name",
+          "bound": "one per issuer"
+        },
+        {
+          "name": "issuer_kind",
+          "values": [
+            "Issuer",
+            "ClusterIssuer"
+          ]
+        },
+        {
+          "name": "issuer_group",
+          "values": [
+            "cert-manager.io"
+          ]
+        }
+      ],
+      "cardinality": "1 per Certificate",
+      "stage": "pki",
+      "questions": [
+        "OC4"
+      ],
+      "zero_initialized": false,
+      "observed": {
+        "fixture": "tests/fixtures/pages/cmtc-a__cert-manager.prom",
+        "series": 11
+      }
+    },
+    {
+      "name": "certmanager_certificate_renewal_timestamp_seconds",
+      "type": "gauge",
+      "unit": "seconds (Unix time)",
+      "help": "The time after which the certificate should be renewed.",
+      "component": "cert-manager",
+      "owner": "cert-manager controller, Deployment cert-manager in cert-manager",
+      "source": {
+        "repo": "cert-manager",
+        "ref": "v1.21.1",
+        "file": "internal/collectors/certificate_collector.go",
+        "function": "certificate collector descriptors",
+        "line": 34,
+        "token": "\"certmanager_certificate_renewal_timestamp_seconds\""
+      },
+      "status": "emitted",
+      "collection": "not-scraped",
+      "labels": [
+        {
+          "name": "name",
+          "bound": "one per Certificate; 11 on cmtc-a at 2026-10-27T00:06:53Z"
+        },
+        {
+          "name": "namespace",
+          "bound": "the Certificate's namespace; stored as exported_namespace"
+        },
+        {
+          "name": "issuer_name",
+          "bound": "one per issuer"
+        },
+        {
+          "name": "issuer_kind",
+          "values": [
+            "Issuer",
+            "ClusterIssuer"
+          ]
+        },
+        {
+          "name": "issuer_group",
+          "values": [
+            "cert-manager.io"
+          ]
+        }
+      ],
+      "cardinality": "1 per Certificate",
+      "stage": "pki",
+      "questions": [
+        "OC4"
+      ],
+      "zero_initialized": false,
+      "observed": {
+        "fixture": "tests/fixtures/pages/cmtc-a__cert-manager.prom",
+        "series": 11
+      }
+    },
+    {
+      "name": "certmanager_certificate_ready_status",
+      "type": "gauge",
+      "unit": "boolean",
+      "help": "1 for the Ready condition status the Certificate has, 0 for the other two.",
+      "component": "cert-manager",
+      "owner": "cert-manager controller, Deployment cert-manager in cert-manager",
+      "source": {
+        "repo": "cert-manager",
+        "ref": "v1.21.1",
+        "file": "internal/collectors/certificate_collector.go",
+        "function": "certificate collector descriptors",
+        "line": 30,
+        "token": "\"certmanager_certificate_ready_status\""
+      },
+      "status": "emitted",
+      "collection": "not-scraped",
+      "labels": [
+        {
+          "name": "name",
+          "bound": "one per Certificate; 11 on cmtc-a at 2026-10-27T00:06:53Z"
+        },
+        {
+          "name": "namespace",
+          "bound": "the Certificate's namespace; stored as exported_namespace"
+        },
+        {
+          "name": "condition",
+          "values": [
+            "True",
+            "False",
+            "Unknown"
+          ]
+        },
+        {
+          "name": "issuer_name",
+          "bound": "one per issuer"
+        },
+        {
+          "name": "issuer_kind",
+          "values": [
+            "Issuer",
+            "ClusterIssuer"
+          ]
+        },
+        {
+          "name": "issuer_group",
+          "values": [
+            "cert-manager.io"
+          ]
+        }
+      ],
+      "cardinality": "3 per Certificate",
+      "stage": "pki",
+      "questions": [
+        "OC4"
+      ],
+      "zero_initialized": true,
+      "observed": {
+        "fixture": "tests/fixtures/pages/cmtc-a__cert-manager.prom",
+        "series": 33
+      }
+    },
+    {
+      "name": "certmanager_clusterissuer_ready_status",
+      "type": "gauge",
+      "unit": "boolean",
+      "help": "1 for the Ready condition status the ClusterIssuer has, 0 for the other two.",
+      "component": "cert-manager",
+      "owner": "cert-manager controller, Deployment cert-manager in cert-manager",
+      "source": {
+        "repo": "cert-manager",
+        "ref": "v1.21.1",
+        "file": "internal/collectors/clusterissuer_collector.go",
+        "function": "clusterissuer collector descriptors",
+        "line": 30,
+        "token": "\"certmanager_clusterissuer_ready_status\""
+      },
+      "status": "emitted",
+      "collection": "not-scraped",
+      "labels": [
+        {
+          "name": "name",
+          "bound": "one per ClusterIssuer; the lab has 5 per cluster"
+        },
+        {
+          "name": "condition",
+          "values": [
+            "True",
+            "False",
+            "Unknown"
+          ]
+        }
+      ],
+      "cardinality": "3 per ClusterIssuer",
+      "stage": "pki",
+      "questions": [
+        "OC4"
+      ],
+      "zero_initialized": true,
+      "observed": {
+        "fixture": "tests/fixtures/pages/cmtc-a__cert-manager.prom",
+        "series": 15
+      }
+    },
+    {
+      "name": "controller_runtime_reconcile_errors_total",
+      "type": "counter",
+      "unit": "errors",
+      "help": "Reconcile errors of trust-manager's Bundle controller (controller-runtime v0.25.0, trust-manager go.mod:21).",
+      "component": "trust-manager",
+      "owner": "trust-manager, Deployment trust-manager in cert-manager",
+      "source": {
+        "repo": "controller-runtime",
+        "ref": "v0.25.0",
+        "file": "pkg/internal/controller/metrics/metrics.go",
+        "function": "metrics (package var)",
+        "line": 40,
+        "token": "\"controller_runtime_reconcile_errors_total\""
+      },
+      "status": "emitted",
+      "collection": "not-scraped",
+      "labels": [
+        {
+          "name": "controller",
+          "values": [
+            "bundles"
+          ]
+        }
+      ],
+      "cardinality": "1 per controller",
+      "stage": "pki",
+      "questions": [
+        "OC4"
+      ],
+      "zero_initialized": true,
+      "observed": {
+        "fixture": "tests/fixtures/pages/cmtc-a__trust-manager.prom",
+        "series": 1
+      }
+    },
+    {
+      "name": "container_threads",
+      "type": "gauge",
+      "unit": "threads",
+      "help": "Tasks (processes and threads) of the container's cgroup: PidsStats.Current (handler.go:917).",
+      "component": "kubelet",
+      "owner": "kubelet's embedded cAdvisor, on every node",
+      "source": {
+        "repo": "cadvisor",
+        "ref": "v0.56.2",
+        "file": "metrics/prometheus.go",
+        "function": "NewPrometheusCollector (ProcessMetrics)",
+        "line": 1641,
+        "token": "\"container_threads\""
+      },
+      "status": "emitted",
+      "collection": "not-scraped",
+      "labels": [
+        {
+          "name": "namespace",
+          "bound": "kept for the mesh namespaces only (deploy/ keep list)"
+        },
+        {
+          "name": "pod",
+          "bound": "one per Pod"
+        },
+        {
+          "name": "container",
+          "bound": "one per container"
+        }
+      ],
+      "cardinality": "1 per container of the kept namespaces",
+      "stage": "platform",
+      "questions": [
+        "OC4"
+      ],
+      "zero_initialized": false,
+      "observed": {
+        "fixture": "tests/fixtures/pages/cmtc-a__kubelet-cadvisor__cmtc-a-worker.prom",
+        "series": 16
+      },
+      "notes": "#41: the register-agent-node sidecar of spire-server-0 grows by about 12 a minute."
+    },
+    {
+      "name": "container_threads_max",
+      "type": "gauge",
+      "unit": "threads",
+      "help": "The cgroup's pids.max: PidsStats.Limit (handler.go:918); 0 when unlimited.",
+      "component": "kubelet",
+      "owner": "kubelet's embedded cAdvisor, on every node",
+      "source": {
+        "repo": "cadvisor",
+        "ref": "v0.56.2",
+        "file": "metrics/prometheus.go",
+        "function": "NewPrometheusCollector (ProcessMetrics)",
+        "line": 1628,
+        "token": "\"container_threads_max\""
+      },
+      "status": "emitted",
+      "collection": "not-scraped",
+      "labels": [
+        {
+          "name": "namespace",
+          "bound": "kept for the mesh namespaces only (deploy/ keep list)"
+        },
+        {
+          "name": "pod",
+          "bound": "one per Pod"
+        },
+        {
+          "name": "container",
+          "bound": "one per container"
+        }
+      ],
+      "cardinality": "1 per container of the kept namespaces",
+      "stage": "platform",
+      "questions": [
+        "OC4"
+      ],
+      "zero_initialized": false,
+      "observed": {
+        "fixture": "tests/fixtures/pages/cmtc-a__kubelet-cadvisor__cmtc-a-worker.prom",
+        "series": 16
+      }
+    },
+    {
+      "name": "up",
+      "type": "gauge",
+      "unit": "boolean",
+      "help": "1 when the last scrape of the target succeeded, 0 when it failed; no series when the job has no target.",
+      "component": "prometheus",
+      "owner": "Prometheus of each cluster (monitoring namespace)",
+      "source": {
+        "repo": "prometheus",
+        "ref": "v3.7.0",
+        "file": "scrape/scrape.go",
+        "function": "scrapeHealthMetric",
+        "line": 2055,
+        "token": "[]byte(\"up\" + \"\\xff\")"
+      },
+      "status": "emitted",
+      "collection": "scraped",
+      "labels": [],
+      "cardinality": "1 per scrape target",
+      "stage": "collection",
+      "questions": [
+        "OC1"
+      ],
+      "zero_initialized": true
+    },
+    {
+      "name": "ALERTS",
+      "type": "gauge",
+      "unit": "boolean",
+      "help": "One series per pending or firing alert, written by the rule evaluator.",
+      "component": "prometheus",
+      "owner": "Prometheus of each cluster (monitoring namespace)",
+      "source": {
+        "repo": "prometheus",
+        "ref": "v3.7.0",
+        "file": "rules/alerting.go",
+        "function": "AlertingRule (alertMetricName)",
+        "line": 41,
+        "token": "alertMetricName = \"ALERTS\""
+      },
+      "status": "emitted",
+      "collection": "not-configured",
+      "labels": [
+        {
+          "name": "alertname",
+          "bound": "one per alert of rules/"
+        },
+        {
+          "name": "alertstate",
+          "values": [
+            "pending",
+            "firing"
+          ]
+        },
+        {
+          "name": "severity",
+          "values": [
+            "warning",
+            "critical"
+          ]
+        },
+        {
+          "name": "owner",
+          "bound": "the owning component, about 10"
+        }
+      ],
+      "cardinality": "1 per active alert",
+      "stage": "collection",
+      "questions": [
+        "OC2"
+      ],
+      "zero_initialized": false,
+      "notes": "The labs load no v2 rule file, so no v2 alert can be active."
+    },
+    {
+      "name": "prometheus_remote_storage_samples_total",
+      "type": "counter",
+      "unit": "samples",
+      "help": "Samples sent to remote storage.",
+      "component": "prometheus",
+      "owner": "Prometheus of each cluster (monitoring namespace)",
+      "source": {
+        "repo": "prometheus",
+        "ref": "v3.7.0",
+        "file": "storage/remote/queue_manager.go",
+        "function": "newQueueManagerMetrics",
+        "line": 113,
+        "token": "\"samples_total\""
+      },
+      "status": "emitted",
+      "collection": "not-scraped",
+      "labels": [
+        {
+          "name": "remote_name",
+          "bound": "one per remote_write entry, 1 on cmtc-b"
+        },
+        {
+          "name": "url",
+          "bound": "as remote_name"
+        }
+      ],
+      "cardinality": "1 per remote_write entry",
+      "stage": "collection",
+      "questions": [
+        "OC1"
+      ],
+      "zero_initialized": false,
+      "observed": {
+        "fixture": "tests/fixtures/pages/cmtc-b__prometheus.prom",
+        "series": 1
+      }
+    },
+    {
+      "name": "prometheus_remote_storage_samples_failed_total",
+      "type": "counter",
+      "unit": "samples",
+      "help": "Samples that failed to send with a non-recoverable error.",
+      "component": "prometheus",
+      "owner": "Prometheus of each cluster (monitoring namespace)",
+      "source": {
+        "repo": "prometheus",
+        "ref": "v3.7.0",
+        "file": "storage/remote/queue_manager.go",
+        "function": "newQueueManagerMetrics",
+        "line": 141,
+        "token": "\"samples_failed_total\""
+      },
+      "status": "emitted",
+      "collection": "not-scraped",
+      "labels": [
+        {
+          "name": "remote_name",
+          "bound": "one per remote_write entry, 1 on cmtc-b"
+        },
+        {
+          "name": "url",
+          "bound": "as remote_name"
+        }
+      ],
+      "cardinality": "1 per remote_write entry",
+      "stage": "collection",
+      "questions": [
+        "OC1"
+      ],
+      "zero_initialized": false,
+      "observed": {
+        "fixture": "tests/fixtures/pages/cmtc-b__prometheus.prom",
+        "series": 1
+      }
+    },
+    {
+      "name": "prometheus_remote_storage_queue_highest_sent_timestamp_seconds",
+      "type": "gauge",
+      "unit": "seconds (Unix time)",
+      "help": "Timestamp of the newest sample the queue sent successfully.",
+      "component": "prometheus",
+      "owner": "Prometheus of each cluster (monitoring namespace)",
+      "source": {
+        "repo": "prometheus",
+        "ref": "v3.7.0",
+        "file": "storage/remote/queue_manager.go",
+        "function": "newQueueManagerMetrics",
+        "line": 246,
+        "token": "\"queue_highest_sent_timestamp_seconds\""
+      },
+      "status": "emitted",
+      "collection": "not-scraped",
+      "labels": [
+        {
+          "name": "remote_name",
+          "bound": "one per remote_write entry, 1 on cmtc-b"
+        },
+        {
+          "name": "url",
+          "bound": "as remote_name"
+        }
+      ],
+      "cardinality": "1 per remote_write entry",
+      "stage": "collection",
+      "questions": [
+        "OC1"
+      ],
+      "zero_initialized": false,
+      "observed": {
+        "fixture": "tests/fixtures/pages/cmtc-b__prometheus.prom",
+        "series": 1
+      }
+    },
+    {
+      "name": "prometheus_remote_storage_highest_timestamp_in_seconds",
+      "type": "gauge",
+      "unit": "seconds (Unix time)",
+      "help": "Timestamp of the newest sample written to the local storage.",
+      "component": "prometheus",
+      "owner": "Prometheus of each cluster (monitoring namespace)",
+      "source": {
+        "repo": "prometheus",
+        "ref": "v3.7.0",
+        "file": "storage/remote/write.go",
+        "function": "NewWriteStorage",
+        "line": 101,
+        "token": "\"highest_timestamp_in_seconds\""
+      },
+      "status": "emitted",
+      "collection": "not-scraped",
+      "labels": [],
+      "cardinality": "1 per Prometheus",
+      "stage": "collection",
+      "questions": [
+        "OC1"
+      ],
+      "zero_initialized": false,
+      "observed": {
+        "fixture": "tests/fixtures/pages/cmtc-b__prometheus.prom",
+        "series": 1
+      }
+    }
+  ]
+}

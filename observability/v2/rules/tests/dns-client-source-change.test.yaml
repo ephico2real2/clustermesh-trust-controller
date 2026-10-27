@@ -1,0 +1,117 @@
+# promtool test rules for rules/proposed/dns-client-source-change.rules.yaml. The series carry the
+# labels of the measurement plane's contract (internal/measurement/contract.go of #36) as a v2 scrape of
+# the node agent stores them: the target labels job, component, cluster, node, namespace and pod, and
+# the agent's own cluster, node and namespace renamed exported_*. Samples every 15 s, so a 1 minute
+# window holds four of them, as at the lab's 5 s scrape interval it holds twelve.
+rule_files:
+- ../proposed/dns-client-source-change.rules.yaml
+evaluation_interval: 1m
+
+tests:
+# 2026-10-25: Pods in cmtc-live-mtls on cmtc-a-worker keep sending queries to CoreDNS on the control
+# plane node (off_node); from 5m no answer returns (dropped at the node's egress gate). Pods in
+# mesh-client keep getting answers.
+- name: queries without answers
+  interval: 15s
+  input_series:
+  - series: 'cmtc_measurement_dns_queries_total{job="cmtc", component="cmtc-node-agent", cluster="cmtc-a", exported_cluster="cmtc-a", node="cmtc-a-worker", exported_node="cmtc-a-worker", namespace="cmtc-system", pod="cmtc-node-agent-gps9r", instance="10.10.1.5:8080", exported_namespace="cmtc-live-mtls", transport="udp", locality="off_node"}'
+    values: '0+2x48'
+  - series: 'cmtc_measurement_dns_answers_total{job="cmtc", component="cmtc-node-agent", cluster="cmtc-a", exported_cluster="cmtc-a", node="cmtc-a-worker", exported_node="cmtc-a-worker", namespace="cmtc-system", pod="cmtc-node-agent-gps9r", instance="10.10.1.5:8080", exported_namespace="cmtc-live-mtls", transport="udp", locality="off_node", rcode="noerror"}'
+    values: '0+2x20 40x28'
+  - series: 'cmtc_measurement_dns_queries_total{job="cmtc", component="cmtc-node-agent", cluster="cmtc-a", exported_cluster="cmtc-a", node="cmtc-a-worker", exported_node="cmtc-a-worker", namespace="cmtc-system", pod="cmtc-node-agent-gps9r", instance="10.10.1.5:8080", exported_namespace="mesh-client", transport="udp", locality="off_node"}'
+    values: '0+4x48'
+  - series: 'cmtc_measurement_dns_answers_total{job="cmtc", component="cmtc-node-agent", cluster="cmtc-a", exported_cluster="cmtc-a", node="cmtc-a-worker", exported_node="cmtc-a-worker", namespace="cmtc-system", pod="cmtc-node-agent-gps9r", instance="10.10.1.5:8080", exported_namespace="mesh-client", transport="udp", locality="off_node", rcode="noerror"}'
+    values: '0+4x48'
+  promql_expr_test:
+  - expr: round(cmtc:measurement_dns_queries:rate5m, 0.0001)
+    eval_time: 10m
+    exp_samples:
+    - labels: '{cluster="cmtc-a", node="cmtc-a-worker", exported_namespace="cmtc-live-mtls", transport="udp", locality="off_node"}'
+      value: 0.1333
+    - labels: '{cluster="cmtc-a", node="cmtc-a-worker", exported_namespace="mesh-client", transport="udp", locality="off_node"}'
+      value: 0.2667
+  - expr: cmtc:measurement_dns_answers:rate5m{exported_namespace="cmtc-live-mtls"}
+    eval_time: 11m
+    exp_samples:
+    - labels: 'cmtc:measurement_dns_answers:rate5m{cluster="cmtc-a", node="cmtc-a-worker", exported_namespace="cmtc-live-mtls", rcode="noerror"}'
+      value: 0
+  - expr: cmtc:measurement_dns_unanswered:ratio_rate5m
+    eval_time: 11m
+    exp_samples:
+    - labels: 'cmtc:measurement_dns_unanswered:ratio_rate5m{cluster="cmtc-a", exported_namespace="cmtc-live-mtls"}'
+      value: 1
+    - labels: 'cmtc:measurement_dns_unanswered:ratio_rate5m{cluster="cmtc-a", exported_namespace="mesh-client"}'
+      value: 0
+  alert_rule_test:
+  - eval_time: 5m
+    alertname: CMTCEnrolledPodDNSUnanswered
+    exp_alerts: []
+  - eval_time: 6m
+    alertname: CMTCEnrolledPodDNSUnanswered
+    exp_alerts: []
+  - eval_time: 7m
+    alertname: CMTCEnrolledPodDNSUnanswered
+    exp_alerts:
+    - exp_labels: {severity: critical, owner: cilium-agent, cluster: cmtc-a, node: cmtc-a-worker, exported_namespace: cmtc-live-mtls}
+      exp_annotations:
+        summary: 'Enrolled Pods in cmtc-live-mtls on cmtc-a-worker (cmtc-a) sent DNS queries and received no answer for 1 minute'
+        runbook: 'If the CoreDNS alerts are quiet, the queries were dropped before CoreDNS: check cilium_drop_count_total on the node (reason "Policy denied", direction EGRESS) and the approved-resolver exception of the Cilium egress gate. The plane''s event stream names each Pod (ADR-005).'
+
+# Answer latency by locality: half within 1 ms, all within 5 ms.
+- name: answer latency
+  interval: 15s
+  input_series:
+  - series: 'cmtc_measurement_dns_answer_duration_seconds_bucket{job="cmtc", component="cmtc-node-agent", cluster="cmtc-a", exported_cluster="cmtc-a", node="cmtc-a-worker", exported_node="cmtc-a-worker", namespace="cmtc-system", pod="cmtc-node-agent-gps9r", instance="10.10.1.5:8080", transport="udp", locality="off_node", le="0.001"}'
+    values: '0+1x40'
+  - series: 'cmtc_measurement_dns_answer_duration_seconds_bucket{job="cmtc", component="cmtc-node-agent", cluster="cmtc-a", exported_cluster="cmtc-a", node="cmtc-a-worker", exported_node="cmtc-a-worker", namespace="cmtc-system", pod="cmtc-node-agent-gps9r", instance="10.10.1.5:8080", transport="udp", locality="off_node", le="0.005"}'
+    values: '0+2x40'
+  - series: 'cmtc_measurement_dns_answer_duration_seconds_bucket{job="cmtc", component="cmtc-node-agent", cluster="cmtc-a", exported_cluster="cmtc-a", node="cmtc-a-worker", exported_node="cmtc-a-worker", namespace="cmtc-system", pod="cmtc-node-agent-gps9r", instance="10.10.1.5:8080", transport="udp", locality="off_node", le="+Inf"}'
+    values: '0+2x40'
+  - series: 'cmtc_measurement_dns_answer_duration_seconds_count{job="cmtc", component="cmtc-node-agent", cluster="cmtc-a", exported_cluster="cmtc-a", node="cmtc-a-worker", exported_node="cmtc-a-worker", namespace="cmtc-system", pod="cmtc-node-agent-gps9r", instance="10.10.1.5:8080", transport="udp", locality="off_node"}'
+    values: '0+2x40'
+  promql_expr_test:
+  - expr: round(cmtc:measurement_dns_answer_duration_seconds:p50_rate5m * 100000) / 100000
+    eval_time: 10m
+    exp_samples:
+    - labels: '{cluster="cmtc-a", locality="off_node"}'
+      value: 0.001
+  - expr: round(cmtc:measurement_dns_answer_duration_seconds:p99_rate5m * 100000) / 100000
+    eval_time: 10m
+    exp_samples:
+    - labels: '{cluster="cmtc-a", locality="off_node"}'
+      value: 0.00492
+
+# The plane on the worker stops being ready at 75 s; two enrolled Pods there are not measured from
+# 135 s.
+- name: plane readiness and coverage
+  interval: 15s
+  input_series:
+  - series: 'cmtc_measurement_ready{job="cmtc", component="cmtc-node-agent", cluster="cmtc-a", exported_cluster="cmtc-a", node="cmtc-a-worker", exported_node="cmtc-a-worker", namespace="cmtc-system", pod="cmtc-node-agent-gps9r", instance="10.10.1.5:8080"}'
+    values: '1x4 0x40'
+  - series: 'cmtc_measurement_ready{job="cmtc", component="cmtc-node-agent", cluster="cmtc-a", exported_cluster="cmtc-a", node="cmtc-a-control-plane", exported_node="cmtc-a-control-plane", namespace="cmtc-system", pod="cmtc-node-agent-8x6s5", instance="10.10.0.7:8080"}'
+    values: '1x44'
+  - series: 'cmtc_measurement_workloads{job="cmtc", component="cmtc-node-agent", cluster="cmtc-a", exported_cluster="cmtc-a", node="cmtc-a-worker", exported_node="cmtc-a-worker", namespace="cmtc-system", pod="cmtc-node-agent-gps9r", instance="10.10.1.5:8080", state="unavailable"}'
+    values: '0x8 2x36'
+  - series: 'cmtc_measurement_workloads{job="cmtc", component="cmtc-node-agent", cluster="cmtc-a", exported_cluster="cmtc-a", node="cmtc-a-worker", exported_node="cmtc-a-worker", namespace="cmtc-system", pod="cmtc-node-agent-gps9r", instance="10.10.1.5:8080", state="attached"}'
+    values: '3x44'
+  alert_rule_test:
+  - eval_time: 6m
+    alertname: CMTCMeasurementPlaneNotReady
+    exp_alerts: []
+  - eval_time: 7m
+    alertname: CMTCMeasurementPlaneNotReady
+    exp_alerts:
+    - exp_labels: {severity: warning, owner: cmtc-node-agent, job: cmtc, component: cmtc-node-agent, cluster: cmtc-a, exported_cluster: cmtc-a, node: cmtc-a-worker, exported_node: cmtc-a-worker, namespace: cmtc-system, pod: cmtc-node-agent-gps9r, instance: '10.10.1.5:8080'}
+      exp_annotations:
+        summary: 'The CMTC measurement plane on cmtc-a-worker (cmtc-a) is not ready'
+        runbook: 'Client DNS panels for this node are unavailable, not zero. cmtc_measurement_hook_available names the hook that did not load; read the loader log.'
+  - eval_time: 7m
+    alertname: CMTCMeasurementWorkloadsUnavailable
+    exp_alerts: []
+  - eval_time: 8m
+    alertname: CMTCMeasurementWorkloadsUnavailable
+    exp_alerts:
+    - exp_labels: {severity: warning, owner: cmtc-node-agent, job: cmtc, component: cmtc-node-agent, cluster: cmtc-a, exported_cluster: cmtc-a, node: cmtc-a-worker, exported_node: cmtc-a-worker, namespace: cmtc-system, pod: cmtc-node-agent-gps9r, instance: '10.10.1.5:8080', state: unavailable}
+      exp_annotations:
+        summary: '2 enrolled Pods on cmtc-a-worker (cmtc-a) are not measured'
+        runbook: 'The plane could not attach to those Pods; their data is unavailable. Read the loader log for the reason.'

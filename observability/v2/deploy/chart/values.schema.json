@@ -1,0 +1,505 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "cmtc-observability values",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "global",
+    "clusterName",
+    "hub",
+    "remoteWrite",
+    "prometheus",
+    "grafana",
+    "rules",
+    "dashboards",
+    "openshift",
+    "jobs"
+  ],
+  "properties": {
+    "global": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "openshift"
+      ],
+      "properties": {
+        "openshift": {
+          "type": "boolean"
+        }
+      }
+    },
+    "clusterName": {
+      "type": "string",
+      "pattern": "^([a-z0-9]([-a-z0-9]*[a-z0-9])?)?$"
+    },
+    "hub": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "enabled",
+        "expectedClusters"
+      ],
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "expectedClusters": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z0-9]([-a-z0-9]*[a-z0-9])?$"
+          }
+        }
+      }
+    },
+    "remoteWrite": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "url"
+      ],
+      "properties": {
+        "url": {
+          "type": "string",
+          "pattern": "^(https?://[^\\s]+/api/v1/write)?$"
+        }
+      }
+    },
+    "prometheus": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "image",
+        "scrapeInterval",
+        "evaluationInterval",
+        "retention",
+        "nodePort",
+        "resources"
+      ],
+      "properties": {
+        "image": {
+          "type": "string",
+          "pattern": "^[^@\\s]+@sha256:[0-9a-f]{64}$"
+        },
+        "scrapeInterval": {
+          "type": "string",
+          "pattern": "^[0-9]+(ms|s|m|h|d)$"
+        },
+        "evaluationInterval": {
+          "type": "string",
+          "pattern": "^[0-9]+(ms|s|m|h|d)$"
+        },
+        "retention": {
+          "type": "string",
+          "pattern": "^[0-9]+(ms|s|m|h|d)$"
+        },
+        "nodePort": {
+          "type": "integer",
+          "minimum": 30000,
+          "maximum": 32767
+        },
+        "resources": {
+          "type": "object"
+        }
+      }
+    },
+    "grafana": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "image",
+        "adminPasswordSecret",
+        "anonymousViewer",
+        "resources"
+      ],
+      "properties": {
+        "image": {
+          "type": "string",
+          "pattern": "^[^@\\s]+@sha256:[0-9a-f]{64}$"
+        },
+        "adminPasswordSecret": {
+          "type": "string"
+        },
+        "anonymousViewer": {
+          "type": "boolean"
+        },
+        "resources": {
+          "type": "object"
+        }
+      }
+    },
+    "rules": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "enabled",
+        "includeProposed"
+      ],
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "includeProposed": {
+          "type": "boolean"
+        }
+      }
+    },
+    "dashboards": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "grafana",
+        "perses",
+        "clusters"
+      ],
+      "properties": {
+        "grafana": {
+          "type": "boolean"
+        },
+        "perses": {
+          "type": "boolean"
+        },
+        "clusters": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z0-9]([-a-z0-9]*[a-z0-9])?$"
+          }
+        }
+      }
+    },
+    "openshift": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "scrapeInterval",
+        "thanosURL",
+        "platformJobs"
+      ],
+      "properties": {
+        "scrapeInterval": {
+          "type": "string",
+          "pattern": "^[0-9]+(ms|s|m|h|d)$"
+        },
+        "thanosURL": {
+          "type": "string",
+          "pattern": "^https://"
+        },
+        "platformJobs": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "coredns",
+            "cadvisor"
+          ],
+          "properties": {
+            "coredns": {
+              "type": "string",
+              "minLength": 1
+            },
+            "cadvisor": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      }
+    },
+    "jobs": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "cmtc",
+        "ciliumAgent",
+        "ztunnel",
+        "coredns",
+        "certManager",
+        "trustManager",
+        "cadvisor",
+        "prometheus",
+        "spireServer",
+        "spireAgent"
+      ],
+      "properties": {
+        "cmtc": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "enabled",
+            "namespace",
+            "keep"
+          ],
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "namespace": {
+              "type": "string",
+              "pattern": "^[a-z0-9]([-a-z0-9]*[a-z0-9])?$"
+            },
+            "keep": {
+              "type": "array",
+              "minItems": 1,
+              "uniqueItems": true,
+              "items": {
+                "type": "string",
+                "pattern": "^[a-zA-Z_:][a-zA-Z0-9_:]*$"
+              }
+            }
+          }
+        },
+        "ciliumAgent": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "enabled",
+            "namespace",
+            "keep"
+          ],
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "namespace": {
+              "type": "string",
+              "pattern": "^[a-z0-9]([-a-z0-9]*[a-z0-9])?$"
+            },
+            "keep": {
+              "type": "array",
+              "minItems": 1,
+              "uniqueItems": true,
+              "items": {
+                "type": "string",
+                "pattern": "^[a-zA-Z_:][a-zA-Z0-9_:]*$"
+              }
+            }
+          }
+        },
+        "ztunnel": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "enabled",
+            "namespace",
+            "keep"
+          ],
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "namespace": {
+              "type": "string",
+              "pattern": "^[a-z0-9]([-a-z0-9]*[a-z0-9])?$"
+            },
+            "keep": {
+              "type": "array",
+              "minItems": 1,
+              "uniqueItems": true,
+              "items": {
+                "type": "string",
+                "pattern": "^[a-zA-Z_:][a-zA-Z0-9_:]*$"
+              }
+            }
+          }
+        },
+        "coredns": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "enabled",
+            "namespace",
+            "keep"
+          ],
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "namespace": {
+              "type": "string",
+              "pattern": "^[a-z0-9]([-a-z0-9]*[a-z0-9])?$"
+            },
+            "keep": {
+              "type": "array",
+              "minItems": 1,
+              "uniqueItems": true,
+              "items": {
+                "type": "string",
+                "pattern": "^[a-zA-Z_:][a-zA-Z0-9_:]*$"
+              }
+            }
+          }
+        },
+        "certManager": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "enabled",
+            "namespace",
+            "keep"
+          ],
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "namespace": {
+              "type": "string",
+              "pattern": "^[a-z0-9]([-a-z0-9]*[a-z0-9])?$"
+            },
+            "keep": {
+              "type": "array",
+              "minItems": 1,
+              "uniqueItems": true,
+              "items": {
+                "type": "string",
+                "pattern": "^[a-zA-Z_:][a-zA-Z0-9_:]*$"
+              }
+            }
+          }
+        },
+        "trustManager": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "enabled",
+            "namespace",
+            "keep"
+          ],
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "namespace": {
+              "type": "string",
+              "pattern": "^[a-z0-9]([-a-z0-9]*[a-z0-9])?$"
+            },
+            "keep": {
+              "type": "array",
+              "minItems": 1,
+              "uniqueItems": true,
+              "items": {
+                "type": "string",
+                "pattern": "^[a-zA-Z_:][a-zA-Z0-9_:]*$"
+              }
+            }
+          }
+        },
+        "cadvisor": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "enabled",
+            "insecureSkipVerify",
+            "namespaces",
+            "keep"
+          ],
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "insecureSkipVerify": {
+              "type": "boolean"
+            },
+            "namespaces": {
+              "type": "array",
+              "minItems": 1,
+              "uniqueItems": true,
+              "items": {
+                "type": "string",
+                "pattern": "^[a-z0-9]([-a-z0-9]*[a-z0-9])?$"
+              }
+            },
+            "keep": {
+              "type": "array",
+              "minItems": 1,
+              "uniqueItems": true,
+              "items": {
+                "type": "string",
+                "pattern": "^[a-zA-Z_:][a-zA-Z0-9_:]*$"
+              }
+            }
+          }
+        },
+        "prometheus": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "enabled",
+            "keep"
+          ],
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "keep": {
+              "type": "array",
+              "minItems": 1,
+              "uniqueItems": true,
+              "items": {
+                "type": "string",
+                "pattern": "^[a-zA-Z_:][a-zA-Z0-9_:]*$"
+              }
+            }
+          }
+        },
+        "spireServer": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "enabled",
+            "namespace",
+            "keep"
+          ],
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "namespace": {
+              "type": "string",
+              "pattern": "^[a-z0-9]([-a-z0-9]*[a-z0-9])?$"
+            },
+            "keep": {
+              "type": "array",
+              "minItems": 1,
+              "uniqueItems": true,
+              "items": {
+                "type": "string",
+                "pattern": "^[a-zA-Z_:][a-zA-Z0-9_:]*$"
+              }
+            }
+          }
+        },
+        "spireAgent": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "enabled",
+            "namespace",
+            "keep"
+          ],
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "namespace": {
+              "type": "string",
+              "pattern": "^[a-z0-9]([-a-z0-9]*[a-z0-9])?$"
+            },
+            "keep": {
+              "type": "array",
+              "minItems": 1,
+              "uniqueItems": true,
+              "items": {
+                "type": "string",
+                "pattern": "^[a-zA-Z_:][a-zA-Z0-9_:]*$"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

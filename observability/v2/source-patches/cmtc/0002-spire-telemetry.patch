@@ -1,0 +1,154 @@
+UNEXECUTED on the labs: not applied and not deployed. Its Python unit tests ran here on a scratch copy of
+scripts/lab/spire at f867e2d: test_render_spire.py, 18 tests OK, of which the new one fails without the change
+(4 subtests) and passes with it; with the working tree's uncommitted renderer change applied first, 19 tests OK.
+Python 3.15.0 and 3.9.6. The other test modules of scripts/lab/spire import the cryptography package, which no
+Python on this Mac has; they did not run. `git apply --check` accepts the patch at CMTC 1c3db28a58 (the deployed
+controller; scripts/lab/spire is identical at f867e2d), at f867e2d (feat/end-to-end-enforcement) and on the
+working tree of 2026-10-27.
+
+Apply and test, from the repository root:
+    git apply observability/v2/source-patches/cmtc/0002-spire-telemetry.patch
+    (cd scripts/lab/spire && python3 -m unittest test_render_spire)
+
+spire: serve the telemetry of the SPIRE server and agent to Prometheus
+
+server.conf and agent.conf have no telemetry block, so no SPIRE metric reaches Prometheus. Two incidents need
+SPIRE's own numbers:
+  - #34, and the outage of 2026-10-25: SPIRE activated a CA that the issuer approval did not pin. The server sets
+    manager.x509_ca.rotate.expiration (notAfter of the CA it activated last) and manager.x509_ca.rotate.max_expiration
+    (the later notAfter of the active and the prepared CA) per trust domain: SPIRE fork 0f8fe4d681,
+    pkg/common/telemetry/server/ca_manager.go:42-55 and :66-73.
+  - #42: ztunnel fetches workload certificates in bursts. The agent counts each DelegatedIdentity call by its gRPC
+    status when the call ends: rpc.delegated_identity.subscribe_to_x509_svids (pkg/common/api/middleware/metrics.go,
+    middleware/interceptor.go). ztunnel ends each SubscribeToX509SVIDs stream after the first answer, so the
+    counter counts fetches.
+
+The patch appends the same block to both configurations and declares it as the container port "prom":
+
+    telemetry {
+      Prometheus {
+        host = "0.0.0.0"
+        port = 9988
+      }
+    }
+
+Host 0.0.0.0, port 9988 and the port name "prom" are those of the SPIFFE hardened Helm chart
+(spiffe/helm-charts-hardened, charts/spire/charts/spire-server/templates/configmap.yaml and
+charts/spire/charts/spire-agent/values.yaml and templates/daemonset.yaml, read 2026-10-27). The Prometheus names
+are the keys joined by "_" under spire_server or spire_agent: spire_server_manager_x509_ca_rotate_expiration,
+spire_server_manager_x509_ca_rotate_max_expiration, spire_agent_rpc_delegated_identity_subscribe_to_x509_svids.
+A counter keeps its key without "_total" (hashicorp/go-metrics v0.7.0 prometheus/prometheus.go, Name: key). Every
+series carries a host label: SPIRE turns EnableHostnameLabel on by default (pkg/common/telemetry/metrics.go:87).
+
+Decisions for the operator:
+  1. Exposure. The endpoint is plain HTTP. The server listens in its Pod's network namespace. The agent runs with
+     hostNetwork, so it listens on every address of its node, as its health checks on 4251 do already: a client
+     that reaches a node address on 9988 reads the agent's metrics (call counts by method and status, the node's
+     hostname, Go runtime figures; no key material). Namespace cilium-spire has no NetworkPolicy. SPIRE can serve
+     the endpoint over TLS with its own SVID and a list of authorized SPIFFE IDs (tls { use_spire_svid = true
+     authorized_spiffe_ids = [...] }, pkg/common/telemetry/prometheus.go); the Prometheus of
+     observability/v2/deploy then needs an SVID of its own.
+  2. Rollout. SPIRE reads its configuration at start, so the server and every agent restart. The live agents do
+     not mount the spire-agent ConfigMap this renderer writes: they mount cmtc-delegated-agent-1f9ab66bbf7f5cd6
+     (cmtc-a) and cmtc-delegated-agent-0da33e582bf1a6d5 (cmtc-b), labelled
+     security.cmtc.io/owner=claude-delegated-socket, which no file of this repository renders (read with kubectl
+     get on 2026-10-27T02:3xZ). Those ConfigMaps need the same block until their configuration is ported into the
+     repository. workload_api.py make_plan refuses a live spire-agent ConfigMap that differs from agent_config()
+     (workload_api.py:133): apply the new baseline ConfigMap before it runs again.
+
+observability/v2/deploy scrapes the "prom" port when jobs.spireServer.enabled and jobs.spireAgent.enabled are
+true; observability/v2/rules/proposed/spire-telemetry.rules.yaml holds the CA and fetch-storm rules.
+
+diff --git a/scripts/lab/spire/render_spire.py b/scripts/lab/spire/render_spire.py
+index d53e82c..ac709af 100644
+--- a/scripts/lab/spire/render_spire.py
++++ b/scripts/lab/spire/render_spire.py
+@@ -66,6 +66,18 @@ READY_PERIOD_SECONDS = 5
+ START_FAILURE_THRESHOLD = 30
+ START_PERIOD_SECONDS = 5
+ START_TIMEOUT_SECONDS = 3
++# Prometheus telemetry of the server and the agent, in plain HTTP on every address of the Pod: the agent runs with
++# hostNetwork, so its exporter listens on the node's addresses, as its health checks on 4251 do. Port 9988 and the
++# port name "prom" are those of the SPIFFE hardened Helm chart; observability/v2/deploy scrapes the "prom" port.
++METRICS_PORT = 9988
++TELEMETRY = f'''
++telemetry {{
++  Prometheus {{
++    host = "0.0.0.0"
++    port = {METRICS_PORT}
++  }}
++}}
++'''
+ FORBIDDEN_NAMES = {
+     "cluster-intermediate",
+     "cmtc-lab-intermediate",
+@@ -538,7 +550,7 @@ health_checks {{
+   live_path = "/live"
+   ready_path = "/ready"
+ }}
+-'''
++''' + TELEMETRY
+ 
+ 
+ def agent_config(cluster, domain):
+@@ -579,7 +591,7 @@ health_checks {{
+   live_path = "/live"
+   ready_path = "/ready"
+ }}
+-'''
++''' + TELEMETRY
+ 
+ 
+ def register_script(domain):
+@@ -757,6 +769,7 @@ def server_stateful_set(cluster, domain, images):
+                             "ports": [
+                                 {"name": "grpc", "containerPort": 8081, "protocol": "TCP"},
+                                 {"name": "http", "containerPort": 8080, "protocol": "TCP"},
++                                {"name": "prom", "containerPort": METRICS_PORT, "protocol": "TCP"},
+                             ],
+                             "startupProbe": startup_probe(),
+                             "livenessProbe": liveness_probe(),
+@@ -873,7 +886,8 @@ def agent_daemon_set(cluster, images):
+                             "imagePullPolicy": "IfNotPresent",
+                             "args": ["-config", "/run/spire/config/agent.conf"],
+                             "ports": [
+-                                {"name": "http", "containerPort": 4251, "protocol": "TCP"}
++                                {"name": "http", "containerPort": 4251, "protocol": "TCP"},
++                                {"name": "prom", "containerPort": METRICS_PORT, "protocol": "TCP"},
+                             ],
+                             "startupProbe": startup_probe(),
+                             "livenessProbe": liveness_probe(),
+diff --git a/scripts/lab/spire/test_render_spire.py b/scripts/lab/spire/test_render_spire.py
+index 5d8338c..d3df7e4 100644
+--- a/scripts/lab/spire/test_render_spire.py
++++ b/scripts/lab/spire/test_render_spire.py
+@@ -471,7 +471,8 @@ class ManifestTests(unittest.TestCase):
+         agent = container(ds, "spire-agent")
+         self.assertEqual(agent["image"], AGENT_IMAGE)
+         self.assertEqual(agent["imagePullPolicy"], "IfNotPresent")
+-        self.assertEqual(agent["ports"], [{"name": "http", "containerPort": 4251, "protocol": "TCP"}])
++        self.assertEqual(agent["ports"], [{"name": "http", "containerPort": 4251, "protocol": "TCP"},
++                                          {"name": "prom", "containerPort": 9988, "protocol": "TCP"}])
+         self.assertIsInstance(agent["ports"][0]["containerPort"], int)
+         self.assertEqual(agent["startupProbe"]["httpGet"], {"path": "/live", "port": "http"})
+         self.assertEqual(agent["livenessProbe"]["httpGet"], {"path": "/live", "port": "http"})
+@@ -544,6 +545,19 @@ class ManifestTests(unittest.TestCase):
+                     empty_dirs.append(item["name"])
+         self.assertEqual(sorted(empty_dirs), ["spire-agent-data", "spire-agent-socket", "spire-registration", "spire-server-socket"])
+ 
++    def test_telemetry_is_served_on_the_declared_prom_port(self):
++        # observability/v2/deploy scrapes the container port named "prom" of both SPIRE containers, over plain HTTP.
++        block = 'telemetry {\n  Prometheus {\n    host = "0.0.0.0"\n    port = 9988\n  }\n}\n'
++        for cluster in spire.CLUSTERS:
++            docs = spire.render(cluster)
++            for name, kind, key in (("spire-server", "StatefulSet", "server.conf"), ("spire-agent", "DaemonSet", "agent.conf")):
++                with self.subTest(cluster=cluster, component=name):
++                    config = one(docs, "ConfigMap", name)["data"][key]
++                    self.assertEqual(config.count("telemetry {"), 1)
++                    self.assertTrue(config.endswith("}\n\n" + block), config[-160:])
++                    ports = [p for p in container(one(docs, kind, name), name)["ports"] if p["name"] == "prom"]
++                    self.assertEqual(ports, [{"name": "prom", "containerPort": 9988, "protocol": "TCP"}])
++
+     def test_mutation_does_not_change_the_next_render(self):
+         docs = spire.render("cmtc-a")
+         docs[0]["metadata"]["name"] = "changed"

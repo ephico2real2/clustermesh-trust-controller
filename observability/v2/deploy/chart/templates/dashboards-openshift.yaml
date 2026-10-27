@@ -1,0 +1,66 @@
+{{- if .Values.global.openshift }}
+{{- if .Values.dashboards.perses }}
+# The Perses dashboards of the OpenShift console (Cluster Observability Operator 1.5 or later) and the data source
+# they query. files/dashboards/perses/ is GENERATED from the Grafana JSON by perses-dashboard (docs/COLLECTION.md).
+# Port 9091 of Thanos Querier is cluster-wide: viewers need cluster-monitoring-view. Port 9092 checks a POST as
+# "create pods" in one namespace, and the Perses UI posts its queries (diagram-kit COLLECTION.md, section 6).
+apiVersion: perses.dev/v1alpha2
+kind: PersesDatasource
+metadata:
+  name: cmtc-thanos
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "cmtc-obs.labels" . | nindent 4 }}
+spec:
+  client:
+    tls:
+      enable: true
+      caCert:
+        type: file
+        certPath: /ca/service-ca.crt
+  config:
+    display:
+      name: OpenShift Thanos Querier (cluster)
+    default: false
+    plugin:
+      kind: PrometheusDatasource
+      spec:
+        proxy:
+          kind: HTTPProxy
+          spec:
+            url: {{ .Values.openshift.thanosURL }}
+            # The secret the operator derives from spec.client.tls; the proxy must name it.
+            secret: cmtc-thanos-secret
+{{- range $name, $content := include "cmtc-obs.dashboards" (dict "root" . "kind" "perses") | fromYaml }}
+---
+apiVersion: perses.dev/v1alpha2
+kind: PersesDashboard
+metadata:
+  name: {{ $name | trimSuffix ".json" }}
+  namespace: {{ $.Release.Namespace }}
+  labels:
+    {{- include "cmtc-obs.labels" $ | nindent 4 }}
+spec:
+  config:
+    {{- $content | trimSuffix "\n" | nindent 4 }}
+{{- end }}
+{{- end }}
+{{- if .Values.dashboards.grafana }}
+---
+# For a Grafana that runs beside the console: the label grafana_dashboard: "1" is the convention Grafana's dashboard
+# sidecar watches for. Each dashboard picks a Prometheus data source with its variable DS_PROMETHEUS.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-grafana-dashboards
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "cmtc-obs.labels" . | nindent 4 }}
+    grafana_dashboard: "1"
+data:
+  {{- range $name, $content := include "cmtc-obs.dashboards" (dict "root" . "kind" "grafana") | fromYaml }}
+  {{ $name }}: |
+    {{- $content | trimSuffix "\n" | nindent 4 }}
+  {{- end }}
+{{- end }}
+{{- end }}

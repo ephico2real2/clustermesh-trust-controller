@@ -1,0 +1,127 @@
+# promtool test rules for rules/cmtc-local.rules.yaml.
+rule_files:
+- ../cmtc-local.rules.yaml
+evaluation_interval: 1m
+
+tests:
+# remote_write to the hub stops sending at t=0 while the local head keeps growing by 60 s a
+# minute; a second queue keeps up and must not fire.
+- interval: 1m
+  input_series:
+  - series: 'prometheus_remote_storage_highest_timestamp_in_seconds{job="prometheus", cluster="cmtc-b", component="prometheus", instance="10.20.0.30:9090"}'
+    values: '1000+60x12'
+  - series: 'prometheus_remote_storage_queue_highest_sent_timestamp_seconds{job="prometheus", cluster="cmtc-b", component="prometheus", instance="10.20.0.30:9090", remote_name="hub", url="https://172.18.0.3:30901/api/v1/write"}'
+    values: '1000x12'
+  - series: 'prometheus_remote_storage_queue_highest_sent_timestamp_seconds{job="prometheus", cluster="cmtc-b", component="prometheus", instance="10.20.0.30:9090", remote_name="mirror", url="https://mirror.example:443/api/v1/write"}'
+    values: '995+60x12'
+  alert_rule_test:
+  - eval_time: 6m
+    alertname: CMTCRemoteWriteBehind
+    exp_alerts: []
+  - eval_time: 10m
+    alertname: CMTCRemoteWriteBehind
+    exp_alerts:
+    - exp_labels:
+        severity: warning
+        owner: prometheus
+        job: prometheus
+        cluster: cmtc-b
+        component: prometheus
+        instance: 10.20.0.30:9090
+        remote_name: hub
+        url: https://172.18.0.3:30901/api/v1/write
+      exp_annotations:
+        summary: 'Prometheus in cmtc-b is 10m 0s behind in remote_write to hub'
+        runbook: 'The hub shows this cluster late, then stale. Check the hub NodePort, the remote-write TLS client certificate and the receiver logs on the hub.'
+
+# One queue fails 10 of every 110 samples; another fails none.
+- interval: 1m
+  input_series:
+  - series: 'prometheus_remote_storage_samples_failed_total{job="prometheus", cluster="cmtc-b", instance="10.20.0.30:9090", remote_name="hub", url="https://172.18.0.3:30901/api/v1/write"}'
+    values: '0+10x12'
+  - series: 'prometheus_remote_storage_samples_total{job="prometheus", cluster="cmtc-b", instance="10.20.0.30:9090", remote_name="hub", url="https://172.18.0.3:30901/api/v1/write"}'
+    values: '0+100x12'
+  - series: 'prometheus_remote_storage_samples_failed_total{job="prometheus", cluster="cmtc-b", instance="10.20.0.30:9090", remote_name="mirror", url="https://mirror.example:443/api/v1/write"}'
+    values: '0x12'
+  - series: 'prometheus_remote_storage_samples_total{job="prometheus", cluster="cmtc-b", instance="10.20.0.30:9090", remote_name="mirror", url="https://mirror.example:443/api/v1/write"}'
+    values: '0+100x12'
+  alert_rule_test:
+  - eval_time: 10m
+    alertname: CMTCRemoteWriteFailing
+    exp_alerts:
+    - exp_labels:
+        severity: warning
+        owner: prometheus
+        job: prometheus
+        cluster: cmtc-b
+        instance: 10.20.0.30:9090
+        remote_name: hub
+        url: https://172.18.0.3:30901/api/v1/write
+      exp_annotations:
+        summary: 'Prometheus in cmtc-b fails to send 9.091% of samples to hub'
+        runbook: 'Samples are dropped, not delayed: gaps at the hub will not fill. Check the receiver on the hub (TLS, client certificate, --web.enable-remote-write-receiver).'
+
+# The leader's publication (valid until t=100 s) is not renewed; a standby that lost the lease
+# reports an older value, and cmtc-b withdrew its profile (0).
+- interval: 1m
+  input_series:
+  - series: 'cmtc_issuer_profile_acknowledged_valid_until_timestamp_seconds{job="cmtc", component="cmtc-controller", cluster="cmtc-a", exported_cluster="cmtc-a", node="cmtc-a-worker", instance="10.10.1.9:8080"}'
+    values: '100x5'
+  - series: 'leader_election_master_status{job="cmtc", component="cmtc-controller", cluster="cmtc-a", node="cmtc-a-worker", instance="10.10.1.9:8080", name="cmtc-controller.security.cmtc.io"}'
+    values: '1x5'
+  - series: 'cmtc_issuer_profile_acknowledged_valid_until_timestamp_seconds{job="cmtc", component="cmtc-controller", cluster="cmtc-a", exported_cluster="cmtc-a", node="cmtc-a-control-plane", instance="10.10.0.8:8080"}'
+    values: '50x5'
+  - series: 'leader_election_master_status{job="cmtc", component="cmtc-controller", cluster="cmtc-a", node="cmtc-a-control-plane", instance="10.10.0.8:8080", name="cmtc-controller.security.cmtc.io"}'
+    values: '0x5'
+  - series: 'cmtc_issuer_profile_acknowledged_valid_until_timestamp_seconds{job="cmtc", component="cmtc-controller", cluster="cmtc-b", exported_cluster="cmtc-b", node="cmtc-b-worker", instance="10.20.1.9:8080"}'
+    values: '0x5'
+  - series: 'leader_election_master_status{job="cmtc", component="cmtc-controller", cluster="cmtc-b", node="cmtc-b-worker", instance="10.20.1.9:8080", name="cmtc-controller.security.cmtc.io"}'
+    values: '1x5'
+  alert_rule_test:
+  - eval_time: 1m
+    alertname: CMTCIssuerProfileLapsed
+    exp_alerts: []
+  - eval_time: 2m
+    alertname: CMTCIssuerProfileLapsed
+    exp_alerts:
+    - exp_labels:
+        severity: critical
+        owner: cmtc-controller
+        job: cmtc
+        component: cmtc-controller
+        cluster: cmtc-a
+        exported_cluster: cmtc-a
+        node: cmtc-a-worker
+        instance: 10.10.1.9:8080
+      exp_annotations:
+        summary: 'The issuer profile of cmtc-a expired at 1970-01-01 00:01:40 +0000 UTC and was not renewed'
+        runbook: 'ztunnel on every node of this cluster drains workload TLS once its profile expires. Check the controller log for publication write errors and the cmtc-issuer-publication ConfigMap in cmtc-system.'
+
+# The leader last read its source at t=10 s; the standby never read it (0) and must not fire.
+- interval: 1m
+  input_series:
+  - series: 'cmtc_issuer_profile_source_checked_timestamp_seconds{job="cmtc", component="cmtc-controller", cluster="cmtc-a", exported_cluster="cmtc-a", node="cmtc-a-worker", instance="10.10.1.9:8080"}'
+    values: '10x6'
+  - series: 'leader_election_master_status{job="cmtc", component="cmtc-controller", cluster="cmtc-a", node="cmtc-a-worker", instance="10.10.1.9:8080", name="cmtc-controller.security.cmtc.io"}'
+    values: '1x6'
+  - series: 'cmtc_issuer_profile_source_checked_timestamp_seconds{job="cmtc", component="cmtc-controller", cluster="cmtc-a", exported_cluster="cmtc-a", node="cmtc-a-control-plane", instance="10.10.0.8:8080"}'
+    values: '0x6'
+  alert_rule_test:
+  - eval_time: 2m
+    alertname: CMTCIssuerProfileSourceStale
+    exp_alerts: []
+  - eval_time: 4m
+    alertname: CMTCIssuerProfileSourceStale
+    exp_alerts:
+    - exp_labels:
+        severity: warning
+        owner: cmtc-controller
+        job: cmtc
+        component: cmtc-controller
+        cluster: cmtc-a
+        exported_cluster: cmtc-a
+        node: cmtc-a-worker
+        instance: 10.10.1.9:8080
+      exp_annotations:
+        summary: 'The issuer-profile producer in cmtc-a last read its approved source 3m 50s ago'
+        runbook: 'The producer cannot read the cmtc-issuer-approval ConfigMap; the profile will lapse when its lease ends. A value of decades means the leader has not read the source since it started. Check the controller''s API access and log.'

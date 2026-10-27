@@ -1,0 +1,160 @@
+{{- /* The provisioning files: the hub's Prometheus as the default data source, and the CMTC folder. */}}
+{{- define "cmtc-obs.grafanaProvisioning" -}}
+datasources.yaml: |
+  apiVersion: 1
+  datasources:
+    - name: CMTC Prometheus
+      uid: cmtc-prom
+      type: prometheus
+      access: proxy
+      url: http://{{ .Release.Name }}-prometheus:9090
+      isDefault: true
+      jsonData:
+        timeInterval: {{ .Values.prometheus.scrapeInterval }}
+dashboards.yaml: |
+  apiVersion: 1
+  providers:
+    - name: cmtc
+      folder: CMTC
+      type: file
+      disableDeletion: true
+      allowUiUpdates: false
+      options:
+        path: /etc/grafana/dashboards
+{{- end }}
+{{- if and (not .Values.global.openshift) .Values.hub.enabled .Values.dashboards.grafana }}
+{{- $g := .Values.grafana }}
+{{- $secret := $g.adminPasswordSecret | default (printf "%s-grafana-admin" .Release.Name) }}
+# kind hub: Grafana with the hub's Prometheus as its default data source, and the five dashboards of
+# files/dashboards/grafana/ in the folder CMTC. Each dashboard picks its data source with the variable DS_PROMETHEUS,
+# whose default is the default data source.
+{{- if not $g.adminPasswordSecret }}
+{{- $existing := lookup "v1" "Secret" .Release.Namespace $secret }}
+apiVersion: v1
+kind: Secret
+metadata:
+  name: {{ $secret }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "cmtc-obs.labels" . | nindent 4 }}
+type: Opaque
+data:
+  # Generated once; an upgrade keeps the password the first install created. Read it with
+  # kubectl get secret {{ $secret }} -n {{ .Release.Namespace }} -o jsonpath='{.data.admin-password}'
+  admin-password: {{ if $existing }}{{ index $existing.data "admin-password" }}{{ else }}{{ randAlphaNum 32 | b64enc }}{{ end }}
+---
+{{- end }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-grafana-provisioning
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "cmtc-obs.labels" . | nindent 4 }}
+data:
+  {{- include "cmtc-obs.grafanaProvisioning" . | nindent 2 }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-grafana-dashboards
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "cmtc-obs.labels" . | nindent 4 }}
+data:
+  {{- range $name, $content := include "cmtc-obs.dashboards" (dict "root" . "kind" "grafana") | fromYaml }}
+  {{ $name }}: |
+    {{- $content | trimSuffix "\n" | nindent 4 }}
+  {{- end }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-grafana
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "cmtc-obs.labels" . | nindent 4 }}
+    app.kubernetes.io/component: grafana
+spec:
+  replicas: 1
+  strategy: {type: Recreate}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: cmtc-observability
+      app.kubernetes.io/instance: {{ .Release.Name }}
+      app.kubernetes.io/component: grafana
+  template:
+    metadata:
+      labels:
+        {{- include "cmtc-obs.labels" . | nindent 8 }}
+        app.kubernetes.io/component: grafana
+      annotations:
+        # Grafana reads its provisioning at start: a changed data source or dashboard replaces the Pod.
+        checksum/dashboards: {{ include "cmtc-obs.dashboards" (dict "root" . "kind" "grafana") | sha256sum }}
+        checksum/provisioning: {{ include "cmtc-obs.grafanaProvisioning" . | sha256sum }}
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 472
+        runAsGroup: 472
+        fsGroup: 472
+        seccompProfile: {type: RuntimeDefault}
+      containers:
+        - name: grafana
+          image: {{ $g.image }}
+          env:
+            - name: GF_SECURITY_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef: {name: {{ $secret }}, key: admin-password}
+            - {name: GF_AUTH_ANONYMOUS_ENABLED, value: {{ $g.anonymousViewer | quote }}}
+            - {name: GF_AUTH_ANONYMOUS_ORG_ROLE, value: Viewer}
+            - {name: GF_ANALYTICS_REPORTING_ENABLED, value: "false"}
+            - {name: GF_ANALYTICS_CHECK_FOR_UPDATES, value: "false"}
+          ports:
+            - {name: http, containerPort: 3000}
+          readinessProbe:
+            httpGet: {path: /api/health, port: http}
+          resources:
+            {{- toYaml $g.resources | nindent 12 }}
+          # As the upstream Grafana chart: the root filesystem stays writable (Grafana writes under /var/lib/grafana
+          # and its plugin and log paths); no privilege, no capability.
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities: {drop: [ALL]}
+          volumeMounts:
+            - {name: datasources, mountPath: /etc/grafana/provisioning/datasources, readOnly: true}
+            - {name: providers, mountPath: /etc/grafana/provisioning/dashboards, readOnly: true}
+            - {name: dashboards, mountPath: /etc/grafana/dashboards, readOnly: true}
+            - {name: data, mountPath: /var/lib/grafana}
+      volumes:
+        - name: datasources
+          configMap:
+            name: {{ .Release.Name }}-grafana-provisioning
+            items: [{key: datasources.yaml, path: datasources.yaml}]
+        - name: providers
+          configMap:
+            name: {{ .Release.Name }}-grafana-provisioning
+            items: [{key: dashboards.yaml, path: dashboards.yaml}]
+        - name: dashboards
+          configMap: {name: {{ .Release.Name }}-grafana-dashboards}
+        - name: data
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-grafana
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "cmtc-obs.labels" . | nindent 4 }}
+    app.kubernetes.io/component: grafana
+spec:
+  # ClusterIP only: kubectl port-forward reaches it; nothing outside the cluster does.
+  selector:
+    app.kubernetes.io/name: cmtc-observability
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/component: grafana
+  ports:
+    - {name: http, port: 3000, targetPort: http}
+{{- end }}

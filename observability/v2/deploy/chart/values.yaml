@@ -1,0 +1,234 @@
+# cmtc-observability: how CMTC observability v2 is collected, evaluated and drawn, on kind and on OpenShift.
+# The metric names, their owners and their status are in metrics/contract.json; tests/test_deploy.py renders this
+# chart and checks every keep list below against it. Status: implemented-but-unexecuted (not installed on any
+# cluster); docs/COLLECTION.md lists what the owner measures after the first install.
+
+global:
+  # -- false: kind. The chart renders a Prometheus of its own per cluster (and Grafana on the hub), in the release
+  # namespace, with the scrape jobs below. true: OpenShift. The chart renders PodMonitors for user workload
+  # monitoring, a PrometheusRule and the Perses dashboards, and no Prometheus. The same switch as charts/cmtc.
+  openshift: false
+
+# -- Required: the cluster name, the same as charts/cmtc's clusterName. Every target gets it as the label cluster,
+# and on kind it is also the external label of this cluster's Prometheus.
+clusterName: ""
+
+hub:
+  # -- true on the cluster whose Prometheus receives the other clusters' samples and evaluates the rules (cmtc-a on
+  # the labs). kind only: the hub enables the remote-write receiver, loads the rule files and runs Grafana.
+  enabled: false
+  # -- The clusters whose data the rules expect (rule cmtc:expected_cluster:info): an absent cluster is an alert,
+  # never a healthy zero. Empty: clusterName alone. The labs' hub: [cmtc-a, cmtc-b].
+  expectedClusters: []
+
+remoteWrite:
+  # -- kind, on every cluster except the hub: the hub's remote-write URL, for example
+  # http://172.18.0.3:30900/api/v1/write. Empty sends nothing.
+  url: ""
+
+prometheus:
+  # -- Prometheus 3.7.0, by digest: the image both labs run (Pod status, 2026-10-27).
+  image: docker.io/prom/prometheus:v3.7.0@sha256:29c1e0b48ad816750245dea3d65ac3ce57dda30547e67b1e9a5176e2953cc4dc
+  # -- 5 s, the lab's interval: a 1 minute window then holds 12 samples, and every rule window holds at least 4.
+  scrapeInterval: 5s
+  # -- How often the hub evaluates the rules; the promtool tests use the same 1 m.
+  evaluationInterval: 1m
+  # -- The longest rule window is 6 h (rules/cmtc-slo.rules.yaml); 7 h keeps it whole. The 30-day error budget of
+  # docs/METRICS_AND_SLOS.md needs a long-term store, which kind does not have.
+  retention: 7h
+  # -- The NodePort of the hub's Prometheus, which the other clusters remote-write to. Other clusters get a
+  # ClusterIP Service only.
+  nodePort: 30900
+  resources:
+    requests: {cpu: 100m, memory: 256Mi}
+    limits: {memory: 1Gi}
+
+grafana:
+  # -- kind hub only. Grafana 12.2.0, by digest: the image the cmtc-a lab runs (Pod status, 2026-10-27).
+  image: docker.io/grafana/grafana:12.2.0@sha256:74144189b38447facf737dfd0f3906e42e0776212bf575dc3334c3609183adf7
+  # -- An existing Secret in the release namespace with the key admin-password. Empty: the chart creates the Secret
+  # <release>-grafana-admin with a random 32-character password, and keeps it on upgrade. Never a value in a file.
+  adminPasswordSecret: ""
+  # -- Anonymous viewers get the Viewer role, as on the labs today.
+  anonymousViewer: true
+  resources:
+    requests: {cpu: 50m, memory: 128Mi}
+    limits: {memory: 512Mi}
+
+rules:
+  # -- Load the rule files of files/rules/ (copies of observability/v2/rules/, made by deploy/sync-files.sh). kind:
+  # into the hub's Prometheus. OpenShift: as one PrometheusRule.
+  enabled: true
+  # -- Also load files/rules/proposed/: rules on metrics that need a source change. They return nothing until
+  # those changes run; loading them early is harmless.
+  includeProposed: false
+
+dashboards:
+  # -- The five Grafana dashboards of files/dashboards/grafana/. kind hub: provisioned into Grafana's CMTC folder.
+  # OpenShift: one ConfigMap labelled grafana_dashboard: "1", for a Grafana dashboard sidecar.
+  grafana: true
+  # -- The two clusters the dashboards draw, each in one fixed colour: the first in place of cmtc-a (blue
+  # #4e79a7), the second in place of cmtc-b (red #e15759). A cluster that sends no data shows as unavailable,
+  # never as zero.
+  clusters: [cmtc-a, cmtc-b]
+  # -- OpenShift only: a PersesDatasource and one PersesDashboard per file of files/dashboards/perses/ (Cluster
+  # Observability Operator 1.5 or later).
+  perses: true
+
+openshift:
+  # -- The PodMonitors' scrape interval. 15 s keeps four samples in the rules' shortest window (1 m); the labs'
+  # 5 s is more than user workload monitoring needs.
+  scrapeInterval: 15s
+  # -- Thanos Querier's cluster-wide port: the Perses UI posts its queries, which port 9092 refuses
+  # (diagram-kit COLLECTION.md section 6).
+  thanosURL: https://thanos-querier.openshift-monitoring.svc.cluster.local:9091
+  # -- OpenShift's platform monitoring scrapes CoreDNS and the kubelet itself; the rules then read these jobs.
+  platformJobs:
+    coredns: dns-default
+    cadvisor: kubelet
+
+# The scrape jobs. Each keep list is the metric names metrics/contract.json lists for the job's components; the
+# rendered regex also keeps a histogram's _bucket, _sum and _count series and an OpenMetrics counter's _total.
+# Everything else a target serves is dropped at ingestion: what no panel or rule reads costs series on every node,
+# and production runs 5,000+ Pods.
+jobs:
+  # -- CMTC controller and node agent: Pods labelled security.cmtc.io/metrics=true, port metrics (8080). Their
+  # NetworkPolicy cmtc-metrics (charts/cmtc) admits this namespace.
+  cmtc:
+    enabled: true
+    namespace: cmtc-system
+    keep:
+      - cmtc_enforcement_available
+      - cmtc_issuer_profile_acknowledged_valid_until_timestamp_seconds
+      - cmtc_issuer_profile_approval_generation
+      - cmtc_issuer_profile_approval_valid_until_timestamp_seconds
+      - cmtc_issuer_profile_approved_issuer_not_after_timestamp_seconds
+      - cmtc_issuer_profile_approved_issuer_not_before_timestamp_seconds
+      - cmtc_issuer_profile_publication_reason
+      - cmtc_issuer_profile_publication_writes_total
+      - cmtc_issuer_profile_source_checked_timestamp_seconds
+      - cmtc_issuer_profile_validation_attempts_total
+      - cmtc_measurement_bytes_total
+      - cmtc_measurement_dns_answer_duration_seconds
+      - cmtc_measurement_dns_answers_total
+      - cmtc_measurement_dns_pending_replaced_total
+      - cmtc_measurement_dns_queries_total
+      - cmtc_measurement_dns_unmatched_answers_total
+      - cmtc_measurement_hook_available
+      - cmtc_measurement_packets_total
+      - cmtc_measurement_program_run_seconds_total
+      - cmtc_measurement_program_runs_total
+      - cmtc_measurement_ready
+      - cmtc_measurement_workloads
+      - cmtc_namespace_decisions
+      - cmtc_namespaces_eligible
+      - cmtc_namespaces_enrolled
+      - cmtc_namespaces_selected
+      - cmtc_node_agent_ready
+      - cmtc_pods_observed
+      - cmtc_policy_evaluations_total
+      - controller_runtime_reconcile_errors_total
+      - leader_election_master_status
+  # -- Cilium agent (fork): hostNetwork, port prometheus (9962). The lab's hand-patched job keeps only
+  # cilium_ztunnel_.*|cmtc_.*; this one adds the drop and forward counters.
+  ciliumAgent:
+    enabled: true
+    namespace: kube-system
+    keep:
+      - cilium_drop_count_total
+      - cilium_forward_count_total
+      - cilium_ztunnel_xds_authorization_events_total
+      - cilium_ztunnel_xds_effective_policy_ack_duration_seconds
+      - cilium_ztunnel_xds_effective_policy_destinations
+      - cilium_ztunnel_xds_effective_policy_events_total
+      - cilium_ztunnel_xds_effective_policy_oldest_unacknowledged_timestamp_seconds
+      - cilium_ztunnel_xds_effective_policy_publications_total
+      - cilium_ztunnel_xds_effective_policy_sources
+      - cilium_ztunnel_xds_effective_policy_sources_refused
+      - cilium_ztunnel_xds_enrollment_failures_total
+      - cilium_ztunnel_xds_remote_projection_events_total
+      - cilium_ztunnel_xds_remote_workloads
+      - cilium_ztunnel_zds_connection_active
+      - cilium_ztunnel_zds_enrollment_failures_total
+      - cilium_ztunnel_zds_enrollment_total
+  # -- ztunnel (fork): DaemonSet ztunnel-cilium, Pod IP port 15020, /stats/prometheus. The container declares no
+  # port, so the address is set from the Pod IP.
+  ztunnel:
+    enabled: true
+    namespace: kube-system
+    keep:
+      - istio_crl_enforcement_delay_seconds
+      - istio_crl_policy_rejections_total
+      - istio_crl_untracked_connections_total
+      - istio_tcp_connections_failed_total
+      - istio_tcp_connections_opened_total
+      - istio_tls_handshakes_total
+      - istio_xds_message_total
+      - workload_manager_active_proxy_count
+      - workload_manager_pending_proxy_count
+  # -- CoreDNS: Pods labelled k8s-app=kube-dns, port metrics (9153). kind only; OpenShift's platform monitoring
+  # scrapes dns-default.
+  coredns:
+    enabled: true
+    namespace: kube-system
+    keep:
+      - coredns_cache_hits_total
+      - coredns_cache_requests_total
+      - coredns_dns_request_duration_seconds
+      - coredns_dns_requests_total
+      - coredns_dns_responses_total
+      - coredns_forward_healthcheck_broken_total
+      - coredns_forward_max_concurrent_rejects_total
+      - coredns_panics_total
+      - coredns_proxy_request_duration_seconds
+      - coredns_reload_failed_total
+      - process_cpu_seconds_total
+      - process_resident_memory_bytes
+  # -- cert-manager controller: app.kubernetes.io/name=cert-manager, component controller, port http-metrics (9402).
+  certManager:
+    enabled: true
+    namespace: cert-manager
+    keep:
+      - certmanager_certificate_expiration_timestamp_seconds
+      - certmanager_certificate_ready_status
+      - certmanager_certificate_renewal_timestamp_seconds
+      - certmanager_clusterissuer_ready_status
+  # -- trust-manager: app.kubernetes.io/name=trust-manager, port metrics (9402).
+  trustManager:
+    enabled: true
+    namespace: cert-manager
+    keep:
+      - controller_runtime_reconcile_errors_total
+  # -- The kubelet's cAdvisor of every node, https://<node>:10250/metrics/cadvisor, with the Prometheus
+  # ServiceAccount's token (nodes/metrics). kind only; OpenShift's platform monitoring scrapes the kubelet.
+  cadvisor:
+    enabled: true
+    # -- kind's kubelets serve a self-signed certificate (no serverTLSBootstrap), which no CA in the Pod verifies.
+    # false verifies against the cluster CA: set it once the kubelets' serving certificates are signed by it.
+    insecureSkipVerify: true
+    # -- Containers of these namespaces only: the mesh's processes (#41).
+    namespaces: [cilium-spire, cmtc-system, kube-system, cert-manager]
+    keep:
+      - container_threads
+      - container_threads_max
+  # -- This cluster's Prometheus itself (remote-write health). kind only.
+  prometheus:
+    enabled: true
+    keep:
+      - prometheus_remote_storage_highest_timestamp_in_seconds
+      - prometheus_remote_storage_queue_highest_sent_timestamp_seconds
+      - prometheus_remote_storage_samples_failed_total
+      - prometheus_remote_storage_samples_total
+  # -- SPIRE server and node agent: off until source-patches/cmtc/0002 configures their telemetry and declares it
+  # as the container port "prom" (9988), which these jobs scrape.
+  spireServer:
+    enabled: false
+    namespace: cilium-spire
+    keep:
+      - spire_server_manager_x509_ca_rotate_expiration
+      - spire_server_manager_x509_ca_rotate_max_expiration
+  spireAgent:
+    enabled: false
+    namespace: cilium-spire
+    keep:
+      - spire_agent_rpc_delegated_identity_subscribe_to_x509_svids

@@ -1,0 +1,13 @@
+# Fixture for metrics/contract.json: cmtc-b monitoring/prometheus, :9090/metrics (service proxy), captured 2026-10-27T01:10:43Z through the API server's proxy (read-only GET), cut to the metrics the contract lists for prometheus.
+# HELP prometheus_remote_storage_highest_timestamp_in_seconds Highest timestamp that has come into the remote storage via the Appender interface, in seconds since epoch. Initialized to 0 when no data has been received yet. Deprecated, check prometheus_remote_storage_queue_highest_timestamp_seconds which is more accurate.
+# TYPE prometheus_remote_storage_highest_timestamp_in_seconds gauge
+prometheus_remote_storage_highest_timestamp_in_seconds 1.793063442e+09
+# HELP prometheus_remote_storage_queue_highest_sent_timestamp_seconds Highest timestamp successfully sent by this queue, in seconds since epoch. Initialized to 0 when no data has been sent yet.
+# TYPE prometheus_remote_storage_queue_highest_sent_timestamp_seconds gauge
+prometheus_remote_storage_queue_highest_sent_timestamp_seconds{remote_name="c114ea",url="http://172.18.0.3:30900/api/v1/write"} 1.793063437e+09
+# HELP prometheus_remote_storage_samples_failed_total Total number of samples which failed on send to remote storage, non-recoverable errors.
+# TYPE prometheus_remote_storage_samples_failed_total counter
+prometheus_remote_storage_samples_failed_total{remote_name="c114ea",url="http://172.18.0.3:30900/api/v1/write"} 0
+# HELP prometheus_remote_storage_samples_total Total number of samples sent to remote storage.
+# TYPE prometheus_remote_storage_samples_total counter
+prometheus_remote_storage_samples_total{remote_name="c114ea",url="http://172.18.0.3:30900/api/v1/write"} 3.2787449e+07

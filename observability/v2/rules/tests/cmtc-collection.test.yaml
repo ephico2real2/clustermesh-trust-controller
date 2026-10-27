@@ -1,0 +1,212 @@
+# promtool test rules for rules/cmtc-collection.rules.yaml. Every rule has a case that fires (or
+# records) and a case that must not.
+rule_files:
+- ../cmtc-collection.rules.yaml
+evaluation_interval: 1m
+
+tests:
+# The expected-cluster list, and a target that answers with up == 0.
+- interval: 1m
+  input_series:
+  - series: 'up{job="ztunnel", cluster="cmtc-a", node="cmtc-a-worker", component="ztunnel", instance="172.18.0.4:15020"}'
+    values: '0x6'
+  - series: 'up{job="ztunnel", cluster="cmtc-a", node="cmtc-a-control-plane", component="ztunnel", instance="172.18.0.2:15020"}'
+    values: '1x6'
+  promql_expr_test:
+  - expr: cmtc:expected_cluster:info
+    eval_time: 1m
+    exp_samples:
+    - labels: 'cmtc:expected_cluster:info{cluster="cmtc-a"}'
+      value: 1
+    - labels: 'cmtc:expected_cluster:info{cluster="cmtc-b"}'
+      value: 1
+  alert_rule_test:
+  - eval_time: 1m
+    alertname: CMTCScrapeTargetDown
+    exp_alerts: []
+  - eval_time: 3m
+    alertname: CMTCScrapeTargetDown
+    exp_alerts:
+    - exp_labels:
+        severity: warning
+        owner: ztunnel
+        job: ztunnel
+        cluster: cmtc-a
+        node: cmtc-a-worker
+        component: ztunnel
+        instance: 172.18.0.4:15020
+      exp_annotations:
+        summary: 'Prometheus in cmtc-a cannot scrape ztunnel on node cmtc-a-worker'
+        runbook: 'Every panel and alert built on this exporter is unavailable, not healthy. Check the pod, its metrics port and the NetworkPolicy that admits the monitoring namespace.'
+
+# Node-local partners: the worker has a Cilium agent target but no ztunnel and no node agent
+# target; the control plane has all three.
+- interval: 1m
+  input_series:
+  - series: 'up{job="cilium-native", cluster="cmtc-b", node="cmtc-b-worker", component="cilium-agent", instance="172.18.0.5:9962"}'
+    values: '1x8'
+  - series: 'up{job="cilium-native", cluster="cmtc-b", node="cmtc-b-control-plane", component="cilium-agent", instance="172.18.0.3:9962"}'
+    values: '1x8'
+  - series: 'up{job="ztunnel", cluster="cmtc-b", node="cmtc-b-control-plane", component="ztunnel", instance="172.18.0.3:15020"}'
+    values: '1x8'
+  - series: 'up{job="cmtc", cluster="cmtc-b", node="cmtc-b-control-plane", component="cmtc-node-agent", instance="10.20.0.7:8080"}'
+    values: '1x8'
+  alert_rule_test:
+  - eval_time: 4m
+    alertname: CMTCZtunnelNotScraped
+    exp_alerts: []
+  - eval_time: 6m
+    alertname: CMTCZtunnelNotScraped
+    exp_alerts:
+    - exp_labels:
+        severity: warning
+        owner: ztunnel
+        cluster: cmtc-b
+        node: cmtc-b-worker
+      exp_annotations:
+        summary: 'No ztunnel scrape target on node cmtc-b-worker in cmtc-b'
+        runbook: 'Handshake, denial and connection panels for this node are unavailable. Check the ztunnel-cilium pod on the node and the ztunnel scrape job (hostNetwork port 15020, /stats/prometheus).'
+  - eval_time: 6m
+    alertname: CMTCNodeAgentNotScraped
+    exp_alerts:
+    - exp_labels:
+        severity: warning
+        owner: cmtc-node-agent
+        cluster: cmtc-b
+        node: cmtc-b-worker
+      exp_annotations:
+        summary: 'No CMTC node agent scrape target on node cmtc-b-worker in cmtc-b'
+        runbook: 'Node inventory for this node is unavailable. Check the cmtc-node-agent DaemonSet pod on the node and its metrics port 8080.'
+
+# Cluster-wide targets: cmtc-a has a controller and CoreDNS target, cmtc-b has neither.
+- interval: 1m
+  input_series:
+  - series: 'up{job="cmtc", cluster="cmtc-a", node="cmtc-a-worker", component="cmtc-controller", instance="10.10.1.9:8080"}'
+    values: '1x8'
+  - series: 'up{job="coredns", cluster="cmtc-a", node="cmtc-a-control-plane", pod="coredns-589f44dc88-gtnm7", component="coredns", instance="10.10.0.64:9153"}'
+    values: '1x8'
+  alert_rule_test:
+  - eval_time: 4m
+    alertname: CMTCControllerNotScraped
+    exp_alerts: []
+  - eval_time: 6m
+    alertname: CMTCControllerNotScraped
+    exp_alerts:
+    - exp_labels:
+        severity: warning
+        owner: cmtc-controller
+        cluster: cmtc-b
+      exp_annotations:
+        summary: 'No CMTC controller scrape target in cmtc-b'
+        runbook: 'Namespace intent and issuer-profile panels are unavailable for this cluster. Check the cmtc-controller Deployment in cmtc-system.'
+  - eval_time: 6m
+    alertname: CoreDNSNotScraped
+    exp_alerts:
+    - exp_labels:
+        severity: warning
+        owner: coredns
+        cluster: cmtc-b
+      exp_annotations:
+        summary: 'No CoreDNS scrape target in cmtc-b'
+        runbook: 'DNS answer, error and latency panels are unavailable for this cluster. Check the coredns scrape job (pods k8s-app=kube-dns, port 9153).'
+
+# cmtc-b's data stops arriving at the hub after 2 minutes: first stale (while the last sample is
+# inside the 5 minute lookback), then absent.
+- interval: 1m
+  input_series:
+  - series: 'up{job="cilium-native", cluster="cmtc-a", node="cmtc-a-worker", component="cilium-agent", instance="172.18.0.4:9962"}'
+    values: '1x12'
+  - series: 'up{job="cilium-native", cluster="cmtc-b", node="cmtc-b-worker", component="cilium-agent", instance="172.18.0.5:9962"}'
+    values: '1 1 1'
+  alert_rule_test:
+  - eval_time: 3m
+    alertname: CMTCClusterMetricsStale
+    exp_alerts: []
+  - eval_time: 5m
+    alertname: CMTCClusterMetricsStale
+    exp_alerts:
+    - exp_labels:
+        severity: warning
+        owner: prometheus
+        cluster: cmtc-b
+      exp_annotations:
+        summary: 'The newest Cilium agent sample from cmtc-b is 3m 0s old at the hub'
+        runbook: 'Panels for this cluster show old data and then none. Check the Prometheus of that cluster and its remote_write to the hub (CMTCRemoteWriteBehind is evaluated there).'
+  - eval_time: 5m
+    alertname: CMTCClusterMetricsAbsent
+    exp_alerts: []
+  - eval_time: 10m
+    alertname: CMTCClusterMetricsStale
+    exp_alerts: []
+  - eval_time: 10m
+    alertname: CMTCClusterMetricsAbsent
+    exp_alerts:
+    - exp_labels:
+        severity: critical
+        owner: prometheus
+        cluster: cmtc-b
+      exp_annotations:
+        summary: 'The hub has no Cilium agent data from cmtc-b'
+        runbook: 'Every panel for this cluster is unavailable, not healthy. Check that cluster''s Prometheus, its cilium-native job and its remote_write to the hub.'
+
+# Added in this review. A node stays expected after its Cilium agent target goes away (the agent
+# Pod is deleted at 4m and Prometheus marks its series stale): the node agent and ztunnel on the
+# worker were never scraped, so the Cilium agent target was the only evidence of the node.
+- interval: 1m
+  input_series:
+  - series: 'up{job="cilium-native", cluster="cmtc-a", node="cmtc-a-worker", component="cilium-agent", instance="172.18.0.4:9962"}'
+    values: '1 1 1 1 stale'
+  - series: 'up{job="cilium-native", cluster="cmtc-a", node="cmtc-a-control-plane", component="cilium-agent", instance="172.18.0.2:9962"}'
+    values: '1x14'
+  - series: 'up{job="ztunnel", cluster="cmtc-a", node="cmtc-a-control-plane", component="ztunnel", instance="172.18.0.2:15020"}'
+    values: '1x14'
+  - series: 'up{job="cmtc", cluster="cmtc-a", node="cmtc-a-control-plane", component="cmtc-node-agent", instance="10.10.0.7:8080"}'
+    values: '1x14'
+  promql_expr_test:
+  - expr: cmtc:expected_node:info
+    eval_time: 10m
+    exp_samples:
+    - labels: 'cmtc:expected_node:info{cluster="cmtc-a", node="cmtc-a-worker"}'
+      value: 1
+    - labels: 'cmtc:expected_node:info{cluster="cmtc-a", node="cmtc-a-control-plane"}'
+      value: 1
+  alert_rule_test:
+  - eval_time: 3m
+    alertname: CMTCCiliumAgentNotScraped
+    exp_alerts: []
+  - eval_time: 8m
+    alertname: CMTCCiliumAgentNotScraped
+    exp_alerts: []
+  - eval_time: 9m
+    alertname: CMTCCiliumAgentNotScraped
+    exp_alerts:
+    - exp_labels:
+        severity: warning
+        owner: cilium-agent
+        cluster: cmtc-a
+        node: cmtc-a-worker
+      exp_annotations:
+        summary: 'No Cilium agent scrape target on node cmtc-a-worker in cmtc-a'
+        runbook: 'Enrollment, effective-policy and drop panels for this node are unavailable. Check the cilium Pod on the node and its prometheus port 9962.'
+
+# The kubelet's cAdvisor page of cmtc-a-worker is not scraped; the control plane's is.
+- name: a node without a cAdvisor target
+  interval: 1m
+  input_series:
+  - series: 'up{job="cilium-native", cluster="cmtc-a", node="cmtc-a-worker", component="cilium-agent", instance="172.18.0.4:9962"}'
+    values: '1x8'
+  - series: 'up{job="cilium-native", cluster="cmtc-a", node="cmtc-a-control-plane", component="cilium-agent", instance="172.18.0.2:9962"}'
+    values: '1x8'
+  - series: 'up{job="cadvisor", cluster="cmtc-a", node="cmtc-a-control-plane", component="kubelet", instance="172.18.0.2:10250"}'
+    values: '1x8'
+  alert_rule_test:
+  - eval_time: 4m
+    alertname: CMTCCAdvisorNotScraped
+    exp_alerts: []
+  - eval_time: 5m
+    alertname: CMTCCAdvisorNotScraped
+    exp_alerts:
+    - exp_labels: {severity: warning, owner: kubelet, cluster: cmtc-a, node: cmtc-a-worker}
+      exp_annotations:
+        summary: 'No cAdvisor scrape target on node cmtc-a-worker in cmtc-a'
+        runbook: 'PID use panels for this node are unavailable, not healthy. Check the cadvisor scrape job (kubelet port 10250, /metrics/cadvisor) and the nodes/metrics permission of the Prometheus ServiceAccount.'

@@ -1,0 +1,29 @@
+CMTC observability v2 for cluster {{ .Values.clusterName }}{{ if .Values.global.openshift }} (OpenShift){{ else }} (kind{{ if .Values.hub.enabled }}, hub{{ end }}){{ end }}.
+{{- if not .Values.global.openshift }}
+
+  Targets:  kubectl -n {{ .Release.Namespace }} port-forward svc/{{ .Release.Name }}-prometheus 9090
+            then http://127.0.0.1:9090/targets: every job up=1 (a job with no target is a finding, not a pass).
+{{- if .Values.remoteWrite.url }}
+  Hub:      this Prometheus writes every sample to {{ .Values.remoteWrite.url }}.
+{{- end }}
+{{- if and .Values.hub.enabled .Values.dashboards.grafana }}
+  Grafana:  kubectl -n {{ .Release.Namespace }} port-forward svc/{{ .Release.Name }}-grafana 3000, folder CMTC.
+{{- end }}
+
+  The CMTC Pods' NetworkPolicy cmtc-metrics (charts/cmtc) admits the namespace monitoring by default; install this
+  release there, or add {{ .Release.Namespace }} to the cmtc chart's metrics.networkPolicy.allowedNamespaces.
+{{- else }}
+
+  Needs, before anything is scraped or evaluated (a cluster administrator; docs/COLLECTION.md):
+  - user workload monitoring on (enableUserWorkload: true in cluster-monitoring-config);
+  - {{ .Release.Namespace }} in namespacesWithoutLabelEnforcement (user-workload-monitoring-config): the rules read
+    several namespaces;
+  - the external label cluster: {{ .Values.clusterName }} on the platform Prometheus (prometheusK8s.externalLabels):
+    the CoreDNS, kubelet and node series the rules and dashboards read come from it.
+
+  Targets:  Observe > Targets, the jobs cmtc, cilium-native, ztunnel, cert-manager and trust-manager.
+  Alerts:   Observe > Alerting, the CMTC* and CoreDNS* rules of PrometheusRule {{ .Release.Namespace }}/{{ .Release.Name }}.
+{{- if .Values.dashboards.perses }}
+  Console:  Observe > Dashboards (Perses), project {{ .Release.Namespace }}.
+{{- end }}
+{{- end }}
