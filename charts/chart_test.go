@@ -444,7 +444,7 @@ func TestIssuerApprovalArbiterIsConfiguredByTheChart(t *testing.T) {
 		object{"name": "issuer-checkpoint", "hostPath": object{"path": "/var/lib/cmtc/ztunnel-issuer-checkpoint", "type": "Directory"}}}) {
 		t.Errorf("node agent volumes: %v", v)
 	}
-	// Without managePins the pins directory is read-only and the agent stays at the image's user.
+	// Without managePins the pins directory is read-only.
 	plain := dig(render(t, "clusterName=cmtc-a", "image.tag=x", "nodeAgent.trustReport.enabled=true")["DaemonSet/cmtc-node-agent"], "spec", "template", "spec").(object)
 	if m := plain["containers"].([]any)[0].(object)["volumeMounts"].([]any)[0]; dig(m, "readOnly") != true {
 		t.Errorf("pins mount without managePins: %v", m)

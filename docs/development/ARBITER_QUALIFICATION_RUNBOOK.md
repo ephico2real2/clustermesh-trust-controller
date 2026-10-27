@@ -80,24 +80,39 @@ runs only from the default branch (`.github/workflows/images.yaml:6-16`). The fi
 The chart values are `config/lab/cmtc/values-cmtc-a.yaml` (UIDs from the table above). For this step the arbiter is
 off, so override it on the command line.
 
-1. Plan the adoption:
-   `helm upgrade --install cmtc charts/cmtc -n cmtc-system --kube-context kind-cmtc-a -f config/lab/cmtc/values-cmtc-a.yaml "${IMAGE_VALUES[@]}" --set controller.issuerApproval.enabled=false --set controller.issuerProfile.sourceUID=e8320c32-79ff-4382-8702-78da8ef14567 --take-ownership --dry-run=server`
-   — expected: a render that ends without error; `Deployment/cmtc-controller` args equal the deployed ones plus nothing
-   (compare with the table: the source `g6`, its UID, the output UID, the root pin, minimum generation 6).
-2. Apply it: the same command without `--dry-run=server`, with `--wait --timeout 5m` — expected: `STATUS: deployed`,
-   `REVISION: 1`.
-3. `kubectl --context kind-cmtc-a get crd nodetrustreports.security.cmtc.io issuerapprovals.security.cmtc.io` — expected:
+The CMTC objects were applied with `kubectl apply` and `kubectl patch`, so those managers own fields that the release
+changes (the image, the node agent's args, its security context). `helm upgrade --dry-run=server` does not send the
+apply and shows no conflict (`/helm-first`); `scripts/lab/cmtc_adopt.py` does the server-side dry run as manager `helm`
+and gives `helm` the kubectl managers' fields first. `A=(cmtc-a config/lab/cmtc/values-cmtc-a.yaml --kubeconfig
+/private/tmp/cmtc-a-b-20261024.kubeconfig --set "image.repository=${CMTC_IMAGE%@*}" --set
+"image.digest=${CMTC_IMAGE#*@}" --set controller.issuerApproval.enabled=false)`.
+
+1. Plan the adoption: `venv/bin/python scripts/lab/cmtc_adopt.py plan "${A[@]}"` — expected on the first run: `Apply
+   failed with … conflicts` naming `kubectl-client-side-apply` and `kubectl-patch` (measured 2026-10-27T17:56Z: the
+   agent's args, env, `runAsNonRoot`, `runAsUser` and image; the controller's image).
+2. Transfer the fields: `venv/bin/python scripts/lab/cmtc_adopt.py transfer "${A[@]}" --backup-dir <review dir>` —
+   expected: one line per object, `fields of … given to helm`; only `metadata.managedFields` changes.
+3. Plan again — expected: `0 kubectl manager entr(ies) left; 0 refusal(s)`; the spec changes are only the image on
+   both workloads, the node agent's trust-report args, mounts and uid 0, and the controller's pod annotation
+   `security.cmtc.io/live-issuer-owner` (the host publisher's marker) removed; the controller args are unchanged; new
+   objects: the two CRDs, the reader identity, the report policy.
+4. Apply it: `helm upgrade --install cmtc charts/cmtc -n cmtc-system --kube-context kind-cmtc-a -f
+   config/lab/cmtc/values-cmtc-a.yaml "${IMAGE_VALUES[@]}" --set controller.issuerApproval.enabled=false
+   --server-side=true --take-ownership --wait --timeout 5m` — expected: `STATUS: deployed`, `REVISION: 1`.
+5. `kubectl --context kind-cmtc-a get crd nodetrustreports.security.cmtc.io issuerapprovals.security.cmtc.io` — expected:
    both listed.
-4. `kubectl --context kind-cmtc-a -n cmtc-system rollout status ds/cmtc-node-agent deploy/cmtc-controller` — expected:
+6. `kubectl --context kind-cmtc-a -n cmtc-system rollout status ds/cmtc-node-agent deploy/cmtc-controller` — expected:
    both `successfully rolled out`; the controller log's first line has `issuerApprovalArbiter=false`,
-   `nodeTrustReport=false` for the controller and the node agent's has `nodeTrustReport=true managePins=true`
+   `nodeTrustReport=false` for the controller and the node agent's has `nodeTrustReport=true managePins=false`
    (`cmd/cmtc/main.go:148`).
-5. `kubectl --context kind-cmtc-a get nodetrustreports -o yaml` — expected: two reports, named after the nodes;
-   `status.pins.state: Unchanged` (the pins file already holds the root), `status.ztunnel.state: Accepted`,
+7. `kubectl --context kind-cmtc-a get nodetrustreports -o yaml` — expected: two reports, named after the nodes;
+   `status.pins.state: ReadOnly` with `rootSHA256` [`0c28af9e…`, `6c12c735…`] (every node's pins file, read
+   2026-10-27T17:55Z, still holds the retired Lab Org Root; `managePins` stays off because a managing agent reports
+   `WriteFailed` for an unapproved pin, which `accepts` in `internal/controller/approval_evidence.go:303` refuses), `status.ztunnel.state: Accepted`,
    `acceptedGeneration: 6`, `trustedIssuers` with the two SPKIs of the table, `observedAt` advancing every 30 s.
-6. `kubectl --context kind-cmtc-a -n cmtc-system get cm cmtc-issuer-publication -o jsonpath='{.data.profile\.json}' | python3 -c 'import json,sys; p=json.load(sys.stdin); print(p["state"], p["acceptedGeneration"], p["source"]["name"])'`
+8. `kubectl --context kind-cmtc-a -n cmtc-system get cm cmtc-issuer-publication -o jsonpath='{.data.profile\.json}' | python3 -c 'import json,sys; p=json.load(sys.stdin); print(p["state"], p["acceptedGeneration"], p["source"]["name"])'`
    — expected: `published 6 cmtc-issuer-approval-g6` (unchanged).
-7. `bash scripts/evidence/run_mtls_matrix.sh docs/evidence/approval-arbiter-<date>/matrix-step2` — expected: 96/96
+9. `bash scripts/evidence/run_mtls_matrix.sh docs/evidence/approval-arbiter-<date>/matrix-step2` — expected: 96/96
    allowed, 36/36 denied, as the baseline.
 
 ## Step 3: kind-cmtc-b, the peer credential of kind-cmtc-a
@@ -117,10 +132,14 @@ kubeconfig with the source's CA and the endpoint the target's Pods reach, checke
 
 ## Step 4: kind-cmtc-b, the arbiter on
 
-1. `helm upgrade --install cmtc charts/cmtc -n cmtc-system --kube-context kind-cmtc-b -f config/lab/cmtc/values-cmtc-b.yaml "${IMAGE_VALUES[@]}" --take-ownership --dry-run=server`
-   — expected: no error; the Deployment args end with `--issuer-approval-config=/etc/cmtc/issuer-approval/config.json`
-   and carry no `--issuer-profile-source`; volumes `issuer-approval-config` and `peer-cmtc-a`.
-2. The same without `--dry-run=server`, with `--wait --timeout 5m` — expected: `STATUS: deployed`, `REVISION: 1`.
+1. Steps 2.1 to 2.3 on cmtc-b: `B=(cmtc-b config/lab/cmtc/values-cmtc-b.yaml --kubeconfig
+   /private/tmp/cmtc-a-b-20261024.kubeconfig --set "image.repository=${CMTC_IMAGE%@*}" --set
+   "image.digest=${CMTC_IMAGE#*@}")`, plan, transfer, plan — expected: no conflict, no refusal; the Deployment args end
+   with `--issuer-approval-config=/etc/cmtc/issuer-approval/config.json` and carry no `--issuer-profile-source`; volumes
+   `issuer-approval-config` and `peer-cmtc-a`; the producer Role names `g6` and both slots.
+2. `helm upgrade --install cmtc charts/cmtc -n cmtc-system --kube-context kind-cmtc-b -f config/lab/cmtc/values-cmtc-b.yaml
+   "${IMAGE_VALUES[@]}" --server-side=true --take-ownership --wait --timeout 5m` — expected: `STATUS: deployed`,
+   `REVISION: 1`.
 3. `kubectl --context kind-cmtc-b -n cmtc-system logs deploy/cmtc-controller | head -3` — expected:
    `starting experimental CMTC … issuerApprovalArbiter=true`; no `peer cmtc-a kubeconfig` error (`cmd/cmtc/main.go:183`).
 4. `kubectl --context kind-cmtc-b get nodetrustreports` — expected: `cmtc-b-control-plane`, `cmtc-b-worker`.
@@ -134,12 +153,12 @@ kubeconfig with the source's CA and the endpoint the target's Pods reach, checke
    — expected: `7 <now + 696h, UTC, whole seconds> [('cmtc-a', ['2dee6086…e3d5']), ('cmtc-b', ['b9075e42…a006'])]`:
    the same issuers as g6. Record `expiresAt`: generation 7 is the **renewal of g6**; the next renewal is due 168 h
    before that time (`renewBefore`, `plan.go:331-333`).
-7. The publication follows: the command of step 2.6 on cmtc-b — expected: `published 7 cmtc-issuer-approval-a`.
-8. The nodes accept it: step 2.5 on cmtc-b — expected: `acceptedGeneration: 7` on both reports, `Accepted`,
+7. The publication follows: the command of step 2.8 on cmtc-b — expected: `published 7 cmtc-issuer-approval-a`.
+8. The nodes accept it: step 2.7 on cmtc-b — expected: `acceptedGeneration: 7` on both reports, `Accepted`,
    `trustedIssuers` unchanged.
 9. `kubectl --context kind-cmtc-b -n kube-system logs ds/ztunnel-cilium --since=10m | grep -c 'lease fenced'` —
    expected: `0` (the promotion is a publication with a new generation, not a lease gap).
-10. The matrix (step 2.7, out dir `matrix-step4`) — expected: 96/96, 36/36.
+10. The matrix (step 2.9, out dir `matrix-step4`) — expected: 96/96, 36/36.
 11. The node report write restriction, on the lab: a Pod under the `cmtc-node-agent` ServiceAccount on `cmtc-b-worker`
     writes another node's report:
     `kubectl --context kind-cmtc-b -n cmtc-system run agent-probe --rm -i --restart=Never --image=curlimages/curl:8.11.1 --overrides='{"spec":{"serviceAccountName":"cmtc-node-agent","nodeName":"cmtc-b-worker","containers":[{"name":"agent-probe","image":"curlimages/curl:8.11.1","command":["sh","-c","T=$(cat /var/run/secrets/kubernetes.io/serviceaccount/token); curl -s -o /tmp/out -w \"%{http_code}\\n\" --cacert /var/run/secrets/kubernetes.io/serviceaccount/ca.crt -H \"Authorization: Bearer $T\" -H Content-Type:application/json -X POST https://kubernetes.default.svc/apis/security.cmtc.io/v1alpha1/nodetrustreports -d \"{\\\"apiVersion\\\":\\\"security.cmtc.io/v1alpha1\\\",\\\"kind\\\":\\\"NodeTrustReport\\\",\\\"metadata\\\":{\\\"name\\\":\\\"not-my-node\\\"},\\\"status\\\":{\\\"cluster\\\":\\\"cmtc-b\\\",\\\"observedAt\\\":\\\"2026-01-01T00:00:00Z\\\",\\\"pins\\\":{\\\"state\\\":\\\"Absent\\\"},\\\"ztunnel\\\":{\\\"state\\\":\\\"Absent\\\"}}}\"; grep -o \"denied request: [^\\\"]*\" /tmp/out"]}]}}'`
@@ -179,7 +198,7 @@ it prepares and activates the next one (ADR-012, "Problem, as measured"), so bot
    (first pass that read the successor) + 24 h + 1 h (`retirementMargin`), so about `T_renew + 25h`. Record it.
 5. Step 4.6 on slot b — expected: generation 8; cmtc-b has **two** issuers: `b9075e42…a006` and the new SPKI; cmtc-a
    unchanged.
-6. The nodes: step 2.5 on both clusters — expected: `acceptedGeneration: 8` on cmtc-b; cmtc-a's arbiter follows with
+6. The nodes: step 2.7 on both clusters — expected: `acceptedGeneration: 8` on cmtc-b; cmtc-a's arbiter follows with
    its own generation 8 (`IssuerAdded`, both cmtc-b keys) and cmtc-a's nodes accept it; every `trustedIssuers` lists
    three SPKIs.
 7. The matrix (`matrix-step6-overlap`) — expected: 96/96 while SPIRE still signs under the old key.

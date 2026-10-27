@@ -35,4 +35,5 @@ controller:
 nodeAgent:
   trustReport:
     enabled: true
-    managePins: true
+    # managePins stays off (the chart default): every node's pins file also holds the retired Lab Org Root
+    # (0c28af9e…), which a managing agent refuses to keep (WriteFailed), and no root change is planned.
