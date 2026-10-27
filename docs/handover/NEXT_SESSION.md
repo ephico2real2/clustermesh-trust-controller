@@ -1,5 +1,9 @@
 # Current continuation checkpoint
 
+**Superseded, 2026-10-27.** The current state is the "Update 2026-10-27" section at the top of
+[handover.md](../../handover.md), with [resume.md](../../resume.md) for the first actions. Everything below is a
+historical record of 2026-10-25.
+
 ## User-requested AI handoff — 2026-10-25T16:40Z
 
 Read root [handover.md](../../handover.md) and [resume.md](../../resume.md) first. Both test

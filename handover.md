@@ -1,5 +1,70 @@
 # CMTC engineering handover
 
+## Update 2026-10-27 13:50 UTC (Claude Code session b744973a)
+
+Supersedes every update below where they differ. Exact image and source pins are in
+[delivery status](docs/agile/DELIVERY_STATUS.md#deployed-images); they are not repeated here.
+
+**Leases.** Compiler and live writer: Claude Code session b744973a (PID 52816),
+`/private/tmp/cmtc-opus-final-20261025/review/{BUILD_SLOT,LAB_OWNER}.json`. A new session claims them only
+after it verifies that this one has ended. No agent or background task is running (both stopped at 13:43Z).
+
+**Traffic (traffic-qualified, 2026-10-27 11:12–11:14Z).** Workload mTLS works through ztunnel on both clusters:
+same node, cross node, cross cluster, by Pod IP, per-Pod name and Global Service name. 95 of 96 allowed probes are
+joined by client socket to a ztunnel mTLS connection with both SPIFFE identities; the 96th returned HTTP 200 from the
+expected Pod and is joined by destination and time, because NAT gave its socket a new source port. 36 of 36
+unregistered probes are dropped by Cilium at `bpf_lxc.c:2381`
+([matrix-g6](docs/evidence/spire-intermediate-20261027/matrix-g6/README.md)). The cross-node and cross-cluster
+authorization blocker of 2026-10-25 is closed (matrix 7, 2026-10-26). Not re-measured on the current images: DNS,
+restart and reboot recovery. This is not a `Protected` claim.
+
+**PKI (issue #34, deployed and traffic-qualified).**
+- SPIRE on each cluster signs with a CA from `cert-manager/<cluster>-spire-intermediate`, under the mesh root, since
+  10:52Z (cmtc-b) and 10:54Z (cmtc-a). It was moved on demand with
+  [`scripts/lab/spire/local_authority.py rotate`](scripts/lab/spire/local_authority.py); SPIRE rotates on its own
+  from there.
+- cert-manager approval is by policy (approver-policy): every SPIRE intermediate and SPIRE CA request is approved by
+  its `CertificateRequestPolicy`.
+- Issuer approval generation 6 (`cmtc-system/cmtc-issuer-approval-g6`) pins each cluster's intermediate and the mesh
+  root. It expires **2026-11-25T10:26:41Z**. No renewal is automated. At expiry ztunnel refuses every workload
+  handshake (fail closed). The operator removed the host-side renewal job at 12:21Z ("this is lab"): no stopgap for
+  lab uptime.
+- The intermediates (revision 1) renew on 2027-09-26 with `rotationPolicy: Always`, so with a new key. Generation 6
+  pins the current key. Without an approval that carries both intermediates during the overlap, that renewal stops
+  all workload mTLS within about one SPIRE CA lifetime (24 h).
+- Record: [LOCAL_ISSUER_PROFILE.md, SPIRE intermediate mode](LOCAL_ISSUER_PROFILE.md#spire-intermediate-mode-issue-34).
+
+**In progress: the CMTC controller as the arbiter of trust changes (operator decisions, 2026-10-27 12:34–12:38Z).**
+- The CMTC controller owns the issuer approval lifecycle across the clusters: derive it from cert-manager's public
+  objects, publish it, overlap old and new intermediates on renewal, retire the old one, renew before expiry. It does
+  this in its reconcile or through a Job it owns. No host script, no CronJob that nobody owns.
+- It is the single leader-elected arbiter. It orders each change with an explicit state machine and advances only on
+  observed evidence. It must settle the six ordering races seen on these labs (listed in the brief).
+- The CMTC node agent DaemonSet does the per-node steps (first, the root pins file that the Cilium agent and ztunnel
+  read at startup) and reports per-node evidence to the controller through a Kubernetes object that only that node
+  may write. A missing or stale report blocks a change.
+- Brief, with every operator amendment: `/private/tmp/cmtc-opus-final-20261025/review/approval-reconciler/BRIEF.md`.
+- Work-in-progress code: branch `feat/approval-follows-cert-manager` (local, not pushed), worktree
+  `.claude/worktrees/agent-afc1333b13bfec87b`, commits `cda9c0d`, `bf18839` (ADR-012 draft), `177d1d8`. It adds the
+  `IssuerApproval` and `NodeTrustReport` types, the approval planner (`internal/trustprofile/plan.go`), the controller
+  pass (`internal/controller/issuer_approval.go`) and the node report (`internal/agent/trust_report.go`). It builds,
+  and `go test` of trustprofile, controller and agent passes. It is **not reviewed**. Missing: the chart and RBAC,
+  enforcement that a node writes only its own report, the cross-cluster path in running code (to be verified against
+  ADR-012), and any fork change.
+
+**Open items, in order.**
+1. Review and finish the arbiter branch (independent review, then the missing parts), then qualify it on cmtc-b,
+   then cmtc-a, under traffic. Due before 2026-11-25T10:26:41Z, or the lab fails closed.
+2. Port the working configuration to Helm (#33): the Cilium agent's issuer-profile Role
+   (`cmtc-system/cilium-ztunnel-issuer-profile`, lab-managed), the node pins file (written by a host script), and
+   the controller's issuer flags (set by `publish_issuers.py`).
+3. Re-measure DNS and recovery (agent, ztunnel, node restart) on the current images.
+4. Earlier open gates: [delivery status, Open gates](docs/agile/DELIVERY_STATUS.md#open-gates).
+
+**Repository.** `feat/end-to-end-enforcement` at `8d79b55`: `8ba1d97` and earlier are pushed; `8d79b55`
+(observability v2, #37, not deployed) is local. The kubeconfig `/private/tmp/cmtc-a-b-20261024.kubeconfig` does not
+survive a host restart.
+
 ## Update 2026-10-25 21:30 UTC (Claude Code session b744973a)
 
 Supersedes the 17:50 update below where they differ.
