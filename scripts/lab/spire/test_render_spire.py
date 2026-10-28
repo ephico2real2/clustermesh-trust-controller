@@ -2,7 +2,9 @@
 """Parsed assertions for the standalone SPIRE renderer."""
 
 import json
+import os
 import re
+import shutil
 import stat
 import subprocess
 import sys
@@ -346,6 +348,9 @@ class ManifestTests(unittest.TestCase):
         )
         self.assertNotIn("hostPID", spec)
         self.assertNotIn("hostNetwork", spec)
+        # Kept private on purpose (#41): with a shared namespace the busybox sidecar, uid 1000 like the
+        # server, could read the server's filesystem (the datastore and its keys) through
+        # /proc/<pid>/root. The sidecar's own PID 1 reaps instead (ReapingTests).
         self.assertNotIn("shareProcessNamespace", spec)
         self.assertEqual(
             sts["spec"]["template"]["metadata"]["labels"],
@@ -914,6 +919,155 @@ class SecurityRegressionTests(unittest.TestCase):
             result=run_shell(script_of(spire.render('cmtc-a')),env,3)
             self.assertEqual(result.returncode,1)
             self.assertFalse((d/'ack').exists())
+
+
+def processes():
+    """(pid, ppid, command) of every process; `ps -A -o` is POSIX, so BSD/macOS and procps read it alike."""
+    out = subprocess.run(["ps", "-A", "-o", "pid=,ppid=,comm="], capture_output=True, text=True, check=True).stdout
+    rows = []
+    for line in out.splitlines():
+        parts = line.split(None, 2)
+        if len(parts) == 3:
+            rows.append((int(parts[0]), int(parts[1]), Path(parts[2]).name))
+    return rows
+
+
+def children_named(ppid, name):
+    return [pid for pid, parent, command in processes() if parent == ppid and command == name]
+
+
+def docker_available():
+    if not shutil.which("docker"):
+        return False
+    try:
+        probe = subprocess.run(["docker", "version", "--format", "{{.Server.Os}}"], capture_output=True, text=True, timeout=20)
+    except (OSError, subprocess.SubprocessError):
+        return False
+    return probe.returncode == 0 and probe.stdout.strip() == "linux"
+
+
+# One line per process in the container: "<pid> <ppid> <state> <comm>", read from /proc (busybox ps has no state column).
+PROCESS_LIST = ('for p in /proc/[0-9]*; do s=$(sed -n "s/^State:.\\(.\\).*/\\1/p" "$p/status" 2>/dev/null); '
+                '[ -n "$s" ] && echo "${p#/proc/} $(sed -n "s/^PPid:.//p" "$p/status") $s $(cat "$p/comm")"; done; true')
+
+
+class ReapingTests(unittest.TestCase):
+    """PID 1 of the register-agent-node sidecar must reap the readiness probe's orphans (#41).
+
+    busybox timeout (coreutils/timeout.c) daemonizes its watcher, so every probe leaves one orphan
+    for PID 1. `exec tail -f /dev/null` never waited: 19,091 zombies in 26 h, then the PID limit,
+    the sidecar NotReady and the spire-server Service without an endpoint on both labs.
+    """
+
+    def holding_env(self, d):
+        stub = d / "spire-server"
+        found = d / "found"
+        write_executable(stub, '#!/bin/sh\ncat "$STUB_FOUND"\n')
+        found.write_text(entry_text("cmtc-a.mesh.example"))
+        env = RegistrationTests().env(d, stub, d / "calls", d / "created", found)
+        env["SPIRE_HOLD"] = "1"
+        return env
+
+    def test_hold_stays_in_the_shell_and_waits(self):
+        script = script_of(spire.render("cmtc-a"))
+        code = "\n".join(line for line in script.splitlines() if not line.lstrip().startswith("#"))
+        self.assertNotIn("tail -f", code)
+        self.assertNotIn("exec tail", code)
+        hold = code[code.index("\nhold() {"):]
+        hold = hold[:hold.index("\n}\n")]
+        self.assertIn('wait "$sleeper"', hold)
+        self.assertIn("trap 'kill \"$sleeper\" 2>/dev/null; exit 0' TERM INT", hold)
+        self.assertNotIn("exec ", hold)
+
+    def test_hold_reaps_while_it_waits_and_ends_on_term_at_once(self):
+        with tempfile.TemporaryDirectory() as raw:
+            d = Path(raw)
+            env = self.holding_env(d)
+            path = d / "script.sh"
+            path.write_text(script_of(spire.render("cmtc-a")))
+            proc = subprocess.Popen(["/bin/sh", str(path)], env=env, cwd=d, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            try:
+                deadline = time.monotonic() + 5
+                while not ((d / "ack").exists() and children_named(proc.pid, "sleep")):
+                    self.assertIsNone(proc.poll(), "the script exited instead of holding")
+                    self.assertLess(time.monotonic(), deadline, "no sleeper child within 5 s")
+                    time.sleep(0.05)
+                sleepers = children_named(proc.pid, "sleep")
+                self.assertEqual(len(sleepers), 1, sleepers)
+                started = time.monotonic()
+                proc.terminate()
+                out, _ = proc.communicate(timeout=3)
+                self.assertLess(time.monotonic() - started, 1.0)
+                self.assertEqual(proc.returncode, 0, out)
+                self.assertIn("stage=entry-confirm", out)
+                deadline = time.monotonic() + 2
+                while any(pid == sleepers[0] for pid, _, _ in processes()):
+                    self.assertLess(time.monotonic(), deadline, "the sleeper outlived the hold")
+                    time.sleep(0.05)
+            finally:
+                if proc.poll() is None:
+                    proc.kill()
+                    proc.wait()
+
+    @unittest.skipUnless(docker_available(), "a Linux docker engine is not reachable")
+    def test_pid1_of_the_pinned_busybox_reaps_the_probe_orphans(self):
+        script = script_of(spire.render("cmtc-a"))
+        self.assertIn("\n    hold\n", script)
+        leaking = script.replace("\n    hold\n", "\n    exec tail -f /dev/null\n")
+        # The control proves the harness sees the leak: one zombie per probe, plus the watchers of the
+        # two startup cli calls (entry show, entry show -entryID), which exit after `exec tail`.
+        pid1, control = self.zombies_after_probes(leaking, 6)
+        self.assertEqual(pid1, "tail")
+        self.assertEqual(len(control), 6 + 2, control)
+        self.assertTrue(all(ppid == "1" and comm == "timeout" for _, ppid, comm in control), control)
+        self.assertEqual(self.zombies_after_probes(script, 20), ("sh", []))
+
+    def zombies_after_probes(self, script, probes):
+        docs = spire.render("cmtc-a")
+        sidecar = container(one(docs, "StatefulSet", "spire-server"), "register-agent-node")
+        self.assertEqual(sidecar["command"], ["/bin/sh", "/opt/cmtc/register-agent-node.sh"])
+        probe = sidecar["readinessProbe"]["exec"]["command"]
+        env = {item["name"]: item["value"] for item in sidecar["env"]}
+        env.update(SPIRE_SERVER_BIN="/opt/cmtc/spire-server", SPIRE_ACK_FILE="/tmp/entry", STUB_FOUND="/opt/cmtc/found")
+        name = "cmtc-reap-test-%d-%d" % (os.getpid(), int(time.monotonic() * 1000))
+        with tempfile.TemporaryDirectory() as raw:
+            d = Path(raw) / "cmtc"
+            d.mkdir()
+            (d / "register-agent-node.sh").write_text(script)
+            write_executable(d / "spire-server", '#!/bin/sh\ncat "$STUB_FOUND"\n')
+            (d / "spire-server").chmod(0o755)  # docker cp makes root the owner; uid 1000 runs it
+            (d / "found").write_text(entry_text("cmtc-a.mesh.example"))
+            create = ["create", "--name", name, "--user", "1000:1000", "--tmpfs", "/opt/cmtc:exec,uid=1000,gid=1000,mode=0755"]  # docker mounts a tmpfs noexec by default
+            for key, value in sorted(env.items()):
+                create += ["-e", key + "=" + value]
+            # docker cp cannot create /opt; the bootstrap copies the files and then execs the sidecar command.
+            create += [sidecar["image"], "/bin/sh", "-c", 'cp /tmp/cmtc/* /opt/cmtc/ && exec "$@"', "sh"] + sidecar["command"]
+            try:
+                self.docker(*create, timeout=300)
+                self.docker("cp", str(d), name + ":/tmp/cmtc")
+                self.docker("start", name)
+                deadline = time.monotonic() + 15
+                while subprocess.run(["docker", "exec", name, "test", "-s", "/tmp/entry"], capture_output=True, check=False).returncode != 0:
+                    self.assertEqual(self.docker("inspect", "-f", "{{.State.Running}}", name).strip(), "true", self.docker("logs", name))
+                    self.assertLess(time.monotonic(), deadline, "the sidecar did not confirm the entry in 15 s: " + self.docker("logs", name))
+                    time.sleep(0.2)
+                pid1 = self.docker("exec", name, "cat", "/proc/1/comm").strip()
+                for _ in range(probes):
+                    self.docker("exec", name, *probe)
+                time.sleep(4)  # every watcher has exited: the probe deadline is 3 s
+                rows = [line.split(None, 3) for line in self.docker("exec", name, "sh", "-c", PROCESS_LIST).splitlines() if line.strip()]
+                live = [row for row in rows if row[2] != "Z"]
+                self.assertNotIn("timeout", [comm for _, _, _, comm in live], live)
+                self.assertLessEqual(len(live), 4, live)  # PID 1, its sleeper (fix only), this listing's sh and sed/cat
+                return pid1, [(pid, ppid, comm) for pid, ppid, state, comm in rows if state == "Z"]
+            finally:
+                subprocess.run(["docker", "rm", "-f", name], capture_output=True, text=True, check=False)
+
+    def docker(self, *args, check=True, timeout=60):
+        completed = subprocess.run(["docker", *args], capture_output=True, text=True, timeout=timeout, check=False)
+        if check and completed.returncode != 0:
+            raise AssertionError("docker %s: rc=%d %s%s" % (args[0], completed.returncode, completed.stdout, completed.stderr))
+        return completed.stdout
 
 
 class CliTests(unittest.TestCase):
