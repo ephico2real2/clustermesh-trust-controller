@@ -1,0 +1,19 @@
+# The kind labs have no cloud load balancer. Cilium gives the shared Ingress Service (cilium-ingress, Cilium chart
+# ingressController.loadbalancerMode shared) an address from LB IPAM and answers ARP for it on the kind network
+# (L2 announcements), so the other cluster and the host reach it without a node port.
+ingress:
+  # -- Required: this cluster's Ingress address, on the kind network and outside Docker's container range. It is
+  # the pool's only address, so the Ingress Service always gets it.
+  address: ""
+  # -- The node interfaces that answer ARP for the address: kind nodes have one, eth0.
+  interfaces: ["^eth0$"]
+
+coredns:
+  # -- Render kube-system/coredns: kubeadm's default Corefile and one server block per zone below. The release takes
+  # the ConfigMap over from kubeadm (helm --take-ownership, after its render equals live); CoreDNS's reload plugin
+  # applies a change without a restart.
+  enabled: true
+  # -- Every cluster's Ingress domain and address, answered on every cluster: an A query for the domain or any name
+  # under it returns the address, any other type returns no data. The labs use <cluster>.localtest.me: public DNS
+  # answers 127.0.0.1 for every localtest.me name, so a name these zones miss stays on loopback.
+  zones: []

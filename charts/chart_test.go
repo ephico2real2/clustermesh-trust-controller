@@ -21,7 +21,7 @@ type object = map[string]any
 // without this an edited template would reuse a cached pass.
 func trackInputs(t *testing.T) {
 	t.Helper()
-	for _, dir := range []string{"cmtc", "../config/default", "../config/crd"} {
+	for _, dir := range []string{"cmtc", "cmtc-lab-network", "../config/default", "../config/crd", "../config/lab/network"} {
 		err := filepath.WalkDir(dir, func(path string, d fs.DirEntry, err error) error {
 			if err != nil || d.IsDir() {
 				return err
@@ -490,4 +490,73 @@ func TestIssuerApprovalArbiterIsConfiguredByTheChart(t *testing.T) {
 	renderFails(t, "clusters[cmtc-b].certificateUID is required", replace("controller.issuerApproval.clusters[1].certificateUID=u-b", "controller.issuerApproval.clusters[1].certificateUID=")...)
 	renderFails(t, "collides with the issuer-profile source", append(base, "controller.issuerApproval.slots[0]=cmtc-issuer-approval-g6", "controller.issuerApproval.slots[1]=cmtc-issuer-approval-b")...)
 	renderFails(t, "managePins needs rootSHA256", "clusterName=cmtc-a", "image.tag=x", "nodeAgent.trustReport.enabled=true", "nodeAgent.trustReport.managePins=true")
+}
+
+// kubeadmCorefile is kubeadm's default Corefile for CoreDNS v1.14.2, as kind created it on both labs
+// (kubectl -n kube-system get cm coredns, sha256 22847ad9af74…, 2026-10-28).
+const kubeadmCorefile = `.:53 {
+    errors
+    health {
+       lameduck 5s
+    }
+    ready
+    kubernetes cluster.local in-addr.arpa ip6.arpa {
+       pods insecure
+       fallthrough in-addr.arpa ip6.arpa
+       ttl 30
+    }
+    prometheus :9153
+    forward . /etc/resolv.conf {
+       max_concurrent 1000
+    }
+    cache 30 {
+       disable success cluster.local
+       disable denial cluster.local
+    }
+    loop
+    reload
+    loadbalance
+}
+`
+
+func TestLabNetworkGivesTheIngressOneAddressAndAName(t *testing.T) {
+	labValues := []string{"-f", "../config/lab/network/values.yaml", "-f", "../config/lab/network/values-cmtc-a.yaml"}
+	objects := renderChart(t, "cmtc-lab-network", "kube-system", labValues)
+
+	pool := objects["CiliumLoadBalancerIPPool/cmtc-ingress"]
+	if blocks := dig(pool, "spec", "blocks"); !reflect.DeepEqual(blocks, []any{object{"start": "172.18.250.10", "stop": "172.18.250.10"}}) {
+		t.Errorf("pool blocks %v, want cmtc-a's one address", blocks)
+	}
+	ingressOnly := object{"matchLabels": object{"cilium.io/ingress": "true"}}
+	policy := objects["CiliumL2AnnouncementPolicy/cmtc-ingress"]
+	for name, selector := range map[string]any{"pool": dig(pool, "spec", "serviceSelector"), "policy": dig(policy, "spec", "serviceSelector")} {
+		if !reflect.DeepEqual(selector, ingressOnly) {
+			t.Errorf("%s selects %v, want Cilium's Ingress Service only", name, selector)
+		}
+	}
+	if dig(policy, "spec", "loadBalancerIPs") != true || !reflect.DeepEqual(dig(policy, "spec", "interfaces"), []any{"^eth0$"}) {
+		t.Errorf("L2 policy %v, want the load balancer IPs announced on eth0", dig(policy, "spec"))
+	}
+
+	corefile, _ := dig(objects["ConfigMap/coredns"], "data", "Corefile").(string)
+	if !strings.HasPrefix(corefile, kubeadmCorefile) {
+		t.Fatalf("the Corefile does not start with kubeadm's default block:\n%s", corefile)
+	}
+	for _, zone := range []struct{ domain, address string }{{"cmtc-a.localtest.me", "172.18.250.10"}, {"cmtc-b.localtest.me", "172.18.251.10"}} {
+		for _, line := range []string{
+			zone.domain + ":53 {",
+			"template IN A " + zone.domain + " {",
+			`answer "{{ .Name }} 60 IN A ` + zone.address + `"`,
+			"template ANY ANY " + zone.domain + " {",
+		} {
+			if !strings.Contains(corefile, line) {
+				t.Errorf("zone %s: the Corefile has no line %q", zone.domain, line)
+			}
+		}
+	}
+
+	renderChartFails(t, "cmtc-lab-network", "kube-system", nil, "ingress.address is required")
+	renderChartFails(t, "cmtc-lab-network", "kube-system", nil, "does not match pattern", "ingress.address=172.18.250")
+	renderChartFails(t, "cmtc-lab-network", "kube-system", nil, "does not match pattern", "ingress.address=172.18.250.10",
+		"coredns.zones[0].domain=Bad_Zone", "coredns.zones[0].address=172.18.250.10")
 }

@@ -1,0 +1,71 @@
+ConfigMap/kube-system/cilium-config: .data.enable-envoy-config
+    live ="<absent>"
+    after="true"
+ConfigMap/kube-system/cilium-config: .data.enable-ingress-controller
+    live ="<absent>"
+    after="true"
+ConfigMap/kube-system/cilium-config: .data.enable-ingress-proxy-protocol
+    live ="<absent>"
+    after="false"
+ConfigMap/kube-system/cilium-config: .data.enable-ingress-secrets-sync
+    live ="<absent>"
+    after="true"
+ConfigMap/kube-system/cilium-config: .data.enable-l2-announcements
+    live ="<absent>"
+    after="true"
+ConfigMap/kube-system/cilium-config: .data.enforce-ingress-https
+    live ="<absent>"
+    after="true"
+ConfigMap/kube-system/cilium-config: .data.envoy-config-retry-interval
+    live ="<absent>"
+    after="15s"
+ConfigMap/kube-system/cilium-config: .data.ingress-default-lb-mode
+    live ="<absent>"
+    after="shared"
+ConfigMap/kube-system/cilium-config: .data.ingress-default-xff-num-trusted-hops
+    live ="<absent>"
+    after="0"
+ConfigMap/kube-system/cilium-config: .data.ingress-hostnetwork-enabled
+    live ="<absent>"
+    after="false"
+ConfigMap/kube-system/cilium-config: .data.ingress-hostnetwork-http-listener-port
+    live ="<absent>"
+    after="0"
+ConfigMap/kube-system/cilium-config: .data.ingress-hostnetwork-https-listener-port
+    live ="<absent>"
+    after="0"
+ConfigMap/kube-system/cilium-config: .data.ingress-hostnetwork-nodelabelselector
+    live ="<absent>"
+    after=""
+ConfigMap/kube-system/cilium-config: .data.ingress-hostnetwork-shared-listener-port
+    live ="<absent>"
+    after="8080"
+ConfigMap/kube-system/cilium-config: .data.ingress-hostnetwork-tls-passthrough-listener-port
+    live ="<absent>"
+    after="0"
+ConfigMap/kube-system/cilium-config: .data.ingress-lb-annotation-prefixes
+    live ="<absent>"
+    after="lbipam.cilium.io nodeipam.cilium.io service.beta.kubernetes.io service.kubernetes.io cloud.google.com"
+ConfigMap/kube-system/cilium-config: .data.ingress-secrets-namespace
+    live ="<absent>"
+    after="cilium-secrets"
+ConfigMap/kube-system/cilium-config: .data.ingress-shared-lb-service-name
+    live ="<absent>"
+    after="cilium-ingress"
+ConfigMap/kube-system/cilium-config: .data.ingress-use-remote-address
+    live ="<absent>"
+    after="true"
+ClusterRole.rbac.authorization.k8s.io/cilium: .rules
+    live =[{"apiGroups": ["networking.k8s.io"], "resources": ["networkpolicies"], "verbs": ["get", "list", "watch"]}, {"apiGroups": ["discovery.k8s.io"], "resources": ["endpointslices"], "verbs": ["get", "list", "watch"]}, {"apiGroups": [""], "resources": ["namespaces", "services", "pods", "nodes"], "verbs": 
+    after=[{"apiGroups": ["networking.k8s.io"], "resources": ["networkpolicies"], "verbs": ["get", "list", "watch"]}, {"apiGroups": ["discovery.k8s.io"], "resources": ["endpointslices"], "verbs": ["get", "list", "watch"]}, {"apiGroups": [""], "resources": ["namespaces", "services", "pods", "nodes"], "verbs": 
+ClusterRole.rbac.authorization.k8s.io/cilium-operator: .rules
+    live =[{"apiGroups": [""], "resources": ["pods"], "verbs": ["get", "list", "watch", "delete"]}, {"apiGroups": [""], "resourceNames": ["cilium-config"], "resources": ["configmaps"], "verbs": ["patch"]}, {"apiGroups": [""], "resources": ["nodes"], "verbs": ["list", "watch"]}, {"apiGroups": [""], "resources"
+    after=[{"apiGroups": [""], "resources": ["pods"], "verbs": ["get", "list", "watch", "delete"]}, {"apiGroups": [""], "resourceNames": ["cilium-config"], "resources": ["configmaps"], "verbs": ["patch"]}, {"apiGroups": [""], "resources": ["nodes"], "verbs": ["list", "watch"]}, {"apiGroups": [""], "resources"
+Role.rbac.authorization.k8s.io/cilium-secrets/cilium-ingress-secrets: created
+Role.rbac.authorization.k8s.io/cilium-secrets/cilium-operator-ingress-secrets: created
+RoleBinding.rbac.authorization.k8s.io/cilium-secrets/cilium-secrets: created
+RoleBinding.rbac.authorization.k8s.io/cilium-secrets/cilium-operator-ingress-secrets: created
+Service/kube-system/cilium-ingress: created
+IngressClass.networking.k8s.io/cilium: created
+EndpointSlice.discovery.k8s.io/kube-system/cilium-ingress: created
+cmtc-b: 28 change(s), 0 deletion(s); 0 kubectl manager entr(ies) left; 0 refusal(s)

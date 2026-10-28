@@ -4,7 +4,8 @@
 #   2. its Secret, key included, is copied to every member cluster, as Cilium's Cluster Mesh guide copies cilium-ca;
 #   3. every cluster signs its own ClusterMesh intermediate from that root, with a key made in-cluster;
 #   4. each intermediate backs a ClusterIssuer of the same name, which signs that cluster's leaves.
-# Every per-cluster CA is named after its cluster (<cluster>-clustermesh-intermediate), so a leaf's issuerRef names the
+# Every per-cluster CA is named after its cluster (<cluster>-clustermesh-intermediate, and
+# <cluster>-ingress-intermediate for the cluster's Ingress certificates), so a leaf's issuerRef names the
 # cluster that signed it, and one cluster's CA can be renewed or revoked alone. The SPIRE intermediate
 # (<cluster>-spire-intermediate) and the mesh root ConfigMap are owned by the CMTC chart (charts/cmtc, trust.*).
 # The public root certificate is written to --root-out for the clusters' trust bundle (Cilium tls.caBundle).
@@ -52,7 +53,8 @@ PY
 manifests() { # cluster, is-control
   [ "$2" = 1 ] && { render_file config/lab-pki/root-control.yaml "$1"; echo ---; }
   render_file config/lab-pki/clustermesh.yaml "$1"; echo ---
-  render_file config/lab-pki/clustermesh-leaf-issuer.yaml "$1"
+  render_file config/lab-pki/clustermesh-leaf-issuer.yaml "$1"; echo ---
+  render_file config/lab-pki/ingress.yaml "$1"
 }
 if [ -n "$render" ]; then manifests "$render" 1; exit 0; fi
 [ ${#names[@]} -ge 1 ] && [ -n "$root_out" ] || { echo "usage: mesh-pki.sh [options] --root-out FILE CONTROL [MEMBER...]" >&2; exit 2; }
@@ -64,6 +66,7 @@ der_sha() { openssl x509 -outform DER | openssl dgst -sha256 -r | cut -d' ' -f1;
 ready() { k "$1" "${@:2}" --for=condition=Ready --timeout=3m >/dev/null; }
 cas_of() { # cluster name: its intermediates, each also the name of its Secret and ClusterIssuer
   echo "$1-clustermesh-intermediate"
+  echo "$1-ingress-intermediate"
 }
 
 # Refuse an issuer that already signs from another Secret: repointing a live issuer is a planned cutover.

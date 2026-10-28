@@ -57,10 +57,11 @@ with it all use that name.
 | Issuer on the root | ClusterIssuer `<prefix>-mesh-root` | Every cluster |
 | ClusterMesh CA | `<cluster>-clustermesh-intermediate` | One cluster |
 | SPIRE CA | `<cluster>-spire-intermediate` | One cluster |
+| Ingress CA | `<cluster>-ingress-intermediate` | One cluster: the serving certificates of its Ingresses |
 
 The prefix is `cmtc` in the lab. The cluster names are `cmtc-a`, `cmtc-b`, and for a third cluster `cmtc-c`. The
 common names follow the same rule: `cmtc mesh root CA`, `cmtc-a ClusterMesh intermediate CA`,
-`cmtc-a SPIRE intermediate CA`.
+`cmtc-a SPIRE intermediate CA`, `cmtc-a Ingress intermediate CA`.
 
 The live labs also keep the old ClusterIssuer `cmtc-lab-intermediate`. No Certificate refers to it since 13:51Z. It
 is deleted once the Helm release values name the new issuer (see [open items](#open-items)).
@@ -74,6 +75,8 @@ CA that signed it.
 |---|---|---|---|---|
 | Mesh root | 10 years | 3 years before expiry | kept (`Never`) | `config/lab-pki/root-control.yaml` |
 | ClusterMesh and SPIRE intermediates | 3 years | 1 year before expiry | new | `config/lab-pki/clustermesh.yaml`, `charts/cmtc` `trust.spireIntermediate` |
+| Ingress intermediate | 3 years (live on both labs since 2026-10-28T04:09Z) | 1 year before expiry | new | `config/lab-pki/ingress.yaml` |
+| Ingress serving certificate (observability hub: `prometheus.cmtc-a.localtest.me`, `grafana.cmtc-a.localtest.me`) | 90 days (cert-manager default) | cert-manager default | new | `observability/v2/deploy/chart` |
 | clustermesh-apiserver server | 365 days | cert-manager default | kept (`Never`): peers pin its key | `up.sh` chart values |
 | clustermesh-apiserver clients | 365 days | cert-manager default | new | `up.sh` chart values |
 | Hubble: every agent's server (`*.<cluster>.hubble-grpc.cilium.io`), the Relay's client and server (`*.hubble-relay.cilium.io`), the UI's client (`*.hubble-ui.cilium.io`) | 365 days | cert-manager default | new | `config/lab/cilium/base.yaml` (`hubble.tls.auto`), issuer per cluster from `scripts/lab/cilium_cluster_values.py` |
@@ -320,7 +323,7 @@ this ConfigMap.
 |---|---|---|
 | trust-manager | `config/lab/trust-manager/values.yaml` | Chart and image v0.25.0, image by digest. No public CA package. No `app.targetNamespaces`: one ClusterRole for ConfigMaps. |
 | SPIRE intermediate and Bundle `cmtc-mesh-root` | `charts/cmtc`, values `trust.*` (`templates/trust.yaml`) | The CMTC chart owns the cluster's SPIFFE trust: Certificate and ClusterIssuer `<cluster>-spire-intermediate` (3 years, renewed 1 year early, ECDSA P-256, new key at each renewal), signed by ClusterIssuer `cmtc-mesh-root`, and the Bundle. `trust.enabled` is off by default; it needs cert-manager and trust-manager first (the Bundle CRD comes from trust-manager's release). The release namespace carries `trust: enabled`. Tested by `charts/chart_test.go` (`TestTrustIsOwnedByTheChart`). |
-| Mesh root and ClusterMesh intermediates | `scripts/lab/pki/mesh-pki.sh`, `config/lab-pki/` | No longer creates the SPIRE intermediate (`config/lab-pki/spire.yaml` removed). |
+| Mesh root, ClusterMesh and Ingress intermediates | `scripts/lab/pki/mesh-pki.sh`, `config/lab-pki/` | No longer creates the SPIRE intermediate (`config/lab-pki/spire.yaml` removed). The Ingress intermediate (`config/lab-pki/ingress.yaml`) was applied alone on the labs on 2026-10-28: a full `mesh-pki.sh` run would also move the live ClusterMesh intermediates from 1 to 3 years ([record](docs/evidence/cilium-ingress-20261028/README.md)). |
 | Bring-up | `scripts/lab/up.sh` | Installs trust-manager, labels `kube-system`, installs CMTC from its chart with `trust.enabled=true`, and waits for the intermediate to be `Ready` and the Bundle to be `Synced`. |
 
 ### Move the labs to the CMTC chart

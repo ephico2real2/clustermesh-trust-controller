@@ -6,6 +6,17 @@ ipam:
   mode: kubernetes
 kubeProxyReplacement: true
 k8sServicePort: 6443
+# Cilium Ingress (operator, 2026-10-28): the observability hub's receiver and Grafana are reached through an Ingress,
+# never a node port. One shared Service, cilium-ingress, takes its cluster's one address from LB IPAM, and the agents
+# answer ARP for it on the kind network; charts/cmtc-lab-network holds the pool, the L2 policy and the DNS names.
+ingressController:
+  enabled: true
+  loadbalancerMode: shared
+  service:
+    # A LoadBalancer Service opens a node port by default; kube-proxy replacement serves the address without one.
+    allocateLoadBalancerNodePorts: false
+l2announcements:
+  enabled: true
 # Hubble on every agent, with TLS from the mesh PKI (MESH_PKI.md: ClusterIssuer <cluster>-clustermesh-intermediate). The
 # Relay and the UI run in the control cluster only; the cluster values set hubble.relay.enabled, hubble.ui.enabled and
 # the issuer name.

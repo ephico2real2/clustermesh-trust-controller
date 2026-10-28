@@ -93,6 +93,12 @@ for cluster in cmtc-a cmtc-b; do
     --kube-context "kind-$cluster" --reuse-values -f .tmp/mesh-values.json -f ".tmp/cilium-constants-$cluster.json" \
     --wait --timeout 10m
   kubectl --context "kind-$cluster" -n kube-system wait certificates --all --for=condition=Ready --timeout=3m
+  # The Cilium Ingress address, its L2 announcement and the localtest.me names (charts/cmtc-lab-network). The chart's
+  # Corefile is kubeadm's default plus the zones: the first install takes kube-system/coredns over from kubeadm, and
+  # --force-conflicts moves kubeadm's ownership of data.Corefile to Helm (without it the apply conflicts with kubeadm).
+  helm upgrade --install cmtc-lab-network charts/cmtc-lab-network -n kube-system --kube-context "kind-$cluster" \
+    -f config/lab/network/values.yaml -f "config/lab/network/values-$cluster.yaml" --take-ownership --force-conflicts \
+    --wait --timeout 5m
 done
 # trust-manager first: the CMTC chart's Bundle needs its CRD. Installed without app.targetNamespaces, so a namespace that
 # opts in later (label trust=enabled) gets the mesh root ConfigMap without a reinstall (MESH_PKI.md, Trust bundle).
