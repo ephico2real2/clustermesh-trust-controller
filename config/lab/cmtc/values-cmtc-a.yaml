@@ -1,7 +1,12 @@
 # kind-cmtc-a: the CMTC chart with the issuer approval arbiter and the node trust report (ADR-012), for the live
 # qualification in docs/development/ARBITER_QUALIFICATION_RUNBOOK.md. UIDs and pins were read from the lab on
-# 2026-10-27 (kubectl get, read-only). The image digest is set on the command line from the CI image lock.
+# 2026-10-27 (kubectl get, read-only).
 clusterName: cmtc-a
+# The image this cluster runs: images.lock.json of the images workflow, run 40580338929, source 9145ad0. A new image
+# is tested with --set image.digest=..., then written here in the commit that records its deployment.
+image:
+  repository: ghcr.io/ephico2real2/cmtc
+  digest: sha256:a99717bbba669e879caf0c48bc33f51125d77a6a499acf5a1701876bb738cbd1
 namespace:
   create: false
 # The labs' SPIFFE trust objects (Certificate cmtc-a-spire-intermediate, Bundle cmtc-mesh-root) were created by

@@ -53,7 +53,7 @@ digests, and every DaemonSet, Deployment and StatefulSet listed is fully ready.
 | ztunnel | `cmtc-ztunnel@sha256:bc4fb925ae90…c87771` | ztunnel fork `68c0282`, branch `feat/root-pin-retirement` (draft PR ephico2real2/ztunnel#2) |
 | SPIRE node agent | `cmtc-spire-agent@sha256:c2d1cbc74d38…a4f1c` | SPIRE fork `0f8fe4d681` |
 | SPIRE server | `cmtc-spire-server@sha256:5d125886ba75…986cab` | SPIRE fork `0f8fe4d681` |
-| CMTC controller and node agent | `cmtc@sha256:a99717bbba66…38cbd1` | CMTC `9145ad0` (CI run 40580338929; from 2026-10-27T20:48Z); Helm release `cmtc` (cmtc-a revision 3, cmtc-b revision 2), issuer approval arbiter on |
+| CMTC controller and node agent | `cmtc@sha256:a99717bbba66…38cbd1` | CMTC `9145ad0` (CI run 40580338929; from 2026-10-27T20:48Z); Helm release `cmtc` (cmtc-a revision 3, cmtc-b revision 2), issuer approval arbiter on; `config/lab/cmtc/values-<cluster>.yaml` pins the digest (render equals live, 2026-10-28) |
 
 On 2026-10-27 (10:25–10:32Z) the CMTC, Cilium agent and ztunnel images moved for the SPIRE intermediate
 approval, generation 6 ([#34](https://github.com/ephico2real2/clustermesh-trust-controller/issues/34),

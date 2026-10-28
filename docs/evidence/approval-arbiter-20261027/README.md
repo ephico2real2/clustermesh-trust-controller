@@ -127,6 +127,8 @@ are not run.
 - SPIRE ([authority](step6/spire-authority-after-renew.txt), 20:06Z): active CA `a1348ce4…` under the old intermediate
   key (upstream `53d3ad70…`), expires 2026-10-28T10:52:42Z; no prepared CA. SPIRE prepares the next CA at half of the
   active CA's lifetime (2026-10-27T22:52:42Z) and activates it at five sixths (2026-10-28T06:52:42Z).
+- SPIRE prepared its next CA ([prepared](step6/spire-prepared.txt), read 2026-10-28T01:48Z): `93fead96…`, upstream
+  key ID `52d271bd…`, the Subject Key Identifier of the renewed intermediate (revision 2). The active CA is unchanged.
 - [matrix-step6-overlap](matrix-step6-overlap/join.txt), 20:06:35-20:10:38Z: the join tool reports 95 proven over
   mTLS, 36 dropped, **1 failed**. The failed probe (cmtc-a `name`, `client-worker` to
   `server-worker.cmtc-live-mtls.svc.cluster.local:80`, 20:06:42.892-.964Z) returned HTTP 200 from the expected server
