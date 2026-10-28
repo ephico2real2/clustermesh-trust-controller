@@ -68,9 +68,11 @@ DRILLS = list(CERTIFICATE_DRILLS) + ['R5', 'R6', 'neg-ca', 'neg-pin', 'neg-peer-
 AGENT_EVENTS = re.compile(r'event=withdrawn|event=projected|refresh-origin-transport|restart-origin-watch|'
                           r'load-config|connect-origin|validate-origin|origin config|Closing ztunnel xDS stream|'
                           r'Creating etcd client|source membership was withdrawn|snapshot is invalid|lease expired')
-ZTUNNEL_EVENTS = re.compile(r'certificate|Stream established|xds|XDS|stage=|identity|issuer|rotat|expired|'
-                            r'handshake|unauthorized|Unauthorized', re.I)
-ZTUNNEL_NOISE = re.compile(r'Fetching PID')
+ZTUNNEL_EVENTS = re.compile(r'certificate|Stream established|XDS client|xds::client|stage=|issuer|rotat|expired|'
+                            r'handshake|unauthorized|drained|witness', re.I)
+# The access log (one line per connection; the matrix joins those from the node files) and the two periodic lines
+# are not events of a rotation.
+ZTUNNEL_NOISE = re.compile(r'Fetching PID|\taccess\t|durably committed before ACK')
 # One curl per second per path, inside the client Pod; the host stamps each line as it arrives.
 LOOP = ('end=$(( $(date +%s) + $2 )); i=0; '
         'while [ "$(date +%s)" -lt "$end" ]; do i=$((i+1)); '

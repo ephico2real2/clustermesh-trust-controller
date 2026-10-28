@@ -367,8 +367,9 @@ ztunnel), one at a time with the traffic matrix after each.
   until each Cilium agent restarts (cmtc-a: 10 minutes). The apiserver's etcd is an `emptyDir`, and the agent's
   local source-membership watch resumes at a revision the new etcd has not reached.
 - [An origin-reader reissue interrupts cross-cluster traffic](docs/evidence/clustermesh-pki-20261026/cutover/08-finding-origin-reader-renewal.md)
-  for 0.4 to 10 seconds (two measurements). Cause and fix (fork `ce5c3ec031`, implemented and unit-tested, not
-  deployed): [Renew every mesh certificate without a failed connection](docs/architecture/MESH_CERTIFICATE_RENEWAL.md),
+  for 0.4 to 10 seconds (two measurements). Cause and fix (fork `ce5c3ec031`; deployed on kind-cmtc-b 2026-10-28, where
+  R1 to R4 then cost 0 failed probes, [record](docs/evidence/cert-rotation-drills-20261028/README.md); not yet on
+  kind-cmtc-a): [Renew every mesh certificate without a failed connection](docs/architecture/MESH_CERTIFICATE_RENEWAL.md),
   issues #46 and #47. The same note predicts that the previous server leaf's NotAfter, 8 h after each
   `clustermesh-apiserver-server-cert` renewal, withdraws every established origin session; to be measured.
 

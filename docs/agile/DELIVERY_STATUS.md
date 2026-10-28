@@ -46,7 +46,7 @@ digests, and every DaemonSet, Deployment and StatefulSet listed is fully ready.
 
 | Component | Image (`ghcr.io/ephico2real2/…`) | Source |
 | --- | --- | --- |
-| Cilium agent | `cilium-dev@sha256:c77bdc52d2f3…ac8a447` | Cilium fork `823d30c51b`, branch `feat/ztunnel-tcp-dns-resolvers` |
+| Cilium agent | cmtc-b: `cilium-dev@sha256:8446cf910bdb…69b2cc` (Helm revision 12, 2026-10-28 16:26Z); cmtc-a: `cilium-dev@sha256:c77bdc52d2f3…ac8a447` | cmtc-b: Cilium fork `ce5c3ec031`, branch `fix/ztunnel-origin-credential-renewal` ([record](../evidence/cert-rotation-drills-20261028/README.md)); cmtc-a: `823d30c51b`, branch `feat/ztunnel-tcp-dns-resolvers` |
 | Cilium operator | `cilium-dev@sha256:533e8ff5483a…40cb38` | Cilium fork `64a07d46a6` |
 | ClusterMesh API server (etcd, apiserver, kvstoremesh) | `cilium-dev@sha256:1e3fc5a8f272…cffc6` | Cilium fork `64a07d46a6` |
 | Hubble relay (cmtc-a only) | `cilium-dev@sha256:bbda6e67ddb9…6b0413` | Cilium fork `b1c3622a9a` ([record](../evidence/hubble-20261027/README.md)) |
@@ -151,7 +151,7 @@ agent's delegation was returned at 18:08:46Z on 2026-10-26.
 | Issuer rotation without reset (gate 10) | orchestrator | generation 6 published (SPIRE intermediate); approval renewal in design (no host job); report and ADR-012 not written |
 | eBPF measurement plane review | none | one patch proposed, not applied; no report |
 | Metrics, CoreDNS scraping and Grafana dashboards v2 | none | rules and tests pass; not deployed; uncommitted |
-| Certificate renewal without a failed connection (#47 P1-P3, #46) | Fable, Phase 1 done | Cilium fork `ce5c3ec031` (branch `fix/ztunnel-origin-credential-renewal`): implemented and unit-tested with `-race`, agent image `cilium-dev@sha256:8446cf910bdb…69b2cc` published (run 40719125969), not deployed; drill `scripts/evidence/rotation_drill.py` dry-run; [design note](../architecture/MESH_CERTIFICATE_RENEWAL.md); Phase 2 (Helm rollout and drills) awaits the orchestrator |
+| Certificate renewal without a failed connection (#47 P1-P3, #46) | Fable, Phase 1 done | Cilium fork `ce5c3ec031` (branch `fix/ztunnel-origin-credential-renewal`): implemented and unit-tested with `-race`, agent image `cilium-dev@sha256:8446cf910bdb…69b2cc` deployed on cmtc-b (revision 12) with drills R1-R4 at 0 failed probes, not yet on cmtc-a; drill `scripts/evidence/rotation_drill.py` dry-run; [design note](../architecture/MESH_CERTIFICATE_RENEWAL.md); Phase 2 (Helm rollout and drills) awaits the orchestrator |
 
 Each result is reviewed and verified on both labs before it is committed.
 
