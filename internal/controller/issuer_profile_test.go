@@ -579,3 +579,52 @@ func TestIssuerProducerLogsEveryFailedPassWithoutPayloads(t *testing.T) {
 		})
 	}
 }
+
+// A source succession needs no reset anywhere. The controller is re-pointed
+// (restarted with new options) at a successor approval object with a new name
+// and UID and a strictly greater generation: the output's sequence continues
+// and the consumer contract accepts it under the UNCHANGED installation pins.
+// A restart with the predecessor's options withdraws without lowering the
+// successor's floor, and re-pointing at the successor again recovers.
+func TestIssuerSourceSuccessionToANewlyNamedObjectContinuesTheSequence(t *testing.T) {
+	r, c, source, _, now, _ := producerFixture(t)
+	reconcileProfile(t, r)
+	_, first := readProfile(t, c, r.Options.Output)
+	pins := trustprofile.Expected{OutputUID: string(r.Options.OutputUID), SourceUID: string(r.Options.SourceUID), SourceNamespace: r.Options.Source.Namespace, SourceName: r.Options.Source.Name, Cluster: r.Options.LocalCluster, MinimumGeneration: first.AcceptedGeneration, MinimumSequence: first.Sequence, RootPins: r.Options.RootPins}
+	var approval trustprofile.Approval
+	if err := json.Unmarshal([]byte(source.Data[trustprofile.ApprovalKey]), &approval); err != nil {
+		t.Fatal(err)
+	}
+	approval.Generation = 2
+	successor := sourceObject(t, approval, "source-g2")
+	successor.Name = "approval-g2"
+	if err := c.Create(context.Background(), successor); err != nil {
+		t.Fatal(err)
+	}
+	options := r.Options
+	options.Source, options.SourceUID = client.ObjectKeyFromObject(successor), successor.UID
+	repointed := &IssuerProfileReconciler{Client: c, Reader: c, Options: options, Metrics: r.Metrics, Now: r.Now}
+	reconcileProfile(t, repointed)
+	out, p := readProfile(t, c, r.Options.Output)
+	if p.State != "published" || p.Sequence != first.Sequence+1 || p.AcceptedGeneration != 2 || p.AcceptedSourceUID != "source-g2" || p.Source.Name != "approval-g2" {
+		t.Fatalf("successor not published on the same output: %+v", p)
+	}
+	if _, err := trustprofile.VerifyCurrent([]byte(out.Data[trustprofile.DataKey]), pins, *now); err != nil {
+		t.Fatalf("consumer rejected the successor under unchanged pins: %v", err)
+	}
+	*now = now.Add(time.Second)
+	stale := &IssuerProfileReconciler{Client: c, Reader: c, Options: r.Options, Metrics: r.Metrics, Now: r.Now}
+	reconcileProfile(t, stale)
+	_, withdrawn := readProfile(t, c, r.Options.Output)
+	if withdrawn.State != "withdrawn" || withdrawn.Reason != "GenerationRollback" || withdrawn.AcceptedGeneration != 2 || withdrawn.AcceptedSourceUID != "source-g2" || withdrawn.Sequence != p.Sequence+1 {
+		t.Fatalf("predecessor options lowered or lost the successor floor: %+v", withdrawn)
+	}
+	reconcileProfile(t, repointed)
+	out, recovered := readProfile(t, c, r.Options.Output)
+	if recovered.State != "published" || recovered.AcceptedGeneration != 2 || recovered.Sequence != withdrawn.Sequence+1 {
+		t.Fatalf("successor did not recover after the stale restart: %+v", recovered)
+	}
+	if _, err := trustprofile.VerifyCurrent([]byte(out.Data[trustprofile.DataKey]), pins, *now); err != nil {
+		t.Fatalf("consumer rejected the recovered successor: %v", err)
+	}
+}
