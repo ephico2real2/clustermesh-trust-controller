@@ -546,12 +546,20 @@ func DecodePublication(data []byte) (*Publication, error) {
 // future API-backed Cilium watcher must also prove authorized object origin,
 // maintain its own durable sequence floor, deliver xDS, ACK and drain on expiry.
 //
+// Expected must be complete: every pin set, SourceUID distinct from
+// OutputUID, SourceName a DNS-1123 subdomain, MinimumGeneration at least 1
+// and Cluster valid. VerifyCurrent fails closed on an incomplete Expected,
+// because an empty SourceUID or a zero MinimumGeneration would unbind the
+// floor generation and accept any successor.
+//
 // SourceName and SourceUID name the approval object accepted at
-// MinimumGeneration and bind only that generation. Approvals are immutable,
-// so each new approval generation is a new object: a successor object in
-// SourceNamespace is current when its generation is strictly greater. The UID
-// identifies the object; a caller that reads the live object by its name
-// proves that the name belongs to it.
+// MinimumGeneration. At that floor generation the publication must carry
+// both the pinned name and the pinned UID. Approvals are immutable, so each
+// new approval generation is a new object: a successor object in
+// SourceNamespace is current when its generation is strictly greater, and
+// its name and UID are not bound by the pins. The UID identifies the object;
+// a caller that reads the live object by its name proves that the name
+// belongs to it.
 type Expected struct {
 	OutputUID, SourceUID, SourceNamespace, SourceName, Cluster string
 	MinimumGeneration, MinimumSequence                         uint64
@@ -559,6 +567,11 @@ type Expected struct {
 }
 
 func VerifyCurrent(data []byte, e Expected, now time.Time) (*Publication, error) {
+	// Incomplete pins fail closed: an empty SourceUID or a zero MinimumGeneration
+	// would otherwise unbind the floor generation and accept any successor.
+	if e.OutputUID == "" || e.SourceUID == "" || e.SourceUID == e.OutputUID || e.SourceNamespace == "" || len(validation.IsDNS1123Subdomain(e.SourceName)) != 0 || e.MinimumGeneration == 0 || !ClusterValid(e.Cluster) {
+		return nil, errors.New("incomplete consumer pins")
+	}
 	p, err := DecodePublication(data)
 	if err != nil {
 		return nil, err
@@ -568,7 +581,7 @@ func VerifyCurrent(data []byte, e Expected, now time.Time) (*Publication, error)
 	}
 	// DecodePublication binds Source.UID to ExpectedSourceUID and
 	// AcceptedSourceUID for a published profile.
-	if len(validation.IsDNS1123Subdomain(p.Source.Name)) != 0 || p.Source.UID == e.OutputUID || p.AcceptedGeneration == e.MinimumGeneration && p.Source.UID != e.SourceUID {
+	if len(validation.IsDNS1123Subdomain(p.Source.Name)) != 0 || p.Source.UID == e.OutputUID || p.AcceptedGeneration == e.MinimumGeneration && (p.Source.UID != e.SourceUID || p.Source.Name != e.SourceName) {
 		return nil, errors.New("publication approval source is neither the floor object nor a successor")
 	}
 	at, _ := parseTime(p.PublishedAt)
