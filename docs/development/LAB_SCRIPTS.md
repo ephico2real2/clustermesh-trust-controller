@@ -88,6 +88,10 @@ Loading an image does not deploy it, and a Ready Pod does not mean mTLS. A
 passing traffic matrix shows traffic outcomes only; workload mTLS also needs
 per-connection peer-certificate evidence and passing recovery tests.
 
+A change to the SPIRE server's objects or helper script (not its image) follows
+[Rolling out a change to the SPIRE server or its helpers](../../LOCAL_ISSUER_PROFILE.md#rolling-out-a-change-to-the-spire-server-or-its-helpers):
+render, server-side dry-run diff, apply one object by its label, replace the Pod, check.
+
 ## 5. Checks you can run at any time
 
 | Run | Answers |

@@ -238,6 +238,101 @@ scripts/lab/spire/local_authority.py --kube-system-uid <uid> --ledger <file> cmt
 Tested by `test_local_authority.py` (8 tests, with a fake SPIRE; removing the upstream check or the old-authority
 check fails them) and on both labs, `rotate` on 2026-10-27 ([Rollout](#rollout-2026-10-27), step 5).
 
+### Rolling out a change to the SPIRE server or its helpers
+
+Status: **current**, written from the #41 rollout of 2026-10-28
+([record](docs/evidence/spire-sidecar-outage-20261028/README.md)). [`render_spire.py`](scripts/lab/spire/render_spire.py)
+renders the 18 objects of the SPIRE server and the SPIRE node agent for one cluster, among them the StatefulSet
+`cilium-spire/spire-server`, the ConfigMap `spire-server` (`server.conf`), the ConfigMap `spire-helpers`
+(`register-agent-node.sh`: the command of the `register-agent-node` sidecar and its readiness probe) and the
+DaemonSet `spire-agent`. Every object carries the label `security.cmtc.io/pki-role`, which selects it from the render
+(`spire-helper`, `spire-server-config`, `spire-server`, `spire-agent`, ...). Roll out one cluster at a time,
+`kind-cmtc-a` then `kind-cmtc-b`, under the lab lease, and not between a SPIRE CA activation and the matrix that
+follows it.
+
+1. Change the renderer and its tests. Run `venv/bin/python scripts/lab/spire/test_render_spire.py` from the
+   repository root. Expected: `OK`, and the new test fails with the previous renderer (check that on a copy of the old
+   file, outside the tree).
+2. Render: `venv/bin/python scripts/lab/spire/render_spire.py cmtc-a --format yaml --server-image <live server image>
+   > .tmp/spire-cmtc-a.yaml`. The live server image is the SPIRE fork digest in
+   [delivery status](docs/agile/DELIVERY_STATUS.md); without it the StatefulSet differs in both of its image fields.
+   The repository venv has PyYAML; the system `python3` does not.
+3. Diff against live, server-side, without `--force-conflicts`, for the object you changed:
+
+   ```sh
+   kubectl --context kind-cmtc-a diff --server-side -l security.cmtc.io/pki-role=spire-helper -f .tmp/spire-cmtc-a.yaml
+   kubectl --context kind-cmtc-a apply --server-side --dry-run=server -o name -l security.cmtc.io/pki-role=spire-helper -f .tmp/spire-cmtc-a.yaml
+   ```
+
+   `diff` prints the fields that would change and exits 1 when there are any, 0 when the render equals live, and 2 on
+   a conflict. The dry run names the object and exits 0, or reports the conflict: a conflict names each field whose
+   rendered value differs from the live value, and the manager that set it. Check that `-o name` printed the object: a label value that
+   matches nothing makes both commands succeed without doing anything. Expected before the apply: only the change you
+   made. A hunk in the annotation `kubectl.kubernetes.io/last-applied-configuration` appears when the object was last
+   applied client-side; it is not a change to the object.
+4. Apply the changed object with the same selector:
+   `kubectl --context kind-cmtc-a apply --server-side -o name -l security.cmtc.io/pki-role=spire-helper -f .tmp/spire-cmtc-a.yaml`.
+   Apply the whole render only on a fresh cluster (see the gap below).
+5. Restart the server Pod when the change is in the StatefulSet template, or in a file that PID 1 of a container has
+   already read. `register-agent-node.sh` is such a file: the kubelet updates the mounted ConfigMap within about a
+   minute and the readiness probe runs the new script from its next period, but the sidecar's PID 1 keeps running the
+   old one. `kubectl --context kind-cmtc-a -n cilium-spire rollout restart statefulset/spire-server` adds the
+   annotation `kubectl.kubernetes.io/restartedAt` to the template, which is a new revision.
+   - If `spire-server-0` is Ready, the controller replaces it, and
+     `kubectl -n cilium-spire rollout status statefulset/spire-server --timeout=3m` ends with `rolling update complete`.
+   - If `spire-server-0` is not Ready (the #41 case: the fault the change fixes made it not Ready), the rollout does
+     not happen. The StatefulSet has `podManagementPolicy: OrderedReady`; with that policy the controller waits for
+     every Pod to be Running and Ready before it updates one, and the not Ready Pod is the one it must update (the
+     "Forced rollback" case of the Kubernetes StatefulSet documentation). What you see: `rollout status` prints
+     `Waiting for 1 pods to be ready...` until it times out; `status.updateRevision` is the new revision, but
+     `status.currentRevision` and the Pod's label `controller-revision-hash` stay at the old one; the Pod keeps its old
+     template. The fix is `kubectl --context kind-cmtc-a -n cilium-spire delete pod spire-server-0`: the controller
+     recreates it from the new revision at once. `podManagementPolicy: Parallel` would remove the wait, but the field is
+     immutable on an existing StatefulSet; changing it is an operator decision and is not part of this procedure.
+6. Check, in this order (`-n cilium-spire`, with the cluster's context):
+
+   | Check | Command | Expected |
+   |---|---|---|
+   | Pod | `kubectl get pod spire-server-0 -L controller-revision-hash` | `2/2 Running`, the new revision, restarts unchanged |
+   | Sidecar PID 1 | `kubectl exec spire-server-0 -c register-agent-node -- cat /proc/1/comm` | `sh` |
+   | Zombies on the server's node | `docker --context colima-cmtc-cilium exec <node> ps -eo stat=,comm= \| awk '$1 ~ /^Z/' \| sort \| uniq -c` | no `timeout`; the `bash` zombies under `cilium-agent` are a separate leak |
+   | SPIRE node agents | `kubectl logs -l app=spire-agent -c spire-agent --since=10m --prefix \| grep -c 'Could not reattest'` | 0 within two minutes of the Pod being Ready (2026-10-28: the last line came before the Pod was Ready) |
+   | Workload certificates | `kubectl -n kube-system logs <the ztunnel-cilium Pod of the worker> --since=10m \| grep -c 'no approved direct issuer'` | the lines stop; on 2026-10-28 probes still failed at 07:26:45Z and passed at 07:30:49Z, 6 to 10 minutes after the cmtc-a Pod was Ready |
+   | Traffic | `scripts/evidence/run_mtls_matrix.sh docs/evidence/<record>/matrix-<hhmm>` | 96 proven over mTLS, 36 dropped by Cilium, 0 failed |
+
+7. Repeat steps 2 to 6 for `kind-cmtc-b`, then write the record under `docs/evidence/` and commit the renderer, its
+   tests and the record together.
+
+What the outage of 2026-10-28 looked like, so that you recognise it:
+
+- Every exec into the sidecar failed with `runc init: unable to spawn stage-2: Resource temporarily unavailable`: the
+  container was at its PID limit. `local_authority.py` and the registration of a ztunnel delegate entry use that exec
+  and could not run.
+- The Pod was not Ready, the Service `spire-server` had no ready endpoint, and the agents logged
+  `Could not reattest agent`.
+- Workload mTLS failed closed: every allowed probe failed with curl 56 or 52, and no probe got a plaintext answer. The
+  SVIDs live 130 s (`X509SvidTtl` 120 s), so a SPIRE outage stops workload mTLS within minutes.
+- Recovery: the new Pods were Ready at 07:20:45Z (cmtc-a) and 07:21:50Z (cmtc-b); the agents' last failed
+  re-attestation was logged before that (07:19:34Z and 07:20:21Z); workload certificates were usable again between
+  07:26:45Z and 07:30:49Z; the matrix at 07:31-07:35Z proved 96 of 96 allowed probes over mTLS.
+
+**Gap: how SPIRE is applied today.** No script in the repository applies what `render_spire.py` renders, and SPIRE has
+no Helm chart; only the tests and `workload_api.py` import the renderer. The field managers of the live objects record
+how they got there: `kubectl create` from the render on 2026-10-25T03:44:45Z (all objects); `kubectl replace` of the
+agent DaemonSet template on 2026-10-25T13:35-13:37Z (the delegated agent: the fork image, ConfigMap
+`cmtc-delegated-agent-<hash>`, the node sockets, the kubelet pins and an init container; no tool in the repository
+produces that template, and `workload_api.py` produces a similar plan under other names); `kubectl patch` of the server
+and agent images on 2026-10-26T16:24-16:39Z (the SPIRE fork); `kubectl patch` of `server.conf` on 2026-10-27T04:07Z
+(the intermediate issuer; the renderer has it too); the client-side `kubectl apply` of `spire-helpers` on 2026-10-28
+(#41). Measured 2026-10-28T14:35Z: the render with the live server image equals live in every set field of 17 of the
+18 objects on both clusters; the agent DaemonSet differs in 9 fields (the delegated template). The server-side dry run
+of the StatefulSet still reports one conflict, `.spec.volumeClaimTemplates`: the list is atomic, the server added
+`apiVersion`, `kind`, `volumeMode: Filesystem` and `status.phase: Pending` to the stored template, and the field is
+immutable in any case. Proposal, not built (operator decision): a chart `charts/cmtc-spire` that renders these objects
+from values (cluster, trust domain, image digests, the delegated agent template), adopts the live objects once its
+render equals them ([working configuration lives in Helm](AGENTS.md#build-and-delivery)), and makes the rollout a
+`helm upgrade` followed by step 5. Until then, the steps above are the standard.
+
 ## What the producer does
 
 The administrator supplies an immutable ConfigMap with approved public certificates.
