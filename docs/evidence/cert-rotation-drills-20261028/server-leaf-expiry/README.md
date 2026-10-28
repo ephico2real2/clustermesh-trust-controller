@@ -11,7 +11,7 @@ place 10 minutes before the peer's ClusterMesh server certificate expired: 0 wit
 17:23:47Z), from a separate defect: the agent loaded its ztunnel ADS server certificate once, at start.
 
 State: **measured** (this run). The lease-ending refresh is **traffic-qualified** on both clusters. The ADS defect is
-**fixed in the fork and not deployed** (see [Open](#open)).
+**fixed, deployed and traffic-qualified** since 19:23Z ([ads-fix-rollout](../ads-fix-rollout/README.md)).
 
 ## Why the test used 1-hour certificates
 
@@ -76,11 +76,7 @@ the cmtc-a upgrade.
 
 ## Open
 
-- The ADS fix: Cilium fork `c84f7d0741` (branch `fix/ztunnel-origin-credential-renewal`), which serves the pair on
-  disk to each new handshake through `pkg/crypto/certloader`, image
-  `cilium-dev@sha256:369090126600…dafa60` (CI run 40738186605). Under independent review; not deployed. Until it
-  is, the agents hold ADS revision 4 in memory (cmtc-a NotAfter 2026-10-29T11:17:15Z, cmtc-b 11:17:16Z): any ztunnel
-  reconnect after that is the same outage.
-- The R3 drill must prove a new handshake presents the renewed ADS certificate (a patch is proposed).
+- Closed at 19:23Z: the ADS fix, Cilium fork `c84f7d0741`, is deployed on both clusters, and the R3 drill now proves
+  that a new handshake gets the renewed certificate ([ads-fix-rollout](../ads-fix-rollout/README.md)).
 - The old-build withdrawal at the server leaf's NotAfter was not observed live; it is confirmed from code by the
   review of `ce5c3ec031` (C8).

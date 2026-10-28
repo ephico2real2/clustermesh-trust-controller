@@ -63,10 +63,14 @@ SPIRE activates the prepared CA at five sixths of the active CA's lifetime. The 
 (cmtc-a) and 22:52:43Z (cmtc-b) on 2026-10-27 and live 24 h, so the next activations are due at about 18:54Z and
 18:53Z. The prepared CAs are signed by the same per-cluster SPIRE intermediates as the active ones.
 
+They activated at 18:52:46Z (cmtc-b) and 18:54:21Z (cmtc-a), SPIRE server log `X509 CA activated`; [spire-authorities-1858.json](spire-authorities-1858.json) shows them active and no CA prepared. The activations ran under per-second probes, and the workload leaves moved to the new CAs by 18:57:33Z: [ads-fix-rollout](../cert-rotation-drills-20261028/ads-fix-rollout/README.md#the-spire-ca-activations).
+
 ## Traffic
 
 [matrix-1349](../spire-sidecar-outage-20261028/matrix-1349/join.txt), 13:48:26-13:52:30Z, covers the ClusterMesh
 renewals on both clusters: 96 proven over mTLS, 0 unanswered, 36 dropped by Cilium, 0 failed.
+
+[matrix-1858](matrix-1858/join.txt), 18:58:00-19:02:05Z, after the SPIRE CA activations: every allowed probe returned HTTP 200; 93 joined to a ztunnel mTLS line and 3 to a line with a rewritten source port (listed in [ads-fix-rollout](../cert-rotation-drills-20261028/ads-fix-rollout/README.md#the-spire-ca-activations)); 36 dropped by Cilium.
 
 ## Open
 
@@ -75,4 +79,4 @@ renewals on both clusters: 96 proven over mTLS, 0 unanswered, 36 dropped by Cili
   cross-cluster requests, 2026-10-26); the fix is issue #46.
 - The SPIRE agents log `Failed to send X.509 SVID response` (`context canceled`, `DelegatedIdentity`,
   `SubscribeToX509SVIDs`) 2 to 6 times per agent between 07:30Z and 13:48Z. Not investigated.
-- Observe the SPIRE CA activations at about 18:53-18:54Z with a matrix after them.
+- Done: the SPIRE CA activations of 18:52:46Z and 18:54:21Z, with a matrix after them (see Traffic).

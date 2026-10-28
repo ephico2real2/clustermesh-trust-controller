@@ -23,6 +23,8 @@ the raw log copies were not kept). The matrix directory is a `run_mtls_matrix.sh
 
 Later the same day: cmtc-a moved to the same build (revision 11, 17:23Z), the session renewal at the peer's server certificate end was measured on both clusters, and an outage on cmtc-a showed that the R3 result below was a false pass: [server-leaf-expiry](server-leaf-expiry/README.md).
 
+At 18:51Z (cmtc-b) and 19:04Z (cmtc-a), both clusters moved to fork `c84f7d0741`, which reloads the ztunnel ADS server certificate, and R3 was run again with a new-handshake check: [ads-fix-rollout](ads-fix-rollout/README.md).
+
 ## Upgrade of kind-cmtc-b
 
 1. The lock: `config/cilium-images.lock.json` `images.agent` set to the digest above (tag

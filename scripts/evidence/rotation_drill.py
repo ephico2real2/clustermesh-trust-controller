@@ -17,8 +17,11 @@ without the kube-system UID pins of both clusters.
   neg-peer-down the peer's clustermesh-apiserver node port dropped on this cluster's nodes for --down-seconds
 
 Verdicts (summary.json, exit 1 on any failed one): every allowed path 0 failed probes, every denied path 0 HTTP
-answers, and for R1-R6 no `event=withdrawn` on any agent. For a negative drill the withdrawal must happen, the
-cross-cluster path into this cluster must fail closed (curl 56, never HTTP 200) and must recover after the revert.
+answers, and for R1-R6 no `event=withdrawn` on any agent. R3 also requires that every node of the cluster presents
+the renewed certificate to a new TLS handshake on the agent's ADS server: the established ztunnel streams do not
+handshake again during a drill, so 0 failed probes alone cannot show that the agent loaded the renewal. For a
+negative drill the withdrawal must happen, the cross-cluster path into this cluster must fail closed (curl 56, never
+HTTP 200) and must recover after the revert.
 
 The two negative drills that change Helm-managed objects (neg-ca patches Certificate ztunnel-origin-reader, neg-pin
 patches ConfigMap ztunnel-origin-config) put the object's data back byte for byte and then require the drift check
@@ -30,9 +33,10 @@ Usage:
   rotation_drill.py drill R1 --cluster cmtc-a --out DIR --execute [--seconds 150] [--lead 20]
   rotation_drill.py drill neg-peer-down --cluster cmtc-a --out DIR --down-seconds 120 --execute
 
-Requires: kubectl, cmctl (R1-R4, neg-ca), docker (neg-peer-down, through the kind nodes' Docker context), the live
+Requires: kubectl, cmctl (R1-R4, neg-ca), docker (R3, neg-peer-down, through the kind nodes' Docker context), the live
 mTLS fixture Pods of both clusters (scripts/evidence/live_mtls_fixture.py) and the kubeconfig below. Runs unchanged
-on Linux and macOS: the node side uses only busybox sh, date +%s and curl; the host stamps every probe line.
+on Linux and macOS: the node side uses only busybox sh, date +%s, curl and (R3) openssl; the host stamps every probe
+line.
 """
 import argparse
 import datetime as dt
@@ -54,6 +58,12 @@ NODE_PORT = 32379
 REPO = pathlib.Path(__file__).resolve().parents[2]
 LOCAL_AUTHORITY = REPO / 'scripts/lab/spire/local_authority.py'
 DRILL_MANAGER = 'cmtc-rotation-drill'
+ADS_CERTIFICATE = 'cmtc-ztunnel-ads-server'
+# A new TLS handshake to the agent's ADS server, inside the kind node's network namespace (the agent runs in the host
+# network). It reads only the certificate the server presents: the server asks for no client certificate, and no
+# Secret is read. OpenSSL starts a full handshake, as a reconnecting ztunnel does.
+ADS_HANDSHAKE = ('openssl s_client -connect 127.0.0.1:15012 -alpn h2 </dev/null 2>/dev/null'
+                 ' | openssl x509 -noout -serial -startdate -enddate -dateopt iso_8601')
 
 CERTIFICATE_DRILLS = {
     'R1': ['ztunnel-origin-reader'],
@@ -67,7 +77,8 @@ DRILLS = list(CERTIFICATE_DRILLS) + ['R5', 'R6', 'neg-ca', 'neg-pin', 'neg-peer-
 # drops the `Fetching PID` flood (#47, P4).
 AGENT_EVENTS = re.compile(r'event=withdrawn|event=projected|refresh-origin-transport|restart-origin-watch|'
                           r'load-config|connect-origin|validate-origin|origin config|Closing ztunnel xDS stream|'
-                          r'Creating etcd client|source membership was withdrawn|snapshot is invalid|lease expired')
+                          r'Creating etcd client|source membership was withdrawn|snapshot is invalid|lease expired|'
+                          r'Keypair updated|Keypair update failed')
 ZTUNNEL_EVENTS = re.compile(r'certificate|Stream established|XDS client|xds::client|stage=|issuer|rotat|expired|'
                             r'handshake|unauthorized|drained|witness', re.I)
 # The access log (one line per connection; the matrix joins those from the node files) and the two periodic lines
@@ -350,6 +361,25 @@ def ztunnel_certificates(cluster, pod):
     return certificates
 
 
+def instant(stamp):
+    """An RFC 3339 or OpenSSL ISO 8601 (`2026-10-29 11:17:15Z`) stamp as an aware datetime, or None."""
+    return dt.datetime.fromisoformat(stamp.replace(' ', 'T')) if stamp else None
+
+
+def ads_presented(node):
+    """The certificate the agent's ADS server presents to a new handshake on one kind node: serial and validity."""
+    r = run(['docker', '--context', DOCKER_CONTEXT, 'exec', node, 'sh', '-c', ADS_HANDSHAKE], check=False, timeout=30)
+    fields = dict(line.split('=', 1) for line in r.stdout.splitlines() if '=' in line)
+    return {'at': iso(), 'exit': r.returncode, 'serial': fields.get('serial'),
+            'notBefore': fields.get('notBefore'), 'notAfter': fields.get('notAfter')}
+
+
+def presents(seen, status):
+    """True when a handshake presented the certificate of a cert-manager Certificate status."""
+    return bool(seen.get('notAfter')) and instant(seen.get('notBefore')) == instant(status.get('notBefore')) \
+        and instant(seen.get('notAfter')) == instant(status.get('notAfter'))
+
+
 def spire_authorities(cluster):
     r = run([sys.executable, str(LOCAL_AUTHORITY), '--kube-system-uid', PINS[cluster], cluster, 'show'], check=False)
     return {'exit': r.returncode, 'stdout': r.stdout[-4000:], 'stderr': r.stderr[-1000:]}
@@ -368,6 +398,33 @@ class Drill:
 
     def save(self, name, obj):
         (self.out / name).write_text(json.dumps(obj, indent=1, sort_keys=True) + '\n')
+
+    def ads_handshakes(self):
+        return {node: ads_presented(node) for node in sorted(self.lab.node_ips(self.cluster))}
+
+    def wait_ads_renewal(self, before):
+        """Handshake on every node until each presents the renewed certificate, or --ads-wait seconds pass.
+
+        The kubelet writes a renewed Secret into the Pod volume at its next sync, and the agent reads the files at
+        its next poll, so a node may present the old certificate for a while after cert-manager renews it.
+        """
+        old = before.get(ADS_CERTIFICATE, {})
+        deadline = time.monotonic() + self.args.ads_wait
+        nodes, status = {}, {}
+        while True:
+            status = self.lab.certificates(self.cluster).get(ADS_CERTIFICATE, {})
+            renewed = (status.get('revision') or 0) > (old.get('revision') or 0) and status.get('ready') == 'True'
+            for node, seen in self.ads_handshakes().items():
+                entry = nodes.setdefault(node, {'renewedAt': None})
+                entry['last'] = seen
+                if renewed and not entry['renewedAt'] and presents(seen, status) and not presents(seen, old):
+                    entry['renewedAt'] = seen['at']
+            if renewed and all(n['renewedAt'] for n in nodes.values()):
+                break
+            if time.monotonic() > deadline:
+                break
+            time.sleep(5)
+        return {'certificate': {'before': old, 'after': status}, 'waitSeconds': self.args.ads_wait, 'nodes': nodes}
 
     # ---- read-only parts -------------------------------------------------------------------------------------
     def preflight(self):
@@ -522,9 +579,14 @@ class Drill:
         """Everything a drill needs, checked before any probe or event starts."""
         if drill in CERTIFICATE_DRILLS or drill == 'neg-ca':
             require(shutil.which('cmctl'), 'cmctl is not installed')
-        if drill == 'neg-peer-down':
+        if drill in ('R3', 'neg-peer-down'):
             require(shutil.which('docker'), 'docker is not installed')
             run(['docker', '--context', DOCKER_CONTEXT, 'info', '--format', '{{.ServerVersion}}'])
+        if drill == 'R3':
+            before = self.lab.certificates(self.cluster).get(ADS_CERTIFICATE, {})
+            for node, seen in self.ads_handshakes().items():
+                require(presents(seen, before), f'{node}: the ADS server presents {seen}, not revision '
+                        f'{before.get("revision")} of {ADS_CERTIFICATE}; the handshake probe cannot tell a renewal')
         if drill in ('neg-ca', 'neg-pin'):
             require(self.args.allow_helm_object_change,
                     f'{drill} patches a Helm-managed object and needs the drift check afterwards; pass --allow-helm-object-change')
@@ -542,6 +604,8 @@ class Drill:
             record['before']['spire'] = {c: spire_authorities(c) for c in PINS}
         if drill in ('R3', 'R6'):
             record['before']['ztunnelCertificates'] = {f'{c}/{p}': ztunnel_certificates(c, p) for c in PINS for p in self.lab.ztunnels(c)}
+        if drill == 'R3':
+            record['before']['adsPresented'] = self.ads_handshakes()
         paths = probe_paths(self.lab)
         commands = self.event_command(drill)
         self.requirements(drill)
@@ -572,6 +636,8 @@ class Drill:
         except Exception as e:  # the watch and the record must still be written
             record['eventError'] = repr(e)
         record['eventEndedAt'] = iso()
+        if drill == 'R3' and 'eventError' not in record:
+            record['adsReload'] = self.wait_ads_renewal(record['before']['preflight']['clusters'][self.cluster]['certificates'])
         watch.wait()
         time.sleep(3)
         for f in followers:
@@ -587,7 +653,8 @@ class Drill:
         for f in followers:
             lines = f.lines()
             counts = {key: sum(1 for l in lines if key in l) for key in
-                      ('event=withdrawn', 'event=projected', 'refresh-origin-transport', 'restart-origin-watch', 'Stream established')}
+                      ('event=withdrawn', 'event=projected', 'refresh-origin-transport', 'restart-origin-watch', 'Stream established',
+                       'Keypair updated', 'Keypair update failed')}
             record['agentEvents'][f'{f.cluster}/{f.pod}/{f.container}'] = {'lines': len(lines), **counts}
         record['verdicts'] = self.verdicts(drill, record)
         record['endedAt'] = iso()
@@ -619,6 +686,11 @@ class Drill:
             verdicts['0 failed allowed probes'] = {'pass': all(v['failures'] == 0 for v in allowed.values()),
                                                   'failures': {k: v['failures'] for k, v in allowed.items()}}
             verdicts['no withdrawal on any agent'] = {'pass': all(n == 0 for n in withdrawn.values()), 'withdrawn': withdrawn}
+            if drill == 'R3':
+                reload = record.get('adsReload', {})
+                verdicts['every node presents the renewed ADS certificate to a new handshake'] = {
+                    'pass': bool(reload.get('nodes')) and all(n.get('renewedAt') for n in reload['nodes'].values()),
+                    'adsReload': reload}
             if drill == 'R5':
                 verdicts['SPIRE rotate exit 0'] = {'pass': all(e['exit'] == 0 for e in record.get('event', [])), 'event': record.get('event')}
             if drill == 'R6':
@@ -680,6 +752,8 @@ def main():
     d.add_argument('--between', type=int, default=10, help='seconds between the commands of a multi-command drill (R4)')
     d.add_argument('--hold', type=int, default=60, help='seconds a negative change stays applied (neg-ca, neg-pin)')
     d.add_argument('--down-seconds', type=int, default=120, help='seconds the peer node port is dropped (neg-peer-down)')
+    d.add_argument('--ads-wait', type=int, default=240,
+                   help='R3: seconds after the renewal for every node to present it to a new handshake (default 240)')
     d.add_argument('--allow-helm-object-change', action='store_true', help='required by neg-ca and neg-pin')
     d.add_argument('--execute', action='store_true', help='without it the drill is a dry run')
     args = parser.parse_args()
