@@ -9,7 +9,6 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
-	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -53,14 +52,25 @@ contexts: [{name: peer, context: {cluster: peer, user: reader}}]
 	if err != nil {
 		t.Fatal(err)
 	}
+	// The read runs in a goroutine so that a read the timeout does not end fails the test here, not at go test's
+	// own timeout.
 	started := time.Now()
-	err = peer.Get(context.Background(), client.ObjectKey{Namespace: "cmtc-system", Name: "cmtc-issuer-publication"}, &corev1.ConfigMap{})
-	if elapsed := time.Since(started); err == nil || elapsed > 10*timeout {
-		t.Fatalf("read of a peer that never answers: err=%v after %s, want an error within %s", err, elapsed, 10*timeout)
+	done := make(chan error, 1)
+	go func() {
+		done <- peer.Get(context.Background(), client.ObjectKey{Namespace: "cmtc-system", Name: "cmtc-issuer-publication"}, &corev1.ConfigMap{})
+	}()
+	select {
+	case err = <-done:
+	case <-time.After(10 * timeout):
+		t.Fatalf("read of a peer that never answers still runs after %s, want an error within %s", time.Since(started), 10*timeout)
+	}
+	if err == nil {
+		t.Fatal("read of a peer that never answers succeeded")
 	}
 	mu.Lock()
 	defer mu.Unlock()
-	if len(paths) == 0 || !strings.HasPrefix(paths[0], "/api") {
-		t.Fatalf("first request %v, want API discovery", paths)
+	// The GET of the ConfigMap is under /api too, so only the exact path proves that discovery is the request that hung.
+	if len(paths) != 1 || paths[0] != "/api" {
+		t.Fatalf("requests %q, want one: API discovery (/api)", paths)
 	}
 }

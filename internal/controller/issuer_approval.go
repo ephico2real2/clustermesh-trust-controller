@@ -31,7 +31,9 @@ const (
 	issuerApprovalPassTimeout = 12 * time.Second
 	// PeerRequestTimeout bounds every request to a peer's API, API discovery included: controller-runtime's REST
 	// mapper discovers without a context, so without it an unreachable peer holds a pass for client-go's 30 s dial
-	// timeout. A peer that is down costs a pass two failed requests (its evidence, its publication), within the pass.
+	// timeout. A failed discovery is not cached, so each failed read costs one timeout. A peer that is down costs a pass
+	// at most two (its evidence, then its publication when a gate asks for its nodes): 8 s of the 12 s pass. Peers are
+	// read in turn, so a second down peer runs the pass to its deadline; the status write still reports both.
 	PeerRequestTimeout = 4 * time.Second
 	// issuerApprovalStatusTimeout bounds the status write. It is not part of the pass budget, so a pass whose evidence
 	// reads used all of it still reports what it saw.

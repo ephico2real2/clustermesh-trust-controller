@@ -204,9 +204,11 @@ now says so.
 
 ### 7.3 again, on the fixed image (20:48-20:58Z)
 
-- Deploy ([cmtc-b](step7-fix/cmtc-b-upgrade.txt), [cmtc-a](step7-fix/cmtc-a-upgrade.txt)): `cmtc_adopt.py plan` on each
-  cluster: 3 changes (the two images and the DaemonSet's template generation), 0 kubectl managers, 0 refusals; the
-  repository's render of the old digest equals each release's manifest. `helm upgrade` cmtc-b to revision 2
+- Deploy ([cmtc-b](step7-fix/cmtc-b-upgrade.txt), [cmtc-a](step7-fix/cmtc-a-upgrade.txt)): `cmtc_adopt.py plan` ran on
+  each cluster before the upgrade; its output was not saved, so its result (3 changes, 0 kubectl managers, 0
+  refusals) and the render check of the old digest are not recorded. The plan after the upgrade, from the values
+  files that pin the new digest, shows 0 changes, 0 kubectl managers and 0 refusals on both clusters
+  ([cmtc-a](step7-fix/plan-cmtc-a.txt), [cmtc-b](step7-fix/plan-cmtc-b.txt), 2026-10-28T02:18Z). `helm upgrade` cmtc-b to revision 2
   (20:48:40Z), then cmtc-a to revision 3 (20:55:38Z). Each new arbiter showed `Distributing` until it saw one
   heartbeat move, then `Overlapping` 8 (cmtc-b 20:49:15Z, cmtc-a 20:56:14Z); 0 failed passes; 0 fences.
 - The test ([record](step7-fix/peer-unreachable.txt), cmtc-b, policy 20:49:50Z, controller restarted 20:49:51Z,
