@@ -186,7 +186,10 @@ func run() (retErr error) {
 			log.Info("observer detached", "stage", "detach", "enforcementAvailable", false)
 		}
 	}()
-	log.Info("observer attached", "stage", "attach", "attempt", 1, "elapsed", time.Since(started), "enforcementAvailable", false)
+	anchorProgram, followed := o.Anchor()
+	log.Info("observer attached", "stage", "attach", "attempt", 1, "elapsed", time.Since(started),
+		"ciliumLinkID", c.CiliumLinkID, "configuredCiliumProgramID", c.CiliumProgramID,
+		"ciliumProgramID", anchorProgram, "enforcementAvailable", false)
 	state := newObservation(c)
 	reg := prometheus.NewRegistry()
 	if err := reg.Register(state); err != nil {
@@ -238,6 +241,12 @@ func run() (retErr error) {
 		state.Unlock()
 		if err != nil {
 			return fmt.Errorf("observer lifecycle verification failed: %w", err)
+		}
+		if program, n := o.Anchor(); n != followed {
+			log.Info("followed Cilium in-place program update", "stage", "verify",
+				"ciliumLinkID", c.CiliumLinkID, "previousCiliumProgramID", anchorProgram,
+				"ciliumProgramID", program, "followed", n, "enforcementAvailable", false)
+			anchorProgram, followed = program, n
 		}
 		select {
 		case <-ctx.Done():

@@ -124,6 +124,20 @@ nodeAgent:
     checkpointDir: /var/lib/cmtc/ztunnel-issuer-checkpoint
     managePins: false
     rootSHA256: []
+  # The eBPF measurement plane (ADR-005): a second container, the loader, attaches observe-only cgroup_skb programs to
+  # the cgroups of the node's enrolled Pods, and the agent exports their counters (cmtc_measurement_*). The loader runs
+  # as root with CAP_BPF and CAP_NET_ADMIN only, with no API token, and mounts the host's cgroup tree read-only.
+  measurement:
+    # true or false. Unset (null), the plane runs on Kubernetes and not on OpenShift (global.openshift): there the
+    # loader needs an SCC that allows runAsUser 0, both capabilities and a hostPath volume, which the restricted-v2 SCC
+    # refuses and this chart does not grant (not tested on OpenShift). On Kubernetes the release namespace must admit
+    # it: Pod Security "privileged" (baseline refuses both capabilities and hostPath volumes).
+    enabled: null
+    resources:
+      requests: {cpu: 10m, memory: 64Mi}
+      # The kernel charges the programs and maps to this container: 450 KiB, and per measured Pod about 21 KiB plus
+      # 768 bytes per possible CPU (internal/measurement/contract.go).
+      limits: {memory: 256Mi}
 
 metrics:
   networkPolicy:

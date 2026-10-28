@@ -430,18 +430,32 @@ func TestIssuerApprovalArbiterIsConfiguredByTheChart(t *testing.T) {
 	if !reflect.DeepEqual(dig(container, "securityContext", "capabilities", "drop"), []any{"ALL"}) || dig(container, "securityContext", "readOnlyRootFilesystem") != true {
 		t.Errorf("node agent container security context: %v", container["securityContext"])
 	}
+	// The trust report's flags, mounts and volumes sit beside the measurement plane's (on by default on Kubernetes,
+	// ADR-005) and the agent's own API token volume (the Pod does not automount one, the loader has none).
 	agentArgs := []any{"--mode=node", "--cluster-name=cmtc-a", "--node-trust-report=true", "--pins-dir=/etc/cmtc/ztunnel-issuer-pins",
-		"--checkpoint-dir=/var/lib/cmtc/ztunnel-issuer-checkpoint", "--manage-pins=true", "--node-root-sha256=" + root}
+		"--checkpoint-dir=/var/lib/cmtc/ztunnel-issuer-checkpoint", "--manage-pins=true", "--node-root-sha256=" + root,
+		"--measurement-desired-dir=/run/cmtc/desired", "--measurement-snapshot-dir=/run/cmtc/snapshot"}
 	if !reflect.DeepEqual(container["args"], agentArgs) {
 		t.Errorf("node agent args:\ngot  %v\nwant %v", container["args"], agentArgs)
 	}
-	mounts := []any{object{"name": "issuer-pins", "mountPath": "/etc/cmtc/ztunnel-issuer-pins", "readOnly": false},
-		object{"name": "issuer-checkpoint", "mountPath": "/var/lib/cmtc/ztunnel-issuer-checkpoint", "readOnly": true}}
+	mounts := []any{object{"name": "api-token", "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount", "readOnly": true},
+		object{"name": "issuer-pins", "mountPath": "/etc/cmtc/ztunnel-issuer-pins", "readOnly": false},
+		object{"name": "issuer-checkpoint", "mountPath": "/var/lib/cmtc/ztunnel-issuer-checkpoint", "readOnly": true},
+		object{"name": "measurement-desired", "mountPath": "/run/cmtc/desired"},
+		object{"name": "measurement-snapshot", "mountPath": "/run/cmtc/snapshot", "readOnly": true}}
 	if !reflect.DeepEqual(container["volumeMounts"], mounts) {
 		t.Errorf("node agent mounts: %v", container["volumeMounts"])
 	}
-	if v := agent["volumes"]; !reflect.DeepEqual(v, []any{object{"name": "issuer-pins", "hostPath": object{"path": "/etc/cmtc/ztunnel-issuer-pins", "type": "Directory"}},
-		object{"name": "issuer-checkpoint", "hostPath": object{"path": "/var/lib/cmtc/ztunnel-issuer-checkpoint", "type": "Directory"}}}) {
+	apiToken := object{"name": "api-token", "projected": object{"sources": []any{
+		object{"serviceAccountToken": object{"path": "token", "expirationSeconds": float64(3607)}},
+		object{"configMap": object{"name": "kube-root-ca.crt", "items": []any{object{"key": "ca.crt", "path": "ca.crt"}}}},
+		object{"downwardAPI": object{"items": []any{object{"path": "namespace", "fieldRef": object{"apiVersion": "v1", "fieldPath": "metadata.namespace"}}}}}}}}
+	if v := agent["volumes"]; !reflect.DeepEqual(v, []any{apiToken,
+		object{"name": "issuer-pins", "hostPath": object{"path": "/etc/cmtc/ztunnel-issuer-pins", "type": "Directory"}},
+		object{"name": "issuer-checkpoint", "hostPath": object{"path": "/var/lib/cmtc/ztunnel-issuer-checkpoint", "type": "Directory"}},
+		object{"name": "host-cgroup", "hostPath": object{"path": "/sys/fs/cgroup", "type": "Directory"}},
+		object{"name": "measurement-desired", "emptyDir": object{"medium": "Memory", "sizeLimit": "8Mi"}},
+		object{"name": "measurement-snapshot", "emptyDir": object{"medium": "Memory", "sizeLimit": "8Mi"}}}) {
 		t.Errorf("node agent volumes: %v", v)
 	}
 	// Without managePins the pins directory is read-only.

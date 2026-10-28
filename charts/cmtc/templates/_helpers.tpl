@@ -66,3 +66,13 @@ helm.sh/chart: {{ printf "%s-%s" .Chart.Name .Chart.Version }}
 {{- end -}}
 {{- toYaml (append $namespaces .Release.Namespace | uniq) -}}
 {{- end }}
+
+{{/* "true" when the node agent runs the measurement loader (ADR-005): nodeAgent.measurement.enabled, or when it is
+unset, on Kubernetes and not on OpenShift (values.yaml explains why). */}}
+{{- define "cmtc.measurement" -}}
+{{- $enabled := .Values.nodeAgent.measurement.enabled -}}
+{{- if kindIs "invalid" $enabled -}}
+{{- $enabled = not .Values.global.openshift -}}
+{{- end -}}
+{{- if $enabled }}true{{ end -}}
+{{- end }}
