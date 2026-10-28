@@ -151,6 +151,7 @@ agent's delegation was returned at 18:08:46Z on 2026-10-26.
 | Issuer rotation without reset (gate 10) | orchestrator | generation 6 published (SPIRE intermediate); approval renewal in design (no host job); report and ADR-012 not written |
 | eBPF measurement plane review | none | one patch proposed, not applied; no report |
 | Metrics, CoreDNS scraping and Grafana dashboards v2 | none | rules and tests pass; not deployed; uncommitted |
+| Certificate renewal without a failed connection (#47 P1-P3, #46) | Fable, Phase 1 done | Cilium fork `ce5c3ec031` (branch `fix/ztunnel-origin-credential-renewal`): implemented and unit-tested with `-race`, image build dispatched, not deployed; drill `scripts/evidence/rotation_drill.py` dry-run; [design note](../architecture/MESH_CERTIFICATE_RENEWAL.md); Phase 2 (Helm rollout and drills) awaits the orchestrator |
 
 Each result is reviewed and verified on both labs before it is committed.
 
