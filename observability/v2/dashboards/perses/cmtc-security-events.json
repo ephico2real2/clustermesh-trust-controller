@@ -8,8 +8,8 @@
       "kind": "Panel",
       "spec": {
         "display": {
-          "name": "Connections denied by policy per second \u00b7 proposed",
-          "description": "Proposed: needs the ztunnel scrape job of deploy/. Connections the destination's ztunnel denied by policy, per cluster, 5 minute rate. The caller's ztunnel sees the same connection as a failure and is not counted again."
+          "name": "Connections denied by policy per second",
+          "description": "Connections the destination's ztunnel denied by policy, per cluster, 5 minute rate. The caller's ztunnel sees the same connection as a failure and is not counted again."
         },
         "plugin": {
           "kind": "TimeSeriesChart",
@@ -86,8 +86,8 @@
       "kind": "Panel",
       "spec": {
         "display": {
-          "name": "Denied connections in the last hour, by namespace pair \u00b7 proposed",
-          "description": "Proposed: needs the ztunnel scrape job of deploy/. Denied connections by caller namespace and destination namespace, largest first, last hour."
+          "name": "Denied connections in the last hour, by namespace pair",
+          "description": "Denied connections by caller namespace and destination namespace, largest first, last hour."
         },
         "plugin": {
           "kind": "BarChart",
@@ -122,8 +122,8 @@
       "kind": "Panel",
       "spec": {
         "display": {
-          "name": "Denied callers in the last hour, top 10 \u00b7 proposed",
-          "description": "Proposed: needs the ztunnel scrape job of deploy/. The ten caller and destination identities with the most denials in the last hour, read from the raw counter at query time (principals are not kept in a recorded series: one per ServiceAccount)."
+          "name": "Denied callers in the last hour, top 10",
+          "description": "The ten caller and destination identities with the most denials in the last hour, read from the raw counter at query time (principals are not kept in a recorded series: one per ServiceAccount)."
         },
         "plugin": {
           "kind": "Table",
@@ -222,8 +222,8 @@
       "kind": "Panel",
       "spec": {
         "display": {
-          "name": "Packets dropped per second, all reasons \u00b7 proposed",
-          "description": "Proposed: needs cilium_drop_count_total in the cilium-native keep list of deploy/. Packets the Cilium datapath dropped, every reason and direction, per cluster, 5 minute rate. On 2026-10-25 a cmtc-a worker read 25208 ingress Policy denied drops since its agent started."
+          "name": "Packets dropped per second, all reasons",
+          "description": "Packets the Cilium datapath dropped, every reason and direction, per cluster, 5 minute rate. On 2026-10-25 a cmtc-a worker read 25208 ingress Policy denied drops since its agent started."
         },
         "plugin": {
           "kind": "TimeSeriesChart",
@@ -300,8 +300,8 @@
       "kind": "Panel",
       "spec": {
         "display": {
-          "name": "Drops in the last hour, by node, direction and reason \u00b7 proposed",
-          "description": "Proposed: needs cilium_drop_count_total in the cilium-native keep list of deploy/. Dropped packets by node, direction and reason over the last hour. The counter has no port, protocol or namespace label, and Hubble is disabled on the lab."
+          "name": "Drops in the last hour, by node, direction and reason",
+          "description": "Dropped packets by node, direction and reason over the last hour. The counter has no port, protocol or namespace label, and Hubble is disabled on the lab."
         },
         "plugin": {
           "kind": "Table",
@@ -404,8 +404,8 @@
       "kind": "Panel",
       "spec": {
         "display": {
-          "name": "Connections refused or closed for a revoked certificate per second \u00b7 proposed",
-          "description": "Proposed: needs the ztunnel scrape job of deploy/, with istio_crl_* kept. Connections ztunnel refused at handshake, or closed when a CRL reload revoked their certificate, per cluster, 5 minute rate. The refusal worked; the caller still holds a revoked identity."
+          "name": "Connections refused or closed for a revoked certificate per second",
+          "description": "Connections ztunnel refused at handshake, or closed when a CRL reload revoked their certificate, per cluster, 5 minute rate. The refusal worked; the caller still holds a revoked identity."
         },
         "plugin": {
           "kind": "TimeSeriesChart",
@@ -482,8 +482,8 @@
       "kind": "Panel",
       "spec": {
         "display": {
-          "name": "Revocation refusals, 1 hour \u00b7 proposed",
-          "description": "Proposed: needs the ztunnel scrape job of deploy/, with istio_crl_* kept. Connections refused or closed for a revoked certificate in the last hour, per cluster. 0 is normal."
+          "name": "Revocation refusals, 1 hour",
+          "description": "Connections refused or closed for a revoked certificate in the last hour, per cluster. 0 is normal."
         },
         "plugin": {
           "kind": "StatChart",
@@ -548,8 +548,8 @@
       "kind": "Panel",
       "spec": {
         "display": {
-          "name": "Connections not tracked for revocation, 1 hour \u00b7 proposed",
-          "description": "Proposed: needs the ztunnel scrape job of deploy/, with istio_crl_* kept. Connections ztunnel accepted but cannot close on a later revocation (their chain could not be parsed for tracking), per cluster. Normal: 0 (CMTCConnectionsUntrackedForRevocation)."
+          "name": "Connections not tracked for revocation, 1 hour",
+          "description": "Connections ztunnel accepted but cannot close on a later revocation (their chain could not be parsed for tracking), per cluster. Normal: 0 (CMTCConnectionsUntrackedForRevocation)."
         },
         "plugin": {
           "kind": "StatChart",
@@ -619,7 +619,7 @@
         "plugin": {
           "kind": "Markdown",
           "spec": {
-            "text": "istio_crl_* is not in the ztunnel keep list of scripts/lab/monitoring.py; deploy/ keeps it."
+            "text": "deploy/ keeps istio_crl_*. ztunnel creates each of these series at its first event, so an empty panel here means no event yet, not a missing scrape."
           }
         }
       }
@@ -954,8 +954,8 @@
       "kind": "Panel",
       "spec": {
         "display": {
-          "name": "TLS handshakes failed at the destination per second \u00b7 proposed",
-          "description": "Proposed: needs the ztunnel scrape job of deploy/. Workload TLS handshakes the destination's ztunnel failed (peer_verification_failed, protocol_error, timeout), per cluster, 5 minute rate. The family is pre-created at 0, so 0 is a measured zero."
+          "name": "TLS handshakes failed at the destination per second",
+          "description": "Workload TLS handshakes the destination's ztunnel failed (peer_verification_failed, protocol_error, timeout), per cluster, 5 minute rate. The family is pre-created at 0, so 0 is a measured zero."
         },
         "plugin": {
           "kind": "TimeSeriesChart",
@@ -1032,8 +1032,8 @@
       "kind": "Panel",
       "spec": {
         "display": {
-          "name": "Failed connections in the last hour, by reporter and response flag \u00b7 proposed",
-          "description": "Proposed: needs the ztunnel scrape job of deploy/. Every failed connection by who counted it and why, last hour."
+          "name": "Failed connections in the last hour, by reporter and response flag",
+          "description": "Every failed connection by who counted it and why, last hour."
         },
         "plugin": {
           "kind": "Table",
@@ -1134,7 +1134,7 @@
       "kind": "Grid",
       "spec": {
         "display": {
-          "title": "What did policy deny? \u00b7 proposed",
+          "title": "What did policy deny?",
           "collapse": {
             "open": true
           }
@@ -1183,7 +1183,7 @@
       "kind": "Grid",
       "spec": {
         "display": {
-          "title": "What did the Cilium datapath drop? \u00b7 proposed",
+          "title": "What did the Cilium datapath drop?",
           "collapse": {
             "open": true
           }
@@ -1223,7 +1223,7 @@
       "kind": "Grid",
       "spec": {
         "display": {
-          "title": "Which certificates were revoked, and were they presented? \u00b7 proposed",
+          "title": "Which certificates were revoked, and were they presented?",
           "collapse": {
             "open": true
           }
@@ -1312,7 +1312,7 @@
       "kind": "Grid",
       "spec": {
         "display": {
-          "title": "Were connections refused over trust or identity? \u00b7 proposed",
+          "title": "Were connections refused over trust or identity?",
           "collapse": {
             "open": true
           }

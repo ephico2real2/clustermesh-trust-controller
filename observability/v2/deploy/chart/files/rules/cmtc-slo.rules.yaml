@@ -8,9 +8,7 @@
 #
 # Burn-rate alerts (Google SRE workbook ch. 5, table 5-8): page when 2 % of a 30-day budget burns in
 # 1 h (14.4x, confirmed over 5 m) or 5 % in 6 h (6x, confirmed over 30 m). The 6 h window needs at
-# least 6 h of retention; the lab keeps 1 h (scripts/lab/monitoring.py:53,
-# --storage.tsdb.retention.time=1h), so only the 5 m and 1 h indicators can be computed there today.
-# deploy/ keeps 7 h (values prometheus.retention); docs/METRICS_AND_SLOS.md lists that decision.
+# least 6 h of retention; deploy/ keeps 7 h (values prometheus.retention).
 #
 # SLI "authenticated connections succeed" (candidate: 99.9 % successful authenticated handshakes).
 #   Reporter: the source ztunnel, which counts every attempt at build time

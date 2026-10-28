@@ -13,12 +13,20 @@ import unittest
 import helmyaml
 import model
 
-VALUES_KEY = {"cmtc": "cmtc", "cilium-native": "ciliumAgent", "ztunnel": "ztunnel", "coredns": "coredns",
-              "cert-manager": "certManager", "trust-manager": "trustManager", "cadvisor": "cadvisor",
-              "prometheus": "prometheus", "spire-server": "spireServer", "spire-agent": "spireAgent"}
+VALUES_KEY = {"cmtc": "cmtc", "cilium-native": "ciliumAgent", "hubble": "hubble", "hubble-relay": "hubbleRelay",
+              "ztunnel": "ztunnel", "coredns": "coredns", "cert-manager": "certManager",
+              "trust-manager": "trustManager", "cadvisor": "cadvisor", "prometheus": "prometheus",
+              "spire-server": "spireServer", "spire-agent": "spireAgent"}
+# The one container port each Hubble job scrapes: the agent declares four ports, the Relay two.
+HUBBLE_PORTS = {"hubble": "hubble-metrics", "hubble-relay": "prometheus"}
 KEEP = re.compile(r"^\((?P<names>[^()]+)\)\(_bucket\|_sum\|_count\|_total\)\?$")
 HUB = ("clusterName=cmtc-a", "hub.enabled=true", "hub.expectedClusters={cmtc-a,cmtc-b}")
-MEMBER = ("clusterName=cmtc-b", "remoteWrite.url=http://172.18.0.3:30900/api/v1/write")
+INGRESS = ("ingress.enabled=true", "ingress.prometheus.host=prometheus.cmtc-a.localtest.me",
+           "ingress.grafana.host=grafana.cmtc-a.localtest.me",
+           "ingress.tls.certManager.issuerRef.name=cmtc-a-ingress-intermediate")
+REMOTE_WRITE = "https://prometheus.cmtc-a.localtest.me/api/v1/write"
+MEMBER = ("clusterName=cmtc-b", f"remoteWrite.url={REMOTE_WRITE}", "remoteWrite.caConfigMap.name=cmtc-mesh-root")
+KIND_VALUES = helmyaml.V2 / "deploy" / "kind"
 OPENSHIFT = ("clusterName=ocp-1", "global.openshift=true")
 # Off by default: they need source-patches/cmtc/0002, which declares the SPIRE telemetry port "prom".
 SPIRE = ("jobs.spireServer.enabled=true", "jobs.spireAgent.enabled=true")
@@ -143,6 +151,18 @@ class Render(unittest.TestCase):
                 self.assertEqual([r for r in relabels if r.get("target_label") == "__address__"], [])
                 self.assertEqual(monitors[f"cmtc-obs-{job}"]["spec"]["podMetricsEndpoints"][0]["port"], "prom")
 
+    def test_hubble_jobs_scrape_one_named_port(self):
+        """One target per Hubble Pod: its metrics port by name, on kind and on OpenShift, never one per declared port."""
+        jobs = {j["job_name"]: j for j in self.config(self.hub)["scrape_configs"]}
+        monitors = {o["metadata"]["name"]: o for o in by_kind(self.openshift, "PodMonitor")}
+        for job, port in HUBBLE_PORTS.items():
+            with self.subTest(job=job):
+                relabels = jobs[job]["relabel_configs"]
+                self.assertIn({"source_labels": ["__meta_kubernetes_pod_container_port_name"], "regex": port,
+                               "action": "keep"}, relabels)
+                self.assertEqual([r for r in relabels if r.get("target_label") == "__address__"], [])
+                self.assertEqual(monitors[f"cmtc-obs-{job}"]["spec"]["podMetricsEndpoints"][0]["port"], port)
+
     def test_hub_and_member(self):
         hub, member = self.config(self.hub), self.config(self.member)
         self.assertEqual(hub["global"]["external_labels"], {"cluster": "cmtc-a"})
@@ -150,16 +170,68 @@ class Render(unittest.TestCase):
         self.assertIn("rule_files", hub)
         self.assertNotIn("rule_files", member)
         self.assertNotIn("remote_write", hub)
-        self.assertEqual(member["remote_write"], [{"url": "http://172.18.0.3:30900/api/v1/write"}])
+        self.assertEqual(member["remote_write"],
+                         [{"url": REMOTE_WRITE, "tls_config": {"ca_file": "/etc/prometheus/remote-write-ca/ca.crt"}}])
+        ca = [v for v in named(self.member, "Deployment", "cmtc-obs-prometheus")["spec"]["template"]["spec"]["volumes"]
+              if v["name"] == "remote-write-ca"]
+        self.assertEqual(ca, [{"name": "remote-write-ca",
+                               "configMap": {"name": "cmtc-mesh-root", "items": [{"key": "ca.crt", "path": "ca.crt"}]}}])
         args = lambda objects: named(objects, "Deployment", "cmtc-obs-prometheus")["spec"]["template"]["spec"][
             "containers"][0]["args"]
         self.assertIn("--web.enable-remote-write-receiver", args(self.hub))
         self.assertNotIn("--web.enable-remote-write-receiver", args(self.member))
         self.assertIn(f"--storage.tsdb.retention.time={self.values['prometheus']['retention']}", args(self.hub))
-        self.assertEqual(named(self.hub, "Service", "cmtc-obs-prometheus")["spec"]["ports"][0]["nodePort"], 30900)
-        self.assertNotIn("type", named(self.member, "Service", "cmtc-obs-prometheus")["spec"])
+        # ClusterIP only, on every cluster: the hub is reached through its Ingress, never a node port.
+        for objects in (self.hub, self.member):
+            service = named(objects, "Service", "cmtc-obs-prometheus")["spec"]
+            self.assertNotIn("type", service)
+            self.assertNotIn("nodePort", service["ports"][0])
+        self.assertEqual(by_kind(self.hub, "Ingress"), [])
         self.assertTrue(by_kind(self.hub, "Deployment") and named(self.hub, "Deployment", "cmtc-obs-grafana"))
         self.assertEqual([o["metadata"]["name"] for o in by_kind(self.member, "Deployment")], ["cmtc-obs-prometheus"])
+
+    def test_ingress(self):
+        hub = helmyaml.render(*HUB, *INGRESS)
+        ingresses = {o["metadata"]["name"]: o["spec"] for o in by_kind(hub, "Ingress")}
+        self.assertEqual(set(ingresses), {"cmtc-obs-prometheus", "cmtc-obs-grafana"})
+        self.assertEqual({spec["ingressClassName"] for spec in ingresses.values()}, {"cilium"})
+        # The remote-write receiver only: the query API is not routed.
+        self.assertEqual(ingresses["cmtc-obs-prometheus"]["rules"], [{"host": "prometheus.cmtc-a.localtest.me", "http": {
+            "paths": [{"path": "/api/v1/write", "pathType": "Exact",
+                       "backend": {"service": {"name": "cmtc-obs-prometheus", "port": {"name": "web"}}}}]}}])
+        self.assertEqual(ingresses["cmtc-obs-grafana"]["tls"],
+                         [{"hosts": ["grafana.cmtc-a.localtest.me"], "secretName": "cmtc-obs-ingress-tls"}])
+        certificate = named(hub, "Certificate", "cmtc-obs-ingress")["spec"]
+        self.assertEqual(certificate["secretName"], "cmtc-obs-ingress-tls")
+        self.assertEqual(certificate["dnsNames"], ["prometheus.cmtc-a.localtest.me", "grafana.cmtc-a.localtest.me"])
+        self.assertEqual(certificate["issuerRef"],
+                         {"name": "cmtc-a-ingress-intermediate", "kind": "ClusterIssuer", "group": "cert-manager.io"})
+        grafana_env = named(hub, "Deployment", "cmtc-obs-grafana")["spec"]["template"]["spec"]["containers"][0]["env"]
+        self.assertIn({"name": "GF_SERVER_ROOT_URL", "value": "https://grafana.cmtc-a.localtest.me/"}, grafana_env)
+
+        # An existing Secret replaces the Certificate; the class is the value's.
+        own = helmyaml.render(*HUB, *INGRESS, "ingress.tls.secretName=hub-tls", "ingress.className=other")
+        self.assertEqual(by_kind(own, "Certificate"), [])
+        self.assertEqual({o["spec"]["ingressClassName"] for o in by_kind(own, "Ingress")}, {"other"})
+        self.assertEqual({o["spec"]["tls"][0]["secretName"] for o in by_kind(own, "Ingress")}, {"hub-tls"})
+
+        for values, message in [
+                ((*MEMBER, *INGRESS), "ingress.enabled needs hub.enabled"),
+                ((*HUB, "ingress.enabled=true"), "needs ingress.prometheus.host or ingress.grafana.host"),
+                ((*HUB, *INGRESS, "ingress.tls.certManager.issuerRef.name="), "needs ingress.tls.secretName"),
+                ((*HUB, *INGRESS, "ingress.grafana.host=Not_A_Host"), "does not match pattern")]:
+            with self.subTest(message=message), self.assertRaises(subprocess.CalledProcessError) as failed:
+                helmyaml.render(*values)
+            self.assertIn(message, failed.exception.stderr)
+
+    def test_kind_values_files_are_the_tested_settings(self):
+        # The labs install from deploy/kind/; the other tests use --set. Both must render the same objects.
+        for name, settings in (("cmtc-a", (*HUB, *INGRESS)), ("cmtc-b", MEMBER)):
+            with self.subTest(cluster=name):
+                from_file = helmyaml.render(files=[KIND_VALUES / f"values-{name}.yaml"])
+                # The chart makes a random Grafana password per render.
+                drop = lambda objects: [o for o in objects if o["kind"] != "Secret"]
+                self.assertEqual(drop(from_file), drop(helmyaml.render(*settings)))
 
     def test_rules_are_the_rule_files(self):
         data = named(self.hub, "ConfigMap", "cmtc-obs-prometheus-rules")["data"]

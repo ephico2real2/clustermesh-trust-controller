@@ -1,8 +1,13 @@
 # cmtc-observability chart
 
-Status: **implemented, not installed.** `observability/v2/tests/test_deploy.py` renders the chart for the three
-cases below and checks the result; no cluster has run it. `docs/COLLECTION.md` lists what to measure after the first
-install.
+Status: **deployed on the labs (kind).** Release `cmtc-obs`, namespace `monitoring`, revision 2, installed
+2026-10-28T07:23Z on kind-cmtc-a (hub) and kind-cmtc-b (member). On 2026-10-28 the render of this chart with
+`deploy/kind/values-<cluster>.yaml` equals `helm get manifest` of the release on cmtc-b (14 objects). On cmtc-a (22
+objects) it differs in four places, all for the next upgrade: the Grafana dashboards ConfigMap (the panel markers
+removed from 5 dashboards), the rules ConfigMap (one comment of `cmtc-slo.rules.yaml`), and the `checksum/dashboards`
+and `checksum/rules` annotations, which restart the Grafana and Prometheus Pods. The hub Prometheus is recreated on
+an `emptyDir`, so that upgrade drops the hub's stored series of both clusters. The OpenShift form is rendered and
+tested by `observability/v2/tests/test_deploy.py` only; no OpenShift cluster has run it.
 
 The chart collects, evaluates and draws CMTC observability v2. What it scrapes is `metrics/contract.json`; the keep
 list of every job is the contract's names for that job, and the tests fail when the two differ.
@@ -11,7 +16,7 @@ list of every job is the contract's names for that job, and the tests fail when 
 
 | Platform | Cluster | Objects |
 | --- | --- | --- |
-| kind | hub (`hub.enabled=true`) | Prometheus (remote-write receiver, rule files), its Service on NodePort 30900, Grafana with the five dashboards |
+| kind | hub (`hub.enabled=true`) | Prometheus (remote-write receiver, rule files), Grafana with the five dashboards, ClusterIP Services; with `ingress.enabled`, an Ingress for each and a cert-manager Certificate (or an existing TLS Secret) |
 | kind | member | Prometheus with `remote_write` to the hub, a ClusterIP Service |
 | OpenShift (`global.openshift=true`) | any | PodMonitors in each target's namespace, one PrometheusRule, a PersesDatasource and five PersesDashboards, a Grafana dashboard ConfigMap |
 
@@ -21,15 +26,25 @@ namespace), and `nodes` and `nodes/metrics` for the kubelet's cAdvisor page (one
 ## Install on the labs (kind)
 
 The CMTC Pods admit scrapes from the namespace `monitoring` only (NetworkPolicy `cmtc-metrics` of `charts/cmtc`).
-Install into `monitoring`, after removing the lab's own monitoring objects there (`scripts/lab/monitoring.py`
-creates a Deployment, Service and ConfigMap named `prometheus`; this chart's objects are named `<release>-*`).
+Install into `monitoring`. `scripts/lab/up.sh` installs the release on both clusters, the hub first. The labs'
+earlier Prometheus and Grafana (`scripts/lab/monitoring.py`, objects named `prometheus` and `grafana`) are removed;
+this chart's objects are named `<release>-*`.
+
+The hub is reached through Cilium Ingress, never a node port. Before the install:
+
+1. Cilium on cmtc-a runs its Ingress controller, with an address from LB IPAM announced on the kind network (L2
+   announcements).
+2. `<cluster>-ingress-intermediate` exists (`scripts/lab/pki/mesh-pki.sh`, `config/lab-pki/ingress.yaml`); the
+   chart's Certificate for the hosts is issued from it.
+3. The labs' CoreDNS answers `*.cmtc-a.localtest.me` with cmtc-a's Ingress address. Public DNS answers `127.0.0.1`
+   for every `localtest.me` name, so a lookup that misses stays on loopback.
+4. On cmtc-b, the namespace `monitoring` carries `trust: enabled`, so trust-manager writes the mesh root ConfigMap
+   `cmtc-mesh-root`; the remote write verifies the hub's certificate against it.
 
 ```sh
 deploy/sync-files.sh
-helm upgrade --install cmtc-obs deploy/chart --kube-context kind-cmtc-a -n monitoring \
-  --set clusterName=cmtc-a --set hub.enabled=true --set 'hub.expectedClusters={cmtc-a,cmtc-b}'
-helm upgrade --install cmtc-obs deploy/chart --kube-context kind-cmtc-b -n monitoring \
-  --set clusterName=cmtc-b --set remoteWrite.url=http://<a cmtc-a node IP>:30900/api/v1/write
+helm upgrade --install cmtc-obs deploy/chart --kube-context kind-cmtc-a -n monitoring -f deploy/kind/values-cmtc-a.yaml
+helm upgrade --install cmtc-obs deploy/chart --kube-context kind-cmtc-b -n monitoring -f deploy/kind/values-cmtc-b.yaml
 ```
 
 ## Install on OpenShift

@@ -55,9 +55,11 @@ def split(stream):
     return [p for p in parts if p.strip() and not all(l.startswith("#") or not l.strip() for l in p.splitlines())]
 
 
-def render(*values, namespace="monitoring"):
-    """helm template of the v2 chart with --set values, as a list of parsed objects."""
+def render(*values, namespace="monitoring", files=()):
+    """helm template of the v2 chart with --values files, then --set values, as a list of parsed objects."""
     command = [HELM, "template", "cmtc-obs", str(CHART), "--namespace", namespace]
+    for file in files:
+        command += ["--values", str(file)]
     for value in values:
         command += ["--set", value]
     out = subprocess.run(command, check=True, capture_output=True, text=True).stdout

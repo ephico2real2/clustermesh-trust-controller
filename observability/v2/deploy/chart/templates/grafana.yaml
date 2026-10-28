@@ -111,6 +111,11 @@ spec:
             - {name: GF_AUTH_ANONYMOUS_ORG_ROLE, value: Viewer}
             - {name: GF_ANALYTICS_REPORTING_ENABLED, value: "false"}
             - {name: GF_ANALYTICS_CHECK_FOR_UPDATES, value: "false"}
+            {{- with .Values.ingress }}
+            {{- if and .enabled .grafana.host }}
+            - {name: GF_SERVER_ROOT_URL, value: {{ printf "%s://%s/" (ternary "https" "http" .tls.enabled) .grafana.host | quote }}}
+            {{- end }}
+            {{- end }}
           ports:
             - {name: http, containerPort: 3000}
           readinessProbe:
@@ -150,7 +155,7 @@ metadata:
     {{- include "cmtc-obs.labels" . | nindent 4 }}
     app.kubernetes.io/component: grafana
 spec:
-  # ClusterIP only: kubectl port-forward reaches it; nothing outside the cluster does.
+  # ClusterIP only: outside the cluster, Grafana is reached through ingress.grafana.host, or kubectl port-forward.
   selector:
     app.kubernetes.io/name: cmtc-observability
     app.kubernetes.io/instance: {{ .Release.Name }}

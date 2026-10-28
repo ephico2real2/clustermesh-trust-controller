@@ -73,7 +73,6 @@ echo "$pki" > .tmp/pki-directory
 bash scripts/lab/pki/mesh-pki.sh --root-out "$pki/root.crt" cmtc-a cmtc-b
 ips_a=$(python3 scripts/lab/kind-node-ips.py cmtc-a)
 ips_b=$(python3 scripts/lab/kind-node-ips.py cmtc-b)
-ip_a=$(python3 -c 'import json,sys; print(json.loads(sys.argv[1])[0])' "$ips_a")
 python3 - "$pki/root.crt" "$ips_a" "$ips_b" <<'PY'
 import json,pathlib,sys
 # A peer's ztunnel-origin-config pins the server certificate's key (spki-sha256), so cert-manager must renew the
@@ -127,4 +126,14 @@ for cluster in cmtc-a cmtc-b; do
   kubectl --context "kind-$cluster" apply -f config/samples/namespace-mtls-policy.yaml
 done
 python3 scripts/cilium/verify.py
-bash scripts/lab/monitoring.sh "$ip_a"
+# Observability v2 (observability/v2/deploy/chart/README.md): the hub on cmtc-a first (Prometheus with the remote-write
+# receiver, and Grafana, behind Cilium Ingress), then cmtc-b's Prometheus, which remote-writes to the hub. cmtc-b
+# verifies the hub's certificate against the mesh root, which trust-manager writes into a namespace labelled
+# trust=enabled.
+for cluster in cmtc-a cmtc-b; do
+  kubectl --context "kind-$cluster" create namespace monitoring --dry-run=client -o yaml | kubectl --context "kind-$cluster" apply -f -
+  kubectl --context "kind-$cluster" label namespace monitoring trust=enabled --overwrite
+  kubectl --context "kind-$cluster" -n monitoring wait --for=create configmap/cmtc-mesh-root --timeout=2m
+  helm upgrade --install cmtc-obs observability/v2/deploy/chart -n monitoring --kube-context "kind-$cluster" \
+    -f "observability/v2/deploy/kind/values-$cluster.yaml" --wait --timeout 5m
+done

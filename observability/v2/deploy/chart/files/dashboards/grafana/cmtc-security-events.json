@@ -69,7 +69,7 @@
   "panels": [
     {
       "type": "row",
-      "title": "What did policy deny? · proposed",
+      "title": "What did policy deny?",
       "id": 1,
       "collapsed": false,
       "gridPos": {
@@ -82,8 +82,8 @@
     },
     {
       "type": "timeseries",
-      "title": "Connections denied by policy per second · proposed",
-      "description": "Proposed: needs the ztunnel scrape job of deploy/. Connections the destination's ztunnel denied by policy, per cluster, 5 minute rate. The caller's ztunnel sees the same connection as a failure and is not counted again.",
+      "title": "Connections denied by policy per second",
+      "description": "Connections the destination's ztunnel denied by policy, per cluster, 5 minute rate. The caller's ztunnel sees the same connection as a failure and is not counted again.",
       "id": 2,
       "datasource": {
         "type": "prometheus",
@@ -193,8 +193,8 @@
     },
     {
       "type": "bargauge",
-      "title": "Denied connections in the last hour, by namespace pair · proposed",
-      "description": "Proposed: needs the ztunnel scrape job of deploy/. Denied connections by caller namespace and destination namespace, largest first, last hour.",
+      "title": "Denied connections in the last hour, by namespace pair",
+      "description": "Denied connections by caller namespace and destination namespace, largest first, last hour.",
       "id": 3,
       "datasource": {
         "type": "prometheus",
@@ -248,8 +248,8 @@
     },
     {
       "type": "table",
-      "title": "Denied callers in the last hour, top 10 · proposed",
-      "description": "Proposed: needs the ztunnel scrape job of deploy/. The ten caller and destination identities with the most denials in the last hour, read from the raw counter at query time (principals are not kept in a recorded series: one per ServiceAccount).",
+      "title": "Denied callers in the last hour, top 10",
+      "description": "The ten caller and destination identities with the most denials in the last hour, read from the raw counter at query time (principals are not kept in a recorded series: one per ServiceAccount).",
       "id": 4,
       "datasource": {
         "type": "prometheus",
@@ -390,7 +390,7 @@
     },
     {
       "type": "row",
-      "title": "What did the Cilium datapath drop? · proposed",
+      "title": "What did the Cilium datapath drop?",
       "id": 6,
       "collapsed": false,
       "gridPos": {
@@ -403,8 +403,8 @@
     },
     {
       "type": "timeseries",
-      "title": "Packets dropped per second, all reasons · proposed",
-      "description": "Proposed: needs cilium_drop_count_total in the cilium-native keep list of deploy/. Packets the Cilium datapath dropped, every reason and direction, per cluster, 5 minute rate. On 2026-10-25 a cmtc-a worker read 25208 ingress Policy denied drops since its agent started.",
+      "title": "Packets dropped per second, all reasons",
+      "description": "Packets the Cilium datapath dropped, every reason and direction, per cluster, 5 minute rate. On 2026-10-25 a cmtc-a worker read 25208 ingress Policy denied drops since its agent started.",
       "id": 7,
       "datasource": {
         "type": "prometheus",
@@ -514,8 +514,8 @@
     },
     {
       "type": "table",
-      "title": "Drops in the last hour, by node, direction and reason · proposed",
-      "description": "Proposed: needs cilium_drop_count_total in the cilium-native keep list of deploy/. Dropped packets by node, direction and reason over the last hour. The counter has no port, protocol or namespace label, and Hubble is disabled on the lab.",
+      "title": "Drops in the last hour, by node, direction and reason",
+      "description": "Dropped packets by node, direction and reason over the last hour. The counter has no port, protocol or namespace label, and Hubble is disabled on the lab.",
       "id": 8,
       "datasource": {
         "type": "prometheus",
@@ -658,7 +658,7 @@
     },
     {
       "type": "row",
-      "title": "Which certificates were revoked, and were they presented? · proposed",
+      "title": "Which certificates were revoked, and were they presented?",
       "id": 10,
       "collapsed": false,
       "gridPos": {
@@ -671,8 +671,8 @@
     },
     {
       "type": "timeseries",
-      "title": "Connections refused or closed for a revoked certificate per second · proposed",
-      "description": "Proposed: needs the ztunnel scrape job of deploy/, with istio_crl_* kept. Connections ztunnel refused at handshake, or closed when a CRL reload revoked their certificate, per cluster, 5 minute rate. The refusal worked; the caller still holds a revoked identity.",
+      "title": "Connections refused or closed for a revoked certificate per second",
+      "description": "Connections ztunnel refused at handshake, or closed when a CRL reload revoked their certificate, per cluster, 5 minute rate. The refusal worked; the caller still holds a revoked identity.",
       "id": 11,
       "datasource": {
         "type": "prometheus",
@@ -782,8 +782,8 @@
     },
     {
       "type": "stat",
-      "title": "Revocation refusals, 1 hour · proposed",
-      "description": "Proposed: needs the ztunnel scrape job of deploy/, with istio_crl_* kept. Connections refused or closed for a revoked certificate in the last hour, per cluster. 0 is normal.",
+      "title": "Revocation refusals, 1 hour",
+      "description": "Connections refused or closed for a revoked certificate in the last hour, per cluster. 0 is normal.",
       "id": 12,
       "datasource": {
         "type": "prometheus",
@@ -861,8 +861,8 @@
     },
     {
       "type": "stat",
-      "title": "Connections not tracked for revocation, 1 hour · proposed",
-      "description": "Proposed: needs the ztunnel scrape job of deploy/, with istio_crl_* kept. Connections ztunnel accepted but cannot close on a later revocation (their chain could not be parsed for tracking), per cluster. Normal: 0 (CMTCConnectionsUntrackedForRevocation).",
+      "title": "Connections not tracked for revocation, 1 hour",
+      "description": "Connections ztunnel accepted but cannot close on a later revocation (their chain could not be parsed for tracking), per cluster. Normal: 0 (CMTCConnectionsUntrackedForRevocation).",
       "id": 13,
       "datasource": {
         "type": "prometheus",
@@ -951,7 +951,7 @@
       },
       "options": {
         "mode": "markdown",
-        "content": "istio_crl_* is not in the ztunnel keep list of scripts/lab/monitoring.py; deploy/ keeps it.",
+        "content": "deploy/ keeps istio_crl_*. ztunnel creates each of these series at its first event, so an empty panel here means no event yet, not a missing scrape.",
         "code": {
           "language": "plaintext",
           "showLineNumbers": false,
@@ -1217,7 +1217,7 @@
     },
     {
       "type": "row",
-      "title": "Were connections refused over trust or identity? · proposed",
+      "title": "Were connections refused over trust or identity?",
       "id": 19,
       "collapsed": false,
       "gridPos": {
@@ -1452,8 +1452,8 @@
     },
     {
       "type": "timeseries",
-      "title": "TLS handshakes failed at the destination per second · proposed",
-      "description": "Proposed: needs the ztunnel scrape job of deploy/. Workload TLS handshakes the destination's ztunnel failed (peer_verification_failed, protocol_error, timeout), per cluster, 5 minute rate. The family is pre-created at 0, so 0 is a measured zero.",
+      "title": "TLS handshakes failed at the destination per second",
+      "description": "Workload TLS handshakes the destination's ztunnel failed (peer_verification_failed, protocol_error, timeout), per cluster, 5 minute rate. The family is pre-created at 0, so 0 is a measured zero.",
       "id": 22,
       "datasource": {
         "type": "prometheus",
@@ -1563,8 +1563,8 @@
     },
     {
       "type": "table",
-      "title": "Failed connections in the last hour, by reporter and response flag · proposed",
-      "description": "Proposed: needs the ztunnel scrape job of deploy/. Every failed connection by who counted it and why, last hour.",
+      "title": "Failed connections in the last hour, by reporter and response flag",
+      "description": "Every failed connection by who counted it and why, last hour.",
       "id": 23,
       "datasource": {
         "type": "prometheus",

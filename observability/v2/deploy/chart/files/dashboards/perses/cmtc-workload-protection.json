@@ -793,8 +793,8 @@
       "kind": "Panel",
       "spec": {
         "display": {
-          "name": "In-Pod proxies waiting to start \u00b7 proposed",
-          "description": "Proposed: needs the ztunnel scrape job of deploy/. In-Pod proxies ztunnel has accepted but not started, per cluster, now. Normal: 0 (CMTCInPodProxiesPending after 5 minutes)."
+          "name": "In-Pod proxies waiting to start",
+          "description": "In-Pod proxies ztunnel has accepted but not started, per cluster, now. Normal: 0 (CMTCInPodProxiesPending after 5 minutes)."
         },
         "plugin": {
           "kind": "StatChart",
@@ -944,8 +944,8 @@
       "kind": "Panel",
       "spec": {
         "display": {
-          "name": "In-Pod proxies running \u00b7 proposed",
-          "description": "Proposed: needs the ztunnel scrape job of deploy/. In-Pod proxies ztunnel runs, per cluster, now: one per enrolled Pod."
+          "name": "In-Pod proxies running",
+          "description": "In-Pod proxies ztunnel runs, per cluster, now: one per enrolled Pod."
         },
         "plugin": {
           "kind": "StatChart",
@@ -2075,8 +2075,8 @@
       "kind": "Panel",
       "spec": {
         "display": {
-          "name": "Source mTLS connections attempted, 5 minutes \u00b7 proposed",
-          "description": "Proposed: needs the ztunnel scrape job of deploy/. Outbound mTLS connections the callers' ztunnels started in the last 5 minutes, per cluster. none: no workload connected, so there is nothing to judge, and no failure count below means healthy. During the outage of #34 no ztunnel of either lab counted a connection between 2026-10-27T00:01Z and 00:47Z (their /stats/prometheus pages, read twice). ztunnel counts a connection as opened when it builds its connection result, before the handshake, so every failed connection was also opened (src/proxy/metrics.rs:752-792, :881-902). Connections refused before that (unknown source workload, no route, a stale xDS generation) are only in the ztunnel access log, as \"connection failed\" (src/proxy/outbound.rs:193-226, metrics.rs:624-648)."
+          "name": "Source mTLS connections attempted, 5 minutes",
+          "description": "Outbound mTLS connections the callers' ztunnels started in the last 5 minutes, per cluster. none: no workload connected, so there is nothing to judge, and no failure count below means healthy. During the outage of #34 no ztunnel of either lab counted a connection between 2026-10-27T00:01Z and 00:47Z (their /stats/prometheus pages, read twice). ztunnel counts a connection as opened when it builds its connection result, before the handshake, so every failed connection was also opened (src/proxy/metrics.rs:752-792, :881-902). Connections refused before that (unknown source workload, no route, a stale xDS generation) are only in the ztunnel access log, as \"connection failed\" (src/proxy/outbound.rs:193-226, metrics.rs:624-648)."
         },
         "plugin": {
           "kind": "StatChart",
@@ -2149,8 +2149,8 @@
       "kind": "Panel",
       "spec": {
         "display": {
-          "name": "mTLS connections opened per second, destination side \u00b7 proposed",
-          "description": "Proposed: needs the ztunnel scrape job of deploy/. Inbound mTLS connections the destination's ztunnel accepted, per cluster, 5 minute rate. Traffic evidence for the connection, not a verdict on the workload."
+          "name": "mTLS connections opened per second, destination side",
+          "description": "Inbound mTLS connections the destination's ztunnel accepted, per cluster, 5 minute rate. Traffic evidence for the connection, not a verdict on the workload."
         },
         "plugin": {
           "kind": "TimeSeriesChart",
@@ -2227,8 +2227,8 @@
       "kind": "Panel",
       "spec": {
         "display": {
-          "name": "Failed share of source mTLS connections \u00b7 proposed",
-          "description": "Proposed: needs the ztunnel scrape job of deploy/. Outbound mTLS connections that failed, as a share of those attempted, as the caller's ztunnel counts them, per cluster, 5 minute rate. Normal: 0. No line: nothing was attempted in the window (the stat beside it reads none), or ztunnel is not scraped. The table beside it names the response flag."
+          "name": "Failed share of source mTLS connections",
+          "description": "Outbound mTLS connections that failed, as a share of those attempted, as the caller's ztunnel counts them, per cluster, 5 minute rate. Normal: 0. No line: nothing was attempted in the window (the stat beside it reads none), or ztunnel is not scraped. The table beside it names the response flag."
         },
         "plugin": {
           "kind": "TimeSeriesChart",
@@ -2306,8 +2306,8 @@
       "kind": "Panel",
       "spec": {
         "display": {
-          "name": "mTLS connections in the last hour, by source and destination cluster \u00b7 proposed",
-          "description": "Proposed: needs the ztunnel scrape job of deploy/. Accepted mTLS connections by where they came from and where they landed, destination side. Both directions between the clusters should have a row while cross-cluster traffic runs."
+          "name": "mTLS connections in the last hour, by source and destination cluster",
+          "description": "Accepted mTLS connections by where they came from and where they landed, destination side. Both directions between the clusters should have a row while cross-cluster traffic runs."
         },
         "plugin": {
           "kind": "Table",
@@ -2976,7 +2976,7 @@
       "kind": "Grid",
       "spec": {
         "display": {
-          "title": "Is protected traffic flowing? \u00b7 proposed",
+          "title": "Is protected traffic flowing?",
           "collapse": {
             "open": true
           }

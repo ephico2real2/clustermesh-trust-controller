@@ -26,6 +26,10 @@ data:
     {{- if .Values.remoteWrite.url }}
     remote_write:
       - url: {{ .Values.remoteWrite.url }}
+        {{- if .Values.remoteWrite.caConfigMap.name }}
+        tls_config:
+          ca_file: /etc/prometheus/remote-write-ca/ca.crt
+        {{- end }}
     {{- end }}
     scrape_configs:
     {{- if $j.cmtc.enabled }}
@@ -64,6 +68,43 @@ data:
           - {source_labels: [__meta_kubernetes_pod_name], target_label: pod}
         metric_relabel_configs:
           - {source_labels: [__name__], regex: '{{ include "cmtc-obs.keep" $j.ciliumAgent.keep }}', action: keep}
+    {{- end }}
+    {{- if $j.hubble.enabled }}
+      # Hubble in the Cilium agent: the agent's hostNetwork port hubble-metrics, so the target address is the node's.
+      - job_name: hubble
+        kubernetes_sd_configs:
+          - role: pod
+            namespaces: {names: [{{ $j.hubble.namespace }}]}
+        relabel_configs:
+          - {source_labels: [__meta_kubernetes_pod_label_k8s_app], regex: cilium, action: keep}
+          - {source_labels: [__meta_kubernetes_pod_container_name], regex: cilium-agent, action: keep}
+          - {source_labels: [__meta_kubernetes_pod_container_port_name], regex: hubble-metrics, action: keep}
+          - {source_labels: [__meta_kubernetes_pod_phase], regex: Running, action: keep}
+          - {target_label: cluster, replacement: {{ $cluster }}}
+          - {target_label: component, replacement: hubble}
+          - {source_labels: [__meta_kubernetes_pod_node_name], target_label: node}
+          - {source_labels: [__meta_kubernetes_namespace], target_label: namespace}
+          - {source_labels: [__meta_kubernetes_pod_name], target_label: pod}
+        metric_relabel_configs:
+          - {source_labels: [__name__], regex: '{{ include "cmtc-obs.keep" $j.hubble.keep }}', action: keep}
+    {{- end }}
+    {{- if $j.hubbleRelay.enabled }}
+      # Hubble Relay: in the control cluster only; elsewhere the job finds no target.
+      - job_name: hubble-relay
+        kubernetes_sd_configs:
+          - role: pod
+            namespaces: {names: [{{ $j.hubbleRelay.namespace }}]}
+        relabel_configs:
+          - {source_labels: [__meta_kubernetes_pod_label_k8s_app], regex: hubble-relay, action: keep}
+          - {source_labels: [__meta_kubernetes_pod_container_port_name], regex: prometheus, action: keep}
+          - {source_labels: [__meta_kubernetes_pod_phase], regex: Running, action: keep}
+          - {target_label: cluster, replacement: {{ $cluster }}}
+          - {target_label: component, replacement: hubble-relay}
+          - {source_labels: [__meta_kubernetes_pod_node_name], target_label: node}
+          - {source_labels: [__meta_kubernetes_namespace], target_label: namespace}
+          - {source_labels: [__meta_kubernetes_pod_name], target_label: pod}
+        metric_relabel_configs:
+          - {source_labels: [__name__], regex: '{{ include "cmtc-obs.keep" $j.hubbleRelay.keep }}', action: keep}
     {{- end }}
     {{- if $j.ztunnel.enabled }}
       # ztunnel: the istio-proxy container declares no port; its stats listener binds the wildcard address on 15020.

@@ -39,6 +39,29 @@ tests:
         summary: 'Prometheus in cmtc-a cannot scrape ztunnel on node cmtc-a-worker'
         runbook: 'Every panel and alert built on this exporter is unavailable, not healthy. Check the pod, its metrics port and the NetworkPolicy that admits the monitoring namespace.'
 
+# The Hubble jobs: a Relay that stops answering is down; a cluster without a Relay has no target, so no alert.
+- interval: 1m
+  input_series:
+  - series: 'up{job="hubble-relay", cluster="cmtc-a", node="cmtc-a-worker", component="hubble-relay", instance="10.10.1.138:9966"}'
+    values: '0x6'
+  - series: 'up{job="hubble", cluster="cmtc-b", node="cmtc-b-worker", component="hubble", instance="172.18.0.5:9965"}'
+    values: '1x6'
+  alert_rule_test:
+  - eval_time: 3m
+    alertname: CMTCScrapeTargetDown
+    exp_alerts:
+    - exp_labels:
+        severity: warning
+        owner: hubble-relay
+        job: hubble-relay
+        cluster: cmtc-a
+        node: cmtc-a-worker
+        component: hubble-relay
+        instance: 10.10.1.138:9966
+      exp_annotations:
+        summary: 'Prometheus in cmtc-a cannot scrape hubble-relay on node cmtc-a-worker'
+        runbook: 'Every panel and alert built on this exporter is unavailable, not healthy. Check the pod, its metrics port and the NetworkPolicy that admits the monitoring namespace.'
+
 # Node-local partners: the worker has a Cilium agent target but no ztunnel and no node agent
 # target; the control plane has all three.
 - interval: 1m

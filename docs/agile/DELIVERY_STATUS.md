@@ -127,9 +127,9 @@ node accepts generation 7; matrix 96/96 proven, 36/36 dropped (19:56–20:00Z). 
 8. **Live policy shapes:** a source whose egress denies the destination, and a live port narrowing. Both are
    unit-tested only.
 9. **WireGuard/IPsec composition** with workload mTLS.
-10. **Monitoring.** CoreDNS exposes `:9153` but is not scraped. Hubble is off. The CMTC eBPF measurement plane
-    ([ADR-005](../architecture/adr/ADR-005.md)) is not built beyond Pod inventory. Metrics v2 is uncommitted
-    (`observability/v2/`).
+10. **Monitoring.** The CMTC eBPF measurement plane ([ADR-005](../architecture/adr/ADR-005.md)) is not built beyond
+    Pod inventory. Observability v2 (`observability/v2/`) is deployed but not traffic-qualified: no dashboard is
+    checked under load in both themes.
 11. **Stale material.** `scripts/lab/mtls/bootstrap.sh` still creates the retired `cmtc-mtls` cluster. The
     [component-roles figure](../diagrams/component-roles/source.html) still shows ztunnel activation as pending.
 
@@ -151,7 +151,7 @@ agent's delegation was returned at 18:08:46Z on 2026-10-26.
 | Evidence tools: client-socket join, per-Pod names, DNS probes | orchestrator | committed (`ed6e004`) |
 | Issuer rotation without reset (gate 10) | orchestrator | generation 6 published (SPIRE intermediate); approval renewal in design (no host job); report and ADR-012 not written |
 | eBPF measurement plane review | none | one patch proposed, not applied; no report |
-| Metrics, CoreDNS scraping and Grafana dashboards v2 | none | rules and tests pass; not deployed; uncommitted |
+| Observability v2: metrics contract, rules, Grafana dashboards, chart `cmtc-observability` (#37) | orchestrator | deployed as Helm release `cmtc-obs` (namespace `monitoring`, revision 2, 2026-10-28T07:23Z): hub on kind-cmtc-a behind Cilium Ingress, member on kind-cmtc-b remote-writing to it; 17/16 targets up at 17:03Z; 69 tests pass with promtool; render equals live on cmtc-b, and on cmtc-a differs only by the panel markers and one rule comment that the next upgrade applies (not run); not traffic-qualified ([chart README](../../observability/v2/deploy/chart/README.md)) |
 | Certificate renewal without a failed connection (#47 P1-P3, #46) | Fable, Phase 1 done | Cilium fork `ce5c3ec031` (branch `fix/ztunnel-origin-credential-renewal`): implemented and unit-tested with `-race`, agent image `cilium-dev@sha256:8446cf910bdb…69b2cc` deployed on cmtc-b (revision 12) with drills R1-R4 at 0 failed probes, not yet on cmtc-a; drill `scripts/evidence/rotation_drill.py` dry-run; [design note](../architecture/MESH_CERTIFICATE_RENEWAL.md); Phase 2 (Helm rollout and drills) awaits the orchestrator |
 
 Each result is reviewed and verified on both labs before it is committed.

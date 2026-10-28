@@ -14,6 +14,8 @@ to scrape otherwise, path, component (empty: from app.kubernetes.io/name).
 {{- $monitors := list
   (dict "key" "cmtc" "job" "cmtc" "selector" (dict "security.cmtc.io/metrics" "true") "port" "metrics" "path" "/metrics" "component" "")
   (dict "key" "ciliumAgent" "job" "cilium-native" "selector" (dict "k8s-app" "cilium") "port" "prometheus" "path" "/metrics" "component" "cilium-agent")
+  (dict "key" "hubble" "job" "hubble" "selector" (dict "k8s-app" "cilium") "port" "hubble-metrics" "path" "/metrics" "component" "hubble")
+  (dict "key" "hubbleRelay" "job" "hubble-relay" "selector" (dict "k8s-app" "hubble-relay") "port" "prometheus" "path" "/metrics" "component" "hubble-relay")
   (dict "key" "ztunnel" "job" "ztunnel" "selector" (dict "app.kubernetes.io/name" "ztunnel-cilium") "port" "" "container" "istio-proxy" "portNumber" 15020 "path" "/stats/prometheus" "component" "ztunnel")
   (dict "key" "certManager" "job" "cert-manager" "selector" (dict "app.kubernetes.io/name" "cert-manager" "app.kubernetes.io/component" "controller") "port" "http-metrics" "path" "/metrics" "component" "cert-manager")
   (dict "key" "trustManager" "job" "trust-manager" "selector" (dict "app.kubernetes.io/name" "trust-manager") "port" "metrics" "path" "/metrics" "component" "trust-manager")

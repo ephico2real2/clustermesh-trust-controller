@@ -1,0 +1,23 @@
+# kind-cmtc-a, the labs' hub: receives cmtc-b's samples by remote write, evaluates the rules, runs Grafana.
+# Install into the namespace monitoring: NetworkPolicy cmtc-metrics of charts/cmtc admits scrapes of the CMTC Pods
+# from that namespace only (and from cmtc-system).
+#
+#   helm upgrade --install cmtc-obs deploy/chart --kube-context kind-cmtc-a -n monitoring -f deploy/kind/values-cmtc-a.yaml
+clusterName: cmtc-a
+hub:
+  enabled: true
+  # The clusters whose data the rules expect: an absent cluster is an alert, never a healthy zero.
+  expectedClusters: [cmtc-a, cmtc-b]
+ingress:
+  # Cilium's Ingress controller (class cilium) on cmtc-a. The names are under localtest.me, whose public DNS answers
+  # 127.0.0.1 for every name; the labs' CoreDNS answers *.cmtc-a.localtest.me with cmtc-a's Ingress address.
+  enabled: true
+  prometheus:
+    host: prometheus.cmtc-a.localtest.me
+  grafana:
+    host: grafana.cmtc-a.localtest.me
+  tls:
+    certManager:
+      # cmtc-a's Ingress intermediate under the mesh root (config/lab-pki/ingress.yaml, ADR-011 decision 3).
+      issuerRef:
+        name: cmtc-a-ingress-intermediate

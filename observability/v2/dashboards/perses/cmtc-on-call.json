@@ -9,7 +9,7 @@
       "spec": {
         "display": {
           "name": "Scrape targets down",
-          "description": "Prometheus targets of the v2 jobs whose last scrape failed (up == 0), both clusters, at the hub. Normal: 0. No data: the hub has no target of these jobs at all, and every panel below is unavailable. The lab scrapes only the cmtc and cilium-native jobs today; the others count once deploy/ adds them (spire-server and spire-agent also need source-patches/cmtc/0002)."
+          "description": "Prometheus targets of the v2 jobs whose last scrape failed (up == 0), both clusters, at the hub. Normal: 0. No data: the hub has no target of these jobs at all, and every panel below is unavailable. spire-server and spire-agent have no target until source-patches/cmtc/0002 configures SPIRE's telemetry."
         },
         "plugin": {
           "kind": "StatChart",
@@ -44,7 +44,7 @@
                     "kind": "PrometheusDatasource",
                     "name": "cmtc-thanos"
                   },
-                  "query": "count(up{job=~\"cmtc|cilium-native|ztunnel|coredns|cert-manager|trust-manager|cadvisor|spire-server|spire-agent|prometheus\"} == 0) or 0 * count(up{job=~\"cmtc|cilium-native|ztunnel|coredns|cert-manager|trust-manager|cadvisor|spire-server|spire-agent|prometheus\"})",
+                  "query": "count(up{job=~\"cmtc|cilium-native|hubble|hubble-relay|ztunnel|coredns|cert-manager|trust-manager|cadvisor|spire-server|spire-agent|prometheus\"} == 0) or 0 * count(up{job=~\"cmtc|cilium-native|hubble|hubble-relay|ztunnel|coredns|cert-manager|trust-manager|cadvisor|spire-server|spire-agent|prometheus\"})",
                   "seriesNameFormat": ""
                 }
               }
@@ -107,7 +107,7 @@
       "spec": {
         "display": {
           "name": "Scrape targets up",
-          "description": "Targets of the v2 jobs that answered their last scrape, per cluster. On the lab: 5 per cluster (2 Cilium agents, 2 node agents, 1 controller; read 2026-10-27T00:44Z); more once deploy/ adds the other jobs. No data for a cluster: none of its targets answers."
+          "description": "Targets of the v2 jobs that answered their last scrape, per cluster. On the lab at 2026-10-28T17:03Z: 17 on cmtc-a (3 cmtc; 2 each of cilium-native, hubble, ztunnel, coredns and cadvisor; 1 each of hubble-relay, cert-manager, trust-manager and prometheus) and 16 on cmtc-b, which runs no Hubble Relay. No data for a cluster: none of its targets answers."
         },
         "plugin": {
           "kind": "StatChart",
@@ -138,7 +138,7 @@
                     "kind": "PrometheusDatasource",
                     "name": "cmtc-thanos"
                   },
-                  "query": "count by (cluster) (up{job=~\"cmtc|cilium-native|ztunnel|coredns|cert-manager|trust-manager|cadvisor|spire-server|spire-agent|prometheus\", cluster=\"cmtc-a\"} == 1)",
+                  "query": "count by (cluster) (up{job=~\"cmtc|cilium-native|hubble|hubble-relay|ztunnel|coredns|cert-manager|trust-manager|cadvisor|spire-server|spire-agent|prometheus\", cluster=\"cmtc-a\"} == 1)",
                   "seriesNameFormat": "{{cluster}}"
                 }
               }
@@ -154,7 +154,7 @@
                     "kind": "PrometheusDatasource",
                     "name": "cmtc-thanos"
                   },
-                  "query": "count by (cluster) (up{job=~\"cmtc|cilium-native|ztunnel|coredns|cert-manager|trust-manager|cadvisor|spire-server|spire-agent|prometheus\", cluster=\"cmtc-b\"} == 1)",
+                  "query": "count by (cluster) (up{job=~\"cmtc|cilium-native|hubble|hubble-relay|ztunnel|coredns|cert-manager|trust-manager|cadvisor|spire-server|spire-agent|prometheus\", cluster=\"cmtc-b\"} == 1)",
                   "seriesNameFormat": "{{cluster}}"
                 }
               }
@@ -238,7 +238,7 @@
       "spec": {
         "display": {
           "name": "Node-local exporters, by node \u00b7 planned",
-          "description": "Planned, a proposed source change: needs source-patches/cmtc/0002 for the SPIRE agent column, and the ztunnel, cadvisor and spire-agent scrape jobs of deploy/ for their columns. One row per node that has at least one node-local scrape target, at the hub. up means the last scrape answered, down that it failed. An empty cell is a node with no target for that exporter: its panels are unavailable on that node, not healthy. The ztunnel job is in scripts/lab/monitoring.py but not in the lab's live Prometheus configuration; the kubelet cAdvisor and SPIRE agent jobs are new in deploy/."
+          "description": "Planned, a proposed source change: needs source-patches/cmtc/0002 for the SPIRE agent column. One row per node that has at least one node-local scrape target, at the hub. up means the last scrape answered, down that it failed. An empty cell is a node with no target for that exporter: its panels are unavailable on that node, not healthy. The spire-agent job of deploy/ is off until then (jobs.spireAgent.enabled)."
         },
         "plugin": {
           "kind": "Table",
@@ -623,8 +623,8 @@
       "kind": "Panel",
       "spec": {
         "display": {
-          "name": "Firing alerts per owning component \u00b7 proposed",
-          "description": "Proposed: needs the v2 rules loaded by deploy/ (rule_files on kind, a PrometheusRule on OpenShift). Alerts in state firing, counted by their owner label (the component that has to act), longest bar first. Normal: no bar. Needs the v2 rules loaded: the lab Prometheus has no rule_files today, so ALERTS has no series."
+          "name": "Firing alerts per owning component",
+          "description": "Alerts in state firing, counted by their owner label (the component that has to act), longest bar first. Normal: no bar. The hub evaluates the rule files of deploy/."
         },
         "plugin": {
           "kind": "BarChart",
@@ -659,8 +659,8 @@
       "kind": "Panel",
       "spec": {
         "display": {
-          "name": "Firing alerts \u00b7 proposed",
-          "description": "Proposed: needs the v2 rules loaded by deploy/ (rule_files on kind, a PrometheusRule on OpenShift). Every firing alert with its severity, owner and where it fires. Each alert's runbook annotation names the next step; the rules are in observability/v2/rules."
+          "name": "Firing alerts",
+          "description": "Every firing alert with its severity, owner and where it fires. Each alert's runbook annotation names the next step; the rules are in observability/v2/rules."
         },
         "plugin": {
           "kind": "Table",
@@ -1044,8 +1044,8 @@
       "kind": "Panel",
       "spec": {
         "display": {
-          "name": "Source mTLS connections attempted, 5 minutes \u00b7 proposed",
-          "description": "Proposed: needs the ztunnel scrape job of deploy/. Outbound mTLS connections the callers' ztunnels started in the last 5 minutes, per cluster. none: no workload connected, so there is nothing to judge, and no failure count below means healthy. During the outage of #34 no ztunnel of either lab counted a connection between 2026-10-27T00:01Z and 00:47Z (their /stats/prometheus pages, read twice). ztunnel counts a connection as opened when it builds its connection result, before the handshake, so every failed connection was also opened (src/proxy/metrics.rs:752-792, :881-902). Connections refused before that (unknown source workload, no route, a stale xDS generation) are only in the ztunnel access log, as \"connection failed\" (src/proxy/outbound.rs:193-226, metrics.rs:624-648)."
+          "name": "Source mTLS connections attempted, 5 minutes",
+          "description": "Outbound mTLS connections the callers' ztunnels started in the last 5 minutes, per cluster. none: no workload connected, so there is nothing to judge, and no failure count below means healthy. During the outage of #34 no ztunnel of either lab counted a connection between 2026-10-27T00:01Z and 00:47Z (their /stats/prometheus pages, read twice). ztunnel counts a connection as opened when it builds its connection result, before the handshake, so every failed connection was also opened (src/proxy/metrics.rs:752-792, :881-902). Connections refused before that (unknown source workload, no route, a stale xDS generation) are only in the ztunnel access log, as \"connection failed\" (src/proxy/outbound.rs:193-226, metrics.rs:624-648)."
         },
         "plugin": {
           "kind": "StatChart",
@@ -1118,8 +1118,8 @@
       "kind": "Panel",
       "spec": {
         "display": {
-          "name": "Failed share of source mTLS connections \u00b7 proposed",
-          "description": "Proposed: needs the ztunnel scrape job of deploy/. Outbound mTLS connections that failed, as a share of those attempted, as the caller's ztunnel counts them, per cluster, 5 minute rate. Normal: 0. No line: nothing was attempted in the window (the stat beside it reads none), or ztunnel is not scraped. The table beside it names the response flag."
+          "name": "Failed share of source mTLS connections",
+          "description": "Outbound mTLS connections that failed, as a share of those attempted, as the caller's ztunnel counts them, per cluster, 5 minute rate. Normal: 0. No line: nothing was attempted in the window (the stat beside it reads none), or ztunnel is not scraped. The table beside it names the response flag."
         },
         "plugin": {
           "kind": "TimeSeriesChart",
@@ -1197,8 +1197,8 @@
       "kind": "Panel",
       "spec": {
         "display": {
-          "name": "Failed source mTLS connections in the last hour, by response flag \u00b7 proposed",
-          "description": "Proposed: needs the ztunnel scrape job of deploy/. Failures by response flag over the last hour. DENY is the caller's own policy; TRUST_PROFILE the issuer approval; IDENTITY_ERROR SPIRE identity issuance; CONNECT and NETWORK_POLICY the network path. A series is created by its first failure, so the first one after a ztunnel start is not counted."
+          "name": "Failed source mTLS connections in the last hour, by response flag",
+          "description": "Failures by response flag over the last hour. DENY is the caller's own policy; TRUST_PROFILE the issuer approval; IDENTITY_ERROR SPIRE identity issuance; CONNECT and NETWORK_POLICY the network path. A series is created by its first failure, so the first one after a ztunnel start is not counted."
         },
         "plugin": {
           "kind": "Table",
@@ -1570,8 +1570,8 @@
       "kind": "Panel",
       "spec": {
         "display": {
-          "name": "CoreDNS answers per second \u00b7 proposed",
-          "description": "Proposed: needs the coredns scrape job of deploy/. Answers CoreDNS sent, all response codes, per cluster, 5 minute rate. A drop to 0 with clients still running means CoreDNS is not reached."
+          "name": "CoreDNS answers per second",
+          "description": "Answers CoreDNS sent, all response codes, per cluster, 5 minute rate. A drop to 0 with clients still running means CoreDNS is not reached."
         },
         "plugin": {
           "kind": "TimeSeriesChart",
@@ -1648,8 +1648,8 @@
       "kind": "Panel",
       "spec": {
         "display": {
-          "name": "CoreDNS SERVFAIL share of answers \u00b7 proposed",
-          "description": "Proposed: needs the coredns scrape job of deploy/. SERVFAIL answers as a share of all answers, per cluster, 5 minute rate. Normal: 0. Above 1 % for 5 minutes: CoreDNSServfailHigh. NXDOMAIN is normal here (search-path expansion) and is on the DNS dashboard."
+          "name": "CoreDNS SERVFAIL share of answers",
+          "description": "SERVFAIL answers as a share of all answers, per cluster, 5 minute rate. Normal: 0. Above 1 % for 5 minutes: CoreDNSServfailHigh. NXDOMAIN is normal here (search-path expansion) and is on the DNS dashboard."
         },
         "plugin": {
           "kind": "TimeSeriesChart",
@@ -1806,8 +1806,8 @@
       "kind": "Panel",
       "spec": {
         "display": {
-          "name": "Packets dropped by Cilium policy per second \u00b7 proposed",
-          "description": "Proposed: needs cilium_drop_count_total in the cilium-native keep list of deploy/. Packets the Cilium datapath dropped with reason Policy denied, both directions, per cluster, 5 minute rate. The counter has no port label: it cannot show which drops were DNS."
+          "name": "Packets dropped by Cilium policy per second",
+          "description": "Packets the Cilium datapath dropped with reason Policy denied, both directions, per cluster, 5 minute rate. The counter has no port label: it cannot show which drops were DNS."
         },
         "plugin": {
           "kind": "TimeSeriesChart",
@@ -1898,8 +1898,8 @@
       "kind": "Panel",
       "spec": {
         "display": {
-          "name": "Mesh certificates not Ready \u00b7 proposed",
-          "description": "Proposed: needs the cert-manager scrape job of deploy/. cert-manager Certificates whose Ready condition is not True, per cluster, now: the mesh root, the ClusterMesh and SPIRE intermediates and the leaves they sign (MESH_PKI.md). Normal: 0 (CMTCCertificateNotReady after 10 minutes). The trust dashboard lists each certificate."
+          "name": "Mesh certificates not Ready",
+          "description": "cert-manager Certificates whose Ready condition is not True, per cluster, now: the mesh root, the ClusterMesh and SPIRE intermediates and the leaves they sign (MESH_PKI.md). Normal: 0 (CMTCCertificateNotReady after 10 minutes). The trust dashboard lists each certificate."
         },
         "plugin": {
           "kind": "StatChart",
@@ -1963,8 +1963,8 @@
       "kind": "Panel",
       "spec": {
         "display": {
-          "name": "Certificate renewals overdue \u00b7 proposed",
-          "description": "Proposed: needs the cert-manager scrape job of deploy/. Certificates whose planned renewal time passed more than 10 minutes ago, per cluster: cert-manager failed to renew them, and they still work until they expire (CMTCCertificateRenewalOverdue). Normal: 0."
+          "name": "Certificate renewals overdue",
+          "description": "Certificates whose planned renewal time passed more than 10 minutes ago, per cluster: cert-manager failed to renew them, and they still work until they expire (CMTCCertificateRenewalOverdue). Normal: 0."
         },
         "plugin": {
           "kind": "StatChart",
@@ -2028,8 +2028,8 @@
       "kind": "Panel",
       "spec": {
         "display": {
-          "name": "Containers above 90 % of their PID limit \u00b7 proposed",
-          "description": "Proposed: needs the cadvisor scrape job of deploy/. Mesh containers (namespaces cilium-spire, cmtc-system, kube-system, cert-manager) whose processes and threads use more than 90 % of their PID limit, per cluster, now (CMTCContainerPIDsNearLimit). Normal: 0. This is #41: on 2026-10-26 spire-server-0 reached its limit at 19,091 processes and was deleted."
+          "name": "Containers above 90 % of their PID limit",
+          "description": "Mesh containers (namespaces cilium-spire, cmtc-system, kube-system, cert-manager) whose processes and threads use more than 90 % of their PID limit, per cluster, now (CMTCContainerPIDsNearLimit). Normal: 0. This is #41: on 2026-10-26 spire-server-0 reached its limit at 19,091 processes and was deleted."
         },
         "plugin": {
           "kind": "StatChart",
@@ -2093,8 +2093,8 @@
       "kind": "Panel",
       "spec": {
         "display": {
-          "name": "Containers that reach their PID limit within 24 h \u00b7 proposed",
-          "description": "Proposed: needs the cadvisor scrape job of deploy/. Mesh containers whose process count, at the rate of the last 30 minutes, reaches their PID limit within 24 hours, per cluster (CMTCContainerPIDsExhaustionForecast). Normal: 0. On 2026-10-27 the register-agent-node sidecar of spire-server-0 grew by 12 a minute from 5443 (00:07:46Z) toward its limit of 19096, read through the kubelet of cmtc-a-worker."
+          "name": "Containers that reach their PID limit within 24 h",
+          "description": "Mesh containers whose process count, at the rate of the last 30 minutes, reaches their PID limit within 24 hours, per cluster (CMTCContainerPIDsExhaustionForecast). Normal: 0. On 2026-10-27 the register-agent-node sidecar of spire-server-0 grew by 12 a minute from 5443 (00:07:46Z) toward its limit of 19096, read through the kubelet of cmtc-a-worker."
         },
         "plugin": {
           "kind": "StatChart",
@@ -2158,8 +2158,8 @@
       "kind": "Panel",
       "spec": {
         "display": {
-          "name": "Mesh containers closest to their PID limit, top 5 \u00b7 proposed",
-          "description": "Proposed: needs the cadvisor scrape job of deploy/. The five mesh containers that use the largest share of their PID limit, both clusters, now. A share that grows between two reads, with a flat workload, is processes that are not reaped (zombies)."
+          "name": "Mesh containers closest to their PID limit, top 5",
+          "description": "The five mesh containers that use the largest share of their PID limit, both clusters, now. A share that grows between two reads, with a flat workload, is processes that are not reaped (zombies)."
         },
         "plugin": {
           "kind": "Table",
@@ -2266,8 +2266,8 @@
       "kind": "Panel",
       "spec": {
         "display": {
-          "name": "Source mTLS connection errors, budget burn rate, 1 hour \u00b7 proposed",
-          "description": "Proposed: needs the ztunnel scrape job of deploy/. Error budget burn rate over the last hour, per cluster: the error ratio divided by the budget. 1 spends the 30-day budget in 30 days; 14.4 (with the 5 minute window) pages, 6 over 6 h opens a ticket (docs/METRICS_AND_SLOS.md). The lab keeps 1 h of data, so only this window is computable there. Objective: 99.9 % of source mTLS connections that policy did not deny succeed."
+          "name": "Source mTLS connection errors, budget burn rate, 1 hour",
+          "description": "Error budget burn rate over the last hour, per cluster: the error ratio divided by the budget. 1 spends the 30-day budget in 30 days; 14.4 (with the 5 minute window) pages, 6 over 6 h opens a ticket (docs/METRICS_AND_SLOS.md). The lab keeps 1 h of data, so only this window is computable there. Objective: 99.9 % of source mTLS connections that policy did not deny succeed."
         },
         "plugin": {
           "kind": "TimeSeriesChart",
@@ -2344,8 +2344,8 @@
       "kind": "Panel",
       "spec": {
         "display": {
-          "name": "CoreDNS SERVFAIL, budget burn rate, 1 hour \u00b7 proposed",
-          "description": "Proposed: needs the coredns scrape job of deploy/. Error budget burn rate over the last hour, per cluster: the error ratio divided by the budget. 1 spends the 30-day budget in 30 days; 14.4 (with the 5 minute window) pages, 6 over 6 h opens a ticket (docs/METRICS_AND_SLOS.md). The lab keeps 1 h of data, so only this window is computable there. Objective: 99.9 % of CoreDNS answers are not SERVFAIL."
+          "name": "CoreDNS SERVFAIL, budget burn rate, 1 hour",
+          "description": "Error budget burn rate over the last hour, per cluster: the error ratio divided by the budget. 1 spends the 30-day budget in 30 days; 14.4 (with the 5 minute window) pages, 6 over 6 h opens a ticket (docs/METRICS_AND_SLOS.md). The lab keeps 1 h of data, so only this window is computable there. Objective: 99.9 % of CoreDNS answers are not SERVFAIL."
         },
         "plugin": {
           "kind": "TimeSeriesChart",
@@ -2422,8 +2422,8 @@
       "kind": "Panel",
       "spec": {
         "display": {
-          "name": "CoreDNS answers slower than 64 ms, budget burn rate, 1 hour \u00b7 proposed",
-          "description": "Proposed: needs the coredns scrape job of deploy/. Error budget burn rate over the last hour, per cluster: the error ratio divided by the budget. 1 spends the 30-day budget in 30 days; 14.4 (with the 5 minute window) pages, 6 over 6 h opens a ticket (docs/METRICS_AND_SLOS.md). The lab keeps 1 h of data, so only this window is computable there. Objective: 99 % of CoreDNS answers within 64 ms."
+          "name": "CoreDNS answers slower than 64 ms, budget burn rate, 1 hour",
+          "description": "Error budget burn rate over the last hour, per cluster: the error ratio divided by the budget. 1 spends the 30-day budget in 30 days; 14.4 (with the 5 minute window) pages, 6 over 6 h opens a ticket (docs/METRICS_AND_SLOS.md). The lab keeps 1 h of data, so only this window is computable there. Objective: 99 % of CoreDNS answers within 64 ms."
         },
         "plugin": {
           "kind": "TimeSeriesChart",
@@ -2592,7 +2592,7 @@
       "kind": "Grid",
       "spec": {
         "display": {
-          "title": "Which alerts are firing, and which component owns them? \u00b7 proposed",
+          "title": "Which alerts are firing, and which component owns them?",
           "collapse": {
             "open": true
           }
@@ -2775,7 +2775,7 @@
       "kind": "Grid",
       "spec": {
         "display": {
-          "title": "Is DNS working? \u00b7 proposed",
+          "title": "Is DNS working?",
           "collapse": {
             "open": true
           }
@@ -2833,7 +2833,7 @@
       "kind": "Grid",
       "spec": {
         "display": {
-          "title": "Are the mesh certificates and processes healthy? \u00b7 proposed",
+          "title": "Are the mesh certificates and processes healthy?",
           "collapse": {
             "open": true
           }
@@ -2900,7 +2900,7 @@
       "kind": "Grid",
       "spec": {
         "display": {
-          "title": "Do the service objectives hold? \u00b7 proposed",
+          "title": "Do the service objectives hold?",
           "collapse": {
             "open": true
           }

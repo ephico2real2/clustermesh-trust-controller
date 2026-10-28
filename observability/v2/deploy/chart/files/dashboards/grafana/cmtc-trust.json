@@ -1676,7 +1676,7 @@
     },
     {
       "type": "row",
-      "title": "Did ztunnel apply the profile, or refuse connections over it? · proposed",
+      "title": "Did ztunnel apply the profile, or refuse connections over it?",
       "id": 21,
       "collapsed": false,
       "gridPos": {
@@ -1689,8 +1689,8 @@
     },
     {
       "type": "timeseries",
-      "title": "Issuer profile messages received by ztunnel per second · proposed",
-      "description": "Proposed: needs the ztunnel scrape job of deploy/. IssuerProfile xDS messages each cluster's ztunnels received, per cluster, 5 minute rate. A flat 0 while the producer renews means ztunnel is not receiving its profile.",
+      "title": "Issuer profile messages received by ztunnel per second",
+      "description": "IssuerProfile xDS messages each cluster's ztunnels received, per cluster, 5 minute rate. A flat 0 while the producer renews means ztunnel is not receiving its profile.",
       "id": 22,
       "datasource": {
         "type": "prometheus",
@@ -1911,8 +1911,8 @@
     },
     {
       "type": "timeseries",
-      "title": "Connections failed for want of a workload identity per second · proposed",
-      "description": "Proposed: needs the ztunnel scrape job of deploy/. Connections that failed because ztunnel had no certificate for the workload (IDENTITY_ERROR), per cluster, 5 minute rate: SPIRE identity issuance is failing.",
+      "title": "Connections failed for want of a workload identity per second",
+      "description": "Connections that failed because ztunnel had no certificate for the workload (IDENTITY_ERROR), per cluster, 5 minute rate: SPIRE identity issuance is failing.",
       "id": 24,
       "datasource": {
         "type": "prometheus",
@@ -2043,7 +2043,7 @@
     },
     {
       "type": "row",
-      "title": "Will the mesh certificates stay valid, and does the mesh root reach its namespaces? · proposed",
+      "title": "Will the mesh certificates stay valid, and does the mesh root reach its namespaces?",
       "id": 26,
       "collapsed": false,
       "gridPos": {
@@ -2056,8 +2056,8 @@
     },
     {
       "type": "table",
-      "title": "Mesh certificates, per cluster · proposed",
-      "description": "Proposed: needs the cert-manager scrape job of deploy/. Each cert-manager Certificate: its issuer, hours until it expires and until cert-manager renews it, and its Ready condition, now. The mesh root cmtc-mesh-root-ca lives 10 years in the control cluster only, the ClusterMesh and SPIRE intermediates 1 year, the ClusterMesh and ztunnel leaves 1 day (MESH_PKI.md). Negative hours to renewal: the renewal is overdue (CMTCCertificateRenewalOverdue).",
+      "title": "Mesh certificates, per cluster",
+      "description": "Each cert-manager Certificate: its issuer, hours until it expires and until cert-manager renews it, and its Ready condition, now. The mesh root cmtc-mesh-root-ca lives 10 years in the control cluster only, the ClusterMesh and SPIRE intermediates 1 year, the ClusterMesh and ztunnel leaves 1 day (MESH_PKI.md). Negative hours to renewal: the renewal is overdue (CMTCCertificateRenewalOverdue).",
       "id": 27,
       "datasource": {
         "type": "prometheus",
@@ -2263,8 +2263,8 @@
     },
     {
       "type": "stat",
-      "title": "ClusterIssuers not Ready · proposed",
-      "description": "Proposed: needs the cert-manager scrape job of deploy/. ClusterIssuers whose Ready condition is not True, per cluster, now: the mesh root, the per-cluster intermediates and the SPIRE issuer. Normal: 0 (CMTCClusterIssuerNotReady).",
+      "title": "ClusterIssuers not Ready",
+      "description": "ClusterIssuers whose Ready condition is not True, per cluster, now: the mesh root, the per-cluster intermediates and the SPIRE issuer. Normal: 0 (CMTCClusterIssuerNotReady).",
       "id": 28,
       "datasource": {
         "type": "prometheus",
@@ -2341,8 +2341,8 @@
     },
     {
       "type": "stat",
-      "title": "Hours until the soonest intermediate expires · proposed",
-      "description": "Proposed: needs the cert-manager scrape job of deploy/. Hours until the first of the cluster's ClusterMesh and SPIRE intermediate certificates expires, per cluster. They were issued for 1 year on 2026-10-26 and renew 30 days before they end.",
+      "title": "Hours until the soonest intermediate expires",
+      "description": "Hours until the first of the cluster's ClusterMesh and SPIRE intermediate certificates expires, per cluster. They were issued for 1 year on 2026-10-26 and renew 30 days before they end.",
       "id": 29,
       "datasource": {
         "type": "prometheus",
@@ -2424,8 +2424,8 @@
     },
     {
       "type": "stat",
-      "title": "Bundle reconcile errors, 1 hour · proposed",
-      "description": "Proposed: needs the trust-manager scrape job of deploy/. Failed reconciles of trust-manager's Bundle controller in the last hour, per cluster. The Bundle cmtc-mesh-root copies the mesh root into ConfigMap cmtc-mesh-root of every namespace labelled trust: enabled. Normal: 0 (CMTCTrustBundleReconcileFailing).",
+      "title": "Bundle reconcile errors, 1 hour",
+      "description": "Failed reconciles of trust-manager's Bundle controller in the last hour, per cluster. The Bundle cmtc-mesh-root copies the mesh root into ConfigMap cmtc-mesh-root of every namespace labelled trust: enabled. Normal: 0 (CMTCTrustBundleReconcileFailing).",
       "id": 30,
       "datasource": {
         "type": "prometheus",

@@ -33,7 +33,7 @@ Run these in order. `make lab-up` refuses to touch existing `cmtc-a` or
 |---|---|---|---|
 | 2.1 | `GITHUB_PATH=$(mktemp) bash scripts/lab/ci-bootstrap.sh` | Downloads pinned, checksum-verified Linux `kind`, `kubectl`, `cilium` and `helm` into `.tmp/bin`. Linux only (it uses `sha256sum` and Linux binaries). | `.tmp/bin` holds four executables. |
 | 2.2 | `make image` and `make capture-image` | Builds `cmtc:dev` and `cmtc-capture:dev`. | Both appear in `docker images`. |
-| 2.3 | `make lab-up` (`scripts/lab/up.sh`) | 1. Applies the clock fix (1.1). 2. Renders the pinned Cilium chart (`scripts/cilium/prepare.sh`). 3. Creates both clusters. 4. Installs Cilium and cert-manager, and builds the mesh PKI with `scripts/lab/pki/mesh-pki.sh` ([MESH_PKI.md](../../MESH_PKI.md)). 5. Joins the ClusterMesh. 6. Deploys CMTC and monitoring. | `scripts/cilium/verify.py` passes, and Prometheus and Grafana roll out. |
+| 2.3 | `make lab-up` (`scripts/lab/up.sh`) | 1. Applies the clock fix (1.1). 2. Renders the pinned Cilium chart (`scripts/cilium/prepare.sh`). 3. Creates both clusters. 4. Installs Cilium and cert-manager, and builds the mesh PKI with `scripts/lab/pki/mesh-pki.sh` ([MESH_PKI.md](../../MESH_PKI.md)). 5. Joins the ClusterMesh. 6. Deploys CMTC and the observability v2 release `cmtc-obs` on both clusters ([observability/v2/deploy/chart](../../observability/v2/deploy/chart/README.md)). | `scripts/cilium/verify.py` passes, and `helm upgrade --install cmtc-obs` completes with `--wait` on both clusters. |
 | 2.4 | `make lab-test` (`scripts/lab/test.sh`) | Test namespaces and traffic. | Local and cross-cluster Service and Pod IP traffic passes on ports 80, 8080 and 31337. |
 | 2.5 | `bash scripts/lab/load.sh start` | Starts bounded real traffic. | Load Jobs are running. |
 | 2.6 | `make lab-capture` (`scripts/lab/capture.sh`) | Runs the `cmtc-capture:dev` browser walk against Grafana while the load runs. | Screenshots are under `artifacts/screenshots/`. |
@@ -126,8 +126,8 @@ hubble --server localhost:4245 --tls --tls-ca-cert-files .tmp/mesh-root.crt \
 
 `hubble status` lists the nodes of both clusters (`<node>.<cluster>.hubble-grpc.cilium.io`). The UI is
 `kubectl --context kind-cmtc-a -n kube-system port-forward svc/hubble-ui 12000:80`, then <http://localhost:12000>.
-Hubble metrics (`hubble_*`, port 9965 on every agent) and Relay metrics (`hubble_relay_*`, 9966) are scraped by the lab
-Prometheus (`scripts/lab/monitoring.py`, jobs `hubble` and `hubble-relay`).
+Hubble metrics (`hubble_*`, port 9965 on every agent) and Relay metrics (`hubble_relay_*`, 9966) are scraped by the
+observability v2 release `cmtc-obs` (jobs `hubble` and `hubble-relay` of `observability/v2/deploy/chart`).
 
 ## 6. Remove the lab
 

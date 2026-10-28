@@ -1,7 +1,7 @@
 # cmtc-observability: how CMTC observability v2 is collected, evaluated and drawn, on kind and on OpenShift.
 # The metric names, their owners and their status are in metrics/contract.json; tests/test_deploy.py renders this
-# chart and checks every keep list below against it. Status: implemented-but-unexecuted (not installed on any
-# cluster); docs/COLLECTION.md lists what the owner measures after the first install.
+# chart and checks every keep list below against it. Deployed on the labs as release cmtc-obs (deploy/chart/README.md
+# says which revision); OpenShift is rendered and tested only.
 
 global:
   # -- false: kind. The chart renders a Prometheus of its own per cluster (and Grafana on the hub), in the release
@@ -22,9 +22,44 @@ hub:
   expectedClusters: []
 
 remoteWrite:
-  # -- kind, on every cluster except the hub: the hub's remote-write URL, for example
-  # http://172.18.0.3:30900/api/v1/write. Empty sends nothing.
+  # -- kind, on every cluster except the hub: the hub's remote-write URL, https://<ingress.prometheus.host of the
+  # hub>/api/v1/write. Empty sends nothing.
   url: ""
+  # -- A ConfigMap in the release namespace with the CA that signs the hub's certificate; the remote write verifies
+  # the hub against it. Empty: the image's system roots. The labs: trust-manager's cmtc-mesh-root (key ca.crt),
+  # which reaches a namespace labelled trust=enabled.
+  caConfigMap:
+    name: ""
+    key: ca.crt
+
+ingress:
+  # -- kind hub only: an Ingress for the remote-write receiver and one for Grafana. Without it both stay ClusterIP
+  # Services, reached by kubectl port-forward.
+  enabled: false
+  # -- The IngressClass: cilium, Cilium's Ingress controller, on the labs. Any other controller's class works.
+  className: cilium
+  # -- Annotations on both Ingresses, for the controller (for Cilium, ingress.cilium.io/* and lbipam.cilium.io/*).
+  annotations: {}
+  prometheus:
+    # -- The host the other clusters remote-write to. Only /api/v1/write is routed: the query API stays inside the
+    # cluster. Empty: no Ingress for Prometheus.
+    host: ""
+  grafana:
+    # -- Grafana's host, routed at /. Empty: no Ingress for Grafana.
+    host: ""
+  tls:
+    # -- Serve the hosts over TLS only.
+    enabled: true
+    # -- An existing kubernetes.io/tls Secret in the release namespace with a certificate for the hosts. Set: the
+    # chart renders no Certificate.
+    secretName: ""
+    certManager:
+      # -- Without secretName: the issuer of the chart's cert-manager Certificate <release>-ingress, which writes
+      # the Secret <release>-ingress-tls. Required then.
+      issuerRef:
+        name: ""
+        kind: ClusterIssuer
+        group: cert-manager.io
 
 prometheus:
   # -- Prometheus 3.7.0, by digest: the image both labs run (Pod status, 2026-10-27).
@@ -36,9 +71,6 @@ prometheus:
   # -- The longest rule window is 6 h (rules/cmtc-slo.rules.yaml); 7 h keeps it whole. The 30-day error budget of
   # docs/METRICS_AND_SLOS.md needs a long-term store, which kind does not have.
   retention: 7h
-  # -- The NodePort of the hub's Prometheus, which the other clusters remote-write to. Other clusters get a
-  # ClusterIP Service only.
-  nodePort: 30900
   resources:
     requests: {cpu: 100m, memory: 256Mi}
     limits: {memory: 1Gi}
@@ -99,6 +131,11 @@ jobs:
     namespace: cmtc-system
     keep:
       - cmtc_enforcement_available
+      - cmtc_issuer_approval_expiry_timestamp_seconds
+      - cmtc_issuer_approval_generation
+      - cmtc_issuer_approval_node_reports
+      - cmtc_issuer_approval_passes_total
+      - cmtc_issuer_approval_phase
       - cmtc_issuer_profile_acknowledged_valid_until_timestamp_seconds
       - cmtc_issuer_profile_approval_generation
       - cmtc_issuer_profile_approval_valid_until_timestamp_seconds
@@ -129,8 +166,7 @@ jobs:
       - cmtc_policy_evaluations_total
       - controller_runtime_reconcile_errors_total
       - leader_election_master_status
-  # -- Cilium agent (fork): hostNetwork, port prometheus (9962). The lab's hand-patched job keeps only
-  # cilium_ztunnel_.*|cmtc_.*; this one adds the drop and forward counters.
+  # -- Cilium agent (fork): hostNetwork, container port prometheus (9962) of DaemonSet cilium.
   ciliumAgent:
     enabled: true
     namespace: kube-system
@@ -151,6 +187,27 @@ jobs:
       - cilium_ztunnel_zds_connection_active
       - cilium_ztunnel_zds_enrollment_failures_total
       - cilium_ztunnel_zds_enrollment_total
+  # -- Hubble in the Cilium agent: hostNetwork, container port hubble-metrics (9965) of DaemonSet cilium
+  # (config/lab/cilium/base.yaml, hubble.metrics). Labelled by workload and namespace, never by Pod.
+  hubble:
+    enabled: true
+    namespace: kube-system
+    keep:
+      - hubble_drop_total
+      - hubble_flows_processed_total
+      - hubble_flows_to_world_total
+      - hubble_icmp_total
+      - hubble_lost_events_total
+      - hubble_policy_verdicts_total
+      - hubble_port_distribution_total
+      - hubble_tcp_flags_total
+  # -- Hubble Relay: Pods labelled k8s-app=hubble-relay, port prometheus (9966). The Relay runs in the control
+  # cluster only (cmtc-a on the labs), so on the other clusters this job finds no target and scrapes nothing.
+  hubbleRelay:
+    enabled: true
+    namespace: kube-system
+    keep:
+      - hubble_relay_pool_peer_connection_status
   # -- ztunnel (fork): DaemonSet ztunnel-cilium, Pod IP port 15020, /stats/prometheus. The container declares no
   # port, so the address is set from the Pod IP.
   ztunnel:
@@ -160,9 +217,15 @@ jobs:
       - istio_crl_enforcement_delay_seconds
       - istio_crl_policy_rejections_total
       - istio_crl_untracked_connections_total
+      - istio_tcp_connections_closed_total
       - istio_tcp_connections_failed_total
       - istio_tcp_connections_opened_total
+      - istio_tcp_received_bytes_total
+      - istio_tcp_sent_bytes_total
+      - istio_tls_connections_active
+      - istio_tls_handshake_duration_seconds
       - istio_tls_handshakes_total
+      - istio_xds_connection_terminations_total
       - istio_xds_message_total
       - workload_manager_active_proxy_count
       - workload_manager_pending_proxy_count

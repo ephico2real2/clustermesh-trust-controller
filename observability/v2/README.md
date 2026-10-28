@@ -1,22 +1,27 @@
 # CMTC observability v2
 
-**Status, 2026-10-27:** implemented in this folder and checked by the tests below on macOS. Not installed on a
-cluster and not traffic-qualified. Tracking issue: #37. The owner reviews and commits it.
+**Status, 2026-10-28:** deployed on both labs and checked by the tests below. The Helm release `cmtc-obs`
+(namespace `monitoring`, revision 2, installed 2026-10-28T07:23Z) runs the hub on kind-cmtc-a (Prometheus, the
+rules and Grafana, behind Cilium Ingress) and a member Prometheus on kind-cmtc-b, which remote-writes to the hub. At
+2026-10-28T17:03Z every target of the enabled jobs answered (17 on cmtc-a, 16 on cmtc-b) and the hub held both
+clusters' series. Not traffic-qualified: no dashboard has been checked under load in both themes. Tracking issue:
+#37. The deployed state and its pins are in [the delivery status](../../docs/agile/DELIVERY_STATUS.md).
 
 v2 replaces the v1 design in `observability/`: `capabilities.json`, `metrics.json`, the eleven dashboards and
-`prometheus/`. v1 stays in place until the steps of [the migration plan](docs/MIGRATION.md) run.
+`prometheus/`. The v1 lab Prometheus and Grafana (`scripts/lab/monitoring.py`) no longer run on the labs; the v1
+files stay in the repository until they are migrated.
 
 ## The parts and their state
 
 | Part | What it holds | State |
 | --- | --- | --- |
-| [`metrics/`](metrics/) | `contract.json`: one entry for each metric, 84 in all, and its JSON schema | Implemented and tested here |
-| [`rules/`](rules/) | 9 rule files (49 alerts, 45 recording rules); 5 files in `proposed/` (20 alerts, 20 recording rules) on metrics that need a source change; 14 `promtool` test files | Implemented and tested here with promtool 3.7.0; not deployed |
-| [`dashboards/grafana/`](dashboards/grafana/) | 5 Grafana dashboards: 118 panels that draw data, 30 text panels | Implemented and tested here; every query run read-only on the lab hub ([live results](docs/METRICS_AND_SLOS.md#live-results)) |
+| [`metrics/`](metrics/) | `contract.json`: one entry for each metric, 104 in all, and its JSON schema | Implemented and tested; collection checked against the deployed hub |
+| [`rules/`](rules/) | 9 rule files (49 alerts, 45 recording rules); 5 files in `proposed/` (20 alerts, 20 recording rules) on metrics that need a source change; 14 `promtool` test files | Tested with promtool 3.7.0; the 9 files are deployed on the hub, `proposed/` is not (`rules.includeProposed` false) |
+| [`dashboards/grafana/`](dashboards/grafana/) | 5 Grafana dashboards: 118 panels that draw data, 30 text panels | Tested here; deployed in the hub's Grafana. Revision 2 still marks 56 panels and 15 rows ` · proposed`, which the hub now collects; the next upgrade removes the markers |
 | [`dashboards/perses/`](dashboards/perses/) | The Perses form, generated from the Grafana JSON | Generated and tested here; not loaded in an OpenShift console |
-| [`deploy/`](deploy/) | The Helm chart `cmtc-observability`, for kind (hub and member) and OpenShift | Implemented, rendered and tested here; not installed |
+| [`deploy/`](deploy/) | The Helm chart `cmtc-observability`, for kind (hub and member) and OpenShift | Deployed on kind-cmtc-a and kind-cmtc-b; the OpenShift form is rendered and tested only |
 | [`tests/`](tests/) | The validators: contract, rules, dashboards, chart | Implemented and run here |
-| [`docs/`](docs/) | [Metrics and service objectives](docs/METRICS_AND_SLOS.md), [collection](docs/COLLECTION.md), [migration from v1](docs/MIGRATION.md), figures | Written here |
+| `docs/` | The metrics and service objectives guide, the collection guide, the migration plan from v1 and the signal-flow figure | Not written: these files were never committed |
 | [`source-patches/`](source-patches/) | Patches against the deployed fork and CMTC commits, each with its unit test | UNEXECUTED: not compiled, unit tests not run |
 
 There is no `collectors/` folder. Each signal has an exporter in the process that observes it, so a collector of
@@ -76,8 +81,8 @@ contract, and every question must have its row.
 
 | Class | Meaning | Title marker |
 | --- | --- | --- |
-| current | The deployed source emits it, and the labs scrape it today | none |
-| proposed | The deployed source emits it; it is collected once `deploy/` is installed | ` · proposed` |
+| current | The deployed source emits it, and the hub collects it (contract `collection: scraped`) | none |
+| proposed | The deployed source emits it, and no enabled job of `deploy/` collects it | ` · proposed` |
 | planned | It needs a source change first: a patch in `source-patches/`, or the measurement plane of #36 | ` · planned` |
 
 The tests compute the class of each panel from its queries and the contract. A panel takes the class of its least
@@ -93,25 +98,22 @@ and platform stages support it. The counts are metric entries of the contract, b
 | --- | --- | --- | --- | --- | --- |
 | intent | Which namespaces CMTC selects for protection | CMTC controller | 6 | 0 | 0 |
 | inventory | What the node agent observes on its node; never enforcement | CMTC node agent | 2 | 0 | 0 |
-| enrollment | Capture and ZDS enrollment of a Pod into ztunnel, and its in-Pod proxy | Cilium agent, ztunnel | 4 | 2 | 0 |
+| enrollment | Capture and ZDS enrollment of a Pod into ztunnel, and its in-Pod proxy | Cilium agent, ztunnel | 6 | 0 | 0 |
 | identity | The workload certificates ztunnel fetches, and the CA that signs them | SPIRE server, SPIRE agent | 0 | 0 | 3 |
 | admission | The callers the Cilium agent admits into effective plans | Cilium agent | 3 | 0 | 1 |
-| publication | Effective plans published to ztunnel over xDS, and their acknowledgment | Cilium agent, ztunnel | 2 | 1 | 3 |
+| publication | Effective plans published to ztunnel over xDS, and their acknowledgment | Cilium agent, ztunnel | 4 | 0 | 3 |
 | release | Quarantine release of a Required workload | Cilium agent | 0 | 0 | 1 |
-| traffic | Connections opened and failed, TLS handshakes, datapath drops | ztunnel, Cilium agent | 0 | 5 | 0 |
-| revocation | Certificate revocation and policy narrowing reaching the datapath | ztunnel | 0 | 2 | 1 |
-| trust | The issuer profile CMTC publishes, and the approval it pins (ADR-010) | CMTC controller | 4 | 0 | 5 |
-| pki | The mesh PKI of ADR-011: Certificates and the trust-manager Bundle | cert-manager, trust-manager | 0 | 5 | 0 |
-| dns | CoreDNS on the server side, the measurement plane on the client side | CoreDNS, CMTC node agent | 0 | 12 | 5 |
+| traffic | Connections opened, closed and failed, bytes, TLS handshakes and sessions, datapath drops, Hubble flows | ztunnel, Cilium agent, Hubble | 17 | 0 | 0 |
+| revocation | Certificate revocation and policy narrowing reaching the datapath | ztunnel | 2 | 0 | 1 |
+| trust | The issuer profile CMTC publishes, and the approval it pins (ADR-010) | CMTC controller | 9 | 0 | 5 |
+| pki | The mesh PKI of ADR-011: Certificates and the trust-manager Bundle | cert-manager, trust-manager | 5 | 0 | 0 |
+| dns | CoreDNS on the server side, the measurement plane on the client side | CoreDNS, CMTC node agent | 12 | 0 | 5 |
 | measurement | The eBPF measurement plane of ADR-005 itself | CMTC node agent | 0 | 0 | 7 |
-| collection | Scrapes, remote write to the hub, alert evaluation | Prometheus | 1 | 5 | 0 |
-| platform | Process IDs, reconcile errors, leadership | CMTC controller, kubelet | 2 | 2 | 0 |
-| **all** | | | **24** | **34** | **26** |
+| collection | Scrapes, remote write to the hub, alert evaluation, events Hubble lost | Prometheus, Hubble | 7 | 0 | 0 |
+| platform | Process IDs, reconcile errors, leadership, Hubble Relay peers | CMTC controller, kubelet, Hubble Relay | 5 | 0 | 0 |
+| **all** | | | **78** | **0** | **26** |
 
-![Signal flow: each component's exporter, the scrape in its cluster, remote write to the hub, rules and dashboards](docs/figures/signal-flow.light.png)
-
-The figure source is [docs/figures/source.html](docs/figures/source.html). [docs/METRICS_AND_SLOS.md](docs/METRICS_AND_SLOS.md)
-maps each question to its metrics.
+The contract's `questions` map each question to its dashboard rows, and each entry's `questions` to its metrics.
 
 ## Rules that every part keeps
 
@@ -140,7 +142,7 @@ PROMTOOL=/path/to/promtool rules/run-promtool.sh
 ```
 
 CI does not run these tests yet: `unittest discover -s observability` does not enter `v2/tests`, which is not a
-package. [The migration plan](docs/MIGRATION.md) adds the step.
+package.
 
 ## Change something
 

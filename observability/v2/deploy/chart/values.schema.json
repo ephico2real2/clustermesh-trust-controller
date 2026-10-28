@@ -8,6 +8,7 @@
     "clusterName",
     "hub",
     "remoteWrite",
+    "ingress",
     "prometheus",
     "grafana",
     "rules",
@@ -57,12 +58,134 @@
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "url"
+        "url",
+        "caConfigMap"
       ],
       "properties": {
         "url": {
           "type": "string",
           "pattern": "^(https?://[^\\s]+/api/v1/write)?$"
+        },
+        "caConfigMap": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "key"
+          ],
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "key": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      }
+    },
+    "ingress": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "enabled",
+        "className",
+        "annotations",
+        "prometheus",
+        "grafana",
+        "tls"
+      ],
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "className": {
+          "type": "string",
+          "pattern": "^[a-z0-9]([-a-z0-9.]*[a-z0-9])?$"
+        },
+        "annotations": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "prometheus": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "host"
+          ],
+          "properties": {
+            "host": {
+              "type": "string",
+              "pattern": "^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)+)?$"
+            }
+          }
+        },
+        "grafana": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "host"
+          ],
+          "properties": {
+            "host": {
+              "type": "string",
+              "pattern": "^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)+)?$"
+            }
+          }
+        },
+        "tls": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "enabled",
+            "secretName",
+            "certManager"
+          ],
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "secretName": {
+              "type": "string"
+            },
+            "certManager": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "issuerRef"
+              ],
+              "properties": {
+                "issuerRef": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "name",
+                    "kind",
+                    "group"
+                  ],
+                  "properties": {
+                    "name": {
+                      "type": "string"
+                    },
+                    "kind": {
+                      "type": "string",
+                      "enum": [
+                        "ClusterIssuer",
+                        "Issuer"
+                      ]
+                    },
+                    "group": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  }
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -74,7 +197,6 @@
         "scrapeInterval",
         "evaluationInterval",
         "retention",
-        "nodePort",
         "resources"
       ],
       "properties": {
@@ -93,11 +215,6 @@
         "retention": {
           "type": "string",
           "pattern": "^[0-9]+(ms|s|m|h|d)$"
-        },
-        "nodePort": {
-          "type": "integer",
-          "minimum": 30000,
-          "maximum": 32767
         },
         "resources": {
           "type": "object"
@@ -215,6 +332,8 @@
       "required": [
         "cmtc",
         "ciliumAgent",
+        "hubble",
+        "hubbleRelay",
         "ztunnel",
         "coredns",
         "certManager",
@@ -253,6 +372,60 @@
           }
         },
         "ciliumAgent": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "enabled",
+            "namespace",
+            "keep"
+          ],
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "namespace": {
+              "type": "string",
+              "pattern": "^[a-z0-9]([-a-z0-9]*[a-z0-9])?$"
+            },
+            "keep": {
+              "type": "array",
+              "minItems": 1,
+              "uniqueItems": true,
+              "items": {
+                "type": "string",
+                "pattern": "^[a-zA-Z_:][a-zA-Z0-9_:]*$"
+              }
+            }
+          }
+        },
+        "hubble": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "enabled",
+            "namespace",
+            "keep"
+          ],
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "namespace": {
+              "type": "string",
+              "pattern": "^[a-z0-9]([-a-z0-9]*[a-z0-9])?$"
+            },
+            "keep": {
+              "type": "array",
+              "minItems": 1,
+              "uniqueItems": true,
+              "items": {
+                "type": "string",
+                "pattern": "^[a-zA-Z_:][a-zA-Z0-9_:]*$"
+              }
+            }
+          }
+        },
+        "hubbleRelay": {
           "type": "object",
           "additionalProperties": false,
           "required": [

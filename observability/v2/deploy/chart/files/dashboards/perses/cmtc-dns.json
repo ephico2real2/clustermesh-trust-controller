@@ -8,8 +8,8 @@
       "kind": "Panel",
       "spec": {
         "display": {
-          "name": "CoreDNS replicas scraped \u00b7 proposed",
-          "description": "Proposed: needs the coredns scrape job of deploy/. CoreDNS Pods that answered their last scrape, per cluster. The lab runs 2 per cluster."
+          "name": "CoreDNS replicas scraped",
+          "description": "CoreDNS Pods that answered their last scrape, per cluster. The lab runs 2 per cluster."
         },
         "plugin": {
           "kind": "StatChart",
@@ -73,8 +73,8 @@
       "kind": "Panel",
       "spec": {
         "display": {
-          "name": "Nodes running CoreDNS \u00b7 proposed",
-          "description": "Proposed: needs the coredns scrape job of deploy/. Nodes that run a scraped CoreDNS replica, per cluster. 1 with 2 replicas means one node failure stops resolution for the cluster (CoreDNSReplicasOnOneNode); both lab clusters run both on the control plane."
+          "name": "Nodes running CoreDNS",
+          "description": "Nodes that run a scraped CoreDNS replica, per cluster. 1 with 2 replicas means one node failure stops resolution for the cluster (CoreDNSReplicasOnOneNode); both lab clusters run both on the control plane."
         },
         "plugin": {
           "kind": "StatChart",
@@ -142,8 +142,8 @@
       "kind": "Panel",
       "spec": {
         "display": {
-          "name": "SERVFAIL share, 5 minutes \u00b7 proposed",
-          "description": "Proposed: needs the coredns scrape job of deploy/. SERVFAIL answers as a share of all answers, per cluster. Normal: 0 %. Above 1 % for 5 minutes: CoreDNSServfailHigh."
+          "name": "SERVFAIL share, 5 minutes",
+          "description": "SERVFAIL answers as a share of all answers, per cluster. Normal: 0 %. Above 1 % for 5 minutes: CoreDNSServfailHigh."
         },
         "plugin": {
           "kind": "StatChart",
@@ -212,8 +212,8 @@
       "kind": "Panel",
       "spec": {
         "display": {
-          "name": "NXDOMAIN share, 5 minutes \u00b7 proposed",
-          "description": "Proposed: needs the coredns scrape job of deploy/. NXDOMAIN answers as a share of all answers, per cluster. High is normal: each lookup of a short name tries the search domains first. On 2026-10-25 a cmtc-a replica had answered 107020 NXDOMAIN and 59271 NOERROR. Recorded, not alerted."
+          "name": "NXDOMAIN share, 5 minutes",
+          "description": "NXDOMAIN answers as a share of all answers, per cluster. High is normal: each lookup of a short name tries the search domains first. On 2026-10-25 a cmtc-a replica had answered 107020 NXDOMAIN and 59271 NOERROR. Recorded, not alerted."
         },
         "plugin": {
           "kind": "StatChart",
@@ -274,8 +274,8 @@
       "kind": "Panel",
       "spec": {
         "display": {
-          "name": "Answers per second \u00b7 proposed",
-          "description": "Proposed: needs the coredns scrape job of deploy/. Answers CoreDNS sent, all response codes, per cluster, 5 minute rate."
+          "name": "Answers per second",
+          "description": "Answers CoreDNS sent, all response codes, per cluster, 5 minute rate."
         },
         "plugin": {
           "kind": "TimeSeriesChart",
@@ -352,8 +352,8 @@
       "kind": "Panel",
       "spec": {
         "display": {
-          "name": "Requests per second \u00b7 proposed",
-          "description": "Proposed: needs the coredns scrape job of deploy/. Requests CoreDNS received, all record types and transports, per cluster, 5 minute rate. It equals answers per second when every request is answered."
+          "name": "Requests per second",
+          "description": "Requests CoreDNS received, all record types and transports, per cluster, 5 minute rate. It equals answers per second when every request is answered."
         },
         "plugin": {
           "kind": "TimeSeriesChart",
@@ -430,8 +430,8 @@
       "kind": "Panel",
       "spec": {
         "display": {
-          "name": "Answers in the last hour, by response code \u00b7 proposed",
-          "description": "Proposed: needs the coredns scrape job of deploy/. Answers by response code over the last hour. A code appears once CoreDNS first sent it."
+          "name": "Answers in the last hour, by response code",
+          "description": "Answers by response code over the last hour. A code appears once CoreDNS first sent it."
         },
         "plugin": {
           "kind": "Table",
@@ -512,8 +512,8 @@
       "kind": "Panel",
       "spec": {
         "display": {
-          "name": "Requests in the last hour, by record type and transport \u00b7 proposed",
-          "description": "Proposed: needs the coredns scrape job of deploy/. Requests by record type (A, AAAA, SRV, other) and transport (udp, tcp) over the last hour."
+          "name": "Requests in the last hour, by record type and transport",
+          "description": "Requests by record type (A, AAAA, SRV, other) and transport (udp, tcp) over the last hour."
         },
         "plugin": {
           "kind": "Table",
@@ -612,8 +612,8 @@
       "kind": "Panel",
       "spec": {
         "display": {
-          "name": "Answer time, median, seconds \u00b7 proposed",
-          "description": "Proposed: needs the coredns scrape job of deploy/. Median time CoreDNS took to answer, per cluster, from its histogram over 5 minutes (buckets from 0.25 ms). No value when nothing was answered."
+          "name": "Answer time, median, seconds",
+          "description": "Median time CoreDNS took to answer, per cluster, from its histogram over 5 minutes (buckets from 0.25 ms). No value when nothing was answered."
         },
         "plugin": {
           "kind": "TimeSeriesChart",
@@ -690,8 +690,8 @@
       "kind": "Panel",
       "spec": {
         "display": {
-          "name": "Answer time, 99th percentile, seconds \u00b7 proposed",
-          "description": "Proposed: needs the coredns scrape job of deploy/. 99th percentile answer time, per cluster, 5 minutes. The latency objective is 99 % within 64 ms (docs/METRICS_AND_SLOS.md)."
+          "name": "Answer time, 99th percentile, seconds",
+          "description": "99th percentile answer time, per cluster, 5 minutes. The latency objective is 99 % within 64 ms (docs/METRICS_AND_SLOS.md)."
         },
         "plugin": {
           "kind": "TimeSeriesChart",
@@ -768,8 +768,8 @@
       "kind": "Panel",
       "spec": {
         "display": {
-          "name": "Each CoreDNS replica, now \u00b7 proposed",
-          "description": "Proposed: needs the coredns scrape job of deploy/. One row per replica over the last 5 minutes: answers per second, median and 99th percentile answer time, SERVFAIL per second, cache hit share, CPU cores and resident memory. Replicas of a cluster should read alike."
+          "name": "Each CoreDNS replica, now",
+          "description": "One row per replica over the last 5 minutes: answers per second, median and 99th percentile answer time, SERVFAIL per second, cache hit share, CPU cores and resident memory. Replicas of a cluster should read alike."
         },
         "plugin": {
           "kind": "Table",
@@ -1006,8 +1006,8 @@
       "kind": "Panel",
       "spec": {
         "display": {
-          "name": "Forwarded queries per second \u00b7 proposed",
-          "description": "Proposed: needs the coredns scrape job of deploy/. Queries CoreDNS forwarded to its upstream resolvers (names outside the cluster), per cluster, 5 minute rate."
+          "name": "Forwarded queries per second",
+          "description": "Queries CoreDNS forwarded to its upstream resolvers (names outside the cluster), per cluster, 5 minute rate."
         },
         "plugin": {
           "kind": "TimeSeriesChart",
@@ -1084,8 +1084,8 @@
       "kind": "Panel",
       "spec": {
         "display": {
-          "name": "Forward answer time, 99th percentile, seconds \u00b7 proposed",
-          "description": "Proposed: needs the coredns scrape job of deploy/. 99th percentile time the upstream took to answer, per cluster, 5 minutes."
+          "name": "Forward answer time, 99th percentile, seconds",
+          "description": "99th percentile time the upstream took to answer, per cluster, 5 minutes."
         },
         "plugin": {
           "kind": "TimeSeriesChart",
@@ -1162,8 +1162,8 @@
       "kind": "Panel",
       "spec": {
         "display": {
-          "name": "Forwarded answers in the last hour, by upstream and response code \u00b7 proposed",
-          "description": "Proposed: needs the coredns scrape job of deploy/. Upstream answers by upstream address and response code over the last hour."
+          "name": "Forwarded answers in the last hour, by upstream and response code",
+          "description": "Upstream answers by upstream address and response code over the last hour."
         },
         "plugin": {
           "kind": "Table",
@@ -1248,8 +1248,8 @@
       "kind": "Panel",
       "spec": {
         "display": {
-          "name": "Faults in the last hour, per replica \u00b7 proposed",
-          "description": "Proposed: needs the coredns scrape job of deploy/. Per replica over the last hour: forward health checks that found every upstream broken, queries refused at the forward concurrency limit, recovered panics and failed Corefile reloads. All 0 is normal; each has its own alert."
+          "name": "Faults in the last hour, per replica",
+          "description": "Per replica over the last hour: forward health checks that found every upstream broken, queries refused at the forward concurrency limit, recovered panics and failed Corefile reloads. All 0 is normal; each has its own alert."
         },
         "plugin": {
           "kind": "Table",
@@ -1733,8 +1733,8 @@
       "kind": "Panel",
       "spec": {
         "display": {
-          "name": "Packets dropped for policy per second, egress \u00b7 proposed",
-          "description": "Proposed: needs cilium_drop_count_total and cilium_forward_count_total in the cilium-native keep list of deploy/. Packets the Cilium datapath dropped leaving a Pod with reason Policy denied, per cluster, 5 minute rate. The 2026-10-25 DNS drops were of this kind; the counter cannot tell DNS from other traffic."
+          "name": "Packets dropped for policy per second, egress",
+          "description": "Packets the Cilium datapath dropped leaving a Pod with reason Policy denied, per cluster, 5 minute rate. The 2026-10-25 DNS drops were of this kind; the counter cannot tell DNS from other traffic."
         },
         "plugin": {
           "kind": "TimeSeriesChart",
@@ -1811,8 +1811,8 @@
       "kind": "Panel",
       "spec": {
         "display": {
-          "name": "Packets forwarded per second \u00b7 proposed",
-          "description": "Proposed: needs cilium_drop_count_total and cilium_forward_count_total in the cilium-native keep list of deploy/. Packets the Cilium datapath forwarded, both directions, per cluster, 5 minute rate: the scale for the drops beside it."
+          "name": "Packets forwarded per second",
+          "description": "Packets the Cilium datapath forwarded, both directions, per cluster, 5 minute rate: the scale for the drops beside it."
         },
         "plugin": {
           "kind": "TimeSeriesChart",
@@ -1889,8 +1889,8 @@
       "kind": "Panel",
       "spec": {
         "display": {
-          "name": "Drops in the last hour, by node, direction and reason \u00b7 proposed",
-          "description": "Proposed: needs cilium_drop_count_total and cilium_forward_count_total in the cilium-native keep list of deploy/. Dropped packets by node, direction and reason over the last hour."
+          "name": "Drops in the last hour, by node, direction and reason",
+          "description": "Dropped packets by node, direction and reason over the last hour."
         },
         "plugin": {
           "kind": "Table",
@@ -1995,7 +1995,7 @@
       "kind": "Grid",
       "spec": {
         "display": {
-          "title": "Is CoreDNS answering? \u00b7 proposed",
+          "title": "Is CoreDNS answering?",
           "collapse": {
             "open": true
           }
@@ -2089,7 +2089,7 @@
       "kind": "Grid",
       "spec": {
         "display": {
-          "title": "Is CoreDNS fast? \u00b7 proposed",
+          "title": "Is CoreDNS fast?",
           "collapse": {
             "open": true
           }
@@ -2138,7 +2138,7 @@
       "kind": "Grid",
       "spec": {
         "display": {
-          "title": "Are the upstream resolvers healthy? \u00b7 proposed",
+          "title": "Are the upstream resolvers healthy?",
           "collapse": {
             "open": true
           }
@@ -2254,7 +2254,7 @@
       "kind": "Grid",
       "spec": {
         "display": {
-          "title": "Is Cilium dropping traffic? \u00b7 proposed",
+          "title": "Is Cilium dropping traffic?",
           "collapse": {
             "open": true
           }

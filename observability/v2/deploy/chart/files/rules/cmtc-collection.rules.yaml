@@ -29,7 +29,7 @@ groups:
   # expected-nodes:end
 
   - alert: CMTCScrapeTargetDown
-    expr: up{job=~"cmtc|cilium-native|ztunnel|coredns|cert-manager|trust-manager|cadvisor|spire-server|spire-agent|prometheus"} == 0
+    expr: up{job=~"cmtc|cilium-native|hubble|hubble-relay|ztunnel|coredns|cert-manager|trust-manager|cadvisor|spire-server|spire-agent|prometheus"} == 0
     for: 2m
     labels:
       severity: warning

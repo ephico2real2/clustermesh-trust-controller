@@ -70,7 +70,8 @@ class Rules(unittest.TestCase):
                                                           "in rules/proposed/")
 
     def test_label_values_are_in_the_contract(self):
-        """A value a matcher names is one the contract lists, or one a source patch adds (proposed_values)."""
+        """A value a matcher names is one the contract lists, or one a source change adds (proposed_values with its
+        patch, planned_values without one)."""
         for path, _, rule in model.rules():
             for name, job_matchers, _ in model.occurrences(rule["expr"]):
                 metrics = [m for n in model.resolve(name) for m in model.entries()[n]
@@ -83,7 +84,8 @@ class Rules(unittest.TestCase):
                         if label not in labels or "values" not in labels[label]:
                             continue
                         values = literal_alternatives(value) if op == "=~" else [value]
-                        allowed = set(labels[label]["values"]) | set(labels[label].get("proposed_values", []))
+                        allowed = (set(labels[label]["values"]) | set(labels[label].get("proposed_values", []))
+                                   | set(labels[label].get("planned_values", [])))
                         for v in values or []:
                             with self.subTest(file=path.name, metric=metric["name"], label=label, value=v):
                                 self.assertIn(v, allowed)

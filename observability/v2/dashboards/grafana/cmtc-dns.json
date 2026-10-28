@@ -69,7 +69,7 @@
   "panels": [
     {
       "type": "row",
-      "title": "Is CoreDNS answering? · proposed",
+      "title": "Is CoreDNS answering?",
       "id": 1,
       "collapsed": false,
       "gridPos": {
@@ -82,8 +82,8 @@
     },
     {
       "type": "stat",
-      "title": "CoreDNS replicas scraped · proposed",
-      "description": "Proposed: needs the coredns scrape job of deploy/. CoreDNS Pods that answered their last scrape, per cluster. The lab runs 2 per cluster.",
+      "title": "CoreDNS replicas scraped",
+      "description": "CoreDNS Pods that answered their last scrape, per cluster. The lab runs 2 per cluster.",
       "id": 2,
       "datasource": {
         "type": "prometheus",
@@ -160,8 +160,8 @@
     },
     {
       "type": "stat",
-      "title": "Nodes running CoreDNS · proposed",
-      "description": "Proposed: needs the coredns scrape job of deploy/. Nodes that run a scraped CoreDNS replica, per cluster. 1 with 2 replicas means one node failure stops resolution for the cluster (CoreDNSReplicasOnOneNode); both lab clusters run both on the control plane.",
+      "title": "Nodes running CoreDNS",
+      "description": "Nodes that run a scraped CoreDNS replica, per cluster. 1 with 2 replicas means one node failure stops resolution for the cluster (CoreDNSReplicasOnOneNode); both lab clusters run both on the control plane.",
       "id": 3,
       "datasource": {
         "type": "prometheus",
@@ -242,8 +242,8 @@
     },
     {
       "type": "stat",
-      "title": "SERVFAIL share, 5 minutes · proposed",
-      "description": "Proposed: needs the coredns scrape job of deploy/. SERVFAIL answers as a share of all answers, per cluster. Normal: 0 %. Above 1 % for 5 minutes: CoreDNSServfailHigh.",
+      "title": "SERVFAIL share, 5 minutes",
+      "description": "SERVFAIL answers as a share of all answers, per cluster. Normal: 0 %. Above 1 % for 5 minutes: CoreDNSServfailHigh.",
       "id": 4,
       "datasource": {
         "type": "prometheus",
@@ -325,8 +325,8 @@
     },
     {
       "type": "stat",
-      "title": "NXDOMAIN share, 5 minutes · proposed",
-      "description": "Proposed: needs the coredns scrape job of deploy/. NXDOMAIN answers as a share of all answers, per cluster. High is normal: each lookup of a short name tries the search domains first. On 2026-10-25 a cmtc-a replica had answered 107020 NXDOMAIN and 59271 NOERROR. Recorded, not alerted.",
+      "title": "NXDOMAIN share, 5 minutes",
+      "description": "NXDOMAIN answers as a share of all answers, per cluster. High is normal: each lookup of a short name tries the search domains first. On 2026-10-25 a cmtc-a replica had answered 107020 NXDOMAIN and 59271 NOERROR. Recorded, not alerted.",
       "id": 5,
       "datasource": {
         "type": "prometheus",
@@ -400,8 +400,8 @@
     },
     {
       "type": "timeseries",
-      "title": "Answers per second · proposed",
-      "description": "Proposed: needs the coredns scrape job of deploy/. Answers CoreDNS sent, all response codes, per cluster, 5 minute rate.",
+      "title": "Answers per second",
+      "description": "Answers CoreDNS sent, all response codes, per cluster, 5 minute rate.",
       "id": 6,
       "datasource": {
         "type": "prometheus",
@@ -511,8 +511,8 @@
     },
     {
       "type": "timeseries",
-      "title": "Requests per second · proposed",
-      "description": "Proposed: needs the coredns scrape job of deploy/. Requests CoreDNS received, all record types and transports, per cluster, 5 minute rate. It equals answers per second when every request is answered.",
+      "title": "Requests per second",
+      "description": "Requests CoreDNS received, all record types and transports, per cluster, 5 minute rate. It equals answers per second when every request is answered.",
       "id": 7,
       "datasource": {
         "type": "prometheus",
@@ -622,8 +622,8 @@
     },
     {
       "type": "table",
-      "title": "Answers in the last hour, by response code · proposed",
-      "description": "Proposed: needs the coredns scrape job of deploy/. Answers by response code over the last hour. A code appears once CoreDNS first sent it.",
+      "title": "Answers in the last hour, by response code",
+      "description": "Answers by response code over the last hour. A code appears once CoreDNS first sent it.",
       "id": 8,
       "datasource": {
         "type": "prometheus",
@@ -741,8 +741,8 @@
     },
     {
       "type": "table",
-      "title": "Requests in the last hour, by record type and transport · proposed",
-      "description": "Proposed: needs the coredns scrape job of deploy/. Requests by record type (A, AAAA, SRV, other) and transport (udp, tcp) over the last hour.",
+      "title": "Requests in the last hour, by record type and transport",
+      "description": "Requests by record type (A, AAAA, SRV, other) and transport (udp, tcp) over the last hour.",
       "id": 9,
       "datasource": {
         "type": "prometheus",
@@ -883,7 +883,7 @@
     },
     {
       "type": "row",
-      "title": "Is CoreDNS fast? · proposed",
+      "title": "Is CoreDNS fast?",
       "id": 11,
       "collapsed": false,
       "gridPos": {
@@ -896,8 +896,8 @@
     },
     {
       "type": "timeseries",
-      "title": "Answer time, median, seconds · proposed",
-      "description": "Proposed: needs the coredns scrape job of deploy/. Median time CoreDNS took to answer, per cluster, from its histogram over 5 minutes (buckets from 0.25 ms). No value when nothing was answered.",
+      "title": "Answer time, median, seconds",
+      "description": "Median time CoreDNS took to answer, per cluster, from its histogram over 5 minutes (buckets from 0.25 ms). No value when nothing was answered.",
       "id": 12,
       "datasource": {
         "type": "prometheus",
@@ -1007,8 +1007,8 @@
     },
     {
       "type": "timeseries",
-      "title": "Answer time, 99th percentile, seconds · proposed",
-      "description": "Proposed: needs the coredns scrape job of deploy/. 99th percentile answer time, per cluster, 5 minutes. The latency objective is 99 % within 64 ms (docs/METRICS_AND_SLOS.md).",
+      "title": "Answer time, 99th percentile, seconds",
+      "description": "99th percentile answer time, per cluster, 5 minutes. The latency objective is 99 % within 64 ms (docs/METRICS_AND_SLOS.md).",
       "id": 13,
       "datasource": {
         "type": "prometheus",
@@ -1118,8 +1118,8 @@
     },
     {
       "type": "table",
-      "title": "Each CoreDNS replica, now · proposed",
-      "description": "Proposed: needs the coredns scrape job of deploy/. One row per replica over the last 5 minutes: answers per second, median and 99th percentile answer time, SERVFAIL per second, cache hit share, CPU cores and resident memory. Replicas of a cluster should read alike.",
+      "title": "Each CoreDNS replica, now",
+      "description": "One row per replica over the last 5 minutes: answers per second, median and 99th percentile answer time, SERVFAIL per second, cache hit share, CPU cores and resident memory. Replicas of a cluster should read alike.",
       "id": 14,
       "datasource": {
         "type": "prometheus",
@@ -1410,7 +1410,7 @@
     },
     {
       "type": "row",
-      "title": "Are the upstream resolvers healthy? · proposed",
+      "title": "Are the upstream resolvers healthy?",
       "id": 16,
       "collapsed": false,
       "gridPos": {
@@ -1423,8 +1423,8 @@
     },
     {
       "type": "timeseries",
-      "title": "Forwarded queries per second · proposed",
-      "description": "Proposed: needs the coredns scrape job of deploy/. Queries CoreDNS forwarded to its upstream resolvers (names outside the cluster), per cluster, 5 minute rate.",
+      "title": "Forwarded queries per second",
+      "description": "Queries CoreDNS forwarded to its upstream resolvers (names outside the cluster), per cluster, 5 minute rate.",
       "id": 17,
       "datasource": {
         "type": "prometheus",
@@ -1534,8 +1534,8 @@
     },
     {
       "type": "timeseries",
-      "title": "Forward answer time, 99th percentile, seconds · proposed",
-      "description": "Proposed: needs the coredns scrape job of deploy/. 99th percentile time the upstream took to answer, per cluster, 5 minutes.",
+      "title": "Forward answer time, 99th percentile, seconds",
+      "description": "99th percentile time the upstream took to answer, per cluster, 5 minutes.",
       "id": 18,
       "datasource": {
         "type": "prometheus",
@@ -1645,8 +1645,8 @@
     },
     {
       "type": "table",
-      "title": "Forwarded answers in the last hour, by upstream and response code · proposed",
-      "description": "Proposed: needs the coredns scrape job of deploy/. Upstream answers by upstream address and response code over the last hour.",
+      "title": "Forwarded answers in the last hour, by upstream and response code",
+      "description": "Upstream answers by upstream address and response code over the last hour.",
       "id": 19,
       "datasource": {
         "type": "prometheus",
@@ -1766,8 +1766,8 @@
     },
     {
       "type": "table",
-      "title": "Faults in the last hour, per replica · proposed",
-      "description": "Proposed: needs the coredns scrape job of deploy/. Per replica over the last hour: forward health checks that found every upstream broken, queries refused at the forward concurrency limit, recovered panics and failed Corefile reloads. All 0 is normal; each has its own alert.",
+      "title": "Faults in the last hour, per replica",
+      "description": "Per replica over the last hour: forward health checks that found every upstream broken, queries refused at the forward concurrency limit, recovered panics and failed Corefile reloads. All 0 is normal; each has its own alert.",
       "id": 20,
       "datasource": {
         "type": "prometheus",
@@ -2441,7 +2441,7 @@
     },
     {
       "type": "row",
-      "title": "Is Cilium dropping traffic? · proposed",
+      "title": "Is Cilium dropping traffic?",
       "id": 28,
       "collapsed": false,
       "gridPos": {
@@ -2454,8 +2454,8 @@
     },
     {
       "type": "timeseries",
-      "title": "Packets dropped for policy per second, egress · proposed",
-      "description": "Proposed: needs cilium_drop_count_total and cilium_forward_count_total in the cilium-native keep list of deploy/. Packets the Cilium datapath dropped leaving a Pod with reason Policy denied, per cluster, 5 minute rate. The 2026-10-25 DNS drops were of this kind; the counter cannot tell DNS from other traffic.",
+      "title": "Packets dropped for policy per second, egress",
+      "description": "Packets the Cilium datapath dropped leaving a Pod with reason Policy denied, per cluster, 5 minute rate. The 2026-10-25 DNS drops were of this kind; the counter cannot tell DNS from other traffic.",
       "id": 29,
       "datasource": {
         "type": "prometheus",
@@ -2565,8 +2565,8 @@
     },
     {
       "type": "timeseries",
-      "title": "Packets forwarded per second · proposed",
-      "description": "Proposed: needs cilium_drop_count_total and cilium_forward_count_total in the cilium-native keep list of deploy/. Packets the Cilium datapath forwarded, both directions, per cluster, 5 minute rate: the scale for the drops beside it.",
+      "title": "Packets forwarded per second",
+      "description": "Packets the Cilium datapath forwarded, both directions, per cluster, 5 minute rate: the scale for the drops beside it.",
       "id": 30,
       "datasource": {
         "type": "prometheus",
@@ -2676,8 +2676,8 @@
     },
     {
       "type": "table",
-      "title": "Drops in the last hour, by node, direction and reason · proposed",
-      "description": "Proposed: needs cilium_drop_count_total and cilium_forward_count_total in the cilium-native keep list of deploy/. Dropped packets by node, direction and reason over the last hour.",
+      "title": "Drops in the last hour, by node, direction and reason",
+      "description": "Dropped packets by node, direction and reason over the last hour.",
       "id": 31,
       "datasource": {
         "type": "prometheus",

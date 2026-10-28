@@ -38,3 +38,27 @@ controller_runtime_reconcile_errors_total{controller="namespacemtlspolicy"} 0
 # HELP leader_election_master_status Gauge of if the reporting system is master of the relevant lease, 0 indicates backup, 1 indicates master. 'name' is the string used to identify the lease. Please make sure to group by name.
 # TYPE leader_election_master_status gauge
 leader_election_master_status{name="cmtc-controller.security.cmtc.io"} 1
+# The issuer approval arbiter's series, read back from the hub the same way at 2026-10-28T01:58:56Z.
+# HELP cmtc_issuer_approval_generation Approval generation by role: accepted (named by the publication) or pending (written, not yet published).
+# TYPE cmtc_issuer_approval_generation gauge
+cmtc_issuer_approval_generation{cluster="cmtc-a",role="accepted"} 8
+cmtc_issuer_approval_generation{cluster="cmtc-a",role="pending"} 0
+# HELP cmtc_issuer_approval_expiry_timestamp_seconds Expiry of the accepted approval; zero when there is none.
+# TYPE cmtc_issuer_approval_expiry_timestamp_seconds gauge
+cmtc_issuer_approval_expiry_timestamp_seconds{cluster="cmtc-a"} 1795637017
+# HELP cmtc_issuer_approval_phase 1 for the arbiter's current phase, 0 for the others.
+# TYPE cmtc_issuer_approval_phase gauge
+cmtc_issuer_approval_phase{cluster="cmtc-a",phase="Blocked"} 0
+cmtc_issuer_approval_phase{cluster="cmtc-a",phase="Converged"} 0
+cmtc_issuer_approval_phase{cluster="cmtc-a",phase="Distributing"} 0
+cmtc_issuer_approval_phase{cluster="cmtc-a",phase="Overlapping"} 1
+cmtc_issuer_approval_phase{cluster="cmtc-a",phase="Pending"} 0
+cmtc_issuer_approval_phase{cluster="cmtc-a",phase="Publishing"} 0
+# HELP cmtc_issuer_approval_passes_total Arbiter passes by result: wrote, deleted, held, idle or error.
+# TYPE cmtc_issuer_approval_passes_total counter
+cmtc_issuer_approval_passes_total{cluster="cmtc-a",result="idle"} 1212
+# HELP cmtc_issuer_approval_node_reports Nodes of a cluster by report state at the last pass that read them: fresh, stale, missing; accepting counts local nodes that accept the accepted generation.
+# TYPE cmtc_issuer_approval_node_reports gauge
+cmtc_issuer_approval_node_reports{cluster="cmtc-a",report_cluster="cmtc-a",state="accepting"} 2
+cmtc_issuer_approval_node_reports{cluster="cmtc-a",report_cluster="cmtc-a",state="fresh"} 2
+cmtc_issuer_approval_node_reports{cluster="cmtc-a",report_cluster="cmtc-a",state="not_fresh"} 0

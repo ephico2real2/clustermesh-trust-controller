@@ -1185,8 +1185,8 @@
       "kind": "Panel",
       "spec": {
         "display": {
-          "name": "Issuer profile messages received by ztunnel per second \u00b7 proposed",
-          "description": "Proposed: needs the ztunnel scrape job of deploy/. IssuerProfile xDS messages each cluster's ztunnels received, per cluster, 5 minute rate. A flat 0 while the producer renews means ztunnel is not receiving its profile."
+          "name": "Issuer profile messages received by ztunnel per second",
+          "description": "IssuerProfile xDS messages each cluster's ztunnels received, per cluster, 5 minute rate. A flat 0 while the producer renews means ztunnel is not receiving its profile."
         },
         "plugin": {
           "kind": "TimeSeriesChart",
@@ -1341,8 +1341,8 @@
       "kind": "Panel",
       "spec": {
         "display": {
-          "name": "Connections failed for want of a workload identity per second \u00b7 proposed",
-          "description": "Proposed: needs the ztunnel scrape job of deploy/. Connections that failed because ztunnel had no certificate for the workload (IDENTITY_ERROR), per cluster, 5 minute rate: SPIRE identity issuance is failing."
+          "name": "Connections failed for want of a workload identity per second",
+          "description": "Connections that failed because ztunnel had no certificate for the workload (IDENTITY_ERROR), per cluster, 5 minute rate: SPIRE identity issuance is failing."
         },
         "plugin": {
           "kind": "TimeSeriesChart",
@@ -1433,8 +1433,8 @@
       "kind": "Panel",
       "spec": {
         "display": {
-          "name": "Mesh certificates, per cluster \u00b7 proposed",
-          "description": "Proposed: needs the cert-manager scrape job of deploy/. Each cert-manager Certificate: its issuer, hours until it expires and until cert-manager renews it, and its Ready condition, now. The mesh root cmtc-mesh-root-ca lives 10 years in the control cluster only, the ClusterMesh and SPIRE intermediates 1 year, the ClusterMesh and ztunnel leaves 1 day (MESH_PKI.md). Negative hours to renewal: the renewal is overdue (CMTCCertificateRenewalOverdue)."
+          "name": "Mesh certificates, per cluster",
+          "description": "Each cert-manager Certificate: its issuer, hours until it expires and until cert-manager renews it, and its Ready condition, now. The mesh root cmtc-mesh-root-ca lives 10 years in the control cluster only, the ClusterMesh and SPIRE intermediates 1 year, the ClusterMesh and ztunnel leaves 1 day (MESH_PKI.md). Negative hours to renewal: the renewal is overdue (CMTCCertificateRenewalOverdue)."
         },
         "plugin": {
           "kind": "Table",
@@ -1593,8 +1593,8 @@
       "kind": "Panel",
       "spec": {
         "display": {
-          "name": "ClusterIssuers not Ready \u00b7 proposed",
-          "description": "Proposed: needs the cert-manager scrape job of deploy/. ClusterIssuers whose Ready condition is not True, per cluster, now: the mesh root, the per-cluster intermediates and the SPIRE issuer. Normal: 0 (CMTCClusterIssuerNotReady)."
+          "name": "ClusterIssuers not Ready",
+          "description": "ClusterIssuers whose Ready condition is not True, per cluster, now: the mesh root, the per-cluster intermediates and the SPIRE issuer. Normal: 0 (CMTCClusterIssuerNotReady)."
         },
         "plugin": {
           "kind": "StatChart",
@@ -1658,8 +1658,8 @@
       "kind": "Panel",
       "spec": {
         "display": {
-          "name": "Hours until the soonest intermediate expires \u00b7 proposed",
-          "description": "Proposed: needs the cert-manager scrape job of deploy/. Hours until the first of the cluster's ClusterMesh and SPIRE intermediate certificates expires, per cluster. They were issued for 1 year on 2026-10-26 and renew 30 days before they end."
+          "name": "Hours until the soonest intermediate expires",
+          "description": "Hours until the first of the cluster's ClusterMesh and SPIRE intermediate certificates expires, per cluster. They were issued for 1 year on 2026-10-26 and renew 30 days before they end."
         },
         "plugin": {
           "kind": "StatChart",
@@ -1728,8 +1728,8 @@
       "kind": "Panel",
       "spec": {
         "display": {
-          "name": "Bundle reconcile errors, 1 hour \u00b7 proposed",
-          "description": "Proposed: needs the trust-manager scrape job of deploy/. Failed reconciles of trust-manager's Bundle controller in the last hour, per cluster. The Bundle cmtc-mesh-root copies the mesh root into ConfigMap cmtc-mesh-root of every namespace labelled trust: enabled. Normal: 0 (CMTCTrustBundleReconcileFailing)."
+          "name": "Bundle reconcile errors, 1 hour",
+          "description": "Failed reconciles of trust-manager's Bundle controller in the last hour, per cluster. The Bundle cmtc-mesh-root copies the mesh root into ConfigMap cmtc-mesh-root of every namespace labelled trust: enabled. Normal: 0 (CMTCTrustBundleReconcileFailing)."
         },
         "plugin": {
           "kind": "StatChart",
@@ -2002,7 +2002,7 @@
       "kind": "Grid",
       "spec": {
         "display": {
-          "title": "Did ztunnel apply the profile, or refuse connections over it? \u00b7 proposed",
+          "title": "Did ztunnel apply the profile, or refuse connections over it?",
           "collapse": {
             "open": true
           }
@@ -2051,7 +2051,7 @@
       "kind": "Grid",
       "spec": {
         "display": {
-          "title": "Will the mesh certificates stay valid, and does the mesh root reach its namespaces? \u00b7 proposed",
+          "title": "Will the mesh certificates stay valid, and does the mesh root reach its namespaces?",
           "collapse": {
             "open": true
           }

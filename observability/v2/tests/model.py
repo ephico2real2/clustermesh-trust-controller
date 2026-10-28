@@ -68,7 +68,7 @@ def entry_class(metric, label_values=()):
         return "planned"
     for label in metric["labels"]:
         for name, value in label_values:
-            if name == label["name"] and value in label.get("proposed_values", ()):
+            if name == label["name"] and value in (*label.get("proposed_values", ()), *label.get("planned_values", ())):
                 return "planned"
     return "current" if metric["collection"] == "scraped" else "proposed"
 
