@@ -1,0 +1,19 @@
+## 4.6 approval
+7 2026-11-25T19:47:11Z [('cmtc-a', ['2dee6086e79ab8ff277646f0cc745c494136f9b51962eb1e7d94bb34f689e3d5']), ('cmtc-b', ['b9075e425be5f66294d2234f1418e31d809655b920dd57efaeff4e550bb9a006'])]
+## g6 for comparison
+6 2026-11-25T10:26:41Z [('cmtc-a', ['2dee6086e79ab8ff277646f0cc745c494136f9b51962eb1e7d94bb34f689e3d5']), ('cmtc-b', ['b9075e425be5f66294d2234f1418e31d809655b920dd57efaeff4e550bb9a006'])]
+## 4.7 publication
+published 7 cmtc-issuer-approval-a 18469
+## 4.8 reports
+cmtc-b-control-plane ReadOnly ['6c12c7353967466f9177847c3c1e3c0acdb54af6eaef94b126f0449bf636275f'] Accepted 7 e559a303977fba2c [('cmtc-a.mesh.example', '2dee6086'), ('cmtc-b.mesh.example', 'b9075e42')] 2026-10-27T19:48:34Z
+cmtc-b-worker ReadOnly ['6c12c7353967466f9177847c3c1e3c0acdb54af6eaef94b126f0449bf636275f'] Accepted 7 e559a303977fba2c [('cmtc-a.mesh.example', '2dee6086'), ('cmtc-b.mesh.example', 'b9075e42')] 2026-10-27T19:48:25Z
+## 4.9 lease fenced (10m)
+pod/ztunnel-cilium-rxmwb 0
+pod/ztunnel-cilium-w6hrb 0
+## ztunnel succession lines
+2026-10-27T19:47:16.153879Z	info	tls::profile_provider	successor approval object durably accepted; floors carried, no checkpoint reset	component="issuer-profile-provider" stage="approval-source-succession" sequence=18459 logical_generation=7 predecessor=cmtc-issuer-approval-g6/cf026f16-e023-4d88-8dd
+2026-10-27T19:47:16.153904Z	warn	tls::profile_provider	native profile rejected; admission closed and existing TLS I/O cancelled	component="issuer-profile-provider" stage="durable-provider-commit" sequence=18459 logical_generation=7 source=cmtc-issuer-approval-a/266edce2-ed18-4cc7-95b7-3e11b9c299dd s
+2026-10-27T19:47:16.154096Z	info	tls::profile_provider	successor approval object durably accepted; floors carried, no checkpoint reset	component="issuer-profile-provider" stage="approval-source-succession" sequence=18459 logical_generation=7 predecessor=cmtc-issuer-approval-g6/cf026f16-e023-4d88-8dd
+2026-10-27T19:47:16.154130Z	warn	tls::profile_provider	native profile rejected; admission closed and existing TLS I/O cancelled	component="issuer-profile-provider" stage="durable-provider-commit" sequence=18459 logical_generation=7 source=cmtc-issuer-approval-a/266edce2-ed18-4cc7-95b7-3e11b9c299dd s
+## cmtc-a unaffected
+published 6 cmtc-issuer-approval-g6

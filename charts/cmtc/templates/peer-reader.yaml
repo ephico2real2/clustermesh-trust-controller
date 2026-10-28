@@ -1,0 +1,98 @@
+{{- $approval := .Values.controller.issuerApproval }}
+{{- if $approval.peerReader.enabled }}
+# The read-only identity the other clusters' arbiters use to read this cluster's public evidence, its publication and
+# its node reports (ADR-012, cross-cluster path). The administrator mints its token once per peer and installs it as the
+# peerSecret of that peer's controller:
+#   kubectl -n <release namespace> create token cmtc-peer-reader --duration=<bound> --bound-object-kind=... (or a
+#   Secret of type kubernetes.io/service-account-token), then a kubeconfig with this cluster's CA and API endpoint.
+# It reads no Secret.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: cmtc-peer-reader
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "cmtc.labels" . | nindent 4 }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: cmtc-peer-reader
+  labels:
+    {{- include "cmtc.labels" . | nindent 4 }}
+rules:
+  {{- include "cmtc.approvalEvidenceRules" . | nindent 2 }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: cmtc-peer-reader
+  labels:
+    {{- include "cmtc.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cmtc-peer-reader
+subjects:
+  - kind: ServiceAccount
+    name: cmtc-peer-reader
+    namespace: {{ .Release.Namespace }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: cmtc-peer-reader
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "cmtc.labels" . | nindent 4 }}
+rules:
+  - apiGroups: [""]
+    resources: [configmaps]
+    resourceNames: [{{ .Values.controller.issuerProfile.output | quote }}]
+    verbs: [get]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: cmtc-peer-reader
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "cmtc.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: cmtc-peer-reader
+subjects:
+  - kind: ServiceAccount
+    name: cmtc-peer-reader
+    namespace: {{ .Release.Namespace }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: cmtc-peer-reader-spire-config
+  namespace: {{ $approval.spire.namespace }}
+  labels:
+    {{- include "cmtc.labels" . | nindent 4 }}
+rules:
+  - apiGroups: [""]
+    resources: [configmaps]
+    resourceNames: [{{ $approval.spire.configMap | quote }}]
+    verbs: [get]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: cmtc-peer-reader-spire-config
+  namespace: {{ $approval.spire.namespace }}
+  labels:
+    {{- include "cmtc.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: cmtc-peer-reader-spire-config
+subjects:
+  - kind: ServiceAccount
+    name: cmtc-peer-reader
+    namespace: {{ .Release.Namespace }}
+{{- end }}

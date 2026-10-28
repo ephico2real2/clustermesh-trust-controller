@@ -1,0 +1,265 @@
+{
+  "apiVersion": "v1",
+  "items": [
+    {
+      "apiVersion": "cilium.io/v2",
+      "kind": "CiliumEndpoint",
+      "metadata": {
+        "creationTimestamp": "2026-10-25T16:35:39Z",
+        "generation": 3,
+        "labels": {
+          "security.cmtc.io/test-owner": "cmtc-primary-live-mtls-20261025",
+          "serving-cluster": "cmtc-a",
+          "test-role": "client"
+        },
+        "name": "client-control-plane",
+        "namespace": "cmtc-live-mtls",
+        "ownerReferences": [
+          {
+            "apiVersion": "v1",
+            "kind": "Pod",
+            "name": "client-control-plane",
+            "uid": "3e1ca151-fe7f-40ca-baf3-50b3f91d9e1b"
+          }
+        ],
+        "resourceVersion": "215188",
+        "uid": "d933a72d-89f6-473f-b3e4-15166bb7a403"
+      },
+      "status": {
+        "external-identifiers": {
+          "cni-attachment-id": "d5011e0346dcc5a672f901a981f7bcd277464cd7ed622bd3753c4f4115dd57c5:eth0"
+        },
+        "id": 372,
+        "identity": {
+          "id": 69042,
+          "labels": [
+            "k8s:io.cilium.k8s.namespace.labels.io.cilium/mtls-enabled=true",
+            "k8s:io.cilium.k8s.namespace.labels.kubernetes.io/metadata.name=cmtc-live-mtls",
+            "k8s:io.cilium.k8s.namespace.labels.security.cmtc.io/test-owner=cmtc-primary-live-mtls-20261025",
+            "k8s:io.cilium.k8s.policy.cluster=cmtc-a",
+            "k8s:io.cilium.k8s.policy.serviceaccount=mesh-client",
+            "k8s:io.kubernetes.pod.namespace=cmtc-live-mtls",
+            "k8s:security.cmtc.io/test-owner=cmtc-primary-live-mtls-20261025",
+            "k8s:serving-cluster=cmtc-a",
+            "k8s:test-role=client"
+          ]
+        },
+        "networking": {
+          "addressing": [
+            {
+              "ipv4": "10.10.0.78"
+            }
+          ],
+          "node": "172.18.0.3"
+        },
+        "service-account": "mesh-client",
+        "state": "ready"
+      }
+    },
+    {
+      "apiVersion": "cilium.io/v2",
+      "kind": "CiliumEndpoint",
+      "metadata": {
+        "creationTimestamp": "2026-10-25T16:35:39Z",
+        "generation": 3,
+        "labels": {
+          "security.cmtc.io/test-owner": "cmtc-primary-live-mtls-20261025",
+          "serving-cluster": "cmtc-a",
+          "test-role": "client"
+        },
+        "name": "client-worker",
+        "namespace": "cmtc-live-mtls",
+        "ownerReferences": [
+          {
+            "apiVersion": "v1",
+            "kind": "Pod",
+            "name": "client-worker",
+            "uid": "b79563b9-1b53-4182-8a61-4b14d706f5f5"
+          }
+        ],
+        "resourceVersion": "215204",
+        "uid": "53a7063f-c949-4743-89cc-61a6ce1aa7e3"
+      },
+      "status": {
+        "external-identifiers": {
+          "cni-attachment-id": "5593053c1fc242b7bc6baeb41856e7907c9a76976e98ab0960642bf0e70bf16a:eth0"
+        },
+        "id": 3897,
+        "identity": {
+          "id": 69042,
+          "labels": [
+            "k8s:io.cilium.k8s.namespace.labels.io.cilium/mtls-enabled=true",
+            "k8s:io.cilium.k8s.namespace.labels.kubernetes.io/metadata.name=cmtc-live-mtls",
+            "k8s:io.cilium.k8s.namespace.labels.security.cmtc.io/test-owner=cmtc-primary-live-mtls-20261025",
+            "k8s:io.cilium.k8s.policy.cluster=cmtc-a",
+            "k8s:io.cilium.k8s.policy.serviceaccount=mesh-client",
+            "k8s:io.kubernetes.pod.namespace=cmtc-live-mtls",
+            "k8s:security.cmtc.io/test-owner=cmtc-primary-live-mtls-20261025",
+            "k8s:serving-cluster=cmtc-a",
+            "k8s:test-role=client"
+          ]
+        },
+        "networking": {
+          "addressing": [
+            {
+              "ipv4": "10.10.1.75"
+            }
+          ],
+          "node": "172.18.0.2"
+        },
+        "service-account": "mesh-client",
+        "state": "ready"
+      }
+    },
+    {
+      "apiVersion": "cilium.io/v2",
+      "kind": "CiliumEndpoint",
+      "metadata": {
+        "creationTimestamp": "2026-10-25T16:35:39Z",
+        "generation": 3,
+        "labels": {
+          "security.cmtc.io/test-owner": "cmtc-primary-live-mtls-20261025",
+          "serving-cluster": "cmtc-a",
+          "test-role": "server"
+        },
+        "name": "server-control-plane",
+        "namespace": "cmtc-live-mtls",
+        "ownerReferences": [
+          {
+            "apiVersion": "v1",
+            "kind": "Pod",
+            "name": "server-control-plane",
+            "uid": "66e627d1-eef4-4a7b-9c79-ac33c2d7d672"
+          }
+        ],
+        "resourceVersion": "215169",
+        "uid": "aca23a84-c918-45aa-afd7-2f95b7143e32"
+      },
+      "status": {
+        "external-identifiers": {
+          "cni-attachment-id": "82f995316b39cb6fa49c7222516cf6d19cf6ef117ca559ec4dde304dde0f7ef4:eth0"
+        },
+        "id": 1878,
+        "identity": {
+          "id": 94895,
+          "labels": [
+            "gen:io.cilium.k8s.named-ports=app-alt.TCP.8080_app-high.TCP.31337_http.TCP.80",
+            "k8s:io.cilium.k8s.namespace.labels.io.cilium/mtls-enabled=true",
+            "k8s:io.cilium.k8s.namespace.labels.kubernetes.io/metadata.name=cmtc-live-mtls",
+            "k8s:io.cilium.k8s.namespace.labels.security.cmtc.io/test-owner=cmtc-primary-live-mtls-20261025",
+            "k8s:io.cilium.k8s.policy.cluster=cmtc-a",
+            "k8s:io.cilium.k8s.policy.serviceaccount=rebel-base",
+            "k8s:io.kubernetes.pod.namespace=cmtc-live-mtls",
+            "k8s:security.cmtc.io/test-owner=cmtc-primary-live-mtls-20261025",
+            "k8s:serving-cluster=cmtc-a",
+            "k8s:test-role=server"
+          ]
+        },
+        "named-ports": [
+          {
+            "name": "app-alt",
+            "port": 8080,
+            "protocol": "TCP"
+          },
+          {
+            "name": "app-high",
+            "port": 31337,
+            "protocol": "TCP"
+          },
+          {
+            "name": "http",
+            "port": 80,
+            "protocol": "TCP"
+          }
+        ],
+        "networking": {
+          "addressing": [
+            {
+              "ipv4": "10.10.0.197"
+            }
+          ],
+          "node": "172.18.0.3"
+        },
+        "service-account": "rebel-base",
+        "state": "ready"
+      }
+    },
+    {
+      "apiVersion": "cilium.io/v2",
+      "kind": "CiliumEndpoint",
+      "metadata": {
+        "creationTimestamp": "2026-10-25T16:35:39Z",
+        "generation": 3,
+        "labels": {
+          "security.cmtc.io/test-owner": "cmtc-primary-live-mtls-20261025",
+          "serving-cluster": "cmtc-a",
+          "test-role": "server"
+        },
+        "name": "server-worker",
+        "namespace": "cmtc-live-mtls",
+        "ownerReferences": [
+          {
+            "apiVersion": "v1",
+            "kind": "Pod",
+            "name": "server-worker",
+            "uid": "5eecbb58-a71d-4693-98e3-89d2a908c6c1"
+          }
+        ],
+        "resourceVersion": "215141",
+        "uid": "6d9f40f3-d4e3-488b-9dd6-916b6e9efbdd"
+      },
+      "status": {
+        "external-identifiers": {
+          "cni-attachment-id": "48d2b0da3620701c4d0088489f9d69222a8a1d93ad3e915a7c6d3809eeffdd77:eth0"
+        },
+        "id": 1221,
+        "identity": {
+          "id": 94895,
+          "labels": [
+            "gen:io.cilium.k8s.named-ports=app-alt.TCP.8080_app-high.TCP.31337_http.TCP.80",
+            "k8s:io.cilium.k8s.namespace.labels.io.cilium/mtls-enabled=true",
+            "k8s:io.cilium.k8s.namespace.labels.kubernetes.io/metadata.name=cmtc-live-mtls",
+            "k8s:io.cilium.k8s.namespace.labels.security.cmtc.io/test-owner=cmtc-primary-live-mtls-20261025",
+            "k8s:io.cilium.k8s.policy.cluster=cmtc-a",
+            "k8s:io.cilium.k8s.policy.serviceaccount=rebel-base",
+            "k8s:io.kubernetes.pod.namespace=cmtc-live-mtls",
+            "k8s:security.cmtc.io/test-owner=cmtc-primary-live-mtls-20261025",
+            "k8s:serving-cluster=cmtc-a",
+            "k8s:test-role=server"
+          ]
+        },
+        "named-ports": [
+          {
+            "name": "app-alt",
+            "port": 8080,
+            "protocol": "TCP"
+          },
+          {
+            "name": "app-high",
+            "port": 31337,
+            "protocol": "TCP"
+          },
+          {
+            "name": "http",
+            "port": 80,
+            "protocol": "TCP"
+          }
+        ],
+        "networking": {
+          "addressing": [
+            {
+              "ipv4": "10.10.1.158"
+            }
+          ],
+          "node": "172.18.0.2"
+        },
+        "service-account": "rebel-base",
+        "state": "ready"
+      }
+    }
+  ],
+  "kind": "List",
+  "metadata": {
+    "resourceVersion": ""
+  }
+}

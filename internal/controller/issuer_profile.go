@@ -16,7 +16,22 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-const issuerProfilePoll = 5 * time.Second
+// Producer and leader-election timing. A publication is valid for
+// trustprofile.MaxLease and republished once less than
+// trustprofile.RenewBefore remains, so a stopping leader leaves at least
+// RenewBefore - issuerProfilePoll - issuerProfilePassTimeout of validity. A
+// waiting successor publishes within LeaderLeaseDuration + LeaderRetryPeriod
+// (the leader crashed and never released its lease) plus its first pass. The
+// publication must outlive that handover: otherwise every node's issuer
+// profile expires and ztunnel drains all workload TLS. A graceful leader
+// releases the lease at once (LeaderElectionReleaseOnCancel).
+const (
+	issuerProfilePoll        = 5 * time.Second
+	issuerProfilePassTimeout = 4 * time.Second
+	LeaderLeaseDuration      = 8 * time.Second
+	LeaderRenewDeadline      = 5 * time.Second
+	LeaderRetryPeriod        = 1 * time.Second
+)
 
 type IssuerProfileOptions struct {
 	Source, Output       client.ObjectKey
@@ -26,9 +41,27 @@ type IssuerProfileOptions struct {
 	LocalCluster         string
 }
 
+const issuerProfileOptionsInvalid = "explicit distinct source/output names and UIDs, cluster, positive generation and root pins required"
+
 func (o IssuerProfileOptions) Validate() error {
-	if o.Source.Namespace == "" || o.Source.Name == "" || o.Output.Namespace != o.Source.Namespace || o.Output.Name == "" || o.Output == o.Source || o.SourceUID == "" || o.OutputUID == "" || o.SourceUID == o.OutputUID || o.MinimumGeneration == 0 || !trustprofile.ClusterValid(o.LocalCluster) || len(o.RootPins) == 0 || len(o.RootPins) > 4 {
-		return errors.New("explicit distinct source/output names and UIDs, cluster, positive generation and root pins required")
+	if o.Source.Namespace == "" || o.Source.Name == "" || o.Output.Namespace != o.Source.Namespace || o.Output == o.Source || o.SourceUID == "" || o.SourceUID == o.OutputUID {
+		return errors.New(issuerProfileOptionsInvalid)
+	}
+	return o.validateOutput()
+}
+
+// ValidateFollowed checks the options of a producer that publishes the approval the issuer approval arbiter names
+// on each pass (ADR-012). A fixed source is refused; each followed source is checked with Validate.
+func (o IssuerProfileOptions) ValidateFollowed() error {
+	if o.Source != (client.ObjectKey{}) || o.SourceUID != "" || o.Output.Namespace == "" {
+		return errors.New("a followed producer has no fixed source and needs the output namespace")
+	}
+	return o.validateOutput()
+}
+
+func (o IssuerProfileOptions) validateOutput() error {
+	if o.Output.Name == "" || o.OutputUID == "" || o.MinimumGeneration == 0 || !trustprofile.ClusterValid(o.LocalCluster) || len(o.RootPins) == 0 || len(o.RootPins) > 4 {
+		return errors.New(issuerProfileOptionsInvalid)
 	}
 	seen := map[string]bool{}
 	for _, pin := range o.RootPins {
@@ -46,9 +79,19 @@ type IssuerProfileReconciler struct {
 	client.Client
 	Reader  client.Reader
 	Options IssuerProfileOptions
+	// Follow, when set, names the source of each pass (the issuer approval arbiter's FollowedSource) and
+	// Options names none. An error ends the pass without a write.
+	Follow  func(context.Context, *trustprofile.Publication) (client.ObjectKey, types.UID, error)
 	Metrics *trustprofile.Metrics
 	Now     func() time.Time
 	attempt atomic.Uint64
+}
+
+func (r *IssuerProfileReconciler) validate() error {
+	if r.Follow != nil {
+		return r.Options.ValidateFollowed()
+	}
+	return r.Options.Validate()
 }
 
 func (r *IssuerProfileReconciler) now() time.Time {
@@ -58,7 +101,7 @@ func (r *IssuerProfileReconciler) now() time.Time {
 	return time.Now().UTC()
 }
 func (r *IssuerProfileReconciler) Reconcile(ctx context.Context, _ ctrl.Request) (requeue ctrl.Result, reconcileErr error) {
-	ctx, cancel := context.WithTimeout(ctx, 4*time.Second)
+	ctx, cancel := context.WithTimeout(ctx, issuerProfilePassTimeout)
 	defer cancel()
 	started := time.Now()
 	attempt := r.attempt.Add(1)
@@ -73,7 +116,7 @@ func (r *IssuerProfileReconciler) Reconcile(ctx context.Context, _ ctrl.Request)
 		}
 	}()
 	next := ctrl.Result{RequeueAfter: issuerProfilePoll}
-	if err := r.Options.Validate(); err != nil {
+	if err := r.validate(); err != nil {
 		return ctrl.Result{}, err
 	}
 	if r.Reader == nil || r.Client == nil || r.Metrics == nil {
@@ -108,7 +151,19 @@ func (r *IssuerProfileReconciler) Reconcile(ctx context.Context, _ ctrl.Request)
 	if previous != nil && previous.Sequence == ^uint64(0) {
 		return next, errors.New("publication sequence exhausted")
 	}
-	p := trustprofile.Publication{SchemaVersion: trustprofile.SchemaVersion, Sequence: 1, State: "withdrawn", ProducerCluster: r.Options.LocalCluster, OutputUID: string(out.UID), ExpectedSourceUID: string(r.Options.SourceUID), Source: trustprofile.Source{Namespace: r.Options.Source.Namespace, Name: r.Options.Source.Name, UID: string(r.Options.SourceUID)}, PublishedAt: trustprofile.Stamp(now), ValidUntil: trustprofile.Stamp(now)}
+	opts := r.Options
+	if r.Follow != nil {
+		key, uid, err := r.Follow(ctx, previous)
+		if err == nil {
+			opts.Source, opts.SourceUID = key, uid
+			err = opts.Validate()
+		}
+		if err != nil {
+			return next, fmt.Errorf("no followed approval source: %w", err)
+		}
+		log = log.WithValues("followedSource", opts.Source, "followedSourceUID", opts.SourceUID)
+	}
+	p := trustprofile.Publication{SchemaVersion: trustprofile.SchemaVersion, Sequence: 1, State: "withdrawn", ProducerCluster: opts.LocalCluster, OutputUID: string(out.UID), ExpectedSourceUID: string(opts.SourceUID), Source: trustprofile.Source{Namespace: opts.Source.Namespace, Name: opts.Source.Name, UID: string(opts.SourceUID)}, PublishedAt: trustprofile.Stamp(now), ValidUntil: trustprofile.Stamp(now)}
 	if previous != nil {
 		p.Sequence = previous.Sequence + 1
 		p.AcceptedGeneration = previous.AcceptedGeneration
@@ -116,7 +171,7 @@ func (r *IssuerProfileReconciler) Reconcile(ctx context.Context, _ ctrl.Request)
 		p.AcceptedApprovalDigest = previous.AcceptedApprovalDigest
 	}
 	var source corev1.ConfigMap
-	sourceErr := r.Reader.Get(ctx, r.Options.Source, &source)
+	sourceErr := r.Reader.Get(ctx, opts.Source, &source)
 	switch {
 	case apierrors.IsNotFound(sourceErr):
 		p.Reason = "SourceDeleted"
@@ -129,14 +184,14 @@ func (r *IssuerProfileReconciler) Reconcile(ctx context.Context, _ ctrl.Request)
 		switch {
 		case source.DeletionTimestamp != nil:
 			p.Reason = "SourceDeleted"
-		case source.UID != r.Options.SourceUID:
+		case source.UID != opts.SourceUID:
 			p.Reason = "SourceUIDMismatch"
 		case source.ResourceVersion == "":
 			p.Reason = "SourceInvalid"
 		case source.Immutable == nil || !*source.Immutable || len(source.BinaryData) > 0 || len(source.Data) != 1:
 			p.Reason = "SourceInvalid"
 		default:
-			valid, err := trustprofile.Validate([]byte(source.Data[trustprofile.ApprovalKey]), r.Options.RootPins, r.Options.LocalCluster, now)
+			valid, err := trustprofile.Validate([]byte(source.Data[trustprofile.ApprovalKey]), opts.RootPins, opts.LocalCluster, now)
 			if err != nil {
 				p.Reason = "SourceInvalid"
 				var invalid *trustprofile.ValidationError
@@ -147,7 +202,7 @@ func (r *IssuerProfileReconciler) Reconcile(ctx context.Context, _ ctrl.Request)
 			} else {
 				p.Source.Generation = valid.Approval.Generation
 				switch {
-				case valid.Approval.Generation < r.Options.MinimumGeneration || valid.Approval.Generation < p.AcceptedGeneration:
+				case valid.Approval.Generation < opts.MinimumGeneration || valid.Approval.Generation < p.AcceptedGeneration:
 					p.Reason = "GenerationRollback"
 				case previous != nil && valid.Approval.Generation == p.AcceptedGeneration && (previous.AcceptedApprovalDigest != valid.Digest || previous.AcceptedSourceUID != string(source.UID)):
 					p.Reason = "GenerationRollback"
@@ -156,7 +211,7 @@ func (r *IssuerProfileReconciler) Reconcile(ctx context.Context, _ ctrl.Request)
 					// API object UID/RV/deletion immediately before composing publication;
 					// this cannot create a multi-object Kubernetes transaction.
 					var latest corev1.ConfigMap
-					err = r.Reader.Get(ctx, r.Options.Source, &latest)
+					err = r.Reader.Get(ctx, opts.Source, &latest)
 					if err != nil {
 						if apierrors.IsNotFound(err) {
 							p.Reason = "SourceDeleted"
@@ -257,7 +312,7 @@ func (r *IssuerProfileReconciler) Reconcile(ctx context.Context, _ ctrl.Request)
 	return next, nil
 }
 func (r *IssuerProfileReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	if err := r.Options.Validate(); err != nil {
+	if err := r.validate(); err != nil {
 		return err
 	}
 	if r.Reader == nil || r.Client == nil || r.Metrics == nil {

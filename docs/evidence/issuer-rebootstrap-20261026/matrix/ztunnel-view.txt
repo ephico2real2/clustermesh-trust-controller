@@ -1,0 +1,41 @@
+
+▌ Overview  what these logs contain
+
+  inputs      4 file(s), nodes: cmtc-a-control-plane, cmtc-a-worker, cmtc-b-control-plane, cmtc-b-worker
+  window      2026-10-26 03:09:41.365Z → 03:10:07.660Z  (0m26s)
+  lines       144 parsed: 144 info
+  connections 48 · 48 over HBONE :15008 · 48 seen by both ztunnels · 48 with the peer identity read from its certificate
+  problems    0 lines in 0 group(s)
+  covers      cmtc-a-control-plane  03:09:30.000Z → 03:10:40.000Z
+  covers      cmtc-a-worker         03:09:30.000Z → 03:10:40.000Z
+  covers      cmtc-b-control-plane  03:09:30.000Z → 03:10:40.000Z
+  covers      cmtc-b-worker         03:09:30.000Z → 03:10:40.000Z
+
+▌ Peer identities  client identities the server-side ztunnel read from each accepted client certificate
+  PEER IDENTITY (mTLS)             CONNECTIONS  ACCEPTED BY
+  ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  mesh-client@cmtc-a.mesh.example           24  cmtc-a/server-control-plane, cmtc-a/server-worker, cmtc-b/server-control-plane, cmtc-b/server-worker
+  mesh-client@cmtc-b.mesh.example           24  cmtc-a/server-control-plane, cmtc-a/server-worker, cmtc-b/server-control-plane, cmtc-b/server-worker
+
+▌ Flows  connections grouped by caller, destination and path
+  FROM                            TO                           PATH           PORTS                CONN  BOTH SIDES  POLICY
+  ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  cmtc-a/client-control-plane  →  cmtc-b/server-control-plane  cross cluster  80×1 8080×1 31337×1     3         3/3     3/3
+  cmtc-a/client-control-plane  →  cmtc-b/server-worker         cross cluster  80×1 8080×1 31337×1     3         3/3     3/3
+  cmtc-a/client-worker         →  cmtc-b/server-control-plane  cross cluster  80×1 8080×1 31337×1     3         3/3     3/3
+  cmtc-a/client-worker         →  cmtc-b/server-worker         cross cluster  80×1 8080×1 31337×1     3         3/3     3/3
+  cmtc-b/client-control-plane  →  cmtc-a/server-control-plane  cross cluster  80×1 8080×1 31337×1     3         3/3     3/3
+  cmtc-b/client-control-plane  →  cmtc-a/server-worker         cross cluster  80×1 8080×1 31337×1     3         3/3     3/3
+  cmtc-b/client-worker         →  cmtc-a/server-control-plane  cross cluster  80×1 8080×1 31337×1     3         3/3     3/3
+  cmtc-b/client-worker         →  cmtc-a/server-worker         cross cluster  80×1 8080×1 31337×1     3         3/3     3/3
+  cmtc-a/client-control-plane  →  cmtc-a/server-worker         cross node     80×1 8080×1 31337×1     3         3/3     3/3
+  cmtc-a/client-worker         →  cmtc-a/server-control-plane  cross node     80×1 8080×1 31337×1     3         3/3     3/3
+  cmtc-b/client-control-plane  →  cmtc-b/server-worker         cross node     80×1 8080×1 31337×1     3         3/3     3/3
+  cmtc-b/client-worker         →  cmtc-b/server-control-plane  cross node     80×1 8080×1 31337×1     3         3/3     3/3
+  cmtc-a/client-control-plane  →  cmtc-a/server-control-plane  same node      80×1 8080×1 31337×1     3         3/3     3/3
+  cmtc-a/client-worker         →  cmtc-a/server-worker         same node      80×1 8080×1 31337×1     3         3/3     3/3
+  cmtc-b/client-control-plane  →  cmtc-b/server-control-plane  same node      80×1 8080×1 31337×1     3         3/3     3/3
+  cmtc-b/client-worker         →  cmtc-b/server-worker         same node      80×1 8080×1 31337×1     3         3/3     3/3
+
+▌ Problems  errors and warnings
+  none

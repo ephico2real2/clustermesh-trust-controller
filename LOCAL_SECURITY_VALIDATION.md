@@ -4,9 +4,15 @@
 Evidence scope: results apply to the recorded source, image and fixture. Read [current delivery status](docs/agile/DELIVERY_STATUS.md) and [documentation terms](DOCUMENTATION_GUIDE.md).
 <!-- /CMTC_DOC_CONTEXT -->
 
-This is an in-progress CMTC-101/403 qualification on the MacBook's isolated two-node `cmtc-mtls` fixture. CI and publication are deferred. The existing two Observe/ClusterMesh clusters are preserved. These results do not close the full CMTC security implementation or enable the Observe-only API's Strict mode.
+**Historical record (2026-10-24).** This qualification ran on the isolated two-node `cmtc-mtls` fixture, which is now
+retired; its drivers under `scripts/lab/mtls/` must not run against `cmtc-a` or `cmtc-b`
+([lab scripts](docs/development/LAB_SCRIPTS.md#do-not-run)). The results do not qualify the current build or the
+two-cluster mesh. **Current state:** read [delivery status](docs/agile/DELIVERY_STATUS.md) and
+[the G1 evidence](docs/evidence/g1-destination-sources/README.md).
 
-## Exact deployed components
+This was a CMTC-101/403 qualification on the MacBook's isolated two-node `cmtc-mtls` fixture. CI and publication are deferred. The existing two Observe/ClusterMesh clusters are preserved. These results do not close the full CMTC security implementation or enable the Observe-only API's Strict mode.
+
+## Exact deployed components (fixture, 2026-10-24)
 
 | Component | Qualified local source | Runtime |
 | --- | --- | --- |
@@ -108,20 +114,20 @@ The screenshots show the fresh 6,000-request/600-rejection window on agent `40d2
 
 The first new capture exposed two provisioned files with the same UID. The legacy `authenticated-only.json` entry could overwrite the corrected `workload-security.json` captions. The owned ConfigMap now has one Workload Security source alongside Operations; the surviving file was refreshed after Grafana briefly removed the duplicated UID. No monitoring restart or telemetry reset was used. Both final themes were visually inspected. The nine original dashboard definitions remain unchanged in the repository.
 
-![Workload Security after local load, dark theme](docs/images/persistent-authenticated-only-dark.png)
+![Workload Security after local load, light theme](docs/images/persistent-authenticated-only-light.png)
 
-[Light-theme screenshot](docs/images/persistent-authenticated-only-light.png)
+[Dark-theme screenshot](docs/images/persistent-authenticated-only-dark.png)
 
 Raw local commands, failed and passing logs, image/source evidence, empty-cache snapshots, traffic output, packet captures, query vectors and screenshots are retained at `/private/tmp/cmtc-ztunnel-build-tools/`. No root private key or workload credential is included in this evidence. Publication remains deferred.
 
 A hashed copy of the earlier reenrollment evidence is committed locally on `ci-captures` at `2ea99a6535532a3635b61d23d50bcbbb2fa07652`, under `/private/tmp/cmtc-mac-captures/2026-10-24-persistent-mtls-zds-validation/`. Its readable README, summary, failed/passing reports, exact patches, scripts and both screenshots remain available without relying on the build cache. This local commit has not been pushed.
 
-## Remaining acceptance
+## Acceptance gates at that time
 
 Reenrollment after a failed DEL now requires installed capture and a fresh ACK. Concurrent capture removal and intent transitions still require a generation-aware state machine. The typed new-Pod gate now propagates enrollment failure before application startup in the qualified pause/recovery fixture. Running-pod enrollment, restore, namespace intent generations and pinned namespace ownership still need separate transition gates.
 
 Both runtime tests of a copied proxy app label were denied after enrollment. Source review explains why: the current helper looks up `k8s:app`, while canonical label maps use `app`. Do not activate a label-spoofable exclusion by merely correcting that key. Remove the unnecessary host-network-proxy exemption after qualification, or use authoritative identity if one is required.
 
-Effective workload-bound authorization, namespace/Pod UID freshness, authenticated remote discovery and cluster identity, trust lifecycle, independent WireGuard/IPsec evidence and platform safety remain open. The ClusterMesh compatibility guard and Observe-only API remain in place. Continue through [delivery status](docs/agile/DELIVERY_STATUS.md) and the canonical backlog; this increment is not project completion.
+Effective workload-bound authorization, namespace/Pod UID freshness, authenticated remote discovery and cluster identity, trust lifecycle, independent WireGuard/IPsec evidence and platform safety remain open. At that time the ClusterMesh compatibility guard was in place (later replaced by capability validation in Cilium `37d5fce0f7`); the CMTC policy API is still Observe-only. Continue through [delivery status](docs/agile/DELIVERY_STATUS.md) and the canonical backlog; this increment is not project completion.
 
 The selected CNI bundle is committed locally on `ci-captures` at `2c455ae739c681806d6c41b7879a10c49a7b8008`, under `/private/tmp/cmtc-mac-captures/2026-10-24-cni-startup-validation/` (640 hashed evidence files plus manifest). It pins CMTC `d0eebe501d` and agent `40d20762d1`; it has not been pushed.

@@ -1,0 +1,11 @@
+{{- if .Values.namespace.create }}
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: {{ .Release.Namespace }}
+  labels:
+    {{- include "cmtc.labels" . | nindent 4 }}
+    security.cmtc.io/platform-protected: "true"
+    # Opts in to the mesh root ConfigMap (trust.bundle): the controller verifies the SPIRE issuers it publishes.
+    trust: enabled
+{{- end }}

@@ -1,0 +1,17 @@
+apiVersion: v2
+name: cmtc-observability
+description: >-
+  CMTC observability v2: the scrape jobs, rules and dashboards of observability/v2. On kind, one Prometheus per
+  cluster (the hub also evaluates the rules and runs Grafana); on OpenShift, PodMonitors for user workload
+  monitoring, a PrometheusRule and Perses dashboards.
+type: application
+version: 0.1.0
+appVersion: "2.0.0"
+kubeVersion: ">=1.27.0-0"
+keywords:
+  - cmtc
+  - prometheus
+  - grafana
+  - perses
+annotations:
+  cmtc.io/status: "implemented-but-unexecuted: rendered and tested by observability/v2/tests, never installed"

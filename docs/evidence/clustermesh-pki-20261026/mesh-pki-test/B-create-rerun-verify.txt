@@ -1,0 +1,26 @@
+== B1: prefix pkitest, control cmtc-a, member cmtc-b
+2026-10-26T12:35:25Z mesh-pki: cmtc-a: root pkitest-mesh-root-ca ready, certificate sha256 505359637e9f4595abba7133838222bcf998e883e9a626fdfc2c0b3404192039
+2026-10-26T12:35:25Z mesh-pki: cmtc-b: root copied
+2026-10-26T12:35:26Z mesh-pki: cmtc-a: pkitest-clustermesh-intermediate pkitest-spire-intermediate chain to the root; issuers pkitest-mesh-root pkitest-lab-intermediate pkitest-spire-issuer ready
+2026-10-26T12:35:27Z mesh-pki: cmtc-b: pkitest-clustermesh-intermediate pkitest-spire-intermediate chain to the root; issuers pkitest-mesh-root pkitest-lab-intermediate pkitest-spire-issuer ready
+2026-10-26T12:35:27Z mesh-pki: root certificate written to /tmp/claude-501/pkitest-root.crt
+bash scripts/lab/pki/mesh-pki.sh --prefix pkitest --root-out $R cmtc-a cmtc-b  1.06s user 0.71s system 73% cpu 2.402 total
+exit 0
+== B2: rerun (expect idempotent)
+2026-10-26T12:35:27Z mesh-pki: cmtc-a: root pkitest-mesh-root-ca ready, certificate sha256 505359637e9f4595abba7133838222bcf998e883e9a626fdfc2c0b3404192039
+2026-10-26T12:35:27Z mesh-pki: cmtc-b: root copy present
+2026-10-26T12:35:28Z mesh-pki: cmtc-a: pkitest-clustermesh-intermediate pkitest-spire-intermediate chain to the root; issuers pkitest-mesh-root pkitest-lab-intermediate pkitest-spire-issuer ready
+2026-10-26T12:35:29Z mesh-pki: cmtc-b: pkitest-clustermesh-intermediate pkitest-spire-intermediate chain to the root; issuers pkitest-mesh-root pkitest-lab-intermediate pkitest-spire-issuer ready
+2026-10-26T12:35:29Z mesh-pki: root certificate written to /tmp/claude-501/pkitest-root.crt
+exit 0
+== B3: chain and lifetime facts (public certificates only)
+subject=CN=pkitest mesh root CA issuer=CN=pkitest mesh root CA notBefore=Oct 26 12:35:25 2026 GMT notAfter=Oct 23 12:35:25 2036 GMT X509v3 Basic Constraints: critical     CA:TRUE 
+cmtc-a pkitest-clustermesh-intermediate: subject=CN=cmtc-a ClusterMesh intermediate CA notAfter=Oct 26 12:35:25 2027 GMT X509v3 Basic Constraints: critical     CA:TRUE  key-sha256 3ff5e2ef39e49614
+cmtc-a pkitest-spire-intermediate: subject=CN=cmtc-a SPIRE intermediate CA notAfter=Oct 26 12:35:25 2027 GMT X509v3 Basic Constraints: critical     CA:TRUE  key-sha256 41c6b1cd7c449ca1
+cmtc-b pkitest-clustermesh-intermediate: subject=CN=cmtc-b ClusterMesh intermediate CA notAfter=Oct 26 12:35:26 2027 GMT X509v3 Basic Constraints: critical     CA:TRUE  key-sha256 f71e1e72613cc50d
+cmtc-b pkitest-spire-intermediate: subject=CN=cmtc-b SPIRE intermediate CA notAfter=Oct 26 12:35:26 2027 GMT X509v3 Basic Constraints: critical     CA:TRUE  key-sha256 476720042a46aa41
+== B4: a leaf from each cluster's leaf issuer verifies at the other cluster (shared root)
+leaf of cmtc-a, chain from its tls.crt, root held by cmtc-b: OK
+  certs in leaf tls.crt: 2
+leaf of cmtc-b, chain from its tls.crt, root held by cmtc-a: OK
+  certs in leaf tls.crt: 2

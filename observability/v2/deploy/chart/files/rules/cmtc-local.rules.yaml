@@ -1,0 +1,81 @@
+# Status: tested here with promtool 3.7.0 (rules/run-promtool.sh, tests/cmtc-local.test.yaml). Not deployed:
+# the remote-write rules need the prometheus self-scrape job of deploy/.
+#
+# Evaluated by the Prometheus of each cluster on its own data, not by the hub:
+#   - when remote_write fails, the hub never receives the samples that would show it;
+#   - an issuer-profile lapse drains every workload's TLS on the cluster's nodes
+#     (internal/controller/issuer_profile.go:19-27), so it is evaluated where the data is fresh.
+# The remote-write rules need the "prometheus" self-scrape job of deploy/chart (kind only). Their
+# expressions follow the upstream Prometheus mixin (prometheus/prometheus,
+# documentation/prometheus-mixin/alerts.libsonnet: PrometheusRemoteWriteBehind and
+# PrometheusRemoteStorageFailures); the metric names were read from the cmtc-b Prometheus 3.7.0
+# /metrics page on 2026-10-25.
+groups:
+- name: cmtc-local
+  rules:
+  - alert: CMTCRemoteWriteBehind
+    expr: |-
+      (
+        max_over_time(prometheus_remote_storage_highest_timestamp_in_seconds{job="prometheus"}[5m])
+        - ignoring (remote_name, url) group_right
+        max_over_time(prometheus_remote_storage_queue_highest_sent_timestamp_seconds{job="prometheus"}[5m])
+      ) > 120
+    for: 5m
+    labels:
+      severity: warning
+      owner: prometheus
+    annotations:
+      summary: 'Prometheus in {{ $labels.cluster }} is {{ $value | humanizeDuration }} behind in remote_write to {{ $labels.remote_name }}'
+      runbook: 'The hub shows this cluster late, then stale. Check the hub NodePort, the remote-write TLS client certificate and the receiver logs on the hub.'
+
+  - alert: CMTCRemoteWriteFailing
+    expr: |-
+      (
+        rate(prometheus_remote_storage_samples_failed_total{job="prometheus"}[5m])
+        /
+        (
+          rate(prometheus_remote_storage_samples_failed_total{job="prometheus"}[5m])
+          + rate(prometheus_remote_storage_samples_total{job="prometheus"}[5m])
+        )
+      ) > 0.01
+    for: 5m
+    labels:
+      severity: warning
+      owner: prometheus
+    annotations:
+      summary: 'Prometheus in {{ $labels.cluster }} fails to send {{ $value | humanizePercentage }} of samples to {{ $labels.remote_name }}'
+      runbook: 'Samples are dropped, not delayed: gaps at the hub will not fill. Check the receiver on the hub (TLS, client certificate, --web.enable-remote-write-receiver).'
+
+  # The leader's last acknowledged publication is past its lease (at most 30 s,
+  # internal/trustprofile/profile.go:31; renewed when less than 24 s remain, :35). A withdrawn
+  # profile reports 0 and is not a lapse. Standby replicas never published and report 0.
+  - alert: CMTCIssuerProfileLapsed
+    expr: |-
+      (
+        cmtc_issuer_profile_acknowledged_valid_until_timestamp_seconds{job="cmtc", component="cmtc-controller"} > 0
+        and on (cluster, instance)
+        (leader_election_master_status{job="cmtc", component="cmtc-controller", name="cmtc-controller.security.cmtc.io"} == 1)
+      )
+      < time()
+    labels:
+      severity: critical
+      owner: cmtc-controller
+    annotations:
+      summary: 'The issuer profile of {{ $labels.cluster }} expired at {{ $value | humanizeTimestamp }} and was not renewed'
+      runbook: 'ztunnel on every node of this cluster drains workload TLS once its profile expires. Check the controller log for publication write errors and the cmtc-issuer-publication ConfigMap in cmtc-system.'
+
+  # The producer reads its approved source every 5 s (internal/controller/issuer_profile.go:29).
+  - alert: CMTCIssuerProfileSourceStale
+    expr: |-
+      (
+        time() - cmtc_issuer_profile_source_checked_timestamp_seconds{job="cmtc", component="cmtc-controller"} > 60
+        and on (cluster, instance)
+        (leader_election_master_status{job="cmtc", component="cmtc-controller", name="cmtc-controller.security.cmtc.io"} == 1)
+      )
+    for: 1m
+    labels:
+      severity: warning
+      owner: cmtc-controller
+    annotations:
+      summary: 'The issuer-profile producer in {{ $labels.cluster }} last read its approved source {{ $value | humanizeDuration }} ago'
+      runbook: 'The producer cannot read the cmtc-issuer-approval ConfigMap; the profile will lapse when its lease ends. A value of decades means the leader has not read the source since it started. Check the controller''s API access and log.'

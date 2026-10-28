@@ -1,0 +1,61 @@
+{{- if .Values.trust.enabled }}
+{{- /* Fail early, with a clear message, when the APIs of the objects below are not installed. */ -}}
+{{- if not (.Capabilities.APIVersions.Has "cert-manager.io/v1/Certificate") }}{{ fail "trust.enabled needs cert-manager installed first (no cert-manager.io/v1 Certificate API)" }}{{ end -}}
+{{- if not (.Capabilities.APIVersions.Has "trust.cert-manager.io/v1alpha1/Bundle") }}{{ fail "trust.enabled needs cert-manager and trust-manager installed first (no trust.cert-manager.io/v1alpha1 Bundle API)" }}{{ end -}}
+{{- $cluster := include "cmtc.clusterName" . -}}
+{{- $intermediate := printf "%s-spire-intermediate" $cluster -}}
+{{- if not .Values.trust.bundle.namespaceLabels }}{{ fail "trust.bundle.namespaceLabels must name at least one label" }}{{ end -}}
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: {{ $intermediate }}
+  namespace: {{ .Values.trust.certManagerNamespace }}
+  labels:
+    {{- include "cmtc.labels" . | nindent 4 }}
+spec:
+  isCA: true
+  commonName: {{ $cluster }} SPIRE intermediate CA
+  duration: {{ .Values.trust.spireIntermediate.duration }}
+  renewBefore: {{ .Values.trust.spireIntermediate.renewBefore }}
+  secretName: {{ $intermediate }}
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+    rotationPolicy: Always
+  issuerRef:
+    name: {{ .Values.trust.rootIssuer }}
+    kind: ClusterIssuer
+    group: cert-manager.io
+---
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: {{ $intermediate }}
+  labels:
+    {{- include "cmtc.labels" . | nindent 4 }}
+spec:
+  ca:
+    secretName: {{ $intermediate }}
+---
+# Cluster-scoped: a Bundle has no namespace. trust-manager v0.25.0 serves trust.cert-manager.io/v1alpha1 only; its
+# announced successor, ClusterBundle (trust-manager.io/v1alpha2), is not in that release.
+apiVersion: trust.cert-manager.io/v1alpha1
+kind: Bundle
+metadata:
+  name: {{ .Values.trust.bundle.name }}
+  labels:
+    {{- include "cmtc.labels" . | nindent 4 }}
+spec:
+  sources:
+    - secret:
+        name: {{ $intermediate | quote }}
+        key: ca.crt
+  target:
+    configMap:
+      key: ca.crt
+    namespaceSelector:
+      matchLabels:
+        {{- range $key, $value := .Values.trust.bundle.namespaceLabels }}
+        {{ $key }}: {{ $value | quote }}
+        {{- end }}
+{{- end }}

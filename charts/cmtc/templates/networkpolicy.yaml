@@ -1,0 +1,18 @@
+{{- if .Values.metrics.networkPolicy.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: cmtc-metrics
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "cmtc.labels" . | nindent 4 }}
+spec:
+  podSelector: {matchLabels: {security.cmtc.io/metrics: "true"}}
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        {{- range (include "cmtc.metricsNamespaces" . | fromYamlArray) }}
+        - namespaceSelector: {matchLabels: {kubernetes.io/metadata.name: {{ . }}}}
+        {{- end }}
+      ports: [{port: 8080, protocol: TCP}]
+{{- end }}

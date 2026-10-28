@@ -1,0 +1,2304 @@
+{
+  "display": {
+    "name": "CMTC DNS"
+  },
+  "variables": [],
+  "panels": {
+    "0_0": {
+      "kind": "Panel",
+      "spec": {
+        "display": {
+          "name": "CoreDNS replicas scraped",
+          "description": "CoreDNS Pods that answered their last scrape, per cluster. The lab runs 2 per cluster."
+        },
+        "plugin": {
+          "kind": "StatChart",
+          "spec": {
+            "calculation": "last-number",
+            "colorMode": "value",
+            "format": {
+              "unit": "decimal"
+            },
+            "thresholds": {
+              "steps": [
+                {
+                  "color": "#e15759",
+                  "value": 0
+                },
+                {
+                  "color": "#59a14f",
+                  "value": 1
+                }
+              ]
+            }
+          }
+        },
+        "queries": [
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "count by (cluster) (up{job=\"coredns\", cluster=\"cmtc-a\"} == 1)",
+                  "seriesNameFormat": "{{cluster}}"
+                }
+              }
+            }
+          },
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "count by (cluster) (up{job=\"coredns\", cluster=\"cmtc-b\"} == 1)",
+                  "seriesNameFormat": "{{cluster}}"
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "0_1": {
+      "kind": "Panel",
+      "spec": {
+        "display": {
+          "name": "Nodes running CoreDNS",
+          "description": "Nodes that run a scraped CoreDNS replica, per cluster. 1 with 2 replicas means one node failure stops resolution for the cluster (CoreDNSReplicasOnOneNode); both lab clusters run both on the control plane."
+        },
+        "plugin": {
+          "kind": "StatChart",
+          "spec": {
+            "calculation": "last-number",
+            "colorMode": "value",
+            "format": {
+              "unit": "decimal"
+            },
+            "thresholds": {
+              "steps": [
+                {
+                  "color": "#e15759",
+                  "value": 0
+                },
+                {
+                  "color": "#f28e2b",
+                  "value": 1
+                },
+                {
+                  "color": "#59a14f",
+                  "value": 2
+                }
+              ]
+            }
+          }
+        },
+        "queries": [
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "count by (cluster) (group by (cluster, node) (up{job=\"coredns\", cluster=\"cmtc-a\"} == 1))",
+                  "seriesNameFormat": "{{cluster}}"
+                }
+              }
+            }
+          },
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "count by (cluster) (group by (cluster, node) (up{job=\"coredns\", cluster=\"cmtc-b\"} == 1))",
+                  "seriesNameFormat": "{{cluster}}"
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "0_2": {
+      "kind": "Panel",
+      "spec": {
+        "display": {
+          "name": "SERVFAIL share, 5 minutes",
+          "description": "SERVFAIL answers as a share of all answers, per cluster. Normal: 0 %. Above 1 % for 5 minutes: CoreDNSServfailHigh."
+        },
+        "plugin": {
+          "kind": "StatChart",
+          "spec": {
+            "calculation": "last-number",
+            "colorMode": "value",
+            "format": {
+              "decimalPlaces": 2,
+              "unit": "percent-decimal"
+            },
+            "thresholds": {
+              "steps": [
+                {
+                  "color": "#59a14f",
+                  "value": 0
+                },
+                {
+                  "color": "#f28e2b",
+                  "value": 0.001
+                },
+                {
+                  "color": "#e15759",
+                  "value": 0.01
+                }
+              ]
+            }
+          }
+        },
+        "queries": [
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "(sum by (cluster) (rate(coredns_dns_responses_total{job=\"coredns\", rcode=\"SERVFAIL\", cluster=\"cmtc-a\"}[5m])) or 0 * sum by (cluster) (rate(coredns_dns_responses_total{job=\"coredns\", cluster=\"cmtc-a\"}[5m]))) / (sum by (cluster) (rate(coredns_dns_responses_total{job=\"coredns\", cluster=\"cmtc-a\"}[5m])) > 0)",
+                  "seriesNameFormat": "{{cluster}}"
+                }
+              }
+            }
+          },
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "(sum by (cluster) (rate(coredns_dns_responses_total{job=\"coredns\", rcode=\"SERVFAIL\", cluster=\"cmtc-b\"}[5m])) or 0 * sum by (cluster) (rate(coredns_dns_responses_total{job=\"coredns\", cluster=\"cmtc-b\"}[5m]))) / (sum by (cluster) (rate(coredns_dns_responses_total{job=\"coredns\", cluster=\"cmtc-b\"}[5m])) > 0)",
+                  "seriesNameFormat": "{{cluster}}"
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "0_3": {
+      "kind": "Panel",
+      "spec": {
+        "display": {
+          "name": "NXDOMAIN share, 5 minutes",
+          "description": "NXDOMAIN answers as a share of all answers, per cluster. High is normal: each lookup of a short name tries the search domains first. On 2026-10-25 a cmtc-a replica had answered 107020 NXDOMAIN and 59271 NOERROR. Recorded, not alerted."
+        },
+        "plugin": {
+          "kind": "StatChart",
+          "spec": {
+            "calculation": "last-number",
+            "colorMode": "value",
+            "format": {
+              "decimalPlaces": 0,
+              "unit": "percent-decimal"
+            },
+            "thresholds": {
+              "steps": [
+                {
+                  "color": "#4e79a7",
+                  "value": 0
+                }
+              ]
+            }
+          }
+        },
+        "queries": [
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "(sum by (cluster) (rate(coredns_dns_responses_total{job=\"coredns\", rcode=\"NXDOMAIN\", cluster=\"cmtc-a\"}[5m])) or 0 * sum by (cluster) (rate(coredns_dns_responses_total{job=\"coredns\", cluster=\"cmtc-a\"}[5m]))) / (sum by (cluster) (rate(coredns_dns_responses_total{job=\"coredns\", cluster=\"cmtc-a\"}[5m])) > 0)",
+                  "seriesNameFormat": "{{cluster}}"
+                }
+              }
+            }
+          },
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "(sum by (cluster) (rate(coredns_dns_responses_total{job=\"coredns\", rcode=\"NXDOMAIN\", cluster=\"cmtc-b\"}[5m])) or 0 * sum by (cluster) (rate(coredns_dns_responses_total{job=\"coredns\", cluster=\"cmtc-b\"}[5m]))) / (sum by (cluster) (rate(coredns_dns_responses_total{job=\"coredns\", cluster=\"cmtc-b\"}[5m])) > 0)",
+                  "seriesNameFormat": "{{cluster}}"
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "0_4": {
+      "kind": "Panel",
+      "spec": {
+        "display": {
+          "name": "Answers per second",
+          "description": "Answers CoreDNS sent, all response codes, per cluster, 5 minute rate."
+        },
+        "plugin": {
+          "kind": "TimeSeriesChart",
+          "spec": {
+            "legend": {
+              "mode": "list",
+              "position": "bottom"
+            },
+            "querySettings": [
+              {
+                "areaOpacity": 0.1,
+                "colorMode": "fixed",
+                "colorValue": "#4e79a7",
+                "queryIndex": 0
+              },
+              {
+                "areaOpacity": 0.1,
+                "colorMode": "fixed",
+                "colorValue": "#e15759",
+                "lineStyle": "dashed",
+                "queryIndex": 1
+              }
+            ],
+            "visual": {
+              "areaOpacity": 0.1,
+              "connectNulls": false,
+              "lineWidth": 1
+            },
+            "yAxis": {
+              "format": {
+                "unit": "requests/sec"
+              },
+              "min": 0
+            }
+          }
+        },
+        "queries": [
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "sum by (cluster) (rate(coredns_dns_responses_total{job=\"coredns\", cluster=\"cmtc-a\"}[5m]))",
+                  "seriesNameFormat": "{{cluster}}"
+                }
+              }
+            }
+          },
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "sum by (cluster) (rate(coredns_dns_responses_total{job=\"coredns\", cluster=\"cmtc-b\"}[5m]))",
+                  "seriesNameFormat": "{{cluster}}"
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "0_5": {
+      "kind": "Panel",
+      "spec": {
+        "display": {
+          "name": "Requests per second",
+          "description": "Requests CoreDNS received, all record types and transports, per cluster, 5 minute rate. It equals answers per second when every request is answered."
+        },
+        "plugin": {
+          "kind": "TimeSeriesChart",
+          "spec": {
+            "legend": {
+              "mode": "list",
+              "position": "bottom"
+            },
+            "querySettings": [
+              {
+                "areaOpacity": 0.1,
+                "colorMode": "fixed",
+                "colorValue": "#4e79a7",
+                "queryIndex": 0
+              },
+              {
+                "areaOpacity": 0.1,
+                "colorMode": "fixed",
+                "colorValue": "#e15759",
+                "lineStyle": "dashed",
+                "queryIndex": 1
+              }
+            ],
+            "visual": {
+              "areaOpacity": 0.1,
+              "connectNulls": false,
+              "lineWidth": 1
+            },
+            "yAxis": {
+              "format": {
+                "unit": "requests/sec"
+              },
+              "min": 0
+            }
+          }
+        },
+        "queries": [
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "sum by (cluster) (rate(coredns_dns_requests_total{job=\"coredns\", cluster=\"cmtc-a\"}[5m]))",
+                  "seriesNameFormat": "{{cluster}}"
+                }
+              }
+            }
+          },
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "sum by (cluster) (rate(coredns_dns_requests_total{job=\"coredns\", cluster=\"cmtc-b\"}[5m]))",
+                  "seriesNameFormat": "{{cluster}}"
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "0_6": {
+      "kind": "Panel",
+      "spec": {
+        "display": {
+          "name": "Answers in the last hour, by response code",
+          "description": "Answers by response code over the last hour. A code appears once CoreDNS first sent it."
+        },
+        "plugin": {
+          "kind": "Table",
+          "spec": {
+            "columnSettings": [
+              {
+                "cellSettings": [
+                  {
+                    "backgroundColor": "#4e79a7",
+                    "condition": {
+                      "kind": "Value",
+                      "spec": {
+                        "value": "cmtc-a"
+                      }
+                    },
+                    "textColor": "#000000"
+                  },
+                  {
+                    "backgroundColor": "#e15759",
+                    "condition": {
+                      "kind": "Value",
+                      "spec": {
+                        "value": "cmtc-b"
+                      }
+                    },
+                    "textColor": "#000000"
+                  }
+                ],
+                "header": "Cluster",
+                "name": "cluster"
+              },
+              {
+                "header": "Response code",
+                "name": "rcode"
+              },
+              {
+                "format": {
+                  "unit": "decimal"
+                },
+                "header": "Answers, 1 h",
+                "name": "value"
+              },
+              {
+                "hide": true,
+                "name": "timestamp"
+              }
+            ],
+            "density": "compact",
+            "transforms": [
+              {
+                "kind": "MergeSeries",
+                "spec": {}
+              }
+            ]
+          }
+        },
+        "queries": [
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "sum by (cluster, rcode) (increase(coredns_dns_responses_total{job=\"coredns\"}[1h]))",
+                  "seriesNameFormat": ""
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "0_7": {
+      "kind": "Panel",
+      "spec": {
+        "display": {
+          "name": "Requests in the last hour, by record type and transport",
+          "description": "Requests by record type (A, AAAA, SRV, other) and transport (udp, tcp) over the last hour."
+        },
+        "plugin": {
+          "kind": "Table",
+          "spec": {
+            "columnSettings": [
+              {
+                "cellSettings": [
+                  {
+                    "backgroundColor": "#4e79a7",
+                    "condition": {
+                      "kind": "Value",
+                      "spec": {
+                        "value": "cmtc-a"
+                      }
+                    },
+                    "textColor": "#000000"
+                  },
+                  {
+                    "backgroundColor": "#e15759",
+                    "condition": {
+                      "kind": "Value",
+                      "spec": {
+                        "value": "cmtc-b"
+                      }
+                    },
+                    "textColor": "#000000"
+                  }
+                ],
+                "header": "Cluster",
+                "name": "cluster"
+              },
+              {
+                "header": "Type",
+                "name": "type"
+              },
+              {
+                "header": "Transport",
+                "name": "proto"
+              },
+              {
+                "format": {
+                  "unit": "decimal"
+                },
+                "header": "Requests, 1 h",
+                "name": "value"
+              },
+              {
+                "hide": true,
+                "name": "timestamp"
+              }
+            ],
+            "density": "compact",
+            "transforms": [
+              {
+                "kind": "MergeSeries",
+                "spec": {}
+              }
+            ]
+          }
+        },
+        "queries": [
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "sum by (cluster, type, proto) (increase(coredns_dns_requests_total{job=\"coredns\"}[1h]))",
+                  "seriesNameFormat": ""
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "0_8": {
+      "kind": "Panel",
+      "spec": {
+        "display": {
+          "name": "How to read this section"
+        },
+        "plugin": {
+          "kind": "Markdown",
+          "spec": {
+            "text": "CoreDNS's own view: the queries that reached it. NXDOMAIN dominates by design; SERVFAIL is the error signal."
+          }
+        }
+      }
+    },
+    "1_0": {
+      "kind": "Panel",
+      "spec": {
+        "display": {
+          "name": "Answer time, median, seconds",
+          "description": "Median time CoreDNS took to answer, per cluster, from its histogram over 5 minutes (buckets from 0.25 ms). No value when nothing was answered."
+        },
+        "plugin": {
+          "kind": "TimeSeriesChart",
+          "spec": {
+            "legend": {
+              "mode": "list",
+              "position": "bottom"
+            },
+            "querySettings": [
+              {
+                "areaOpacity": 0.1,
+                "colorMode": "fixed",
+                "colorValue": "#4e79a7",
+                "queryIndex": 0
+              },
+              {
+                "areaOpacity": 0.1,
+                "colorMode": "fixed",
+                "colorValue": "#e15759",
+                "lineStyle": "dashed",
+                "queryIndex": 1
+              }
+            ],
+            "visual": {
+              "areaOpacity": 0.1,
+              "connectNulls": false,
+              "lineWidth": 1
+            },
+            "yAxis": {
+              "format": {
+                "unit": "seconds"
+              },
+              "min": 0
+            }
+          }
+        },
+        "queries": [
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "histogram_quantile(0.5, sum by (cluster, le) (rate(coredns_dns_request_duration_seconds_bucket{job=\"coredns\", cluster=\"cmtc-a\"}[5m])))",
+                  "seriesNameFormat": "{{cluster}}"
+                }
+              }
+            }
+          },
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "histogram_quantile(0.5, sum by (cluster, le) (rate(coredns_dns_request_duration_seconds_bucket{job=\"coredns\", cluster=\"cmtc-b\"}[5m])))",
+                  "seriesNameFormat": "{{cluster}}"
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "1_1": {
+      "kind": "Panel",
+      "spec": {
+        "display": {
+          "name": "Answer time, 99th percentile, seconds",
+          "description": "99th percentile answer time, per cluster, 5 minutes. The latency objective is 99 % within 64 ms (docs/METRICS_AND_SLOS.md)."
+        },
+        "plugin": {
+          "kind": "TimeSeriesChart",
+          "spec": {
+            "legend": {
+              "mode": "list",
+              "position": "bottom"
+            },
+            "querySettings": [
+              {
+                "areaOpacity": 0.1,
+                "colorMode": "fixed",
+                "colorValue": "#4e79a7",
+                "queryIndex": 0
+              },
+              {
+                "areaOpacity": 0.1,
+                "colorMode": "fixed",
+                "colorValue": "#e15759",
+                "lineStyle": "dashed",
+                "queryIndex": 1
+              }
+            ],
+            "visual": {
+              "areaOpacity": 0.1,
+              "connectNulls": false,
+              "lineWidth": 1
+            },
+            "yAxis": {
+              "format": {
+                "unit": "seconds"
+              },
+              "min": 0
+            }
+          }
+        },
+        "queries": [
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "histogram_quantile(0.99, sum by (cluster, le) (rate(coredns_dns_request_duration_seconds_bucket{job=\"coredns\", cluster=\"cmtc-a\"}[5m])))",
+                  "seriesNameFormat": "{{cluster}}"
+                }
+              }
+            }
+          },
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "histogram_quantile(0.99, sum by (cluster, le) (rate(coredns_dns_request_duration_seconds_bucket{job=\"coredns\", cluster=\"cmtc-b\"}[5m])))",
+                  "seriesNameFormat": "{{cluster}}"
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "1_2": {
+      "kind": "Panel",
+      "spec": {
+        "display": {
+          "name": "Each CoreDNS replica, now",
+          "description": "One row per replica over the last 5 minutes: answers per second, median and 99th percentile answer time, SERVFAIL per second, cache hit share, CPU cores and resident memory. Replicas of a cluster should read alike."
+        },
+        "plugin": {
+          "kind": "Table",
+          "spec": {
+            "columnSettings": [
+              {
+                "cellSettings": [
+                  {
+                    "backgroundColor": "#4e79a7",
+                    "condition": {
+                      "kind": "Value",
+                      "spec": {
+                        "value": "cmtc-a"
+                      }
+                    },
+                    "textColor": "#000000"
+                  },
+                  {
+                    "backgroundColor": "#e15759",
+                    "condition": {
+                      "kind": "Value",
+                      "spec": {
+                        "value": "cmtc-b"
+                      }
+                    },
+                    "textColor": "#000000"
+                  }
+                ],
+                "header": "Cluster",
+                "name": "cluster"
+              },
+              {
+                "header": "Node",
+                "name": "node"
+              },
+              {
+                "header": "Pod",
+                "name": "pod"
+              },
+              {
+                "format": {
+                  "unit": "requests/sec"
+                },
+                "header": "Answers/s",
+                "name": "value #1"
+              },
+              {
+                "format": {
+                  "unit": "seconds"
+                },
+                "header": "Median",
+                "name": "value #2"
+              },
+              {
+                "format": {
+                  "unit": "seconds"
+                },
+                "header": "p99",
+                "name": "value #3"
+              },
+              {
+                "format": {
+                  "unit": "requests/sec"
+                },
+                "header": "SERVFAIL/s",
+                "name": "value #4"
+              },
+              {
+                "format": {
+                  "unit": "percent-decimal"
+                },
+                "header": "Cache hits",
+                "name": "value #5"
+              },
+              {
+                "format": {
+                  "unit": "decimal"
+                },
+                "header": "CPU",
+                "name": "value #6"
+              },
+              {
+                "format": {
+                  "unit": "bytes"
+                },
+                "header": "Memory",
+                "name": "value #7"
+              },
+              {
+                "hide": true,
+                "name": "timestamp"
+              }
+            ],
+            "density": "compact",
+            "transforms": [
+              {
+                "kind": "MergeSeries",
+                "spec": {}
+              }
+            ]
+          }
+        },
+        "queries": [
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "sum by (cluster, node, pod) (rate(coredns_dns_responses_total{job=\"coredns\"}[5m]))",
+                  "seriesNameFormat": ""
+                }
+              }
+            }
+          },
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "histogram_quantile(0.5, sum by (cluster, node, pod, le) (rate(coredns_dns_request_duration_seconds_bucket{job=\"coredns\"}[5m])))",
+                  "seriesNameFormat": ""
+                }
+              }
+            }
+          },
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "histogram_quantile(0.99, sum by (cluster, node, pod, le) (rate(coredns_dns_request_duration_seconds_bucket{job=\"coredns\"}[5m])))",
+                  "seriesNameFormat": ""
+                }
+              }
+            }
+          },
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "sum by (cluster, node, pod) (rate(coredns_dns_responses_total{job=\"coredns\", rcode=\"SERVFAIL\"}[5m])) or 0 * sum by (cluster, node, pod) (rate(coredns_dns_responses_total{job=\"coredns\"}[5m]))",
+                  "seriesNameFormat": ""
+                }
+              }
+            }
+          },
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "sum by (cluster, node, pod) (rate(coredns_cache_hits_total{job=\"coredns\"}[5m])) / (sum by (cluster, node, pod) (rate(coredns_cache_requests_total{job=\"coredns\"}[5m])) > 0)",
+                  "seriesNameFormat": ""
+                }
+              }
+            }
+          },
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "sum by (cluster, node, pod) (rate(process_cpu_seconds_total{job=\"coredns\"}[5m]))",
+                  "seriesNameFormat": ""
+                }
+              }
+            }
+          },
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "sum by (cluster, node, pod) (process_resident_memory_bytes{job=\"coredns\"})",
+                  "seriesNameFormat": ""
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "1_3": {
+      "kind": "Panel",
+      "spec": {
+        "display": {
+          "name": "How to read this section"
+        },
+        "plugin": {
+          "kind": "Markdown",
+          "spec": {
+            "text": "Percentiles come from CoreDNS's buckets, not an average. A replica slower than its neighbour points at its node."
+          }
+        }
+      }
+    },
+    "2_0": {
+      "kind": "Panel",
+      "spec": {
+        "display": {
+          "name": "Forwarded queries per second",
+          "description": "Queries CoreDNS forwarded to its upstream resolvers (names outside the cluster), per cluster, 5 minute rate."
+        },
+        "plugin": {
+          "kind": "TimeSeriesChart",
+          "spec": {
+            "legend": {
+              "mode": "list",
+              "position": "bottom"
+            },
+            "querySettings": [
+              {
+                "areaOpacity": 0.1,
+                "colorMode": "fixed",
+                "colorValue": "#4e79a7",
+                "queryIndex": 0
+              },
+              {
+                "areaOpacity": 0.1,
+                "colorMode": "fixed",
+                "colorValue": "#e15759",
+                "lineStyle": "dashed",
+                "queryIndex": 1
+              }
+            ],
+            "visual": {
+              "areaOpacity": 0.1,
+              "connectNulls": false,
+              "lineWidth": 1
+            },
+            "yAxis": {
+              "format": {
+                "unit": "requests/sec"
+              },
+              "min": 0
+            }
+          }
+        },
+        "queries": [
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "sum by (cluster) (rate(coredns_proxy_request_duration_seconds_count{job=\"coredns\", cluster=\"cmtc-a\"}[5m]))",
+                  "seriesNameFormat": "{{cluster}}"
+                }
+              }
+            }
+          },
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "sum by (cluster) (rate(coredns_proxy_request_duration_seconds_count{job=\"coredns\", cluster=\"cmtc-b\"}[5m]))",
+                  "seriesNameFormat": "{{cluster}}"
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "2_1": {
+      "kind": "Panel",
+      "spec": {
+        "display": {
+          "name": "Forward answer time, 99th percentile, seconds",
+          "description": "99th percentile time the upstream took to answer, per cluster, 5 minutes."
+        },
+        "plugin": {
+          "kind": "TimeSeriesChart",
+          "spec": {
+            "legend": {
+              "mode": "list",
+              "position": "bottom"
+            },
+            "querySettings": [
+              {
+                "areaOpacity": 0.1,
+                "colorMode": "fixed",
+                "colorValue": "#4e79a7",
+                "queryIndex": 0
+              },
+              {
+                "areaOpacity": 0.1,
+                "colorMode": "fixed",
+                "colorValue": "#e15759",
+                "lineStyle": "dashed",
+                "queryIndex": 1
+              }
+            ],
+            "visual": {
+              "areaOpacity": 0.1,
+              "connectNulls": false,
+              "lineWidth": 1
+            },
+            "yAxis": {
+              "format": {
+                "unit": "seconds"
+              },
+              "min": 0
+            }
+          }
+        },
+        "queries": [
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "histogram_quantile(0.99, sum by (cluster, le) (rate(coredns_proxy_request_duration_seconds_bucket{job=\"coredns\", cluster=\"cmtc-a\"}[5m])))",
+                  "seriesNameFormat": "{{cluster}}"
+                }
+              }
+            }
+          },
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "histogram_quantile(0.99, sum by (cluster, le) (rate(coredns_proxy_request_duration_seconds_bucket{job=\"coredns\", cluster=\"cmtc-b\"}[5m])))",
+                  "seriesNameFormat": "{{cluster}}"
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "2_2": {
+      "kind": "Panel",
+      "spec": {
+        "display": {
+          "name": "Forwarded answers in the last hour, by upstream and response code",
+          "description": "Upstream answers by upstream address and response code over the last hour."
+        },
+        "plugin": {
+          "kind": "Table",
+          "spec": {
+            "columnSettings": [
+              {
+                "cellSettings": [
+                  {
+                    "backgroundColor": "#4e79a7",
+                    "condition": {
+                      "kind": "Value",
+                      "spec": {
+                        "value": "cmtc-a"
+                      }
+                    },
+                    "textColor": "#000000"
+                  },
+                  {
+                    "backgroundColor": "#e15759",
+                    "condition": {
+                      "kind": "Value",
+                      "spec": {
+                        "value": "cmtc-b"
+                      }
+                    },
+                    "textColor": "#000000"
+                  }
+                ],
+                "header": "Cluster",
+                "name": "cluster"
+              },
+              {
+                "header": "Upstream",
+                "name": "to"
+              },
+              {
+                "header": "Response code",
+                "name": "rcode"
+              },
+              {
+                "format": {
+                  "unit": "decimal"
+                },
+                "header": "Answers, 1 h",
+                "name": "value"
+              },
+              {
+                "hide": true,
+                "name": "timestamp"
+              }
+            ],
+            "density": "compact",
+            "transforms": [
+              {
+                "kind": "MergeSeries",
+                "spec": {}
+              }
+            ]
+          }
+        },
+        "queries": [
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "sum by (cluster, to, rcode) (increase(coredns_proxy_request_duration_seconds_count{job=\"coredns\"}[1h]))",
+                  "seriesNameFormat": ""
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "2_3": {
+      "kind": "Panel",
+      "spec": {
+        "display": {
+          "name": "Faults in the last hour, per replica",
+          "description": "Per replica over the last hour: forward health checks that found every upstream broken, queries refused at the forward concurrency limit, recovered panics and failed Corefile reloads. All 0 is normal; each has its own alert."
+        },
+        "plugin": {
+          "kind": "Table",
+          "spec": {
+            "columnSettings": [
+              {
+                "cellSettings": [
+                  {
+                    "backgroundColor": "#4e79a7",
+                    "condition": {
+                      "kind": "Value",
+                      "spec": {
+                        "value": "cmtc-a"
+                      }
+                    },
+                    "textColor": "#000000"
+                  },
+                  {
+                    "backgroundColor": "#e15759",
+                    "condition": {
+                      "kind": "Value",
+                      "spec": {
+                        "value": "cmtc-b"
+                      }
+                    },
+                    "textColor": "#000000"
+                  }
+                ],
+                "header": "Cluster",
+                "name": "cluster"
+              },
+              {
+                "header": "Node",
+                "name": "node"
+              },
+              {
+                "header": "Pod",
+                "name": "pod"
+              },
+              {
+                "format": {
+                  "unit": "decimal"
+                },
+                "header": "Upstreams broken",
+                "name": "value #1"
+              },
+              {
+                "format": {
+                  "unit": "decimal"
+                },
+                "header": "Concurrency rejects",
+                "name": "value #2"
+              },
+              {
+                "format": {
+                  "unit": "decimal"
+                },
+                "header": "Panics",
+                "name": "value #3"
+              },
+              {
+                "format": {
+                  "unit": "decimal"
+                },
+                "header": "Reloads failed",
+                "name": "value #4"
+              },
+              {
+                "hide": true,
+                "name": "timestamp"
+              }
+            ],
+            "density": "compact",
+            "transforms": [
+              {
+                "kind": "MergeSeries",
+                "spec": {}
+              }
+            ]
+          }
+        },
+        "queries": [
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "sum by (cluster, node, pod) (increase(coredns_forward_healthcheck_broken_total{job=\"coredns\"}[1h]))",
+                  "seriesNameFormat": ""
+                }
+              }
+            }
+          },
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "sum by (cluster, node, pod) (increase(coredns_forward_max_concurrent_rejects_total{job=\"coredns\"}[1h]))",
+                  "seriesNameFormat": ""
+                }
+              }
+            }
+          },
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "sum by (cluster, node, pod) (increase(coredns_panics_total{job=\"coredns\"}[1h]))",
+                  "seriesNameFormat": ""
+                }
+              }
+            }
+          },
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "sum by (cluster, node, pod) (increase(coredns_reload_failed_total{job=\"coredns\"}[1h]))",
+                  "seriesNameFormat": ""
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "2_4": {
+      "kind": "Panel",
+      "spec": {
+        "display": {
+          "name": "How to read this section"
+        },
+        "plugin": {
+          "kind": "Markdown",
+          "spec": {
+            "text": "On the lab every replica forwards to the node's resolver. SERVFAIL with healthy forwarding points at the kubernetes plugin."
+          }
+        }
+      }
+    },
+    "3_0": {
+      "kind": "Panel",
+      "spec": {
+        "display": {
+          "name": "Queries without an answer, share \u00b7 planned",
+          "description": "Planned, a proposed source change: needs the CMTC measurement plane (#36, ADR-005; its names are in metrics/contract.json). Share of DNS queries (UDP and TCP, to port 53 or to ztunnel's DNS proxy on 15053) sent by enrolled Pods that got no answer, per cluster, 5 minute rate, measured at the client's own node. CoreDNS cannot see a query dropped before it. UDP retries count as queries."
+        },
+        "plugin": {
+          "kind": "TimeSeriesChart",
+          "spec": {
+            "legend": {
+              "mode": "list",
+              "position": "bottom"
+            },
+            "querySettings": [
+              {
+                "areaOpacity": 0.1,
+                "colorMode": "fixed",
+                "colorValue": "#4e79a7",
+                "queryIndex": 0
+              },
+              {
+                "areaOpacity": 0.1,
+                "colorMode": "fixed",
+                "colorValue": "#e15759",
+                "lineStyle": "dashed",
+                "queryIndex": 1
+              }
+            ],
+            "visual": {
+              "areaOpacity": 0.1,
+              "connectNulls": false,
+              "lineWidth": 1
+            },
+            "yAxis": {
+              "format": {
+                "unit": "percent-decimal"
+              },
+              "max": 1,
+              "min": 0
+            }
+          }
+        },
+        "queries": [
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "clamp_min(1 - ((sum by (cluster) (rate(cmtc_measurement_dns_answers_total{job=\"cmtc\", cluster=\"cmtc-a\"}[5m])) or 0 * sum by (cluster) (rate(cmtc_measurement_dns_queries_total{job=\"cmtc\", cluster=\"cmtc-a\"}[5m]))) / (sum by (cluster) (rate(cmtc_measurement_dns_queries_total{job=\"cmtc\", cluster=\"cmtc-a\"}[5m])) > 0)), 0)",
+                  "seriesNameFormat": "{{cluster}}"
+                }
+              }
+            }
+          },
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "clamp_min(1 - ((sum by (cluster) (rate(cmtc_measurement_dns_answers_total{job=\"cmtc\", cluster=\"cmtc-b\"}[5m])) or 0 * sum by (cluster) (rate(cmtc_measurement_dns_queries_total{job=\"cmtc\", cluster=\"cmtc-b\"}[5m]))) / (sum by (cluster) (rate(cmtc_measurement_dns_queries_total{job=\"cmtc\", cluster=\"cmtc-b\"}[5m])) > 0)), 0)",
+                  "seriesNameFormat": "{{cluster}}"
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "3_1": {
+      "kind": "Panel",
+      "spec": {
+        "display": {
+          "name": "Client-side answer time, 99th percentile, seconds \u00b7 planned",
+          "description": "Planned, a proposed source change: needs the CMTC measurement plane (#36, ADR-005; its names are in metrics/contract.json). Time from an enrolled Pod's query to its answer, as the client's node measures it, per cluster, 5 minutes. Includes the network path CoreDNS cannot see."
+        },
+        "plugin": {
+          "kind": "TimeSeriesChart",
+          "spec": {
+            "legend": {
+              "mode": "list",
+              "position": "bottom"
+            },
+            "querySettings": [
+              {
+                "areaOpacity": 0.1,
+                "colorMode": "fixed",
+                "colorValue": "#4e79a7",
+                "queryIndex": 0
+              },
+              {
+                "areaOpacity": 0.1,
+                "colorMode": "fixed",
+                "colorValue": "#e15759",
+                "lineStyle": "dashed",
+                "queryIndex": 1
+              }
+            ],
+            "visual": {
+              "areaOpacity": 0.1,
+              "connectNulls": false,
+              "lineWidth": 1
+            },
+            "yAxis": {
+              "format": {
+                "unit": "seconds"
+              },
+              "min": 0
+            }
+          }
+        },
+        "queries": [
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "histogram_quantile(0.99, sum by (cluster, le) (rate(cmtc_measurement_dns_answer_duration_seconds_bucket{job=\"cmtc\", cluster=\"cmtc-a\"}[5m])))",
+                  "seriesNameFormat": "{{cluster}}"
+                }
+              }
+            }
+          },
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "histogram_quantile(0.99, sum by (cluster, le) (rate(cmtc_measurement_dns_answer_duration_seconds_bucket{job=\"cmtc\", cluster=\"cmtc-b\"}[5m])))",
+                  "seriesNameFormat": "{{cluster}}"
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "3_2": {
+      "kind": "Panel",
+      "spec": {
+        "display": {
+          "name": "Namespaces whose queries got no answer, last minute \u00b7 planned",
+          "description": "Planned, a proposed source change: needs the CMTC measurement plane (#36, ADR-005; its names are in metrics/contract.json). Nodes and namespaces where enrolled Pods sent queries and received no answer in the last minute: the condition of CMTCEnrolledPodDNSUnanswered. Labels stop at the namespace: per-Pod detail never goes into a metric label (ADR-005). The plane's namespace label reads exported_namespace here, because the scrape sets namespace to the node agent's own."
+        },
+        "plugin": {
+          "kind": "Table",
+          "spec": {
+            "columnSettings": [
+              {
+                "cellSettings": [
+                  {
+                    "backgroundColor": "#4e79a7",
+                    "condition": {
+                      "kind": "Value",
+                      "spec": {
+                        "value": "cmtc-a"
+                      }
+                    },
+                    "textColor": "#000000"
+                  },
+                  {
+                    "backgroundColor": "#e15759",
+                    "condition": {
+                      "kind": "Value",
+                      "spec": {
+                        "value": "cmtc-b"
+                      }
+                    },
+                    "textColor": "#000000"
+                  }
+                ],
+                "header": "Cluster",
+                "name": "cluster"
+              },
+              {
+                "header": "Node",
+                "name": "node"
+              },
+              {
+                "header": "Namespace",
+                "name": "exported_namespace"
+              },
+              {
+                "format": {
+                  "unit": "decimal"
+                },
+                "header": "Queries, 1 min",
+                "name": "value"
+              },
+              {
+                "hide": true,
+                "name": "timestamp"
+              }
+            ],
+            "density": "compact",
+            "transforms": [
+              {
+                "kind": "MergeSeries",
+                "spec": {}
+              }
+            ]
+          }
+        },
+        "queries": [
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "sum by (cluster, node, exported_namespace) (increase(cmtc_measurement_dns_queries_total{job=\"cmtc\"}[1m])) > 0 unless on (cluster, node, exported_namespace) sum by (cluster, node, exported_namespace) (increase(cmtc_measurement_dns_answers_total{job=\"cmtc\"}[1m])) > 0",
+                  "seriesNameFormat": ""
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "3_3": {
+      "kind": "Panel",
+      "spec": {
+        "display": {
+          "name": "Measurement plane ready, per node \u00b7 planned",
+          "description": "Planned, a proposed source change: needs the CMTC measurement plane (#36, ADR-005; its names are in metrics/contract.json). Whether the measurement plane on each node is attached and fresh. Not ready means the panels above are unavailable for that node, not zero."
+        },
+        "plugin": {
+          "kind": "StatusHistoryChart",
+          "spec": {
+            "legend": {
+              "mode": "list",
+              "position": "bottom"
+            },
+            "mappings": [
+              {
+                "kind": "Value",
+                "spec": {
+                  "result": {
+                    "color": "#e15759",
+                    "value": "not ready"
+                  },
+                  "value": "0"
+                }
+              },
+              {
+                "kind": "Value",
+                "spec": {
+                  "result": {
+                    "color": "#59a14f",
+                    "value": "ready"
+                  },
+                  "value": "1"
+                }
+              }
+            ],
+            "sorting": "asc"
+          }
+        },
+        "queries": [
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "max by (cluster, node) (cmtc_measurement_ready{job=\"cmtc\"})",
+                  "seriesNameFormat": "{{node}}"
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "3_4": {
+      "kind": "Panel",
+      "spec": {
+        "display": {
+          "name": "How to read this section"
+        },
+        "plugin": {
+          "kind": "Markdown",
+          "spec": {
+            "text": "The 2026-10-25 failure: an enrolled Pod's queries were dropped at its own node's egress gate while CoreDNS stayed healthy. Only this client side shows it."
+          }
+        }
+      }
+    },
+    "4_0": {
+      "kind": "Panel",
+      "spec": {
+        "display": {
+          "name": "Packets dropped for policy per second, egress",
+          "description": "Packets the Cilium datapath dropped leaving a Pod with reason Policy denied, per cluster, 5 minute rate. The 2026-10-25 DNS drops were of this kind; the counter cannot tell DNS from other traffic."
+        },
+        "plugin": {
+          "kind": "TimeSeriesChart",
+          "spec": {
+            "legend": {
+              "mode": "list",
+              "position": "bottom"
+            },
+            "querySettings": [
+              {
+                "areaOpacity": 0.1,
+                "colorMode": "fixed",
+                "colorValue": "#4e79a7",
+                "queryIndex": 0
+              },
+              {
+                "areaOpacity": 0.1,
+                "colorMode": "fixed",
+                "colorValue": "#e15759",
+                "lineStyle": "dashed",
+                "queryIndex": 1
+              }
+            ],
+            "visual": {
+              "areaOpacity": 0.1,
+              "connectNulls": false,
+              "lineWidth": 1
+            },
+            "yAxis": {
+              "format": {
+                "unit": "packets/sec"
+              },
+              "min": 0
+            }
+          }
+        },
+        "queries": [
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "sum by (cluster) (rate(cilium_drop_count_total{job=\"cilium-native\", direction=\"EGRESS\", reason=\"Policy denied\", cluster=\"cmtc-a\"}[5m]))",
+                  "seriesNameFormat": "{{cluster}}"
+                }
+              }
+            }
+          },
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "sum by (cluster) (rate(cilium_drop_count_total{job=\"cilium-native\", direction=\"EGRESS\", reason=\"Policy denied\", cluster=\"cmtc-b\"}[5m]))",
+                  "seriesNameFormat": "{{cluster}}"
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "4_1": {
+      "kind": "Panel",
+      "spec": {
+        "display": {
+          "name": "Packets forwarded per second",
+          "description": "Packets the Cilium datapath forwarded, both directions, per cluster, 5 minute rate: the scale for the drops beside it."
+        },
+        "plugin": {
+          "kind": "TimeSeriesChart",
+          "spec": {
+            "legend": {
+              "mode": "list",
+              "position": "bottom"
+            },
+            "querySettings": [
+              {
+                "areaOpacity": 0.1,
+                "colorMode": "fixed",
+                "colorValue": "#4e79a7",
+                "queryIndex": 0
+              },
+              {
+                "areaOpacity": 0.1,
+                "colorMode": "fixed",
+                "colorValue": "#e15759",
+                "lineStyle": "dashed",
+                "queryIndex": 1
+              }
+            ],
+            "visual": {
+              "areaOpacity": 0.1,
+              "connectNulls": false,
+              "lineWidth": 1
+            },
+            "yAxis": {
+              "format": {
+                "unit": "packets/sec"
+              },
+              "min": 0
+            }
+          }
+        },
+        "queries": [
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "sum by (cluster) (rate(cilium_forward_count_total{job=\"cilium-native\", cluster=\"cmtc-a\"}[5m]))",
+                  "seriesNameFormat": "{{cluster}}"
+                }
+              }
+            }
+          },
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "sum by (cluster) (rate(cilium_forward_count_total{job=\"cilium-native\", cluster=\"cmtc-b\"}[5m]))",
+                  "seriesNameFormat": "{{cluster}}"
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "4_2": {
+      "kind": "Panel",
+      "spec": {
+        "display": {
+          "name": "Drops in the last hour, by node, direction and reason",
+          "description": "Dropped packets by node, direction and reason over the last hour."
+        },
+        "plugin": {
+          "kind": "Table",
+          "spec": {
+            "columnSettings": [
+              {
+                "cellSettings": [
+                  {
+                    "backgroundColor": "#4e79a7",
+                    "condition": {
+                      "kind": "Value",
+                      "spec": {
+                        "value": "cmtc-a"
+                      }
+                    },
+                    "textColor": "#000000"
+                  },
+                  {
+                    "backgroundColor": "#e15759",
+                    "condition": {
+                      "kind": "Value",
+                      "spec": {
+                        "value": "cmtc-b"
+                      }
+                    },
+                    "textColor": "#000000"
+                  }
+                ],
+                "header": "Cluster",
+                "name": "cluster"
+              },
+              {
+                "header": "Node",
+                "name": "node"
+              },
+              {
+                "header": "Direction",
+                "name": "direction"
+              },
+              {
+                "header": "Reason",
+                "name": "reason"
+              },
+              {
+                "format": {
+                  "unit": "decimal"
+                },
+                "header": "Packets, 1 h",
+                "name": "value"
+              },
+              {
+                "hide": true,
+                "name": "timestamp"
+              }
+            ],
+            "density": "compact",
+            "transforms": [
+              {
+                "kind": "MergeSeries",
+                "spec": {}
+              }
+            ]
+          }
+        },
+        "queries": [
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "sum by (cluster, node, direction, reason) (increase(cilium_drop_count_total{job=\"cilium-native\"}[1h])) > 0",
+                  "seriesNameFormat": ""
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "4_3": {
+      "kind": "Panel",
+      "spec": {
+        "display": {
+          "name": "How to read this section"
+        },
+        "plugin": {
+          "kind": "Markdown",
+          "spec": {
+            "text": "Drops have no port label: a rise of egress Policy denied drops with healthy CoreDNS is a hint, the client side is the proof."
+          }
+        }
+      }
+    }
+  },
+  "layouts": [
+    {
+      "kind": "Grid",
+      "spec": {
+        "display": {
+          "title": "Is CoreDNS answering?",
+          "collapse": {
+            "open": true
+          }
+        },
+        "items": [
+          {
+            "x": 0,
+            "y": 1,
+            "width": 6,
+            "height": 4,
+            "content": {
+              "$ref": "#/spec/panels/0_0"
+            }
+          },
+          {
+            "x": 6,
+            "y": 1,
+            "width": 6,
+            "height": 4,
+            "content": {
+              "$ref": "#/spec/panels/0_1"
+            }
+          },
+          {
+            "x": 12,
+            "y": 1,
+            "width": 6,
+            "height": 4,
+            "content": {
+              "$ref": "#/spec/panels/0_2"
+            }
+          },
+          {
+            "x": 18,
+            "y": 1,
+            "width": 6,
+            "height": 4,
+            "content": {
+              "$ref": "#/spec/panels/0_3"
+            }
+          },
+          {
+            "x": 0,
+            "y": 5,
+            "width": 12,
+            "height": 8,
+            "content": {
+              "$ref": "#/spec/panels/0_4"
+            }
+          },
+          {
+            "x": 12,
+            "y": 5,
+            "width": 12,
+            "height": 8,
+            "content": {
+              "$ref": "#/spec/panels/0_5"
+            }
+          },
+          {
+            "x": 0,
+            "y": 13,
+            "width": 12,
+            "height": 6,
+            "content": {
+              "$ref": "#/spec/panels/0_6"
+            }
+          },
+          {
+            "x": 12,
+            "y": 13,
+            "width": 12,
+            "height": 6,
+            "content": {
+              "$ref": "#/spec/panels/0_7"
+            }
+          },
+          {
+            "x": 0,
+            "y": 19,
+            "width": 24,
+            "height": 3,
+            "content": {
+              "$ref": "#/spec/panels/0_8"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "Grid",
+      "spec": {
+        "display": {
+          "title": "Is CoreDNS fast?",
+          "collapse": {
+            "open": true
+          }
+        },
+        "items": [
+          {
+            "x": 0,
+            "y": 23,
+            "width": 12,
+            "height": 8,
+            "content": {
+              "$ref": "#/spec/panels/1_0"
+            }
+          },
+          {
+            "x": 12,
+            "y": 23,
+            "width": 12,
+            "height": 8,
+            "content": {
+              "$ref": "#/spec/panels/1_1"
+            }
+          },
+          {
+            "x": 0,
+            "y": 31,
+            "width": 24,
+            "height": 6,
+            "content": {
+              "$ref": "#/spec/panels/1_2"
+            }
+          },
+          {
+            "x": 0,
+            "y": 37,
+            "width": 24,
+            "height": 3,
+            "content": {
+              "$ref": "#/spec/panels/1_3"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "Grid",
+      "spec": {
+        "display": {
+          "title": "Are the upstream resolvers healthy?",
+          "collapse": {
+            "open": true
+          }
+        },
+        "items": [
+          {
+            "x": 0,
+            "y": 41,
+            "width": 12,
+            "height": 8,
+            "content": {
+              "$ref": "#/spec/panels/2_0"
+            }
+          },
+          {
+            "x": 12,
+            "y": 41,
+            "width": 12,
+            "height": 8,
+            "content": {
+              "$ref": "#/spec/panels/2_1"
+            }
+          },
+          {
+            "x": 0,
+            "y": 49,
+            "width": 12,
+            "height": 6,
+            "content": {
+              "$ref": "#/spec/panels/2_2"
+            }
+          },
+          {
+            "x": 12,
+            "y": 49,
+            "width": 12,
+            "height": 6,
+            "content": {
+              "$ref": "#/spec/panels/2_3"
+            }
+          },
+          {
+            "x": 0,
+            "y": 55,
+            "width": 24,
+            "height": 3,
+            "content": {
+              "$ref": "#/spec/panels/2_4"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "Grid",
+      "spec": {
+        "display": {
+          "title": "Do enrolled Pods get answers? \u00b7 planned",
+          "collapse": {
+            "open": true
+          }
+        },
+        "items": [
+          {
+            "x": 0,
+            "y": 59,
+            "width": 12,
+            "height": 8,
+            "content": {
+              "$ref": "#/spec/panels/3_0"
+            }
+          },
+          {
+            "x": 12,
+            "y": 59,
+            "width": 12,
+            "height": 8,
+            "content": {
+              "$ref": "#/spec/panels/3_1"
+            }
+          },
+          {
+            "x": 0,
+            "y": 67,
+            "width": 12,
+            "height": 6,
+            "content": {
+              "$ref": "#/spec/panels/3_2"
+            }
+          },
+          {
+            "x": 12,
+            "y": 67,
+            "width": 12,
+            "height": 8,
+            "content": {
+              "$ref": "#/spec/panels/3_3"
+            }
+          },
+          {
+            "x": 0,
+            "y": 75,
+            "width": 24,
+            "height": 3,
+            "content": {
+              "$ref": "#/spec/panels/3_4"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "Grid",
+      "spec": {
+        "display": {
+          "title": "Is Cilium dropping traffic?",
+          "collapse": {
+            "open": true
+          }
+        },
+        "items": [
+          {
+            "x": 0,
+            "y": 79,
+            "width": 12,
+            "height": 8,
+            "content": {
+              "$ref": "#/spec/panels/4_0"
+            }
+          },
+          {
+            "x": 12,
+            "y": 79,
+            "width": 12,
+            "height": 8,
+            "content": {
+              "$ref": "#/spec/panels/4_1"
+            }
+          },
+          {
+            "x": 0,
+            "y": 87,
+            "width": 24,
+            "height": 6,
+            "content": {
+              "$ref": "#/spec/panels/4_2"
+            }
+          },
+          {
+            "x": 0,
+            "y": 93,
+            "width": 24,
+            "height": 3,
+            "content": {
+              "$ref": "#/spec/panels/4_3"
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "duration": "1h"
+}

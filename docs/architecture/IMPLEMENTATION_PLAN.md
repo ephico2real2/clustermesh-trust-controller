@@ -20,17 +20,17 @@ Current instructions defer CI, branch pushes, and image publication.
 Do not restart an initial authorization gate for work already authorized.
 Production enrollment and `Protected` claims still require their security acceptance tests.
 
-## Current implementation snapshot — 2026-10-25
+## Current state — 2026-10-25
 
-| Item | State |
+| PR | State |
 | --- | --- |
-| Cilium source | `8bb97137fcc92b935171d60e59d7fb8a93714bd8` |
-| Cilium runtime | `4459d58ed3d98805f15c74298076025fc97dd540`; later source increments need exact-image qualification. |
-| Ztunnel source | `75843515d549f7928d080801ac3f7e4344f572eb`. |
-| Latest ztunnel source qualification | 568 full-suite tests and 2 diagnostic tests pass. Formatting and strict Clippy pass. |
-| Runtime activation | The candidate is not activated. Ztunnel stays disabled, KVStoreMesh stays enabled, and the compatibility guard stays closed. |
-| SPIRE registrar decision | Cilium reuse remains the baseline. The later separate CMTC image is experimental; production ownership is undecided. |
-| Dashboard delivery | Two consolidated pages preserve nine domains, original JSON definitions, and planned signals. |
+| PR 3: observation and safe canary | The node agent DaemonSet is deployed (unprivileged). The eBPF measurement plane is decided ([ADR-005](adr/ADR-005.md), Proposed) and not built; the single-workload observer and the fence are in source and not deployed. |
+| PR 4: trust lifecycle | Separate cluster CAs, exact SPIRE signers and per-cluster trust domains are deployed. Rotation is not run. Registration owner undecided. |
+| PR 5a/5b: native cross-cluster mTLS | Implemented in our Cilium and ztunnel forks and deployed. Allow paths pass in both directions ([test matrix](SECURITY_AND_FAILURE_TEST_MATRIX.md)). The blanket ClusterMesh/ztunnel rejection is replaced by a capability check. Recovery, policy-deny shapes, DNS from enrolled Pods and the [ADR-010](adr/ADR-010.md) review findings remain open. |
+| PR 6: transport composition | Not started. WireGuard and IPsec are not configured. |
+| PR 7: platform and observability | Two v1 dashboard pages are current; `observability/v2/` is in progress. |
+
+Pins: [delivery status](../agile/DELIVERY_STATUS.md). No workload is `Protected`.
 
 See [SPIRE registration design](../../SPIRE_REGISTRATION_DESIGN.md) for the registrar alternatives and exact authority boundaries.
 Source test success does not close runtime registration, credential withdrawal, traffic, policy, or existing-flow revocation gates.
@@ -75,9 +75,9 @@ Acceptance: table-driven unit/envtest cases cover inclusion, exclusion, platform
 
 F03 / EP03: CMTC-201..204; F02 / EP02: CMTC-503,504. Depends on approved observation and packet-gate contracts.
 
-Subtasks: maintain the controller-runtime cluster controller and Go DaemonSet inventory, authenticated generation/digest ACKs, and bounded probes. The user-requested first datapath stage is a separately gated CMTC DaemonSet eBPF observer/deny prototype; after hook behavior and failure recovery are proven, port the production gate into the enhanced Cilium agent. Keep this transitional hook narrow, preserve Cilium policy/service translation, and do not build a permanent parallel datapath. Reuse Cilium's Hive enrollment and ZDS inventory; do not copy the reconciler into CMTC. Fresh evidence is bound to node/pod/namespace UID, version, generation and observation time.
+Subtasks: maintain the controller-runtime cluster controller and Go DaemonSet inventory, authenticated generation/digest ACKs, and bounded probes. The DaemonSet's eBPF programs are the permanent, observe-only per-node measurement plane ([ADR-005](adr/ADR-005.md), operator mandate 2026-10-25); the production quarantine gate is native in the enhanced Cilium agent. The measurement plane preserves Cilium policy and service translation and never decides a verdict. Reuse Cilium's Hive enrollment and ZDS inventory; do not copy the reconciler into CMTC. Fresh evidence is bound to node/pod/namespace UID, version, generation and observation time.
 
-Acceptance: missing/stale observations, restart, namespace reuse, node disconnection and mismatched digests never yield `Protected`. The prototype has explicit hook-mode compatibility, first-packet admission, map/interface ownership, attach/detach, Cilium reload and recovery evidence before any canary. A supported single-cluster canary may write labels only after platform interoperability and the first-packet gate pass. No cross-cluster support is advertised. Baseline API/DNS/webhook traffic and existing policy denials survive enable/disable and recovery. Port the production gate to Cilium before claiming native or ClusterMesh support. If the external hook cannot be made safe, retain dry-run behavior and implement the gate directly in Cilium.
+Acceptance: missing/stale observations, restart, namespace reuse, node disconnection and mismatched digests never yield `Protected`. The measurement plane has explicit hook-mode compatibility, a proven pass verdict on every program path, map/interface ownership, attach/detach, Cilium reload and recovery evidence before any canary. A supported single-cluster canary may write labels only after platform interoperability and the first-packet gate pass. No cross-cluster support is advertised. Baseline API/DNS/webhook traffic and existing policy denials survive enable/disable and recovery. Native or ClusterMesh support is claimed only from the native Cilium gate and the live matrix, never from measurement-plane data. A measurement hook that cannot be attached safely reports unavailable and is left out.
 
 ## PR 4 — Option A trust lifecycle spike
 
@@ -105,7 +105,7 @@ F05 / EP05: CMTC-401..404; F09 / EP09: CMTC-805 for upstream proposal planning. 
 
 Subtasks: follow the [Cilium integration contract](CILIUM_ZTUNNEL_CONTRACT.md): authenticated remote workload discovery/lifecycle, cluster identity spike, then effective Cilium L4 policy translation and fail-closed traffic admission. The [Istio/Linkerd source comparison](../research/MESH_MTLS_COMPARISON.md) finds an existing proxy authorization engine, missing-reference allow behavior, same-trust-domain verification and protocol differences that may require explicit Rust proxy changes alongside Go/Hive patches. Document datapath changes separately. Send an upstream proposal only when explicitly authorized; local design does not send maintainer messages.
 
-Acceptance: two pinned clusters pass pod-IP and Global Service tests, with matching namespace/service-account names in different clusters. Wrong cluster, unknown/stale identity, unauthorized application port, excluded→protected traffic, pod creation/relabel races, SPIRE outage, ztunnel crash, Cilium restart and cache resync all have denial/capture evidence. Keep the incompatibility guard for configurations without these capabilities. Remove/narrow it only with corresponding security tests; successful TLS alone cannot close CMTC-403.
+Acceptance: two pinned clusters pass pod-IP and Global Service tests, with matching namespace/service-account names in different clusters. Wrong cluster, unknown/stale identity, unauthorized application port, excluded→protected traffic, pod creation/relabel races, SPIRE outage, ztunnel crash, Cilium restart and cache resync all have denial/capture evidence. Keep the incompatibility guard for configurations without these capabilities. Remove/narrow it only with corresponding security tests; successful TLS alone cannot close CMTC-403. (2026-10-25: the guard is narrowed to a capability check in our Cilium fork, `pkg/ztunnel/cell.go:73`; the denial and recovery tests above are still open.)
 
 ## PR 6 — Independent transport composition
 
@@ -113,7 +113,7 @@ F06 / EP06: CMTC-301..305. Depends on the secure HBONE baseline; trace spikes ma
 
 Subtasks: separate workload-authentication and transport settings; capability negotiation rejects unsupported/mixed combinations. Trace WireGuard/XFRM/eBPF marks and identity through overlay/direct routing, MTU/MSS, service translation and key rotation.
 
-Start composition qualification with WireGuard using the existing lab's measured WG exercise; then add IPsec as a separate profile. Preserve the user's existing Cilium Hubble patch on its own branch. The original PoC used a 1.20.2-derived agent. That pin is historical. Use the current source/runtime pins above and preserve the user's existing lab and Hubble work.
+Start composition qualification with WireGuard using the existing lab's measured WG exercise; then add IPsec as a separate profile. Preserve the user's existing Cilium Hubble patch on its own branch. The original PoC used a 1.20.2-derived agent. That pin is historical. Use the pins in delivery status and preserve the user's existing lab and Hubble work.
 
 Acceptance: for none/WireGuard/IPsec with mTLS off, baseline ClusterMesh regression tests pass on supported profiles. With mTLS on, TLS peer identity/policy evidence and independent WG/XFRM state plus packet captures establish both required layers. Missing keys, stale XFRM, node reboot and MTU failure produce no required-layer downgrade. No unsupported combination silently coerces to another mode.
 

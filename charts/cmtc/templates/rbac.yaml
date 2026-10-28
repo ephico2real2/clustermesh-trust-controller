@@ -1,0 +1,110 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: cmtc-controller
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "cmtc.labels" . | nindent 4 }}
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: cmtc-node-agent
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "cmtc.labels" . | nindent 4 }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: cmtc-controller
+  labels:
+    {{- include "cmtc.labels" . | nindent 4 }}
+rules:
+  - apiGroups: [""]
+    resources: [namespaces]
+    verbs: [get, list, watch]
+  - apiGroups: [security.cmtc.io]
+    resources: [namespacemtlspolicies]
+    verbs: [get, list, watch]
+  - apiGroups: [security.cmtc.io]
+    resources: [namespacemtlspolicies/status]
+    verbs: [get, patch, update]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: cmtc-controller
+  labels:
+    {{- include "cmtc.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cmtc-controller
+subjects:
+  - kind: ServiceAccount
+    name: cmtc-controller
+    namespace: {{ .Release.Namespace }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: cmtc-leader-election
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "cmtc.labels" . | nindent 4 }}
+rules:
+  - apiGroups: [coordination.k8s.io]
+    resources: [leases]
+    verbs: [get, list, watch, create, update, patch]
+  - apiGroups: [""]
+    resources: [events]
+    verbs: [create, patch]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: cmtc-leader-election
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "cmtc.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: cmtc-leader-election
+subjects:
+  - kind: ServiceAccount
+    name: cmtc-controller
+    namespace: {{ .Release.Namespace }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: cmtc-node-agent
+  labels:
+    {{- include "cmtc.labels" . | nindent 4 }}
+rules:
+  - apiGroups: [""]
+    resources: [pods]
+    verbs: [get, list, watch]
+  {{- if include "cmtc.measurement" . }}
+  # The measurement plane measures the Pods of enrolled namespaces (label io.cilium/mtls-enabled=true).
+  - apiGroups: [""]
+    resources: [namespaces]
+    verbs: [get, list, watch]
+  {{- end }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: cmtc-node-agent
+  labels:
+    {{- include "cmtc.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cmtc-node-agent
+subjects:
+  - kind: ServiceAccount
+    name: cmtc-node-agent
+    namespace: {{ .Release.Namespace }}

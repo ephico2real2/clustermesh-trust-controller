@@ -1,0 +1,97 @@
+# Fixture for metrics/contract.json: cmtc-a kube-system/coredns-589f44dc88-gtnm7 on cmtc-a-control-plane, :9153/metrics, captured 2026-10-27T01:10:01Z through the API server's proxy (read-only GET), cut to the metrics the contract lists for coredns.
+# HELP coredns_cache_hits_total The count of cache hits.
+# TYPE coredns_cache_hits_total counter
+coredns_cache_hits_total{server="dns://:53",type="success",view="",zones="."} 372
+# HELP coredns_cache_requests_total The count of cache requests.
+# TYPE coredns_cache_requests_total counter
+coredns_cache_requests_total{server="dns://:53",view="",zones="."} 285126
+# HELP coredns_dns_request_duration_seconds Histogram of the time (in seconds) each request took per zone.
+# TYPE coredns_dns_request_duration_seconds histogram
+coredns_dns_request_duration_seconds_bucket{server="dns://:53",view="",zone=".",le="0.00025"} 242589
+coredns_dns_request_duration_seconds_bucket{server="dns://:53",view="",zone=".",le="0.0005"} 246347
+coredns_dns_request_duration_seconds_bucket{server="dns://:53",view="",zone=".",le="0.001"} 263715
+coredns_dns_request_duration_seconds_bucket{server="dns://:53",view="",zone=".",le="0.002"} 277111
+coredns_dns_request_duration_seconds_bucket{server="dns://:53",view="",zone=".",le="0.004"} 283483
+coredns_dns_request_duration_seconds_bucket{server="dns://:53",view="",zone=".",le="0.008"} 283620
+coredns_dns_request_duration_seconds_bucket{server="dns://:53",view="",zone=".",le="0.016"} 284525
+coredns_dns_request_duration_seconds_bucket{server="dns://:53",view="",zone=".",le="0.032"} 285081
+coredns_dns_request_duration_seconds_bucket{server="dns://:53",view="",zone=".",le="0.064"} 285109
+coredns_dns_request_duration_seconds_bucket{server="dns://:53",view="",zone=".",le="0.128"} 285120
+coredns_dns_request_duration_seconds_bucket{server="dns://:53",view="",zone=".",le="0.256"} 285126
+coredns_dns_request_duration_seconds_bucket{server="dns://:53",view="",zone=".",le="0.512"} 285126
+coredns_dns_request_duration_seconds_bucket{server="dns://:53",view="",zone=".",le="1.024"} 285126
+coredns_dns_request_duration_seconds_bucket{server="dns://:53",view="",zone=".",le="2.048"} 285126
+coredns_dns_request_duration_seconds_bucket{server="dns://:53",view="",zone=".",le="4.096"} 285126
+coredns_dns_request_duration_seconds_bucket{server="dns://:53",view="",zone=".",le="8.192"} 285126
+coredns_dns_request_duration_seconds_bucket{server="dns://:53",view="",zone=".",le="+Inf"} 285126
+coredns_dns_request_duration_seconds_sum{server="dns://:53",view="",zone="."} 100.0999685220001
+coredns_dns_request_duration_seconds_count{server="dns://:53",view="",zone="."} 285126
+# HELP coredns_dns_requests_total Counter of DNS requests made per zone, protocol and family.
+# TYPE coredns_dns_requests_total counter
+coredns_dns_requests_total{family="1",proto="tcp",server="dns://:53",type="A",view="",zone="."} 11
+coredns_dns_requests_total{family="1",proto="udp",server="dns://:53",type="A",view="",zone="."} 140185
+coredns_dns_requests_total{family="1",proto="udp",server="dns://:53",type="AAAA",view="",zone="."} 140166
+coredns_dns_requests_total{family="1",proto="udp",server="dns://:53",type="SRV",view="",zone="."} 4763
+coredns_dns_requests_total{family="1",proto="udp",server="dns://:53",type="other",view="",zone="."} 1
+# HELP coredns_dns_responses_total Counter of response status codes.
+# TYPE coredns_dns_responses_total counter
+coredns_dns_responses_total{plugin="errors",rcode="NOERROR",server="dns://:53",view="",zone="."} 101002
+coredns_dns_responses_total{plugin="errors",rcode="NXDOMAIN",server="dns://:53",view="",zone="."} 184124
+# HELP coredns_forward_healthcheck_broken_total Counter of the number of complete failures of the healthchecks.
+# TYPE coredns_forward_healthcheck_broken_total counter
+coredns_forward_healthcheck_broken_total 0
+# HELP coredns_forward_max_concurrent_rejects_total Counter of the number of queries rejected because the concurrent queries were at maximum.
+# TYPE coredns_forward_max_concurrent_rejects_total counter
+coredns_forward_max_concurrent_rejects_total 0
+# HELP coredns_panics_total A metrics that counts the number of panics.
+# TYPE coredns_panics_total counter
+coredns_panics_total 0
+# HELP coredns_proxy_request_duration_seconds Histogram of the time each request took.
+# TYPE coredns_proxy_request_duration_seconds histogram
+coredns_proxy_request_duration_seconds_bucket{proxy_name="forward",rcode="NOERROR",to="192.168.5.2:53",le="0.00025"} 1
+coredns_proxy_request_duration_seconds_bucket{proxy_name="forward",rcode="NOERROR",to="192.168.5.2:53",le="0.0005"} 1403
+coredns_proxy_request_duration_seconds_bucket{proxy_name="forward",rcode="NOERROR",to="192.168.5.2:53",le="0.001"} 18149
+coredns_proxy_request_duration_seconds_bucket{proxy_name="forward",rcode="NOERROR",to="192.168.5.2:53",le="0.002"} 32706
+coredns_proxy_request_duration_seconds_bucket{proxy_name="forward",rcode="NOERROR",to="192.168.5.2:53",le="0.004"} 37302
+coredns_proxy_request_duration_seconds_bucket{proxy_name="forward",rcode="NOERROR",to="192.168.5.2:53",le="0.008"} 37409
+coredns_proxy_request_duration_seconds_bucket{proxy_name="forward",rcode="NOERROR",to="192.168.5.2:53",le="0.016"} 37480
+coredns_proxy_request_duration_seconds_bucket{proxy_name="forward",rcode="NOERROR",to="192.168.5.2:53",le="0.032"} 37685
+coredns_proxy_request_duration_seconds_bucket{proxy_name="forward",rcode="NOERROR",to="192.168.5.2:53",le="0.064"} 37696
+coredns_proxy_request_duration_seconds_bucket{proxy_name="forward",rcode="NOERROR",to="192.168.5.2:53",le="0.128"} 37700
+coredns_proxy_request_duration_seconds_bucket{proxy_name="forward",rcode="NOERROR",to="192.168.5.2:53",le="0.256"} 37705
+coredns_proxy_request_duration_seconds_bucket{proxy_name="forward",rcode="NOERROR",to="192.168.5.2:53",le="0.512"} 37705
+coredns_proxy_request_duration_seconds_bucket{proxy_name="forward",rcode="NOERROR",to="192.168.5.2:53",le="1.024"} 37705
+coredns_proxy_request_duration_seconds_bucket{proxy_name="forward",rcode="NOERROR",to="192.168.5.2:53",le="2.048"} 37705
+coredns_proxy_request_duration_seconds_bucket{proxy_name="forward",rcode="NOERROR",to="192.168.5.2:53",le="4.096"} 37705
+coredns_proxy_request_duration_seconds_bucket{proxy_name="forward",rcode="NOERROR",to="192.168.5.2:53",le="8.192"} 37705
+coredns_proxy_request_duration_seconds_bucket{proxy_name="forward",rcode="NOERROR",to="192.168.5.2:53",le="+Inf"} 37705
+coredns_proxy_request_duration_seconds_sum{proxy_name="forward",rcode="NOERROR",to="192.168.5.2:53"} 54.21804809799983
+coredns_proxy_request_duration_seconds_count{proxy_name="forward",rcode="NOERROR",to="192.168.5.2:53"} 37705
+coredns_proxy_request_duration_seconds_bucket{proxy_name="forward",rcode="NXDOMAIN",to="192.168.5.2:53",le="0.00025"} 0
+coredns_proxy_request_duration_seconds_bucket{proxy_name="forward",rcode="NXDOMAIN",to="192.168.5.2:53",le="0.0005"} 0
+coredns_proxy_request_duration_seconds_bucket{proxy_name="forward",rcode="NXDOMAIN",to="192.168.5.2:53",le="0.001"} 0
+coredns_proxy_request_duration_seconds_bucket{proxy_name="forward",rcode="NXDOMAIN",to="192.168.5.2:53",le="0.002"} 2
+coredns_proxy_request_duration_seconds_bucket{proxy_name="forward",rcode="NXDOMAIN",to="192.168.5.2:53",le="0.004"} 3
+coredns_proxy_request_duration_seconds_bucket{proxy_name="forward",rcode="NXDOMAIN",to="192.168.5.2:53",le="0.008"} 13
+coredns_proxy_request_duration_seconds_bucket{proxy_name="forward",rcode="NXDOMAIN",to="192.168.5.2:53",le="0.016"} 849
+coredns_proxy_request_duration_seconds_bucket{proxy_name="forward",rcode="NXDOMAIN",to="192.168.5.2:53",le="0.032"} 1187
+coredns_proxy_request_duration_seconds_bucket{proxy_name="forward",rcode="NXDOMAIN",to="192.168.5.2:53",le="0.064"} 1203
+coredns_proxy_request_duration_seconds_bucket{proxy_name="forward",rcode="NXDOMAIN",to="192.168.5.2:53",le="0.128"} 1208
+coredns_proxy_request_duration_seconds_bucket{proxy_name="forward",rcode="NXDOMAIN",to="192.168.5.2:53",le="0.256"} 1208
+coredns_proxy_request_duration_seconds_bucket{proxy_name="forward",rcode="NXDOMAIN",to="192.168.5.2:53",le="0.512"} 1208
+coredns_proxy_request_duration_seconds_bucket{proxy_name="forward",rcode="NXDOMAIN",to="192.168.5.2:53",le="1.024"} 1208
+coredns_proxy_request_duration_seconds_bucket{proxy_name="forward",rcode="NXDOMAIN",to="192.168.5.2:53",le="2.048"} 1208
+coredns_proxy_request_duration_seconds_bucket{proxy_name="forward",rcode="NXDOMAIN",to="192.168.5.2:53",le="4.096"} 1208
+coredns_proxy_request_duration_seconds_bucket{proxy_name="forward",rcode="NXDOMAIN",to="192.168.5.2:53",le="8.192"} 1208
+coredns_proxy_request_duration_seconds_bucket{proxy_name="forward",rcode="NXDOMAIN",to="192.168.5.2:53",le="+Inf"} 1208
+coredns_proxy_request_duration_seconds_sum{proxy_name="forward",rcode="NXDOMAIN",to="192.168.5.2:53"} 19.561383015
+coredns_proxy_request_duration_seconds_count{proxy_name="forward",rcode="NXDOMAIN",to="192.168.5.2:53"} 1208
+# HELP coredns_reload_failed_total Counter of the number of failed reload attempts.
+# TYPE coredns_reload_failed_total counter
+coredns_reload_failed_total 0
+# HELP process_cpu_seconds_total Total user and system CPU time spent in seconds.
+# TYPE process_cpu_seconds_total counter
+process_cpu_seconds_total 193.7
+# HELP process_resident_memory_bytes Resident memory size in bytes.
+# TYPE process_resident_memory_bytes gauge
+process_resident_memory_bytes 2.8782592e+07

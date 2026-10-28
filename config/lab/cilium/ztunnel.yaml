@@ -1,0 +1,66 @@
+# Strict, sidecar-free workload mTLS with the CMTC forks (Cilium, ztunnel, SPIRE). Apply it only after SPIRE, the
+# CMTC issuer profile and each node's issuer pins exist: ztunnel refuses to start without them, and the agent then
+# keeps every enrolled workload closed. Values marked "fork" exist only in the ephico2real2/cilium chart.
+encryption:
+  enabled: true
+  type: ztunnel
+  ztunnel:
+    ca:
+      type: spire
+      # The CMTC SPIRE registrar owns registration; the operator manages no SPIRE entries.
+      externalExactRegistrar: true
+    requireMtls: true
+    effectivePolicyQuarantine: true # fork
+    # CoreDNS stays outside the mesh; enrolled Pods query it in plaintext (MESH_DNS.md).
+    dnsResolverLabels: # fork
+      - k8s:io.kubernetes.pod.namespace=kube-system
+      - k8s:k8s-app=kube-dns
+      - k8s:io.cilium.k8s.policy.serviceaccount=coredns
+    image:
+      # ztunnel fork 68c0282 (on 0e92198, CMTC #34): the SPIRE intermediate pin, and root pin extension and retirement
+      # without a checkpoint reset.
+      override: ghcr.io/ephico2real2/cmtc-ztunnel@sha256:bc4fb925ae905f02ffd90d5bc2b65f7720af4ab5ef262607c653942c5ac87771
+      pullPolicy: IfNotPresent
+    # A ztunnel Pod is replaced only on purpose: each new Pod needs its exact SPIRE delegate entry first.
+    updateStrategy:
+      type: OnDelete
+      rollingUpdate: null
+    # The agent's xDS and CA server certificate, from the cluster's ClusterMesh intermediate.
+    bootstrap: # fork
+      existingSecret: cmtc-ztunnel-ads-tls
+      certManager:
+        enabled: true
+        name: cmtc-ztunnel-ads-server
+    sourceMembership: # fork
+      enabled: true
+      certManager:
+        enabled: true
+    # The peers (node addresses and server key pins) are instance data, in the generated instance values.
+    remoteWorkloadMembership: # fork
+      enabled: true
+      certManager:
+        enabled: true
+    issuerProfile: # fork
+      probePinsDirectory: /etc/cmtc/ztunnel-issuer-pins
+      checkpointDirectory: /var/lib/cmtc/ztunnel-issuer-checkpoint
+      # true only for a node's first ztunnel start, into an empty directory. Never true on a running lab: an emptied
+      # directory would then be accepted as a first start, which defeats the anti-rollback checkpoint.
+      checkpointBootstrap: false
+    # The mesh clusters (mesh.clusters) come from the environment file, in the generated cluster values.
+    mesh: # fork
+      exceptions: []
+    extraEnv:
+      - name: AUTHZ_POLICY_INFO_LOGGING
+        value: "true"
+serviceAccounts:
+  ztunnel:
+    create: true
+    name: ztunnel-cilium
+    automount: false
+operator:
+  # The operator also reads these from cilium-config (its --config-dir). They stay until an operator restart that
+  # drops them is qualified on its own.
+  extraArgs:
+    - --enable-ztunnel=true
+    - --ztunnel-ca-type=spire
+    - --ztunnel-spire-external-exact-registrar=true

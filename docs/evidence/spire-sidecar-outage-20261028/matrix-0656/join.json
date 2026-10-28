@@ -1,0 +1,886 @@
+[
+  {
+    "file": "cmtc-a-20261028T065548525941Z-probe-same-allow.json",
+    "at": "2026-10-28T06:55:48.747674+00:00",
+    "cluster": "cmtc-a",
+    "scope": "same",
+    "expect": "allow",
+    "client": "client-worker",
+    "url": "http://10.10.1.37:80/",
+    "curlRC": 56,
+    "nodeClockOffset": [
+      -0.085569,
+      -0.043869
+    ],
+    "result": "FAIL: curl exit 56, no connection to join",
+    "dropSearch": "no matching Cilium drop in the captures of cmtc-a-control-plane, cmtc-a-worker, cmtc-b-control-plane, cmtc-b-worker"
+  },
+  {
+    "file": "cmtc-a-20261028T065548849180Z-probe-crossnode-allow.json",
+    "at": "2026-10-28T06:55:49.034904+00:00",
+    "cluster": "cmtc-a",
+    "scope": "crossnode",
+    "expect": "allow",
+    "client": "client-worker",
+    "url": "http://10.10.0.98:80/",
+    "curlRC": 56,
+    "nodeClockOffset": [
+      -0.085569,
+      -0.043869
+    ],
+    "result": "FAIL: curl exit 56, no connection to join",
+    "dropSearch": "no matching Cilium drop in the captures of cmtc-a-control-plane, cmtc-a-worker, cmtc-b-control-plane, cmtc-b-worker"
+  },
+  {
+    "file": "cmtc-a-20261028T065549127693Z-probe-crosscluster-allow.json",
+    "at": "2026-10-28T06:55:49.527909+00:00",
+    "cluster": "cmtc-a",
+    "scope": "crosscluster",
+    "expect": "allow",
+    "client": "client-worker",
+    "url": "http://10.20.0.92:80/",
+    "curlRC": 52,
+    "nodeClockOffset": [
+      -0.085569,
+      -0.043869
+    ],
+    "result": "FAIL: curl exit 52, no connection to join",
+    "dropSearch": "no matching Cilium drop in the captures of cmtc-a-control-plane, cmtc-a-worker, cmtc-b-control-plane, cmtc-b-worker"
+  },
+  {
+    "file": "cmtc-a-20261028T065549634481Z-probe-global-allow.json",
+    "at": "2026-10-28T06:55:49.882427+00:00",
+    "cluster": "cmtc-a",
+    "scope": "global",
+    "expect": "allow",
+    "client": "client-worker",
+    "url": "http://server-cmtc-a.cmtc-live-mtls.svc.cluster.local:80/",
+    "curlRC": 56,
+    "nodeClockOffset": [
+      -0.085569,
+      -0.043869
+    ],
+    "result": "FAIL: curl exit 56 (\"Recv failure: Connection reset by peer\"); the target is a DNS name; a ztunnel connection from the client to a backend on port 80 is in the window",
+    "targetName": "server-cmtc-a.cmtc-live-mtls.svc.cluster.local",
+    "dropSearch": "no matching Cilium drop in the captures of cmtc-a-control-plane, cmtc-a-worker, cmtc-b-control-plane, cmtc-b-worker"
+  },
+  {
+    "file": "cmtc-a-20261028T065549965647Z-probe-name-allow.json",
+    "at": "2026-10-28T06:55:50.327175+00:00",
+    "cluster": "cmtc-a",
+    "scope": "name",
+    "expect": "allow",
+    "client": "client-worker",
+    "url": "http://server-worker.cmtc-live-mtls.svc.cluster.local:80/",
+    "curlRC": 56,
+    "nodeClockOffset": [
+      -0.085569,
+      -0.043869
+    ],
+    "result": "FAIL: curl exit 56 (\"Recv failure: Connection reset by peer\"); the target is a DNS name; a ztunnel connection from the client to a backend on port 80 is in the window",
+    "targetName": "server-worker.cmtc-live-mtls.svc.cluster.local",
+    "dropSearch": "no matching Cilium drop in the captures of cmtc-a-control-plane, cmtc-a-worker, cmtc-b-control-plane, cmtc-b-worker"
+  },
+  {
+    "file": "cmtc-a-20261028T065550421410Z-probe-negative-deny.json",
+    "at": "2026-10-28T06:55:53.682288+00:00",
+    "cluster": "cmtc-a",
+    "scope": "negative",
+    "expect": "deny",
+    "client": "unregistered-worker",
+    "url": "http://10.10.1.37:80/",
+    "curlRC": 28,
+    "nodeClockOffset": [
+      -0.085569,
+      -0.043869
+    ],
+    "result": "dropped by Cilium: Policy denied at bpf_lxc.c:2381",
+    "drops": [
+      "2026-10-28T06:55:50.592619Z xx drop (Policy denied) flow 0x562f0577 to endpoint 2743, ifindex 399, file bpf_lxc.c:2381, , identity 81142->94895: 10.10.1.127:42126 -> 10.10.1.37:80 tcp SYN",
+      "2026-10-28T06:55:51.656488Z xx drop (Policy denied) flow 0xbc27077d to endpoint 2743, ifindex 399, file bpf_lxc.c:2381, , identity 81142->94895: 10.10.1.127:42126 -> 10.10.1.37:80 tcp SYN",
+      "2026-10-28T06:55:52.680558Z xx drop (Policy denied) flow 0x946ac7d4 to endpoint 2743, ifindex 399, file bpf_lxc.c:2381, , identity 81142->94895: 10.10.1.127:42126 -> 10.10.1.37:80 tcp SYN"
+    ]
+  },
+  {
+    "file": "cmtc-a-20261028T065550421410Z-probe-negative-deny.json",
+    "at": "2026-10-28T06:55:56.751437+00:00",
+    "cluster": "cmtc-a",
+    "scope": "negative",
+    "expect": "deny",
+    "client": "unregistered-worker",
+    "url": "http://10.10.1.37:8080/",
+    "curlRC": 28,
+    "nodeClockOffset": [
+      -0.085569,
+      -0.043869
+    ],
+    "result": "dropped by Cilium: Policy denied at bpf_lxc.c:2381",
+    "drops": [
+      "2026-10-28T06:55:53.664305Z xx drop (Policy denied) flow 0x2a5142f4 to endpoint 2743, ifindex 399, file bpf_lxc.c:2381, , identity 81142->94895: 10.10.1.127:53650 -> 10.10.1.37:8080 tcp SYN",
+      "2026-10-28T06:55:54.727951Z xx drop (Policy denied) flow 0xa4d6cf90 to endpoint 2743, ifindex 399, file bpf_lxc.c:2381, , identity 81142->94895: 10.10.1.127:53650 -> 10.10.1.37:8080 tcp SYN",
+      "2026-10-28T06:55:55.751542Z xx drop (Policy denied) flow 0xb09d4e4f to endpoint 2743, ifindex 399, file bpf_lxc.c:2381, , identity 81142->94895: 10.10.1.127:53650 -> 10.10.1.37:8080 tcp SYN"
+    ]
+  },
+  {
+    "file": "cmtc-a-20261028T065550421410Z-probe-negative-deny.json",
+    "at": "2026-10-28T06:55:59.822821+00:00",
+    "cluster": "cmtc-a",
+    "scope": "negative",
+    "expect": "deny",
+    "client": "unregistered-worker",
+    "url": "http://10.10.1.37:31337/",
+    "curlRC": 28,
+    "nodeClockOffset": [
+      -0.085569,
+      -0.043869
+    ],
+    "result": "dropped by Cilium: Policy denied at bpf_lxc.c:2381",
+    "drops": [
+      "2026-10-28T06:55:56.734387Z xx drop (Policy denied) flow 0x3fc72ae5 to endpoint 2743, ifindex 399, file bpf_lxc.c:2381, , identity 81142->94895: 10.10.1.127:49460 -> 10.10.1.37:31337 tcp SYN",
+      "2026-10-28T06:55:57.735650Z xx drop (Policy denied) flow 0x89206dd8 to endpoint 2743, ifindex 399, file bpf_lxc.c:2381, , identity 81142->94895: 10.10.1.127:49460 -> 10.10.1.37:31337 tcp SYN",
+      "2026-10-28T06:55:58.759724Z xx drop (Policy denied) flow 0xb8a2f7b5 to endpoint 2743, ifindex 399, file bpf_lxc.c:2381, , identity 81142->94895: 10.10.1.127:49460 -> 10.10.1.37:31337 tcp SYN"
+    ]
+  },
+  {
+    "file": "cmtc-a-20261028T065550421410Z-probe-negative-deny.json",
+    "at": "2026-10-28T06:56:02.919279+00:00",
+    "cluster": "cmtc-a",
+    "scope": "negative",
+    "expect": "deny",
+    "client": "unregistered-control-plane",
+    "url": "http://10.10.0.98:80/",
+    "curlRC": 28,
+    "nodeClockOffset": [
+      -0.085569,
+      -0.043869
+    ],
+    "result": "dropped by Cilium: Policy denied at bpf_lxc.c:2381",
+    "drops": [
+      "2026-10-28T06:55:59.830954Z xx drop (Policy denied) flow 0xcfdabf0a to endpoint 1185, ifindex 119, file bpf_lxc.c:2381, , identity 81142->94895: 10.10.0.3:50462 -> 10.10.0.98:80 tcp SYN",
+      "2026-10-28T06:56:00.871557Z xx drop (Policy denied) flow 0x1151935c to endpoint 1185, ifindex 119, file bpf_lxc.c:2381, , identity 81142->94895: 10.10.0.3:50462 -> 10.10.0.98:80 tcp SYN",
+      "2026-10-28T06:56:01.895862Z xx drop (Policy denied) flow 0x147a7ffb to endpoint 1185, ifindex 119, file bpf_lxc.c:2381, , identity 81142->94895: 10.10.0.3:50462 -> 10.10.0.98:80 tcp SYN"
+    ]
+  },
+  {
+    "file": "cmtc-a-20261028T065550421410Z-probe-negative-deny.json",
+    "at": "2026-10-28T06:56:05.999829+00:00",
+    "cluster": "cmtc-a",
+    "scope": "negative",
+    "expect": "deny",
+    "client": "unregistered-control-plane",
+    "url": "http://10.10.0.98:8080/",
+    "curlRC": 28,
+    "nodeClockOffset": [
+      -0.085569,
+      -0.043869
+    ],
+    "result": "dropped by Cilium: Policy denied at bpf_lxc.c:2381",
+    "drops": [
+      "2026-10-28T06:56:02.913714Z xx drop (Policy denied) flow 0xc5dadd49 to endpoint 1185, ifindex 119, file bpf_lxc.c:2381, , identity 81142->94895: 10.10.0.3:44010 -> 10.10.0.98:8080 tcp SYN",
+      "2026-10-28T06:56:03.944952Z xx drop (Policy denied) flow 0x1192dd4b to endpoint 1185, ifindex 119, file bpf_lxc.c:2381, , identity 81142->94895: 10.10.0.3:44010 -> 10.10.0.98:8080 tcp SYN",
+      "2026-10-28T06:56:04.967702Z xx drop (Policy denied) flow 0xccaba81a to endpoint 1185, ifindex 119, file bpf_lxc.c:2381, , identity 81142->94895: 10.10.0.3:44010 -> 10.10.0.98:8080 tcp SYN"
+    ]
+  },
+  {
+    "file": "cmtc-a-20261028T065550421410Z-probe-negative-deny.json",
+    "at": "2026-10-28T06:56:09.075025+00:00",
+    "cluster": "cmtc-a",
+    "scope": "negative",
+    "expect": "deny",
+    "client": "unregistered-control-plane",
+    "url": "http://10.10.0.98:31337/",
+    "curlRC": 28,
+    "nodeClockOffset": [
+      -0.085569,
+      -0.043869
+    ],
+    "result": "dropped by Cilium: Policy denied at bpf_lxc.c:2381",
+    "drops": [
+      "2026-10-28T06:56:05.986801Z xx drop (Policy denied) flow 0xb41c46d1 to endpoint 1185, ifindex 119, file bpf_lxc.c:2381, , identity 81142->94895: 10.10.0.3:37586 -> 10.10.0.98:31337 tcp SYN",
+      "2026-10-28T06:56:07.015567Z xx drop (Policy denied) flow 0xa040e729 to endpoint 1185, ifindex 119, file bpf_lxc.c:2381, , identity 81142->94895: 10.10.0.3:37586 -> 10.10.0.98:31337 tcp SYN",
+      "2026-10-28T06:56:08.039505Z xx drop (Policy denied) flow 0x51e31bb9 to endpoint 1185, ifindex 119, file bpf_lxc.c:2381, , identity 81142->94895: 10.10.0.3:37586 -> 10.10.0.98:31337 tcp SYN"
+    ]
+  },
+  {
+    "file": "cmtc-a-20261028T065609172615Z-probe-negative-name-deny.json",
+    "at": "2026-10-28T06:56:12.602940+00:00",
+    "cluster": "cmtc-a",
+    "scope": "negative-name",
+    "expect": "deny",
+    "client": "unregistered-worker",
+    "url": "http://server-worker.cmtc-live-mtls.svc.cluster.local:80/",
+    "curlRC": 28,
+    "nodeClockOffset": [
+      -0.085569,
+      -0.043869
+    ],
+    "result": "dropped by Cilium: Policy denied at bpf_lxc.c:2381",
+    "drops": [
+      "2026-10-28T06:56:09.517371Z xx drop (Policy denied) flow 0xeedea138 to endpoint 2743, ifindex 399, file bpf_lxc.c:2381, , identity 81142->94895: 10.10.1.127:36384 -> 10.10.1.37:80 tcp SYN",
+      "2026-10-28T06:56:10.536691Z xx drop (Policy denied) flow 0x696b2a58 to endpoint 2743, ifindex 399, file bpf_lxc.c:2381, , identity 81142->94895: 10.10.1.127:36384 -> 10.10.1.37:80 tcp SYN",
+      "2026-10-28T06:56:11.559669Z xx drop (Policy denied) flow 0x7dbff6 to endpoint 2743, ifindex 399, file bpf_lxc.c:2381, , identity 81142->94895: 10.10.1.127:36384 -> 10.10.1.37:80 tcp SYN"
+    ]
+  },
+  {
+    "file": "cmtc-a-20261028T065609172615Z-probe-negative-name-deny.json",
+    "at": "2026-10-28T06:56:15.675066+00:00",
+    "cluster": "cmtc-a",
+    "scope": "negative-name",
+    "expect": "deny",
+    "client": "unregistered-worker",
+    "url": "http://server-worker.cmtc-live-mtls.svc.cluster.local:8080/",
+    "curlRC": 28,
+    "nodeClockOffset": [
+      -0.085569,
+      -0.043869
+    ],
+    "result": "dropped by Cilium: Policy denied at bpf_lxc.c:2381",
+    "drops": [
+      "2026-10-28T06:56:12.591195Z xx drop (Policy denied) flow 0xdc4f590c to endpoint 2743, ifindex 399, file bpf_lxc.c:2381, , identity 81142->94895: 10.10.1.127:44238 -> 10.10.1.37:8080 tcp SYN",
+      "2026-10-28T06:56:13.607799Z xx drop (Policy denied) flow 0x2d3a2b6f to endpoint 2743, ifindex 399, file bpf_lxc.c:2381, , identity 81142->94895: 10.10.1.127:44238 -> 10.10.1.37:8080 tcp SYN",
+      "2026-10-28T06:56:14.631701Z xx drop (Policy denied) flow 0xed765cc0 to endpoint 2743, ifindex 399, file bpf_lxc.c:2381, , identity 81142->94895: 10.10.1.127:44238 -> 10.10.1.37:8080 tcp SYN"
+    ]
+  },
+  {
+    "file": "cmtc-a-20261028T065609172615Z-probe-negative-name-deny.json",
+    "at": "2026-10-28T06:56:18.759338+00:00",
+    "cluster": "cmtc-a",
+    "scope": "negative-name",
+    "expect": "deny",
+    "client": "unregistered-worker",
+    "url": "http://server-worker.cmtc-live-mtls.svc.cluster.local:31337/",
+    "curlRC": 28,
+    "nodeClockOffset": [
+      -0.085569,
+      -0.043869
+    ],
+    "result": "dropped by Cilium: Policy denied at bpf_lxc.c:2381",
+    "drops": [
+      "2026-10-28T06:56:15.676623Z xx drop (Policy denied) flow 0xf8ef57f9 to endpoint 2743, ifindex 399, file bpf_lxc.c:2381, , identity 81142->94895: 10.10.1.127:47744 -> 10.10.1.37:31337 tcp SYN",
+      "2026-10-28T06:56:16.679596Z xx drop (Policy denied) flow 0x55132a4c to endpoint 2743, ifindex 399, file bpf_lxc.c:2381, , identity 81142->94895: 10.10.1.127:47744 -> 10.10.1.37:31337 tcp SYN",
+      "2026-10-28T06:56:17.703640Z xx drop (Policy denied) flow 0x3a31cd77 to endpoint 2743, ifindex 399, file bpf_lxc.c:2381, , identity 81142->94895: 10.10.1.127:47744 -> 10.10.1.37:31337 tcp SYN"
+    ]
+  },
+  {
+    "file": "cmtc-a-20261028T065609172615Z-probe-negative-name-deny.json",
+    "at": "2026-10-28T06:56:21.865513+00:00",
+    "cluster": "cmtc-a",
+    "scope": "negative-name",
+    "expect": "deny",
+    "client": "unregistered-worker",
+    "url": "http://server-control-plane.cmtc-live-mtls.svc.cluster.local:80/",
+    "curlRC": 28,
+    "nodeClockOffset": [
+      -0.085569,
+      -0.043869
+    ],
+    "result": "dropped by Cilium: Policy denied at bpf_lxc.c:2381",
+    "drops": [
+      "2026-10-28T06:56:18.773804Z xx drop (Policy denied) flow 0x977e5b72 to endpoint 1185, ifindex 5, file bpf_lxc.c:2381, , identity 81142->94895: 10.10.1.127:46386 -> 10.10.0.98:80 tcp SYN",
+      "2026-10-28T06:56:19.816386Z xx drop (Policy denied) flow 0x62155fb1 to endpoint 1185, ifindex 5, file bpf_lxc.c:2381, , identity 81142->94895: 10.10.1.127:46386 -> 10.10.0.98:80 tcp SYN",
+      "2026-10-28T06:56:20.839615Z xx drop (Policy denied) flow 0xd3ac897c to endpoint 1185, ifindex 5, file bpf_lxc.c:2381, , identity 81142->94895: 10.10.1.127:46386 -> 10.10.0.98:80 tcp SYN"
+    ]
+  },
+  {
+    "file": "cmtc-a-20261028T065609172615Z-probe-negative-name-deny.json",
+    "at": "2026-10-28T06:56:24.948196+00:00",
+    "cluster": "cmtc-a",
+    "scope": "negative-name",
+    "expect": "deny",
+    "client": "unregistered-worker",
+    "url": "http://server-control-plane.cmtc-live-mtls.svc.cluster.local:8080/",
+    "curlRC": 28,
+    "nodeClockOffset": [
+      -0.085569,
+      -0.043869
+    ],
+    "result": "dropped by Cilium: Policy denied at bpf_lxc.c:2381",
+    "drops": [
+      "2026-10-28T06:56:21.865385Z xx drop (Policy denied) flow 0x1320458b to endpoint 1185, ifindex 5, file bpf_lxc.c:2381, , identity 81142->94895: 10.10.1.127:50970 -> 10.10.0.98:8080 tcp SYN",
+      "2026-10-28T06:56:22.887511Z xx drop (Policy denied) flow 0x3b7db19f to endpoint 1185, ifindex 5, file bpf_lxc.c:2381, , identity 81142->94895: 10.10.1.127:50970 -> 10.10.0.98:8080 tcp SYN",
+      "2026-10-28T06:56:23.911901Z xx drop (Policy denied) flow 0x57f51233 to endpoint 1185, ifindex 5, file bpf_lxc.c:2381, , identity 81142->94895: 10.10.1.127:50970 -> 10.10.0.98:8080 tcp SYN"
+    ]
+  },
+  {
+    "file": "cmtc-a-20261028T065609172615Z-probe-negative-name-deny.json",
+    "at": "2026-10-28T06:56:28.051565+00:00",
+    "cluster": "cmtc-a",
+    "scope": "negative-name",
+    "expect": "deny",
+    "client": "unregistered-worker",
+    "url": "http://server-control-plane.cmtc-live-mtls.svc.cluster.local:31337/",
+    "curlRC": 28,
+    "nodeClockOffset": [
+      -0.085569,
+      -0.043869
+    ],
+    "result": "dropped by Cilium: Policy denied at bpf_lxc.c:2381",
+    "drops": [
+      "2026-10-28T06:56:24.964230Z xx drop (Policy denied) flow 0x1a103ab6 to endpoint 1185, ifindex 5, file bpf_lxc.c:2381, , identity 81142->94895: 10.10.1.127:37078 -> 10.10.0.98:31337 tcp SYN",
+      "2026-10-28T06:56:26.024941Z xx drop (Policy denied) flow 0xd1d8a26a to endpoint 1185, ifindex 5, file bpf_lxc.c:2381, , identity 81142->94895: 10.10.1.127:37078 -> 10.10.0.98:31337 tcp SYN",
+      "2026-10-28T06:56:27.047739Z xx drop (Policy denied) flow 0xaa040ae6 to endpoint 1185, ifindex 5, file bpf_lxc.c:2381, , identity 81142->94895: 10.10.1.127:37078 -> 10.10.0.98:31337 tcp SYN"
+    ]
+  },
+  {
+    "file": "cmtc-a-20261028T065609172615Z-probe-negative-name-deny.json",
+    "at": "2026-10-28T06:56:31.130636+00:00",
+    "cluster": "cmtc-a",
+    "scope": "negative-name",
+    "expect": "deny",
+    "client": "unregistered-control-plane",
+    "url": "http://server-control-plane.cmtc-live-mtls.svc.cluster.local:80/",
+    "curlRC": 28,
+    "nodeClockOffset": [
+      -0.085569,
+      -0.043869
+    ],
+    "result": "dropped by Cilium: Policy denied at bpf_lxc.c:2381",
+    "drops": [
+      "2026-10-28T06:56:28.041480Z xx drop (Policy denied) flow 0xe7b70d04 to endpoint 1185, ifindex 119, file bpf_lxc.c:2381, , identity 81142->94895: 10.10.0.3:37594 -> 10.10.0.98:80 tcp SYN",
+      "2026-10-28T06:56:29.095609Z xx drop (Policy denied) flow 0x28194344 to endpoint 1185, ifindex 119, file bpf_lxc.c:2381, , identity 81142->94895: 10.10.0.3:37594 -> 10.10.0.98:80 tcp SYN",
+      "2026-10-28T06:56:30.119754Z xx drop (Policy denied) flow 0x136577e9 to endpoint 1185, ifindex 119, file bpf_lxc.c:2381, , identity 81142->94895: 10.10.0.3:37594 -> 10.10.0.98:80 tcp SYN"
+    ]
+  },
+  {
+    "file": "cmtc-a-20261028T065609172615Z-probe-negative-name-deny.json",
+    "at": "2026-10-28T06:56:34.206546+00:00",
+    "cluster": "cmtc-a",
+    "scope": "negative-name",
+    "expect": "deny",
+    "client": "unregistered-control-plane",
+    "url": "http://server-control-plane.cmtc-live-mtls.svc.cluster.local:8080/",
+    "curlRC": 28,
+    "nodeClockOffset": [
+      -0.085569,
+      -0.043869
+    ],
+    "result": "dropped by Cilium: Policy denied at bpf_lxc.c:2381",
+    "drops": [
+      "2026-10-28T06:56:31.118010Z xx drop (Policy denied) flow 0x9b3542ef to endpoint 1185, ifindex 119, file bpf_lxc.c:2381, , identity 81142->94895: 10.10.0.3:42068 -> 10.10.0.98:8080 tcp SYN",
+      "2026-10-28T06:56:32.168629Z xx drop (Policy denied) flow 0xad387490 to endpoint 1185, ifindex 119, file bpf_lxc.c:2381, , identity 81142->94895: 10.10.0.3:42068 -> 10.10.0.98:8080 tcp SYN",
+      "2026-10-28T06:56:33.191571Z xx drop (Policy denied) flow 0xc4f130fe to endpoint 1185, ifindex 119, file bpf_lxc.c:2381, , identity 81142->94895: 10.10.0.3:42068 -> 10.10.0.98:8080 tcp SYN"
+    ]
+  },
+  {
+    "file": "cmtc-a-20261028T065609172615Z-probe-negative-name-deny.json",
+    "at": "2026-10-28T06:56:37.282387+00:00",
+    "cluster": "cmtc-a",
+    "scope": "negative-name",
+    "expect": "deny",
+    "client": "unregistered-control-plane",
+    "url": "http://server-control-plane.cmtc-live-mtls.svc.cluster.local:31337/",
+    "curlRC": 28,
+    "nodeClockOffset": [
+      -0.085569,
+      -0.043869
+    ],
+    "result": "dropped by Cilium: Policy denied at bpf_lxc.c:2381",
+    "drops": [
+      "2026-10-28T06:56:34.193470Z xx drop (Policy denied) flow 0xad58110a to endpoint 1185, ifindex 119, file bpf_lxc.c:2381, , identity 81142->94895: 10.10.0.3:46466 -> 10.10.0.98:31337 tcp SYN",
+      "2026-10-28T06:56:35.240554Z xx drop (Policy denied) flow 0x1210f686 to endpoint 1185, ifindex 119, file bpf_lxc.c:2381, , identity 81142->94895: 10.10.0.3:46466 -> 10.10.0.98:31337 tcp SYN",
+      "2026-10-28T06:56:36.264539Z xx drop (Policy denied) flow 0x3ef27d9e to endpoint 1185, ifindex 119, file bpf_lxc.c:2381, , identity 81142->94895: 10.10.0.3:46466 -> 10.10.0.98:31337 tcp SYN"
+    ]
+  },
+  {
+    "file": "cmtc-a-20261028T065609172615Z-probe-negative-name-deny.json",
+    "at": "2026-10-28T06:56:40.350003+00:00",
+    "cluster": "cmtc-a",
+    "scope": "negative-name",
+    "expect": "deny",
+    "client": "unregistered-control-plane",
+    "url": "http://server-worker.cmtc-live-mtls.svc.cluster.local:80/",
+    "curlRC": 28,
+    "nodeClockOffset": [
+      -0.085569,
+      -0.043869
+    ],
+    "result": "dropped by Cilium: Policy denied at bpf_lxc.c:2381",
+    "drops": [
+      "2026-10-28T06:56:37.262451Z xx drop (Policy denied) flow 0x52a76ade to endpoint 2743, ifindex 5, file bpf_lxc.c:2381, , identity 81142->94895: 10.10.0.3:52894 -> 10.10.1.37:80 tcp SYN",
+      "2026-10-28T06:56:38.311616Z xx drop (Policy denied) flow 0xb9ed9af to endpoint 2743, ifindex 5, file bpf_lxc.c:2381, , identity 81142->94895: 10.10.0.3:52894 -> 10.10.1.37:80 tcp SYN",
+      "2026-10-28T06:56:39.336642Z xx drop (Policy denied) flow 0x64b6fe0b to endpoint 2743, ifindex 5, file bpf_lxc.c:2381, , identity 81142->94895: 10.10.0.3:52894 -> 10.10.1.37:80 tcp SYN"
+    ]
+  },
+  {
+    "file": "cmtc-a-20261028T065609172615Z-probe-negative-name-deny.json",
+    "at": "2026-10-28T06:56:43.432133+00:00",
+    "cluster": "cmtc-a",
+    "scope": "negative-name",
+    "expect": "deny",
+    "client": "unregistered-control-plane",
+    "url": "http://server-worker.cmtc-live-mtls.svc.cluster.local:8080/",
+    "curlRC": 28,
+    "nodeClockOffset": [
+      -0.085569,
+      -0.043869
+    ],
+    "result": "dropped by Cilium: Policy denied at bpf_lxc.c:2381",
+    "drops": [
+      "2026-10-28T06:56:40.344737Z xx drop (Policy denied) flow 0x90189334 to endpoint 2743, ifindex 5, file bpf_lxc.c:2381, , identity 81142->94895: 10.10.0.3:52092 -> 10.10.1.37:8080 tcp SYN",
+      "2026-10-28T06:56:41.383699Z xx drop (Policy denied) flow 0x620393d5 to endpoint 2743, ifindex 5, file bpf_lxc.c:2381, , identity 81142->94895: 10.10.0.3:52092 -> 10.10.1.37:8080 tcp SYN",
+      "2026-10-28T06:56:42.408830Z xx drop (Policy denied) flow 0xf62fed7b to endpoint 2743, ifindex 5, file bpf_lxc.c:2381, , identity 81142->94895: 10.10.0.3:52092 -> 10.10.1.37:8080 tcp SYN"
+    ]
+  },
+  {
+    "file": "cmtc-a-20261028T065609172615Z-probe-negative-name-deny.json",
+    "at": "2026-10-28T06:56:46.512830+00:00",
+    "cluster": "cmtc-a",
+    "scope": "negative-name",
+    "expect": "deny",
+    "client": "unregistered-control-plane",
+    "url": "http://server-worker.cmtc-live-mtls.svc.cluster.local:31337/",
+    "curlRC": 28,
+    "nodeClockOffset": [
+      -0.085569,
+      -0.043869
+    ],
+    "result": "dropped by Cilium: Policy denied at bpf_lxc.c:2381",
+    "drops": [
+      "2026-10-28T06:56:43.424776Z xx drop (Policy denied) flow 0x77ff131b to endpoint 2743, ifindex 5, file bpf_lxc.c:2381, , identity 81142->94895: 10.10.0.3:58984 -> 10.10.1.37:31337 tcp SYN",
+      "2026-10-28T06:56:44.455616Z xx drop (Policy denied) flow 0xc9bcd701 to endpoint 2743, ifindex 5, file bpf_lxc.c:2381, , identity 81142->94895: 10.10.0.3:58984 -> 10.10.1.37:31337 tcp SYN",
+      "2026-10-28T06:56:45.480828Z xx drop (Policy denied) flow 0x5b2d12fc to endpoint 2743, ifindex 5, file bpf_lxc.c:2381, , identity 81142->94895: 10.10.0.3:58984 -> 10.10.1.37:31337 tcp SYN"
+    ]
+  },
+  {
+    "file": "cmtc-b-20261028T065646612298Z-probe-same-allow.json",
+    "at": "2026-10-28T06:56:46.832850+00:00",
+    "cluster": "cmtc-b",
+    "scope": "same",
+    "expect": "allow",
+    "client": "client-worker",
+    "url": "http://10.20.1.116:80/",
+    "curlRC": 56,
+    "nodeClockOffset": [
+      -0.085569,
+      -0.043869
+    ],
+    "result": "FAIL: curl exit 56, no connection to join",
+    "dropSearch": "no matching Cilium drop in the captures of cmtc-a-control-plane, cmtc-a-worker, cmtc-b-control-plane, cmtc-b-worker"
+  },
+  {
+    "file": "cmtc-b-20261028T065646936555Z-probe-crossnode-allow.json",
+    "at": "2026-10-28T06:56:47.123119+00:00",
+    "cluster": "cmtc-b",
+    "scope": "crossnode",
+    "expect": "allow",
+    "client": "client-worker",
+    "url": "http://10.20.0.92:80/",
+    "curlRC": 52,
+    "nodeClockOffset": [
+      -0.085569,
+      -0.043869
+    ],
+    "result": "FAIL: curl exit 52, no connection to join",
+    "dropSearch": "no matching Cilium drop in the captures of cmtc-a-control-plane, cmtc-a-worker, cmtc-b-control-plane, cmtc-b-worker"
+  },
+  {
+    "file": "cmtc-b-20261028T065647219576Z-probe-crosscluster-allow.json",
+    "at": "2026-10-28T06:56:47.654238+00:00",
+    "cluster": "cmtc-b",
+    "scope": "crosscluster",
+    "expect": "allow",
+    "client": "client-worker",
+    "url": "http://10.10.0.98:80/",
+    "curlRC": 52,
+    "nodeClockOffset": [
+      -0.085569,
+      -0.043869
+    ],
+    "result": "FAIL: curl exit 52, no connection to join",
+    "dropSearch": "no matching Cilium drop in the captures of cmtc-a-control-plane, cmtc-a-worker, cmtc-b-control-plane, cmtc-b-worker"
+  },
+  {
+    "file": "cmtc-b-20261028T065647763416Z-probe-global-allow.json",
+    "at": "2026-10-28T06:56:47.973231+00:00",
+    "cluster": "cmtc-b",
+    "scope": "global",
+    "expect": "allow",
+    "client": "client-worker",
+    "url": "http://server-cmtc-a.cmtc-live-mtls.svc.cluster.local:80/",
+    "curlRC": 52,
+    "nodeClockOffset": [
+      -0.085569,
+      -0.043869
+    ],
+    "result": "FAIL: curl exit 52 (\"Empty reply from server\"); the target is a DNS name; a ztunnel connection from the client to a backend on port 80 is in the window",
+    "targetName": "server-cmtc-a.cmtc-live-mtls.svc.cluster.local",
+    "dropSearch": "no matching Cilium drop in the captures of cmtc-a-control-plane, cmtc-a-worker, cmtc-b-control-plane, cmtc-b-worker"
+  },
+  {
+    "file": "cmtc-b-20261028T065648062005Z-probe-name-allow.json",
+    "at": "2026-10-28T06:56:48.445658+00:00",
+    "cluster": "cmtc-b",
+    "scope": "name",
+    "expect": "allow",
+    "client": "client-worker",
+    "url": "http://server-worker.cmtc-live-mtls.svc.cluster.local:80/",
+    "curlRC": 56,
+    "nodeClockOffset": [
+      -0.085569,
+      -0.043869
+    ],
+    "result": "FAIL: curl exit 56 (\"Recv failure: Connection reset by peer\"); the target is a DNS name; a ztunnel connection from the client to a backend on port 80 is in the window",
+    "targetName": "server-worker.cmtc-live-mtls.svc.cluster.local",
+    "dropSearch": "no matching Cilium drop in the captures of cmtc-a-control-plane, cmtc-a-worker, cmtc-b-control-plane, cmtc-b-worker"
+  },
+  {
+    "file": "cmtc-b-20261028T065648546329Z-probe-negative-deny.json",
+    "at": "2026-10-28T06:56:51.835558+00:00",
+    "cluster": "cmtc-b",
+    "scope": "negative",
+    "expect": "deny",
+    "client": "unregistered-worker",
+    "url": "http://10.20.1.116:80/",
+    "curlRC": 28,
+    "nodeClockOffset": [
+      -0.085569,
+      -0.043869
+    ],
+    "result": "dropped by Cilium: Policy denied at bpf_lxc.c:2381",
+    "drops": [
+      "2026-10-28T06:56:48.745146Z xx drop (Policy denied) flow 0x13b0bf99 to endpoint 1225, ifindex 335, file bpf_lxc.c:2381, , identity 131157->179695: 10.20.1.243:34050 -> 10.20.1.116:80 tcp SYN",
+      "2026-10-28T06:56:49.768525Z xx drop (Policy denied) flow 0x4ec5889f to endpoint 1225, ifindex 335, file bpf_lxc.c:2381, , identity 131157->179695: 10.20.1.243:34050 -> 10.20.1.116:80 tcp SYN",
+      "2026-10-28T06:56:50.791661Z xx drop (Policy denied) flow 0x5578093 to endpoint 1225, ifindex 335, file bpf_lxc.c:2381, , identity 131157->179695: 10.20.1.243:34050 -> 10.20.1.116:80 tcp SYN"
+    ]
+  },
+  {
+    "file": "cmtc-b-20261028T065648546329Z-probe-negative-deny.json",
+    "at": "2026-10-28T06:56:54.910894+00:00",
+    "cluster": "cmtc-b",
+    "scope": "negative",
+    "expect": "deny",
+    "client": "unregistered-worker",
+    "url": "http://10.20.1.116:8080/",
+    "curlRC": 28,
+    "nodeClockOffset": [
+      -0.085569,
+      -0.043869
+    ],
+    "result": "dropped by Cilium: Policy denied at bpf_lxc.c:2381",
+    "drops": [
+      "2026-10-28T06:56:51.822589Z xx drop (Policy denied) flow 0x9898c644 to endpoint 1225, ifindex 335, file bpf_lxc.c:2381, , identity 131157->179695: 10.20.1.243:43054 -> 10.20.1.116:8080 tcp SYN",
+      "2026-10-28T06:56:52.839538Z xx drop (Policy denied) flow 0x6ebb05c4 to endpoint 1225, ifindex 335, file bpf_lxc.c:2381, , identity 131157->179695: 10.20.1.243:43054 -> 10.20.1.116:8080 tcp SYN",
+      "2026-10-28T06:56:53.863623Z xx drop (Policy denied) flow 0x3615a667 to endpoint 1225, ifindex 335, file bpf_lxc.c:2381, , identity 131157->179695: 10.20.1.243:43054 -> 10.20.1.116:8080 tcp SYN"
+    ]
+  },
+  {
+    "file": "cmtc-b-20261028T065648546329Z-probe-negative-deny.json",
+    "at": "2026-10-28T06:56:57.984632+00:00",
+    "cluster": "cmtc-b",
+    "scope": "negative",
+    "expect": "deny",
+    "client": "unregistered-worker",
+    "url": "http://10.20.1.116:31337/",
+    "curlRC": 28,
+    "nodeClockOffset": [
+      -0.085569,
+      -0.043869
+    ],
+    "result": "dropped by Cilium: Policy denied at bpf_lxc.c:2381",
+    "drops": [
+      "2026-10-28T06:56:54.895197Z xx drop (Policy denied) flow 0x303cf071 to endpoint 1225, ifindex 335, file bpf_lxc.c:2381, , identity 131157->179695: 10.20.1.243:42628 -> 10.20.1.116:31337 tcp SYN",
+      "2026-10-28T06:56:55.912719Z xx drop (Policy denied) flow 0x6cea0bfe to endpoint 1225, ifindex 335, file bpf_lxc.c:2381, , identity 131157->179695: 10.20.1.243:42628 -> 10.20.1.116:31337 tcp SYN",
+      "2026-10-28T06:56:56.935774Z xx drop (Policy denied) flow 0xc2bdd34e to endpoint 1225, ifindex 335, file bpf_lxc.c:2381, , identity 131157->179695: 10.20.1.243:42628 -> 10.20.1.116:31337 tcp SYN"
+    ]
+  },
+  {
+    "file": "cmtc-b-20261028T065648546329Z-probe-negative-deny.json",
+    "at": "2026-10-28T06:57:01.088571+00:00",
+    "cluster": "cmtc-b",
+    "scope": "negative",
+    "expect": "deny",
+    "client": "unregistered-control-plane",
+    "url": "http://10.20.0.92:80/",
+    "curlRC": 28,
+    "nodeClockOffset": [
+      -0.085569,
+      -0.043869
+    ],
+    "result": "dropped by Cilium: Policy denied at bpf_lxc.c:2381",
+    "drops": [
+      "2026-10-28T06:56:58.000263Z xx drop (Policy denied) flow 0xbdd8d14a to endpoint 2109, ifindex 99, file bpf_lxc.c:2381, , identity 131157->179695: 10.20.0.17:56206 -> 10.20.0.92:80 tcp SYN",
+      "2026-10-28T06:56:59.047540Z xx drop (Policy denied) flow 0x8a44b260 to endpoint 2109, ifindex 99, file bpf_lxc.c:2381, , identity 131157->179695: 10.20.0.17:56206 -> 10.20.0.92:80 tcp SYN",
+      "2026-10-28T06:57:00.072666Z xx drop (Policy denied) flow 0xba516c88 to endpoint 2109, ifindex 99, file bpf_lxc.c:2381, , identity 131157->179695: 10.20.0.17:56206 -> 10.20.0.92:80 tcp SYN"
+    ]
+  },
+  {
+    "file": "cmtc-b-20261028T065648546329Z-probe-negative-deny.json",
+    "at": "2026-10-28T06:57:04.160411+00:00",
+    "cluster": "cmtc-b",
+    "scope": "negative",
+    "expect": "deny",
+    "client": "unregistered-control-plane",
+    "url": "http://10.20.0.92:8080/",
+    "curlRC": 28,
+    "nodeClockOffset": [
+      -0.085569,
+      -0.043869
+    ],
+    "result": "dropped by Cilium: Policy denied at bpf_lxc.c:2381",
+    "drops": [
+      "2026-10-28T06:57:01.070505Z xx drop (Policy denied) flow 0x1ba91676 to endpoint 2109, ifindex 99, file bpf_lxc.c:2381, , identity 131157->179695: 10.20.0.17:53516 -> 10.20.0.92:8080 tcp SYN",
+      "2026-10-28T06:57:02.119605Z xx drop (Policy denied) flow 0xa33269eb to endpoint 2109, ifindex 99, file bpf_lxc.c:2381, , identity 131157->179695: 10.20.0.17:53516 -> 10.20.0.92:8080 tcp SYN",
+      "2026-10-28T06:57:03.144605Z xx drop (Policy denied) flow 0xc41e12e2 to endpoint 2109, ifindex 99, file bpf_lxc.c:2381, , identity 131157->179695: 10.20.0.17:53516 -> 10.20.0.92:8080 tcp SYN"
+    ]
+  },
+  {
+    "file": "cmtc-b-20261028T065648546329Z-probe-negative-deny.json",
+    "at": "2026-10-28T06:57:07.235185+00:00",
+    "cluster": "cmtc-b",
+    "scope": "negative",
+    "expect": "deny",
+    "client": "unregistered-control-plane",
+    "url": "http://10.20.0.92:31337/",
+    "curlRC": 28,
+    "nodeClockOffset": [
+      -0.085569,
+      -0.043869
+    ],
+    "result": "dropped by Cilium: Policy denied at bpf_lxc.c:2381",
+    "drops": [
+      "2026-10-28T06:57:04.145609Z xx drop (Policy denied) flow 0x8f90b38f to endpoint 2109, ifindex 99, file bpf_lxc.c:2381, , identity 131157->179695: 10.20.0.17:50594 -> 10.20.0.92:31337 tcp SYN",
+      "2026-10-28T06:57:05.191738Z xx drop (Policy denied) flow 0x444013dd to endpoint 2109, ifindex 99, file bpf_lxc.c:2381, , identity 131157->179695: 10.20.0.17:50594 -> 10.20.0.92:31337 tcp SYN",
+      "2026-10-28T06:57:06.215565Z xx drop (Policy denied) flow 0x58009be1 to endpoint 2109, ifindex 99, file bpf_lxc.c:2381, , identity 131157->179695: 10.20.0.17:50594 -> 10.20.0.92:31337 tcp SYN"
+    ]
+  },
+  {
+    "file": "cmtc-b-20261028T065707316375Z-probe-negative-name-deny.json",
+    "at": "2026-10-28T06:57:10.730249+00:00",
+    "cluster": "cmtc-b",
+    "scope": "negative-name",
+    "expect": "deny",
+    "client": "unregistered-worker",
+    "url": "http://server-worker.cmtc-live-mtls.svc.cluster.local:80/",
+    "curlRC": 28,
+    "nodeClockOffset": [
+      -0.085569,
+      -0.043869
+    ],
+    "result": "dropped by Cilium: Policy denied at bpf_lxc.c:2381",
+    "drops": [
+      "2026-10-28T06:57:07.646529Z xx drop (Policy denied) flow 0x319c31bb to endpoint 1225, ifindex 335, file bpf_lxc.c:2381, , identity 131157->179695: 10.20.1.243:38058 -> 10.20.1.116:80 tcp SYN",
+      "2026-10-28T06:57:08.647825Z xx drop (Policy denied) flow 0xfff9bc46 to endpoint 1225, ifindex 335, file bpf_lxc.c:2381, , identity 131157->179695: 10.20.1.243:38058 -> 10.20.1.116:80 tcp SYN",
+      "2026-10-28T06:57:09.672531Z xx drop (Policy denied) flow 0xe91509bf to endpoint 1225, ifindex 335, file bpf_lxc.c:2381, , identity 131157->179695: 10.20.1.243:38058 -> 10.20.1.116:80 tcp SYN"
+    ]
+  },
+  {
+    "file": "cmtc-b-20261028T065707316375Z-probe-negative-name-deny.json",
+    "at": "2026-10-28T06:57:13.798389+00:00",
+    "cluster": "cmtc-b",
+    "scope": "negative-name",
+    "expect": "deny",
+    "client": "unregistered-worker",
+    "url": "http://server-worker.cmtc-live-mtls.svc.cluster.local:8080/",
+    "curlRC": 28,
+    "nodeClockOffset": [
+      -0.085569,
+      -0.043869
+    ],
+    "result": "dropped by Cilium: Policy denied at bpf_lxc.c:2381",
+    "drops": [
+      "2026-10-28T06:57:10.711640Z xx drop (Policy denied) flow 0xe167782 to endpoint 1225, ifindex 335, file bpf_lxc.c:2381, , identity 131157->179695: 10.20.1.243:40570 -> 10.20.1.116:8080 tcp SYN",
+      "2026-10-28T06:57:11.719590Z xx drop (Policy denied) flow 0xee1b2d3c to endpoint 1225, ifindex 335, file bpf_lxc.c:2381, , identity 131157->179695: 10.20.1.243:40570 -> 10.20.1.116:8080 tcp SYN",
+      "2026-10-28T06:57:12.743612Z xx drop (Policy denied) flow 0x4e9cfe3a to endpoint 1225, ifindex 335, file bpf_lxc.c:2381, , identity 131157->179695: 10.20.1.243:40570 -> 10.20.1.116:8080 tcp SYN"
+    ]
+  },
+  {
+    "file": "cmtc-b-20261028T065707316375Z-probe-negative-name-deny.json",
+    "at": "2026-10-28T06:57:16.877456+00:00",
+    "cluster": "cmtc-b",
+    "scope": "negative-name",
+    "expect": "deny",
+    "client": "unregistered-worker",
+    "url": "http://server-worker.cmtc-live-mtls.svc.cluster.local:31337/",
+    "curlRC": 28,
+    "nodeClockOffset": [
+      -0.085569,
+      -0.043869
+    ],
+    "result": "dropped by Cilium: Policy denied at bpf_lxc.c:2381",
+    "drops": [
+      "2026-10-28T06:57:13.792448Z xx drop (Policy denied) flow 0xc86b6519 to endpoint 1225, ifindex 335, file bpf_lxc.c:2381, , identity 131157->179695: 10.20.1.243:60036 -> 10.20.1.116:31337 tcp SYN",
+      "2026-10-28T06:57:14.856561Z xx drop (Policy denied) flow 0x537f51b9 to endpoint 1225, ifindex 335, file bpf_lxc.c:2381, , identity 131157->179695: 10.20.1.243:60036 -> 10.20.1.116:31337 tcp SYN",
+      "2026-10-28T06:57:15.880798Z xx drop (Policy denied) flow 0x5f64e5d8 to endpoint 1225, ifindex 335, file bpf_lxc.c:2381, , identity 131157->179695: 10.20.1.243:60036 -> 10.20.1.116:31337 tcp SYN"
+    ]
+  },
+  {
+    "file": "cmtc-b-20261028T065707316375Z-probe-negative-name-deny.json",
+    "at": "2026-10-28T06:57:19.967604+00:00",
+    "cluster": "cmtc-b",
+    "scope": "negative-name",
+    "expect": "deny",
+    "client": "unregistered-worker",
+    "url": "http://server-control-plane.cmtc-live-mtls.svc.cluster.local:80/",
+    "curlRC": 28,
+    "nodeClockOffset": [
+      -0.085569,
+      -0.043869
+    ],
+    "result": "dropped by Cilium: Policy denied at bpf_lxc.c:2381",
+    "drops": [
+      "2026-10-28T06:57:16.876486Z xx drop (Policy denied) flow 0x4ff83802 to endpoint 2109, ifindex 5, file bpf_lxc.c:2381, , identity 131157->179695: 10.20.1.243:46584 -> 10.20.0.92:80 tcp SYN",
+      "2026-10-28T06:57:17.928643Z xx drop (Policy denied) flow 0x3ae6cbf5 to endpoint 2109, ifindex 5, file bpf_lxc.c:2381, , identity 131157->179695: 10.20.1.243:46584 -> 10.20.0.92:80 tcp SYN",
+      "2026-10-28T06:57:18.952718Z xx drop (Policy denied) flow 0xc51c2f11 to endpoint 2109, ifindex 5, file bpf_lxc.c:2381, , identity 131157->179695: 10.20.1.243:46584 -> 10.20.0.92:80 tcp SYN"
+    ]
+  },
+  {
+    "file": "cmtc-b-20261028T065707316375Z-probe-negative-name-deny.json",
+    "at": "2026-10-28T06:57:23.062559+00:00",
+    "cluster": "cmtc-b",
+    "scope": "negative-name",
+    "expect": "deny",
+    "client": "unregistered-worker",
+    "url": "http://server-control-plane.cmtc-live-mtls.svc.cluster.local:8080/",
+    "curlRC": 28,
+    "nodeClockOffset": [
+      -0.085569,
+      -0.043869
+    ],
+    "result": "dropped by Cilium: Policy denied at bpf_lxc.c:2381",
+    "drops": [
+      "2026-10-28T06:57:19.972690Z xx drop (Policy denied) flow 0xb1ad9012 to endpoint 2109, ifindex 5, file bpf_lxc.c:2381, , identity 131157->179695: 10.20.1.243:37836 -> 10.20.0.92:8080 tcp SYN",
+      "2026-10-28T06:57:20.999568Z xx drop (Policy denied) flow 0xb10c30f4 to endpoint 2109, ifindex 5, file bpf_lxc.c:2381, , identity 131157->179695: 10.20.1.243:37836 -> 10.20.0.92:8080 tcp SYN",
+      "2026-10-28T06:57:22.023870Z xx drop (Policy denied) flow 0x1f47e748 to endpoint 2109, ifindex 5, file bpf_lxc.c:2381, , identity 131157->179695: 10.20.1.243:37836 -> 10.20.0.92:8080 tcp SYN"
+    ]
+  },
+  {
+    "file": "cmtc-b-20261028T065707316375Z-probe-negative-name-deny.json",
+    "at": "2026-10-28T06:57:26.157146+00:00",
+    "cluster": "cmtc-b",
+    "scope": "negative-name",
+    "expect": "deny",
+    "client": "unregistered-worker",
+    "url": "http://server-control-plane.cmtc-live-mtls.svc.cluster.local:31337/",
+    "curlRC": 28,
+    "nodeClockOffset": [
+      -0.085569,
+      -0.043869
+    ],
+    "result": "dropped by Cilium: Policy denied at bpf_lxc.c:2381",
+    "drops": [
+      "2026-10-28T06:57:23.068770Z xx drop (Policy denied) flow 0xa5dee179 to endpoint 2109, ifindex 5, file bpf_lxc.c:2381, , identity 131157->179695: 10.20.1.243:52346 -> 10.20.0.92:31337 tcp SYN",
+      "2026-10-28T06:57:24.072154Z xx drop (Policy denied) flow 0xacbca511 to endpoint 2109, ifindex 5, file bpf_lxc.c:2381, , identity 131157->179695: 10.20.1.243:52346 -> 10.20.0.92:31337 tcp SYN",
+      "2026-10-28T06:57:25.096560Z xx drop (Policy denied) flow 0x2eed3d1c to endpoint 2109, ifindex 5, file bpf_lxc.c:2381, , identity 131157->179695: 10.20.1.243:52346 -> 10.20.0.92:31337 tcp SYN"
+    ]
+  },
+  {
+    "file": "cmtc-b-20261028T065707316375Z-probe-negative-name-deny.json",
+    "at": "2026-10-28T06:57:29.230170+00:00",
+    "cluster": "cmtc-b",
+    "scope": "negative-name",
+    "expect": "deny",
+    "client": "unregistered-control-plane",
+    "url": "http://server-control-plane.cmtc-live-mtls.svc.cluster.local:80/",
+    "curlRC": 28,
+    "nodeClockOffset": [
+      -0.085569,
+      -0.043869
+    ],
+    "result": "dropped by Cilium: Policy denied at bpf_lxc.c:2381",
+    "drops": [
+      "2026-10-28T06:57:26.141389Z xx drop (Policy denied) flow 0x50278da8 to endpoint 2109, ifindex 99, file bpf_lxc.c:2381, , identity 131157->179695: 10.20.0.17:56564 -> 10.20.0.92:80 tcp SYN",
+      "2026-10-28T06:57:27.143675Z xx drop (Policy denied) flow 0x5356ccbc to endpoint 2109, ifindex 99, file bpf_lxc.c:2381, , identity 131157->179695: 10.20.0.17:56564 -> 10.20.0.92:80 tcp SYN",
+      "2026-10-28T06:57:28.168737Z xx drop (Policy denied) flow 0xb8eb977 to endpoint 2109, ifindex 99, file bpf_lxc.c:2381, , identity 131157->179695: 10.20.0.17:56564 -> 10.20.0.92:80 tcp SYN"
+    ]
+  },
+  {
+    "file": "cmtc-b-20261028T065707316375Z-probe-negative-name-deny.json",
+    "at": "2026-10-28T06:57:32.322584+00:00",
+    "cluster": "cmtc-b",
+    "scope": "negative-name",
+    "expect": "deny",
+    "client": "unregistered-control-plane",
+    "url": "http://server-control-plane.cmtc-live-mtls.svc.cluster.local:8080/",
+    "curlRC": 28,
+    "nodeClockOffset": [
+      -0.085569,
+      -0.043869
+    ],
+    "result": "dropped by Cilium: Policy denied at bpf_lxc.c:2381",
+    "drops": [
+      "2026-10-28T06:57:29.233379Z xx drop (Policy denied) flow 0xcb4601ca to endpoint 2109, ifindex 99, file bpf_lxc.c:2381, , identity 131157->179695: 10.20.0.17:47974 -> 10.20.0.92:8080 tcp SYN",
+      "2026-10-28T06:57:30.279637Z xx drop (Policy denied) flow 0xce02498a to endpoint 2109, ifindex 99, file bpf_lxc.c:2381, , identity 131157->179695: 10.20.0.17:47974 -> 10.20.0.92:8080 tcp SYN",
+      "2026-10-28T06:57:31.304522Z xx drop (Policy denied) flow 0x53c4a76b to endpoint 2109, ifindex 99, file bpf_lxc.c:2381, , identity 131157->179695: 10.20.0.17:47974 -> 10.20.0.92:8080 tcp SYN"
+    ]
+  },
+  {
+    "file": "cmtc-b-20261028T065707316375Z-probe-negative-name-deny.json",
+    "at": "2026-10-28T06:57:35.400425+00:00",
+    "cluster": "cmtc-b",
+    "scope": "negative-name",
+    "expect": "deny",
+    "client": "unregistered-control-plane",
+    "url": "http://server-control-plane.cmtc-live-mtls.svc.cluster.local:31337/",
+    "curlRC": 28,
+    "nodeClockOffset": [
+      -0.085569,
+      -0.043869
+    ],
+    "result": "dropped by Cilium: Policy denied at bpf_lxc.c:2381",
+    "drops": [
+      "2026-10-28T06:57:32.314089Z xx drop (Policy denied) flow 0x10aaf779 to endpoint 2109, ifindex 99, file bpf_lxc.c:2381, , identity 131157->179695: 10.20.0.17:47118 -> 10.20.0.92:31337 tcp SYN",
+      "2026-10-28T06:57:33.351616Z xx drop (Policy denied) flow 0x4e8b075c to endpoint 2109, ifindex 99, file bpf_lxc.c:2381, , identity 131157->179695: 10.20.0.17:47118 -> 10.20.0.92:31337 tcp SYN",
+      "2026-10-28T06:57:34.376568Z xx drop (Policy denied) flow 0x83051f77 to endpoint 2109, ifindex 99, file bpf_lxc.c:2381, , identity 131157->179695: 10.20.0.17:47118 -> 10.20.0.92:31337 tcp SYN"
+    ]
+  },
+  {
+    "file": "cmtc-b-20261028T065707316375Z-probe-negative-name-deny.json",
+    "at": "2026-10-28T06:57:38.477600+00:00",
+    "cluster": "cmtc-b",
+    "scope": "negative-name",
+    "expect": "deny",
+    "client": "unregistered-control-plane",
+    "url": "http://server-worker.cmtc-live-mtls.svc.cluster.local:80/",
+    "curlRC": 28,
+    "nodeClockOffset": [
+      -0.085569,
+      -0.043869
+    ],
+    "result": "dropped by Cilium: Policy denied at bpf_lxc.c:2381",
+    "drops": [
+      "2026-10-28T06:57:35.388856Z xx drop (Policy denied) flow 0xc1165edf to endpoint 1225, ifindex 5, file bpf_lxc.c:2381, , identity 131157->179695: 10.20.0.17:48342 -> 10.20.1.116:80 tcp SYN",
+      "2026-10-28T06:57:36.423987Z xx drop (Policy denied) flow 0x3d855598 to endpoint 1225, ifindex 5, file bpf_lxc.c:2381, , identity 131157->179695: 10.20.0.17:48342 -> 10.20.1.116:80 tcp SYN",
+      "2026-10-28T06:57:37.448840Z xx drop (Policy denied) flow 0xe12cc5bb to endpoint 1225, ifindex 5, file bpf_lxc.c:2381, , identity 131157->179695: 10.20.0.17:48342 -> 10.20.1.116:80 tcp SYN"
+    ]
+  },
+  {
+    "file": "cmtc-b-20261028T065707316375Z-probe-negative-name-deny.json",
+    "at": "2026-10-28T06:57:41.563219+00:00",
+    "cluster": "cmtc-b",
+    "scope": "negative-name",
+    "expect": "deny",
+    "client": "unregistered-control-plane",
+    "url": "http://server-worker.cmtc-live-mtls.svc.cluster.local:8080/",
+    "curlRC": 28,
+    "nodeClockOffset": [
+      -0.085569,
+      -0.043869
+    ],
+    "result": "dropped by Cilium: Policy denied at bpf_lxc.c:2381",
+    "drops": [
+      "2026-10-28T06:57:38.483576Z xx drop (Policy denied) flow 0x5321bf to endpoint 1225, ifindex 5, file bpf_lxc.c:2381, , identity 131157->179695: 10.20.0.17:41518 -> 10.20.1.116:8080 tcp SYN",
+      "2026-10-28T06:57:39.496536Z xx drop (Policy denied) flow 0xea0cce7a to endpoint 1225, ifindex 5, file bpf_lxc.c:2381, , identity 131157->179695: 10.20.0.17:41518 -> 10.20.1.116:8080 tcp SYN",
+      "2026-10-28T06:57:40.519590Z xx drop (Policy denied) flow 0xcde43607 to endpoint 1225, ifindex 5, file bpf_lxc.c:2381, , identity 131157->179695: 10.20.0.17:41518 -> 10.20.1.116:8080 tcp SYN"
+    ]
+  },
+  {
+    "file": "cmtc-b-20261028T065707316375Z-probe-negative-name-deny.json",
+    "at": "2026-10-28T06:57:44.645931+00:00",
+    "cluster": "cmtc-b",
+    "scope": "negative-name",
+    "expect": "deny",
+    "client": "unregistered-control-plane",
+    "url": "http://server-worker.cmtc-live-mtls.svc.cluster.local:31337/",
+    "curlRC": 28,
+    "nodeClockOffset": [
+      -0.085569,
+      -0.043869
+    ],
+    "result": "dropped by Cilium: Policy denied at bpf_lxc.c:2381",
+    "drops": [
+      "2026-10-28T06:57:41.556483Z xx drop (Policy denied) flow 0x341c65c4 to endpoint 1225, ifindex 5, file bpf_lxc.c:2381, , identity 131157->179695: 10.20.0.17:43798 -> 10.20.1.116:31337 tcp SYN",
+      "2026-10-28T06:57:42.567696Z xx drop (Policy denied) flow 0x7b8f836e to endpoint 1225, ifindex 5, file bpf_lxc.c:2381, , identity 131157->179695: 10.20.0.17:43798 -> 10.20.1.116:31337 tcp SYN",
+      "2026-10-28T06:57:43.592858Z xx drop (Policy denied) flow 0xe0aa1a9 to endpoint 1225, ifindex 5, file bpf_lxc.c:2381, , identity 131157->179695: 10.20.0.17:43798 -> 10.20.1.116:31337 tcp SYN"
+    ]
+  }
+]

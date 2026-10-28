@@ -1,0 +1,17 @@
+== run 2: the policy, then a controller restart
+ciliumnetworkpolicy.cilium.io/cmtc-qualify-no-peer created
+applied 2026-10-27T20:22:41Z
+deployment.apps/cmtc-controller restarted
+Waiting for deployment "cmtc-controller" rollout to finish: 1 old replicas are pending termination...
+Waiting for deployment "cmtc-controller" rollout to finish: 1 old replicas are pending termination...
+deployment "cmtc-controller" successfully rolled out
+restarted 20:22:43
+20:22:43 phase=Overlapping current=8/cmtc-issuer-approval-b pending=None EvidenceReady=True AllClustersRead  | Blocked=False NotBlocked | pub published 8 18673
+20:24:45 end | pub published 8 18685
+ciliumnetworkpolicy.cilium.io "cmtc-qualify-no-peer" deleted from cmtc-system namespace
+deleted 20:24:46
+20:24:46 phase=Overlapping current=8/cmtc-issuer-approval-b pending=None EvidenceReady=True AllClustersRead  | Blocked=False NotBlocked | pub published 8 18685
+20:26:48 end | pub published 8 18697
+pod/ztunnel-cilium-rxmwb since 2026-10-27T20:22:41Z: fenced=0
+pod/ztunnel-cilium-w6hrb since 2026-10-27T20:22:41Z: fenced=0
+slots: configmap/cmtc-issuer-approval-b configmap/cmtc-issuer-approval-config configmap/cmtc-issuer-approval-g1 configmap/cmtc-issuer-approval-g2 configmap/cmtc-issuer-approval-g3 configmap/cmtc-issuer-approval-g4 configmap/cmtc-issuer-approval-g5 configmap/cmtc-issuer-approval-g6 

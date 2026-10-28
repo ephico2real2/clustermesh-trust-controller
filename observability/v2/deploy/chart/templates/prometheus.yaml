@@ -1,0 +1,109 @@
+{{- if not .Values.global.openshift }}
+{{- $p := .Values.prometheus }}
+{{- $rules := and .Values.hub.enabled .Values.rules.enabled }}
+# kind: one Prometheus per cluster. The hub also receives the other clusters' remote write and evaluates the rules;
+# a member scrapes its own cluster and sends everything to the hub.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-prometheus
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "cmtc-obs.labels" . | nindent 4 }}
+    app.kubernetes.io/component: prometheus
+spec:
+  replicas: 1
+  # One Pod at a time: two would scrape every target twice and send every sample twice.
+  strategy: {type: Recreate}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: cmtc-observability
+      app.kubernetes.io/instance: {{ .Release.Name }}
+      app.kubernetes.io/component: prometheus
+  template:
+    metadata:
+      labels:
+        {{- include "cmtc-obs.labels" . | nindent 8 }}
+        app.kubernetes.io/component: prometheus
+      annotations:
+        # A changed configuration or rule file replaces the Pod.
+        checksum/config: {{ include (print $.Template.BasePath "/prometheus-config.yaml") . | sha256sum }}
+        checksum/rules: {{ include (print $.Template.BasePath "/prometheus-rules.yaml") . | sha256sum }}
+    spec:
+      serviceAccountName: {{ .Release.Name }}-prometheus
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+        runAsGroup: 65534
+        fsGroup: 65534
+        seccompProfile: {type: RuntimeDefault}
+      containers:
+        - name: prometheus
+          image: {{ $p.image }}
+          args:
+            - --config.file=/etc/prometheus/config/prometheus.yml
+            - --storage.tsdb.path=/prometheus
+            - --storage.tsdb.retention.time={{ $p.retention }}
+            {{- if .Values.hub.enabled }}
+            - --web.enable-remote-write-receiver
+            {{- end }}
+          ports:
+            - {name: web, containerPort: 9090}
+          readinessProbe:
+            httpGet: {path: /-/ready, port: web}
+          livenessProbe:
+            httpGet: {path: /-/healthy, port: web}
+            failureThreshold: 6
+          resources:
+            {{- toYaml $p.resources | nindent 12 }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: {drop: [ALL]}
+          volumeMounts:
+            - {name: config, mountPath: /etc/prometheus/config, readOnly: true}
+            {{- if $rules }}
+            - {name: rules, mountPath: /etc/prometheus/rules, readOnly: true}
+            {{- end }}
+            - {name: data, mountPath: /prometheus}
+            {{- with .Values.remoteWrite.caConfigMap.name }}
+            - {name: remote-write-ca, mountPath: /etc/prometheus/remote-write-ca, readOnly: true}
+            {{- end }}
+      volumes:
+        - name: config
+          configMap: {name: {{ .Release.Name }}-prometheus}
+        {{- if $rules }}
+        - name: rules
+          configMap: {name: {{ .Release.Name }}-prometheus-rules}
+        {{- end }}
+        # The labs keep no history across a restart: retention is 7 h, kind has no long-term store.
+        - name: data
+          emptyDir: {sizeLimit: 4Gi}
+        {{- with .Values.remoteWrite.caConfigMap }}
+        {{- if .name }}
+        - name: remote-write-ca
+          configMap:
+            name: {{ .name }}
+            items: [{key: {{ .key }}, path: ca.crt}]
+        {{- end }}
+        {{- end }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-prometheus
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "cmtc-obs.labels" . | nindent 4 }}
+    app.kubernetes.io/component: prometheus
+spec:
+  # ClusterIP only: the other clusters reach the hub's remote-write receiver through ingress.prometheus.host.
+  selector:
+    app.kubernetes.io/name: cmtc-observability
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/component: prometheus
+  ports:
+    - name: web
+      port: 9090
+      targetPort: web
+{{- end }}

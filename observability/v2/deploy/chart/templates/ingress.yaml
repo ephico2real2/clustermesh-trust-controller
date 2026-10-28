@@ -1,0 +1,72 @@
+{{- if and (not .Values.global.openshift) .Values.ingress.enabled }}
+{{- $i := .Values.ingress }}
+{{- if not .Values.hub.enabled }}
+{{- fail "ingress.enabled needs hub.enabled: only the hub receives remote write and runs Grafana" }}
+{{- end }}
+{{- $hosts := compact (list $i.prometheus.host $i.grafana.host) }}
+{{- if not $hosts }}
+{{- fail "ingress.enabled needs ingress.prometheus.host or ingress.grafana.host" }}
+{{- end }}
+{{- $secret := "" }}
+{{- if $i.tls.enabled }}
+{{- $secret = $i.tls.secretName | default (printf "%s-ingress-tls" .Release.Name) }}
+{{- if and (not $i.tls.secretName) (not $i.tls.certManager.issuerRef.name) }}
+{{- fail "ingress.tls.enabled needs ingress.tls.secretName (an existing Secret) or ingress.tls.certManager.issuerRef.name" }}
+{{- end }}
+{{- if not $i.tls.secretName }}
+---
+# The certificate of both hosts, issued and renewed by cert-manager. ingress.tls.secretName names an existing Secret
+# instead, and this Certificate is not rendered.
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: {{ .Release.Name }}-ingress
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "cmtc-obs.labels" . | nindent 4 }}
+spec:
+  secretName: {{ $secret }}
+  dnsNames:
+    {{- toYaml $hosts | nindent 4 }}
+  issuerRef:
+    {{- toYaml $i.tls.certManager.issuerRef | nindent 4 }}
+{{- end }}
+{{- end }}
+{{- range $name, $route := dict "prometheus" (dict "host" $i.prometheus.host "path" "/api/v1/write" "pathType" "Exact" "port" "web") "grafana" (dict "host" $i.grafana.host "path" "/" "pathType" "Prefix" "port" "http") }}
+{{- if $route.host }}
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ $.Release.Name }}-{{ $name }}
+  namespace: {{ $.Release.Namespace }}
+  labels:
+    {{- include "cmtc-obs.labels" $ | nindent 4 }}
+    app.kubernetes.io/component: {{ $name }}
+  {{- with $i.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  ingressClassName: {{ required "ingress.className is required" $i.className }}
+  {{- if $secret }}
+  tls:
+    - hosts: [{{ $route.host | quote }}]
+      secretName: {{ $secret }}
+  {{- end }}
+  rules:
+    - host: {{ $route.host | quote }}
+      http:
+        paths:
+          {{- if eq $name "prometheus" }}
+          # The remote-write receiver only: the query API stays inside the cluster.
+          {{- end }}
+          - path: {{ $route.path }}
+            pathType: {{ $route.pathType }}
+            backend:
+              service:
+                name: {{ $.Release.Name }}-{{ $name }}
+                port: {name: {{ $route.port }}}
+{{- end }}
+{{- end }}
+{{- end }}

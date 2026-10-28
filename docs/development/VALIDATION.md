@@ -4,6 +4,11 @@
 Evidence scope: results apply to the recorded source, image and fixture. Read [current delivery status](../agile/DELIVERY_STATUS.md) and [documentation terms](../../DOCUMENTATION_GUIDE.md).
 <!-- /CMTC_DOC_CONTEXT -->
 
+**Historical record (2026-10-23 to 2026-10-24).** These are Observe and ClusterMesh baseline runs, plus the
+published-image CI path. They do not qualify the current local overlay images or workload mTLS. Current state is in
+[delivery status](../agile/DELIVERY_STATUS.md); enrolled traffic outcomes are in
+[the G1 evidence](../evidence/g1-destination-sources/README.md).
+
 ## Local two-page dashboard consolidation — October 24, 2026
 
 All nine original domain JSONs are preserved byte for byte against `b68484a`; their coverage is combined into Operations (28 panels) and Workload Security (29 panels). Ten planned Operations signals and sixteen planned Security signals remain visible and explicitly BLOCKED. The twelve native mTLS panels retain their qualified query semantics. The [root dashboard guide](../../DASHBOARD_GUIDE.md) maps each original domain, defines chart meanings and shows both themes. This is local ARM64 qualification; the earlier CI runs below tested their recorded layouts.

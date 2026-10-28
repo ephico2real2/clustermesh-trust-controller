@@ -1,0 +1,507 @@
+{
+ "apiVersion": "v1",
+ "kind": "Pod",
+ "metadata": {
+  "annotations": {
+   "sidecar.istio.io/inject": "false"
+  },
+  "creationTimestamp": "2026-10-25T21:47:12Z",
+  "generateName": "ztunnel-cilium-",
+  "generation": 1,
+  "labels": {
+   "app": "ztunnel-cilium",
+   "app.kubernetes.io/name": "ztunnel-cilium",
+   "app.kubernetes.io/part-of": "cilium",
+   "controller-revision-hash": "74b5c54dd7",
+   "helm.sh/chart": "cilium-1.21.0-dev",
+   "pod-template-generation": "5"
+  },
+  "name": "ztunnel-cilium-s9hkq",
+  "namespace": "kube-system",
+  "ownerReferences": [
+   {
+    "apiVersion": "apps/v1",
+    "blockOwnerDeletion": true,
+    "controller": true,
+    "kind": "DaemonSet",
+    "name": "ztunnel-cilium",
+    "uid": "cc87de23-8236-420c-b261-9fcd74bab242"
+   }
+  ],
+  "resourceVersion": "324251",
+  "uid": "b581955e-4aa0-480d-81ee-18f5951076c1"
+ },
+ "spec": {
+  "affinity": {
+   "nodeAffinity": {
+    "requiredDuringSchedulingIgnoredDuringExecution": {
+     "nodeSelectorTerms": [
+      {
+       "matchFields": [
+        {
+         "key": "metadata.name",
+         "operator": "In",
+         "values": [
+          "cmtc-b-control-plane"
+         ]
+        }
+       ]
+      }
+     ]
+    }
+   }
+  },
+  "automountServiceAccountToken": false,
+  "containers": [
+   {
+    "args": [
+     "proxy-mtls",
+     "ztunnel"
+    ],
+    "env": [
+     {
+      "name": "XDS_ADDRESS",
+      "value": "https://localhost:15012"
+     },
+     {
+      "name": "XDS_ROOT_CA",
+      "value": "/etc/ztunnel/bootstrap-ca.crt"
+     },
+     {
+      "name": "CA_ROOT_CA",
+      "value": "/etc/ztunnel/bootstrap-ca.crt"
+     },
+     {
+      "name": "CA_ADDRESS",
+      "value": "https://localhost:15012"
+     },
+     {
+      "name": "SPIRE_ENABLED",
+      "value": "true"
+     },
+     {
+      "name": "SPIRE_ADMIN_ENDPOINT_SOCKET",
+      "value": "unix:///run/cmtc-spire/cmtc-b/delegated/delegated.sock"
+     },
+     {
+      "name": "CONTAINER_RUNTIME_SOCK_PATH",
+      "value": "/run/containerd/containerd.sock"
+     },
+     {
+      "name": "TRUST_DOMAIN",
+      "value": "cmtc-b.mesh.example"
+     },
+     {
+      "name": "CLUSTER_DOMAIN",
+      "value": "cmtc-b.mesh.example"
+     },
+     {
+      "name": "ISTIO_META_DNS_CAPTURE",
+      "value": "false"
+     },
+     {
+      "name": "INPOD_UDS",
+      "value": "/var/run/cilium/ztunnel.sock"
+     },
+     {
+      "name": "NODE_NAME",
+      "valueFrom": {
+       "fieldRef": {
+        "apiVersion": "v1",
+        "fieldPath": "spec.nodeName"
+       }
+      }
+     },
+     {
+      "name": "INSTANCE_IP",
+      "valueFrom": {
+       "fieldRef": {
+        "apiVersion": "v1",
+        "fieldPath": "status.podIP"
+       }
+      }
+     },
+     {
+      "name": "ISTIO_META_ENABLE_HBONE",
+      "value": "true"
+     },
+     {
+      "name": "CLUSTER_ID",
+      "value": "cmtc-b"
+     },
+     {
+      "name": "REQUIRE_INBOUND_MTLS",
+      "value": "true"
+     },
+     {
+      "name": "REQUIRE_MESH_HBONE",
+      "value": "true"
+     },
+     {
+      "name": "MESH_EGRESS_CONFIG",
+      "value": "{\"clusters\":[{\"clusterId\":\"cmtc-a\",\"trustDomain\":\"cmtc-a.mesh.example\",\"podCidrs\":[\"10.10.0.0/16\"],\"serviceCidrs\":[\"10.11.0.0/16\"]},{\"clusterId\":\"cmtc-b\",\"trustDomain\":\"cmtc-b.mesh.example\",\"podCidrs\":[\"10.20.0.0/16\"],\"serviceCidrs\":[\"10.21.0.0/16\"]}],\"exceptions\":[]}"
+     },
+     {
+      "name": "ISSUER_PROFILE_PROBE_PINS",
+      "value": "/etc/cmtc/ztunnel-issuer-pins/pins.json"
+     },
+     {
+      "name": "ISSUER_PROFILE_CHECKPOINT_DIR",
+      "value": "/var/lib/cmtc/ztunnel-issuer-checkpoint"
+     },
+     {
+      "name": "ISSUER_PROFILE_CHECKPOINT_BOOTSTRAP",
+      "value": "false"
+     },
+     {
+      "name": "AUTHZ_POLICY_INFO_LOGGING",
+      "value": "true"
+     }
+    ],
+    "image": "localhost/cmtc-ztunnel@sha256:5cf97f91e56247742cc8eb22b9ef28911f312b3cfb3980b115c9dc539bf109e2",
+    "imagePullPolicy": "Never",
+    "name": "istio-proxy",
+    "readinessProbe": {
+     "failureThreshold": 3,
+     "httpGet": {
+      "host": "127.0.0.1",
+      "path": "/healthz/ready",
+      "port": 15021,
+      "scheme": "HTTP"
+     },
+     "periodSeconds": 10,
+     "successThreshold": 1,
+     "timeoutSeconds": 1
+    },
+    "resources": {
+     "requests": {
+      "cpu": "200m",
+      "memory": "512Mi"
+     }
+    },
+    "securityContext": {
+     "allowPrivilegeEscalation": true,
+     "capabilities": {
+      "add": [
+       "NET_ADMIN",
+       "SYS_ADMIN",
+       "NET_RAW"
+      ],
+      "drop": [
+       "ALL"
+      ]
+     },
+     "privileged": false,
+     "readOnlyRootFilesystem": true,
+     "runAsGroup": 1337,
+     "runAsNonRoot": false,
+     "runAsUser": 0
+    },
+    "terminationMessagePath": "/dev/termination-log",
+    "terminationMessagePolicy": "File",
+    "volumeMounts": [
+     {
+      "mountPath": "/var/run/cilium",
+      "name": "cilium-dir"
+     },
+     {
+      "mountPath": "/etc/ztunnel",
+      "name": "cilium-ztunnel-secrets",
+      "readOnly": true
+     },
+     {
+      "mountPath": "/run/cmtc-spire/cmtc-b/delegated",
+      "name": "spire-agent-socket",
+      "readOnly": true
+     },
+     {
+      "mountPath": "/run/containerd/containerd.sock",
+      "name": "container-runtime-socket",
+      "readOnly": true
+     },
+     {
+      "mountPath": "/etc/cmtc/ztunnel-issuer-pins",
+      "name": "issuer-pins",
+      "readOnly": true
+     },
+     {
+      "mountPath": "/var/lib/cmtc/ztunnel-issuer-checkpoint",
+      "name": "issuer-checkpoint"
+     }
+    ]
+   }
+  ],
+  "dnsPolicy": "ClusterFirst",
+  "enableServiceLinks": true,
+  "hostNetwork": true,
+  "hostPID": true,
+  "nodeName": "cmtc-b-control-plane",
+  "nodeSelector": {
+   "kubernetes.io/os": "linux"
+  },
+  "preemptionPolicy": "PreemptLowerPriority",
+  "priority": 2000001000,
+  "priorityClassName": "system-node-critical",
+  "restartPolicy": "Always",
+  "schedulerName": "default-scheduler",
+  "securityContext": {},
+  "serviceAccount": "ztunnel-cilium",
+  "serviceAccountName": "ztunnel-cilium",
+  "terminationGracePeriodSeconds": 30,
+  "tolerations": [
+   {
+    "effect": "NoSchedule",
+    "operator": "Exists"
+   },
+   {
+    "key": "CriticalAddonsOnly",
+    "operator": "Exists"
+   },
+   {
+    "effect": "NoExecute",
+    "operator": "Exists"
+   },
+   {
+    "effect": "NoExecute",
+    "key": "node.kubernetes.io/not-ready",
+    "operator": "Exists"
+   },
+   {
+    "effect": "NoExecute",
+    "key": "node.kubernetes.io/unreachable",
+    "operator": "Exists"
+   },
+   {
+    "effect": "NoSchedule",
+    "key": "node.kubernetes.io/disk-pressure",
+    "operator": "Exists"
+   },
+   {
+    "effect": "NoSchedule",
+    "key": "node.kubernetes.io/memory-pressure",
+    "operator": "Exists"
+   },
+   {
+    "effect": "NoSchedule",
+    "key": "node.kubernetes.io/pid-pressure",
+    "operator": "Exists"
+   },
+   {
+    "effect": "NoSchedule",
+    "key": "node.kubernetes.io/unschedulable",
+    "operator": "Exists"
+   },
+   {
+    "effect": "NoSchedule",
+    "key": "node.kubernetes.io/network-unavailable",
+    "operator": "Exists"
+   }
+  ],
+  "volumes": [
+   {
+    "hostPath": {
+     "path": "/var/run/cilium",
+     "type": "DirectoryOrCreate"
+    },
+    "name": "cilium-dir"
+   },
+   {
+    "name": "cilium-ztunnel-secrets",
+    "projected": {
+     "defaultMode": 420,
+     "sources": [
+      {
+       "secret": {
+        "items": [
+         {
+          "key": "tls.crt",
+          "path": "bootstrap-root.crt"
+         }
+        ],
+        "name": "cmtc-ztunnel-ads-tls"
+       }
+      },
+      {
+       "configMap": {
+        "items": [
+         {
+          "key": "ca.crt",
+          "path": "bootstrap-ca.crt"
+         }
+        ],
+        "name": "cmtc-public-root"
+       }
+      }
+     ]
+    }
+   },
+   {
+    "hostPath": {
+     "path": "/run/cmtc-spire/cmtc-b/delegated",
+     "type": "DirectoryOrCreate"
+    },
+    "name": "spire-agent-socket"
+   },
+   {
+    "hostPath": {
+     "path": "/run/containerd/containerd.sock",
+     "type": "Socket"
+    },
+    "name": "container-runtime-socket"
+   },
+   {
+    "hostPath": {
+     "path": "/etc/cmtc/ztunnel-issuer-pins",
+     "type": "Directory"
+    },
+    "name": "issuer-pins"
+   },
+   {
+    "hostPath": {
+     "path": "/var/lib/cmtc/ztunnel-issuer-checkpoint",
+     "type": "Directory"
+    },
+    "name": "issuer-checkpoint"
+   }
+  ]
+ },
+ "status": {
+  "allocatedResources": {
+   "cpu": "200m",
+   "memory": "512Mi"
+  },
+  "conditions": [
+   {
+    "lastProbeTime": null,
+    "lastTransitionTime": "2026-10-25T21:47:13Z",
+    "observedGeneration": 1,
+    "status": "True",
+    "type": "PodReadyToStartContainers"
+   },
+   {
+    "lastProbeTime": null,
+    "lastTransitionTime": "2026-10-25T21:47:12Z",
+    "observedGeneration": 1,
+    "status": "True",
+    "type": "Initialized"
+   },
+   {
+    "lastProbeTime": null,
+    "lastTransitionTime": "2026-10-26T02:45:53Z",
+    "message": "containers with unready status: [istio-proxy]",
+    "observedGeneration": 1,
+    "reason": "ContainersNotReady",
+    "status": "False",
+    "type": "Ready"
+   },
+   {
+    "lastProbeTime": null,
+    "lastTransitionTime": "2026-10-26T02:45:53Z",
+    "message": "containers with unready status: [istio-proxy]",
+    "observedGeneration": 1,
+    "reason": "ContainersNotReady",
+    "status": "False",
+    "type": "ContainersReady"
+   },
+   {
+    "lastProbeTime": null,
+    "lastTransitionTime": "2026-10-25T21:47:12Z",
+    "observedGeneration": 1,
+    "status": "True",
+    "type": "PodScheduled"
+   }
+  ],
+  "containerStatuses": [
+   {
+    "allocatedResources": {
+     "cpu": "200m",
+     "memory": "512Mi"
+    },
+    "containerID": "containerd://4095d1576c91babc0746ea767c38e8958cfe2da04a9dfe82f139498a87e67411",
+    "image": "localhost/cmtc-ztunnel:native-f221f29b59",
+    "imageID": "localhost/cmtc-ztunnel@sha256:5cf97f91e56247742cc8eb22b9ef28911f312b3cfb3980b115c9dc539bf109e2",
+    "lastState": {},
+    "name": "istio-proxy",
+    "ready": false,
+    "resources": {
+     "requests": {
+      "cpu": "200m",
+      "memory": "512Mi"
+     }
+    },
+    "restartCount": 0,
+    "started": true,
+    "state": {
+     "running": {
+      "startedAt": "2026-10-25T21:47:13Z"
+     }
+    },
+    "user": {
+     "linux": {
+      "gid": 1337,
+      "supplementalGroups": [
+       1337
+      ],
+      "uid": 0
+     }
+    },
+    "volumeMounts": [
+     {
+      "mountPath": "/var/run/cilium",
+      "name": "cilium-dir"
+     },
+     {
+      "mountPath": "/etc/ztunnel",
+      "name": "cilium-ztunnel-secrets",
+      "readOnly": true,
+      "recursiveReadOnly": "Disabled"
+     },
+     {
+      "mountPath": "/run/cmtc-spire/cmtc-b/delegated",
+      "name": "spire-agent-socket",
+      "readOnly": true,
+      "recursiveReadOnly": "Disabled"
+     },
+     {
+      "mountPath": "/run/containerd/containerd.sock",
+      "name": "container-runtime-socket",
+      "readOnly": true,
+      "recursiveReadOnly": "Disabled"
+     },
+     {
+      "mountPath": "/etc/cmtc/ztunnel-issuer-pins",
+      "name": "issuer-pins",
+      "readOnly": true,
+      "recursiveReadOnly": "Disabled"
+     },
+     {
+      "mountPath": "/var/lib/cmtc/ztunnel-issuer-checkpoint",
+      "name": "issuer-checkpoint"
+     }
+    ]
+   }
+  ],
+  "hostIP": "172.18.0.4",
+  "hostIPs": [
+   {
+    "ip": "172.18.0.4"
+   }
+  ],
+  "observedGeneration": 1,
+  "phase": "Running",
+  "podIP": "172.18.0.4",
+  "podIPs": [
+   {
+    "ip": "172.18.0.4"
+   }
+  ],
+  "qosClass": "Burstable",
+  "resources": {
+   "requests": {
+    "cpu": "181m",
+    "memory": "512Mi"
+   }
+  },
+  "startTime": "2026-10-25T21:47:12Z"
+ }
+}

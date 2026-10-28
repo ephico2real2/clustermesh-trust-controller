@@ -1,0 +1,102 @@
+# Cilium on the CMTC kind labs: settings shared by every cluster. `python3 scripts/lab/cilium_release.py files` prints
+# the file order: this file, the image lock (.tmp/cilium-image-values.json), the environment's extraCiliumValues and the
+# cluster values (scripts/lab/cilium_cluster_values.py). The strict workload mTLS layer is ztunnel.yaml.
+# scripts/lab/up.sh uses this file from its second Cilium upgrade on, once cert-manager exists (issue #33).
+ipam:
+  mode: kubernetes
+kubeProxyReplacement: true
+k8sServicePort: 6443
+# Cilium Ingress (operator, 2026-10-28): the observability hub's receiver and Grafana are reached through an Ingress,
+# never a node port. One shared Service, cilium-ingress, takes its cluster's one address from LB IPAM, and the agents
+# answer ARP for it on the kind network; charts/cmtc-lab-network holds the pool, the L2 policy and the DNS names.
+ingressController:
+  enabled: true
+  loadbalancerMode: shared
+  service:
+    # A LoadBalancer Service opens a node port by default; kube-proxy replacement serves the address without one.
+    allocateLoadBalancerNodePorts: false
+l2announcements:
+  enabled: true
+# Hubble on every agent, with TLS from the mesh PKI (MESH_PKI.md: ClusterIssuer <cluster>-clustermesh-intermediate). The
+# Relay and the UI run in the control cluster only; the cluster values set hubble.relay.enabled, hubble.ui.enabled and
+# the issuer name.
+hubble:
+  enabled: true
+  tls:
+    enabled: true
+    auto:
+      enabled: true
+      method: certmanager
+      # 365 days (MESH_PKI.md, Lifetimes).
+      certValidityDuration: 365
+      certManagerIssuerRef:
+        group: cert-manager.io
+        kind: ClusterIssuer
+  relay:
+    tls:
+      server:
+        # The Relay serves its own API over TLS too (certificate *.hubble-relay.cilium.io); the UI backend and the
+        # hubble CLI verify it against the mesh root. Client certificates are not required (mtls: false, the chart
+        # default): the CLI reaches the Relay through a port-forward only.
+        enabled: true
+    # Relay metrics on :9966 (hubble_relay_*), scraped by the lab Prometheus of the control cluster.
+    prometheus:
+      enabled: true
+  # Hubble metrics on :9965, scraped by the lab Prometheus (scripts/lab/monitoring.py, job hubble). The labs run an L4
+  # mesh (ztunnel, HBONE) with no L7 proxy, so the metrics that need one (dns, http, httpV2, kafka) would stay empty and
+  # are left out; sctp is left out because nothing speaks it. Every metric is labelled by workload, not by Pod, so its
+  # cardinality is bounded by the number of workloads, not by 5,000 Pods.
+  metrics:
+    enabled:
+      # Drops by reason and protocol: a policy denial or an unreachable peer shows here first.
+      - drop:sourceContext=workload-name|reserved-identity;destinationContext=workload-name|reserved-identity;labelsContext=source_namespace,destination_namespace
+      # TCP flags (SYN, FIN, RST) by workload pair: connection rate and resets, which is what an L4 mesh can see.
+      - tcp:sourceContext=workload-name|reserved-identity;destinationContext=workload-name|reserved-identity;labelsContext=source_namespace,destination_namespace
+      # Flows by type, protocol and verdict: the baseline volume per workload pair.
+      - flow:sourceContext=workload-name|reserved-identity;destinationContext=workload-name|reserved-identity;labelsContext=source_namespace,destination_namespace
+      # Destination ports: HBONE (15008) against plain ports shows what rides the tunnel and what does not.
+      - port-distribution:sourceContext=workload-name|reserved-identity;destinationContext=workload-name|reserved-identity;labelsContext=source_namespace,destination_namespace
+      # ICMP by type: the reachability checks the runbooks use.
+      - icmp:sourceContext=workload-name|reserved-identity;destinationContext=workload-name|reserved-identity;labelsContext=source_namespace,destination_namespace
+      # Policy verdicts by direction, match and action (forwarded, dropped, audit): the enforcement signal of the labs.
+      - policy:sourceContext=workload-name|reserved-identity;destinationContext=workload-name|reserved-identity;labelsContext=source_namespace,destination_namespace
+      # Flows that leave the cluster (reserved:world): what the mesh does not cover.
+      - flows-to-world:sourceContext=workload-name|reserved-identity;labelsContext=source_namespace
+operator:
+  replicas: 1
+# One agent at a time: each restart closes and reopens ztunnel admission on its node.
+updateStrategy:
+  rollingUpdate:
+    maxUnavailable: 1
+# The agent metrics on :9962, scraped by the lab Prometheus (scripts/lab/monitoring.sh).
+prometheus:
+  enabled: true
+  # The labs were qualified without controller-group metrics (the chart default adds three groups).
+  controllerGroupMetrics: []
+# The mesh trust bundle (MESH_PKI.md). Its content is instance data: the generated instance values carry it.
+tls:
+  caBundle:
+    enabled: true
+    name: cmtc-public-root
+    key: ca.crt
+    useSecret: false
+clustermesh:
+  useAPIServer: true
+  apiserver:
+    service:
+      type: NodePort
+    tls:
+      auto:
+        enabled: true
+        method: certmanager
+        # 365 days (MESH_PKI.md, Lifetimes). live-labs.yaml keeps the two current labs at 1 day until they move.
+        certValidityDuration: 365
+        certManagerIssuerRef:
+          group: cert-manager.io
+          kind: ClusterIssuer
+        # A peer's ztunnel-origin-config pins this certificate's key, so renewal keeps the key.
+        server:
+          privateKey:
+            rotationPolicy: Never
+  config:
+    enabled: true

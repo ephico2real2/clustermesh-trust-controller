@@ -1,0 +1,2526 @@
+{
+  "__inputs": [
+    {
+      "name": "DS_PROMETHEUS",
+      "label": "Prometheus",
+      "description": "",
+      "type": "datasource",
+      "pluginId": "prometheus",
+      "pluginName": "Prometheus"
+    }
+  ],
+  "__requires": [
+    {
+      "type": "datasource",
+      "id": "prometheus",
+      "name": "Prometheus",
+      "version": "1.0.0"
+    }
+  ],
+  "title": "CMTC trust profile and issuer succession",
+  "uid": "cmtc-v2-trust",
+  "description": "Will workload mTLS keep working, and how long until the trust profile must change? The issuer profile each controller publishes, the approval it accepted, and SPIRE's next CA.",
+  "tags": [
+    "cmtc",
+    "cmtc-v2"
+  ],
+  "schemaVersion": 39,
+  "version": 1,
+  "editable": true,
+  "graphTooltip": 1,
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
+  "refresh": "30s",
+  "timezone": "utc",
+  "annotations": {
+    "list": []
+  },
+  "links": [
+    {
+      "type": "dashboards",
+      "tags": [
+        "cmtc-v2"
+      ],
+      "asDropdown": false,
+      "title": "CMTC v2",
+      "includeVars": false,
+      "keepTime": true
+    }
+  ],
+  "templating": {
+    "list": [
+      {
+        "name": "DS_PROMETHEUS",
+        "label": "Data source",
+        "type": "datasource",
+        "query": "prometheus",
+        "current": {},
+        "hide": 0,
+        "includeAll": false,
+        "multi": false,
+        "options": [],
+        "refresh": 1,
+        "regex": ""
+      }
+    ]
+  },
+  "panels": [
+    {
+      "type": "row",
+      "title": "Is the issuer profile published and renewed?",
+      "id": 1,
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "panels": []
+    },
+    {
+      "type": "stat",
+      "title": "Profile lease left, seconds",
+      "description": "Seconds until the published profile expires, per cluster. 15 to 30 s while the producer renews (15 to 27 s over the hour to 2026-10-26T04:50Z); below 10 s renewals are failing; below 0 the profile lapsed (CMTCIssuerProfileLapsed). No data: no scraped controller, or a withdrawn profile.",
+      "id": 2,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 0,
+        "y": 1
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "max by (cluster) (cmtc_issuer_profile_acknowledged_valid_until_timestamp_seconds{job=\"cmtc\", component=\"cmtc-controller\", cluster=\"cmtc-a\"} > 0) - time()",
+          "legendFormat": "{{cluster}}",
+          "instant": true
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "max by (cluster) (cmtc_issuer_profile_acknowledged_valid_until_timestamp_seconds{job=\"cmtc\", component=\"cmtc-controller\", cluster=\"cmtc-b\"} > 0) - time()",
+          "legendFormat": "{{cluster}}",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "noValue": "No data: not scraped",
+          "mappings": [],
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#e15759",
+                "value": null
+              },
+              {
+                "color": "#f28e2b",
+                "value": 0
+              },
+              {
+                "color": "#59a14f",
+                "value": 10
+              }
+            ]
+          },
+          "decimals": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "wideLayout": true,
+        "showPercentChange": false
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Approval source read, seconds ago",
+      "description": "Seconds since the leader last read its approval source, per cluster. It reads every 5 s (at most 10 s over the hour to 2026-10-26T04:50Z); above 60 s the producer cannot read it (CMTCIssuerProfileSourceStale).",
+      "id": 3,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 6,
+        "y": 1
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "time() - max by (cluster) (cmtc_issuer_profile_source_checked_timestamp_seconds{job=\"cmtc\", component=\"cmtc-controller\", cluster=\"cmtc-a\"} > 0)",
+          "legendFormat": "{{cluster}}",
+          "instant": true
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "time() - max by (cluster) (cmtc_issuer_profile_source_checked_timestamp_seconds{job=\"cmtc\", component=\"cmtc-controller\", cluster=\"cmtc-b\"} > 0)",
+          "legendFormat": "{{cluster}}",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "noValue": "No data: not scraped",
+          "mappings": [],
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#59a14f",
+                "value": null
+              },
+              {
+                "color": "#f28e2b",
+                "value": 30
+              },
+              {
+                "color": "#e15759",
+                "value": 60
+              }
+            ]
+          },
+          "decimals": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "wideLayout": true,
+        "showPercentChange": false
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Source validations not accepted, 1 hour",
+      "description": "Approval source reads that were rejected or unavailable in the last hour, per cluster. 0 is normal; the controller log line \"approval validation rejected\" has the reason.",
+      "id": 4,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 12,
+        "y": 1
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "sum by (cluster) (increase(cmtc_issuer_profile_validation_attempts_total{job=\"cmtc\", component=\"cmtc-controller\", result!=\"accepted\", cluster=\"cmtc-a\"}[1h])) or 0 * max by (cluster) (up{job=\"cmtc\", component=\"cmtc-controller\", cluster=\"cmtc-a\"} == 1)",
+          "legendFormat": "{{cluster}}",
+          "instant": true
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "sum by (cluster) (increase(cmtc_issuer_profile_validation_attempts_total{job=\"cmtc\", component=\"cmtc-controller\", result!=\"accepted\", cluster=\"cmtc-b\"}[1h])) or 0 * max by (cluster) (up{job=\"cmtc\", component=\"cmtc-controller\", cluster=\"cmtc-b\"} == 1)",
+          "legendFormat": "{{cluster}}",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "noValue": "No data: not scraped",
+          "mappings": [],
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#59a14f",
+                "value": null
+              },
+              {
+                "color": "#e15759",
+                "value": 1
+              }
+            ]
+          },
+          "decimals": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "wideLayout": true,
+        "showPercentChange": false
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Publication writes failed, 1 hour",
+      "description": "Publication writes the API server did not acknowledge in the last hour, per cluster. 0 is normal.",
+      "id": 5,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 18,
+        "y": 1
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "sum by (cluster) (increase(cmtc_issuer_profile_publication_writes_total{job=\"cmtc\", component=\"cmtc-controller\", result=\"error\", cluster=\"cmtc-a\"}[1h])) or 0 * max by (cluster) (up{job=\"cmtc\", component=\"cmtc-controller\", cluster=\"cmtc-a\"} == 1)",
+          "legendFormat": "{{cluster}}",
+          "instant": true
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "sum by (cluster) (increase(cmtc_issuer_profile_publication_writes_total{job=\"cmtc\", component=\"cmtc-controller\", result=\"error\", cluster=\"cmtc-b\"}[1h])) or 0 * max by (cluster) (up{job=\"cmtc\", component=\"cmtc-controller\", cluster=\"cmtc-b\"} == 1)",
+          "legendFormat": "{{cluster}}",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "noValue": "No data: not scraped",
+          "mappings": [],
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#59a14f",
+                "value": null
+              },
+              {
+                "color": "#e15759",
+                "value": 1
+              }
+            ]
+          },
+          "decimals": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "wideLayout": true,
+        "showPercentChange": false
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Profile lease left, seconds",
+      "description": "The lease over time, per cluster: a saw-tooth between about 15 and 30 s. A line falling through 0 is a lapse.",
+      "id": 6,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 5
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "max by (cluster) (cmtc_issuer_profile_acknowledged_valid_until_timestamp_seconds{job=\"cmtc\", component=\"cmtc-controller\", cluster=\"cmtc-a\"} > 0) - time()",
+          "legendFormat": "{{cluster}}",
+          "range": true
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "max by (cluster) (cmtc_issuer_profile_acknowledged_valid_until_timestamp_seconds{job=\"cmtc\", component=\"cmtc-controller\", cluster=\"cmtc-b\"} > 0) - time()",
+          "legendFormat": "{{cluster}}",
+          "range": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "min": null,
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "spanNulls": false
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byFrameRefID",
+              "options": "A"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#4e79a7"
+                }
+              },
+              {
+                "id": "custom.fillOpacity",
+                "value": 10
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byFrameRefID",
+              "options": "B"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#e15759"
+                }
+              },
+              {
+                "id": "custom.fillOpacity",
+                "value": 10
+              },
+              {
+                "id": "custom.lineStyle",
+                "value": {
+                  "fill": "dash",
+                  "dash": [
+                    8,
+                    6
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Publication writes per second",
+      "description": "Acknowledged and failed publication writes, per cluster, 5 minute rate: about one every 10 s while the producer renews (361 and 360 in the hour to 2026-10-26T04:50Z).",
+      "id": 7,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 5
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "sum by (cluster) (rate(cmtc_issuer_profile_publication_writes_total{job=\"cmtc\", component=\"cmtc-controller\", cluster=\"cmtc-a\"}[5m]))",
+          "legendFormat": "{{cluster}}",
+          "range": true
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "sum by (cluster) (rate(cmtc_issuer_profile_publication_writes_total{job=\"cmtc\", component=\"cmtc-controller\", cluster=\"cmtc-b\"}[5m]))",
+          "legendFormat": "{{cluster}}",
+          "range": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "wps",
+          "min": 0,
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "spanNulls": false
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byFrameRefID",
+              "options": "A"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#4e79a7"
+                }
+              },
+              {
+                "id": "custom.fillOpacity",
+                "value": 10
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byFrameRefID",
+              "options": "B"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#e15759"
+                }
+              },
+              {
+                "id": "custom.fillOpacity",
+                "value": 10
+              },
+              {
+                "id": "custom.lineStyle",
+                "value": {
+                  "fill": "dash",
+                  "dash": [
+                    8,
+                    6
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      }
+    },
+    {
+      "type": "text",
+      "title": "How to read this section",
+      "id": 8,
+      "transparent": true,
+      "gridPos": {
+        "h": 3,
+        "w": 24,
+        "x": 0,
+        "y": 13
+      },
+      "options": {
+        "mode": "markdown",
+        "content": "The producer works when the lease saw-tooth stays above 0 and every read and write is accepted. This is the publication; whether ztunnel applied it is the last section.",
+        "code": {
+          "language": "plaintext",
+          "showLineNumbers": false,
+          "showMiniMap": false
+        }
+      }
+    },
+    {
+      "type": "row",
+      "title": "Which issuers does each approval pin, and until when? · planned",
+      "id": 9,
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 16
+      },
+      "panels": []
+    },
+    {
+      "type": "table",
+      "title": "Approval in force, per cluster · planned",
+      "description": "Planned, a proposed source change: needs source-patches/cmtc/0001 (approval and approved issuer gauges). The approval generation each cluster's producer accepted and the hours until it ends (the earliest notAfter it pins, or its expiresAt). Both clusters should accept the same generation (CMTCIssuerApprovalGenerationsDiffer).",
+      "id": 10,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 12,
+        "x": 0,
+        "y": 17
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "max by (cluster) (cmtc_issuer_profile_approval_generation{job=\"cmtc\", component=\"cmtc-controller\"} > 0)",
+          "legendFormat": "",
+          "instant": true,
+          "format": "table"
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "(max by (cluster) (cmtc_issuer_profile_approval_valid_until_timestamp_seconds{job=\"cmtc\", component=\"cmtc-controller\"} > 0) - time()) / 3600",
+          "legendFormat": "",
+          "instant": true,
+          "format": "table"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            }
+          },
+          "noValue": "–"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Cluster"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-background",
+                  "mode": "basic"
+                }
+              },
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "cmtc-a": {
+                        "color": "#4e79a7",
+                        "index": 0
+                      },
+                      "cmtc-b": {
+                        "color": "#e15759",
+                        "index": 1
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Generation"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "none"
+              },
+              {
+                "id": "decimals",
+                "value": 0
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Ends in, hours"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "none"
+              },
+              {
+                "id": "decimals",
+                "value": 0
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm"
+      },
+      "transformations": [
+        {
+          "id": "merge",
+          "options": {}
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true
+            },
+            "indexByName": {
+              "cluster": 0,
+              "Value #A": 1,
+              "Value #B": 2
+            },
+            "renameByName": {
+              "cluster": "Cluster",
+              "Value #A": "Generation",
+              "Value #B": "Ends in, hours"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "type": "table",
+      "title": "Pinned issuers, per approval cluster · planned",
+      "description": "Planned, a proposed source change: needs source-patches/cmtc/0001 (approval and approved issuer gauges). For each cluster the approval lists: hours until its newest and oldest pinned issuer end, and until SPIRE prepares and activates the CA that follows the newest. Negative hours: already happened.",
+      "id": 11,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 24,
+        "x": 0,
+        "y": 22
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "(max by (cluster, approval_cluster) (cmtc_issuer_profile_approved_issuer_not_after_timestamp_seconds{job=\"cmtc\", component=\"cmtc-controller\", position=\"newest\"} > 0) - time()) / 3600",
+          "legendFormat": "",
+          "instant": true,
+          "format": "table"
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "(max by (cluster, approval_cluster) (cmtc_issuer_profile_approved_issuer_not_after_timestamp_seconds{job=\"cmtc\", component=\"cmtc-controller\", position=\"oldest\"} > 0) - time()) / 3600",
+          "legendFormat": "",
+          "instant": true,
+          "format": "table"
+        },
+        {
+          "refId": "C",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "(max by (cluster, approval_cluster) (cmtc_issuer_profile_approved_issuer_not_after_timestamp_seconds{job=\"cmtc\", component=\"cmtc-controller\", position=\"newest\"} > 0) - clamp_max((max by (cluster, approval_cluster) (cmtc_issuer_profile_approved_issuer_not_after_timestamp_seconds{job=\"cmtc\", component=\"cmtc-controller\", position=\"newest\"} > 0) - max by (cluster, approval_cluster) (cmtc_issuer_profile_approved_issuer_not_before_timestamp_seconds{job=\"cmtc\", component=\"cmtc-controller\", position=\"newest\"} > 0)) / 2, 2592000) - time()) / 3600",
+          "legendFormat": "",
+          "instant": true,
+          "format": "table"
+        },
+        {
+          "refId": "D",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "(max by (cluster, approval_cluster) (cmtc_issuer_profile_approved_issuer_not_after_timestamp_seconds{job=\"cmtc\", component=\"cmtc-controller\", position=\"newest\"} > 0) - clamp_max((max by (cluster, approval_cluster) (cmtc_issuer_profile_approved_issuer_not_after_timestamp_seconds{job=\"cmtc\", component=\"cmtc-controller\", position=\"newest\"} > 0) - max by (cluster, approval_cluster) (cmtc_issuer_profile_approved_issuer_not_before_timestamp_seconds{job=\"cmtc\", component=\"cmtc-controller\", position=\"newest\"} > 0)) / 6, 604800) - time()) / 3600",
+          "legendFormat": "",
+          "instant": true,
+          "format": "table"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            }
+          },
+          "noValue": "–"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Cluster"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-background",
+                  "mode": "basic"
+                }
+              },
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "cmtc-a": {
+                        "color": "#4e79a7",
+                        "index": 0
+                      },
+                      "cmtc-b": {
+                        "color": "#e15759",
+                        "index": 1
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Newest pin ends, h"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "none"
+              },
+              {
+                "id": "decimals",
+                "value": 0
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Oldest pin ends, h"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "none"
+              },
+              {
+                "id": "decimals",
+                "value": 0
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Next CA prepared, h"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "none"
+              },
+              {
+                "id": "decimals",
+                "value": 0
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Next CA activates, h"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "none"
+              },
+              {
+                "id": "decimals",
+                "value": 0
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm"
+      },
+      "transformations": [
+        {
+          "id": "merge",
+          "options": {}
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true
+            },
+            "indexByName": {
+              "cluster": 0,
+              "approval_cluster": 1,
+              "Value #A": 2,
+              "Value #B": 3,
+              "Value #C": 4,
+              "Value #D": 5
+            },
+            "renameByName": {
+              "cluster": "Cluster",
+              "approval_cluster": "Approval cluster",
+              "Value #A": "Newest pin ends, h",
+              "Value #B": "Oldest pin ends, h",
+              "Value #C": "Next CA prepared, h",
+              "Value #D": "Next CA activates, h"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "type": "status-history",
+      "title": "Profile withdrawn, per cluster · planned",
+      "description": "Planned, a proposed source change: needs source-patches/cmtc/0001 (approval and approved issuer gauges). Whether each producer publishes a validated profile (validated) or withdrew it (withdrawn), over time. The table names the reason.",
+      "id": 12,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 28
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "max by (cluster) (cmtc_issuer_profile_publication_reason{job=\"cmtc\", component=\"cmtc-controller\", reason!=\"Validated\"})",
+          "legendFormat": "{{cluster}}",
+          "range": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": {
+                  "text": "validated",
+                  "color": "#59a14f",
+                  "index": 0
+                },
+                "1": {
+                  "text": "withdrawn",
+                  "color": "#e15759",
+                  "index": 1
+                }
+              }
+            }
+          ],
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "#59a14f"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "showValue": "never",
+        "rowHeight": 0.8,
+        "colWidth": 0.95,
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      }
+    },
+    {
+      "type": "table",
+      "title": "Publication reason now · planned",
+      "description": "Planned, a proposed source change: needs source-patches/cmtc/0001 (approval and approved issuer gauges). The reason each producer gives for its publication: Validated, or why it withdrew the profile (SourceExpired, SourceInvalid, SourceDeleted, SourceUnavailable, SourceUIDMismatch, SourceChanged, GenerationRollback).",
+      "id": 13,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 12,
+        "x": 12,
+        "y": 28
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "max by (cluster, reason) (cmtc_issuer_profile_publication_reason{job=\"cmtc\", component=\"cmtc-controller\"} == 1)",
+          "legendFormat": "",
+          "instant": true,
+          "format": "table"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            }
+          },
+          "noValue": "–"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Cluster"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-background",
+                  "mode": "basic"
+                }
+              },
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "cmtc-a": {
+                        "color": "#4e79a7",
+                        "index": 0
+                      },
+                      "cmtc-b": {
+                        "color": "#e15759",
+                        "index": 1
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Now"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "none"
+              },
+              {
+                "id": "decimals",
+                "value": 0
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm"
+      },
+      "transformations": [
+        {
+          "id": "merge",
+          "options": {}
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true,
+              "Value": true
+            },
+            "indexByName": {
+              "cluster": 0,
+              "reason": 1,
+              "Value": 2
+            },
+            "renameByName": {
+              "cluster": "Cluster",
+              "reason": "Reason",
+              "Value": "Now"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "type": "text",
+      "title": "How to read this section",
+      "id": 14,
+      "transparent": true,
+      "gridPos": {
+        "h": 3,
+        "w": 24,
+        "x": 0,
+        "y": 36
+      },
+      "options": {
+        "mode": "markdown",
+        "content": "The approval pins at most two issuers per cluster. While SPIRE holds a CA it does not pin, the next CA activation is a deadline.",
+        "code": {
+          "language": "plaintext",
+          "showLineNumbers": false,
+          "showMiniMap": false
+        }
+      }
+    },
+    {
+      "type": "row",
+      "title": "When does SPIRE switch to a CA the approval does not pin? · planned",
+      "id": 15,
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 39
+      },
+      "panels": []
+    },
+    {
+      "type": "stat",
+      "title": "Hours until SPIRE activates an unpinned CA · planned",
+      "description": "Planned, a proposed source change: needs source-patches/cmtc/0001 (approval and approved issuer gauges). The soonest activation, over the clusters the approval lists, of a CA it does not pin, per cluster. Critical below 2 h; past 0 the activation happened and ztunnel refuses new certificates.",
+      "id": 16,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 12,
+        "x": 0,
+        "y": 40
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "(min by (cluster) (max by (cluster, approval_cluster) (cmtc_issuer_profile_approved_issuer_not_after_timestamp_seconds{job=\"cmtc\", component=\"cmtc-controller\", position=\"newest\", cluster=\"cmtc-a\"} > 0) - clamp_max((max by (cluster, approval_cluster) (cmtc_issuer_profile_approved_issuer_not_after_timestamp_seconds{job=\"cmtc\", component=\"cmtc-controller\", position=\"newest\", cluster=\"cmtc-a\"} > 0) - max by (cluster, approval_cluster) (cmtc_issuer_profile_approved_issuer_not_before_timestamp_seconds{job=\"cmtc\", component=\"cmtc-controller\", position=\"newest\", cluster=\"cmtc-a\"} > 0)) / 6, 604800)) - time()) / 3600",
+          "legendFormat": "{{cluster}}",
+          "instant": true
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "(min by (cluster) (max by (cluster, approval_cluster) (cmtc_issuer_profile_approved_issuer_not_after_timestamp_seconds{job=\"cmtc\", component=\"cmtc-controller\", position=\"newest\", cluster=\"cmtc-b\"} > 0) - clamp_max((max by (cluster, approval_cluster) (cmtc_issuer_profile_approved_issuer_not_after_timestamp_seconds{job=\"cmtc\", component=\"cmtc-controller\", position=\"newest\", cluster=\"cmtc-b\"} > 0) - max by (cluster, approval_cluster) (cmtc_issuer_profile_approved_issuer_not_before_timestamp_seconds{job=\"cmtc\", component=\"cmtc-controller\", position=\"newest\", cluster=\"cmtc-b\"} > 0)) / 6, 604800)) - time()) / 3600",
+          "legendFormat": "{{cluster}}",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "noValue": "Planned",
+          "mappings": [],
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#e15759",
+                "value": null
+              },
+              {
+                "color": "#f28e2b",
+                "value": 2
+              },
+              {
+                "color": "#59a14f",
+                "value": 4
+              }
+            ]
+          },
+          "decimals": 1
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "wideLayout": true,
+        "showPercentChange": false
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Hours until SPIRE prepares the next CA · planned",
+      "description": "Planned, a proposed source change: needs source-patches/cmtc/0001 (approval and approved issuer gauges). The soonest preparation of the CA that follows the newest pin, per cluster. Negative: SPIRE has prepared it and it must be added to a new approval generation (CMTCIssuerSuccessionDue).",
+      "id": 17,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 12,
+        "x": 12,
+        "y": 40
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "(min by (cluster) (max by (cluster, approval_cluster) (cmtc_issuer_profile_approved_issuer_not_after_timestamp_seconds{job=\"cmtc\", component=\"cmtc-controller\", position=\"newest\", cluster=\"cmtc-a\"} > 0) - clamp_max((max by (cluster, approval_cluster) (cmtc_issuer_profile_approved_issuer_not_after_timestamp_seconds{job=\"cmtc\", component=\"cmtc-controller\", position=\"newest\", cluster=\"cmtc-a\"} > 0) - max by (cluster, approval_cluster) (cmtc_issuer_profile_approved_issuer_not_before_timestamp_seconds{job=\"cmtc\", component=\"cmtc-controller\", position=\"newest\", cluster=\"cmtc-a\"} > 0)) / 2, 2592000)) - time()) / 3600",
+          "legendFormat": "{{cluster}}",
+          "instant": true
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "(min by (cluster) (max by (cluster, approval_cluster) (cmtc_issuer_profile_approved_issuer_not_after_timestamp_seconds{job=\"cmtc\", component=\"cmtc-controller\", position=\"newest\", cluster=\"cmtc-b\"} > 0) - clamp_max((max by (cluster, approval_cluster) (cmtc_issuer_profile_approved_issuer_not_after_timestamp_seconds{job=\"cmtc\", component=\"cmtc-controller\", position=\"newest\", cluster=\"cmtc-b\"} > 0) - max by (cluster, approval_cluster) (cmtc_issuer_profile_approved_issuer_not_before_timestamp_seconds{job=\"cmtc\", component=\"cmtc-controller\", position=\"newest\", cluster=\"cmtc-b\"} > 0)) / 2, 2592000)) - time()) / 3600",
+          "legendFormat": "{{cluster}}",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "noValue": "Planned",
+          "mappings": [],
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#f28e2b",
+                "value": null
+              },
+              {
+                "color": "#59a14f",
+                "value": 0
+              }
+            ]
+          },
+          "decimals": 1
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "wideLayout": true,
+        "showPercentChange": false
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Hours until SPIRE activates an unpinned CA · planned",
+      "description": "Planned, a proposed source change: needs source-patches/cmtc/0001 (approval and approved issuer gauges). The same countdown over time, per cluster. A new approval generation that pins the prepared CA moves the line up by the CA's lifetime.",
+      "id": 18,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 44
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "(min by (cluster) (max by (cluster, approval_cluster) (cmtc_issuer_profile_approved_issuer_not_after_timestamp_seconds{job=\"cmtc\", component=\"cmtc-controller\", position=\"newest\", cluster=\"cmtc-a\"} > 0) - clamp_max((max by (cluster, approval_cluster) (cmtc_issuer_profile_approved_issuer_not_after_timestamp_seconds{job=\"cmtc\", component=\"cmtc-controller\", position=\"newest\", cluster=\"cmtc-a\"} > 0) - max by (cluster, approval_cluster) (cmtc_issuer_profile_approved_issuer_not_before_timestamp_seconds{job=\"cmtc\", component=\"cmtc-controller\", position=\"newest\", cluster=\"cmtc-a\"} > 0)) / 6, 604800)) - time()) / 3600",
+          "legendFormat": "{{cluster}}",
+          "range": true
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "(min by (cluster) (max by (cluster, approval_cluster) (cmtc_issuer_profile_approved_issuer_not_after_timestamp_seconds{job=\"cmtc\", component=\"cmtc-controller\", position=\"newest\", cluster=\"cmtc-b\"} > 0) - clamp_max((max by (cluster, approval_cluster) (cmtc_issuer_profile_approved_issuer_not_after_timestamp_seconds{job=\"cmtc\", component=\"cmtc-controller\", position=\"newest\", cluster=\"cmtc-b\"} > 0) - max by (cluster, approval_cluster) (cmtc_issuer_profile_approved_issuer_not_before_timestamp_seconds{job=\"cmtc\", component=\"cmtc-controller\", position=\"newest\", cluster=\"cmtc-b\"} > 0)) / 6, 604800)) - time()) / 3600",
+          "legendFormat": "{{cluster}}",
+          "range": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "min": null,
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "spanNulls": false
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byFrameRefID",
+              "options": "A"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#4e79a7"
+                }
+              },
+              {
+                "id": "custom.fillOpacity",
+                "value": 10
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byFrameRefID",
+              "options": "B"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#e15759"
+                }
+              },
+              {
+                "id": "custom.fillOpacity",
+                "value": 10
+              },
+              {
+                "id": "custom.lineStyle",
+                "value": {
+                  "fill": "dash",
+                  "dash": [
+                    8,
+                    6
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      }
+    },
+    {
+      "type": "table",
+      "title": "SPIRE CA times, per cluster · planned",
+      "description": "Planned, a proposed source change: needs source-patches/cmtc/0002 (SPIRE telemetry) and the spire-server scrape job of deploy/. Hours until SPIRE's active CA ends, and until the latest CA it holds (active or prepared) ends, per cluster SPIRE runs in. A latest CA beyond every pin is a prepared CA the approval does not pin (CMTCSPIRECANotApproved).",
+      "id": 19,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 12,
+        "x": 12,
+        "y": 44
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "(max by (cluster) (spire_server_manager_x509_ca_rotate_expiration{job=\"spire-server\"}) - time()) / 3600",
+          "legendFormat": "",
+          "instant": true,
+          "format": "table"
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "(max by (cluster) (spire_server_manager_x509_ca_rotate_max_expiration{job=\"spire-server\"}) - time()) / 3600",
+          "legendFormat": "",
+          "instant": true,
+          "format": "table"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            }
+          },
+          "noValue": "–"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Cluster"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-background",
+                  "mode": "basic"
+                }
+              },
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "cmtc-a": {
+                        "color": "#4e79a7",
+                        "index": 0
+                      },
+                      "cmtc-b": {
+                        "color": "#e15759",
+                        "index": 1
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Active CA ends, h"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "none"
+              },
+              {
+                "id": "decimals",
+                "value": 0
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Latest CA ends, h"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "none"
+              },
+              {
+                "id": "decimals",
+                "value": 0
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm"
+      },
+      "transformations": [
+        {
+          "id": "merge",
+          "options": {}
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true
+            },
+            "indexByName": {
+              "cluster": 0,
+              "Value #A": 1,
+              "Value #B": 2
+            },
+            "renameByName": {
+              "cluster": "Cluster",
+              "Value #A": "Active CA ends, h",
+              "Value #B": "Latest CA ends, h"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "type": "text",
+      "title": "How to read this section",
+      "id": 20,
+      "transparent": true,
+      "gridPos": {
+        "h": 5,
+        "w": 24,
+        "x": 0,
+        "y": 52
+      },
+      "options": {
+        "mode": "markdown",
+        "content": "On 2026-10-25, SPIRE prepared slot B at 15:55:19Z and activated it at 23:55:17Z: an 8 hour window these panels would have counted down.\n#34, 2026-10-26: approval generation 5 pinned SPIRE slot A only. The same arithmetic forecasts the activation at 23:55:28Z (cmtc-a) and 23:55:54Z (cmtc-b); spire-server-0 logged it at 23:55:37Z and 23:55:57Z (rules/proposed/issuer-approval-source-change.rules.yaml).",
+        "code": {
+          "language": "plaintext",
+          "showLineNumbers": false,
+          "showMiniMap": false
+        }
+      }
+    },
+    {
+      "type": "row",
+      "title": "Did ztunnel apply the profile, or refuse connections over it?",
+      "id": 21,
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 57
+      },
+      "panels": []
+    },
+    {
+      "type": "timeseries",
+      "title": "Issuer profile messages received by ztunnel per second",
+      "description": "IssuerProfile xDS messages each cluster's ztunnels received, per cluster, 5 minute rate. A flat 0 while the producer renews means ztunnel is not receiving its profile.",
+      "id": 22,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 58
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "sum by (cluster) (rate(istio_xds_message_total{job=\"ztunnel\", url=\"type.googleapis.com/cilium.ztunnel.v1.IssuerProfile\", cluster=\"cmtc-a\"}[5m]))",
+          "legendFormat": "{{cluster}}",
+          "range": true
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "sum by (cluster) (rate(istio_xds_message_total{job=\"ztunnel\", url=\"type.googleapis.com/cilium.ztunnel.v1.IssuerProfile\", cluster=\"cmtc-b\"}[5m]))",
+          "legendFormat": "{{cluster}}",
+          "range": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops",
+          "min": 0,
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "spanNulls": false
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byFrameRefID",
+              "options": "A"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#4e79a7"
+                }
+              },
+              {
+                "id": "custom.fillOpacity",
+                "value": 10
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byFrameRefID",
+              "options": "B"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#e15759"
+                }
+              },
+              {
+                "id": "custom.fillOpacity",
+                "value": 10
+              },
+              {
+                "id": "custom.lineStyle",
+                "value": {
+                  "fill": "dash",
+                  "dash": [
+                    8,
+                    6
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Connections refused over the trust profile per second · planned",
+      "description": "Planned, a proposed source change: needs source-patches/ztunnel/0001 (TRUST_PROFILE) and the ztunnel scrape job. Connections ztunnel refused because its profile does not accept a certificate, per cluster, 5 minute rate (CMTCTrustProfileRefusingConnections).",
+      "id": 23,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 8,
+        "y": 58
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "sum by (cluster) (rate(istio_tcp_connections_failed_total{job=\"ztunnel\", response_flags=\"TRUST_PROFILE\", cluster=\"cmtc-a\"}[5m]))",
+          "legendFormat": "{{cluster}}",
+          "range": true
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "sum by (cluster) (rate(istio_tcp_connections_failed_total{job=\"ztunnel\", response_flags=\"TRUST_PROFILE\", cluster=\"cmtc-b\"}[5m]))",
+          "legendFormat": "{{cluster}}",
+          "range": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "cps",
+          "min": 0,
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "spanNulls": false
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byFrameRefID",
+              "options": "A"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#4e79a7"
+                }
+              },
+              {
+                "id": "custom.fillOpacity",
+                "value": 10
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byFrameRefID",
+              "options": "B"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#e15759"
+                }
+              },
+              {
+                "id": "custom.fillOpacity",
+                "value": 10
+              },
+              {
+                "id": "custom.lineStyle",
+                "value": {
+                  "fill": "dash",
+                  "dash": [
+                    8,
+                    6
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Connections failed for want of a workload identity per second",
+      "description": "Connections that failed because ztunnel had no certificate for the workload (IDENTITY_ERROR), per cluster, 5 minute rate: SPIRE identity issuance is failing.",
+      "id": 24,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 58
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "sum by (cluster) (rate(istio_tcp_connections_failed_total{job=\"ztunnel\", response_flags=\"IDENTITY_ERROR\", cluster=\"cmtc-a\"}[5m]))",
+          "legendFormat": "{{cluster}}",
+          "range": true
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "sum by (cluster) (rate(istio_tcp_connections_failed_total{job=\"ztunnel\", response_flags=\"IDENTITY_ERROR\", cluster=\"cmtc-b\"}[5m]))",
+          "legendFormat": "{{cluster}}",
+          "range": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "cps",
+          "min": 0,
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "spanNulls": false
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byFrameRefID",
+              "options": "A"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#4e79a7"
+                }
+              },
+              {
+                "id": "custom.fillOpacity",
+                "value": 10
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byFrameRefID",
+              "options": "B"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#e15759"
+                }
+              },
+              {
+                "id": "custom.fillOpacity",
+                "value": 10
+              },
+              {
+                "id": "custom.lineStyle",
+                "value": {
+                  "fill": "dash",
+                  "dash": [
+                    8,
+                    6
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      }
+    },
+    {
+      "type": "text",
+      "title": "How to read this section",
+      "id": 25,
+      "transparent": true,
+      "gridPos": {
+        "h": 3,
+        "w": 24,
+        "x": 0,
+        "y": 66
+      },
+      "options": {
+        "mode": "markdown",
+        "content": "The profile reaches ztunnel over xDS. Refusals over the profile are the outage of 2026-10-25; IDENTITY_ERROR is SPIRE not issuing.",
+        "code": {
+          "language": "plaintext",
+          "showLineNumbers": false,
+          "showMiniMap": false
+        }
+      }
+    },
+    {
+      "type": "row",
+      "title": "Will the mesh certificates stay valid, and does the mesh root reach its namespaces?",
+      "id": 26,
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 69
+      },
+      "panels": []
+    },
+    {
+      "type": "table",
+      "title": "Mesh certificates, per cluster",
+      "description": "Each cert-manager Certificate: its issuer, hours until it expires and until cert-manager renews it, and its Ready condition, now. The mesh root cmtc-mesh-root-ca lives 10 years in the control cluster only, the ClusterMesh and SPIRE intermediates 1 year, the ClusterMesh and ztunnel leaves 1 day (MESH_PKI.md). Negative hours to renewal: the renewal is overdue (CMTCCertificateRenewalOverdue).",
+      "id": 27,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 24,
+        "x": 0,
+        "y": 70
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "(max by (cluster, exported_namespace, name, issuer_name) (certmanager_certificate_expiration_timestamp_seconds{job=\"cert-manager\"} > 0) - time()) / 3600",
+          "legendFormat": "",
+          "instant": true,
+          "format": "table"
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "(max by (cluster, exported_namespace, name, issuer_name) (certmanager_certificate_renewal_timestamp_seconds{job=\"cert-manager\"} > 0) - time()) / 3600",
+          "legendFormat": "",
+          "instant": true,
+          "format": "table"
+        },
+        {
+          "refId": "C",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "max by (cluster, exported_namespace, name, issuer_name) (certmanager_certificate_ready_status{job=\"cert-manager\", condition=\"True\"})",
+          "legendFormat": "",
+          "instant": true,
+          "format": "table"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            }
+          },
+          "noValue": "–"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Cluster"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-background",
+                  "mode": "basic"
+                }
+              },
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "cmtc-a": {
+                        "color": "#4e79a7",
+                        "index": 0
+                      },
+                      "cmtc-b": {
+                        "color": "#e15759",
+                        "index": 1
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Expires in, h"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "none"
+              },
+              {
+                "id": "decimals",
+                "value": 0
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Renews in, h"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "none"
+              },
+              {
+                "id": "decimals",
+                "value": 0
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Ready"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "none"
+              },
+              {
+                "id": "decimals",
+                "value": 0
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
+                }
+              },
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "0": {
+                        "text": "not Ready",
+                        "color": "#e15759",
+                        "index": 0
+                      },
+                      "1": {
+                        "text": "Ready",
+                        "color": "#59a14f",
+                        "index": 1
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm"
+      },
+      "transformations": [
+        {
+          "id": "merge",
+          "options": {}
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true
+            },
+            "indexByName": {
+              "cluster": 0,
+              "exported_namespace": 1,
+              "name": 2,
+              "issuer_name": 3,
+              "Value #A": 4,
+              "Value #B": 5,
+              "Value #C": 6
+            },
+            "renameByName": {
+              "cluster": "Cluster",
+              "exported_namespace": "Namespace",
+              "name": "Certificate",
+              "issuer_name": "Issuer",
+              "Value #A": "Expires in, h",
+              "Value #B": "Renews in, h",
+              "Value #C": "Ready"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "ClusterIssuers not Ready",
+      "description": "ClusterIssuers whose Ready condition is not True, per cluster, now: the mesh root, the per-cluster intermediates and the SPIRE issuer. Normal: 0 (CMTCClusterIssuerNotReady).",
+      "id": 28,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 8,
+        "x": 0,
+        "y": 79
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "count by (cluster) (max by (cluster, name) (certmanager_clusterissuer_ready_status{job=\"cert-manager\", condition!=\"True\", cluster=\"cmtc-a\"}) == 1) or 0 * max by (cluster) (up{job=\"cert-manager\", cluster=\"cmtc-a\"} == 1)",
+          "legendFormat": "{{cluster}}",
+          "instant": true
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "count by (cluster) (max by (cluster, name) (certmanager_clusterissuer_ready_status{job=\"cert-manager\", condition!=\"True\", cluster=\"cmtc-b\"}) == 1) or 0 * max by (cluster) (up{job=\"cert-manager\", cluster=\"cmtc-b\"} == 1)",
+          "legendFormat": "{{cluster}}",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "noValue": "Not scraped yet",
+          "mappings": [],
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#59a14f",
+                "value": null
+              },
+              {
+                "color": "#e15759",
+                "value": 1
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "wideLayout": true,
+        "showPercentChange": false
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Hours until the soonest intermediate expires",
+      "description": "Hours until the first of the cluster's ClusterMesh and SPIRE intermediate certificates expires, per cluster. They were issued for 1 year on 2026-10-26 and renew 30 days before they end.",
+      "id": 29,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 8,
+        "x": 8,
+        "y": 79
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "(min by (cluster) (certmanager_certificate_expiration_timestamp_seconds{job=\"cert-manager\", name=~\".+-(clustermesh|spire)-intermediate\", cluster=\"cmtc-a\"} > 0) - time()) / 3600",
+          "legendFormat": "{{cluster}}",
+          "instant": true
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "(min by (cluster) (certmanager_certificate_expiration_timestamp_seconds{job=\"cert-manager\", name=~\".+-(clustermesh|spire)-intermediate\", cluster=\"cmtc-b\"} > 0) - time()) / 3600",
+          "legendFormat": "{{cluster}}",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "noValue": "Not scraped yet",
+          "mappings": [],
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#e15759",
+                "value": null
+              },
+              {
+                "color": "#f28e2b",
+                "value": 24
+              },
+              {
+                "color": "#59a14f",
+                "value": 720
+              }
+            ]
+          },
+          "decimals": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "wideLayout": true,
+        "showPercentChange": false
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Bundle reconcile errors, 1 hour",
+      "description": "Failed reconciles of trust-manager's Bundle controller in the last hour, per cluster. The Bundle cmtc-mesh-root copies the mesh root into ConfigMap cmtc-mesh-root of every namespace labelled trust: enabled. Normal: 0 (CMTCTrustBundleReconcileFailing).",
+      "id": 30,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 8,
+        "x": 16,
+        "y": 79
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "sum by (cluster) (increase(controller_runtime_reconcile_errors_total{job=\"trust-manager\", controller=\"bundles\", cluster=\"cmtc-a\"}[1h])) or 0 * max by (cluster) (up{job=\"trust-manager\", cluster=\"cmtc-a\"} == 1)",
+          "legendFormat": "{{cluster}}",
+          "instant": true
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "sum by (cluster) (increase(controller_runtime_reconcile_errors_total{job=\"trust-manager\", controller=\"bundles\", cluster=\"cmtc-b\"}[1h])) or 0 * max by (cluster) (up{job=\"trust-manager\", cluster=\"cmtc-b\"} == 1)",
+          "legendFormat": "{{cluster}}",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "noValue": "Not scraped yet",
+          "mappings": [],
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#59a14f",
+                "value": null
+              },
+              {
+                "color": "#e15759",
+                "value": 1
+              }
+            ]
+          },
+          "decimals": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "wideLayout": true,
+        "showPercentChange": false
+      }
+    },
+    {
+      "type": "text",
+      "title": "How to read this section",
+      "id": 31,
+      "transparent": true,
+      "gridPos": {
+        "h": 5,
+        "w": 24,
+        "x": 0,
+        "y": 83
+      },
+      "options": {
+        "mode": "markdown",
+        "content": "Read on the labs at 2026-10-27T00:06:53Z: every Certificate Ready; the four intermediates end 2027-10-26T12:49Z, cmtc-mesh-root-ca 2036-10-23T12:49Z; 6 Bundle reconciles and 0 errors on cmtc-a.\ncert-manager's metrics describe the certificates it manages, not the ones SPIRE issues: SPIRE's CA times are in the section above.",
+        "code": {
+          "language": "plaintext",
+          "showLineNumbers": false,
+          "showMiniMap": false
+        }
+      }
+    }
+  ]
+}

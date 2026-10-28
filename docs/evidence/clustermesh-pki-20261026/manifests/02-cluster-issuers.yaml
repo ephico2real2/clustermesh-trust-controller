@@ -1,0 +1,20 @@
+# Apply on every cluster after Secret cert-manager/cmtc-mesh-root-ca exists there (minted on cmtc-a, copied to
+# the others). Replace CLUSTER_NAME. Each cluster signs its own ClusterMesh intermediate from the shared root.
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata: {name: cmtc-mesh-root}
+spec:
+  ca: {secretName: cmtc-mesh-root-ca}
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata: {name: cmtc-clustermesh-intermediate, namespace: cert-manager}
+spec:
+  isCA: true
+  commonName: CLUSTER_NAME ClusterMesh intermediate CA
+  duration: 8760h     # 1 year
+  renewBefore: 720h
+  secretName: cmtc-clustermesh-intermediate
+  # Nothing pins the intermediate key, so cert-manager's default of a new key per renewal is kept.
+  privateKey: {algorithm: ECDSA, size: 256, rotationPolicy: Always}
+  issuerRef: {name: cmtc-mesh-root, kind: ClusterIssuer, group: cert-manager.io}

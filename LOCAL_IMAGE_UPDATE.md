@@ -4,14 +4,19 @@
 Evidence scope: results apply to the recorded source, image and fixture. Read [current delivery status](docs/agile/DELIVERY_STATUS.md) and [documentation terms](DOCUMENTATION_GUIDE.md).
 <!-- /CMTC_DOC_CONTEXT -->
 
-The later [admission increment](LOCAL_ADMISSION_VALIDATION.md) records the current Cilium agent pin; the table below preserves the earlier rebuild baseline.
+**Historical record (2026-10-24).** Cilium agent `a23b8479ca`, CMTC `85d0cd8acc`, ztunnel `8106c02662`. It does not
+qualify the current build. The later [admission increment](LOCAL_ADMISSION_VALIDATION.md) replaced this Cilium pin,
+and later work replaced that one. **Current state:** ztunnel runs in both clusters; current pins are in
+[delivery status](docs/agile/DELIVERY_STATUS.md). The current image-update loop (build, archive import, `OnDelete`
+DaemonSet image change, one node at a time) is in [lab scripts, section 4](docs/development/LAB_SCRIPTS.md#4-update-the-mesh-images-on-the-running-lab).
 
 On October 24, 2026, the MacBook Podman builder rebuilt Linux ARM64 images and
 updated the existing `cmtc-a` and `cmtc-b` clusters in Colima `cmtc-cilium`.
-Cilium and CMTC are running the rebuilt images. The new ztunnel image is
-imported and was executed on every node using version-only Jobs; active
-ztunnel interception remains blocked by Cilium's ClusterMesh compatibility
-check. This is an Observe/reachability qualification, not cross-cluster mTLS.
+Cilium and CMTC then ran the rebuilt images. The new ztunnel image was
+imported and executed on every node with version-only Jobs. Active ztunnel
+interception was then blocked by Cilium's ClusterMesh compatibility check; Cilium
+`37d5fce0f7` later replaced that check with capability validation. This was an
+Observe/reachability qualification, not cross-cluster mTLS.
 
 | Component | Source | Local image | Runtime state |
 | --- | --- | --- | --- |
@@ -25,7 +30,7 @@ IDs and source labels. All 12 node/component image identities matched Podman.
 Each running Cilium agent matched SHA-256
 `1152bef474c16acc343c90dc0dc683cc4f6e7e4689c5d8737235c74682b99778`.
 
-## Build and import procedure
+## Build and import procedure (as run on 2026-10-24)
 
 Use the explicit Podman connection `cmtc-ubuntu-build`; do not change the
 existing kind provider. The exact executed commands are retained in
@@ -92,19 +97,18 @@ repository contains no signing keys or kubeconfigs.
   pie sums to 100%; missing security instrumentation remains unavailable.
   [Query evidence](docs/evidence/local-image-update/dashboard-query-evidence.json).
 
-These source and Observe checks do not close durable restore, authenticated
-remote discovery, issuer binding, effective authorization, custom CMTC eBPF or
-mTLS-with-WireGuard/IPsec gates. The full implementation mandate has resumed;
-its next dependency is durable Required intent plus fail-closed admission and
-recovery. Track subsequent candidate changes separately from this deployed pin.
+These source and Observe checks did not close durable restore, authenticated
+remote discovery, issuer binding, effective authorization or
+mTLS-with-WireGuard/IPsec gates. Later increments carry those gates; read
+[delivery status](docs/agile/DELIVERY_STATUS.md) for their current state.
 
 ## Screenshots after load
 
-These are current viewport captures; query assertions above cover both complete
-consolidated dashboards. Native mTLS signals remain unavailable in this profile.
+These are viewport captures from that run; query assertions above cover both complete
+consolidated dashboards. Native mTLS signals were unavailable in that profile.
 
-![Operations, dark theme](docs/evidence/local-image-update/grafana/operations-dark.jpg)
+![Operations, light theme](docs/evidence/local-image-update/grafana/operations-light.jpg)
 
-[Operations light](docs/evidence/local-image-update/grafana/operations-light.jpg),
+[Operations dark](docs/evidence/local-image-update/grafana/operations-dark.jpg),
 [Workload Security dark](docs/evidence/local-image-update/grafana/workload-security-dark.jpg),
 and [Workload Security light](docs/evidence/local-image-update/grafana/workload-security-light.jpg).

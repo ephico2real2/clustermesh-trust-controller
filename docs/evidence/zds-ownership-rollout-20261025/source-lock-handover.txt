@@ -1,0 +1,34 @@
+== cmtc-a-cmtc-a-control-plane outgoing agent
+time=2026-10-25T20:54:13.807154696Z level=info msg="Signal received" signal=terminated
+time=2026-10-25T20:54:13.817493071Z level=info msg="Stopping reconciler" module=agent.controlplane.ztunnel.enrollment-reconciler
+== cmtc-a-cmtc-a-worker outgoing agent
+time=2026-10-25T20:51:54.839046172Z level=info msg="Signal received" signal=terminated
+time=2026-10-25T20:51:54.84014613Z level=info msg="Stopping reconciler" module=agent.controlplane.ztunnel.enrollment-reconciler
+== cmtc-b-cmtc-b-control-plane outgoing agent
+time=2026-10-25T20:58:50.740375495Z level=info msg="Signal received" signal=terminated
+time=2026-10-25T20:58:50.750769662Z level=info msg="Stopping reconciler" module=agent.controlplane.ztunnel.enrollment-reconciler
+== cmtc-b-cmtc-b-worker outgoing agent
+time=2026-10-25T20:57:03.091327319Z level=info msg="Signal received" signal=terminated
+time=2026-10-25T20:57:03.102724902Z level=info msg="Stopping reconciler" module=agent.controlplane.ztunnel.enrollment-reconciler
+== cmtc-a-cmtc-a-control-plane successor
+time=2026-10-25T20:54:23.607844492Z level=warn msg="Unable to acquire source membership writer lock" module=agent.controlplane.ztunnel.ztunnel-admission subsys=ztunnel-membership-source stage=lock clusterName=cmtc-a attempt=1 elapsedDuration=1.001700126s retryDelay=5s timeout=1s error="etcd client timeout exceeded"
+time=2026-10-25T20:54:29.610430745Z level=warn msg="Unable to acquire source membership writer lock" module=agent.controlplane.ztunnel.ztunnel-admission subsys=ztunnel-membership-source stage=lock clusterName=cmtc-a attempt=2 elapsedDuration=1.002181626s retryDelay=5s timeout=1s error="etcd client timeout exceeded"
+time=2026-10-25T20:54:34.611929748Z level=info msg="Acquired source membership writer lock" module=agent.controlplane.ztunnel.ztunnel-admission subsys=ztunnel-membership-source stage=lock clusterName=cmtc-a attempt=3 elapsedDuration=12.005788547s
+== cmtc-a-cmtc-a-worker successor
+time=2026-10-25T20:52:04.562666385Z level=warn msg="Unable to acquire source membership writer lock" module=agent.controlplane.ztunnel.ztunnel-admission subsys=ztunnel-membership-source stage=lock clusterName=cmtc-a attempt=1 elapsedDuration=1.003929s retryDelay=5s timeout=1s error="etcd client timeout exceeded"
+time=2026-10-25T20:52:10.564732929Z level=warn msg="Unable to acquire source membership writer lock" module=agent.controlplane.ztunnel.ztunnel-admission subsys=ztunnel-membership-source stage=lock clusterName=cmtc-a attempt=2 elapsedDuration=1.001675209s retryDelay=5s timeout=1s error="etcd client timeout exceeded"
+time=2026-10-25T20:52:16.566951265Z level=warn msg="Unable to acquire source membership writer lock" module=agent.controlplane.ztunnel.ztunnel-admission subsys=ztunnel-membership-source stage=lock clusterName=cmtc-a attempt=3 elapsedDuration=1.001593625s retryDelay=5s timeout=1s error="etcd client timeout exceeded"
+time=2026-10-25T20:52:21.570148226Z level=info msg="Acquired source membership writer lock" module=agent.controlplane.ztunnel.ztunnel-admission subsys=ztunnel-membership-source stage=lock clusterName=cmtc-a attempt=4 elapsedDuration=18.011410759s
+== cmtc-b-cmtc-b-control-plane successor
+time=2026-10-25T20:59:01.064383375Z level=warn msg="Unable to acquire source membership writer lock" module=agent.controlplane.ztunnel.ztunnel-admission subsys=ztunnel-membership-source stage=lock clusterName=cmtc-b attempt=1 elapsedDuration=1.001329459s retryDelay=5s timeout=1s error="etcd client timeout exceeded"
+time=2026-10-25T20:59:07.066173794Z level=warn msg="Unable to acquire source membership writer lock" module=agent.controlplane.ztunnel.ztunnel-admission subsys=ztunnel-membership-source stage=lock clusterName=cmtc-b attempt=2 elapsedDuration=1.001562626s retryDelay=5s timeout=1s error="etcd client timeout exceeded"
+time=2026-10-25T20:59:13.069436006Z level=warn msg="Unable to acquire source membership writer lock" module=agent.controlplane.ztunnel.ztunnel-admission subsys=ztunnel-membership-source stage=lock clusterName=cmtc-b attempt=3 elapsedDuration=1.002406209s retryDelay=5s timeout=1s error="etcd client timeout exceeded"
+time=2026-10-25T20:59:18.071245133Z level=info msg="Acquired source membership writer lock" module=agent.controlplane.ztunnel.ztunnel-admission subsys=ztunnel-membership-source stage=lock clusterName=cmtc-b attempt=4 elapsedDuration=18.008192592s
+== cmtc-b-cmtc-b-worker successor
+time=2026-10-25T20:57:13.269066323Z level=warn msg="Unable to acquire source membership writer lock" module=agent.controlplane.ztunnel.ztunnel-admission subsys=ztunnel-membership-source stage=lock clusterName=cmtc-b attempt=1 elapsedDuration=1.004544126s retryDelay=5s timeout=1s error="etcd client timeout exceeded"
+time=2026-10-25T20:57:19.271664243Z level=warn msg="Unable to acquire source membership writer lock" module=agent.controlplane.ztunnel.ztunnel-admission subsys=ztunnel-membership-source stage=lock clusterName=cmtc-b attempt=2 elapsedDuration=1.002016376s retryDelay=5s timeout=1s error="etcd client timeout exceeded"
+time=2026-10-25T20:57:24.274943079Z level=info msg="Acquired source membership writer lock" module=agent.controlplane.ztunnel.ztunnel-admission subsys=ztunnel-membership-source stage=lock clusterName=cmtc-b attempt=3 elapsedDuration=12.010415506s
+cmtc-a-cmtc-a-control-plane-cilium-old-pod.json terminationGracePeriodSeconds 1
+cmtc-a-cmtc-a-worker-cilium-old-pod.json terminationGracePeriodSeconds 1
+cmtc-b-cmtc-b-control-plane-cilium-old-pod.json terminationGracePeriodSeconds 1
+cmtc-b-cmtc-b-worker-cilium-old-pod.json terminationGracePeriodSeconds 1

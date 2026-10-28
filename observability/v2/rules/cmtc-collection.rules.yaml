@@ -1,0 +1,147 @@
+# Status: tested here with promtool 3.7.0 (rules/run-promtool.sh, tests/cmtc-collection.test.yaml). Not
+# deployed: the labs load no rule files (2026-10-27), and the jobs other than cmtc and cilium-native need
+# deploy/.
+#
+# Collection health: is every exporter the dashboards and alerts depend on actually scraped?
+# A missing exporter is unavailable, never a healthy zero, so every family below has an alert that
+# fires when its data stops arriving. Evaluated on the hub (cmtc-a), which holds both clusters.
+# Owner of each alert: the component whose exporter is missing (label "owner").
+groups:
+- name: cmtc-collection
+  rules:
+  # The clusters this hub expects data from. deploy/chart replaces the lines between the markers
+  # with values hub.expectedClusters (templates/_helpers.tpl, cmtc-obs.ruleFiles); tests/test_deploy.py
+  # checks the replacement.
+  # expected-clusters:begin
+  - record: cmtc:expected_cluster:info
+    expr: |-
+      label_replace(vector(1), "cluster", "cmtc-a", "", "")
+      or label_replace(vector(1), "cluster", "cmtc-b", "", "")
+  # expected-clusters:end
+
+  # The nodes this hub expects node-local exporters on: every node any node-scoped job reported in
+  # the last hour. A node keeps its place for an hour after its last exporter went away, which is
+  # longer than every "NotScraped" alert below waits. On OpenShift, deploy/chart replaces the lines
+  # between the markers with kube_node_info of the platform Prometheus, read through Thanos Querier.
+  # expected-nodes:begin
+  - record: cmtc:expected_node:info
+    expr: group by (cluster, node) (max_over_time(up{job=~"cilium-native|ztunnel|cmtc|cadvisor", node!=""}[1h]))
+  # expected-nodes:end
+
+  - alert: CMTCScrapeTargetDown
+    expr: up{job=~"cmtc|cilium-native|hubble|hubble-relay|ztunnel|coredns|cert-manager|trust-manager|cadvisor|spire-server|spire-agent|prometheus"} == 0
+    for: 2m
+    labels:
+      severity: warning
+      # OpenShift's platform targets (dns-default, kubelet) carry no component label: the job names them.
+      owner: '{{ or $labels.component $labels.job }}'
+    annotations:
+      summary: 'Prometheus in {{ $labels.cluster }} cannot scrape {{ $labels.component }} on node {{ $labels.node }}'
+      runbook: 'Every panel and alert built on this exporter is unavailable, not healthy. Check the pod, its metrics port and the NetworkPolicy that admits the monitoring namespace.'
+
+  # A target that does not exist is not "down": these compare the expected nodes with the nodes
+  # where each node-local exporter has a scrape target.
+  - alert: CMTCZtunnelNotScraped
+    expr: |-
+      cmtc:expected_node:info
+      unless on (cluster, node)
+      group by (cluster, node) (up{job="ztunnel"})
+    for: 5m
+    labels:
+      severity: warning
+      owner: ztunnel
+    annotations:
+      summary: 'No ztunnel scrape target on node {{ $labels.node }} in {{ $labels.cluster }}'
+      runbook: 'Handshake, denial and connection panels for this node are unavailable. Check the ztunnel-cilium pod on the node and the ztunnel scrape job (hostNetwork port 15020, /stats/prometheus).'
+
+  - alert: CMTCNodeAgentNotScraped
+    expr: |-
+      cmtc:expected_node:info
+      unless on (cluster, node)
+      group by (cluster, node) (up{job="cmtc", component="cmtc-node-agent"})
+    for: 5m
+    labels:
+      severity: warning
+      owner: cmtc-node-agent
+    annotations:
+      summary: 'No CMTC node agent scrape target on node {{ $labels.node }} in {{ $labels.cluster }}'
+      runbook: 'Node inventory for this node is unavailable. Check the cmtc-node-agent DaemonSet pod on the node and its metrics port 8080.'
+
+  - alert: CMTCCiliumAgentNotScraped
+    expr: |-
+      cmtc:expected_node:info
+      unless on (cluster, node)
+      group by (cluster, node) (up{job="cilium-native"})
+    for: 5m
+    labels:
+      severity: warning
+      owner: cilium-agent
+    annotations:
+      summary: 'No Cilium agent scrape target on node {{ $labels.node }} in {{ $labels.cluster }}'
+      runbook: 'Enrollment, effective-policy and drop panels for this node are unavailable. Check the cilium Pod on the node and its prometheus port 9962.'
+
+  # The kubelet of every node serves cAdvisor; one target per node (node discovery).
+  - alert: CMTCCAdvisorNotScraped
+    expr: |-
+      cmtc:expected_node:info
+      unless on (cluster, node)
+      group by (cluster, node) (up{job="cadvisor"})
+    for: 5m
+    labels:
+      severity: warning
+      owner: kubelet
+    annotations:
+      summary: 'No cAdvisor scrape target on node {{ $labels.node }} in {{ $labels.cluster }}'
+      runbook: 'PID use panels for this node are unavailable, not healthy. Check the cadvisor scrape job (kubelet port 10250, /metrics/cadvisor) and the nodes/metrics permission of the Prometheus ServiceAccount.'
+
+  - alert: CMTCControllerNotScraped
+    expr: |-
+      cmtc:expected_cluster:info
+      unless on (cluster)
+      group by (cluster) (up{job="cmtc", component="cmtc-controller"})
+    for: 5m
+    labels:
+      severity: warning
+      owner: cmtc-controller
+    annotations:
+      summary: 'No CMTC controller scrape target in {{ $labels.cluster }}'
+      runbook: 'Namespace intent and issuer-profile panels are unavailable for this cluster. Check the cmtc-controller Deployment in cmtc-system.'
+
+  - alert: CoreDNSNotScraped
+    expr: |-
+      cmtc:expected_cluster:info
+      unless on (cluster)
+      group by (cluster) (up{job="coredns"})
+    for: 5m
+    labels:
+      severity: warning
+      owner: coredns
+    annotations:
+      summary: 'No CoreDNS scrape target in {{ $labels.cluster }}'
+      runbook: 'DNS answer, error and latency panels are unavailable for this cluster. Check the coredns scrape job (pods k8s-app=kube-dns, port 9153).'
+
+  # Data from a cluster stopped arriving at the hub while its last samples are still inside the
+  # 5 minute lookback. Normal age at the hub is the scrape interval plus remote-write delay.
+  - alert: CMTCClusterMetricsStale
+    expr: max by (cluster) (time() - timestamp(up{job="cilium-native"})) > 60
+    for: 1m
+    labels:
+      severity: warning
+      owner: prometheus
+    annotations:
+      summary: 'The newest Cilium agent sample from {{ $labels.cluster }} is {{ $value | humanizeDuration }} old at the hub'
+      runbook: 'Panels for this cluster show old data and then none. Check the Prometheus of that cluster and its remote_write to the hub (CMTCRemoteWriteBehind is evaluated there).'
+
+  # After the lookback the series are gone: the expected-cluster list is what is left to compare.
+  - alert: CMTCClusterMetricsAbsent
+    expr: |-
+      cmtc:expected_cluster:info
+      unless on (cluster)
+      group by (cluster) (up{job="cilium-native"})
+    for: 2m
+    labels:
+      severity: critical
+      owner: prometheus
+    annotations:
+      summary: 'The hub has no Cilium agent data from {{ $labels.cluster }}'
+      runbook: 'Every panel for this cluster is unavailable, not healthy. Check that cluster''s Prometheus, its cilium-native job and its remote_write to the hub.'

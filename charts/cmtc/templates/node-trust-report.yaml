@@ -1,0 +1,73 @@
+{{- $report := .Values.nodeAgent.trustReport }}
+{{- if $report.enabled }}
+# Each node agent writes the NodeTrustReport named after its node (ADR-012). RBAC cannot limit create or update by the
+# writer's node, so the ValidatingAdmissionPolicy below compares the report's name with the node name the API server
+# embedded in the agent's bound ServiceAccount token (authentication.kubernetes.io/node-name, stable since
+# Kubernetes 1.32). Delete is not granted. Each validation answers with reason Forbidden (HTTP 403, as an RBAC denial);
+# without it the API server answers Invalid (422; k8s.io/api admissionregistration/v1 Validation.Reason).
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: cmtc-node-trust-report
+  labels:
+    {{- include "cmtc.labels" . | nindent 4 }}
+rules:
+  - apiGroups: [security.cmtc.io]
+    resources: [nodetrustreports]
+    verbs: [get, create, update]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: cmtc-node-trust-report
+  labels:
+    {{- include "cmtc.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cmtc-node-trust-report
+subjects:
+  - kind: ServiceAccount
+    name: cmtc-node-agent
+    namespace: {{ .Release.Namespace }}
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicy
+metadata:
+  name: cmtc-node-trust-report-owner
+  labels:
+    {{- include "cmtc.labels" . | nindent 4 }}
+spec:
+  failurePolicy: Fail
+  matchConstraints:
+    resourceRules:
+      - apiGroups: [security.cmtc.io]
+        apiVersions: [v1alpha1]
+        operations: [CREATE, UPDATE, DELETE]
+        resources: [nodetrustreports]
+  matchConditions:
+    - name: node-agent
+      expression: {{ printf "request.userInfo.username == 'system:serviceaccount:%s:cmtc-node-agent'" .Release.Namespace | quote }}
+  variables:
+    - name: reportName
+      expression: "request.operation == 'DELETE' ? oldObject.metadata.name : object.metadata.name"
+    - name: nodeNames
+      expression: "has(request.userInfo.extra) && 'authentication.kubernetes.io/node-name' in request.userInfo.extra ? request.userInfo.extra['authentication.kubernetes.io/node-name'] : []"
+  validations:
+    - expression: "request.operation != 'DELETE'"
+      message: a CMTC node agent never deletes a NodeTrustReport
+      reason: Forbidden
+    - expression: "size(variables.nodeNames) == 1 && variables.nodeNames[0] == variables.reportName"
+      message: a CMTC node agent may write only the NodeTrustReport named after the node its token is bound to
+      reason: Forbidden
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicyBinding
+metadata:
+  name: cmtc-node-trust-report-owner
+  labels:
+    {{- include "cmtc.labels" . | nindent 4 }}
+spec:
+  policyName: cmtc-node-trust-report-owner
+  validationActions: [Deny]
+{{- end }}

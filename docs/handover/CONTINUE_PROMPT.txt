@@ -1,0 +1,85 @@
+Continue CMTC in /Users/olasumbo/gitRepos/clustermest-trust-controller.
+
+CURRENT STATE (2026-10-27 13:50 UTC): read the "Update 2026-10-27" section at
+the top of handover.md and the "Current state" of resume.md. They supersede the
+2026-10-25 state paragraphs below (curl 56 on first enrolled requests, ClusterMesh
+0/1, unassigned leases, host Podman packaging), which are historical. Workload
+mTLS is traffic-qualified; images come from ghcr.io/ephico2real2 by digest; the
+open work is the CMTC controller as the arbiter of issuer approvals, before
+approval generation 6 expires at 2026-11-25T10:26:41Z.
+
+Start with handover.md and resume.md, then AGENTS.md and
+docs/handover/CODEX_MASTER_PROMPT.md. Treat handover.md as the current state;
+older statements that ztunnel is disabled are historical.
+
+ULTIMATE GOAL: complete fail-closed, sidecar-free workload mTLS across our
+Cilium ClusterMesh, not just startup or baseline HTTP connectivity. Use native
+Cilium capture/discovery/effective-policy xDS, node ztunnel, SPIRE cluster-bound
+identities and CMTC trust coordination. Finish withdrawal/recovery, selected
+WireGuard/IPsec composition, real telemetry and load-backed Grafana evidence.
+Qualify the opt-in Go/eBPF DaemonSet experiment before porting production
+enforcement into Cilium on a separate branch. Follow the agile acceptance gates.
+
+FORKS: ephico2real2/cilium (upstream cilium/cilium), ephico2real2/ztunnel
+(upstream cilium/ztunnel, master), ephico2real2/spire (upstream spiffe/spire).
+All three working branches are feat/opus-mesh-mtls-finalization under
+/private/tmp/cmtc-opus-final-20261025. CMTC is on feat/end-to-end-enforcement.
+The local root uses clustermest in its spelling; the GitHub repo uses clustermesh.
+Use existing ephico2real2 SSH configuration and preserve every working branch.
+
+API ACCESS FROM MACBOOK: export
+KUBECONFIG=/private/tmp/cmtc-a-b-20261024.kubeconfig, then use explicit
+--context kind-cmtc-a or --context kind-cmtc-b with kubectl. Check /readyz,
+verify the pinned kube-system UIDs in handover.md, and discover node names with
+kubectl get nodes. Current host endpoints are127.0.0.1:54193 and127.0.0.1:54247;
+rediscover with cluster-info rather than hard-coding them. Never print the
+kubeconfig. Host loopback is not the same endpoint inside a VM/build container.
+Read handover.md for Colima and Podman connection commands.
+
+Develop suitable Go helpers/controllers against those real APIs before image
+packaging. Use explicit client-go context selection and a single reconciler.
+Use the Ubuntu toolchain and owned nodes for Linux datapath tests. Local unit
+tests alone do not replace API/traffic/failure/recovery integration tests.
+
+Verify every checkout SHA and dirty state, process state, certificate validity
+and lease before writing. The previous Opus source process was stopped for
+handoff. Compiler and live-writer leases are unassigned. Claim exactly one
+writer. Keep the read-only monitor separate. Do not launch duplicate writers.
+
+Both cmtc-a and cmtc-b have current fork images deployed. All four Cilium and
+ztunnel Pods became Ready after the explicitly approved hostPID correction.
+Both test namespaces are enrolled. Each cluster passed36/36 plaintext baseline
+paths before enrollment. Each first enrolled request then failed with curl56.
+Strict xDS Address updates repeatedly require full snapshot resync. A reports
+authorization snapshot unavailable; B drains an attempted HBONE connection.
+ClusterMesh reports0/1 remote Ready despite synchronized remote inventory.
+Membership lifecycle and native ZDS ownership-busy errors remain. These are
+actual failures, not completed end-to-end mTLS. Read the preserved raw evidence.
+
+Repair and locally qualify the real Cilium/ztunnel path. Use the existing test
+ledger and both owned kind contexts. Start with the first same-node positive,
+then cross-node, A-to-B/B-to-A Pod IP and Global Service on80/8080/31337.
+Complete native source-egress policy rather than installing a permissive rule.
+Add deterministic negative/recovery tests. Keep strict authentication, issuer,
+authorization and freshness checks. Preserve checkpoints, signers and existing
+applications. Never reset floors or expose SPIRE Admin sockets to nodes/proxies.
+
+Use edit -> run against cmtc-a/cmtc-b -> test traffic/failures/recovery -> package
+the verified change with host Podman. Verify exact deployed source/image IDs.
+Run meaningful unit/race/vet and Linux tests for the affected source. An ACK,
+Pod readiness, timeout, skipped test or zero-selected test does not prove mTLS.
+
+Follow the recorded Opus implementation/Grok adversarial review workflow where
+available. Never substitute an unrequested older model. Keep a single compiler
+and live writer. Do not blindly restart the old truncating/replaying runner.
+
+The user authorized committing all work and personal-default merges while
+retaining every working branch. No canonical upstream merges, force pushes,
+manual workflow dispatch or registry publication are included. Use the configured
+human author. Complete real load, peer/policy/packet evidence and meaningful
+Grafana data after fixing traffic. Keep all open security gates explicit.
+The latest user-provided AGENTS instructions defer new CI-triggering pushes;
+completed historical default-branch pushes do not override that current boundary.
+
+Begin by reporting the verified current state and the first concrete repair.
+Then continue the implementation autonomously. Keep the handover current.

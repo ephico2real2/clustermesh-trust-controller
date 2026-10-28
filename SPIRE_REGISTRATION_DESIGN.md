@@ -1,7 +1,15 @@
 # SPIRE registration design and current experiment
 
-Status: experimental design change; production registration owner is undecided.
-Evidence snapshot: 2026-10-25. The bounded registration/credential trial passes. Production integration remains open.
+Status: experimental design change; production registration owner is undecided. Revised 2026-10-25.
+
+**Current runtime (2026-10-25):**
+
+- The registrar helper is **not deployed**. The SPIRE server Pod runs the server and the `register-agent-node` container, which confirms the SPIRE agent node entry.
+- Cilium's legacy namespace/service-account registration is switched off in both clusters (`ztunnel-spire-external-exact-registrar=true` in `cilium-config`).
+- The live fixture's exact workload entries were written by the operational fixture runner with `spire-server entry create`, outside the product.
+- Ztunnel is enabled and fetches delegated SVIDs through a DelegatedIdentity-only SPIRE agent socket (our SPIRE fork, `0f8fe4d681`). The agent Admin socket is not shared with the proxy.
+
+The bounded registration and credential trial below passed on 2026-10-25 for its exact images; it is a historical record.
 
 The original design reuses Cilium's SPIRE enrollment.
 The separate CMTC registrar was introduced later during local security qualification.
@@ -65,14 +73,14 @@ These costs require an explicit architecture decision.
 The fork's experimental `externalExactRegistrar` switch disables its legacy SPIRE management and broad namespace registration.
 The switch does not qualify the replacement registrar.
 It must not enable a second writer for the same registrations.
-The current two-cluster lab still has ztunnel disabled.
+The switch is on in both lab clusters; no permanent replacement writer is deployed.
 
 ## Component roles
 
 | Component | Responsibility | Registration and traffic boundary |
 | --- | --- | --- |
 | CMTC operator | Evaluate namespace intent, exclusions, platform constraints, and available evidence. | A desired label does not prove enrollment or protection. |
-| CMTC node DaemonSet | Collect node observations and run the separately gated prototype where authorized. | It is not the experimental registrar or a second TLS proxy. Production packet enforcement belongs in Cilium. |
+| CMTC node DaemonSet | Collect node observations and run the observe-only eBPF measurement plane ([ADR-005](docs/architecture/adr/ADR-005.md)). | It is not the experimental registrar or a second TLS proxy. It never decides a verdict; production packet enforcement belongs in Cilium. |
 | Cilium operator | Own the existing Cilium SPIRE enrollment path under the original baseline. | An enhanced native registrar remains a production option. Exact incarnation behavior still needs implementation and qualification. |
 | Cilium node agent | Own endpoint lifecycle, capture, native policy, workload inventory, and delivery to ztunnel. | Capture and xDS acknowledgments remain separate from effective policy and protected traffic. |
 | ztunnel | Fetch workload credentials and enforce authenticated workload transport and policy when enabled and qualified. | Native credential delivery does not establish TLS traffic or policy acceptance. |
@@ -105,8 +113,8 @@ The fixture does not export signing keys.
 | Source implementation | [command](cmd/cmtc-spire-registrar/main.go), [planner](internal/spireregistrar/plan.go), [source checks](internal/spireregistrar/source.go), [registration RPCs](internal/spireregistrar/entries.go), [runner](internal/spireregistrar/runner.go) |
 | Owned runtime fixture | [qualify_registrar.py](scripts/lab/spire/qualify_registrar.py) |
 
-The image is loaded on all four nodes in the existing `cmtc-a` and `cmtc-b` lab.
-That fact establishes image availability, not complete runtime acceptance.
+These pins are those of the 2026-10-25 trial. The helper container was removed after that trial; it does not run now.
+Image availability never established runtime acceptance.
 The retained [delivery status](docs/agile/DELIVERY_STATUS.md) records source tests and current runtime gates.
 
 ## Two different Admin sockets
@@ -114,7 +122,8 @@ The retained [delivery status](docs/agile/DELIVERY_STATUS.md) records source tes
 | Endpoint | Location and caller | Authority and current state |
 | --- | --- | --- |
 | SPIRE server Admin socket | Private volume inside the server Pod; experimental registrar uses UID1000. | Changes server registration entries. It is not mounted into ordinary applications or the node proxy. |
-| SPIRE agent Admin socket | Node-local agent endpoint; native ztunnel delegated credential client uses it. | Requests credentials for an attested target PID. Delegate authorization still applies. Production proxy access remains unqualified. |
+| SPIRE agent Admin socket | Node-local agent endpoint, `1000:1000`, mode `0700` directory. The earlier native credential diagnostic used it as UID1000. | Serves Debug, Logger and DelegatedIdentity. Not shared with the production proxy. |
+| SPIRE agent DelegatedIdentity-only socket | `/run/cmtc-spire/<cluster>/delegated`; the deployed ztunnel (UID0/GID1337) uses it. Our SPIRE fork, `0f8fe4d681`. | Serves only DelegatedIdentity. Kernel group membership permits the connection; `authorized_delegates` still authorizes each delegate. |
 | SPIRE agent Workload socket | Separate agent endpoint for its normal Workload API. | It is distinct from the delegated Admin endpoint. Ordinary applications receive no new socket mounts in this experiment. |
 
 A read-only socket mount still permits RPCs.
@@ -131,11 +140,9 @@ The registrar then runs as UID1000.
 The [socket dialer](internal/spireregistrar/socket_linux.go) checks directory and socket permissions and the server's UNIX peer UID.
 
 This server-local initialization does not change the persistent node agent Admin directory.
-The separate proposal would grant the production UID0/GID1337 proxy narrow agent Admin access.
-Automatic approval review rejected that migration.
-Explicit user approval remains pending; no migration occurred.
-The experiment uses the previously qualified UID1000 diagnostic profile while that decision remains open.
-Do not infer production proxy access from that diagnostic profile.
+An earlier proposal would have shared the agent Admin socket with the production UID0/GID1337 proxy.
+Automatic approval review rejected it, and it was never applied.
+It is superseded by the DelegatedIdentity-only socket above, which gives the proxy delegated credentials without Debug or Logger access.
 
 ## Exact registration binding
 
@@ -209,7 +216,7 @@ The tested source correction makes the first stream error terminate that credent
 It preserves separate setup, empty-response, stream-end, and deadline errors.
 Tests must reject an error followed by a certificate on the same stream.
 Tests must allow recovery through a fresh, fully attested request.
-The correction is committed at `75843515d549f7928d080801ac3f7e4344f572eb`. It passes 568 full-profile tests plus two diagnostic cases, formatting and strict Clippy. [Raw source evidence](docs/evidence/spire-stream-errors/summary.json) is retained. These source tests do not qualify a replacement runtime image.
+The correction is committed at `75843515d549f7928d080801ac3f7e4344f572eb`. It passes 568 full-profile tests plus two diagnostic cases, formatting and strict Clippy. [Raw source evidence](docs/evidence/spire-stream-errors/summary.json) is retained. The deployed ztunnel build (`f221f29b59`) descends from that commit; no live stream-error test has run on it.
 That seventh trial remains failed evidence. The corrected eighth trial has its own source, image, controls and passing result above.
 
 The earlier interpretation of `PermissionDenied: no identity issued` also needs correction.
@@ -272,5 +279,5 @@ No registration or credential result alone establishes `Protected`.
 - [x] Prove reenrollment, same-name Pod replacement and server restart in both clusters.
 - [ ] Complete dedicated source-read failure and bounded-expiry fault injection.
 - [x] Verify cleanup restores exact server templates, preserves signer and PVC identity, and removes only owned fixture objects and entries.
-- [ ] Keep production agent Admin permission migration pending until the required approval and separate runtime qualification complete.
-- [ ] Keep TLS, effective policy, cross-cluster traffic, packet capture, and existing-flow revocation gates open until their own evidence passes.
+- [x] Give the production proxy delegated credentials without the agent Admin socket: DelegatedIdentity-only socket (SPIRE fork `0f8fe4d681`), deployed. The agent Admin migration is withdrawn.
+- [ ] Keep TLS, effective policy, cross-cluster traffic, packet capture, and existing-flow revocation gates open until their own evidence passes. Allow-path traffic now passes; the others remain open ([test matrix](docs/architecture/SECURITY_AND_FAILURE_TEST_MATRIX.md)).

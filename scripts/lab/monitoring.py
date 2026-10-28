@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Small disposable monitoring fixture with two consolidated dashboards preserving all nine domains."""
+import hashlib
 import json
 from pathlib import Path
 import sys
@@ -39,18 +40,38 @@ prom={'global':{'scrape_interval':'5s','external_labels':{'cluster':cluster}},'s
     # Keep only the families the dashboards and rules query; drop the per-locality labels.
     {'source_labels':['__name__'],'action':'keep','regex':ZTUNNEL_FAMILIES},
     {'action':'labeldrop','regex':'(source|destination)_(region|zone)'},
+]},
+# Hubble metrics (hubble_*) on every agent's hubble-metrics port (config/lab/cilium/base.yaml, hubble.metrics.port 9965).
+{'job_name':'hubble','kubernetes_sd_configs':[{'role':'pod','namespaces':{'names':['kube-system']}}],'relabel_configs':[
+    {'source_labels':['__meta_kubernetes_pod_label_k8s_app'],'action':'keep','regex':'cilium'},
+    {'source_labels':['__meta_kubernetes_pod_container_port_name'],'action':'keep','regex':'hubble-metrics'},
+    {'target_label':'cluster','replacement':cluster},
+    {'target_label':'component','replacement':'hubble'},
+    {'source_labels':['__meta_kubernetes_pod_node_name'],'target_label':'node'},
+]},
+# Hubble Relay metrics (hubble_relay_*) on its prometheus port (9966); the Relay runs in the control cluster only, so
+# the job finds no target elsewhere.
+{'job_name':'hubble-relay','kubernetes_sd_configs':[{'role':'pod','namespaces':{'names':['kube-system']}}],'relabel_configs':[
+    {'source_labels':['__meta_kubernetes_pod_label_k8s_app'],'action':'keep','regex':'hubble-relay'},
+    {'source_labels':['__meta_kubernetes_pod_container_port_name'],'action':'keep','regex':'prometheus'},
+    {'target_label':'cluster','replacement':cluster},
+    {'target_label':'component','replacement':'hubble-relay'},
+    {'source_labels':['__meta_kubernetes_pod_node_name'],'target_label':'node'},
 ]}]}
 if cluster=='cmtc-b':prom['remote_write']=[{'url':f'http://{hub}:30900/api/v1/write'}]
 add('v1','ConfigMap','prometheus',{'data':{'prometheus.yml':json.dumps(prom)}})
 
-def deploy(name,image,args,ports,mounts,volumes,env=None,sa=None):
+# config: text the Pod reads only at start; its hash in the Pod template makes an apply restart the Pod when it changes.
+def deploy(name,image,args,ports,mounts,volumes,env=None,sa=None,config=None):
     container={'name':name,'image':image,'args':args,'ports':[{'containerPort':p} for p in ports],'volumeMounts':mounts,'resources':{'requests':{'cpu':'25m','memory':'64Mi'},'limits':{'memory':'512Mi'}},'readinessProbe':{'httpGet':{'path':'/-/ready' if name=='prometheus' else '/api/health','port':ports[0]}}}
     if env:container['env']=[{'name':k,'value':v} for k,v in env.items()]
     spec={'containers':[container],'volumes':volumes}
     if sa:spec['serviceAccountName']=sa
-    add('apps/v1','Deployment',name,{'spec':{'replicas':1,'selector':{'matchLabels':{'app':name}},'template':{'metadata':{'labels':{'app':name}},'spec':spec}}})
+    meta={'labels':{'app':name}}
+    if config:meta['annotations']={'cmtc.io/config-sha256':hashlib.sha256(config.encode()).hexdigest()}
+    add('apps/v1','Deployment',name,{'spec':{'replicas':1,'selector':{'matchLabels':{'app':name}},'template':{'metadata':meta,'spec':spec}}})
 
-deploy('prometheus','prom/prometheus:v3.7.0',['--config.file=/etc/prometheus/prometheus.yml','--storage.tsdb.retention.time=1h','--web.enable-remote-write-receiver'],[9090],[{'name':'config','mountPath':'/etc/prometheus'},{'name':'data','mountPath':'/prometheus'}],[{'name':'config','configMap':{'name':'prometheus'}},{'name':'data','emptyDir':{}}],sa='prometheus')
+deploy('prometheus','prom/prometheus:v3.7.0',['--config.file=/etc/prometheus/prometheus.yml','--storage.tsdb.retention.time=1h','--web.enable-remote-write-receiver'],[9090],[{'name':'config','mountPath':'/etc/prometheus'},{'name':'data','mountPath':'/prometheus'}],[{'name':'config','configMap':{'name':'prometheus'}},{'name':'data','emptyDir':{}}],sa='prometheus',config=json.dumps(prom))
 add('v1','Service','prometheus',{'spec':{'type':'NodePort','selector':{'app':'prometheus'},'ports':[{'port':9090,'targetPort':9090,'nodePort':30900}]}})
 if cluster=='cmtc-a':
     dashboards={}

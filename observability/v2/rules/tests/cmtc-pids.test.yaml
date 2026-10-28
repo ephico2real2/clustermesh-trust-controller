@@ -1,0 +1,82 @@
+# promtool test rules for rules/cmtc-pids.rules.yaml, with the values read through the kubelet of
+# cmtc-a-worker on 2026-10-27 (rules/cmtc-pids.rules.yaml header): register-agent-node grows by 12 a
+# minute from 5443 with a limit of 19096; the spire-server container beside it stays at 14.
+rule_files:
+- ../cmtc-pids.rules.yaml
+evaluation_interval: 1m
+
+tests:
+- name: the SPIRE server sidecar that does not reap its children
+  interval: 1m
+  input_series:
+  - series: 'container_threads{job="cadvisor", component="kubelet", cluster="cmtc-a", node="cmtc-a-worker", instance="cmtc-a-worker", namespace="cilium-spire", pod="spire-server-0", container="register-agent-node"}'
+    values: '5443+12x40'
+  - series: 'container_threads_max{job="cadvisor", component="kubelet", cluster="cmtc-a", node="cmtc-a-worker", instance="cmtc-a-worker", namespace="cilium-spire", pod="spire-server-0", container="register-agent-node"}'
+    values: '19096x40'
+  - series: 'container_threads{job="cadvisor", component="kubelet", cluster="cmtc-a", node="cmtc-a-worker", instance="cmtc-a-worker", namespace="cilium-spire", pod="spire-server-0", container="spire-server"}'
+    values: '14x40'
+  - series: 'container_threads_max{job="cadvisor", component="kubelet", cluster="cmtc-a", node="cmtc-a-worker", instance="cmtc-a-worker", namespace="cilium-spire", pod="spire-server-0", container="spire-server"}'
+    values: '19096x40'
+  promql_expr_test:
+  # 5443 + 12 * 10 = 5563 of 19096 at minute 10.
+  - expr: cmtc:container_pids:ratio{container="register-agent-node"}
+    eval_time: 10m
+    exp_samples:
+    - labels: 'cmtc:container_pids:ratio{cluster="cmtc-a", node="cmtc-a-worker", namespace="cilium-spire", pod="spire-server-0", container="register-agent-node"}'
+      value: 0.29131755341432763
+  alert_rule_test:
+  # From minute 1 the 30 minute trend reaches the limit within 24 h (5455 + 0.2 * 86400 >= 19096);
+  # the forecast holds for 15 minutes before it fires. The spire-server container never fires.
+  - eval_time: 15m
+    alertname: CMTCContainerPIDsExhaustionForecast
+    exp_alerts: []
+  - eval_time: 16m
+    alertname: CMTCContainerPIDsExhaustionForecast
+    exp_alerts:
+    # A comparison matched with on (...) keeps only the labels it matched on.
+    - exp_labels: {severity: warning, owner: spire-server, cluster: cmtc-a, node: cmtc-a-worker, namespace: cilium-spire, pod: spire-server-0, container: register-agent-node}
+      exp_annotations:
+        summary: 'Container register-agent-node of cilium-spire/spire-server-0 on cmtc-a-worker (cmtc-a) reaches its PID limit within 24 hours at the rate of the last 30 minutes'
+        runbook: 'Processes are not reaped (zombies) or keep forking. For spire-server-0 this is #41: the register-agent-node sidecar needs an init that reaps its children. The Pod is replaced when the limit is reached; plan the fix or a restart before then.'
+  - eval_time: 40m
+    alertname: CMTCContainerPIDsNearLimit
+    exp_alerts: []
+
+- name: containers above 90 % of their limit, owner read from the Pod name
+  interval: 1m
+  input_series:
+  - series: 'container_threads{job="cadvisor", component="kubelet", cluster="cmtc-b", node="cmtc-b-worker", instance="cmtc-b-worker", namespace="kube-system", pod="cilium-x7k2p", container="cilium-agent"}'
+    values: '18000x10'
+  - series: 'container_threads_max{job="cadvisor", component="kubelet", cluster="cmtc-b", node="cmtc-b-worker", instance="cmtc-b-worker", namespace="kube-system", pod="cilium-x7k2p", container="cilium-agent"}'
+    values: '19096x10'
+  - series: 'container_threads{job="cadvisor", component="kubelet", cluster="cmtc-b", node="cmtc-b-worker", instance="cmtc-b-worker", namespace="kube-system", pod="etcd-cmtc-b-control-plane", container="etcd"}'
+    values: '18000x10'
+  - series: 'container_threads_max{job="cadvisor", component="kubelet", cluster="cmtc-b", node="cmtc-b-worker", instance="cmtc-b-worker", namespace="kube-system", pod="etcd-cmtc-b-control-plane", container="etcd"}'
+    values: '19096x10'
+  - series: 'container_threads{job="cadvisor", component="kubelet", cluster="cmtc-b", node="cmtc-b-worker", instance="cmtc-b-worker", namespace="cert-manager", pod="cert-manager-689c4c5575-477xj", container="cert-manager-controller"}'
+    values: '18000x10'
+  - series: 'container_threads_max{job="cadvisor", component="kubelet", cluster="cmtc-b", node="cmtc-b-worker", instance="cmtc-b-worker", namespace="cert-manager", pod="cert-manager-689c4c5575-477xj", container="cert-manager-controller"}'
+    values: '19096x10'
+  alert_rule_test:
+  - eval_time: 4m
+    alertname: CMTCContainerPIDsNearLimit
+    exp_alerts: []
+  - eval_time: 5m
+    alertname: CMTCContainerPIDsNearLimit
+    exp_alerts:
+    - exp_labels: {severity: critical, owner: cilium-agent, cluster: cmtc-b, node: cmtc-b-worker, namespace: kube-system, pod: cilium-x7k2p, container: cilium-agent}
+      exp_annotations:
+        summary: 'Container cilium-agent of kube-system/cilium-x7k2p on cmtc-b-worker (cmtc-b) uses 94.26% of its PID limit'
+        runbook: 'New processes and threads will fail to start, then the Pod fails. Restart the Pod to release the zombies now, and fix the reaping (#41 for spire-server-0).'
+    - exp_labels: {severity: critical, owner: kubernetes, cluster: cmtc-b, node: cmtc-b-worker, namespace: kube-system, pod: etcd-cmtc-b-control-plane, container: etcd}
+      exp_annotations:
+        summary: 'Container etcd of kube-system/etcd-cmtc-b-control-plane on cmtc-b-worker (cmtc-b) uses 94.26% of its PID limit'
+        runbook: 'New processes and threads will fail to start, then the Pod fails. Restart the Pod to release the zombies now, and fix the reaping (#41 for spire-server-0).'
+    - exp_labels: {severity: critical, owner: cert-manager, cluster: cmtc-b, node: cmtc-b-worker, namespace: cert-manager, pod: cert-manager-689c4c5575-477xj, container: cert-manager-controller}
+      exp_annotations:
+        summary: 'Container cert-manager-controller of cert-manager/cert-manager-689c4c5575-477xj on cmtc-b-worker (cmtc-b) uses 94.26% of its PID limit'
+        runbook: 'New processes and threads will fail to start, then the Pod fails. Restart the Pod to release the zombies now, and fix the reaping (#41 for spire-server-0).'
+  # Flat at 18000: no growth, no forecast.
+  - eval_time: 10m
+    alertname: CMTCContainerPIDsExhaustionForecast
+    exp_alerts: []

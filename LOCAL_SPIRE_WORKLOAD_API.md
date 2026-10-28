@@ -4,15 +4,21 @@
 Evidence scope: results apply to the recorded source, image and fixture. Read [current delivery status](docs/agile/DELIVERY_STATUS.md) and [documentation terms](DOCUMENTATION_GUIDE.md).
 <!-- /CMTC_DOC_CONTEXT -->
 
-Both mesh clusters now run the current SPIRE agent fork on all four nodes.
-Each agent exposes a separate Workload API socket and Admin API socket.
+**Current state (read 2026-10-25T23:13Z):** the SPIRE node agents run `localhost/cmtc-spire-agent:delegated-0f8fe4d681`
+on all four nodes. That build adds an opt-in DelegatedIdentity-only socket (`delegated_identity_socket_path`, group
+1337 in the agent ConfigMap), which ztunnel mounts from `/run/cmtc-spire/<cluster>/delegated`. The runtime table and
+results below are **historical** (2026-10-24, source `28f6b8d84a`). Exact pins are in
+[delivery status](docs/agile/DELIVERY_STATUS.md).
+
+At this record, both mesh clusters ran the SPIRE agent fork on all four nodes.
+Each agent exposed a separate Workload API socket and Admin API socket.
 The agent verifies the kubelet certificate against the approved per-node CA and the exact node DNS name.
 Applications have no sidecars, socket mounts or private-key files.
 
 The node API bootstrap is qualified. A later [native credential qualification](LOCAL_NATIVE_CREDENTIALS.md) also verifies real workload SVID delivery on all four nodes. Workload traffic mTLS remains unqualified.
 [The deployment ledger](docs/evidence/spire-workload-api/summary.json) records that boundary.
 
-## Exact runtime
+## Exact runtime (historical, 2026-10-24)
 
 | Item | Value |
 | --- | --- |
@@ -64,14 +70,14 @@ A different CA requires a new explicit public approval.
 ## Socket and registration boundaries
 
 The host socket parent is `/run/cmtc-spire/<cluster>` on each selected node.
-Its separate `agent` and `admin` directories belong to UID/GID1000 with mode0700.
+Its separate `agent` and `admin` directories belong to UID/GID1000 with mode 0700.
 The initializer validates existing directories. It does not adopt or change a foreign directory.
-The SPIRE agent remains UID1000.
+The SPIRE agent remains UID 1000.
 
 An ordinary application never receives the Admin API or CRI socket.
 A trusted node diagnostic process can receive those sockets to exercise ztunnel's real credential path.
 That process is part of the node trust boundary. A read-only socket mount still permits RPC.
-Host PID visibility is required for future held-process checks against the host PIDs returned by CRI.
+Host PID visibility is required for held-process checks against the host PIDs returned by CRI; the ztunnel DaemonSet now has `hostPID: true` ([installation requirements](INSTALLATION_REQUIREMENTS.md)).
 Applications and the CMTC Observe DaemonSet do not gain host PID access.
 
 The [planner](scripts/lab/spire/workload_api.py) produces immutable public configuration, an exact DaemonSet patch and proposed registration commands.
@@ -82,9 +88,9 @@ The real native credential checks remain a separate step.
 
 ## Local evidence
 
-The affected agent packages pass170 top-level race tests and373 subtests, with no failures or skips.
+The affected agent packages pass 170 top-level race tests and 373 subtests, with no failures or skips.
 Vet passes.
-The SPIRE Python suite passes72 cases, including actual loopback TLS rejection for wrong DNS and wrong CA.
+The SPIRE Python suite passes 72 cases, including actual loopback TLS rejection for wrong DNS and wrong CA.
 These fixture tests do not substitute for a live workload credential test.
 
 Both agent rollouts pass exact image/source checks.
@@ -94,5 +100,4 @@ Private keys remain outside the evidence.
 
 Exact registrations and native credential delivery now pass on every node.
 See the [native credential guide](LOCAL_NATIVE_CREDENTIALS.md) for denial, replacement, retry and recovery evidence.
-Then qualify process incarnation, native remote provenance, effective policy, actual drains and cross-cluster traffic.
-Keep the ClusterMesh/ztunnel compatibility guard closed until those gates pass.
+Native remote provenance, effective policy and enrolled cross-cluster traffic have since been exercised ([G1 evidence](docs/evidence/g1-destination-sources/README.md)). Recovery and per-connection peer-certificate evidence remain open.

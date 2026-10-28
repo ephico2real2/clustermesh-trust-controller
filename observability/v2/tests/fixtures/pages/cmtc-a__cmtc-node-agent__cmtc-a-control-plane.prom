@@ -1,0 +1,8 @@
+# Fixture for metrics/contract.json: cmtc-a cmtc-system/cmtc-node-agent-8x6s5 on cmtc-a-control-plane, :8080/metrics, captured 2026-10-27T01:09:41Z through the API server's proxy (read-only GET), cut to the metrics the contract lists for cmtc-node-agent.
+# HELP cmtc_node_agent_ready Successful local inventory observation; not enforcement readiness.
+# TYPE cmtc_node_agent_ready gauge
+cmtc_node_agent_ready{cluster="cmtc-a",node="cmtc-a-control-plane"} 1
+# HELP cmtc_pods_observed Observed local pods by network category; not protected pod counts.
+# TYPE cmtc_pods_observed gauge
+cmtc_pods_observed{cluster="cmtc-a",network="host",node="cmtc-a-control-plane"} 8
+cmtc_pods_observed{cluster="cmtc-a",network="pod",node="cmtc-a-control-plane"} 8

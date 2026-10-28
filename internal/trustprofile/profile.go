@@ -29,7 +29,10 @@ const MaxPublicationBytes = 256 * 1024
 const MaxJSONDepth = 12
 const SchemaVersion = 1
 const MaxLease = 30 * time.Second
-const RenewBefore = 15 * time.Second
+
+// RenewBefore is the validity left at which the producer republishes. It
+// must outlast a leader handover; see the controller's leader timing.
+const RenewBefore = 24 * time.Second
 const DataKey = "profile.json"
 const ApprovalKey = "approval.json"
 const OutputLabel = "security.cmtc.io/issuer-profile-output"
@@ -39,11 +42,17 @@ type Root struct {
 	CertificatePEM string `json:"certificatePEM"`
 	SHA256         string `json:"sha256"`
 }
+
+// Issuer pins one CA of a cluster. By default it is SPIRE's own signing CA,
+// which signs the SVIDs. With SignsSPIRECA it is the cluster's SPIRE
+// intermediate instead, directly under the root: SPIRE rotates its signing CA
+// below it, and a verifier accepts exactly one CA between this pin and an SVID.
 type Issuer struct {
 	CertificatePEM string `json:"certificatePEM"`
 	ChainPEM       string `json:"chainPEM,omitempty"`
 	SPKISHA256     string `json:"spkiSHA256"`
 	RootSHA256     string `json:"rootSHA256"`
+	SignsSPIRECA   bool   `json:"signsSPIRECA,omitempty"`
 }
 type Cluster struct {
 	ClusterID   string   `json:"clusterID"`
@@ -126,7 +135,7 @@ func decodeBounded(data []byte, out any, limit int) error {
 		return errors.New("bounded nonempty JSON required")
 	}
 	allowed := map[string]bool{}
-	for _, s := range strings.Fields("schemaVersion generation expiresAt roots clusters certificatePEM sha256 clusterID trustDomain issuers chainPEM spkiSHA256 rootSHA256 sequence state reason producerCluster outputUID expectedSourceUID source namespace name uid resourceVersion acceptedGeneration acceptedSourceUID acceptedApprovalDigest approvalDigest approval publishedAt validUntil digest") {
+	for _, s := range strings.Fields("schemaVersion generation expiresAt roots clusters certificatePEM sha256 clusterID trustDomain issuers chainPEM spkiSHA256 rootSHA256 signsSPIRECA sequence state reason producerCluster outputUID expectedSourceUID source namespace name uid resourceVersion acceptedGeneration acceptedSourceUID acceptedApprovalDigest approvalDigest approval publishedAt validUntil digest") {
 		allowed[s] = true
 	}
 	d := json.NewDecoder(bytes.NewReader(data))
@@ -365,6 +374,10 @@ func Validate(data []byte, rootPins []string, localCluster string, now time.Time
 			if e := caCurrentForDomain(cert, now, c.TrustDomain); e != nil {
 				return nil, invalid("SourceInvalid", e)
 			}
+			// The SVID path is root -> this intermediate -> SPIRE CA -> SVID.
+			if pin.SignsSPIRECA && (pin.ChainPEM != "" || !caDepthAllows(root, 2) || !caDepthAllows(cert, 1)) {
+				return nil, invalid("SourceInvalid", errors.New("SPIRE intermediate must be directly under the root, with path depth for one SPIRE CA"))
+			}
 
 			intermediatePool := x509.NewCertPool()
 			chainPEM := ""
@@ -532,6 +545,21 @@ func DecodePublication(data []byte) (*Publication, error) {
 // VerifyCurrent is a pure consumer-side contract, not Cilium integration. A
 // future API-backed Cilium watcher must also prove authorized object origin,
 // maintain its own durable sequence floor, deliver xDS, ACK and drain on expiry.
+//
+// Expected must be complete: every pin set, SourceUID distinct from
+// OutputUID, SourceName a DNS-1123 subdomain, MinimumGeneration at least 1
+// and Cluster valid. VerifyCurrent fails closed on an incomplete Expected,
+// because an empty SourceUID or a zero MinimumGeneration would unbind the
+// floor generation and accept any successor.
+//
+// SourceName and SourceUID name the approval object accepted at
+// MinimumGeneration. At that floor generation the publication must carry
+// both the pinned name and the pinned UID. Approvals are immutable, so each
+// new approval generation is a new object: a successor object in
+// SourceNamespace is current when its generation is strictly greater, and
+// its name and UID are not bound by the pins. The UID identifies the object;
+// a caller that reads the live object by its name proves that the name
+// belongs to it.
 type Expected struct {
 	OutputUID, SourceUID, SourceNamespace, SourceName, Cluster string
 	MinimumGeneration, MinimumSequence                         uint64
@@ -539,12 +567,22 @@ type Expected struct {
 }
 
 func VerifyCurrent(data []byte, e Expected, now time.Time) (*Publication, error) {
+	// Incomplete pins fail closed: an empty SourceUID or a zero MinimumGeneration
+	// would otherwise unbind the floor generation and accept any successor.
+	if e.OutputUID == "" || e.SourceUID == "" || e.SourceUID == e.OutputUID || e.SourceNamespace == "" || len(validation.IsDNS1123Subdomain(e.SourceName)) != 0 || e.MinimumGeneration == 0 || !ClusterValid(e.Cluster) {
+		return nil, errors.New("incomplete consumer pins")
+	}
 	p, err := DecodePublication(data)
 	if err != nil {
 		return nil, err
 	}
-	if p.State != "published" || p.Reason != "Validated" || p.OutputUID != e.OutputUID || p.ExpectedSourceUID != e.SourceUID || p.Source.UID != e.SourceUID || p.Source.Namespace != e.SourceNamespace || p.Source.Name != e.SourceName || p.Source.ResourceVersion == "" || p.ProducerCluster != e.Cluster || p.AcceptedGeneration < e.MinimumGeneration || p.Sequence < e.MinimumSequence {
+	if p.State != "published" || p.Reason != "Validated" || p.OutputUID != e.OutputUID || p.Source.Namespace != e.SourceNamespace || p.Source.ResourceVersion == "" || p.ProducerCluster != e.Cluster || p.AcceptedGeneration < e.MinimumGeneration || p.Sequence < e.MinimumSequence {
 		return nil, errors.New("publication not authorized/current for configured source")
+	}
+	// DecodePublication binds Source.UID to ExpectedSourceUID and
+	// AcceptedSourceUID for a published profile.
+	if len(validation.IsDNS1123Subdomain(p.Source.Name)) != 0 || p.Source.UID == e.OutputUID || p.AcceptedGeneration == e.MinimumGeneration && (p.Source.UID != e.SourceUID || p.Source.Name != e.SourceName) {
+		return nil, errors.New("publication approval source is neither the floor object nor a successor")
 	}
 	at, _ := parseTime(p.PublishedAt)
 	until, _ := parseTime(p.ValidUntil)

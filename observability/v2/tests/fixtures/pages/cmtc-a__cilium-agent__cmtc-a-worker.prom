@@ -1,0 +1,36 @@
+# Fixture for metrics/contract.json: cmtc-a kube-system/cilium-rt2vr on cmtc-a-worker, :9962/metrics, captured 2026-10-27T01:09:21Z through the API server's proxy (read-only GET), cut to the metrics the contract lists for cilium-agent.
+# HELP cilium_drop_count_total Total dropped packets, tagged by drop reason and ingress/egress direction
+# TYPE cilium_drop_count_total counter
+cilium_drop_count_total{direction="EGRESS",reason="Policy denied"} 352
+cilium_drop_count_total{direction="EGRESS",reason="Unsupported L3 protocol"} 2671
+cilium_drop_count_total{direction="INGRESS",reason="Policy denied"} 49917
+cilium_drop_count_total{direction="INGRESS",reason="Stale or unroutable IP"} 440
+# HELP cilium_forward_count_total Total forwarded packets, tagged by ingress/egress direction
+# TYPE cilium_forward_count_total counter
+cilium_forward_count_total{direction="EGRESS"} 2.1314666e+07
+cilium_forward_count_total{direction="INGRESS"} 3.1495816e+07
+# HELP cilium_ztunnel_xds_authorization_events_total Authorization xDS protocol events by status (ack, nack, cancel, send_failed); not enforcement evidence
+# TYPE cilium_ztunnel_xds_authorization_events_total counter
+cilium_ztunnel_xds_authorization_events_total{status="ack"} 6
+# HELP cilium_ztunnel_xds_effective_policy_events_total Effective ztunnel policy events (published, acknowledged, compile_failed, released, release_refused); acknowledgments are ztunnel ACKs on the current stream, not traffic evidence
+# TYPE cilium_ztunnel_xds_effective_policy_events_total counter
+cilium_ztunnel_xds_effective_policy_events_total{event="acknowledged"} 25
+cilium_ztunnel_xds_effective_policy_events_total{event="published"} 26
+cilium_ztunnel_xds_effective_policy_events_total{event="released"} 2
+# HELP cilium_ztunnel_xds_effective_policy_sources Callers admitted into effective ztunnel plans by the last reconcile, by origin (node: this node's captured workloads; cluster: this cluster's other nodes; peer: ClusterMesh peers); admission, not traffic evidence
+# TYPE cilium_ztunnel_xds_effective_policy_sources gauge
+cilium_ztunnel_xds_effective_policy_sources{origin="cluster"} 2
+cilium_ztunnel_xds_effective_policy_sources{origin="node"} 2
+cilium_ztunnel_xds_effective_policy_sources{origin="peer"} 4
+# HELP cilium_ztunnel_xds_remote_projection_events_total Remote workload projection events on ztunnel xDS streams (projected, withdrawn, withdrawn_local_collision, stream_reset_for_recovery); discovery only, not authorization
+# TYPE cilium_ztunnel_xds_remote_projection_events_total counter
+cilium_ztunnel_xds_remote_projection_events_total{event="projected"} 1
+# HELP cilium_ztunnel_xds_remote_workloads Remote workloads last published to ztunnel by peer cluster; zero after withdrawal
+# TYPE cilium_ztunnel_xds_remote_workloads gauge
+cilium_ztunnel_xds_remote_workloads{peer_cluster="cmtc-b"} 4
+# HELP cilium_ztunnel_zds_connection_active Whether ztunnel connection is active (1) or not (0)
+# TYPE cilium_ztunnel_zds_connection_active gauge
+cilium_ztunnel_zds_connection_active 1
+# HELP cilium_ztunnel_zds_enrollment_total Total number of endpoint enrollment attempts to ztunnel
+# TYPE cilium_ztunnel_zds_enrollment_total counter
+cilium_ztunnel_zds_enrollment_total 2

@@ -182,7 +182,12 @@ func TestIssuerPublicationIdempotentRenewalAndTelemetryBoundary(t *testing.T) {
 	if c.updates != 1 || first.ResourceVersion != second.ResourceVersion {
 		t.Fatal("unchanged pass churned output")
 	}
-	*now = now.Add(16 * time.Second)
+	*now = now.Add(trustprofile.MaxLease - trustprofile.RenewBefore - time.Second)
+	reconcileProfile(t, r)
+	if c.updates != 1 {
+		t.Fatal("renewed before less than RenewBefore of validity remained")
+	}
+	*now = now.Add(2 * time.Second)
 	reconcileProfile(t, r)
 	_, renewed := readProfile(t, c, r.Options.Output)
 	if renewed.Sequence != 2 || c.updates != 2 {
@@ -199,6 +204,26 @@ func TestIssuerPublicationIdempotentRenewalAndTelemetryBoundary(t *testing.T) {
 		if strings.Contains(family.GetName(), "trust_bundle_ready") || strings.Contains(family.GetName(), "protected") || strings.Contains(family.GetName(), "mtls") {
 			t.Fatal("producer claimed consumer/datapath work")
 		}
+	}
+}
+
+// The cmtc-b controller rollout on 2026-10-25 let the publication expire for
+// 2.7 s while the new leader waited out the old one's lease, and every node's
+// ztunnel drained its workload TLS. A publication must outlive the slowest
+// leader handover with a waiting successor.
+func TestIssuerProfilePublicationOutlivesLeaderHandover(t *testing.T) {
+	leftAtStop := trustprofile.RenewBefore - issuerProfilePoll - issuerProfilePassTimeout
+	handover := LeaderLeaseDuration + LeaderRetryPeriod + issuerProfilePassTimeout
+	if leftAtStop <= handover {
+		t.Fatalf("a stopping leader leaves %v of validity but a successor may need %v", leftAtStop, handover)
+	}
+	if trustprofile.RenewBefore >= trustprofile.MaxLease {
+		t.Fatalf("RenewBefore %v must be shorter than MaxLease %v", trustprofile.RenewBefore, trustprofile.MaxLease)
+	}
+	// client-go's leader elector requires LeaseDuration > RenewDeadline >
+	// JitterFactor (1.2) * RetryPeriod.
+	if LeaderLeaseDuration <= LeaderRenewDeadline || LeaderRenewDeadline <= LeaderRetryPeriod*12/10 {
+		t.Fatalf("invalid leader timing %v/%v/%v", LeaderLeaseDuration, LeaderRenewDeadline, LeaderRetryPeriod)
 	}
 }
 func TestIssuerSourceDeletionUIDReplacementGenerationAndRecovery(t *testing.T) {
@@ -552,5 +577,54 @@ func TestIssuerProducerLogsEveryFailedPassWithoutPayloads(t *testing.T) {
 				t.Fatal("failed ownership/parse check mutated output")
 			}
 		})
+	}
+}
+
+// A source succession needs no reset anywhere. The controller is re-pointed
+// (restarted with new options) at a successor approval object with a new name
+// and UID and a strictly greater generation: the output's sequence continues
+// and the consumer contract accepts it under the UNCHANGED installation pins.
+// A restart with the predecessor's options withdraws without lowering the
+// successor's floor, and re-pointing at the successor again recovers.
+func TestIssuerSourceSuccessionToANewlyNamedObjectContinuesTheSequence(t *testing.T) {
+	r, c, source, _, now, _ := producerFixture(t)
+	reconcileProfile(t, r)
+	_, first := readProfile(t, c, r.Options.Output)
+	pins := trustprofile.Expected{OutputUID: string(r.Options.OutputUID), SourceUID: string(r.Options.SourceUID), SourceNamespace: r.Options.Source.Namespace, SourceName: r.Options.Source.Name, Cluster: r.Options.LocalCluster, MinimumGeneration: first.AcceptedGeneration, MinimumSequence: first.Sequence, RootPins: r.Options.RootPins}
+	var approval trustprofile.Approval
+	if err := json.Unmarshal([]byte(source.Data[trustprofile.ApprovalKey]), &approval); err != nil {
+		t.Fatal(err)
+	}
+	approval.Generation = 2
+	successor := sourceObject(t, approval, "source-g2")
+	successor.Name = "approval-g2"
+	if err := c.Create(context.Background(), successor); err != nil {
+		t.Fatal(err)
+	}
+	options := r.Options
+	options.Source, options.SourceUID = client.ObjectKeyFromObject(successor), successor.UID
+	repointed := &IssuerProfileReconciler{Client: c, Reader: c, Options: options, Metrics: r.Metrics, Now: r.Now}
+	reconcileProfile(t, repointed)
+	out, p := readProfile(t, c, r.Options.Output)
+	if p.State != "published" || p.Sequence != first.Sequence+1 || p.AcceptedGeneration != 2 || p.AcceptedSourceUID != "source-g2" || p.Source.Name != "approval-g2" {
+		t.Fatalf("successor not published on the same output: %+v", p)
+	}
+	if _, err := trustprofile.VerifyCurrent([]byte(out.Data[trustprofile.DataKey]), pins, *now); err != nil {
+		t.Fatalf("consumer rejected the successor under unchanged pins: %v", err)
+	}
+	*now = now.Add(time.Second)
+	stale := &IssuerProfileReconciler{Client: c, Reader: c, Options: r.Options, Metrics: r.Metrics, Now: r.Now}
+	reconcileProfile(t, stale)
+	_, withdrawn := readProfile(t, c, r.Options.Output)
+	if withdrawn.State != "withdrawn" || withdrawn.Reason != "GenerationRollback" || withdrawn.AcceptedGeneration != 2 || withdrawn.AcceptedSourceUID != "source-g2" || withdrawn.Sequence != p.Sequence+1 {
+		t.Fatalf("predecessor options lowered or lost the successor floor: %+v", withdrawn)
+	}
+	reconcileProfile(t, repointed)
+	out, recovered := readProfile(t, c, r.Options.Output)
+	if recovered.State != "published" || recovered.AcceptedGeneration != 2 || recovered.Sequence != withdrawn.Sequence+1 {
+		t.Fatalf("successor did not recover after the stale restart: %+v", recovered)
+	}
+	if _, err := trustprofile.VerifyCurrent([]byte(out.Data[trustprofile.DataKey]), pins, *now); err != nil {
+		t.Fatalf("consumer rejected the recovered successor: %v", err)
 	}
 }

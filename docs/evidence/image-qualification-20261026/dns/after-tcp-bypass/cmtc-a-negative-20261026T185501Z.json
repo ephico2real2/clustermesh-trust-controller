@@ -1,0 +1,177 @@
+{
+  "client": "client-worker",
+  "clientIP": "10.10.1.205",
+  "node": "cmtc-a-worker",
+  "agent": "cilium-dl9f8",
+  "monitor": "docs/evidence/image-qualification-20261026/dns/after-tcp-bypass/cmtc-a-negative-20261026T185501Z-monitor-cmtc-a-worker.txt",
+  "rows": [
+    {
+      "at": "2026-10-26T18:55:10.914421+00:00",
+      "context": "kind-cmtc-a",
+      "client": "client-worker",
+      "probe": "dns-udp",
+      "name": "kubernetes.default.svc.cluster.local",
+      "server": "10.10.0.98",
+      "rc": 1,
+      "resolved": false,
+      "addresses": [],
+      "stdout": ";; connection timed out; no servers could be reached\n\n\nCMTC_RC=1\n",
+      "stderr": "",
+      "case": "DNS over UDP to a server Pod (not a resolver)",
+      "failed": true,
+      "dropLines": [
+        "xx drop (Policy denied) flow 0x162051e8 to endpoint 0, ifindex 403, file bpf_lxc.c:1630, , identity 69042->94895: 10.10.1.205:58510 -> 10.10.0.98:53 udp",
+        "xx drop (Policy denied) flow 0x162051e8 to endpoint 0, ifindex 403, file bpf_lxc.c:1630, , identity 69042->94895: 10.10.1.205:58510 -> 10.10.0.98:53 udp",
+        "xx drop (Policy denied) flow 0x162051e8 to endpoint 0, ifindex 403, file bpf_lxc.c:1630, , identity 69042->94895: 10.10.1.205:58510 -> 10.10.0.98:53 udp",
+        "xx drop (Policy denied) flow 0x162051e8 to endpoint 0, ifindex 403, file bpf_lxc.c:1630, , identity 69042->94895: 10.10.1.205:58510 -> 10.10.0.98:53 udp"
+      ]
+    },
+    {
+      "at": "2026-10-26T18:55:15.983703+00:00",
+      "context": "kind-cmtc-a",
+      "client": "client-worker",
+      "probe": "dns-udp",
+      "name": "kubernetes.default.svc.cluster.local",
+      "server": "1.1.1.1",
+      "rc": 1,
+      "resolved": false,
+      "addresses": [],
+      "stdout": ";; connection timed out; no servers could be reached\n\n\nCMTC_RC=1\n",
+      "stderr": "",
+      "case": "DNS over UDP to 1.1.1.1 (world)",
+      "failed": true,
+      "dropLines": [
+        "xx drop (Policy denied) flow 0x8c0422b2 to endpoint 0, ifindex 403, file bpf_lxc.c:1630, , identity 69042->world: 10.10.1.205:48176 -> 1.1.1.1:53 udp",
+        "xx drop (Policy denied) flow 0x8c0422b2 to endpoint 0, ifindex 403, file bpf_lxc.c:1630, , identity 69042->world: 10.10.1.205:48176 -> 1.1.1.1:53 udp",
+        "xx drop (Policy denied) flow 0x8c0422b2 to endpoint 0, ifindex 403, file bpf_lxc.c:1630, , identity 69042->world: 10.10.1.205:48176 -> 1.1.1.1:53 udp",
+        "xx drop (Policy denied) flow 0x8c0422b2 to endpoint 0, ifindex 403, file bpf_lxc.c:1630, , identity 69042->world: 10.10.1.205:48176 -> 1.1.1.1:53 udp"
+      ]
+    },
+    {
+      "at": "2026-10-26T18:55:21.046669+00:00",
+      "context": "kind-cmtc-a",
+      "client": "cmtc-live-mtls/client-worker",
+      "probe": "dns-tcp",
+      "name": "kubernetes.default.svc.cluster.local",
+      "server": "10.10.0.98",
+      "queryID": 59128,
+      "rc": 0,
+      "replyBytes": 0,
+      "stderr": "",
+      "answered": false,
+      "reason": "0 bytes received",
+      "case": "DNS over TCP to a server Pod (not a resolver)",
+      "failed": true,
+      "dropLines": [
+        "xx drop (Policy denied) flow 0x5b34e71c to endpoint 0, ifindex 403, file bpf_lxc.c:1630, , identity 69042->94895: 10.10.1.205:43719 -> 10.10.0.98:53 tcp SYN",
+        "xx drop (Policy denied) flow 0xd16304c to endpoint 0, ifindex 403, file bpf_lxc.c:1630, , identity 69042->94895: 10.10.1.205:43719 -> 10.10.0.98:53 tcp SYN",
+        "xx drop (Policy denied) flow 0x7cc5ff94 to endpoint 0, ifindex 403, file bpf_lxc.c:1630, , identity 69042->94895: 10.10.1.205:43719 -> 10.10.0.98:53 tcp SYN",
+        "xx drop (Policy denied) flow 0xfdf5d157 to endpoint 0, ifindex 403, file bpf_lxc.c:1630, , identity 69042->94895: 10.10.1.205:43719 -> 10.10.0.98:53 tcp SYN",
+        "xx drop (Policy denied) flow 0x1d726040 to endpoint 0, ifindex 403, file bpf_lxc.c:1630, , identity 69042->94895: 10.10.1.205:43719 -> 10.10.0.98:53 tcp SYN"
+      ]
+    },
+    {
+      "at": "2026-10-26T18:55:26.110662+00:00",
+      "context": "kind-cmtc-a",
+      "client": "cmtc-live-mtls/client-worker",
+      "probe": "dns-tcp",
+      "name": "kubernetes.default.svc.cluster.local",
+      "server": "1.1.1.1",
+      "queryID": 57448,
+      "rc": 0,
+      "replyBytes": 0,
+      "stderr": "",
+      "answered": false,
+      "reason": "0 bytes received",
+      "case": "DNS over TCP to 1.1.1.1 (world)",
+      "failed": true,
+      "dropLines": [
+        "xx drop (Policy denied) flow 0x67f5ce87 to endpoint 0, ifindex 403, file bpf_lxc.c:1630, , identity 69042->world: 10.10.1.205:42935 -> 1.1.1.1:53 tcp SYN",
+        "xx drop (Policy denied) flow 0xa8ae0114 to endpoint 0, ifindex 403, file bpf_lxc.c:1630, , identity 69042->world: 10.10.1.205:42935 -> 1.1.1.1:53 tcp SYN",
+        "xx drop (Policy denied) flow 0xc0d219ea to endpoint 0, ifindex 403, file bpf_lxc.c:1630, , identity 69042->world: 10.10.1.205:42935 -> 1.1.1.1:53 tcp SYN",
+        "xx drop (Policy denied) flow 0xe7d77042 to endpoint 0, ifindex 403, file bpf_lxc.c:1630, , identity 69042->world: 10.10.1.205:42935 -> 1.1.1.1:53 tcp SYN",
+        "xx drop (Policy denied) flow 0x585126de to endpoint 0, ifindex 403, file bpf_lxc.c:1630, , identity 69042->world: 10.10.1.205:42935 -> 1.1.1.1:53 tcp SYN"
+      ]
+    },
+    {
+      "at": "2026-10-26T18:55:26.175621+00:00",
+      "context": "kind-cmtc-a",
+      "client": "client-worker",
+      "probe": "curl",
+      "url": "http://10.10.0.64:8080/health",
+      "curlRC": 56,
+      "http200": false,
+      "expectedCluster": null,
+      "positiveMatch": false,
+      "stdout": "\nCMTC_RC=56\n",
+      "stderr": "curl: (56) Recv failure: Connection reset by peer\n",
+      "case": "TCP to CoreDNS on 8080",
+      "failed": true,
+      "dropLines": []
+    },
+    {
+      "at": "2026-10-26T18:55:26.233558+00:00",
+      "context": "kind-cmtc-a",
+      "client": "client-worker",
+      "probe": "curl",
+      "url": "http://10.10.0.64:9153/metrics",
+      "curlRC": 56,
+      "http200": false,
+      "expectedCluster": null,
+      "positiveMatch": false,
+      "stdout": "\nCMTC_RC=56\n",
+      "stderr": "curl: (56) Recv failure: Connection reset by peer\n",
+      "case": "TCP to CoreDNS on 9153",
+      "failed": true,
+      "dropLines": []
+    },
+    {
+      "at": "2026-10-26T18:55:28.290795+00:00",
+      "context": "kind-cmtc-a",
+      "client": "client-worker",
+      "probe": "udp",
+      "dst": "10.10.0.98:80",
+      "rc": 0,
+      "reply": "",
+      "stdout": "\nCMTC_RC=0\n",
+      "stderr": "",
+      "case": "plaintext UDP to a server Pod on 80",
+      "failed": true,
+      "dropLines": [
+        "xx drop (Policy denied) flow 0x9e3e3b6a to endpoint 0, ifindex 403, file bpf_lxc.c:1630, , identity 69042->94895: 10.10.1.205:37479 -> 10.10.0.98:80 udp"
+      ]
+    },
+    {
+      "at": "2026-10-26T18:55:30.357819+00:00",
+      "context": "kind-cmtc-a",
+      "client": "client-worker",
+      "probe": "udp",
+      "dst": "10.10.0.98:8080",
+      "rc": 0,
+      "reply": "",
+      "stdout": "\nCMTC_RC=0\n",
+      "stderr": "",
+      "case": "plaintext UDP to a server Pod on 8080",
+      "failed": true,
+      "dropLines": [
+        "xx drop (Policy denied) flow 0x44ff278 to endpoint 0, ifindex 403, file bpf_lxc.c:1630, , identity 69042->94895: 10.10.1.205:51021 -> 10.10.0.98:8080 udp"
+      ]
+    },
+    {
+      "at": "2026-10-26T18:55:32.419267+00:00",
+      "context": "kind-cmtc-a",
+      "client": "client-worker",
+      "probe": "udp",
+      "dst": "10.10.0.98:31337",
+      "rc": 0,
+      "reply": "",
+      "stdout": "\nCMTC_RC=0\n",
+      "stderr": "",
+      "case": "plaintext UDP to a server Pod on 31337",
+      "failed": true,
+      "dropLines": [
+        "xx drop (Policy denied) flow 0x65f9ab72 to endpoint 0, ifindex 403, file bpf_lxc.c:1630, , identity 69042->94895: 10.10.1.205:33671 -> 10.10.0.98:31337 udp"
+      ]
+    }
+  ]
+}

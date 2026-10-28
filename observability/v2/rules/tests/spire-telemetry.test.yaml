@@ -1,0 +1,157 @@
+# promtool test rules for rules/proposed/spire-telemetry.rules.yaml, on the 2026-10-25 timeline
+# (docs/evidence/issuer-rebootstrap-20261026/INCIDENT.md:21-25). Each cluster's controller reports
+# the pins its own approval holds for both clusters; SPIRE of cmtc-a reports its CA times.
+#   slot A notAfter 2026-10-26T03:55:11Z (1792986911), active until 23:55:17Z;
+#   slot B prepared 15:55:19Z, notAfter 2026-10-26T15:55:19Z (1793030119), active from 23:55:17Z.
+# The SPIRE values are the documented gauges (SPIRE 0f8fe4d681 pkg/common/telemetry/server/ca_manager.go:42-55
+# and :66-73, float64 Unix seconds); they were not scraped on the lab. These rules never read time(), so the
+# tests keep real timestamps as values and need no start_timestamp (which promtool 3.7.0 does not have).
+rule_files:
+- ../cmtc-collection.rules.yaml
+- ../proposed/spire-telemetry.rules.yaml
+evaluation_interval: 1m
+# promtool evaluates groups in map order unless told: the expected-cluster and expected-node
+# records of cmtc-collection must exist before the groups that read them, as they do in
+# Prometheus after the first evaluation.
+group_eval_order:
+- cmtc-collection
+- cmtc-spire-proposed
+- cmtc-spire-agent-proposed
+
+tests:
+# Minute 0 stands for 2026-10-25T15:00:00Z: SPIRE prepares slot B at 15:55:19Z (minute 55); both
+# approvals pin slot A only.
+- name: a prepared CA that no approval pins
+  interval: 1m
+  input_series:
+  - series: 'spire_server_manager_x509_ca_rotate_max_expiration{job="spire-server", component="spire-server", cluster="cmtc-a", node="cmtc-a-worker", instance="10.10.1.40:9988", trust_domain_id="cmtc-a.mesh.example"}'
+    values: '1792986911x55 1793030119x10'
+  - series: 'spire_server_manager_x509_ca_rotate_expiration{job="spire-server", component="spire-server", cluster="cmtc-a", node="cmtc-a-worker", instance="10.10.1.40:9988", trust_domain_id="cmtc-a.mesh.example"}'
+    values: '1792986911x65'
+  - series: 'up{job="spire-server", component="spire-server", cluster="cmtc-a", node="cmtc-a-worker", instance="10.10.1.40:9988"}'
+    values: '1x65'
+  - series: 'cmtc_issuer_profile_approved_issuer_not_after_timestamp_seconds{job="cmtc", component="cmtc-controller", cluster="cmtc-a", approval_cluster="cmtc-a", position="newest"}'
+    values: '1792986911x65'
+  - series: 'cmtc_issuer_profile_approved_issuer_not_after_timestamp_seconds{job="cmtc", component="cmtc-controller", cluster="cmtc-b", approval_cluster="cmtc-a", position="newest"}'
+    values: '1792986911x65'
+  promql_expr_test:
+  - expr: cmtc:spire_x509_ca_latest_not_after:timestamp_seconds
+    eval_time: 56m
+    exp_samples:
+    - labels: 'cmtc:spire_x509_ca_latest_not_after:timestamp_seconds{cluster="cmtc-a", approval_cluster="cmtc-a"}'
+      value: 1793030119
+  - expr: cmtc:spire_x509_ca_active_not_after:timestamp_seconds
+    eval_time: 56m
+    exp_samples:
+    - labels: 'cmtc:spire_x509_ca_active_not_after:timestamp_seconds{cluster="cmtc-a", approval_cluster="cmtc-a"}'
+      value: 1792986911
+  alert_rule_test:
+  - eval_time: 60m
+    alertname: CMTCSPIRECANotApproved
+    exp_alerts: []
+  - eval_time: 61m
+    alertname: CMTCSPIRECANotApproved
+    exp_alerts:
+    - exp_labels: {severity: warning, owner: spire-server, cluster: cmtc-a, approval_cluster: cmtc-a}
+      exp_annotations:
+        summary: 'SPIRE of cmtc-a holds a CA valid 12h 0m 8s past the newest issuer the approval in cmtc-a pins'
+        runbook: 'SPIRE prepared its next CA. Pin it in a new approval generation in every cluster before SPIRE activates it; CMTCIssuerSuccessionImminent gives the time left.'
+    - exp_labels: {severity: warning, owner: spire-server, cluster: cmtc-b, approval_cluster: cmtc-a}
+      exp_annotations:
+        summary: 'SPIRE of cmtc-a holds a CA valid 12h 0m 8s past the newest issuer the approval in cmtc-b pins'
+        runbook: 'SPIRE prepared its next CA. Pin it in a new approval generation in every cluster before SPIRE activates it; CMTCIssuerSuccessionImminent gives the time left.'
+  - eval_time: 61m
+    alertname: CMTCSPIREActiveCANotApproved
+    exp_alerts: []
+  # SPIRE of cmtc-b is not scraped at all: unavailable, not passing.
+  - eval_time: 4m
+    alertname: CMTCSPIREServerNotScraped
+    exp_alerts: []
+  - eval_time: 5m
+    alertname: CMTCSPIREServerNotScraped
+    exp_alerts:
+    - exp_labels: {severity: warning, owner: spire-server, cluster: cmtc-b}
+      exp_annotations:
+        summary: 'No SPIRE server metrics from cmtc-b'
+        runbook: 'Check the spire-server Pod in cilium-spire, the telemetry block of server.conf (Prometheus port 9988) and the spire-server scrape job.'
+
+# Minute 0 stands for 2026-10-25T23:50:00Z: SPIRE of cmtc-a activates slot B at 23:55:17Z (minute 5).
+# The approval in cmtc-a still pins slot A only; the approval in cmtc-b pins both slots and stays quiet.
+- name: the active CA is not pinned
+  interval: 1m
+  input_series:
+  - series: 'spire_server_manager_x509_ca_rotate_expiration{job="spire-server", component="spire-server", cluster="cmtc-a", node="cmtc-a-worker", instance="10.10.1.40:9988", trust_domain_id="cmtc-a.mesh.example"}'
+    values: '1792986911x5 1793030119x10'
+  - series: 'cmtc_issuer_profile_approved_issuer_not_after_timestamp_seconds{job="cmtc", component="cmtc-controller", cluster="cmtc-a", approval_cluster="cmtc-a", position="newest"}'
+    values: '1792986911x15'
+  - series: 'cmtc_issuer_profile_approved_issuer_not_after_timestamp_seconds{job="cmtc", component="cmtc-controller", cluster="cmtc-a", approval_cluster="cmtc-a", position="oldest"}'
+    values: '1792986911x15'
+  - series: 'cmtc_issuer_profile_approved_issuer_not_after_timestamp_seconds{job="cmtc", component="cmtc-controller", cluster="cmtc-b", approval_cluster="cmtc-a", position="newest"}'
+    values: '1793030119x15'
+  - series: 'cmtc_issuer_profile_approved_issuer_not_after_timestamp_seconds{job="cmtc", component="cmtc-controller", cluster="cmtc-b", approval_cluster="cmtc-a", position="oldest"}'
+    values: '1792986911x15'
+  alert_rule_test:
+  - eval_time: 5m
+    alertname: CMTCSPIREActiveCANotApproved
+    exp_alerts: []
+  - eval_time: 6m
+    alertname: CMTCSPIREActiveCANotApproved
+    exp_alerts: []
+  - eval_time: 7m
+    alertname: CMTCSPIREActiveCANotApproved
+    exp_alerts:
+    - exp_labels: {severity: critical, owner: spire-server, cluster: cmtc-a, approval_cluster: cmtc-a}
+      exp_annotations:
+        summary: 'SPIRE of cmtc-a signs with a CA that the approval in cmtc-a does not pin'
+        runbook: 'Workload mTLS is failing closed now (CMTCTrustProfileRefusingConnections shows the refusals). Publish an approval generation that pins the active CA; INCIDENT.md of 2026-10-26 records the re-bootstrap used once, by the operator''s decision.'
+
+# Issue #42 at its measured peak: cmtc-a-worker fetched 3,331 certificates in one minute with 2 workloads
+# (2026-10-26 11:52-11:57Z). The control-plane node fetches 2 a minute for 2 workloads, as expected, but its
+# SPIRE agent is not scraped at all.
+- name: a certificate fetch storm on one node
+  interval: 1m
+  input_series:
+  - series: 'spire_agent_rpc_delegated_identity_subscribe_to_x509_svids{job="spire-agent", component="spire-agent", cluster="cmtc-a", node="cmtc-a-worker", namespace="cilium-spire", pod="spire-agent-6l4mq", status="OK"}'
+    values: '0+3331x20'
+  - series: 'workload_manager_active_proxy_count{job="ztunnel", component="ztunnel", cluster="cmtc-a", node="cmtc-a-worker", namespace="kube-system", pod="ztunnel-cilium-f4566"}'
+    values: '2x20'
+  - series: 'up{job="spire-agent", component="spire-agent", cluster="cmtc-a", node="cmtc-a-worker", namespace="cilium-spire", pod="spire-agent-6l4mq"}'
+    values: '1x20'
+  - series: 'up{job="ztunnel", component="ztunnel", cluster="cmtc-a", node="cmtc-a-worker", namespace="kube-system", pod="ztunnel-cilium-f4566"}'
+    values: '1x20'
+  - series: 'up{job="ztunnel", component="ztunnel", cluster="cmtc-a", node="cmtc-a-control-plane", namespace="kube-system", pod="ztunnel-cilium-5lbfx"}'
+    values: '1x20'
+  - series: 'workload_manager_active_proxy_count{job="ztunnel", component="ztunnel", cluster="cmtc-a", node="cmtc-a-control-plane", namespace="kube-system", pod="ztunnel-cilium-5lbfx"}'
+    values: '2x20'
+  - series: 'spire_agent_rpc_delegated_identity_subscribe_to_x509_svids_total{job="spire-agent", component="spire-agent", cluster="cmtc-a", node="cmtc-a-control-plane", namespace="cilium-spire", pod="spire-agent-xfl5s", status="OK"}'
+    values: '0+2x20'
+  promql_expr_test:
+  # 3331 a minute is 55.516... a second.
+  - expr: cmtc:spire_agent_svid_subscriptions:rate5m{node="cmtc-a-worker"}
+    eval_time: 10m
+    exp_samples:
+    - labels: 'cmtc:spire_agent_svid_subscriptions:rate5m{cluster="cmtc-a", node="cmtc-a-worker", status="OK"}'
+      value: 55.516666666666666
+  alert_rule_test:
+  - eval_time: 10m
+    alertname: CMTCSVIDFetchStorm
+    exp_alerts: []
+  - eval_time: 11m
+    alertname: CMTCSVIDFetchStorm
+    exp_alerts:
+    - exp_labels: {severity: warning, owner: ztunnel, cluster: cmtc-a, node: cmtc-a-worker}
+      exp_annotations:
+        summary: 'ztunnel on cmtc-a-worker (cmtc-a) fetches 27.8 workload certificates a second per in-Pod proxy from the SPIRE agent'
+        runbook: 'The expected rate is about one a minute per workload (#42). Read the ztunnel log lines "Fetching PID for workload UID" on the node to find the workload and the caller; the SPIRE agent and the node CPU carry the load.'
+  # The control-plane node's agent has a series without a scrape target of its own here: the expected
+  # nodes come from the ztunnel targets, and the spire-agent target of that node is missing.
+  - eval_time: 4m
+    alertname: CMTCSPIREAgentNotScraped
+    exp_alerts: []
+  - eval_time: 5m
+    alertname: CMTCSPIREAgentNotScraped
+    exp_alerts:
+    - exp_labels: {severity: warning, owner: spire-agent, cluster: cmtc-a, node: cmtc-a-control-plane}
+      exp_annotations:
+        summary: 'No SPIRE agent scrape target on node cmtc-a-control-plane in cmtc-a'
+        runbook: 'Certificate fetch panels for this node are unavailable, not healthy. Check the spire-agent Pod in cilium-spire, the telemetry block of agent.conf (Prometheus port 9988) and the spire-agent scrape job.'
