@@ -7,7 +7,11 @@ Evidence scope: results apply to the recorded source, image and fixture. Read [c
 Status, 2026-10-28: the design for P1 and P2 of [#47](https://github.com/ephico2real2/clustermesh-trust-controller/issues/47)
 (= [#46](https://github.com/ephico2real2/clustermesh-trust-controller/issues/46)) is **implemented and unit-tested**
 in the Cilium fork, commit `ce5c3ec031b412a4b927bcba025f9ef269a41673` on branch `fix/ztunnel-origin-credential-renewal`
-(from `823d30c51b`, the deployed agent source). It is **not deployed**: Phase 2 ([below](#phase-2-rollout-plan)) deploys
+(from `823d30c51b`, the deployed agent source), built by the fork workflow run
+[40719125969](https://github.com/ephico2real2/cilium/actions/runs/40719125969) as
+`ghcr.io/ephico2real2/cilium-dev@sha256:8446cf910bdba8d0ef7760693a16b8536800de6e353456df6e6f7bca8969b2cc`
+(tag `sha-ce5c3ec031b412a4b927bcba025f9ef269a41673-agent`, linux/amd64 and linux/arm64, revision label and
+`cilium-dbg version` checked). It is **not deployed**: Phase 2 ([below](#phase-2-rollout-plan)) deploys
 it by digest through Helm, one cluster at a time, and runs the drills. The rotation drill (P3) is **written and
 dry-run** ([`scripts/evidence/rotation_drill.py`](../../scripts/evidence/rotation_drill.py)). P4 to P9 are **planned**.
 cert-manager stays the issuer of every certificate (operator, 2026-10-28; [ADR-011](adr/ADR-011.md)).
@@ -178,7 +182,8 @@ extracted.
 Preconditions: the orchestrator's go; the lab lease; no cluster access between 18:40Z and 19:15Z on 2026-10-28; the
 image digest from the fork workflow run (`cmtc-development-images.yaml`, `images.lock.json` artifact).
 
-1. Lock. In `config/cilium-images.lock.json` set `images.agent` to the new digest, `tag`
+1. Lock. In `config/cilium-images.lock.json` set `images.agent` to
+   `ghcr.io/ephico2real2/cilium-dev@sha256:8446cf910bdba8d0ef7760693a16b8536800de6e353456df6e6f7bca8969b2cc`, `tag`
    `ghcr.io/ephico2real2/cilium-dev:sha-ce5c3ec031b412a4b927bcba025f9ef269a41673-agent` and `source_sha`
    `ce5c3ec031b412a4b927bcba025f9ef269a41673`. The chart source stays `1bd555f313` (the agent's chart renders the
    same; `prepare.py` allows a per-role source). Pull the image by digest and check
