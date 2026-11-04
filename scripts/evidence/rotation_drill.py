@@ -24,14 +24,20 @@ negative drill the withdrawal must happen, the cross-cluster path into this clus
 HTTP 200) and must recover after the revert.
 
 The two negative drills that change Helm-managed objects (neg-ca patches Certificate ztunnel-origin-reader, neg-pin
-patches ConfigMap ztunnel-origin-config) put the object's data back byte for byte and then require the drift check
-`scripts/lab/cilium_adopt.py plan` to report 0; they refuse to run without --allow-helm-object-change.
+patches ConfigMap ztunnel-origin-config) put the object's data back byte for byte, and they refuse to run without
+--allow-helm-object-change and --cluster-values. The drift check `scripts/lab/cilium_adopt.py plan` must report 0
+changes, 0 deletions, 0 kubectl manager entries and 0 refusals before the event (else the drill refuses: a later
+difference could not be told from one the drill made). After the event, `cilium_adopt.py transfer` gives the field
+manager cmtc-rotation-drill's fields back to Helm (managedFields only, a backup in DIR/owners-backup), and the same
+plan must report 0 again.
 
 Usage:
   rotation_drill.py plan --out DIR                              print the plan and the current certificates (read-only)
   rotation_drill.py preflight --out DIR                         the read-only checks every drill runs first
   rotation_drill.py drill R1 --cluster cmtc-a --out DIR --execute [--seconds 150] [--lead 20]
   rotation_drill.py drill neg-peer-down --cluster cmtc-a --out DIR --down-seconds 120 --execute
+  rotation_drill.py drill neg-pin --cluster cmtc-a --out DIR --allow-helm-object-change \
+      --cluster-values .tmp/cilium-values-cmtc-a.json --adopt-python venv/bin/python --execute
 
 Requires: kubectl, cmctl (R1-R4, neg-ca), docker (R3, neg-peer-down, through the kind nodes' Docker context), the live
 mTLS fixture Pods of both clusters (scripts/evidence/live_mtls_fixture.py) and the kubeconfig below. Runs unchanged
@@ -57,6 +63,11 @@ NS, NEG = 'cmtc-live-mtls', 'cmtc-live-mtls-unauth'
 NODE_PORT = 32379
 REPO = pathlib.Path(__file__).resolve().parents[2]
 LOCAL_AUTHORITY = REPO / 'scripts/lab/spire/local_authority.py'
+ADOPT = REPO / 'scripts/lab/cilium_adopt.py'
+# The last line of `cilium_adopt.py plan`.
+ADOPT_SUMMARY = re.compile(r'^(\S+): (\d+) change\(s\), (\d+) deletion\(s\); (\d+) kubectl manager entr\(ies\) left; '
+                           r'(\d+) refusal\(s\)$', re.M)
+HELM_OBJECT_DRILLS = ('neg-ca', 'neg-pin')
 DRILL_MANAGER = 'cmtc-rotation-drill'
 ADS_CERTIFICATE = 'cmtc-ztunnel-ads-server'
 # A new TLS handshake to the agent's ADS server, inside the kind node's network namespace (the agent runs in the host
@@ -426,6 +437,35 @@ class Drill:
             time.sleep(5)
         return {'certificate': {'before': old, 'after': status}, 'waitSeconds': self.args.ads_wait, 'nodes': nodes}
 
+    def adopt(self, command, name):
+        """Run `cilium_adopt.py <command>` on this cluster, keep its output in <name>.txt, and return its summary.
+
+        The labs run the strict workload mTLS layer, so --strict is always passed, as in every recorded plan.
+        """
+        a = self.args
+        argv = [a.adopt_python, str(ADOPT), command, a.environment, self.cluster, '--cluster-values', a.cluster_values,
+                '--strict', '--kubeconfig', KUBECONFIG]
+        if a.chart:
+            argv += ['--chart', a.chart]
+        if a.image_values:
+            argv += ['--image-values', a.image_values]
+        if command == 'transfer':
+            argv += ['--backup-dir', str(self.out / 'owners-backup')]
+        started = iso()
+        r = run(argv, check=False, timeout=600)
+        (self.out / f'{name}.txt').write_text(r.stdout + r.stderr)
+        result = {'command': argv, 'startedAt': started, 'exit': r.returncode, 'output': f'{name}.txt'}
+        found = [m for m in ADOPT_SUMMARY.finditer(r.stdout) if m.group(1) == self.cluster]
+        if found:
+            counts = [int(x) for x in found[-1].groups()[1:]]
+            result.update(zip(('changes', 'deletions', 'kubectlManagerEntries', 'refusals'), counts))
+        return result
+
+    @staticmethod
+    def no_drift(result):
+        return result.get('exit') == 0 and all(result.get(k) == 0 for k in
+                                               ('changes', 'deletions', 'kubectlManagerEntries', 'refusals'))
+
     # ---- read-only parts -------------------------------------------------------------------------------------
     def preflight(self):
         facts = {'clusters': {}, 'tools': {}}
@@ -587,9 +627,12 @@ class Drill:
             for node, seen in self.ads_handshakes().items():
                 require(presents(seen, before), f'{node}: the ADS server presents {seen}, not revision '
                         f'{before.get("revision")} of {ADS_CERTIFICATE}; the handshake probe cannot tell a renewal')
-        if drill in ('neg-ca', 'neg-pin'):
+        if drill in HELM_OBJECT_DRILLS:
             require(self.args.allow_helm_object_change,
                     f'{drill} patches a Helm-managed object and needs the drift check afterwards; pass --allow-helm-object-change')
+            require(self.args.cluster_values and pathlib.Path(self.args.cluster_values).is_file(),
+                    f'{drill} needs --cluster-values (the cilium_cluster_values.py output for {self.cluster}) for the drift check')
+            require(ADOPT.exists(), f'{ADOPT} is missing')
         if drill == 'R5':
             require(LOCAL_AUTHORITY.exists(), f'{LOCAL_AUTHORITY} is missing')
 
@@ -609,6 +652,12 @@ class Drill:
         paths = probe_paths(self.lab)
         commands = self.event_command(drill)
         self.requirements(drill)
+        if drill in HELM_OBJECT_DRILLS:
+            # Read-only (a server-side dry-run apply), so the dry run checks it too.
+            drift = self.adopt('plan', 'helm-drift-before')
+            record['before']['helmDrift'] = drift
+            require(self.no_drift(drift), f'{self.cluster}: cilium_adopt.py plan is not clean before the drill '
+                    f'({drift}); a difference afterwards could not be told from one the drill made')
         plan = {'drill': drill, 'cluster': self.cluster, 'paths': [p[0] for p in paths],
                 'event': commands if commands is not None else f'method negative_{drill[4:].replace("-", "_")}',
                 'seconds': self.args.seconds, 'lead': self.args.lead}
@@ -642,6 +691,9 @@ class Drill:
         time.sleep(3)
         for f in followers:
             f.stop()
+        if drill in HELM_OBJECT_DRILLS:
+            record['helmDrift'] = {'transfer': self.adopt('transfer', 'helm-transfer-after')}
+            record['helmDrift']['after'] = self.adopt('plan', 'helm-drift-after')
 
         record['traffic'] = watch.summary()
         record['after'] = {'certificates': {c: self.lab.certificates(c) for c in PINS}}
@@ -712,6 +764,10 @@ class Drill:
             if drill in ('neg-ca', 'neg-pin'):
                 restored = record.get('event', [{}])[-1]
                 verdicts['the Helm-managed object was put back'] = {'pass': bool(restored.get('specRestored') or restored.get('dataRestored')), 'event': restored}
+                drift = record.get('helmDrift', {})
+                verdicts['Helm reports no drift afterwards (cilium_adopt.py transfer, then plan)'] = {
+                    'pass': drift.get('transfer', {}).get('exit') == 0 and self.no_drift(drift.get('after', {})),
+                    'helmDrift': drift}
             if drill == 'neg-peer-down':
                 left = record.get('event', [{}])[-1].get('leftoverDropRules', {'?': ['unknown']})
                 verdicts['no DROP rule left on the nodes'] = {'pass': all(not v for v in left.values()), 'leftover': left}
@@ -755,6 +811,13 @@ def main():
     d.add_argument('--ads-wait', type=int, default=240,
                    help='R3: seconds after the renewal for every node to present it to a new handshake (default 240)')
     d.add_argument('--allow-helm-object-change', action='store_true', help='required by neg-ca and neg-pin')
+    d.add_argument('--cluster-values', help='neg-ca, neg-pin: the cilium_cluster_values.py output for --cluster')
+    d.add_argument('--environment', default=str(REPO / 'config/lab/environments/cmtc.yaml'),
+                   help='neg-ca, neg-pin: the environment file cilium_adopt.py reads')
+    d.add_argument('--chart', help='neg-ca, neg-pin: the Cilium chart directory (cilium_adopt.py default if omitted)')
+    d.add_argument('--image-values', help='neg-ca, neg-pin: the image values file (cilium_adopt.py default if omitted)')
+    d.add_argument('--adopt-python', default=sys.executable,
+                   help='neg-ca, neg-pin: a Python with PyYAML to run cilium_adopt.py (default: this one)')
     d.add_argument('--execute', action='store_true', help='without it the drill is a dry run')
     args = parser.parse_args()
     if args.command != 'drill':

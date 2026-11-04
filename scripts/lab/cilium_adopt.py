@@ -33,9 +33,10 @@ from cilium_release import NAMESPACE, RELEASE, Cluster, compare, default_chart, 
 
 FIELD_MANAGER = 'helm'
 # Field managers of hand-made changes. Controllers (kube-controller-manager, cert-manager) and kubectl-rollout
-# (restartedAt, never rendered) keep their fields.
+# (restartedAt, never rendered) keep their fields. cmtc-rotation-drill is scripts/evidence/rotation_drill.py: its
+# negative drills patch a Helm-managed object and put the data back, and that entry must go back to Helm too.
 KUBECTL_MANAGERS = ('kubectl-patch', 'kubectl-client-side-apply', 'kubectl-edit', 'kubectl-label', 'kubectl-annotate',
-                    'kubectl-set')
+                    'kubectl-set', 'cmtc-rotation-drill')
 # Fields the API server maintains: they stay unowned, as on objects Helm created.
 SERVER_MAINTAINED = (('f:metadata', 'f:annotations', 'f:deprecated.daemonset.template.generation'),)
 

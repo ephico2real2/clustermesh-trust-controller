@@ -21,6 +21,7 @@ import dns_probes  # noqa: E402
 import join_probes_to_ztunnel as join  # noqa: E402
 import live_mtls_fixture as fixture  # noqa: E402
 import node_clock_offset as clock_offset  # noqa: E402
+import rotation_drill as drill  # noqa: E402
 import ztunnel_log_view as view  # noqa: E402
 
 A, B = "cmtc-a.mesh.example", "cmtc-b.mesh.example"
@@ -809,6 +810,59 @@ class FixtureRunnerTests(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, r"server-worker names \['10\.10\.1\.99'\].*run the services stage"):
             lab.probe("cmtc-a", "name", "allow", 1)
         self.assertEqual(lab.rows, [])
+
+
+class RotationDrillHelmDriftTests(unittest.TestCase):
+    """The drift check of the negative drills that patch a Helm-managed object; no cluster access."""
+
+    def setUp(self):
+        self.tmp = Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, self.tmp)
+        # Drill.__init__ reads both clusters through Lab(); these tests need only args, cluster and out.
+        self.drill = drill.Drill.__new__(drill.Drill)
+        self.drill.cluster, self.drill.out = "cmtc-a", self.tmp
+        self.drill.args = type("Args", (), {"adopt_python": "/venv/python", "environment": "env.yaml",
+                                            "cluster_values": "values-cmtc-a.json", "chart": None,
+                                            "image_values": None})()
+        self.calls = []
+
+    def adopt(self, command, stdout, code=0):
+        real_run = drill.run
+        def fake_run(argv, check=True, text_input=None, timeout=300):
+            self.calls.append(argv)
+            return subprocess.CompletedProcess(argv, code, stdout, "")
+        drill.run = fake_run
+        try:
+            return self.drill.adopt(command, "out")
+        finally:
+            drill.run = real_run
+
+    def test_clean_plan_is_no_drift(self):
+        result = self.adopt("plan", "cmtc-a: 0 change(s), 0 deletion(s); 0 kubectl manager entr(ies) left; 0 refusal(s)\n")
+        self.assertTrue(drill.Drill.no_drift(result))
+        self.assertEqual(self.calls[0][:5], ["/venv/python", str(drill.ADOPT), "plan", "env.yaml", "cmtc-a"])
+        self.assertIn("--strict", self.calls[0])
+        self.assertNotIn("--backup-dir", self.calls[0])
+        self.assertIn("0 refusal(s)", (self.tmp / "out.txt").read_text())
+
+    def test_a_field_left_with_the_drill_manager_is_drift(self):
+        out = ("ConfigMap/ztunnel-origin-config: cmtc-rotation-drill still owns 1 field(s) (transfer)\n"
+               "cmtc-a: 0 change(s), 0 deletion(s); 1 kubectl manager entr(ies) left; 0 refusal(s)\n")
+        result = self.adopt("plan", out)
+        self.assertEqual(result["kubectlManagerEntries"], 1)
+        self.assertFalse(drill.Drill.no_drift(result))
+
+    def test_no_summary_another_cluster_or_a_failed_run_is_drift(self):
+        self.assertFalse(drill.Drill.no_drift(self.adopt("plan", "Error: missing values file x\n", code=1)))
+        other = "cmtc-b: 0 change(s), 0 deletion(s); 0 kubectl manager entr(ies) left; 0 refusal(s)\n"
+        self.assertFalse(drill.Drill.no_drift(self.adopt("plan", other)))
+        clean = "cmtc-a: 0 change(s), 0 deletion(s); 0 kubectl manager entr(ies) left; 0 refusal(s)\n"
+        self.assertFalse(drill.Drill.no_drift(self.adopt("plan", clean, code=1)))
+
+    def test_transfer_keeps_its_backup_in_the_record(self):
+        self.adopt("transfer", "")
+        argv = self.calls[0]
+        self.assertEqual(argv[argv.index("--backup-dir") + 1], str(self.tmp / "owners-backup"))
 
 
 if __name__ == "__main__":

@@ -80,6 +80,14 @@ class TransferredTests(unittest.TestCase):
         again = live(*repaired, api='v1')
         self.assertIs(transferred(again, backup), again['metadata']['managedFields'])
 
+    def test_rotation_drill_fields_go_back_to_helm(self):
+        # neg-pin patches ztunnel-origin-config with --field-manager=cmtc-rotation-drill and puts the data back.
+        helm = entry('helm', {'f:data': {'.': {}, 'f:cmtc-a': {}}}, 'Apply', api='v1')
+        drill = entry('cmtc-rotation-drill', {'f:data': {'f:cmtc-a': {}}}, api='v1')
+        out = transferred(live(helm, drill, api='v1'), [])
+        self.assertEqual([m['manager'] for m in out], ['helm'])
+        self.assertEqual(out[0]['fieldsV1'], {'f:data': {'.': {}, 'f:cmtc-a': {}}})
+
     def test_nothing_to_move_creates_no_entry(self):
         obj = live(entry('kube-controller-manager', {'f:spec': {}}))
         self.assertEqual(transferred(obj, []), obj['metadata']['managedFields'])
