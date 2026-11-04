@@ -4,6 +4,10 @@
 Evidence scope: results apply to the recorded source, image and fixture. Read [current delivery status](../../agile/DELIVERY_STATUS.md) and [documentation terms](../../../DOCUMENTATION_GUIDE.md).
 <!-- /CMTC_DOC_CONTEXT -->
 
+> **Correction (2026-11-04T09:30Z).** The first sentence below covers only the credentials in the table (ADS server,
+> origin session, ClusterMesh, SPIRE CA). It did not check ztunnel's workload certificates, and those did not renew:
+> from 08:37Z every allowed connection failed. See [ztunnel certificate refresh](../ztunnel-cert-refresh-20261104/README.md).
+
 Result: from the last change (2026-10-28T19:23Z) to this check (2026-11-04T08:33Z), every scheduled certificate
 renewal on both clusters completed in place, without a Cilium agent or ztunnel restart. Each of the 9 peer
 withdrawals and all 2,935 issuer-profile session closes came within 16 s of a host sleep or wake transition. The matrix

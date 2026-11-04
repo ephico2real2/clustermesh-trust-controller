@@ -1,0 +1,37 @@
+== clippy
+    Finished `dev` profile [unoptimized] target(s) in 46.46s
+CLIPPY_EXIT=0
+== lib tests
+test inpod::config::test::test_inpod_config_no_port_reuse ... FAILED
+test inpod::config::test::test_inpod_config_outbound_sockets ... FAILED
+test inpod::config::test::test_inpod_config_port_reuse ... FAILED
+test inpod::netns::tests::test_run_works ... FAILED
+test inpod::statemanager::owned_drain_tests::failed_owned_task_poison_is_not_erased_by_repeated_delete ... ok
+test inpod::statemanager::tests::add_delete_add_workload_starts_only_one_proxy ... FAILED
+test inpod::statemanager::tests::add_with_different_netns_keeps_latest_proxy ... FAILED
+test inpod::statemanager::tests::add_workload_starts_a_proxy ... FAILED
+test inpod::statemanager::tests::del_workload_before_snapshot_removes_from_snapshot_and_pending ... FAILED
+test inpod::statemanager::tests::idemepotency_add_workload_fails ... FAILED
+test inpod::statemanager::tests::idemepotency_add_workload_starts_only_one_proxy ... FAILED
+test inpod::statemanager::tests::idempotency_add_workload_fails_and_then_deleted ... FAILED
+test inpod::statemanager::tests::no_workload_info_rejected ... FAILED
+test inpod::statemanager::tests::proxy_added_then_kept_with_new_snapshot ... FAILED
+test inpod::statemanager::tests::workload_added_while_pending ... FAILED
+test inpod::workloadmanager::tests::test_process_add ... FAILED
+test inpod::workloadmanager::tests::test_process_add_and_del ... FAILED
+test inpod::workloadmanager::tests::test_process_failed ... FAILED
+test inpod::workloadmanager::tests::test_process_failed_announce ... FAILED
+test inpod::workloadmanager::tests::test_process_snapshot_with_missing_workload ... FAILED
+test inpod::workloadmanager::tests::typed_native_ack_loss_refreshes_same_owner_and_rejects_old_capture_generation ... FAILED
+test inpod::workloadmanager::tests::typed_native_outer_manager_preserves_owner_through_request_rejection_and_reconnect ... FAILED
+test inpod::workloadmanager::tests::typed_native_seqpacket_add_wrong_incarnation_nack_and_original_execution_recovery ... FAILED
+test inpod::workloadmanager::tests::typed_native_snapshot_omission_keeps_the_same_source_incarnation ... FAILED
+test inpod::workloadmanager::tests::typed_native_snapshot_omission_releases_owner_for_a_new_source ... FAILED
+test inpod::workloadmanager::tests::typed_native_unknown_or_restarted_execution_never_returns_empty_drain_receipt ... FAILED
+LIB_EXIT=101
+== mutation 1 (no reschedule)
+test identity::manager::tests::test_refresh_follows_wall_clock_jump ... FAILED
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 563 filtered out; finished in 0.04s
+== mutation 2 (no expiry check)
+test identity::manager::tests::test_expired_certificate_is_not_returned ... FAILED
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 563 filtered out; finished in 0.03s
