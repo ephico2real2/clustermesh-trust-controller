@@ -12,6 +12,14 @@ RUNNER=scripts/evidence/live_mtls_fixture.py
 NODES=(cmtc-a-control-plane cmtc-a-worker cmtc-b-control-plane cmtc-b-worker)
 # Epoch seconds to UTC ISO time; `date -r` takes seconds on BSD but a file on GNU, so use Python on both.
 iso() { python3 -c 'import datetime,sys; print(datetime.datetime.fromtimestamp(int(sys.argv[1]), datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"))' "$1"; }
+# The runner's --out is the fixture state (namespace UID pins, registration ledger); it writes each probe file there.
+STATE=docs/evidence/local-activation-20261025/live-tests
+# A workload certificate lives 130 s, and a probe inside that time cannot detect a refresh that never happens: the
+# matrix of 2026-11-04 08:35Z passed while ztunnel had stopped refreshing. So fetch first, and probe after one life.
+for c in cmtc-a cmtc-b; do
+  python3 "$RUNNER" --cluster $c --out "$STATE" --scope same probe --execute >> "$R/first-fetch.txt" 2>&1 || echo "first fetch $c exit $?" | tee -a "$R/first-fetch.txt"
+done
+sleep 150
 scripts/evidence/capture_cilium_drops.sh "$R/cilium-drops" 240 \
   kind-cmtc-a/cmtc-a-control-plane kind-cmtc-a/cmtc-a-worker \
   kind-cmtc-b/cmtc-b-control-plane kind-cmtc-b/cmtc-b-worker > "$R/capture.txt" 2>&1 &
@@ -23,8 +31,6 @@ until grep -q 'capturing drops on 4 node' "$R/capture.txt"; do kill -0 $CAP; sle
 scripts/evidence/node_clock_offset.py --out "$R/node-clock-before.json" "${NODES[@]}" 2>> "$R/node-clock.txt"
 START_S=$(date -u +%s); START=$(iso "$START_S")
 echo "probes start $START" | tee "$R/window.txt"
-# The runner's --out is the fixture state (namespace UID pins, registration ledger); it writes each probe file there.
-STATE=docs/evidence/local-activation-20261025/live-tests
 touch "$R/.probes-start"
 for c in cmtc-a cmtc-b; do
   for scope in same crossnode crosscluster global name; do

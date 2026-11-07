@@ -17,9 +17,9 @@ encryption:
       - k8s:k8s-app=kube-dns
       - k8s:io.cilium.k8s.policy.serviceaccount=coredns
     image:
-      # ztunnel fork 68c0282 (on 0e92198, CMTC #34): the SPIRE intermediate pin, and root pin extension and retirement
-      # without a checkpoint reset.
-      override: ghcr.io/ephico2real2/cmtc-ztunnel@sha256:bc4fb925ae905f02ffd90d5bc2b65f7720af4ab5ef262607c653942c5ac87771
+      # ztunnel fork a545c3a (on 68c0282, CMTC #47): certificate refresh by the wall clock, after the SPIRE intermediate
+      # pin (#34) and root pin extension and retirement without a checkpoint reset.
+      override: ghcr.io/ephico2real2/cmtc-ztunnel@sha256:8705a64e73a63be66ae91d058b5082f338eaa6a9a111322ab6a026c85d1b43fa
       pullPolicy: IfNotPresent
     # A ztunnel Pod is replaced only on purpose: each new Pod needs its exact SPIRE delegate entry first.
     updateStrategy:

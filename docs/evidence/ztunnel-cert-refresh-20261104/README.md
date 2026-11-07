@@ -11,8 +11,9 @@ istio/ztunnel at `c95d433f0`): it schedules each certificate refresh on the mono
 wall clock that is fixed when ztunnel starts. In the lab VM the monotonic clock is 95.77 h behind the wall clock
 since the ztunnels started, so each refresh is due about 95.77 h after the certificate it replaces.
 
-State: **measured** (this record). The fix is in [the fix section](#fix); its deployment and qualification are recorded
-there.
+State: **measured** (this record). The outage ended on 2026-11-07 at 02:48Z, when the fixed ztunnel ran on both
+clusters ([deployment and qualification](#deployment-and-qualification-2026-11-07)). The fix is **not yet qualified
+across a host sleep**.
 
 ## What failed
 
@@ -75,7 +76,8 @@ Not determined: why the fixture workloads' certificates were fetched again at 08
 
 ztunnel fork commits `d5f24b5` ("identity: schedule certificate refreshes by the wall clock", on `68c0282`) and
 `a545c3a` ("identity: decide on the certificate value that is marked seen", from the review below), draft PR
-ephico2real2/ztunnel#2. State: **implemented and unit-tested**; not yet built, deployed or traffic-qualified.
+ephico2real2/ztunnel#2. State: **implemented, tested and deployed**; traffic-qualified after a restart, not yet across
+a host sleep ([deployment and qualification](#deployment-and-qualification-2026-11-07)).
 
 - `time::WallClock` reads the wall clock at each conversion (`SystemTime::now()` in production; tests derive it from
   Tokio's paused clock and can step it without moving the monotonic clock).
@@ -90,7 +92,8 @@ ephico2real2/ztunnel#2. State: **implemented and unit-tested**; not yet built, d
 
 Tests, 2026-11-04, in `rust:1.90.0` (`sha256:e227f20e…726c`) on the lab's Colima VM, limited to 6 GiB and 3 CPUs, on
 a copy of the fork at `d5f24b5`. The 4 GiB podman VM could not compile the test crate (rustc killed with signal 9),
-and the fork's `Rust Related Checks` did not start for the push (no check run after 15 minutes).
+and the fork's `Rust Related Checks` did not start for the push (no check run after 15 minutes; the cause was found
+later: [GitHub had stopped Actions on the fork](../fork-ci-20261107/README.md)).
 
 | Check | Result |
 |---|---|
@@ -102,7 +105,8 @@ and the fork's `Rust Related Checks` did not start for the push (no check run af
 | Mutation: no rescheduling after a jump | `test_refresh_follows_wall_clock_jump` fails |
 | Mutation: no expiry check in `start_fetch_key` | `test_expired_certificate_is_not_returned` fails |
 
-Not run: the integration tests (`--tests --benches --bins`), which CI runs with `sudo` for the same namespace reason.
+Not run here: the integration tests (`--tests --benches --bins`), which CI runs with `sudo` for the same namespace
+reason. CI ran them on 2026-11-07 ([below](#deployment-and-qualification-2026-11-07)).
 
 ### Review of `d5f24b5`
 
@@ -136,3 +140,52 @@ Tests of `a545c3a`, 2026-11-04 09:46-09:51Z, the same container and limits ([run
 | `cargo test --lib -- --skip inpod::` | 526 passed, 0 failed, 1 ignored |
 | Mutation: no rescheduling after a jump | `test_refresh_follows_wall_clock_jump` fails |
 | Mutation: an expired cached certificate is returned (as at `68c0282`) | `test_expired_certificate_is_not_returned` fails |
+
+## Deployment and qualification, 2026-11-07
+
+Result: the fixed ztunnel runs on both clusters, and allowed traffic is proven over mTLS again. This does not yet show
+that the fix survives a host sleep ([what this does not show](#what-this-does-not-show)).
+
+**Image.** `ghcr.io/ephico2real2/cmtc-ztunnel@sha256:8705a64e73a63be66ae91d058b5082f338eaa6a9a111322ab6a026c85d1b43fa`,
+built from `a545c3a` by fork run `42329168256` ([lock](rollout-20261107/images.lock.json)). The registry reports the
+same digest, for linux/amd64 and linux/arm64. The build started 2 days after the first push because
+[GitHub had stopped Actions on the fork](../fork-ci-20261107/README.md).
+
+**CI on the fix.** Fork commit `71951b7` has `a545c3a`'s source and only workflow changes after it.
+
+| Run | Result |
+|---|---|
+| `Rust Related Checks` `42329199245` | success: lint, and `sudo cargo test --benches --tests --bins`, including the `inpod` tests (37 passed; 25 of them fail in this record's unprivileged container) and both new tests ([extract](rollout-20261107/ci-rust-checks-71951b7-extract.txt)). Cargo stops at the first failed target, so the step's success covers every target; the log read here ends about 32 s before the step ended, so no total is given |
+| `Image CI Build` `42329199211` | success: four release binaries with `-D warnings` (amd64, arm64; aws-lc, boring); the Quay push is skipped on a fork |
+| `E2E Tests` `42329199208` | skipped on a fork. It needs the Quay image, so this fix has no upstream E2E result |
+
+**Rollout.** One cluster at a time, with `cilium_adopt.py` and `replace_ztunnel.py`. The image values came from
+`prepare.py` on the committed lock ([values](rollout-20261107/cilium-image-values-0cff841.json)), not from the
+[older file](../cert-rotation-drills-20261104/README.md#helm-drift-check-for-the-negative-drills).
+
+| Step | cmtc-b | cmtc-a |
+|---|---|---|
+| Plan | [2 changes](rollout-20261107/cmtc-b-plan-new-ztunnel.txt): the image and the template generation | [2 changes](rollout-20261107/cmtc-a-plan-new-ztunnel.txt): the same |
+| Helm upgrade | revision 14, 02:34:58Z; [no Pod changed](rollout-20261107/cmtc-b-upgrade.txt) | revision 13, 02:48:04Z; [no Pod changed](rollout-20261107/cmtc-a-upgrade.txt) |
+| Pods replaced, worker first | [02:35:12Z to 02:35:20Z](rollout-20261107/cmtc-b-replace.jsonl) | [02:48:26Z to 02:48:34Z](rollout-20261107/cmtc-a-replace.jsonl) |
+| Other Pods | [only ztunnel changed](rollout-20261107/cmtc-b-pods-after-replace.txt) | [only ztunnel changed](rollout-20261107/cmtc-a-pods-after-replace.txt) |
+
+**Renewal on cmtc-b, 02:36:05Z to 02:47:20Z** ([rounds](rollout-20261107/cmtc-b-renewal/rounds.txt),
+[script](rollout-20261107/renewal-probes.sh)). Seven rounds of same-cluster probes: 168 of 168 allowed probes answered
+and 126 of 126 denied probes got no answer. Each round's certificate cache held a new certificate: `rebel-base` was
+valid from 02:36:00Z in round 1 and from 02:46:21Z in round 7. Cross-cluster paths were not probed, because cmtc-a
+still ran the old build. These probes check the answers only; the matrix below proves mTLS from the ztunnel logs.
+
+**Matrix, 02:51:21Z to 02:53:21Z** ([join](matrix-20261107/join.txt)): 96 proven over mTLS, 0 unanswered, 36 dropped by
+Cilium (policy denied), 0 failed, in all scopes on both clusters. It started 154 s after the first certificate fetch
+([script](rollout-20261107/matrix-after-one-life.sh)), so it does not have the blind spot of the 08:35Z matrix.
+`scripts/evidence/run_mtls_matrix.sh` now does this itself.
+
+### What this does not show
+
+- **The fix across a host sleep.** The outage came from a clock mapping that is taken when ztunnel starts. A new Pod
+  takes a new mapping, so the old build would also pass these tests until the host next sleeps. The last host wake
+  before this rollout was 2026-11-05 22:57Z (`pmset -g log`), and at 02:55Z the four new Pods had logged no clock jump.
+  The fix is proven across a sleep only when, after the next host sleep, each ztunnel logs
+  `wall clock moved ahead of the monotonic clock` and allowed traffic is still proven.
+- **Protection of a workload.** This record covers the fixture's probe paths only.
