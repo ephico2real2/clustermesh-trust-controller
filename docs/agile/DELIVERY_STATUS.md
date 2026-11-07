@@ -1,6 +1,6 @@
 # End-to-end local delivery status
 
-**Current state, measured by traffic at 2026-10-27T11:14Z.** Both labs run only published images
+**Newest state: [update of 2026-11-07](#update-2026-11-07).** **State measured by traffic at 2026-10-27T11:14Z.** Both labs run only published images
 (`ghcr.io/ephico2real2`). SPIRE's CA on each cluster is issued by `<cluster>-spire-intermediate` under the mesh root,
 and approval generation 6 pins that intermediate ([#34](https://github.com/ephico2real2/clustermesh-trust-controller/issues/34)).
 Enrolled workload traffic runs over workload mTLS through ztunnel: same node, across nodes and across clusters, by
@@ -73,6 +73,32 @@ The Cilium releases hold the labs' ztunnel options since the Helm adoption of 20
 [cmtc-b record](../evidence/helm-adoption-cmtc-b-20261027/README.md)); `cilium_release.py check` shows 0 differences
 on both clusters at 19:14Z (cmtc-a revision 9) and 19:05Z (cmtc-b revision 10).
 
+## Update 2026-11-07
+
+Read at 2026-11-07T04:02Z: all four ztunnel Pods run `cmtc-ztunnel@sha256:8705a64e73a6…`, with 0 restarts.
+
+**#47 is not met on this build.** An allowed connection can fail at a certificate deadline, with or without a rotation:
+2 of 13,130 allowed probes failed, and 28 of 28 teardown errors in the measured window fell in a second that a sampled
+certificate `notAfter` names ([drill record](../evidence/cert-rotation-drills-20261107/README.md)). R6 on both clusters,
+R1 and R2 on cmtc-a had 0 failed probes. R4 on cmtc-a had 1, and a 300 s R6 on cmtc-a had 1. All had 0 withdrawals.
+R5 and the negative drills did not run.
+
+**Fix: implemented and tested, not deployed.** ztunnel fork `2a1897b` (branch `feat/root-pin-retirement`): a pooled
+transport takes no new stream when 5 s or less is left before its certificate deadline. The close at the deadline does
+not change. On the lab's Colima VM: formatting and clippy clean, 529 library tests passed without `inpod::`, 3 mutations
+each fail their test. Fork CI: `Rust Related Checks` `42336135773` and `Image CI Build` `42336135752` succeeded;
+`E2E Tests` `42336135782` was skipped on a fork ([fix record](../evidence/ztunnel-pool-retirement-20261107/README.md)).
+No traffic result exists for this source.
+
+**Next, in order.**
+
+1. The operator approves the image publication: a `SOURCE_SHA` change on the fork's `ci/images` branch.
+2. Roll out on cmtc-b, then cmtc-a. Each plan must show exactly 2 changes (the image and the template generation).
+3. Run the matrix, and an R6 soak of at least 30,000 allowed probes (about 42 minutes).
+4. Run the positive drills again, with R5, and then the negative drills.
+5. After the next host sleep, check for `wall clock moved ahead of the monotonic clock` in each ztunnel log, and run the
+   matrix. The fix of the 2026-11-04 outage is not yet qualified across a host sleep.
+
 ## Traffic-qualified results
 
 | Result | Evidence |
@@ -87,6 +113,7 @@ on both clusters at 19:14Z (cmtc-a revision 9) and 19:05Z (cmtc-b revision 10).
 | ztunnel ADS certificate renewal without an agent restart (2026-10-28, R3 drill on each cluster after the upgrade to `c84f7d0741`): every node served the renewed certificate to new handshakes 11 to 58 s after cert-manager issued it; 3,582 allowed probes per cluster, 0 failed; 0 withdrawals. The upgrades: every failure inside the agent restarts (200 and 199 probes, about 40 s per cluster), plus 1 pooled-connection refusal on cmtc-a. The SPIRE CA activations (18:52:46Z cmtc-b, 18:54:21Z cmtc-a) ran under per-second probes with 0 failures; the matrix after them: every allowed probe HTTP 200 over mTLS, 36/36 unregistered probes dropped | [ADS fix rollout](../evidence/cert-rotation-drills-20261028/ads-fix-rollout/README.md) |
 | **Outage, ended (2026-11-04 08:37Z to 2026-11-07 02:48Z):** every allowed connection on both clusters failed (curl 52/56); denied traffic stayed denied. ztunnel (fork `68c0282`, also upstream) scheduled workload certificate refreshes on the monotonic clock through a wall-clock mapping fixed at start-up; after host sleeps the lab VM's wall clock was 95.77 h ahead, so each 130 s certificate expired and was still served as `Available`. Fix: ztunnel fork `d5f24b5` and `a545c3a`, **deployed** on both clusters. Matrix 02:51:21Z to 02:53:21Z, 154 s after the first certificate fetch: 96 proven over mTLS, 0 unanswered, 36 dropped by Cilium, 0 failed. **Not yet qualified across a host sleep:** a new ztunnel Pod also resets the mapping, so this result alone does not separate the fix from the restart | [ztunnel certificate refresh](../evidence/ztunnel-cert-refresh-20261104/README.md#deployment-and-qualification-2026-11-07) |
 | Fork CI, 2026-11-07: GitHub had stopped Actions on the ztunnel fork, with a notice only on the logged-in Actions page; the API still reported enabled and active. No run started from 2026-11-04 until the operator re-enabled it. The operator also disabled 33 upstream scheduled workflows on the Cilium fork that cannot pass there. Whether that usage caused the notice is not determined | [fork CI record](../evidence/fork-ci-20261107/README.md) |
+| Rotation drills on `8705a64e` (2026-11-07, 03:00:06Z to 03:27:38Z): 13,130 allowed probes, **2 failed**, both at a certificate deadline; 0 withdrawals. Not a qualification of #47 | [drill record](../evidence/cert-rotation-drills-20261107/README.md) |
 | Six unattended days (2026-10-28 19:23Z to 2026-11-04 08:33Z), **corrected 2026-11-04**: ztunnel workload certificates were not checked and did not renew (row above). Otherwise: every scheduled renewal in place (ADS certificate daily, origin sessions refreshed in place 4 times per agent, ClusterMesh and SPIRE CA renewals), 0 agent or ztunnel restarts. All 9 peer withdrawals and 2,935 issuer-profile session closes within 16 s of a host sleep or wake. Matrix afterwards: 96/96 allowed probes over mTLS, 36/36 unregistered probes dropped, 0 failed | [lab health 2026-11-04](../evidence/lab-health-20261104/README.md) |
 | How to repeat the per-connection proof | [Prove mTLS for each request from ztunnel logs](../evidence/g1-destination-sources/PROVE_MTLS_FROM_ZTUNNEL_LOGS.md), `scripts/evidence/run_mtls_matrix.sh` |
 | Earlier: mTLS restored on approval generation 2 at 03:10Z; the G1 source-egress record (ADR-010). Historical for the current images. | [Incident record](../evidence/issuer-rebootstrap-20261026/INCIDENT.md#restoration), [G1 traffic record](../evidence/g1-destination-sources/README.md) |
@@ -137,6 +164,13 @@ node accepts generation 7; matrix 96/96 proven, 36/36 dropped (19:56–20:00Z). 
     checked under load in both themes.
 11. **Stale material.** `scripts/lab/mtls/bootstrap.sh` still creates the retired `cmtc-mtls` cluster. The
     [component-roles figure](../diagrams/component-roles/source.html) still shows ztunnel activation as pending.
+12. **Certificate renewal without a failed connection ([#47](https://github.com/ephico2real2/clustermesh-trust-controller/issues/47)).**
+    The pool can hand out a connection that closes at its certificate deadline; the fix is not deployed
+    ([update of 2026-11-07](#update-2026-11-07)). A long-lived stream closes at the earliest certificate deadline, at most
+    130 s in this lab: this is the existing fail-closed design, and it needs an operator decision.
+13. **Connections close when a workload's Address is published again.** A Cilium enrollment reconcile closed the
+    connections of `client-worker` at 03:24:28Z. No probe failed for this reason, a stream in progress would close, and
+    what starts the reconcile is not determined ([record](../evidence/cert-rotation-drills-20261107/README.md#a-second-reason-for-a-connection-to-close)).
 
 ## Approval boundary
 
@@ -157,7 +191,7 @@ agent's delegation was returned at 18:08:46Z on 2026-10-26.
 | Issuer rotation without reset (gate 10) | orchestrator | generation 6 published (SPIRE intermediate); approval renewal in design (no host job); report and ADR-012 not written |
 | eBPF measurement plane review | none | one patch proposed, not applied; no report |
 | Observability v2: metrics contract, rules, Grafana dashboards, chart `cmtc-observability` (#37) | orchestrator | deployed as Helm release `cmtc-obs` (namespace `monitoring`, revision 2, 2026-10-28T07:23Z): hub on kind-cmtc-a behind Cilium Ingress, member on kind-cmtc-b remote-writing to it; 17/16 targets up at 17:03Z; 69 tests pass with promtool; render equals live on cmtc-b, and on cmtc-a differs only by the panel markers and one rule comment that the next upgrade applies (not run); not traffic-qualified ([chart README](../../observability/v2/deploy/chart/README.md)) |
-| Certificate renewal without a failed connection (#47 P1-P3, #46) | Fable, Phase 1 done | Cilium fork `ce5c3ec031` (branch `fix/ztunnel-origin-credential-renewal`): implemented and unit-tested with `-race`, agent image `cilium-dev@sha256:8446cf910bdb…69b2cc` deployed on cmtc-b (revision 12) with drills R1-R4 at 0 failed probes, not yet on cmtc-a; drill `scripts/evidence/rotation_drill.py` dry-run; [design note](../architecture/MESH_CERTIFICATE_RENEWAL.md); Phase 2 (Helm rollout and drills) awaits the orchestrator |
+| Certificate renewal without a failed connection (#47 P1-P3, #46) | orchestrator | Deployed on both labs: Cilium fork `c84f7d0741` and ztunnel `a545c3a`. Open: ztunnel `2a1897b`, implemented and tested, not deployed; R5 and the negative drills not run ([update of 2026-11-07](#update-2026-11-07)). Drill: `scripts/evidence/rotation_drill.py`; [design note](../architecture/MESH_CERTIFICATE_RENEWAL.md) |
 
 Each result is reviewed and verified on both labs before it is committed.
 

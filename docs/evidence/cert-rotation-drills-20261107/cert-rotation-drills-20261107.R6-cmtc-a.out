@@ -1,0 +1,68 @@
+{
+ "drill": "R6",
+ "cluster": "cmtc-a",
+ "verdicts": {
+  "denied paths never answered": {
+   "pass": true,
+   "http200": {
+    "cmtc-a-denied": 0,
+    "cmtc-b-denied": 0
+   }
+  },
+  "every path probed for the whole window": {
+   "pass": true,
+   "requests": {
+    "cmtc-a-same": 150,
+    "cmtc-a-crossnode": 150,
+    "cmtc-a-crosscluster": 150,
+    "cmtc-a-global-local": 149,
+    "cmtc-a-global-remote": 149,
+    "cmtc-a-name": 149,
+    "cmtc-a-denied": 75,
+    "cmtc-b-same": 150,
+    "cmtc-b-crossnode": 150,
+    "cmtc-b-crosscluster": 149,
+    "cmtc-b-global-local": 149,
+    "cmtc-b-global-remote": 149,
+    "cmtc-b-name": 149,
+    "cmtc-b-denied": 75
+   }
+  },
+  "0 failed allowed probes": {
+   "pass": true,
+   "failures": {
+    "cmtc-a-same": 0,
+    "cmtc-a-crossnode": 0,
+    "cmtc-a-crosscluster": 0,
+    "cmtc-a-global-local": 0,
+    "cmtc-a-global-remote": 0,
+    "cmtc-a-name": 0,
+    "cmtc-b-same": 0,
+    "cmtc-b-crossnode": 0,
+    "cmtc-b-crosscluster": 0,
+    "cmtc-b-global-local": 0,
+    "cmtc-b-global-remote": 0,
+    "cmtc-b-name": 0
+   }
+  },
+  "no withdrawal on any agent": {
+   "pass": true,
+   "withdrawn": {
+    "cmtc-a/cilium-b9cc6/cilium-agent": 0,
+    "cmtc-a/cilium-jk7jl/cilium-agent": 0,
+    "cmtc-b/cilium-p9lgb/cilium-agent": 0,
+    "cmtc-b/cilium-zlj26/cilium-agent": 0
+   }
+  },
+  "every ztunnel renewed its workload certificates": {
+   "pass": true,
+   "changed": {
+    "cmtc-a/ztunnel-cilium-4gbdb": true,
+    "cmtc-a/ztunnel-cilium-lbchw": true,
+    "cmtc-b/ztunnel-cilium-q6l85": true,
+    "cmtc-b/ztunnel-cilium-vbt5v": true
+   }
+  }
+ },
+ "out": "docs/evidence/cert-rotation-drills-20261107/R6-cmtc-a"
+}
