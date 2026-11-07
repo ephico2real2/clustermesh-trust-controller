@@ -1,0 +1,58 @@
+# Status: tested here with promtool 3.7.0 (rules/run-promtool.sh, tests/cmtc-pids.test.yaml). Not deployed:
+# needs the cadvisor scrape job of deploy/ (the kubelet's cAdvisor page is not scraped on the labs,
+# 2026-10-27). Evaluated on the hub.
+#
+# Question: "Is a mesh component about to run out of process IDs?" (issue #41)
+#
+# The register-agent-node sidecar of cilium-spire/spire-server-0 starts `timeout` children that its PID 1
+# (`tail -f /dev/null`) never reaps. The zombies count against the PID limit until the Pod cannot fork: on
+# 2026-10-26 the limit was reached at 19,091 processes and spire-server-0 was deleted at 11:43:59Z (#41).
+# cAdvisor counts them: container_threads is the container's pids cgroup count (pids.current, zombies
+# included) and container_threads_max its limit (pids.max; 0 means no limit). Read through the kubelet of
+# cmtc-a-worker: register-agent-node 5443 at 2026-10-27T00:07:46Z and 5621 at 00:22:34Z (12 a minute),
+# limit 19096; the spire-server container beside it 14.
+#
+# deploy/ keeps these two families for the mesh namespaces only (cilium-spire, cmtc-system, kube-system,
+# cert-manager) and drops cAdvisor's per-cgroup id, name and image labels: one series per container.
+groups:
+- name: cmtc-pids
+  rules:
+  # The share of its PID limit each mesh container uses.
+  - record: cmtc:container_pids:ratio
+    expr: |-
+      max by (cluster, node, namespace, pod, container) (container_threads{job="cadvisor", container!=""})
+      / on (cluster, node, namespace, pod, container)
+      (max by (cluster, node, namespace, pod, container) (container_threads_max{job="cadvisor", container!=""}) > 0)
+
+  # The owner is the component the Pod belongs to, read from its name; "kubernetes" for any other Pod.
+  - alert: CMTCContainerPIDsExhaustionForecast
+    expr: |-
+      label_replace(label_replace(label_replace(
+        (
+          predict_linear(container_threads{job="cadvisor", container!=""}[30m], 24 * 3600)
+          >= on (cluster, node, namespace, pod, container)
+          (container_threads_max{job="cadvisor", container!=""} > 0)
+        ),
+        "owner", "$1", "pod", "(spire-server|spire-agent|cmtc-controller|cmtc-node-agent|coredns|ztunnel|cilium-operator|cert-manager|trust-manager)-.*"),
+        "owner", "cilium-agent", "pod", "cilium-[a-z0-9]{5}"),
+        "owner", "kubernetes", "owner", "")
+    for: 15m
+    labels:
+      severity: warning
+    annotations:
+      summary: 'Container {{ $labels.container }} of {{ $labels.namespace }}/{{ $labels.pod }} on {{ $labels.node }} ({{ $labels.cluster }}) reaches its PID limit within 24 hours at the rate of the last 30 minutes'
+      runbook: 'Processes are not reaped (zombies) or keep forking. For spire-server-0 this is #41: the register-agent-node sidecar needs an init that reaps its children. The Pod is replaced when the limit is reached; plan the fix or a restart before then.'
+
+  - alert: CMTCContainerPIDsNearLimit
+    expr: |-
+      label_replace(label_replace(label_replace(
+        cmtc:container_pids:ratio > 0.9,
+        "owner", "$1", "pod", "(spire-server|spire-agent|cmtc-controller|cmtc-node-agent|coredns|ztunnel|cilium-operator|cert-manager|trust-manager)-.*"),
+        "owner", "cilium-agent", "pod", "cilium-[a-z0-9]{5}"),
+        "owner", "kubernetes", "owner", "")
+    for: 5m
+    labels:
+      severity: critical
+    annotations:
+      summary: 'Container {{ $labels.container }} of {{ $labels.namespace }}/{{ $labels.pod }} on {{ $labels.node }} ({{ $labels.cluster }}) uses {{ $value | humanizePercentage }} of its PID limit'
+      runbook: 'New processes and threads will fail to start, then the Pod fails. Restart the Pod to release the zombies now, and fix the reaping (#41 for spire-server-0).'

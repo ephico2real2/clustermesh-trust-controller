@@ -4,20 +4,28 @@
 Evidence scope: results apply to the recorded source, image and fixture. Read [current delivery status](docs/agile/DELIVERY_STATUS.md) and [documentation terms](DOCUMENTATION_GUIDE.md).
 <!-- /CMTC_DOC_CONTEXT -->
 
-The issuer-profile producer is enabled on both existing mesh clusters.
-It publishes verified mappings from the real SPIRE signing authorities.
-Both clusters pass renewal, restricted RBAC, structured logging and five live metric queries.
-The controller image remains the qualified `f5fe9992da` image below.
-CMTC remains in Observe mode. Workload mTLS is not enabled.
+**Update, 2026-10-27:** generations 2 to 5 followed generation 1 on the same ledger. Generation 5 pinned SPIRE's
+24-hour signer and expired at 03:55:28Z; both producers then report `withdrawn SourceExpired`, and ztunnel fails
+closed. The next generation uses the SPIRE intermediate mode below (issue #34). The two paragraphs that follow are
+historical.
 
-[The live publication ledger](docs/evidence/live-issuer-publication/summary.json) records the exact resource UIDs, image pins and renewal sequences.
-Generation1 approval expires at `2026-10-26T03:55:11Z`.
-Rotate the immutable approval before expiry. Do not extend it by resetting the ledger or version floors.
-The mutable publication has a lease of at most30 seconds.
+**Historical state (read 2026-10-25T23:13Z):** the issuer-profile producer is enabled on the CMTC controller in both
+clusters (`--issuer-profile-producer=true`, source `cmtc-issuer-approval-g1`, minimum generation 1). The controller
+now runs `localhost/cmtc:current-46d01e91ce`, which includes the leader-handover fix (`46d01e9`); exact pins are in
+[delivery status](docs/agile/DELIVERY_STATUS.md). CMTC policy stays in Observe mode. Ztunnel now runs in both
+clusters and mounts the issuer pins and its issuer checkpoint.
+
+**Action needed:** the generation-1 approval in both clusters has `expiresAt` `2026-10-26T03:55:11Z` (read from
+`cmtc-system/cmtc-issuer-approval-g1`). Rotate the immutable approval before that time. Do not extend it by
+resetting the ledger or version floors. What expiry does to running workload traffic is not tested.
+
+The mutable publication has a lease of at most 30 seconds.
 A publication acknowledgment does not prove native consumer acceptance or traffic protection.
+[The live publication ledger](docs/evidence/live-issuer-publication/summary.json) records the activation resource
+UIDs, image pins and renewal sequences. Its image pins are historical (`f5fe9992da`, below).
 
 The earlier direct-root and approved-parent trials restored their templates and removed their trial resources.
-The current activation is persistent. Preserve its source, output, RBAC and private host ownership ledger at `~/.local/share/cmtc-issuer-profile/live-a-b/`.
+The activation is persistent. Preserve its source, output, RBAC and private host ownership ledger at `~/.local/share/cmtc-issuer-profile/live-a-b/`.
 The ledger contains public proof and ownership state. It does not contain CA private keys.
 
 ## Persistent activation helper
@@ -28,7 +36,7 @@ It obtains fresh nonce proofs from both exact SPIRE server images before each ac
 It creates an immutable approval and a mutable output with exact ownership checks.
 It validates effective RBAC and verifies the same producer image before it enables the controller arguments.
 It confirms publication renewal, current metrics and structured logs.
-Its41 local tests, including the existing helper tests, pass.
+Its 41 local tests, including the existing helper tests, pass.
 
 [The actual invocation](docs/evidence/live-issuer-publication/publisher-command.json) records all public pins.
 It uses the canonical SPIRE manifest digest from [the recovery ledger](docs/evidence/spire-recovery/image-pin.json).
@@ -37,6 +45,293 @@ Do not run the old trial cleanup against this persistent activation.
 A failed activation uses a resourceVersion-changing rollback fence. It does not adopt foreign resources or remove authority state.
 
 Read [the illustrated PKI flow](PKI_TRUST_FLOW.md) for the full certificate and verification path. Read [the build steps](LOCAL_IMAGE_BUILD.md) for component builds.
+
+## SPIRE intermediate mode (issue #34)
+
+Status: **implemented, tested, deployed and traffic-qualified** (generation 6 on both labs, 2026-10-27T10:27Z;
+SPIRE on `<cluster>-spire-intermediate` since 10:55Z; the matrix at 11:12–11:14Z, [Rollout](#rollout-2026-10-27),
+step 6).
+
+Signer mode approves SPIRE's active 24-hour CA, so every SPIRE CA rotation needs a new generation. The intermediate
+mode approves each cluster's `<cluster>-spire-intermediate` instead, under the mesh root, with `signsSPIRECA: true`
+and no chain. The verifiers then accept exactly one CA below that intermediate, for the cluster's trust domain
+(CMTC `internal/trustprofile`, the Cilium fork's `pkg/ztunnel/issuerprofile`, the ztunnel fork's
+`src/tls/domain_anchors.rs`). SPIRE's rotations need no new generation; the approval lasts up to 30 days
+(`--horizon`, the controller's limit).
+
+The evidence comes from public API objects; no Secret is read:
+
+1. The Certificate `cert-manager/<cluster>-spire-intermediate` has the pinned UID (`--intermediate-pin`), is Ready and
+   is a CA from ClusterIssuer `cmtc-mesh-root`.
+2. Its CertificateRequest of the current revision is Approved and Ready. Its certificate's `notAfter` equals the
+   Certificate's status.
+3. ClusterIssuer `<cluster>-spire-intermediate` signs from that Certificate's Secret.
+4. SPIRE's `server.conf` (`cilium-spire/spire-server`) names that ClusterIssuer as its one cert-manager upstream issuer.
+5. The ConfigMap `cmtc-system/cmtc-mesh-root` holds the root that `--root-sha256` pins. trust-manager writes it without
+   the final newline; only that newline is added before the strict parse.
+
+The intermediate and the root are checked with the verifiers' own CA rules: critical basic constraints with CA set,
+Cert Sign, only the basic-constraints, key-usage and key-identifier extensions, and path depth for the CAs below. CRL
+Sign is not required; cert-manager's CAs do not have it.
+
+The move from signer mode is one `--advance`. Only that advance may change the root and replace the SPIRE proof pins
+(`--approval-pin`, `--server-image`) with `--intermediate-pin`. Its preflight checks the live producer against the
+previous generation's root. Later advances keep the old rule: generation +1 and the controller image only.
+
+Dry run on the live labs, 2026-10-27T06:10Z, read-only: the generation-6 approval built from the live objects has the
+mesh root (`6c12c735…`) and one issuer per cluster. CMTC's `trustprofile.Validate` and the Cilium fork's
+`issuerprofile.Validate` (`823d30c51b`) accept it for both clusters (digest `ea2aa6dc…`). CMTC refuses it under the old
+root pin (`0c28af9e…`).
+
+Before the advance:
+
+- The controller runs an image with `signsSPIRECA` (`c05755d` or later). The advance verifies the image; it does not
+  change it.
+- The issuer approval must not pin the intermediate while cert-manager still approves every request
+  ([MESH_PKI.md, Approval](MESH_PKI.md#approval)).
+- Each node's `pins.json` lists the mesh root in `rootPins`. The Cilium agent and ztunnel read that file at startup.
+- **Blocker (found 2026-10-27T06:28Z; fixed, deployed in the rollout below, step 4):** ztunnel's checkpoint binds the installation's root pins as part of its
+  immutable origin (ztunnel fork `1f32bac`, `src/tls/profile_checkpoint.rs`: `Origin.root_pins`, and `validate()`
+  refuses "checkpoint independent origin/root scope differs"). Read on the live nodes: the checkpoints are version 2,
+  `origin.root_pins` = [`0c28af9e…`] only, authority generation 5. Adding the mesh root to `pins.json` therefore puts
+  every existing checkpoint out of scope, and ztunnel fails closed until the checkpoint is reset, which is not allowed.
+  `cee26dd` accepts a root succession only when the new root is already an installation root pin, so it does not cover
+  a lab installed with one root.
+
+  The fix is ztunnel fork `0e92198` (`feat/spire-intermediate-pin`). On load, a stored origin that differs from the
+  installation only by missing root pins is extended in memory, after the integrity check on the stored bytes. Floors,
+  anchor history, fences and cutoffs carry over, and the file keeps the narrower origin until the next distinct durable
+  commit. A new root still gains authority only through a strictly newer approval generation. In `0e92198`, dropping a
+  root pin, or adding one together with any other origin change, still fails closed (retirement:
+  [Root pin retirement](#root-pin-retirement-2026-10-27)). ztunnel logs
+  `stage="installation-root-pin-extension"`. Tested by the fork's CI (Rust Related Checks, run 40462405566: format,
+  build, `cargo test --benches --tests --bins` passed, with the new
+  `installation_root_pin_extension_continues_the_checkpoint`). Clippy with `-D warnings` passed locally.
+
+  Order per cluster, as run on 2026-10-27: write the wider `pins.json` on every node, roll the Cilium agent (it reads the
+  file only at startup, one node at a time), then replace each ztunnel Pod with an image built from `0e92198` or later.
+  The ztunnel Pods are `OnDelete` and also read the file only at startup, so the old ztunnel keeps its narrower origin
+  until it is replaced; only a restart of the old image in that window would fail closed on the wider file.
+
+### Rollout, 2026-10-27
+
+Run by the live-writer session under the operator's permission, cmtc-b first, then cmtc-a. Evidence:
+`/private/tmp/cmtc-opus-final-20261025/review/g6-rollout/` (ledger, pins before and after) and
+`review/issuer-rotation/live/lifecycle/advance-g6/` (advance command, output, ledger before).
+
+1. 10:19–10:21Z: approval by policy ([MESH_PKI.md, Approval](MESH_PKI.md#approval)). cert-manager runs
+   `--controllers=-certificaterequests-approver`; every CertificateRequestPolicy is Ready; the four refusal cases of
+   `approval-check.sh` pass on each cluster. clustermesh-apiserver did not restart. (Historical: the operator removed
+   approval by policy at 16:25Z; cert-manager's built-in approver approves every request again.)
+2. 10:25Z: the CMTC controller and node agent to `cmtc@sha256:113b94c09da2…e0ac312` (`5e5d6308f2`, `signsSPIRECA`).
+3. 10:26:40–10:27:13Z: `publish_issuers.py --spire-intermediate --advance --generation 6 --horizon 2505600` (29 days,
+   one day under the controller's limit for clock skew). Both publications are `published`, `Validated`, generation 6,
+   root `6c12c735…`.
+4. Per cluster: each node's `pins.json` gains the mesh root (the Lab Org Root stays; the old file is kept at
+   `/etc/cmtc/ztunnel-issuer-pins-before-g6.json`); the Cilium agent's issuer-profile Role
+   (`cmtc-system/cilium-ztunnel-issuer-profile`) names `cmtc-issuer-approval-g6`; the Cilium agent rolls to
+   `cilium-dev@sha256:c77bdc52d2f3…ac8a447` and reads the wider file at startup; then each ztunnel Pod, worker
+   first, is replaced with `cmtc-ztunnel@sha256:6f1ae6891782…d4f4f4a` and gets its exact SPIRE delegate entry.
+   Every new ztunnel logged `stage="installation-root-pin-extension"` (added `6c12c735…`), then
+   `stage="approval-source-succession"` from g5 to g6 and a durable commit at generation 6. No checkpoint was reset.
+   clustermesh-apiserver did not restart on either cluster.
+
+The Role step is the one the earlier advances also needed: the Cilium agent reads the approval object that the
+publication names, and its Role lists names. Without it the agent logged `configmaps "cmtc-issuer-approval-g6" is
+forbidden`.
+
+Traffic after the rollout, 10:33Z: every probe fails with curl 56. ztunnel logs `no approved direct issuer for domain
+cmtc-a.mesh.example` (`src/tls/domain_anchors.rs`, `UnauthorizedIssuer`). The client's chain, read from ztunnel's
+config dump, is SVID → `cmtc-a SPIRE CA` (valid 2026-10-26T15:55:33Z to 2026-10-27T15:55:33Z) → `cmtc-a SPIRE
+cluster CA` → Lab Org Root: SPIRE's active CA is still from the old upstream, and g6 pins only the new intermediate.
+This is correct fail-closed behavior.
+
+Why SPIRE had not moved: SPIRE prepares the next CA at half of the current CA's lifetime and activates it at five
+sixths (SPIRE `pkg/server/ca/manager/manager.go`, divisors 2 and 6). The SPIRE server restarted with the
+cert-manager upstream at 04:08Z, after the current CA's preparation threshold (03:55Z), and logged no "X509 CA
+prepared"; its rotator prepares only when the next slot is empty (`pkg/server/ca/rotator/rotator.go`). `localauthority
+x509 show` confirmed it at 10:49Z: on both clusters the prepared CA's upstream key ID was the old upstream's
+(`9c3af0aa…` on cmtc-a, `14d636dc…` on cmtc-b), not the intermediate's (`78dee534…`, `53d3ad70…`). Left alone, the
+first CA from the intermediate would have activated at about 23:55Z.
+
+5. SPIRE moved on demand, with the operator's permission (10:48Z), by
+   [`local_authority.py rotate`](#spire-local-authority-operations), cmtc-b at 10:52:42Z, cmtc-a at 10:54:07Z.
+   `prepare` replaced the waiting old-chain CA with one from the intermediate; approver-policy logged `Approved by
+   CertificateRequestPolicy: "cmtc-b-spire-ca"` (and `"cmtc-a-spire-ca"`), the first live approval by policy. The
+   SPIRE bundle held the mesh root at once; after 60 seconds `activate` made the new CA the signer
+   (`a1348ce4…` on cmtc-b, `04f6c9ee…` on cmtc-a). Within two minutes the workload certificates in ztunnel's config
+   dump chained to `cmtc mesh root CA`. From here SPIRE rotates on its own under the intermediate: next preparation at
+   about 22:52Z, activation at about 06:52Z on 2026-10-28.
+6. 11:12–11:14Z: the mTLS matrix (`scripts/evidence/run_mtls_matrix.sh`,
+   [evidence](docs/evidence/spire-intermediate-20261027/matrix-g6/README.md)). 95 of 96 allowed probes are joined by
+   client socket to a ztunnel mTLS connection with both SPIFFE identities, in every scope; 36 of 36 unregistered
+   probes are dropped at `bpf_lxc.c:2381`. The 96th returned HTTP 200 from the expected Pod; NAT gave its socket a new
+   source port, so it is joined by destination and time (one candidate) instead.
+
+### Root pin retirement, 2026-10-27
+
+After the rollout every node pinned two roots: the Lab Organization Root (`0c28af9e…`) and the mesh root
+(`6c12c735…`). The operator chose to retire the old root in ztunnel, not to redo the mTLS enabling.
+
+- **Code:** ztunnel fork `68c0282` (branch `feat/root-pin-retirement`, draft PR ephico2real2/ztunnel#2, on `0e92198`).
+  A stored origin that differs from the installation only by retired root pins continues, if the recovered anchors
+  still chain to a remaining pin. Retiring the anchored root ("checkpoint root not independently pinned"), any other
+  origin change, and an add together with a retire still fail closed. ztunnel logs
+  `stage="installation-root-pin-retirement"`. Tested by the fork's CI (Rust Related Checks, run 40560082332).
+- **Tool:** [retire_root_pin.py](scripts/lab/issuer-profile/retire_root_pin.py) removes one pin from one node's
+  `pins.json`, keeps every other field, keeps the old file on the node, and refuses the last pin.
+- **Order per cluster:** the ztunnel image first (Helm; `OnDelete`, so no Pod changes), then per node: narrow the
+  pins, replace the ztunnel Pod at once with its delegate entry, restart the node's Cilium agent. An old ztunnel that
+  restarts on the narrow file fails closed, so the image moves first. Rollback: restore the kept file before any image
+  rollback.
+- **Result (19:05–19:21Z):** every node pins only `6c12c735…`; every checkpoint origin has only `6c12c735…`, logical
+  generation 6, sequence continued, no reset; matrix 96/96 proven, 36/36 dropped
+  ([evidence](docs/evidence/root-pin-retirement-20261027/README.md)).
+
+### Approval renewal
+
+Status: the host renewal job is **removed** (`renew_approval.py`, its tests and `renewal-schedule.sh`; operator,
+2026-10-27T12:21Z; no `io.cmtc.issuer-approval-renewal` launchd job is loaded on the operator's host, checked
+2026-10-27T17:50Z). Its replacement, the issuer approval arbiter in the CMTC controller, is **proposed** in
+[ADR-012](docs/architecture/adr/ADR-012.md), **implemented and unit-tested** (controller, node agent, chart values
+`controller.issuerApproval` and `nodeAgent.trustReport`), and **deployed** on both labs since 2026-10-27 (cmtc-b
+19:46Z, cmtc-a 19:55Z). Its adoption of g6 as generation 7 is traffic-qualified
+([record](docs/evidence/approval-arbiter-20261027/README.md)); renewal, the intermediate's key rotation and recovery
+are still to be run ([runbook](docs/development/ARBITER_QUALIFICATION_RUNBOOK.md), steps 6 and 7).
+
+An approval lasts at most 30 days: the controller refuses a longer one (`internal/trustprofile/profile.go:316`).
+Generation 6 expires 2026-11-25T10:26:41Z; without a renewal the labs would lose workload mTLS then (the operator
+accepted that outage, 2026-10-27T12:21Z). Since 2026-10-27 both clusters publish generation 7 from the arbiter instead,
+and the arbiter renews it 168 h before its expiry.
+
+The arbiter also settles the intermediate's own renewal: with `rotationPolicy: Always` the renewed intermediate has a
+new key, and the arbiter approves the old and the new key during the overlap (ADR-012, State machine).
+
+Historical: on 2026-10-27 a host-side renewal (`renew_approval.py`, a launchd job) was written, installed at 12:03Z and
+removed at 12:21Z at the operator's decision. A host job is a lab stopgap, not the production method. The advance's
+agent Role step from that work stays (`set_agent_access` in `publish_issuers.py`): the Cilium agent's Role
+(`cmtc-system/cilium-ztunnel-issuer-profile`) names the new source before the producer publishes from it.
+
+### SPIRE local authority operations
+
+[local_authority.py](scripts/lab/spire/local_authority.py) runs `spire-server localauthority x509` for one cluster,
+through the SPIRE server's private socket in its Pod (container `register-agent-node`, the one `entry create` uses). No
+socket is exposed and no Secret is read. It needs only `kubectl` and `openssl`.
+
+| Command | What it does | Checked first |
+| --- | --- | --- |
+| `show` | the active, prepared and old authorities | — |
+| `prepare` | mints the next CA now, from the configured upstream | after: its upstream key ID is the current `<cluster>-spire-intermediate`'s Subject Key ID; `server.conf` names that issuer |
+| `activate --authority-id ID` | makes the prepared CA the signer now | ID is the prepared one, from the intermediate; the SPIRE trust bundle holds the mesh root |
+| `rotate` | `prepare` (kept when the prepared CA is already from the intermediate), wait for the mesh root in the bundle, wait `--propagation` seconds (60), `activate` | as above |
+| `taint --authority-id ID` | marks the old authority tainted, so agents and workloads move off it | ID is the old authority, not the active or prepared one |
+| `revoke --authority-id ID` | removes a tainted old authority from the bundle | same |
+
+`taint` and `revoke` are never part of `rotate`: they are for a compromised key. `prepare` discards a prepared CA that
+was never active.
+
+```sh
+scripts/lab/spire/local_authority.py --kube-system-uid <uid> --ledger <file> cmtc-b show
+scripts/lab/spire/local_authority.py --kube-system-uid <uid> --ledger <file> cmtc-b rotate
+```
+
+Tested by `test_local_authority.py` (8 tests, with a fake SPIRE; removing the upstream check or the old-authority
+check fails them) and on both labs, `rotate` on 2026-10-27 ([Rollout](#rollout-2026-10-27), step 5).
+
+### Rolling out a change to the SPIRE server or its helpers
+
+Status: **current**, written from the #41 rollout of 2026-10-28
+([record](docs/evidence/spire-sidecar-outage-20261028/README.md)). [`render_spire.py`](scripts/lab/spire/render_spire.py)
+renders the 18 objects of the SPIRE server and the SPIRE node agent for one cluster, among them the StatefulSet
+`cilium-spire/spire-server`, the ConfigMap `spire-server` (`server.conf`), the ConfigMap `spire-helpers`
+(`register-agent-node.sh`: the command of the `register-agent-node` sidecar and its readiness probe) and the
+DaemonSet `spire-agent`. Every object carries the label `security.cmtc.io/pki-role`, which selects it from the render
+(`spire-helper`, `spire-server-config`, `spire-server`, `spire-agent`, ...). Roll out one cluster at a time,
+`kind-cmtc-a` then `kind-cmtc-b`, under the lab lease, and not between a SPIRE CA activation and the matrix that
+follows it.
+
+1. Change the renderer and its tests. Run `venv/bin/python scripts/lab/spire/test_render_spire.py` from the
+   repository root. Expected: `OK`, and the new test fails with the previous renderer (check that on a copy of the old
+   file, outside the tree).
+2. Render: `venv/bin/python scripts/lab/spire/render_spire.py cmtc-a --format yaml --server-image <live server image>
+   > .tmp/spire-cmtc-a.yaml`. The live server image is the SPIRE fork digest in
+   [delivery status](docs/agile/DELIVERY_STATUS.md); without it the StatefulSet differs in both of its image fields.
+   The repository venv has PyYAML; the system `python3` does not.
+3. Diff against live, server-side, without `--force-conflicts`, for the object you changed:
+
+   ```sh
+   kubectl --context kind-cmtc-a diff --server-side -l security.cmtc.io/pki-role=spire-helper -f .tmp/spire-cmtc-a.yaml
+   kubectl --context kind-cmtc-a apply --server-side --dry-run=server -o name -l security.cmtc.io/pki-role=spire-helper -f .tmp/spire-cmtc-a.yaml
+   ```
+
+   `diff` prints the fields that would change and exits 1 when there are any, 0 when the render equals live, and 2 on
+   a conflict. The dry run names the object and exits 0, or reports the conflict: a conflict names each field whose
+   rendered value differs from the live value, and the manager that set it. Check that `-o name` printed the object: a label value that
+   matches nothing makes both commands succeed without doing anything. Expected before the apply: only the change you
+   made. A hunk in the annotation `kubectl.kubernetes.io/last-applied-configuration` appears when the object was last
+   applied client-side; it is not a change to the object.
+4. Apply the changed object with the same selector:
+   `kubectl --context kind-cmtc-a apply --server-side -o name -l security.cmtc.io/pki-role=spire-helper -f .tmp/spire-cmtc-a.yaml`.
+   Apply the whole render only on a fresh cluster (see the gap below).
+5. Restart the server Pod when the change is in the StatefulSet template, or in a file that PID 1 of a container has
+   already read. `register-agent-node.sh` is such a file: the kubelet updates the mounted ConfigMap within about a
+   minute and the readiness probe runs the new script from its next period, but the sidecar's PID 1 keeps running the
+   old one. `kubectl --context kind-cmtc-a -n cilium-spire rollout restart statefulset/spire-server` adds the
+   annotation `kubectl.kubernetes.io/restartedAt` to the template, which is a new revision.
+   - If `spire-server-0` is Ready, the controller replaces it, and
+     `kubectl -n cilium-spire rollout status statefulset/spire-server --timeout=3m` ends with `rolling update complete`.
+   - If `spire-server-0` is not Ready (the #41 case: the fault the change fixes made it not Ready), the rollout does
+     not happen. The StatefulSet has `podManagementPolicy: OrderedReady`; with that policy the controller waits for
+     every Pod to be Running and Ready before it updates one, and the not Ready Pod is the one it must update (the
+     "Forced rollback" case of the Kubernetes StatefulSet documentation). What you see: `rollout status` prints
+     `Waiting for 1 pods to be ready...` until it times out; `status.updateRevision` is the new revision, but
+     `status.currentRevision` and the Pod's label `controller-revision-hash` stay at the old one; the Pod keeps its old
+     template. The fix is `kubectl --context kind-cmtc-a -n cilium-spire delete pod spire-server-0`: the controller
+     recreates it from the new revision at once. `podManagementPolicy: Parallel` would remove the wait, but the field is
+     immutable on an existing StatefulSet; changing it is an operator decision and is not part of this procedure.
+6. Check, in this order (`-n cilium-spire`, with the cluster's context):
+
+   | Check | Command | Expected |
+   |---|---|---|
+   | Pod | `kubectl get pod spire-server-0 -L controller-revision-hash` | `2/2 Running`, the new revision, restarts unchanged |
+   | Sidecar PID 1 | `kubectl exec spire-server-0 -c register-agent-node -- cat /proc/1/comm` | `sh` |
+   | Zombies on the server's node | `docker --context colima-cmtc-cilium exec <node> ps -eo stat=,comm= \| awk '$1 ~ /^Z/' \| sort \| uniq -c` | no `timeout`; the `bash` zombies under `cilium-agent` are a separate leak |
+   | SPIRE node agents | `kubectl logs -l app=spire-agent -c spire-agent --since=10m --prefix \| grep -c 'Could not reattest'` | 0 within two minutes of the Pod being Ready (2026-10-28: the last line came before the Pod was Ready) |
+   | Workload certificates | `kubectl -n kube-system logs <the ztunnel-cilium Pod of the worker> --since=10m \| grep -c 'no approved direct issuer'` | the lines stop; on 2026-10-28 probes still failed at 07:26:45Z and passed at 07:30:49Z, 6 to 10 minutes after the cmtc-a Pod was Ready |
+   | Traffic | `scripts/evidence/run_mtls_matrix.sh docs/evidence/<record>/matrix-<hhmm>` | 96 proven over mTLS, 36 dropped by Cilium, 0 failed |
+
+7. Repeat steps 2 to 6 for `kind-cmtc-b`, then write the record under `docs/evidence/` and commit the renderer, its
+   tests and the record together.
+
+What the outage of 2026-10-28 looked like, so that you recognise it:
+
+- Every exec into the sidecar failed with `runc init: unable to spawn stage-2: Resource temporarily unavailable`: the
+  container was at its PID limit. `local_authority.py` and the registration of a ztunnel delegate entry use that exec
+  and could not run.
+- The Pod was not Ready, the Service `spire-server` had no ready endpoint, and the agents logged
+  `Could not reattest agent`.
+- Workload mTLS failed closed: every allowed probe failed with curl 56 or 52, and no probe got a plaintext answer. The
+  SVIDs live 130 s (`X509SvidTtl` 120 s), so a SPIRE outage stops workload mTLS within minutes.
+- Recovery: the new Pods were Ready at 07:20:45Z (cmtc-a) and 07:21:50Z (cmtc-b); the agents' last failed
+  re-attestation was logged before that (07:19:34Z and 07:20:21Z); workload certificates were usable again between
+  07:26:45Z and 07:30:49Z; the matrix at 07:31-07:35Z proved 96 of 96 allowed probes over mTLS.
+
+**Gap: how SPIRE is applied today.** No script in the repository applies what `render_spire.py` renders, and SPIRE has
+no Helm chart; only the tests and `workload_api.py` import the renderer. The field managers of the live objects record
+how they got there: `kubectl create` from the render on 2026-10-25T03:44:45Z (all objects); `kubectl replace` of the
+agent DaemonSet template on 2026-10-25T13:35-13:37Z (the delegated agent: the fork image, ConfigMap
+`cmtc-delegated-agent-<hash>`, the node sockets, the kubelet pins and an init container; no tool in the repository
+produces that template, and `workload_api.py` produces a similar plan under other names); `kubectl patch` of the server
+and agent images on 2026-10-26T16:24-16:39Z (the SPIRE fork); `kubectl patch` of `server.conf` on 2026-10-27T04:07Z
+(the intermediate issuer; the renderer has it too); the client-side `kubectl apply` of `spire-helpers` on 2026-10-28
+(#41). Measured 2026-10-28T14:35Z: the render with the live server image equals live in every set field of 17 of the
+18 objects on both clusters; the agent DaemonSet differs in 9 fields (the delegated template). The server-side dry run
+of the StatefulSet still reports one conflict, `.spec.volumeClaimTemplates`: the list is atomic, the server added
+`apiVersion`, `kind`, `volumeMode: Filesystem` and `status.phase: Pending` to the stored template, and the field is
+immutable in any case. Proposal, not built (operator decision): a chart `charts/cmtc-spire` that renders these objects
+from values (cluster, trust domain, image digests, the delegated agent template), adopts the live objects once its
+render equals them ([working configuration lives in Helm](AGENTS.md#build-and-delivery)), and makes the rollout a
+`helm upgrade` followed by step 5. Until then, the steps above are the standard.
 
 ## What the producer does
 
@@ -50,7 +345,7 @@ A hash detects changed content. It is not an authority signature.
 Verified Kubernetes TLS, restricted permissions and independent configuration provide the API boundary.
 No root private key is placed in either cluster or the evidence.
 
-## Exact build and deployment
+## Exact build and deployment (historical, 2026-10-24)
 
 | Item | Qualified value |
 | --- | --- |
@@ -99,12 +394,12 @@ UID and resourceVersion preconditions protect cleanup.
 The public fixture generator retains no signing keys.
 Its certificates test publication. They are not a production workload authority.
 
-## Completed direct-root trial
+## Completed direct-root trial (historical)
 
 These results apply to source `7e606195f5`. The evidence remains available.
 
-- CMTC unit/race tests:52 top-level tests and150 subtests passed. Vet passed.
-- Helper checks:22 tests passed after correcting two rollout/scrape timing errors.
+- CMTC unit/race tests: 52 top-level tests and 150 subtests passed. Vet passed.
+- Helper checks: 22 tests passed after correcting two rollout/scrape timing errors.
 - Both clusters passed publication, idle stability, lease renewal and restart-floor checks.
 - Both clusters passed source deletion, UID replacement and generation rollback checks.
 - Both clusters rejected wrong roots, duplicate issuer keys and expired approvals.
@@ -114,11 +409,11 @@ These results apply to source `7e606195f5`. The evidence remains available.
 - All four metric families were scraped locally.
 - Fresh B-to-A remote-write samples were verified centrally.
 - Cleanup restored both controllers and left zero owned resources.
-- The deployed baseline passed the existing API/policy and36 application-path checks.
+- The deployed baseline passed the existing API/policy and 36 application-path checks.
 
 [Cluster A report](docs/evidence/issuer-profile-producer/cmtc-a-report.json) and [Cluster B report](docs/evidence/issuer-profile-producer/cmtc-b-report.json) contain actual results.
 [Central query evidence](docs/evidence/issuer-profile-producer/central-b.json) records sample timestamps.
-The comparison allows10 ms for target timestamps with nanoseconds and samples with milliseconds.
+The comparison allows 10 ms for target timestamps with nanoseconds and samples with milliseconds.
 [Raw evidence](docs/evidence/issuer-profile-producer/raw-evidence.tar.gz) retains commands, outputs, logs and the initial failures.
 
 ## Metric meaning
@@ -130,18 +425,17 @@ A source-read timestamp does not prove valid approval.
 A publication lease does not prove protected traffic.
 [The metric contract](observability/METRICS.md) defines each family.
 
-## Remaining security gates
+## Security gates
 
-The Cilium consumer and ztunnel decoder are under local qualification.
-Their production ADS delivery and durable transition are unfinished.
-Remote workload provenance, effective authorization, admission recovery and actual peer TLS integration remain open.
-WireGuard/IPsec composition remains open.
-The ClusterMesh-plus-ztunnel startup guard stays closed.
-No mTLS or Protected claim follows from these producer tests.
+At the producer qualification (2026-10-24) the Cilium consumer, the ztunnel decoder and the ClusterMesh-plus-ztunnel
+startup guard were still closed. That state is historical: the Cilium guard was replaced by capability validation
+(`37d5fce0f7`), and ztunnel now runs with issuer pins in both clusters. Still open: per-connection peer-certificate
+evidence, the behavior at approval expiry, recovery on the current images and WireGuard/IPsec composition. No mTLS or
+`Protected` claim follows from producer tests. Read [delivery status](docs/agile/DELIVERY_STATUS.md).
 
-## Approved cluster-intermediate support
+## Approved cluster-intermediate support (historical, source `f5fe9992da`)
 
-The deployed producer source increment accepts the intended Option A hierarchy:
+The producer source increment accepts the intended Option A hierarchy:
 organization root → cluster intermediate → explicitly pinned SPIRE CA → workload SVID.
 The existing direct-root form remains supported.
 The cluster intermediate is public approved lineage. It is not a workload signer.
@@ -153,12 +447,12 @@ The parent expiry bounds the publication lease.
 SPIRE's optional CA URI SAN must equal the independently approved trust domain.
 It cannot contain a workload path or additional names.
 
-The complete CMTC race suite passes57 top-level tests and172 subtests.
+The complete CMTC race suite passes 57 top-level tests and 172 subtests.
 No test failed or was skipped. Three packages contain no tests.
 Formatting and vet pass on the same ARM64 source snapshot.
 [The source ledger and raw log](docs/evidence/approved-issuer-lineage/root-summary.json) retain the checks.
-The new ARM64 image is deployed in all six containers. Their running binaries match the source ledger.
-The API/policy and36 app paths pass after rollout. Both real clusters pass parented-profile publication, renewal, restart, invalid-input and recovery checks.
+The new ARM64 image was deployed in all six containers. Their running binaries matched the source ledger.
+The API/policy and 36 app paths pass after rollout. Both real clusters pass parented-profile publication, renewal, restart, invalid-input and recovery checks.
 Fresh B-to-A producer telemetry is verified. Cleanup reports no errors.
 [Cluster A report](docs/evidence/approved-issuer-lineage/cmtc-a-report.json), [Cluster B report](docs/evidence/approved-issuer-lineage/cmtc-b-report.json) and [raw evidence](docs/evidence/approved-issuer-lineage/raw-live-evidence.tar.gz) retain the actual output.
 [Application output](docs/evidence/approved-issuer-lineage/baseline-test.log) retains the actual responses.

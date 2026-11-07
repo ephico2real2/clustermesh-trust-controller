@@ -1,11 +1,23 @@
 #!/usr/bin/env bash
 set -euo pipefail
 cd "$(dirname "$0")/../.."
-image=${CMTC_IMAGE:-cmtc:dev}
+# Registry first: the clusters pull the CMTC image by digest, never a side-loaded copy. The repository holds no CMTC
+# image lock (.github/workflows/images.yaml keeps images.lock.json as a workflow artifact), so the caller names it:
+# a published image, or a local build pushed with scripts/lab/local-registry.sh (make lab-up does that).
+: "${CMTC_IMAGE:?set CMTC_IMAGE to ghcr.io/ephico2real2/cmtc@sha256:<digest> or localhost:5001/cmtc@sha256:<digest>}"
+image=$CMTC_IMAGE
 node_image=kindest/node:v1.36.4@sha256:099e049362a1526b2db71494e1947aae99bd16290d7c895f2b7ea312e3cbfaed
 mkdir -p .tmp artifacts
-for tool in docker kind kubectl helm openssl python3; do command -v "$tool" >/dev/null; done
+for tool in docker kind kubectl helm openssl python3 cilium; do
+  command -v "$tool" >/dev/null || { echo "up.sh needs $tool on PATH" >&2; exit 1; }
+done
+# The lab helpers that read YAML need PyYAML: the repository venv has it (docs/development/LAB_SCRIPTS.md); without a
+# venv, python3 must have it (macOS's python3 does not).
+py=python3; [ -x venv/bin/python ] && py=venv/bin/python
+"$py" -c 'import yaml' 2>/dev/null || { echo "up.sh needs PyYAML for $py (create the repository venv)" >&2; exit 1; }
 docker info >/dev/null
+# A Colima guest needs a single wall-clock owner before mesh TLS runs on it; a no-op elsewhere.
+bash scripts/lab/colima-timekeeping.sh --apply
 bash scripts/cilium/prepare.sh
 cilium_chart=$(cat .tmp/cilium-chart-path)
 for cluster in cmtc-a cmtc-b; do
@@ -31,109 +43,97 @@ nodes:
 EOF
   echo "$cluster" >> .tmp/created-clusters
   kind create cluster --config ".tmp/$cluster.yaml" --wait 0
+  # An image built on this machine comes from the local registry (scripts/lab/local-registry.sh push).
+  case $image in
+    localhost:5001/*) bash scripts/lab/local-registry.sh nodes "$cluster" ;;
+  esac
 done
 helm repo add jetstack https://charts.jetstack.io --force-update
 helm repo update
 for cluster in cmtc-a cmtc-b; do
   id=1; [ "$cluster" = cmtc-b ] && id=2
+  # Hubble waits for the second upgrade below: its certificates come from cert-manager, which does not exist yet.
   helm install cilium "$cilium_chart" -f .tmp/cilium-image-values.json -n kube-system --kube-context "kind-$cluster" \
     --set "cluster.name=$cluster" --set "cluster.id=$id" --set ipam.mode=kubernetes \
     --set kubeProxyReplacement=true --set "k8sServiceHost=$cluster-control-plane" --set k8sServicePort=6443 \
     --set operator.replicas=1 --set hubble.enabled=false --set encryption.enabled=false \
     --wait --timeout 10m
   kubectl --context "kind-$cluster" wait nodes --all --for=condition=Ready --timeout=5m
-  kind load docker-image "$image" --name "$cluster"
+  # cert-manager's built-in approver approves every request (MESH_PKI.md, Approval).
   helm upgrade --install cert-manager jetstack/cert-manager --version v1.21.1 --namespace cert-manager --create-namespace \
     --kube-context "kind-$cluster" --set crds.enabled=true --wait --timeout 5m
 done
-# Disposable test authority: root key remains on this runner, never in a cluster or artifact.
-# Each intermediate key is generated inside its own cluster; only CSRs leave it.
+# Mesh PKI (ADR-011, MESH_PKI.md): cert-manager in cmtc-a, the control cluster, mints the 10-year mesh root; its Secret
+# is copied to cmtc-b; each cluster signs its own <cluster>-clustermesh-intermediate. The CMTC chart adds
+# <cluster>-spire-intermediate below.
+# Only the public root certificate is written here, for the trust bundle.
 umask 077
 pki=$(mktemp -d "$PWD/.tmp/pki.XXXXXX")
 echo "$pki" > .tmp/pki-directory
-openssl ecparam -name prime256v1 -genkey -noout -out "$pki/root.key"
-openssl req -x509 -new -key "$pki/root.key" -out "$pki/root.crt" -days 3 -subj '/CN=CMTC disposable lab root' \
-  -addext 'basicConstraints=critical,CA:TRUE,pathlen:1' -addext 'keyUsage=critical,keyCertSign,cRLSign'
-for cluster in cmtc-a cmtc-b; do
-  kubectl --context "kind-$cluster" -n cert-manager apply -f - <<EOF
-apiVersion: v1
-kind: ServiceAccount
-metadata: {name: lab-ca-init}
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: Role
-metadata: {name: lab-ca-init}
-rules:
-  - apiGroups: [""]
-    resources: [secrets]
-    verbs: [create]
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: RoleBinding
-metadata: {name: lab-ca-init}
-roleRef: {apiGroup: rbac.authorization.k8s.io, kind: Role, name: lab-ca-init}
-subjects: [{kind: ServiceAccount, name: lab-ca-init, namespace: cert-manager}]
----
-apiVersion: batch/v1
-kind: Job
-metadata: {name: lab-ca-init}
-spec:
-  backoffLimit: 0
-  template:
-    spec:
-      restartPolicy: Never
-      serviceAccountName: lab-ca-init
-      containers:
-        - name: init
-          image: $image
-          imagePullPolicy: IfNotPresent
-          command: [/lab-ca-init]
-          env: [{name: CLUSTER_NAME, value: $cluster}]
-EOF
-  kubectl --context "kind-$cluster" -n cert-manager wait job/lab-ca-init --for=condition=Complete --timeout=2m
-  kubectl --context "kind-$cluster" -n cert-manager logs job/lab-ca-init > "$pki/$cluster.csr"
-  printf 'basicConstraints=critical,CA:TRUE,pathlen:0\nkeyUsage=critical,keyCertSign,cRLSign\nsubjectKeyIdentifier=hash\nauthorityKeyIdentifier=keyid:always,issuer\n' > "$pki/intermediate.ext"
-  openssl x509 -req -in "$pki/$cluster.csr" -CA "$pki/root.crt" -CAkey "$pki/root.key" -CAcreateserial \
-    -out "$pki/$cluster.crt" -days 2 -extfile "$pki/intermediate.ext"
-  cat "$pki/$cluster.crt" "$pki/root.crt" > "$pki/$cluster.chain.crt"
-  python3 - "$pki/$cluster.chain.crt" > "$pki/public-certificate-patch.json" <<'PY'
-import base64,json,pathlib,sys
-# Secret.type is immutable. cert-manager's CA issuer consumes tls.crt/tls.key
-# from the existing Opaque Secret; only this public chain is added here.
-print(json.dumps({'data':{'tls.crt':base64.b64encode(pathlib.Path(sys.argv[1]).read_bytes()).decode()}}))
-PY
-  kubectl --context "kind-$cluster" -n cert-manager patch secret cluster-intermediate --type merge --patch-file "$pki/public-certificate-patch.json"
-  kubectl --context "kind-$cluster" -n cert-manager delete job/lab-ca-init rolebinding/lab-ca-init role/lab-ca-init sa/lab-ca-init
-  kubectl --context "kind-$cluster" apply -f - <<EOF
-apiVersion: cert-manager.io/v1
-kind: ClusterIssuer
-metadata: {name: cmtc-lab-intermediate}
-spec:
-  ca: {secretName: cluster-intermediate}
-EOF
-  kubectl --context "kind-$cluster" wait clusterissuer/cmtc-lab-intermediate --for=condition=Ready --timeout=2m
-done
-rm "$pki/root.key"
+bash scripts/lab/pki/mesh-pki.sh --root-out "$pki/root.crt" cmtc-a cmtc-b
 ips_a=$(python3 scripts/lab/kind-node-ips.py cmtc-a)
 ips_b=$(python3 scripts/lab/kind-node-ips.py cmtc-b)
-ip_a=$(python3 -c 'import json,sys; print(json.loads(sys.argv[1])[0])' "$ips_a")
 python3 - "$pki/root.crt" "$ips_a" "$ips_b" <<'PY'
 import json,pathlib,sys
-values={'tls':{'caBundle':{'enabled':True,'name':'cmtc-public-root','key':'ca.crt','useSecret':False,'content':pathlib.Path(sys.argv[1]).read_text()}},'clustermesh':{'useAPIServer':True,'apiserver':{'service':{'type':'NodePort'},'tls':{'auto':{'enabled':True,'method':'certmanager','certValidityDuration':1,'certManagerIssuerRef':{'group':'cert-manager.io','kind':'ClusterIssuer','name':'cmtc-lab-intermediate'}}}},'config':{'enabled':True,'clusters':[{'name':'cmtc-a','ips':json.loads(sys.argv[2]),'port':32379},{'name':'cmtc-b','ips':json.loads(sys.argv[3]),'port':32379}]}}}
+# A peer's ztunnel-origin-config pins the server certificate's key (spki-sha256), so cert-manager must renew the
+# server certificate with the same key; the client certificates keep cert-manager's default (a new key each time).
+# Charts before the fork's auto.server.privateKey value ignore it; they also predate the pin.
+values={'tls':{'caBundle':{'enabled':True,'name':'cmtc-public-root','key':'ca.crt','useSecret':False,'content':pathlib.Path(sys.argv[1]).read_text()}},'clustermesh':{'useAPIServer':True,'apiserver':{'service':{'type':'NodePort'},'tls':{'auto':{'enabled':True,'method':'certmanager','certValidityDuration':365,'certManagerIssuerRef':{'group':'cert-manager.io','kind':'ClusterIssuer'},'server':{'privateKey':{'rotationPolicy':'Never'}}}}},'config':{'enabled':True,'clusters':[{'name':'cmtc-a','ips':json.loads(sys.argv[2]),'port':32379},{'name':'cmtc-b','ips':json.loads(sys.argv[3]),'port':32379}]}}}
 pathlib.Path('.tmp/mesh-values.json').write_text(json.dumps(values))
 PY
 for cluster in cmtc-a cmtc-b; do
-  helm upgrade cilium "$cilium_chart" -f .tmp/cilium-image-values.json -n kube-system --kube-context "kind-$cluster" --reuse-values \
-    -f .tmp/mesh-values.json --wait --timeout 10m
+  # The shared values (config/lab/cilium/base.yaml: Hubble on, with cert-manager TLS) and the cluster's constants
+  # (scripts/lab/cilium_cluster_values.py: each cluster's leaves, ClusterMesh and Hubble, are signed by its own
+  # intermediate; the Relay and the UI run in the control cluster only). The instance values stay in mesh-values.json.
+  # The ztunnel constants wait for the strict layer: the chart refuses them while encryption is off.
+  "$py" scripts/lab/cilium_cluster_values.py config/lab/environments/cmtc.yaml "$cluster" ".tmp/cilium-constants-$cluster.json" \
+    --constants-only --without-ztunnel
+  helm upgrade cilium "$cilium_chart" -f config/lab/cilium/base.yaml -f .tmp/cilium-image-values.json -n kube-system \
+    --kube-context "kind-$cluster" --reuse-values -f .tmp/mesh-values.json -f ".tmp/cilium-constants-$cluster.json" \
+    --wait --timeout 10m
   kubectl --context "kind-$cluster" -n kube-system wait certificates --all --for=condition=Ready --timeout=3m
+  # The Cilium Ingress address, its L2 announcement and the localtest.me names (charts/cmtc-lab-network). The chart's
+  # Corefile is kubeadm's default plus the zones: the first install takes kube-system/coredns over from kubeadm, and
+  # --force-conflicts moves kubeadm's ownership of data.Corefile to Helm (without it the apply conflicts with kubeadm).
+  helm upgrade --install cmtc-lab-network charts/cmtc-lab-network -n kube-system --kube-context "kind-$cluster" \
+    -f config/lab/network/values.yaml -f "config/lab/network/values-$cluster.yaml" --take-ownership --force-conflicts \
+    --wait --timeout 5m
 done
+# trust-manager first: the CMTC chart's Bundle needs its CRD. Installed without app.targetNamespaces, so a namespace that
+# opts in later (label trust=enabled) gets the mesh root ConfigMap without a reinstall (MESH_PKI.md, Trust bundle).
+for cluster in cmtc-a cmtc-b; do
+  helm upgrade --install trust-manager oci://quay.io/jetstack/charts/trust-manager --version v0.25.0 -n cert-manager \
+    --kube-context "kind-$cluster" -f config/lab/trust-manager/values.yaml --wait --timeout 5m
+done
+# The CMTC chart owns the cluster's SPIFFE trust (trust.*): <cluster>-spire-intermediate, signed by the mesh root, and the
+# Bundle cmtc-mesh-root. cmtc-system and cilium-spire opt in through their own manifests; kube-system (Cilium, ztunnel)
+# has no manifest of ours, so it is labelled here.
+case $image in
+  *@sha256:*) image_values=(--set "image.repository=${image%@*}" --set "image.digest=${image#*@}") ;;
+  *) image_values=(--set "image.repository=${image%:*}" --set "image.tag=${image##*:}") ;;
+esac
 for cluster in cmtc-a cmtc-b; do
   cilium clustermesh status --context "kind-$cluster" --wait --wait-duration 10m
-  kubectl kustomize config/default | sed "s/CLUSTER_NAME/$cluster/g; s|image: cmtc:dev|image: $image|g" | kubectl --context "kind-$cluster" apply -f -
+  kubectl --context "kind-$cluster" label namespace kube-system trust=enabled --overwrite
+  # Helm stores the release in cmtc-system, so the namespace exists, with the chart's labels, before the install.
+  kubectl --context "kind-$cluster" create namespace cmtc-system --dry-run=client -o yaml | kubectl --context "kind-$cluster" apply -f -
+  kubectl --context "kind-$cluster" label namespace cmtc-system security.cmtc.io/platform-protected=true trust=enabled --overwrite
+  helm upgrade --install cmtc charts/cmtc -n cmtc-system --kube-context "kind-$cluster" --set "clusterName=$cluster" \
+    "${image_values[@]}" --set namespace.create=false --set trust.enabled=true --wait --timeout 5m
   kubectl --context "kind-$cluster" wait crd/namespacemtlspolicies.security.cmtc.io --for=condition=Established --timeout=60s
-  kubectl --context "kind-$cluster" -n cmtc-system rollout status deployment/cmtc-controller --timeout=3m
-  kubectl --context "kind-$cluster" -n cmtc-system rollout status ds/cmtc-node-agent --timeout=3m
+  kubectl --context "kind-$cluster" -n cert-manager wait "certificate/$cluster-spire-intermediate" --for=condition=Ready --timeout=3m
+  kubectl --context "kind-$cluster" wait bundle/cmtc-mesh-root --for=condition=Synced --timeout=2m
   kubectl --context "kind-$cluster" apply -f config/samples/namespace-mtls-policy.yaml
 done
 python3 scripts/cilium/verify.py
-bash scripts/lab/monitoring.sh "$ip_a"
+# Observability v2 (observability/v2/deploy/chart/README.md): the hub on cmtc-a first (Prometheus with the remote-write
+# receiver, and Grafana, behind Cilium Ingress), then cmtc-b's Prometheus, which remote-writes to the hub. cmtc-b
+# verifies the hub's certificate against the mesh root, which trust-manager writes into a namespace labelled
+# trust=enabled.
+for cluster in cmtc-a cmtc-b; do
+  kubectl --context "kind-$cluster" create namespace monitoring --dry-run=client -o yaml | kubectl --context "kind-$cluster" apply -f -
+  kubectl --context "kind-$cluster" label namespace monitoring trust=enabled --overwrite
+  kubectl --context "kind-$cluster" -n monitoring wait --for=create configmap/cmtc-mesh-root --timeout=2m
+  helm upgrade --install cmtc-obs observability/v2/deploy/chart -n monitoring --kube-context "kind-$cluster" \
+    -f "observability/v2/deploy/kind/values-$cluster.yaml" --wait --timeout 5m
+done

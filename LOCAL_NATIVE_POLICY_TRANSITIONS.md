@@ -1,6 +1,12 @@
 # Local native policy transitions
 
-Cilium source `8bb97137fcc92b935171d60e59d7fb8a93714bd8` passed the local Linux ARM64 checks below. This increment has no new image or deployment. The clusters still use the earlier Cilium image.
+<!-- CMTC_DOC_CONTEXT -->
+Evidence scope: results apply to the recorded source, image and fixture. Read [current delivery status](docs/agile/DELIVERY_STATUS.md) and [documentation terms](DOCUMENTATION_GUIDE.md).
+<!-- /CMTC_DOC_CONTEXT -->
+
+**Historical record (2026-10-25, source only).** Cilium source `8bb97137fcc92b935171d60e59d7fb8a93714bd8` passed the
+local Linux ARM64 checks below. That increment had no image or deployment of its own. The deployed Cilium agent has
+since moved on; read [delivery status](docs/agile/DELIVERY_STATUS.md) for the current pin.
 
 | Check | Recorded result |
 | --- | --- |
@@ -39,7 +45,7 @@ The native ownership check examines ADD bindings, replay state and pending send 
 
 Cilium records send uncertainty before it writes an original ADD. The index holds at most 4096 endpoint-incarnation slots. An exact typed retirement cannot erase a successor request in the same slot. An ACK, successful certificate request or populated index does not mean `Protected`.
 
-One recovery gap remains open. After a lost ADD ACK, the uncertainty index can retain the request while the acknowledged binding is absent. The current drain lookup cannot yet recover that binding safely. No test result here claims this gap is fixed.
+At this source one recovery gap was open. After a lost ADD ACK, the uncertainty index could retain the request while the acknowledged binding was absent, and the drain lookup could not recover that binding safely. A later source candidate addresses it ([lost ADD ACK evidence](docs/evidence/native-lost-add-ack/README.md), source tests only). Lost-ACK recovery has not been run live on the current agent.
 
 ## Run the suites automatically
 
@@ -59,11 +65,11 @@ The functional runner creates its own isolated etcd container. It runs the selec
 
 Raw output was written under `/private/tmp/cmtc-native-policy-transition-20261025`. Durable copies are stored in [docs/evidence/native-policy-transition](docs/evidence/native-policy-transition/README.md).
 
-## Remaining delivery gates
+## Delivery gates at this source
 
 This profile qualifies source behavior and native receipt correlation. It does not qualify a running proxy or end-to-end workload mTLS.
 
-The following gates remain open:
+The following gates were open at this source:
 
 - Recover the original drain binding after an uncertain ADD ACK.
 - Prove that the running programs use the expected kernel policy maps.
@@ -72,6 +78,6 @@ The following gates remain open:
 - Close any kernel transport grant before a policy transition or authority failure.
 - Build, deploy and verify the exact image, then collect real positive and negative traffic evidence.
 
-This change adds no HBONE port 15008 allowance. Application-port authorization remains a separate requirement. The ClusterMesh compatibility guard stays closed. No result in this guide establishes `Protected` status.
+This change adds no HBONE port 15008 allowance. Application-port authorization is a separate requirement. At this source the ClusterMesh compatibility guard was still closed; Cilium `37d5fce0f7` later replaced it with capability validation. No result in this guide establishes `Protected` status.
 
 See [delivery status](docs/agile/DELIVERY_STATUS.md) for the next unfinished dependency.

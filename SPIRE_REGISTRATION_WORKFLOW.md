@@ -1,7 +1,8 @@
 # SPIRE registration workflow
 
-Status: source explanation and an active local experiment, 2026-10-25.
+Status: source explanation and a completed local experiment, revised 2026-10-25.
 The production registration owner remains undecided.
+**Current runtime:** the registrar helper is not deployed; Cilium's legacy registration is switched off (`ztunnel-spire-external-exact-registrar=true`); the live fixture's exact entries were written by the operational fixture runner. See [the design record](SPIRE_REGISTRATION_DESIGN.md#spire-registration-design-and-current-experiment).
 The original baseline reuses Cilium's SPIRE enrollment.
 The separate CMTC registrar is a later experiment, not an approved permanent replacement.
 See [the design decision record](SPIRE_REGISTRATION_DESIGN.md) for ownership alternatives and acceptance gates.
@@ -14,7 +15,7 @@ SPIRE still attests workloads and signs SVIDs in both workflows.
 
 This description uses the enhanced Cilium fork at `8bb97137fcc92b935171d60e59d7fb8a93714bd8`.
 It describes source behavior when ztunnel uses SPIRE and legacy enrollment is enabled.
-The retained two-cluster lab has ztunnel disabled.
+In the current two-cluster lab ztunnel is enabled, but this legacy enrollment is switched off.
 
 1. The namespace reflector observes `io.cilium/mtls-enabled: "true"`.
 2. The namespace table records its name and UID as an enrolled namespace.
@@ -162,8 +163,8 @@ The experimental registrar runs as UID1000 inside the SPIRE server Pod.
 Its private server Admin socket remains inside that Pod.
 The helper adds no server Admin mount to a node proxy or application.
 The node agent Admin socket is a different endpoint for delegated credential requests.
-The production proxy's group-access migration remains a separate approval and qualification gate.
-The current diagnostic uses the qualified UID1000/GID0 profile.
+The production proxy does not use the agent Admin socket. It uses a DelegatedIdentity-only agent socket (our SPIRE fork, `0f8fe4d681`); the earlier group-access migration of the Admin socket was never applied.
+The 2026-10-25 trial's diagnostic used the qualified UID1000/GID0 profile.
 
 The fork's [external registrar switch](docs/evidence/spire-registration-workflow/source/operator/pkg/ztunnel/config/config.go.txt) disables legacy SPIRE enrollment when selected.
 That switch does not prove replacement readiness.
@@ -171,7 +172,7 @@ Keep one authoritative writer and prevent obsolete broad entries from remaining 
 The production choice must compare enhancing Cilium's native registrar with retaining this helper.
 Implementation alone does not approve the second option.
 
-## Current evidence and open work
+## Trial evidence (2026-10-25) and open work
 
 | Item | Snapshot |
 | --- | --- |
@@ -181,7 +182,7 @@ Implementation alone does not approve the second option.
 | Diagnostic image | `localhost/cmtc-spire-workload-check@sha256:80096e7eab07cae5df6a093b7fcb4b39ceee47f30467dc3491abc2782380c524` |
 | Diagnostic configuration | `4bf82edb89ad5b03a2ff1bebe9c29c4c5881024f447e3d62fcbebf2111948430`; imported and version-checked on all four nodes. |
 | Eighth runtime trial | Passed both clusters. Four target-withdrawal checks used valid same-node controls. Reenrollment, Pod replacement, server restart and exact cleanup passed. No cleanup errors. |
-| Traffic | Ztunnel remains disabled in the retained two-cluster profile. No workload TLS activation follows from this guide. |
+| Traffic | Not part of this trial. Ztunnel was enabled later on 2026-10-25; see the [test matrix](docs/architecture/SECURITY_AND_FAILURE_TEST_MATRIX.md). No traffic claim follows from this guide. |
 
 The snapshot guard rejects a changed UID or resource version. Three startup passes rejected changing API observations before a fresh pass became ready. Those failed attempts remain in the logs. The successful retry required fresh readback; it did not accept an old acknowledgment.
 [The actual runtime output](docs/evidence/exact-spire-registration/summary.json) and [delivery status](docs/agile/DELIVERY_STATUS.md) retain the source, image and cleanup results.

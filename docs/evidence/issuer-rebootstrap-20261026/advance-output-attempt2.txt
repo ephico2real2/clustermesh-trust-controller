@@ -1,0 +1,25 @@
+exit 1
+--stdout
+
+--stderr
+Traceback (most recent call last):
+  File "/Users/olasumbo/gitRepos/clustermest-trust-controller/scripts/lab/issuer-profile/publish_issuers.py", line 588, in <module>
+    if __name__=='__main__':main()
+                            ^^^^^^
+  File "/Users/olasumbo/gitRepos/clustermest-trust-controller/scripts/lab/issuer-profile/publish_issuers.py", line 586, in main
+    publisher.advance() if a.advance else publisher.run()
+    ^^^^^^^^^^^^^^^^^^^
+  File "/Users/olasumbo/gitRepos/clustermest-trust-controller/scripts/lab/issuer-profile/publish_issuers.py", line 517, in advance
+    if d['clusters'][cluster]['advance'].get('phase')!='qualified':self.advance_cluster(cluster,previous)
+                                                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/olasumbo/gitRepos/clustermest-trust-controller/scripts/lab/issuer-profile/publish_issuers.py", line 486, in advance_cluster
+    self.runtime(cluster,desired);self.publications(cluster,source);self.metrics_logs(cluster)
+                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/olasumbo/gitRepos/clustermest-trust-controller/scripts/lab/issuer-profile/publish_issuers.py", line 361, in publications
+    p=self.read_publication(cluster,source)
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/olasumbo/gitRepos/clustermest-trust-controller/scripts/lab/issuer-profile/publish_issuers.py", line 351, in read_publication
+    if p['state']!='published' or p.get('reason')!='Validated' or p.get('source')!=wanted or p.get('expectedSourceUID')!=meta(src)['uid'] or p.get('acceptedGeneration')!=self.a.generation or p.get('approval')!=self.s.data['approval']:raise Refusal('publication is not exact current approved source/generation')
+                                                                                                                                                                                                                                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Refusal: publication is not exact current approved source/generation
+

@@ -1,0 +1,158 @@
+
+▌ Probe join  132 probes joined to 96 ztunnel connections
+
+  CLUSTER  SCOPE          EXPECT  PROBES  RESULT
+  ──────────────────────────────────────────────────────────────────────────────────────────
+  cmtc-a   crosscluster   allow       12  mTLS proven
+  cmtc-a   crossnode      allow        6  mTLS proven
+  cmtc-a   global         allow       12  mTLS proven
+  cmtc-a   name           allow       12  mTLS proven
+  cmtc-a   negative       deny         6  dropped by Cilium: Policy denied at bpf_lxc.c:2381
+  cmtc-a   negative-name  deny        12  dropped by Cilium: Policy denied at bpf_lxc.c:2381
+  cmtc-a   same           allow        6  mTLS proven
+  cmtc-b   crosscluster   allow       12  mTLS proven
+  cmtc-b   crossnode      allow        6  mTLS proven
+  cmtc-b   global         allow       12  mTLS proven
+  cmtc-b   name           allow       12  mTLS proven
+  cmtc-b   negative       deny         6  dropped by Cilium: Policy denied at bpf_lxc.c:2381
+  cmtc-b   negative-name  deny        12  dropped by Cilium: Policy denied at bpf_lxc.c:2381
+  cmtc-b   same           allow        6  mTLS proven
+
+▌ Probes  one row per curl
+
+  AT            CLIENT                             TARGET                                                        SERVED BY                    PEER IDENTITY                    RESULT
+  ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  02:51:21.522  cmtc-a/client-worker               10.10.1.37:80/                                                cmtc-a/server-worker         mesh-client@cmtc-a.mesh.example  mTLS proven
+  02:51:21.584  cmtc-a/client-worker               10.10.1.37:8080/                                              cmtc-a/server-worker         mesh-client@cmtc-a.mesh.example  mTLS proven
+  02:51:21.641  cmtc-a/client-worker               10.10.1.37:31337/                                             cmtc-a/server-worker         mesh-client@cmtc-a.mesh.example  mTLS proven
+  02:51:21.698  cmtc-a/client-control-plane        10.10.0.98:80/                                                cmtc-a/server-control-plane  mesh-client@cmtc-a.mesh.example  mTLS proven
+  02:51:21.757  cmtc-a/client-control-plane        10.10.0.98:8080/                                              cmtc-a/server-control-plane  mesh-client@cmtc-a.mesh.example  mTLS proven
+  02:51:21.813  cmtc-a/client-control-plane        10.10.0.98:31337/                                             cmtc-a/server-control-plane  mesh-client@cmtc-a.mesh.example  mTLS proven
+  02:51:22.079  cmtc-a/client-worker               10.10.0.98:80/                                                cmtc-a/server-control-plane  mesh-client@cmtc-a.mesh.example  mTLS proven
+  02:51:22.152  cmtc-a/client-worker               10.10.0.98:8080/                                              cmtc-a/server-control-plane  mesh-client@cmtc-a.mesh.example  mTLS proven
+  02:51:22.215  cmtc-a/client-worker               10.10.0.98:31337/                                             cmtc-a/server-control-plane  mesh-client@cmtc-a.mesh.example  mTLS proven
+  02:51:22.282  cmtc-a/client-control-plane        10.10.1.37:80/                                                cmtc-a/server-worker         mesh-client@cmtc-a.mesh.example  mTLS proven
+  02:51:22.342  cmtc-a/client-control-plane        10.10.1.37:8080/                                              cmtc-a/server-worker         mesh-client@cmtc-a.mesh.example  mTLS proven
+  02:51:22.404  cmtc-a/client-control-plane        10.10.1.37:31337/                                             cmtc-a/server-worker         mesh-client@cmtc-a.mesh.example  mTLS proven
+  02:51:22.837  cmtc-a/client-worker               10.20.0.92:80/                                                cmtc-b/server-control-plane  mesh-client@cmtc-a.mesh.example  mTLS proven
+  02:51:22.896  cmtc-a/client-worker               10.20.0.92:8080/                                              cmtc-b/server-control-plane  mesh-client@cmtc-a.mesh.example  mTLS proven
+  02:51:22.958  cmtc-a/client-worker               10.20.0.92:31337/                                             cmtc-b/server-control-plane  mesh-client@cmtc-a.mesh.example  mTLS proven
+  02:51:23.019  cmtc-a/client-worker               10.20.1.116:80/                                               cmtc-b/server-worker         mesh-client@cmtc-a.mesh.example  mTLS proven
+  02:51:23.079  cmtc-a/client-worker               10.20.1.116:8080/                                             cmtc-b/server-worker         mesh-client@cmtc-a.mesh.example  mTLS proven
+  02:51:23.138  cmtc-a/client-worker               10.20.1.116:31337/                                            cmtc-b/server-worker         mesh-client@cmtc-a.mesh.example  mTLS proven
+  02:51:23.197  cmtc-a/client-control-plane        10.20.0.92:80/                                                cmtc-b/server-control-plane  mesh-client@cmtc-a.mesh.example  mTLS proven
+  02:51:23.250  cmtc-a/client-control-plane        10.20.0.92:8080/                                              cmtc-b/server-control-plane  mesh-client@cmtc-a.mesh.example  mTLS proven
+  02:51:23.306  cmtc-a/client-control-plane        10.20.0.92:31337/                                             cmtc-b/server-control-plane  mesh-client@cmtc-a.mesh.example  mTLS proven
+  02:51:23.362  cmtc-a/client-control-plane        10.20.1.116:80/                                               cmtc-b/server-worker         mesh-client@cmtc-a.mesh.example  mTLS proven
+  02:51:23.417  cmtc-a/client-control-plane        10.20.1.116:8080/                                             cmtc-b/server-worker         mesh-client@cmtc-a.mesh.example  mTLS proven
+  02:51:23.469  cmtc-a/client-control-plane        10.20.1.116:31337/                                            cmtc-b/server-worker         mesh-client@cmtc-a.mesh.example  mTLS proven
+  02:51:23.684  cmtc-a/client-worker               server-cmtc-a.cmtc-live-mtls.svc.cluster.local:80/            cmtc-a/server-control-plane  mesh-client@cmtc-a.mesh.example  mTLS proven
+  02:51:23.743  cmtc-a/client-worker               server-cmtc-a.cmtc-live-mtls.svc.cluster.local:8080/          cmtc-a/server-worker         mesh-client@cmtc-a.mesh.example  mTLS proven
+  02:51:23.799  cmtc-a/client-worker               server-cmtc-a.cmtc-live-mtls.svc.cluster.local:31337/         cmtc-a/server-worker         mesh-client@cmtc-a.mesh.example  mTLS proven
+  02:51:23.855  cmtc-a/client-worker               server-cmtc-b.cmtc-live-mtls.svc.cluster.local:80/            cmtc-b/server-control-plane  mesh-client@cmtc-a.mesh.example  mTLS proven
+  02:51:23.911  cmtc-a/client-worker               server-cmtc-b.cmtc-live-mtls.svc.cluster.local:8080/          cmtc-b/server-worker         mesh-client@cmtc-a.mesh.example  mTLS proven
+  02:51:23.968  cmtc-a/client-worker               server-cmtc-b.cmtc-live-mtls.svc.cluster.local:31337/         cmtc-b/server-control-plane  mesh-client@cmtc-a.mesh.example  mTLS proven
+  02:51:24.023  cmtc-a/client-control-plane        server-cmtc-a.cmtc-live-mtls.svc.cluster.local:80/            cmtc-a/server-control-plane  mesh-client@cmtc-a.mesh.example  mTLS proven
+  02:51:24.078  cmtc-a/client-control-plane        server-cmtc-a.cmtc-live-mtls.svc.cluster.local:8080/          cmtc-a/server-worker         mesh-client@cmtc-a.mesh.example  mTLS proven
+  02:51:24.131  cmtc-a/client-control-plane        server-cmtc-a.cmtc-live-mtls.svc.cluster.local:31337/         cmtc-a/server-control-plane  mesh-client@cmtc-a.mesh.example  mTLS proven
+  02:51:24.186  cmtc-a/client-control-plane        server-cmtc-b.cmtc-live-mtls.svc.cluster.local:80/            cmtc-b/server-control-plane  mesh-client@cmtc-a.mesh.example  mTLS proven
+  02:51:24.242  cmtc-a/client-control-plane        server-cmtc-b.cmtc-live-mtls.svc.cluster.local:8080/          cmtc-b/server-worker         mesh-client@cmtc-a.mesh.example  mTLS proven
+  02:51:24.299  cmtc-a/client-control-plane        server-cmtc-b.cmtc-live-mtls.svc.cluster.local:31337/         cmtc-b/server-worker         mesh-client@cmtc-a.mesh.example  mTLS proven
+  02:51:24.638  cmtc-a/client-worker               server-worker.cmtc-live-mtls.svc.cluster.local:80/            cmtc-a/server-worker         mesh-client@cmtc-a.mesh.example  mTLS proven
+  02:51:24.696  cmtc-a/client-worker               server-worker.cmtc-live-mtls.svc.cluster.local:8080/          cmtc-a/server-worker         mesh-client@cmtc-a.mesh.example  mTLS proven
+  02:51:24.754  cmtc-a/client-worker               server-worker.cmtc-live-mtls.svc.cluster.local:31337/         cmtc-a/server-worker         mesh-client@cmtc-a.mesh.example  mTLS proven
+  02:51:24.810  cmtc-a/client-worker               server-control-plane.cmtc-live-mtls.svc.cluster.local:80/     cmtc-a/server-control-plane  mesh-client@cmtc-a.mesh.example  mTLS proven
+  02:51:24.869  cmtc-a/client-worker               server-control-plane.cmtc-live-mtls.svc.cluster.local:8080/   cmtc-a/server-control-plane  mesh-client@cmtc-a.mesh.example  mTLS proven
+  02:51:24.937  cmtc-a/client-worker               server-control-plane.cmtc-live-mtls.svc.cluster.local:31337/  cmtc-a/server-control-plane  mesh-client@cmtc-a.mesh.example  mTLS proven
+  02:51:24.999  cmtc-a/client-control-plane        server-control-plane.cmtc-live-mtls.svc.cluster.local:80/     cmtc-a/server-control-plane  mesh-client@cmtc-a.mesh.example  mTLS proven
+  02:51:25.052  cmtc-a/client-control-plane        server-control-plane.cmtc-live-mtls.svc.cluster.local:8080/   cmtc-a/server-control-plane  mesh-client@cmtc-a.mesh.example  mTLS proven
+  02:51:25.105  cmtc-a/client-control-plane        server-control-plane.cmtc-live-mtls.svc.cluster.local:31337/  cmtc-a/server-control-plane  mesh-client@cmtc-a.mesh.example  mTLS proven
+  02:51:25.160  cmtc-a/client-control-plane        server-worker.cmtc-live-mtls.svc.cluster.local:80/            cmtc-a/server-worker         mesh-client@cmtc-a.mesh.example  mTLS proven
+  02:51:25.215  cmtc-a/client-control-plane        server-worker.cmtc-live-mtls.svc.cluster.local:8080/          cmtc-a/server-worker         mesh-client@cmtc-a.mesh.example  mTLS proven
+  02:51:25.271  cmtc-a/client-control-plane        server-worker.cmtc-live-mtls.svc.cluster.local:31337/         cmtc-a/server-worker         mesh-client@cmtc-a.mesh.example  mTLS proven
+  02:51:28.548  cmtc-a/unregistered-worker         10.10.1.37:80/                                                                                                              dropped by Cilium: Policy denied at bpf_lxc.c:2381
+  02:51:31.604  cmtc-a/unregistered-worker         10.10.1.37:8080/                                                                                                            dropped by Cilium: Policy denied at bpf_lxc.c:2381
+  02:51:34.664  cmtc-a/unregistered-worker         10.10.1.37:31337/                                                                                                           dropped by Cilium: Policy denied at bpf_lxc.c:2381
+  02:51:37.722  cmtc-a/unregistered-control-plane  10.10.0.98:80/                                                                                                              dropped by Cilium: Policy denied at bpf_lxc.c:2381
+  02:51:40.784  cmtc-a/unregistered-control-plane  10.10.0.98:8080/                                                                                                            dropped by Cilium: Policy denied at bpf_lxc.c:2381
+  02:51:43.848  cmtc-a/unregistered-control-plane  10.10.0.98:31337/                                                                                                           dropped by Cilium: Policy denied at bpf_lxc.c:2381
+  02:51:47.324  cmtc-a/unregistered-worker         server-worker.cmtc-live-mtls.svc.cluster.local:80/                                                                          dropped by Cilium: Policy denied at bpf_lxc.c:2381
+  02:51:50.402  cmtc-a/unregistered-worker         server-worker.cmtc-live-mtls.svc.cluster.local:8080/                                                                        dropped by Cilium: Policy denied at bpf_lxc.c:2381
+  02:51:53.458  cmtc-a/unregistered-worker         server-worker.cmtc-live-mtls.svc.cluster.local:31337/                                                                       dropped by Cilium: Policy denied at bpf_lxc.c:2381
+  02:51:56.513  cmtc-a/unregistered-worker         server-control-plane.cmtc-live-mtls.svc.cluster.local:80/                                                                   dropped by Cilium: Policy denied at bpf_lxc.c:2381
+  02:51:59.571  cmtc-a/unregistered-worker         server-control-plane.cmtc-live-mtls.svc.cluster.local:8080/                                                                 dropped by Cilium: Policy denied at bpf_lxc.c:2381
+  02:52:02.627  cmtc-a/unregistered-worker         server-control-plane.cmtc-live-mtls.svc.cluster.local:31337/                                                                dropped by Cilium: Policy denied at bpf_lxc.c:2381
+  02:52:05.691  cmtc-a/unregistered-control-plane  server-control-plane.cmtc-live-mtls.svc.cluster.local:80/                                                                   dropped by Cilium: Policy denied at bpf_lxc.c:2381
+  02:52:08.757  cmtc-a/unregistered-control-plane  server-control-plane.cmtc-live-mtls.svc.cluster.local:8080/                                                                 dropped by Cilium: Policy denied at bpf_lxc.c:2381
+  02:52:11.819  cmtc-a/unregistered-control-plane  server-control-plane.cmtc-live-mtls.svc.cluster.local:31337/                                                                dropped by Cilium: Policy denied at bpf_lxc.c:2381
+  02:52:14.882  cmtc-a/unregistered-control-plane  server-worker.cmtc-live-mtls.svc.cluster.local:80/                                                                          dropped by Cilium: Policy denied at bpf_lxc.c:2381
+  02:52:17.939  cmtc-a/unregistered-control-plane  server-worker.cmtc-live-mtls.svc.cluster.local:8080/                                                                        dropped by Cilium: Policy denied at bpf_lxc.c:2381
+  02:52:20.998  cmtc-a/unregistered-control-plane  server-worker.cmtc-live-mtls.svc.cluster.local:31337/                                                                       dropped by Cilium: Policy denied at bpf_lxc.c:2381
+  02:52:21.225  cmtc-b/client-worker               10.20.1.116:80/                                               cmtc-b/server-worker         mesh-client@cmtc-b.mesh.example  mTLS proven
+  02:52:21.282  cmtc-b/client-worker               10.20.1.116:8080/                                             cmtc-b/server-worker         mesh-client@cmtc-b.mesh.example  mTLS proven
+  02:52:21.339  cmtc-b/client-worker               10.20.1.116:31337/                                            cmtc-b/server-worker         mesh-client@cmtc-b.mesh.example  mTLS proven
+  02:52:21.399  cmtc-b/client-control-plane        10.20.0.92:80/                                                cmtc-b/server-control-plane  mesh-client@cmtc-b.mesh.example  mTLS proven
+  02:52:21.456  cmtc-b/client-control-plane        10.20.0.92:8080/                                              cmtc-b/server-control-plane  mesh-client@cmtc-b.mesh.example  mTLS proven
+  02:52:21.524  cmtc-b/client-control-plane        10.20.0.92:31337/                                             cmtc-b/server-control-plane  mesh-client@cmtc-b.mesh.example  mTLS proven
+  02:52:21.763  cmtc-b/client-worker               10.20.0.92:80/                                                cmtc-b/server-control-plane  mesh-client@cmtc-b.mesh.example  mTLS proven
+  02:52:21.824  cmtc-b/client-worker               10.20.0.92:8080/                                              cmtc-b/server-control-plane  mesh-client@cmtc-b.mesh.example  mTLS proven
+  02:52:21.891  cmtc-b/client-worker               10.20.0.92:31337/                                             cmtc-b/server-control-plane  mesh-client@cmtc-b.mesh.example  mTLS proven
+  02:52:21.964  cmtc-b/client-control-plane        10.20.1.116:80/                                               cmtc-b/server-worker         mesh-client@cmtc-b.mesh.example  mTLS proven
+  02:52:22.031  cmtc-b/client-control-plane        10.20.1.116:8080/                                             cmtc-b/server-worker         mesh-client@cmtc-b.mesh.example  mTLS proven
+  02:52:22.098  cmtc-b/client-control-plane        10.20.1.116:31337/                                            cmtc-b/server-worker         mesh-client@cmtc-b.mesh.example  mTLS proven
+  02:52:22.605  cmtc-b/client-worker               10.10.0.98:80/                                                cmtc-a/server-control-plane  mesh-client@cmtc-b.mesh.example  mTLS proven
+  02:52:22.664  cmtc-b/client-worker               10.10.0.98:8080/                                              cmtc-a/server-control-plane  mesh-client@cmtc-b.mesh.example  mTLS proven
+  02:52:22.726  cmtc-b/client-worker               10.10.0.98:31337/                                             cmtc-a/server-control-plane  mesh-client@cmtc-b.mesh.example  mTLS proven
+  02:52:22.795  cmtc-b/client-worker               10.10.1.37:80/                                                cmtc-a/server-worker         mesh-client@cmtc-b.mesh.example  mTLS proven
+  02:52:22.858  cmtc-b/client-worker               10.10.1.37:8080/                                              cmtc-a/server-worker         mesh-client@cmtc-b.mesh.example  mTLS proven
+  02:52:22.921  cmtc-b/client-worker               10.10.1.37:31337/                                             cmtc-a/server-worker         mesh-client@cmtc-b.mesh.example  mTLS proven
+  02:52:22.983  cmtc-b/client-control-plane        10.10.0.98:80/                                                cmtc-a/server-control-plane  mesh-client@cmtc-b.mesh.example  mTLS proven
+  02:52:23.046  cmtc-b/client-control-plane        10.10.0.98:8080/                                              cmtc-a/server-control-plane  mesh-client@cmtc-b.mesh.example  mTLS proven
+  02:52:23.101  cmtc-b/client-control-plane        10.10.0.98:31337/                                             cmtc-a/server-control-plane  mesh-client@cmtc-b.mesh.example  mTLS proven
+  02:52:23.160  cmtc-b/client-control-plane        10.10.1.37:80/                                                cmtc-a/server-worker         mesh-client@cmtc-b.mesh.example  mTLS proven
+  02:52:23.225  cmtc-b/client-control-plane        10.10.1.37:8080/                                              cmtc-a/server-worker         mesh-client@cmtc-b.mesh.example  mTLS proven
+  02:52:23.285  cmtc-b/client-control-plane        10.10.1.37:31337/                                             cmtc-a/server-worker         mesh-client@cmtc-b.mesh.example  mTLS proven
+  02:52:23.525  cmtc-b/client-worker               server-cmtc-a.cmtc-live-mtls.svc.cluster.local:80/            cmtc-a/server-worker         mesh-client@cmtc-b.mesh.example  mTLS proven
+  02:52:23.586  cmtc-b/client-worker               server-cmtc-a.cmtc-live-mtls.svc.cluster.local:8080/          cmtc-a/server-control-plane  mesh-client@cmtc-b.mesh.example  mTLS proven
+  02:52:23.648  cmtc-b/client-worker               server-cmtc-a.cmtc-live-mtls.svc.cluster.local:31337/         cmtc-a/server-control-plane  mesh-client@cmtc-b.mesh.example  mTLS proven
+  02:52:23.714  cmtc-b/client-worker               server-cmtc-b.cmtc-live-mtls.svc.cluster.local:80/            cmtc-b/server-worker         mesh-client@cmtc-b.mesh.example  mTLS proven
+  02:52:23.771  cmtc-b/client-worker               server-cmtc-b.cmtc-live-mtls.svc.cluster.local:8080/          cmtc-b/server-control-plane  mesh-client@cmtc-b.mesh.example  mTLS proven
+  02:52:23.829  cmtc-b/client-worker               server-cmtc-b.cmtc-live-mtls.svc.cluster.local:31337/         cmtc-b/server-control-plane  mesh-client@cmtc-b.mesh.example  mTLS proven
+  02:52:23.891  cmtc-b/client-control-plane        server-cmtc-a.cmtc-live-mtls.svc.cluster.local:80/            cmtc-a/server-control-plane  mesh-client@cmtc-b.mesh.example  mTLS proven
+  02:52:23.955  cmtc-b/client-control-plane        server-cmtc-a.cmtc-live-mtls.svc.cluster.local:8080/          cmtc-a/server-worker         mesh-client@cmtc-b.mesh.example  mTLS proven
+  02:52:24.030  cmtc-b/client-control-plane        server-cmtc-a.cmtc-live-mtls.svc.cluster.local:31337/         cmtc-a/server-worker         mesh-client@cmtc-b.mesh.example  mTLS proven
+  02:52:24.101  cmtc-b/client-control-plane        server-cmtc-b.cmtc-live-mtls.svc.cluster.local:80/            cmtc-b/server-control-plane  mesh-client@cmtc-b.mesh.example  mTLS proven
+  02:52:24.170  cmtc-b/client-control-plane        server-cmtc-b.cmtc-live-mtls.svc.cluster.local:8080/          cmtc-b/server-control-plane  mesh-client@cmtc-b.mesh.example  mTLS proven
+  02:52:24.233  cmtc-b/client-control-plane        server-cmtc-b.cmtc-live-mtls.svc.cluster.local:31337/         cmtc-b/server-control-plane  mesh-client@cmtc-b.mesh.example  mTLS proven
+  02:52:24.597  cmtc-b/client-worker               server-worker.cmtc-live-mtls.svc.cluster.local:80/            cmtc-b/server-worker         mesh-client@cmtc-b.mesh.example  mTLS proven
+  02:52:24.656  cmtc-b/client-worker               server-worker.cmtc-live-mtls.svc.cluster.local:8080/          cmtc-b/server-worker         mesh-client@cmtc-b.mesh.example  mTLS proven
+  02:52:24.719  cmtc-b/client-worker               server-worker.cmtc-live-mtls.svc.cluster.local:31337/         cmtc-b/server-worker         mesh-client@cmtc-b.mesh.example  mTLS proven
+  02:52:24.780  cmtc-b/client-worker               server-control-plane.cmtc-live-mtls.svc.cluster.local:80/     cmtc-b/server-control-plane  mesh-client@cmtc-b.mesh.example  mTLS proven
+  02:52:24.844  cmtc-b/client-worker               server-control-plane.cmtc-live-mtls.svc.cluster.local:8080/   cmtc-b/server-control-plane  mesh-client@cmtc-b.mesh.example  mTLS proven
+  02:52:24.911  cmtc-b/client-worker               server-control-plane.cmtc-live-mtls.svc.cluster.local:31337/  cmtc-b/server-control-plane  mesh-client@cmtc-b.mesh.example  mTLS proven
+  02:52:24.971  cmtc-b/client-control-plane        server-control-plane.cmtc-live-mtls.svc.cluster.local:80/     cmtc-b/server-control-plane  mesh-client@cmtc-b.mesh.example  mTLS proven
+  02:52:25.026  cmtc-b/client-control-plane        server-control-plane.cmtc-live-mtls.svc.cluster.local:8080/   cmtc-b/server-control-plane  mesh-client@cmtc-b.mesh.example  mTLS proven
+  02:52:25.079  cmtc-b/client-control-plane        server-control-plane.cmtc-live-mtls.svc.cluster.local:31337/  cmtc-b/server-control-plane  mesh-client@cmtc-b.mesh.example  mTLS proven
+  02:52:25.133  cmtc-b/client-control-plane        server-worker.cmtc-live-mtls.svc.cluster.local:80/            cmtc-b/server-worker         mesh-client@cmtc-b.mesh.example  mTLS proven
+  02:52:25.286  cmtc-b/client-control-plane        server-worker.cmtc-live-mtls.svc.cluster.local:8080/          cmtc-b/server-worker         mesh-client@cmtc-b.mesh.example  mTLS proven
+  02:52:25.340  cmtc-b/client-control-plane        server-worker.cmtc-live-mtls.svc.cluster.local:31337/         cmtc-b/server-worker         mesh-client@cmtc-b.mesh.example  mTLS proven
+  02:52:28.621  cmtc-b/unregistered-worker         10.20.1.116:80/                                                                                                             dropped by Cilium: Policy denied at bpf_lxc.c:2381
+  02:52:31.682  cmtc-b/unregistered-worker         10.20.1.116:8080/                                                                                                           dropped by Cilium: Policy denied at bpf_lxc.c:2381
+  02:52:34.744  cmtc-b/unregistered-worker         10.20.1.116:31337/                                                                                                          dropped by Cilium: Policy denied at bpf_lxc.c:2381
+  02:52:37.808  cmtc-b/unregistered-control-plane  10.20.0.92:80/                                                                                                              dropped by Cilium: Policy denied at bpf_lxc.c:2381
+  02:52:40.864  cmtc-b/unregistered-control-plane  10.20.0.92:8080/                                                                                                            dropped by Cilium: Policy denied at bpf_lxc.c:2381
+  02:52:43.924  cmtc-b/unregistered-control-plane  10.20.0.92:31337/                                                                                                           dropped by Cilium: Policy denied at bpf_lxc.c:2381
+  02:52:47.405  cmtc-b/unregistered-worker         server-worker.cmtc-live-mtls.svc.cluster.local:80/                                                                          dropped by Cilium: Policy denied at bpf_lxc.c:2381
+  02:52:50.466  cmtc-b/unregistered-worker         server-worker.cmtc-live-mtls.svc.cluster.local:8080/                                                                        dropped by Cilium: Policy denied at bpf_lxc.c:2381
+  02:52:53.525  cmtc-b/unregistered-worker         server-worker.cmtc-live-mtls.svc.cluster.local:31337/                                                                       dropped by Cilium: Policy denied at bpf_lxc.c:2381
+  02:52:56.589  cmtc-b/unregistered-worker         server-control-plane.cmtc-live-mtls.svc.cluster.local:80/                                                                   dropped by Cilium: Policy denied at bpf_lxc.c:2381
+  02:52:59.649  cmtc-b/unregistered-worker         server-control-plane.cmtc-live-mtls.svc.cluster.local:8080/                                                                 dropped by Cilium: Policy denied at bpf_lxc.c:2381
+  02:53:02.707  cmtc-b/unregistered-worker         server-control-plane.cmtc-live-mtls.svc.cluster.local:31337/                                                                dropped by Cilium: Policy denied at bpf_lxc.c:2381
+  02:53:05.771  cmtc-b/unregistered-control-plane  server-control-plane.cmtc-live-mtls.svc.cluster.local:80/                                                                   dropped by Cilium: Policy denied at bpf_lxc.c:2381
+  02:53:08.836  cmtc-b/unregistered-control-plane  server-control-plane.cmtc-live-mtls.svc.cluster.local:8080/                                                                 dropped by Cilium: Policy denied at bpf_lxc.c:2381
+  02:53:11.921  cmtc-b/unregistered-control-plane  server-control-plane.cmtc-live-mtls.svc.cluster.local:31337/                                                                dropped by Cilium: Policy denied at bpf_lxc.c:2381
+  02:53:14.991  cmtc-b/unregistered-control-plane  server-worker.cmtc-live-mtls.svc.cluster.local:80/                                                                          dropped by Cilium: Policy denied at bpf_lxc.c:2381
+  02:53:18.078  cmtc-b/unregistered-control-plane  server-worker.cmtc-live-mtls.svc.cluster.local:8080/                                                                        dropped by Cilium: Policy denied at bpf_lxc.c:2381
+  02:53:21.135  cmtc-b/unregistered-control-plane  server-worker.cmtc-live-mtls.svc.cluster.local:31337/                                                                       dropped by Cilium: Policy denied at bpf_lxc.c:2381
+
+  96 proven over mTLS · 0 unanswered with no ztunnel line · 36 dropped by Cilium · 0 failed

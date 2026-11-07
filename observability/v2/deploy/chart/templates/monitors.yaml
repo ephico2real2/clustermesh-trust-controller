@@ -1,0 +1,68 @@
+{{- if .Values.global.openshift }}
+{{- $cluster := include "cmtc-obs.cluster" . }}
+{{- $j := .Values.jobs }}
+{{- $interval := .Values.openshift.scrapeInterval }}
+{{- /*
+OpenShift: one PodMonitor per job, in the namespace of its Pods; user workload monitoring ignores a monitor's
+namespaceSelector. The Prometheus Operator stamps namespace, pod and container; the relabelings below set job (the
+name the rules and dashboards select), cluster, component and node, as the kind jobs of prometheus-config.yaml do.
+CoreDNS, the kubelet and this Prometheus are not here: the platform's monitoring scrapes the first two, and there
+is no hub to remote-write to.
+Each entry: values key, job, Pod selector, port name ("" when the container declares none), the container and port
+to scrape otherwise, path, component (empty: from app.kubernetes.io/name).
+*/}}
+{{- $monitors := list
+  (dict "key" "cmtc" "job" "cmtc" "selector" (dict "security.cmtc.io/metrics" "true") "port" "metrics" "path" "/metrics" "component" "")
+  (dict "key" "ciliumAgent" "job" "cilium-native" "selector" (dict "k8s-app" "cilium") "port" "prometheus" "path" "/metrics" "component" "cilium-agent")
+  (dict "key" "hubble" "job" "hubble" "selector" (dict "k8s-app" "cilium") "port" "hubble-metrics" "path" "/metrics" "component" "hubble")
+  (dict "key" "hubbleRelay" "job" "hubble-relay" "selector" (dict "k8s-app" "hubble-relay") "port" "prometheus" "path" "/metrics" "component" "hubble-relay")
+  (dict "key" "ztunnel" "job" "ztunnel" "selector" (dict "app.kubernetes.io/name" "ztunnel-cilium") "port" "" "container" "istio-proxy" "portNumber" 15020 "path" "/stats/prometheus" "component" "ztunnel")
+  (dict "key" "certManager" "job" "cert-manager" "selector" (dict "app.kubernetes.io/name" "cert-manager" "app.kubernetes.io/component" "controller") "port" "http-metrics" "path" "/metrics" "component" "cert-manager")
+  (dict "key" "trustManager" "job" "trust-manager" "selector" (dict "app.kubernetes.io/name" "trust-manager") "port" "metrics" "path" "/metrics" "component" "trust-manager")
+  (dict "key" "spireServer" "job" "spire-server" "selector" (dict "app" "spire-server") "port" "prom" "path" "/metrics" "component" "spire-server")
+  (dict "key" "spireAgent" "job" "spire-agent" "selector" (dict "app" "spire-agent") "port" "prom" "path" "/metrics" "component" "spire-agent")
+}}
+{{- range $m := $monitors }}
+{{- $job := index $j $m.key }}
+{{- if $job.enabled }}
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: {{ $.Release.Name }}-{{ $m.job }}
+  namespace: {{ $job.namespace }}
+  labels:
+    {{- include "cmtc-obs.labels" $ | nindent 4 }}
+spec:
+  selector:
+    matchLabels:
+      {{- toYaml $m.selector | nindent 6 }}
+  podMetricsEndpoints:
+    - path: {{ $m.path }}
+      interval: {{ $interval }}
+      {{- if $m.port }}
+      port: {{ $m.port }}
+      {{- end }}
+      relabelings:
+        {{- if not $m.port }}
+        # The container declares no port: scrape the Pod IP on the exporter's port, once per Pod.
+        - {sourceLabels: [__meta_kubernetes_pod_container_name, __meta_kubernetes_pod_container_init], regex: "{{ $m.container }};false", action: keep}
+        - {sourceLabels: [__meta_kubernetes_pod_ip], regex: (.+), targetLabel: __address__, replacement: "$1:{{ $m.portNumber }}"}
+        {{- end }}
+        - {sourceLabels: [__meta_kubernetes_pod_phase], regex: Running, action: keep}
+        - {targetLabel: job, replacement: {{ $m.job }}}
+        - {targetLabel: cluster, replacement: {{ $cluster }}}
+        {{- if $m.component }}
+        - {targetLabel: component, replacement: {{ $m.component }}}
+        {{- else }}
+        - {sourceLabels: [__meta_kubernetes_pod_label_app_kubernetes_io_name], targetLabel: component}
+        {{- end }}
+        - {sourceLabels: [__meta_kubernetes_pod_node_name], targetLabel: node}
+      metricRelabelings:
+        - {sourceLabels: [__name__], regex: '{{ include "cmtc-obs.keep" $job.keep }}', action: keep}
+        {{- if eq $m.job "ztunnel" }}
+        - {regex: (source|destination)_(region|zone), action: labeldrop}
+        {{- end }}
+{{- end }}
+{{- end }}
+{{- end }}

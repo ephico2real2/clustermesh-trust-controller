@@ -4,3 +4,5 @@ metadata:
   name: cmtc-system
   labels:
     security.cmtc.io/platform-protected: "true"
+    # Opts in to the mesh root ConfigMap (charts/cmtc trust.bundle): the controller verifies the SPIRE issuers it publishes.
+    trust: enabled

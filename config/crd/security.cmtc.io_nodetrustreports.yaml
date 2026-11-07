@@ -1,0 +1,189 @@
+{
+  "apiVersion": "apiextensions.k8s.io/v1",
+  "kind": "CustomResourceDefinition",
+  "metadata": {
+    "name": "nodetrustreports.security.cmtc.io"
+  },
+  "spec": {
+    "group": "security.cmtc.io",
+    "scope": "Cluster",
+    "names": {
+      "kind": "NodeTrustReport",
+      "plural": "nodetrustreports",
+      "singular": "nodetrustreport",
+      "shortNames": [
+        "ntr"
+      ]
+    },
+    "versions": [
+      {
+        "name": "v1alpha1",
+        "served": true,
+        "storage": true,
+        "schema": {
+          "openAPIV3Schema": {
+            "type": "object",
+            "required": [
+              "status"
+            ],
+            "properties": {
+              "apiVersion": {
+                "type": "string"
+              },
+              "kind": {
+                "type": "string"
+              },
+              "metadata": {
+                "type": "object"
+              },
+              "status": {
+                "type": "object",
+                "required": [
+                  "cluster",
+                  "observedAt",
+                  "pins",
+                  "ztunnel"
+                ],
+                "properties": {
+                  "cluster": {
+                    "type": "string",
+                    "maxLength": 32
+                  },
+                  "observedAt": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "pins": {
+                    "type": "object",
+                    "required": [
+                      "state"
+                    ],
+                    "properties": {
+                      "state": {
+                        "type": "string",
+                        "enum": [
+                          "Unchanged",
+                          "Written",
+                          "ReadOnly",
+                          "Absent",
+                          "Invalid",
+                          "WriteFailed"
+                        ]
+                      },
+                      "sha256": {
+                        "type": "string",
+                        "pattern": "^[0-9a-f]{64}$"
+                      },
+                      "rootSHA256": {
+                        "type": "array",
+                        "maxItems": 4,
+                        "items": {
+                          "type": "string",
+                          "pattern": "^[0-9a-f]{64}$"
+                        }
+                      },
+                      "message": {
+                        "type": "string",
+                        "maxLength": 4096
+                      }
+                    }
+                  },
+                  "ztunnel": {
+                    "type": "object",
+                    "required": [
+                      "state"
+                    ],
+                    "properties": {
+                      "state": {
+                        "type": "string",
+                        "enum": [
+                          "Accepted",
+                          "NotCurrent",
+                          "Absent",
+                          "Invalid"
+                        ]
+                      },
+                      "observation": {
+                        "type": "string",
+                        "maxLength": 64
+                      },
+                      "acceptedGeneration": {
+                        "type": "integer",
+                        "format": "int64",
+                        "minimum": 0
+                      },
+                      "approvalDigest": {
+                        "type": "string",
+                        "pattern": "^[0-9a-f]{64}$"
+                      },
+                      "loadedRootSHA256": {
+                        "type": "array",
+                        "maxItems": 4,
+                        "items": {
+                          "type": "string",
+                          "pattern": "^[0-9a-f]{64}$"
+                        }
+                      },
+                      "trustedIssuers": {
+                        "type": "array",
+                        "maxItems": 32,
+                        "items": {
+                          "type": "object",
+                          "required": [
+                            "trustDomain",
+                            "spkiSHA256"
+                          ],
+                          "properties": {
+                            "trustDomain": {
+                              "type": "string",
+                              "maxLength": 253
+                            },
+                            "spkiSHA256": {
+                              "type": "string",
+                              "pattern": "^[0-9a-f]{64}$"
+                            }
+                          }
+                        }
+                      },
+                      "message": {
+                        "type": "string",
+                        "maxLength": 4096
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "additionalPrinterColumns": [
+          {
+            "name": "Cluster",
+            "type": "string",
+            "jsonPath": ".status.cluster"
+          },
+          {
+            "name": "Pins",
+            "type": "string",
+            "jsonPath": ".status.pins.state"
+          },
+          {
+            "name": "Ztunnel",
+            "type": "string",
+            "jsonPath": ".status.ztunnel.state"
+          },
+          {
+            "name": "Generation",
+            "type": "integer",
+            "jsonPath": ".status.ztunnel.acceptedGeneration"
+          },
+          {
+            "name": "Observed",
+            "type": "date",
+            "jsonPath": ".status.observedAt"
+          }
+        ]
+      }
+    ]
+  }
+}

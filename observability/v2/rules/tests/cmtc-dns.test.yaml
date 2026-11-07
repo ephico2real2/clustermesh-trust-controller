@@ -1,0 +1,217 @@
+# promtool test rules for rules/cmtc-dns.rules.yaml. Label shapes are those of the CoreDNS 1.14.2
+# pages captured on 2026-10-26T03:05:36Z (the review inventory,
+# live-20261026/pages/cmtc-a__coredns__coredns-589f44dc88-ktw7v__9153.prom), with the target labels
+# the coredns job of deploy/chart adds (cluster, node, pod). In cmtc-a both replicas run on the
+# control-plane node, as on the lab; the cmtc-b replicas are spread here to give the negative case.
+rule_files:
+- ../cmtc-dns.rules.yaml
+evaluation_interval: 1m
+
+tests:
+- name: answers, requests, latency and replica placement
+  interval: 1m
+  input_series:
+  - series: 'up{job="coredns", component="coredns", cluster="cmtc-a", node="cmtc-a-control-plane", pod="coredns-589f44dc88-gtnm7", instance="10.10.0.64:9153"}'
+    values: '1x15'
+  - series: 'up{job="coredns", component="coredns", cluster="cmtc-a", node="cmtc-a-control-plane", pod="coredns-589f44dc88-ktw7v", instance="10.10.0.193:9153"}'
+    values: '1x15'
+  - series: 'up{job="coredns", component="coredns", cluster="cmtc-b", node="cmtc-b-control-plane", pod="coredns-589f44dc88-9cwr7", instance="10.20.0.238:9153"}'
+    values: '1x15'
+  - series: 'up{job="coredns", component="coredns", cluster="cmtc-b", node="cmtc-b-worker", pod="coredns-589f44dc88-fvk6v", instance="10.20.1.19:9153"}'
+    values: '1x15'
+  - series: 'coredns_dns_responses_total{job="coredns", component="coredns", cluster="cmtc-a", node="cmtc-a-control-plane", pod="coredns-589f44dc88-gtnm7", instance="10.10.0.64:9153", plugin="errors", rcode="NOERROR", server="dns://:53", view="", zone="."}'
+    values: '0+60x15'
+  - series: 'coredns_dns_responses_total{job="coredns", component="coredns", cluster="cmtc-a", node="cmtc-a-control-plane", pod="coredns-589f44dc88-ktw7v", instance="10.10.0.193:9153", plugin="errors", rcode="NOERROR", server="dns://:53", view="", zone="."}'
+    values: '0+60x15'
+  - series: 'coredns_dns_responses_total{job="coredns", component="coredns", cluster="cmtc-a", node="cmtc-a-control-plane", pod="coredns-589f44dc88-ktw7v", instance="10.10.0.193:9153", plugin="errors", rcode="NXDOMAIN", server="dns://:53", view="", zone="."}'
+    values: '0+120x15'
+  - series: 'coredns_dns_requests_total{job="coredns", component="coredns", cluster="cmtc-a", node="cmtc-a-control-plane", pod="coredns-589f44dc88-gtnm7", instance="10.10.0.64:9153", family="1", proto="udp", server="dns://:53", type="A", view="", zone="."}'
+    values: '0+60x15'
+  # gtnm7 and ktw7v: half the answers within 1 ms, 99 % within 64 ms.
+  - series: 'coredns_dns_request_duration_seconds_bucket{job="coredns", component="coredns", cluster="cmtc-a", node="cmtc-a-control-plane", pod="coredns-589f44dc88-gtnm7", instance="10.10.0.64:9153", server="dns://:53", view="", zone=".", le="0.001"}'
+    values: '0+50x15'
+  - series: 'coredns_dns_request_duration_seconds_bucket{job="coredns", component="coredns", cluster="cmtc-a", node="cmtc-a-control-plane", pod="coredns-589f44dc88-gtnm7", instance="10.10.0.64:9153", server="dns://:53", view="", zone=".", le="0.064"}'
+    values: '0+99x15'
+  - series: 'coredns_dns_request_duration_seconds_bucket{job="coredns", component="coredns", cluster="cmtc-a", node="cmtc-a-control-plane", pod="coredns-589f44dc88-gtnm7", instance="10.10.0.64:9153", server="dns://:53", view="", zone=".", le="+Inf"}'
+    values: '0+100x15'
+  - series: 'coredns_dns_request_duration_seconds_count{job="coredns", component="coredns", cluster="cmtc-a", node="cmtc-a-control-plane", pod="coredns-589f44dc88-gtnm7", instance="10.10.0.64:9153", server="dns://:53", view="", zone="."}'
+    values: '0+100x15'
+  - series: 'coredns_dns_request_duration_seconds_bucket{job="coredns", component="coredns", cluster="cmtc-a", node="cmtc-a-control-plane", pod="coredns-589f44dc88-ktw7v", instance="10.10.0.193:9153", server="dns://:53", view="", zone=".", le="0.001"}'
+    values: '0+50x15'
+  - series: 'coredns_dns_request_duration_seconds_bucket{job="coredns", component="coredns", cluster="cmtc-a", node="cmtc-a-control-plane", pod="coredns-589f44dc88-ktw7v", instance="10.10.0.193:9153", server="dns://:53", view="", zone=".", le="0.064"}'
+    values: '0+99x15'
+  - series: 'coredns_dns_request_duration_seconds_bucket{job="coredns", component="coredns", cluster="cmtc-a", node="cmtc-a-control-plane", pod="coredns-589f44dc88-ktw7v", instance="10.10.0.193:9153", server="dns://:53", view="", zone=".", le="+Inf"}'
+    values: '0+100x15'
+  - series: 'coredns_dns_request_duration_seconds_count{job="coredns", component="coredns", cluster="cmtc-a", node="cmtc-a-control-plane", pod="coredns-589f44dc88-ktw7v", instance="10.10.0.193:9153", server="dns://:53", view="", zone="."}'
+    values: '0+100x15'
+  # 9cwr7 in cmtc-b: every answer within 1 ms. fvk6v answers nothing: no latency value for it.
+  - series: 'coredns_dns_request_duration_seconds_bucket{job="coredns", component="coredns", cluster="cmtc-b", node="cmtc-b-control-plane", pod="coredns-589f44dc88-9cwr7", instance="10.20.0.238:9153", server="dns://:53", view="", zone=".", le="0.001"}'
+    values: '0+100x15'
+  - series: 'coredns_dns_request_duration_seconds_bucket{job="coredns", component="coredns", cluster="cmtc-b", node="cmtc-b-control-plane", pod="coredns-589f44dc88-9cwr7", instance="10.20.0.238:9153", server="dns://:53", view="", zone=".", le="0.064"}'
+    values: '0+100x15'
+  - series: 'coredns_dns_request_duration_seconds_bucket{job="coredns", component="coredns", cluster="cmtc-b", node="cmtc-b-control-plane", pod="coredns-589f44dc88-9cwr7", instance="10.20.0.238:9153", server="dns://:53", view="", zone=".", le="+Inf"}'
+    values: '0+100x15'
+  - series: 'coredns_dns_request_duration_seconds_count{job="coredns", component="coredns", cluster="cmtc-b", node="cmtc-b-control-plane", pod="coredns-589f44dc88-9cwr7", instance="10.20.0.238:9153", server="dns://:53", view="", zone="."}'
+    values: '0+100x15'
+  - series: 'coredns_dns_request_duration_seconds_bucket{job="coredns", component="coredns", cluster="cmtc-b", node="cmtc-b-worker", pod="coredns-589f44dc88-fvk6v", instance="10.20.1.19:9153", server="dns://:53", view="", zone=".", le="+Inf"}'
+    values: '0x15'
+  - series: 'coredns_dns_request_duration_seconds_count{job="coredns", component="coredns", cluster="cmtc-b", node="cmtc-b-worker", pod="coredns-589f44dc88-fvk6v", instance="10.20.1.19:9153", server="dns://:53", view="", zone="."}'
+    values: '0x15'
+  - series: 'coredns_proxy_request_duration_seconds_count{job="coredns", component="coredns", cluster="cmtc-a", node="cmtc-a-control-plane", pod="coredns-589f44dc88-gtnm7", instance="10.10.0.64:9153", proxy_name="forward", rcode="NOERROR", to="192.168.5.2:53"}'
+    values: '0+30x15'
+  promql_expr_test:
+  - expr: cmtc:coredns_responses:rate5m
+    eval_time: 10m
+    exp_samples:
+    - labels: 'cmtc:coredns_responses:rate5m{cluster="cmtc-a", rcode="NOERROR"}'
+      value: 2
+    - labels: 'cmtc:coredns_responses:rate5m{cluster="cmtc-a", rcode="NXDOMAIN"}'
+      value: 2
+  - expr: cmtc:coredns_responses_by_pod:rate5m{pod="coredns-589f44dc88-ktw7v"}
+    eval_time: 10m
+    exp_samples:
+    - labels: 'cmtc:coredns_responses_by_pod:rate5m{cluster="cmtc-a", node="cmtc-a-control-plane", pod="coredns-589f44dc88-ktw7v", rcode="NOERROR"}'
+      value: 1
+    - labels: 'cmtc:coredns_responses_by_pod:rate5m{cluster="cmtc-a", node="cmtc-a-control-plane", pod="coredns-589f44dc88-ktw7v", rcode="NXDOMAIN"}'
+      value: 2
+  - expr: cmtc:coredns_responses:ratio_rate5m
+    eval_time: 10m
+    exp_samples:
+    - labels: 'cmtc:coredns_responses:ratio_rate5m{cluster="cmtc-a", rcode="NOERROR"}'
+      value: 0.5
+    - labels: 'cmtc:coredns_responses:ratio_rate5m{cluster="cmtc-a", rcode="NXDOMAIN"}'
+      value: 0.5
+  - expr: cmtc:coredns_requests:rate5m
+    eval_time: 10m
+    exp_samples:
+    - labels: 'cmtc:coredns_requests:rate5m{cluster="cmtc-a", type="A", proto="udp"}'
+      value: 1
+  - expr: cmtc:coredns_request_duration_seconds:p50_rate5m
+    eval_time: 10m
+    exp_samples:
+    - labels: 'cmtc:coredns_request_duration_seconds:p50_rate5m{cluster="cmtc-a"}'
+      value: 0.001
+    - labels: 'cmtc:coredns_request_duration_seconds:p50_rate5m{cluster="cmtc-b"}'
+      value: 0.0005
+  - expr: cmtc:coredns_request_duration_seconds:p99_rate5m{cluster="cmtc-a"}
+    eval_time: 10m
+    exp_samples:
+    - labels: 'cmtc:coredns_request_duration_seconds:p99_rate5m{cluster="cmtc-a"}'
+      value: 0.064
+  - expr: cmtc:coredns_request_duration_seconds_by_pod:p50_rate5m
+    eval_time: 10m
+    exp_samples:
+    - labels: 'cmtc:coredns_request_duration_seconds_by_pod:p50_rate5m{cluster="cmtc-a", node="cmtc-a-control-plane", pod="coredns-589f44dc88-gtnm7"}'
+      value: 0.001
+    - labels: 'cmtc:coredns_request_duration_seconds_by_pod:p50_rate5m{cluster="cmtc-a", node="cmtc-a-control-plane", pod="coredns-589f44dc88-ktw7v"}'
+      value: 0.001
+    - labels: 'cmtc:coredns_request_duration_seconds_by_pod:p50_rate5m{cluster="cmtc-b", node="cmtc-b-control-plane", pod="coredns-589f44dc88-9cwr7"}'
+      value: 0.0005
+  - expr: cmtc:coredns_request_duration_seconds_by_pod:p99_rate5m{cluster="cmtc-a"}
+    eval_time: 10m
+    exp_samples:
+    - labels: 'cmtc:coredns_request_duration_seconds_by_pod:p99_rate5m{cluster="cmtc-a", node="cmtc-a-control-plane", pod="coredns-589f44dc88-gtnm7"}'
+      value: 0.064
+    - labels: 'cmtc:coredns_request_duration_seconds_by_pod:p99_rate5m{cluster="cmtc-a", node="cmtc-a-control-plane", pod="coredns-589f44dc88-ktw7v"}'
+      value: 0.064
+  - expr: cmtc:coredns_forward_responses:rate5m
+    eval_time: 10m
+    exp_samples:
+    - labels: 'cmtc:coredns_forward_responses:rate5m{cluster="cmtc-a", to="192.168.5.2:53", rcode="NOERROR"}'
+      value: 0.5
+  - expr: cmtc:coredns_replicas:count
+    eval_time: 10m
+    exp_samples:
+    - labels: 'cmtc:coredns_replicas:count{cluster="cmtc-a"}'
+      value: 2
+    - labels: 'cmtc:coredns_replicas:count{cluster="cmtc-b"}'
+      value: 2
+  - expr: cmtc:coredns_replica_nodes:count
+    eval_time: 10m
+    exp_samples:
+    - labels: 'cmtc:coredns_replica_nodes:count{cluster="cmtc-a"}'
+      value: 1
+    - labels: 'cmtc:coredns_replica_nodes:count{cluster="cmtc-b"}'
+      value: 2
+  alert_rule_test:
+  - eval_time: 9m
+    alertname: CoreDNSReplicasOnOneNode
+    exp_alerts: []
+  - eval_time: 10m
+    alertname: CoreDNSReplicasOnOneNode
+    exp_alerts:
+    - exp_labels: {severity: warning, owner: coredns, cluster: cmtc-a}
+      exp_annotations:
+        summary: 'All 2 CoreDNS replicas in cmtc-a run on one node'
+        runbook: 'A failure of that node stops name resolution for the whole cluster. Spread the replicas with a required podAntiAffinity or a topologySpreadConstraint on kubernetes.io/hostname.'
+  - eval_time: 10m
+    alertname: CoreDNSServfailHigh
+    exp_alerts: []
+
+- name: SERVFAIL share above 1 %
+  interval: 1m
+  input_series:
+  - series: 'coredns_dns_responses_total{job="coredns", component="coredns", cluster="cmtc-b", node="cmtc-b-control-plane", pod="coredns-589f44dc88-9cwr7", instance="10.20.0.238:9153", plugin="errors", rcode="NOERROR", server="dns://:53", view="", zone="."}'
+    values: '0+117x10'
+  - series: 'coredns_dns_responses_total{job="coredns", component="coredns", cluster="cmtc-b", node="cmtc-b-control-plane", pod="coredns-589f44dc88-9cwr7", instance="10.20.0.238:9153", plugin="errors", rcode="SERVFAIL", server="dns://:53", view="", zone="."}'
+    values: '0+3x10'
+  alert_rule_test:
+  - eval_time: 5m
+    alertname: CoreDNSServfailHigh
+    exp_alerts: []
+  - eval_time: 6m
+    alertname: CoreDNSServfailHigh
+    exp_alerts:
+    - exp_labels: {severity: warning, owner: coredns, cluster: cmtc-b}
+      exp_annotations:
+        summary: '2.5% of CoreDNS answers in cmtc-b are SERVFAIL'
+        runbook: 'CoreDNS cannot answer: an upstream is failing or the kubernetes plugin lost its API watch. The DNS dashboard shows the upstream response codes; read the CoreDNS log.'
+
+- name: forward health, concurrency limit, panics and reloads
+  interval: 1m
+  input_series:
+  - series: 'coredns_forward_healthcheck_broken_total{job="coredns", component="coredns", cluster="cmtc-a", node="cmtc-a-control-plane", pod="coredns-589f44dc88-gtnm7", instance="10.10.0.64:9153"}'
+    values: '0x4 1x6'
+  - series: 'coredns_forward_max_concurrent_rejects_total{job="coredns", component="coredns", cluster="cmtc-a", node="cmtc-a-control-plane", pod="coredns-589f44dc88-gtnm7", instance="10.10.0.64:9153"}'
+    values: '0x4 1x6'
+  - series: 'coredns_panics_total{job="coredns", component="coredns", cluster="cmtc-a", node="cmtc-a-control-plane", pod="coredns-589f44dc88-gtnm7", instance="10.10.0.64:9153"}'
+    values: '0x4 1x6'
+  - series: 'coredns_reload_failed_total{job="coredns", component="coredns", cluster="cmtc-a", node="cmtc-a-control-plane", pod="coredns-589f44dc88-gtnm7", instance="10.10.0.64:9153"}'
+    values: '0x4 1x6'
+  - series: 'coredns_panics_total{job="coredns", component="coredns", cluster="cmtc-a", node="cmtc-a-control-plane", pod="coredns-589f44dc88-ktw7v", instance="10.10.0.193:9153"}'
+    values: '0x10'
+  alert_rule_test:
+  - eval_time: 4m
+    alertname: CoreDNSForwardHealthcheckBroken
+    exp_alerts: []
+  - eval_time: 5m
+    alertname: CoreDNSForwardHealthcheckBroken
+    exp_alerts:
+    - exp_labels: {severity: warning, owner: coredns, cluster: cmtc-a, node: cmtc-a-control-plane, pod: coredns-589f44dc88-gtnm7}
+      exp_annotations:
+        summary: 'Every forward upstream of CoreDNS coredns-589f44dc88-gtnm7 in cmtc-a failed its health check'
+        runbook: 'Names outside the cluster do not resolve from this replica. Check the upstream resolvers in the Corefile (forward . /etc/resolv.conf) and the node''s network path to them.'
+  - eval_time: 10m
+    alertname: CoreDNSForwardHealthcheckBroken
+    exp_alerts: []
+  - eval_time: 5m
+    alertname: CoreDNSForwardConcurrencyRejects
+    exp_alerts:
+    - exp_labels: {severity: warning, owner: coredns, cluster: cmtc-a, node: cmtc-a-control-plane, pod: coredns-589f44dc88-gtnm7}
+      exp_annotations:
+        summary: 'CoreDNS coredns-589f44dc88-gtnm7 in cmtc-a refused 1 forwarded queries at its concurrency limit in 5 minutes'
+        runbook: 'Upstream answers are slower than the query rate. Check the forward latency on the DNS dashboard and the max_concurrent setting of the forward plugin.'
+  - eval_time: 5m
+    alertname: CoreDNSPanics
+    exp_alerts:
+    - exp_labels: {severity: warning, owner: coredns, cluster: cmtc-a, node: cmtc-a-control-plane, pod: coredns-589f44dc88-gtnm7}
+      exp_annotations:
+        summary: 'CoreDNS coredns-589f44dc88-gtnm7 in cmtc-a recovered from 1 panics in 5 minutes'
+        runbook: 'A plugin crashed while serving a query. The CoreDNS log has the stack trace; report it with the CoreDNS version from coredns_build_info.'
+  - eval_time: 5m
+    alertname: CoreDNSReloadFailed
+    exp_alerts:
+    - exp_labels: {severity: warning, owner: coredns, cluster: cmtc-a, node: cmtc-a-control-plane, pod: coredns-589f44dc88-gtnm7}
+      exp_annotations:
+        summary: 'CoreDNS coredns-589f44dc88-gtnm7 in cmtc-a failed to load a changed Corefile'
+        runbook: 'The replica keeps serving the previous configuration. Read the CoreDNS log for the parse error and fix the coredns ConfigMap.'

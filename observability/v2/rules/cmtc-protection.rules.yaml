@@ -1,0 +1,153 @@
+# Status: tested here with promtool 3.7.0 (rules/run-promtool.sh, tests/cmtc-protection.test.yaml). Not
+# deployed: the drop and forward records need the widened cilium-native keep list of deploy/, and
+# CMTCInPodProxiesPending the ztunnel scrape job.
+#
+# Protection lifecycle as the Cilium agent reports it: ZDS enrollment, xDS publication and ACK,
+# effective policy compilation and quarantine release. These are control-plane events: none of
+# them proves that traffic is protected (no rule here says "Protected").
+#
+# Counters whose labelled series are created by their first event (Cilium creates the ztunnel
+# metric vectors disabled, so NewCounterVecWithLabels never pre-creates them:
+# pkg/metrics/metric/metric.go:367-371) lose that first event in increase(). Every event alert
+# below therefore also fires on a series that did not exist five minutes earlier, provided its
+# scrape target did (so a Prometheus or scrape restart does not look like an event).
+# source-patches/cilium/0001 pre-creates the closed label sets; the second branch is then inert.
+groups:
+- name: cmtc-protection
+  rules:
+  - record: cmtc:effective_policy_events:increase5m
+    expr: |-
+      sum by (cluster, node, event) (
+        increase(cilium_ztunnel_xds_effective_policy_events_total{job="cilium-native"}[5m])
+      )
+
+  - record: cmtc:effective_policy_sources:sum
+    expr: sum by (cluster, origin) (cilium_ztunnel_xds_effective_policy_sources{job="cilium-native"})
+
+  # Cilium datapath outcomes for every packet the agent's programs handled, all ports and
+  # protocols (the counters have no port or namespace label). Needs the widened cilium-native
+  # keep list of deploy/chart (values jobs.ciliumAgent.keep).
+  - record: cmtc:cilium_drops:rate5m
+    expr: sum by (cluster, node, direction, reason) (rate(cilium_drop_count_total{job="cilium-native"}[5m]))
+  - record: cmtc:cilium_forwarded:rate5m
+    expr: sum by (cluster, node, direction) (rate(cilium_forward_count_total{job="cilium-native"}[5m]))
+
+  - alert: CMTCZDSDisconnected
+    expr: max by (cluster, node) (cilium_ztunnel_zds_connection_active{job="cilium-native"}) < 1
+    for: 2m
+    labels:
+      severity: warning
+      owner: cilium-agent
+    annotations:
+      summary: 'The Cilium agent on {{ $labels.node }} ({{ $labels.cluster }}) has no ZDS connection from ztunnel'
+      runbook: 'New Pods on this node cannot be enrolled and stay quarantined. Check the ztunnel-cilium pod on the node and the agent log for the ZDS socket /var/run/cilium/ztunnel.sock.'
+
+  - alert: CMTCZDSEnrollmentFailing
+    expr: |-
+      sum by (cluster, node, status) (
+        increase(cilium_ztunnel_zds_enrollment_failures_total{job="cilium-native"}[5m])
+      ) > 0
+      or
+      count by (cluster, node, status) (
+        (
+          cilium_ztunnel_zds_enrollment_failures_total{job="cilium-native"}
+          unless cilium_ztunnel_zds_enrollment_failures_total{job="cilium-native"} offset 5m
+        )
+        and on (cluster, node) (up{job="cilium-native"} offset 5m == 1)
+      )
+    labels:
+      severity: warning
+      owner: cilium-agent
+    annotations:
+      summary: 'ZDS enrollment failed on {{ $labels.node }} ({{ $labels.cluster }}): {{ $labels.status }}'
+      runbook: 'The Pod stays quarantined. netns_failed and iptables_failed point at the Pod network namespace; uid_mismatch at a replaced Pod; send_failed at the ztunnel connection. Read the agent log at the same minute.'
+
+  - alert: CMTCXDSEnrollmentFailing
+    expr: |-
+      sum by (cluster, node, status) (
+        increase(cilium_ztunnel_xds_enrollment_failures_total{job="cilium-native"}[5m])
+      ) > 0
+      or
+      count by (cluster, node, status) (
+        (
+          cilium_ztunnel_xds_enrollment_failures_total{job="cilium-native"}
+          unless cilium_ztunnel_xds_enrollment_failures_total{job="cilium-native"} offset 5m
+        )
+        and on (cluster, node) (up{job="cilium-native"} offset 5m == 1)
+      )
+    labels:
+      severity: warning
+      owner: cilium-agent
+    annotations:
+      summary: 'xDS workload publication to ztunnel failed on {{ $labels.node }} ({{ $labels.cluster }}): {{ $labels.status }}'
+      runbook: 'nack_received means ztunnel rejected the Address snapshot; invalid_workload_* means the agent refused to build one. The workload keeps its quarantine until the Address is acknowledged.'
+
+  - alert: CMTCAuthorizationRejected
+    expr: |-
+      sum by (cluster, node, status) (
+        increase(cilium_ztunnel_xds_authorization_events_total{job="cilium-native", status=~"nack|send_failed"}[5m])
+      ) > 0
+      or
+      count by (cluster, node, status) (
+        (
+          cilium_ztunnel_xds_authorization_events_total{job="cilium-native", status=~"nack|send_failed"}
+          unless cilium_ztunnel_xds_authorization_events_total{job="cilium-native", status=~"nack|send_failed"} offset 5m
+        )
+        and on (cluster, node) (up{job="cilium-native"} offset 5m == 1)
+      )
+    labels:
+      severity: warning
+      owner: cilium-agent
+    annotations:
+      summary: 'ztunnel on {{ $labels.node }} ({{ $labels.cluster }}) did not apply an Authorization update: {{ $labels.status }}'
+      runbook: 'The effective policy is not acknowledged, so the destination stays quarantined or keeps its previous plan. Compare with CMTCEffectivePolicyCompileFailed and the ztunnel log.'
+
+  - alert: CMTCEffectivePolicyCompileFailed
+    expr: |-
+      sum by (cluster, node) (
+        increase(cilium_ztunnel_xds_effective_policy_events_total{job="cilium-native", event="compile_failed"}[5m])
+      ) > 0
+      or
+      count by (cluster, node) (
+        (
+          cilium_ztunnel_xds_effective_policy_events_total{job="cilium-native", event="compile_failed"}
+          unless cilium_ztunnel_xds_effective_policy_events_total{job="cilium-native", event="compile_failed"} offset 5m
+        )
+        and on (cluster, node) (up{job="cilium-native"} offset 5m == 1)
+      )
+    labels:
+      severity: warning
+      owner: cilium-agent
+    annotations:
+      summary: 'An effective ztunnel policy failed to compile on {{ $labels.node }} ({{ $labels.cluster }})'
+      runbook: 'That destination now denies every caller (fail closed). The agent log line "Effective ztunnel policy compilation failed" names the Pod UID and the error, for example more than 64 sources.'
+
+  - alert: CMTCQuarantineReleaseRefused
+    expr: |-
+      sum by (cluster, node) (
+        increase(cilium_ztunnel_xds_effective_policy_events_total{job="cilium-native", event="release_refused"}[5m])
+      ) > 0
+      or
+      count by (cluster, node) (
+        (
+          cilium_ztunnel_xds_effective_policy_events_total{job="cilium-native", event="release_refused"}
+          unless cilium_ztunnel_xds_effective_policy_events_total{job="cilium-native", event="release_refused"} offset 5m
+        )
+        and on (cluster, node) (up{job="cilium-native"} offset 5m == 1)
+      )
+    labels:
+      severity: warning
+      owner: cilium-agent
+    annotations:
+      summary: 'The endpoint refused a quarantine release receipt on {{ $labels.node }} ({{ $labels.cluster }})'
+      runbook: 'The receipt did not match the endpoint''s own state (binding, membership, policy digest or identity changed). The workload stays quarantined until the next consistent publication.'
+
+  - alert: CMTCInPodProxiesPending
+    expr: max by (cluster, node) (workload_manager_pending_proxy_count{job="ztunnel"}) > 0
+    for: 5m
+    labels:
+      severity: warning
+      owner: ztunnel
+    annotations:
+      summary: 'ztunnel on {{ $labels.node }} ({{ $labels.cluster }}) has {{ $value }} in-Pod proxies waiting to start'
+      runbook: 'An enrolled Pod has no running in-Pod proxy, so its traffic is not carried. Check the ztunnel log for the Pod network namespace and its workload certificate.'

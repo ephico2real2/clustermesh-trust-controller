@@ -1,4 +1,4 @@
-// Package v1alpha1 defines CMTC's experimental observation API.
+// Package v1alpha1 defines CMTC's experimental observation API and the issuer approval arbiter's records.
 package v1alpha1
 
 import (
@@ -10,7 +10,7 @@ import (
 var GroupVersion = schema.GroupVersion{Group: "security.cmtc.io", Version: "v1alpha1"}
 
 func AddToScheme(s *runtime.Scheme) error {
-	s.AddKnownTypes(GroupVersion, &NamespaceMTLSPolicy{}, &NamespaceMTLSPolicyList{})
+	s.AddKnownTypes(GroupVersion, &NamespaceMTLSPolicy{}, &NamespaceMTLSPolicyList{}, &IssuerApproval{}, &IssuerApprovalList{}, &NodeTrustReport{}, &NodeTrustReportList{})
 	metav1.AddToGroupVersion(s, GroupVersion)
 	return nil
 }

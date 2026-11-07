@@ -1,0 +1,104 @@
+# promtool test rules for rules/cmtc-security.rules.yaml. The denial and revocation series are
+# created by their first event (ztunnel omits a family until then), so the cases start without
+# them and check that the first event is counted once, from its full value.
+rule_files:
+- ../cmtc-security.rules.yaml
+evaluation_interval: 1m
+
+tests:
+# Three denials appear at 8m on a node that was already scraped, two more at 10m.
+- interval: 1m
+  input_series:
+  - series: 'up{job="ztunnel", component="ztunnel", cluster="cmtc-a", node="cmtc-a-worker", instance="172.18.0.4:15020"}'
+    values: '1x20'
+  - series: 'istio_tcp_connections_failed_total{job="ztunnel", component="ztunnel", cluster="cmtc-a", node="cmtc-a-worker", instance="172.18.0.4:15020", reporter="destination", response_flags="DENY", source_cluster="cmtc-b", source_workload_namespace="mesh-client", source_principal="spiffe://cmtc-b.cmtc.local/ns/mesh-client/sa/default", destination_workload_namespace="mesh-server", connection_security_policy="mutual_tls"}'
+    values: '_x8 3 3 5x10'
+  promql_expr_test:
+  - expr: cmtc:ztunnel_denied_connections:increase5m
+    eval_time: 7m
+    exp_samples: []
+  - expr: cmtc:ztunnel_denied_connections:increase5m
+    eval_time: 8m
+    exp_samples:
+    - labels: 'cmtc:ztunnel_denied_connections:increase5m{cluster="cmtc-a", node="cmtc-a-worker", source_cluster="cmtc-b", source_workload_namespace="mesh-client", destination_workload_namespace="mesh-server"}'
+      value: 3
+  - expr: cmtc:ztunnel_denied_connections:increase5m
+    eval_time: 10m
+    exp_samples:
+    - labels: 'cmtc:ztunnel_denied_connections:increase5m{cluster="cmtc-a", node="cmtc-a-worker", source_cluster="cmtc-b", source_workload_namespace="mesh-client", destination_workload_namespace="mesh-server"}'
+      value: 5
+  - expr: cmtc:ztunnel_denied_connections:increase5m
+    eval_time: 20m
+    exp_samples:
+    - labels: 'cmtc:ztunnel_denied_connections:increase5m{cluster="cmtc-a", node="cmtc-a-worker", source_cluster="cmtc-b", source_workload_namespace="mesh-client", destination_workload_namespace="mesh-server"}'
+      value: 0
+
+# A series that already existed when Prometheus (or this scrape target) started is not an event:
+# without a scrape of the node five minutes earlier, the first value is not counted.
+- interval: 1m
+  input_series:
+  - series: 'up{job="ztunnel", component="ztunnel", cluster="cmtc-a", node="cmtc-a-worker", instance="172.18.0.4:15020"}'
+    values: '_x8 1x8'
+  - series: 'istio_tcp_connections_failed_total{job="ztunnel", component="ztunnel", cluster="cmtc-a", node="cmtc-a-worker", instance="172.18.0.4:15020", reporter="destination", response_flags="DENY", source_cluster="cmtc-a", source_workload_namespace="mesh-client", destination_workload_namespace="mesh-server", connection_security_policy="mutual_tls"}'
+    values: '_x8 40x8'
+  promql_expr_test:
+  - expr: cmtc:ztunnel_denied_connections:increase5m
+    eval_time: 8m
+    exp_samples: []
+
+# A revoked certificate refused twice at 6m (first event of the series), one more at 9m; untracked
+# connections for more than 5 minutes; handshakes by result.
+- interval: 1m
+  input_series:
+  - series: 'up{job="ztunnel", component="ztunnel", cluster="cmtc-b", node="cmtc-b-worker", instance="172.18.0.5:15020"}'
+    values: '1x30'
+  - series: 'istio_crl_policy_rejections_total{job="ztunnel", component="ztunnel", cluster="cmtc-b", node="cmtc-b-worker", instance="172.18.0.5:15020", reporter="destination"}'
+    values: '_x6 2 2 2 3x21'
+  - series: 'istio_crl_untracked_connections_total{job="ztunnel", component="ztunnel", cluster="cmtc-b", node="cmtc-b-worker", instance="172.18.0.5:15020", reporter="destination"}'
+    values: '0 0 1+1x28'
+  - series: 'istio_tls_handshakes_total{job="ztunnel", component="ztunnel", cluster="cmtc-b", node="cmtc-b-worker", instance="172.18.0.5:15020", reporter="destination", result="success"}'
+    values: '0+10x30'
+  - series: 'istio_tls_handshakes_total{job="ztunnel", component="ztunnel", cluster="cmtc-b", node="cmtc-b-worker", instance="172.18.0.5:15020", reporter="destination", result="failure"}'
+    values: '0x30'
+  promql_expr_test:
+  - expr: cmtc:ztunnel_crl_rejections:increase5m
+    eval_time: 6m
+    exp_samples:
+    - labels: 'cmtc:ztunnel_crl_rejections:increase5m{cluster="cmtc-b", node="cmtc-b-worker", reporter="destination"}'
+      value: 2
+  - expr: cmtc:ztunnel_crl_rejections:increase5m
+    eval_time: 25m
+    exp_samples:
+    - labels: 'cmtc:ztunnel_crl_rejections:increase5m{cluster="cmtc-b", node="cmtc-b-worker", reporter="destination"}'
+      value: 0
+  - expr: cmtc:ztunnel_tls_handshakes:increase5m
+    eval_time: 10m
+    exp_samples:
+    - labels: 'cmtc:ztunnel_tls_handshakes:increase5m{cluster="cmtc-b", node="cmtc-b-worker", result="success"}'
+      value: 50
+    - labels: 'cmtc:ztunnel_tls_handshakes:increase5m{cluster="cmtc-b", node="cmtc-b-worker", result="failure"}'
+      value: 0
+  alert_rule_test:
+  - eval_time: 5m
+    alertname: CMTCRevokedCertificatePresented
+    exp_alerts: []
+  - eval_time: 6m
+    alertname: CMTCRevokedCertificatePresented
+    exp_alerts:
+    - exp_labels: {severity: warning, owner: ztunnel, cluster: cmtc-b, node: cmtc-b-worker, reporter: destination}
+      exp_annotations:
+        summary: 'ztunnel on cmtc-b-worker (cmtc-b) refused 2 connections with a revoked certificate in 5 minutes (destination side)'
+        runbook: 'The refusal worked; find the caller. The ztunnel log on the node names the peer and the certificate serial. Check whether its SPIRE entry was deleted and whether the workload still holds the old SVID.'
+  - eval_time: 25m
+    alertname: CMTCRevokedCertificatePresented
+    exp_alerts: []
+  - eval_time: 6m
+    alertname: CMTCConnectionsUntrackedForRevocation
+    exp_alerts: []
+  - eval_time: 7m
+    alertname: CMTCConnectionsUntrackedForRevocation
+    exp_alerts:
+    - exp_labels: {severity: warning, owner: ztunnel, cluster: cmtc-b, node: cmtc-b-worker, reporter: destination}
+      exp_annotations:
+        summary: 'ztunnel on cmtc-b-worker (cmtc-b) accepted connections it cannot close on revocation'
+        runbook: 'A later revocation will not end these connections. Read the ztunnel log for the CRL tracking error and check the CRL file and its watcher.'

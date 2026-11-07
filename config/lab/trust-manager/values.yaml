@@ -1,0 +1,29 @@
+# trust-manager on the CMTC labs. It keeps the mesh root certificate as a ConfigMap in each namespace that opts in with
+# the label trust=enabled, including namespaces labelled later (the CMTC chart holds the Bundle, charts/cmtc trust.*;
+# MESH_PKI.md, Trust bundle, lists the namespaces and the opt-in steps). Install it after cert-manager and before the
+# CMTC chart:
+#
+#   helm upgrade --install trust-manager oci://quay.io/jetstack/charts/trust-manager --version v0.25.0 \
+#     -n cert-manager -f config/lab/trust-manager/values.yaml --wait
+#
+# Chart v0.25.0: oci://quay.io/jetstack/charts/trust-manager@sha256:ef4540d4c3b7eb8cd498e3420aa5171ccc7434b7fa5e3168f1218d22906dbecb
+# Image v0.25.0: the multi-platform index below (linux/amd64 and linux/arm64 among its platforms).
+#
+# No app.targetNamespaces: the chart then grants one ClusterRole for ConfigMaps, so a namespace labelled later gets its
+# copy without a Role or a reinstall (the operator's demo lab, cilium-implementation-poc demo 36, runs the same way).
+# Measured on kind-cmtc-a 2026-10-26: with targetNamespaces set, a new namespace got no copy while the Bundle still
+# reported Synced=True.
+#
+# trust-manager reads every Secret in its trust namespace (a Role with get, list and watch), which includes the mesh
+# root's and the intermediates' private keys. Accepted for the labs in ADR-011 (Accepted risk).
+image:
+  digest: sha256:0521921c2a46d14d0417336b20bcde69215ef3164f2977cc939d53c6e5224a17
+
+# The mesh trusts only its own root. No public CA package, so no second image either.
+defaultPackage:
+  enabled: false
+
+app:
+  trust:
+    # Where Bundle sources are read from: cert-manager writes the root and the intermediates here.
+    namespace: cert-manager

@@ -1,0 +1,165 @@
+{
+  "client": "client-worker",
+  "clientIP": "10.20.1.242",
+  "node": "cmtc-b-worker",
+  "agent": "cilium-bf2pb",
+  "monitor": "docs/evidence/image-qualification-20261026/dns/before-tcp-bypass/cmtc-b-negative-20261026T183842Z-monitor-cmtc-b-worker.txt",
+  "rows": [
+    {
+      "at": "2026-10-26T18:38:51.417747+00:00",
+      "context": "kind-cmtc-b",
+      "client": "client-worker",
+      "probe": "dns-udp",
+      "name": "kubernetes.default.svc.cluster.local",
+      "server": "10.20.0.92",
+      "rc": 1,
+      "resolved": false,
+      "addresses": [],
+      "stdout": ";; connection timed out; no servers could be reached\n\n\nCMTC_RC=1\n",
+      "stderr": "",
+      "case": "DNS over UDP to a server Pod (not a resolver)",
+      "failed": true,
+      "dropLines": [
+        "xx drop (Policy denied) flow 0x938d8cf9 to endpoint 0, ifindex 333, file bpf_lxc.c:1630, , identity 137854->179695: 10.20.1.242:40436 -> 10.20.0.92:53 udp",
+        "xx drop (Policy denied) flow 0x938d8cf9 to endpoint 0, ifindex 333, file bpf_lxc.c:1630, , identity 137854->179695: 10.20.1.242:40436 -> 10.20.0.92:53 udp",
+        "xx drop (Policy denied) flow 0x938d8cf9 to endpoint 0, ifindex 333, file bpf_lxc.c:1630, , identity 137854->179695: 10.20.1.242:40436 -> 10.20.0.92:53 udp",
+        "xx drop (Policy denied) flow 0x938d8cf9 to endpoint 0, ifindex 333, file bpf_lxc.c:1630, , identity 137854->179695: 10.20.1.242:40436 -> 10.20.0.92:53 udp"
+      ]
+    },
+    {
+      "at": "2026-10-26T18:38:56.478720+00:00",
+      "context": "kind-cmtc-b",
+      "client": "client-worker",
+      "probe": "dns-udp",
+      "name": "kubernetes.default.svc.cluster.local",
+      "server": "1.1.1.1",
+      "rc": 1,
+      "resolved": false,
+      "addresses": [],
+      "stdout": ";; connection timed out; no servers could be reached\n\n\nCMTC_RC=1\n",
+      "stderr": "",
+      "case": "DNS over UDP to 1.1.1.1 (world)",
+      "failed": true,
+      "dropLines": [
+        "xx drop (Policy denied) flow 0x1ffba70e to endpoint 0, ifindex 333, file bpf_lxc.c:1630, , identity 137854->world: 10.20.1.242:36347 -> 1.1.1.1:53 udp",
+        "xx drop (Policy denied) flow 0x1ffba70e to endpoint 0, ifindex 333, file bpf_lxc.c:1630, , identity 137854->world: 10.20.1.242:36347 -> 1.1.1.1:53 udp",
+        "xx drop (Policy denied) flow 0x1ffba70e to endpoint 0, ifindex 333, file bpf_lxc.c:1630, , identity 137854->world: 10.20.1.242:36347 -> 1.1.1.1:53 udp",
+        "xx drop (Policy denied) flow 0x1ffba70e to endpoint 0, ifindex 333, file bpf_lxc.c:1630, , identity 137854->world: 10.20.1.242:36347 -> 1.1.1.1:53 udp"
+      ]
+    },
+    {
+      "at": "2026-10-26T18:38:56.538736+00:00",
+      "context": "kind-cmtc-b",
+      "client": "cmtc-live-mtls/client-worker",
+      "probe": "dns-tcp",
+      "name": "kubernetes.default.svc.cluster.local",
+      "server": "10.20.0.92",
+      "queryID": 1752,
+      "rc": 0,
+      "replyBytes": 0,
+      "stderr": "",
+      "answered": false,
+      "reason": "0 bytes received",
+      "case": "DNS over TCP to a server Pod (not a resolver)",
+      "failed": true,
+      "dropLines": []
+    },
+    {
+      "at": "2026-10-26T18:38:56.593992+00:00",
+      "context": "kind-cmtc-b",
+      "client": "cmtc-live-mtls/client-worker",
+      "probe": "dns-tcp",
+      "name": "kubernetes.default.svc.cluster.local",
+      "server": "1.1.1.1",
+      "queryID": 44312,
+      "rc": 0,
+      "replyBytes": 0,
+      "stderr": "",
+      "answered": false,
+      "reason": "0 bytes received",
+      "case": "DNS over TCP to 1.1.1.1 (world)",
+      "failed": true,
+      "dropLines": []
+    },
+    {
+      "at": "2026-10-26T18:38:56.651064+00:00",
+      "context": "kind-cmtc-b",
+      "client": "client-worker",
+      "probe": "curl",
+      "url": "http://10.20.0.238:8080/health",
+      "curlRC": 56,
+      "http200": false,
+      "expectedCluster": null,
+      "positiveMatch": false,
+      "stdout": "\nCMTC_RC=56\n",
+      "stderr": "curl: (56) Recv failure: Connection reset by peer\n",
+      "case": "TCP to CoreDNS on 8080",
+      "failed": true,
+      "dropLines": []
+    },
+    {
+      "at": "2026-10-26T18:38:56.707825+00:00",
+      "context": "kind-cmtc-b",
+      "client": "client-worker",
+      "probe": "curl",
+      "url": "http://10.20.0.238:9153/metrics",
+      "curlRC": 56,
+      "http200": false,
+      "expectedCluster": null,
+      "positiveMatch": false,
+      "stdout": "\nCMTC_RC=56\n",
+      "stderr": "curl: (56) Recv failure: Connection reset by peer\n",
+      "case": "TCP to CoreDNS on 9153",
+      "failed": true,
+      "dropLines": []
+    },
+    {
+      "at": "2026-10-26T18:38:58.765072+00:00",
+      "context": "kind-cmtc-b",
+      "client": "client-worker",
+      "probe": "udp",
+      "dst": "10.20.0.92:80",
+      "rc": 0,
+      "reply": "",
+      "stdout": "\nCMTC_RC=0\n",
+      "stderr": "",
+      "case": "plaintext UDP to a server Pod on 80",
+      "failed": true,
+      "dropLines": [
+        "xx drop (Policy denied) flow 0x2e080eb0 to endpoint 0, ifindex 333, file bpf_lxc.c:1630, , identity 137854->179695: 10.20.1.242:33015 -> 10.20.0.92:80 udp"
+      ]
+    },
+    {
+      "at": "2026-10-26T18:39:00.828210+00:00",
+      "context": "kind-cmtc-b",
+      "client": "client-worker",
+      "probe": "udp",
+      "dst": "10.20.0.92:8080",
+      "rc": 0,
+      "reply": "",
+      "stdout": "\nCMTC_RC=0\n",
+      "stderr": "",
+      "case": "plaintext UDP to a server Pod on 8080",
+      "failed": true,
+      "dropLines": [
+        "xx drop (Policy denied) flow 0x46adc07a to endpoint 0, ifindex 333, file bpf_lxc.c:1630, , identity 137854->179695: 10.20.1.242:60254 -> 10.20.0.92:8080 udp"
+      ]
+    },
+    {
+      "at": "2026-10-26T18:39:02.886746+00:00",
+      "context": "kind-cmtc-b",
+      "client": "client-worker",
+      "probe": "udp",
+      "dst": "10.20.0.92:31337",
+      "rc": 0,
+      "reply": "",
+      "stdout": "\nCMTC_RC=0\n",
+      "stderr": "",
+      "case": "plaintext UDP to a server Pod on 31337",
+      "failed": true,
+      "dropLines": [
+        "xx drop (Policy denied) flow 0x27950fcb to endpoint 0, ifindex 333, file bpf_lxc.c:1630, , identity 137854->179695: 10.20.1.242:50041 -> 10.20.0.92:31337 udp"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,302 @@
+# promtool test rules for rules/cmtc-slo.rules.yaml. Each burn-rate alert is tested at the first
+# minute it must fire and at the minute before, on a fault that starts at 6 h (360m), so that the
+# 6 h window is full. The thresholds are 14.4 x and 6 x the budget (0.1 % or 1 %).
+# The dependency indicator needs cmtc:expected_cluster:info and cmtc:expected_node:info from
+# rules/cmtc-collection.rules.yaml, so both files are loaded.
+rule_files:
+- ../cmtc-collection.rules.yaml
+- ../cmtc-slo.rules.yaml
+evaluation_interval: 1m
+# promtool evaluates groups in map order unless told: the expected-cluster and expected-node
+# records of cmtc-collection must exist before the groups that read them, as they do in
+# Prometheus after the first evaluation.
+group_eval_order:
+- cmtc-collection
+- cmtc-slo-connections
+- cmtc-slo-dependencies
+- cmtc-slo-coredns
+
+tests:
+# Source mTLS in cmtc-a: 100 attempts and 50 intended denials a minute; from 360m, 7 CONNECT
+# failures a minute (14 % of the 50 valid attempts). cmtc-b connects without failures.
+- name: authenticated connections
+  interval: 1m
+  input_series:
+  - series: 'istio_tcp_connections_opened_total{job="ztunnel", component="ztunnel", cluster="cmtc-a", node="cmtc-a-worker", instance="172.18.0.4:15020", reporter="source", connection_security_policy="mutual_tls", source_workload_namespace="mesh-client", destination_workload_namespace="mesh-server"}'
+    values: '0+100x420'
+  - series: 'istio_tcp_connections_failed_total{job="ztunnel", component="ztunnel", cluster="cmtc-a", node="cmtc-a-worker", instance="172.18.0.4:15020", reporter="source", connection_security_policy="mutual_tls", source_workload_namespace="mesh-client", destination_workload_namespace="mesh-server", response_flags="DENY"}'
+    values: '0+50x420'
+  - series: 'istio_tcp_connections_failed_total{job="ztunnel", component="ztunnel", cluster="cmtc-a", node="cmtc-a-worker", instance="172.18.0.4:15020", reporter="source", connection_security_policy="mutual_tls", source_workload_namespace="mesh-client", destination_workload_namespace="mesh-server", response_flags="CONNECT"}'
+    values: '0x360 7+7x60'
+  - series: 'istio_tcp_connections_opened_total{job="ztunnel", component="ztunnel", cluster="cmtc-b", node="cmtc-b-worker", instance="172.18.0.5:15020", reporter="source", connection_security_policy="mutual_tls", source_workload_namespace="mesh-client", destination_workload_namespace="mesh-server"}'
+    values: '0+100x420'
+  promql_expr_test:
+  - expr: cmtc:slo_connection_errors:ratio_rate1h
+    eval_time: 366m
+    exp_samples:
+    - labels: 'cmtc:slo_connection_errors:ratio_rate1h{cluster="cmtc-a"}'
+      value: 0.014
+    - labels: 'cmtc:slo_connection_errors:ratio_rate1h{cluster="cmtc-b"}'
+      value: 0
+  - expr: cmtc:slo_connection_errors:ratio_rate5m{cluster="cmtc-a"}
+    eval_time: 367m
+    exp_samples:
+    - labels: 'cmtc:slo_connection_errors:ratio_rate5m{cluster="cmtc-a"}'
+      value: 0.13999999999999999  # 35 / 250, as float64 arithmetic yields it; promtool compares exactly
+  # The other windows, rounded to 6 decimals: 112 / 1500 and 112 / 18000.
+  - expr: round(cmtc:slo_connection_errors:ratio_rate30m{cluster="cmtc-a"} * 1000000) / 1000000
+    eval_time: 376m
+    exp_samples:
+    - labels: '{cluster="cmtc-a"}'
+      value: 0.074667
+  - expr: round(cmtc:slo_connection_errors:ratio_rate6h{cluster="cmtc-a"} * 1000000) / 1000000
+    eval_time: 376m
+    exp_samples:
+    - labels: '{cluster="cmtc-a"}'
+      value: 0.006222
+  alert_rule_test:
+  - eval_time: 366m
+    alertname: CMTCConnectionErrorBudgetFastBurn
+    exp_alerts: []
+  - eval_time: 367m
+    alertname: CMTCConnectionErrorBudgetFastBurn
+    exp_alerts:
+    - exp_labels: {severity: critical, owner: ztunnel, slo: '99.9', cluster: cmtc-a}
+      exp_annotations:
+        summary: 'Source mTLS connections fail in cmtc-a: 1.633% over 1h, 14.4x the rate the 99.9 % objective allows'
+        runbook: 'Read the failures by response flag on the on-call dashboard: TRUST_PROFILE points at the issuer approval, IDENTITY_ERROR at SPIRE identity issuance, CONNECT and NETWORK_POLICY at the network path.'
+  - eval_time: 375m
+    alertname: CMTCConnectionErrorBudgetSlowBurn
+    exp_alerts: []
+  - eval_time: 376m
+    alertname: CMTCConnectionErrorBudgetSlowBurn
+    exp_alerts:
+    - exp_labels: {severity: warning, owner: ztunnel, slo: '99.9', cluster: cmtc-a}
+      exp_annotations:
+        summary: 'Source mTLS connections fail in cmtc-a: 0.6222% over 6h, 6x the rate the 99.9 % objective allows'
+        runbook: 'Read the failures by response flag on the on-call dashboard: TRUST_PROFILE points at the issuer approval, IDENTITY_ERROR at SPIRE identity issuance, CONNECT and NETWORK_POLICY at the network path.'
+
+# cmtc-a has every dependency until the worker's ztunnel stops answering at 361m. cmtc-b sends no
+# data at all: every term is 0 there, so it burns from the start (missing is unavailable).
+- name: critical dependencies
+  interval: 1m
+  input_series:
+  - series: 'up{job="cmtc", component="cmtc-controller", cluster="cmtc-a", node="cmtc-a-worker", instance="10.10.1.197:8080"}'
+    values: '1x420'
+  - series: 'cmtc_issuer_profile_acknowledged_valid_until_timestamp_seconds{job="cmtc", component="cmtc-controller", cluster="cmtc-a", exported_cluster="cmtc-a", node="cmtc-a-worker", instance="10.10.1.197:8080"}'
+    values: '30+60x420'
+  - series: 'up{job="cmtc", component="cmtc-node-agent", cluster="cmtc-a", node="cmtc-a-worker", instance="10.10.1.5:8080"}'
+    values: '1x420'
+  - series: 'up{job="cmtc", component="cmtc-node-agent", cluster="cmtc-a", node="cmtc-a-control-plane", instance="10.10.0.7:8080"}'
+    values: '1x420'
+  - series: 'up{job="cilium-native", component="cilium-agent", cluster="cmtc-a", node="cmtc-a-worker", instance="172.18.0.4:9962"}'
+    values: '1x420'
+  - series: 'up{job="cilium-native", component="cilium-agent", cluster="cmtc-a", node="cmtc-a-control-plane", instance="172.18.0.2:9962"}'
+    values: '1x420'
+  - series: 'up{job="ztunnel", component="ztunnel", cluster="cmtc-a", node="cmtc-a-worker", instance="172.18.0.4:15020"}'
+    values: '1x360 0x60'
+  - series: 'up{job="ztunnel", component="ztunnel", cluster="cmtc-a", node="cmtc-a-control-plane", instance="172.18.0.2:15020"}'
+    values: '1x420'
+  - series: 'up{job="coredns", component="coredns", cluster="cmtc-a", node="cmtc-a-control-plane", pod="coredns-589f44dc88-gtnm7", instance="10.10.0.64:9153"}'
+    values: '1x420'
+  promql_expr_test:
+  - expr: cmtc:dependency_available:bool
+    eval_time: 361m
+    exp_samples:
+    - labels: 'cmtc:dependency_available:bool{cluster="cmtc-a", dependency="cmtc-controller"}'
+      value: 1
+    - labels: 'cmtc:dependency_available:bool{cluster="cmtc-a", dependency="issuer-profile"}'
+      value: 1
+    - labels: 'cmtc:dependency_available:bool{cluster="cmtc-a", dependency="cilium-agent"}'
+      value: 1
+    - labels: 'cmtc:dependency_available:bool{cluster="cmtc-a", dependency="ztunnel"}'
+      value: 0
+    - labels: 'cmtc:dependency_available:bool{cluster="cmtc-a", dependency="coredns"}'
+      value: 1
+    - labels: 'cmtc:dependency_available:bool{cluster="cmtc-b", dependency="cmtc-controller"}'
+      value: 0
+    - labels: 'cmtc:dependency_available:bool{cluster="cmtc-b", dependency="issuer-profile"}'
+      value: 0
+    - labels: 'cmtc:dependency_available:bool{cluster="cmtc-b", dependency="cilium-agent"}'
+      value: 0
+    - labels: 'cmtc:dependency_available:bool{cluster="cmtc-b", dependency="ztunnel"}'
+      value: 0
+    - labels: 'cmtc:dependency_available:bool{cluster="cmtc-b", dependency="coredns"}'
+      value: 0
+  - expr: cmtc:slo_dependencies_available:bool
+    eval_time: 360m
+    exp_samples:
+    - labels: 'cmtc:slo_dependencies_available:bool{cluster="cmtc-a"}'
+      value: 1
+    - labels: 'cmtc:slo_dependencies_available:bool{cluster="cmtc-b"}'
+      value: 0
+  # One unavailable minute (361m) in each window: 1/5, 1/30, 1/60, 1/360; cmtc-b none available.
+  - expr: round(cmtc:slo_dependency_unavailable:ratio_avg5m * 1000000) / 1000000
+    eval_time: 361m
+    exp_samples:
+    - labels: '{cluster="cmtc-a"}'
+      value: 0.2
+    - labels: '{cluster="cmtc-b"}'
+      value: 1
+  - expr: round(cmtc:slo_dependency_unavailable:ratio_avg30m * 1000000) / 1000000
+    eval_time: 361m
+    exp_samples:
+    - labels: '{cluster="cmtc-a"}'
+      value: 0.033333
+    - labels: '{cluster="cmtc-b"}'
+      value: 1
+  - expr: round(cmtc:slo_dependency_unavailable:ratio_avg1h * 1000000) / 1000000
+    eval_time: 361m
+    exp_samples:
+    - labels: '{cluster="cmtc-a"}'
+      value: 0.016667
+    - labels: '{cluster="cmtc-b"}'
+      value: 1
+  - expr: round(cmtc:slo_dependency_unavailable:ratio_avg6h * 1000000) / 1000000
+    eval_time: 361m
+    exp_samples:
+    - labels: '{cluster="cmtc-a"}'
+      value: 0.002778
+    - labels: '{cluster="cmtc-b"}'
+      value: 1
+  alert_rule_test:
+  - eval_time: 360m
+    alertname: CMTCDependencyErrorBudgetFastBurn
+    exp_alerts:
+    - exp_labels: {severity: critical, owner: prometheus, slo: '99.9', cluster: cmtc-b}
+      exp_annotations:
+        summary: 'Critical dependencies are unavailable in cmtc-b: 100% over 1h, 14.4x the rate the 99.9 % objective allows'
+        runbook: 'The term of cmtc:dependency_available:bool that is 0 names the dependency; its own alert (CMTCScrapeTargetDown, CMTCIssuerProfileLapsed, CMTCZtunnelNotScraped, CoreDNSNotScraped) has the next step.'
+  - eval_time: 361m
+    alertname: CMTCDependencyErrorBudgetFastBurn
+    exp_alerts:
+    - exp_labels: {severity: critical, owner: prometheus, slo: '99.9', cluster: cmtc-a}
+      exp_annotations:
+        summary: 'Critical dependencies are unavailable in cmtc-a: 1.667% over 1h, 14.4x the rate the 99.9 % objective allows'
+        runbook: 'The term of cmtc:dependency_available:bool that is 0 names the dependency; its own alert (CMTCScrapeTargetDown, CMTCIssuerProfileLapsed, CMTCZtunnelNotScraped, CoreDNSNotScraped) has the next step.'
+    - exp_labels: {severity: critical, owner: prometheus, slo: '99.9', cluster: cmtc-b}
+      exp_annotations:
+        summary: 'Critical dependencies are unavailable in cmtc-b: 100% over 1h, 14.4x the rate the 99.9 % objective allows'
+        runbook: 'The term of cmtc:dependency_available:bool that is 0 names the dependency; its own alert (CMTCScrapeTargetDown, CMTCIssuerProfileLapsed, CMTCZtunnelNotScraped, CoreDNSNotScraped) has the next step.'
+  - eval_time: 362m
+    alertname: CMTCDependencyErrorBudgetSlowBurn
+    exp_alerts:
+    - exp_labels: {severity: warning, owner: prometheus, slo: '99.9', cluster: cmtc-b}
+      exp_annotations:
+        summary: 'Critical dependencies are unavailable in cmtc-b: 100% over 6h, 6x the rate the 99.9 % objective allows'
+        runbook: 'The term of cmtc:dependency_available:bool that is 0 names the dependency; its own alert (CMTCScrapeTargetDown, CMTCIssuerProfileLapsed, CMTCZtunnelNotScraped, CoreDNSNotScraped) has the next step.'
+  - eval_time: 363m
+    alertname: CMTCDependencyErrorBudgetSlowBurn
+    exp_alerts:
+    - exp_labels: {severity: warning, owner: prometheus, slo: '99.9', cluster: cmtc-a}
+      exp_annotations:
+        summary: 'Critical dependencies are unavailable in cmtc-a: 0.8333% over 6h, 6x the rate the 99.9 % objective allows'
+        runbook: 'The term of cmtc:dependency_available:bool that is 0 names the dependency; its own alert (CMTCScrapeTargetDown, CMTCIssuerProfileLapsed, CMTCZtunnelNotScraped, CoreDNSNotScraped) has the next step.'
+    - exp_labels: {severity: warning, owner: prometheus, slo: '99.9', cluster: cmtc-b}
+      exp_annotations:
+        summary: 'Critical dependencies are unavailable in cmtc-b: 100% over 6h, 6x the rate the 99.9 % objective allows'
+        runbook: 'The term of cmtc:dependency_available:bool that is 0 names the dependency; its own alert (CMTCScrapeTargetDown, CMTCIssuerProfileLapsed, CMTCZtunnelNotScraped, CoreDNSNotScraped) has the next step.'
+
+# CoreDNS in cmtc-a: 1000 answers a minute; from 360m, 50 SERVFAIL a minute on top, and 20 % of
+# the answers take longer than 64 ms.
+- name: CoreDNS answers and latency
+  interval: 1m
+  input_series:
+  - series: 'coredns_dns_responses_total{job="coredns", component="coredns", cluster="cmtc-a", node="cmtc-a-control-plane", pod="coredns-589f44dc88-gtnm7", instance="10.10.0.64:9153", plugin="errors", rcode="NOERROR", server="dns://:53", view="", zone="."}'
+    values: '0+1000x480'
+  - series: 'coredns_dns_responses_total{job="coredns", component="coredns", cluster="cmtc-a", node="cmtc-a-control-plane", pod="coredns-589f44dc88-gtnm7", instance="10.10.0.64:9153", plugin="errors", rcode="SERVFAIL", server="dns://:53", view="", zone="."}'
+    values: '0x360 50+50x119'
+  - series: 'coredns_dns_request_duration_seconds_count{job="coredns", component="coredns", cluster="cmtc-a", node="cmtc-a-control-plane", pod="coredns-589f44dc88-gtnm7", instance="10.10.0.64:9153", server="dns://:53", view="", zone="."}'
+    values: '0+1000x480'
+  - series: 'coredns_dns_request_duration_seconds_bucket{job="coredns", component="coredns", cluster="cmtc-a", node="cmtc-a-control-plane", pod="coredns-589f44dc88-gtnm7", instance="10.10.0.64:9153", server="dns://:53", view="", zone=".", le="0.064"}'
+    values: '0+1000x360 360800+800x119'
+  promql_expr_test:
+  - expr: cmtc:slo_coredns_errors:ratio_rate5m
+    eval_time: 300m
+    exp_samples:
+    - labels: 'cmtc:slo_coredns_errors:ratio_rate5m{cluster="cmtc-a"}'
+      value: 0
+  - expr: cmtc:slo_coredns_slow:ratio_rate30m
+    eval_time: 420m
+    exp_samples:
+    - labels: 'cmtc:slo_coredns_slow:ratio_rate30m{cluster="cmtc-a"}'
+      value: 0.20000000000000007  # 1 - 23200 / 29000 in float64
+  # SERVFAIL share: 900 / 60900 (1h) and 250 / 5250 (5m) at 378m; 1500 / 31500 (30m) and
+  # 2200 / 362200 (6h) at 404m. Slow share: 43 / 295 (1h) and 0.2 (5m) at 403m; 21600 / 359000 (6h)
+  # at 468m.
+  - expr: round(cmtc:slo_coredns_errors:ratio_rate1h * 1000000) / 1000000
+    eval_time: 378m
+    exp_samples:
+    - labels: '{cluster="cmtc-a"}'
+      value: 0.014778
+  - expr: round(cmtc:slo_coredns_errors:ratio_rate5m * 1000000) / 1000000
+    eval_time: 378m
+    exp_samples:
+    - labels: '{cluster="cmtc-a"}'
+      value: 0.047619
+  - expr: round(cmtc:slo_coredns_errors:ratio_rate30m * 1000000) / 1000000
+    eval_time: 404m
+    exp_samples:
+    - labels: '{cluster="cmtc-a"}'
+      value: 0.047619
+  - expr: round(cmtc:slo_coredns_errors:ratio_rate6h * 1000000) / 1000000
+    eval_time: 404m
+    exp_samples:
+    - labels: '{cluster="cmtc-a"}'
+      value: 0.006074
+  - expr: round(cmtc:slo_coredns_slow:ratio_rate1h * 1000000) / 1000000
+    eval_time: 403m
+    exp_samples:
+    - labels: '{cluster="cmtc-a"}'
+      value: 0.145763
+  - expr: round(cmtc:slo_coredns_slow:ratio_rate5m * 1000000) / 1000000
+    eval_time: 403m
+    exp_samples:
+    - labels: '{cluster="cmtc-a"}'
+      value: 0.2
+  - expr: round(cmtc:slo_coredns_slow:ratio_rate6h * 1000000) / 1000000
+    eval_time: 468m
+    exp_samples:
+    - labels: '{cluster="cmtc-a"}'
+      value: 0.060167
+  alert_rule_test:
+  - eval_time: 377m
+    alertname: CoreDNSErrorBudgetFastBurn
+    exp_alerts: []
+  - eval_time: 378m
+    alertname: CoreDNSErrorBudgetFastBurn
+    exp_alerts:
+    - exp_labels: {severity: critical, owner: coredns, slo: '99.9', cluster: cmtc-a}
+      exp_annotations:
+        summary: 'CoreDNS SERVFAIL answers in cmtc-a: 1.478% over 1h, 14.4x the rate the 99.9 % objective allows'
+        runbook: 'An upstream resolver or the kubernetes plugin is failing. Read the forward response codes on the DNS dashboard and the CoreDNS log.'
+  - eval_time: 403m
+    alertname: CoreDNSErrorBudgetSlowBurn
+    exp_alerts: []
+  - eval_time: 404m
+    alertname: CoreDNSErrorBudgetSlowBurn
+    exp_alerts:
+    - exp_labels: {severity: warning, owner: coredns, slo: '99.9', cluster: cmtc-a}
+      exp_annotations:
+        summary: 'CoreDNS SERVFAIL answers in cmtc-a: 0.6074% over 6h, 6x the rate the 99.9 % objective allows'
+        runbook: 'An upstream resolver or the kubernetes plugin is failing. Read the forward response codes on the DNS dashboard and the CoreDNS log.'
+  - eval_time: 402m
+    alertname: CoreDNSLatencyErrorBudgetFastBurn
+    exp_alerts: []
+  - eval_time: 403m
+    alertname: CoreDNSLatencyErrorBudgetFastBurn
+    exp_alerts:
+    - exp_labels: {severity: critical, owner: coredns, slo: '99', cluster: cmtc-a}
+      exp_annotations:
+        summary: 'CoreDNS answers slower than 64 ms in cmtc-a: 14.58% over 1h, 14.4x the rate the 99 % objective allows'
+        runbook: 'Check the forward latency by upstream on the DNS dashboard, the cache hit ratio and the CPU of the CoreDNS Pods.'
+  - eval_time: 467m
+    alertname: CoreDNSLatencyErrorBudgetSlowBurn
+    exp_alerts: []
+  - eval_time: 468m
+    alertname: CoreDNSLatencyErrorBudgetSlowBurn
+    exp_alerts:
+    - exp_labels: {severity: warning, owner: coredns, slo: '99', cluster: cmtc-a}
+      exp_annotations:
+        summary: 'CoreDNS answers slower than 64 ms in cmtc-a: 6.017% over 6h, 6x the rate the 99 % objective allows'
+        runbook: 'Check the forward latency by upstream on the DNS dashboard, the cache hit ratio and the CPU of the CoreDNS Pods.'

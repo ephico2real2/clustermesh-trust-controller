@@ -1,0 +1,15 @@
+# A second, independent mesh, built from a clean clone to prove the bring-up works in any setup:
+# kind-gf1 and kind-gf2 in the Colima VM "gf".
+name: gf
+dockerContext: colima-gf
+controlCluster: gf1
+clusters:
+  - name: gf1
+    id: 1
+    podCIDR: 10.30.0.0/16
+    serviceCIDR: 10.31.0.0/16
+  - name: gf2
+    id: 2
+    podCIDR: 10.40.0.0/16
+    serviceCIDR: 10.41.0.0/16
+extraCiliumValues: []

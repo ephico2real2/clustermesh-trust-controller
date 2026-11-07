@@ -1,0 +1,28 @@
+2026-10-27T19:45:05Z
+NAME                              READY   UP-TO-DATE   AVAILABLE   AGE   CONTAINERS   IMAGES                                                                                              SELECTOR
+deployment.apps/cmtc-controller   1/1     1            1           3d    controller   ghcr.io/ephico2real2/cmtc@sha256:113b94c09da2cd0683a5e9f7af01c526941c928129f7cbb3679026a2ce0ac312   app.kubernetes.io/name=cmtc-controller
+
+NAME                             DESIRED   CURRENT   READY   UP-TO-DATE   AVAILABLE   NODE SELECTOR   AGE   CONTAINERS   IMAGES                                                                                              SELECTOR
+daemonset.apps/cmtc-node-agent   2         2         2       2            2           <none>          3d    agent        ghcr.io/ephico2real2/cmtc@sha256:113b94c09da2cd0683a5e9f7af01c526941c928129f7cbb3679026a2ce0ac312   app.kubernetes.io/name=cmtc-node-agent
+
+NAME                                  READY   STATUS    RESTARTS   AGE   IP            NODE                   NOMINATED NODE   READINESS GATES
+pod/cmtc-controller-949b68d76-4gdzw   1/1     Running   0          9h    10.20.1.5     cmtc-b-worker          <none>           <none>
+pod/cmtc-node-agent-4wq9t             1/1     Running   0          9h    10.20.0.227   cmtc-b-control-plane   <none>           <none>
+pod/cmtc-node-agent-mk555             1/1     Running   0          9h    10.20.1.113   cmtc-b-worker          <none>           <none>
+
+NAME                                DATA   AGE
+configmap/cmtc-issuer-approval-g1   1      2d15h
+configmap/cmtc-issuer-approval-g2   1      40h
+configmap/cmtc-issuer-approval-g3   1      39h
+configmap/cmtc-issuer-approval-g4   1      31h
+configmap/cmtc-issuer-approval-g5   1      31h
+configmap/cmtc-issuer-approval-g6   1      9h
+configmap/cmtc-issuer-publication   1      2d15h
+configmap/cmtc-mesh-root            1      21h
+configmap/kube-root-ca.crt          1      3d
+
+NAME                             AGE
+serviceaccount/cmtc-controller   3d
+serviceaccount/cmtc-node-agent   3d
+serviceaccount/default           3d
+publication published 6 cmtc-issuer-approval-g6 18445

@@ -4,12 +4,17 @@
 Evidence scope: results apply to the recorded source, image and fixture. Read [current delivery status](docs/agile/DELIVERY_STATUS.md) and [documentation terms](DOCUMENTATION_GUIDE.md).
 <!-- /CMTC_DOC_CONTEXT -->
 
-The native credential path now works on all four nodes in `cmtc-a` and `cmtc-b`.
-A trusted node probe fetches a workload SVID through the real ztunnel CRI and SPIRE client.
-The application has no sidecar, node socket mount or private-key file.
+**Historical record (2026-10-24).** Diagnostic ztunnel source `3b1a6a9e8f`, SPIRE `28f6b8d84a`. It does not qualify
+the current build. **Current state (read 2026-10-25T23:13Z):** the production ztunnel runs on all four nodes and
+reaches SPIRE through the DelegatedIdentity-only socket `/run/cmtc-spire/<cluster>/delegated`, added by SPIRE fork
+commit `0f8fe4d681` ("agent: add an opt-in DelegatedIdentity-only Unix socket"). The SPIRE node agents run
+`localhost/cmtc-spire-agent:delegated-0f8fe4d681`. Exact pins are in [delivery status](docs/agile/DELIVERY_STATUS.md).
+
+In this run, the native credential path worked on all four nodes in `cmtc-a` and `cmtc-b`.
+A trusted node probe fetched a workload SVID through the real ztunnel CRI and SPIRE client.
+The application had no sidecar, node socket mount or private-key file.
 
 This test proves credential delivery. It does not prove workload traffic encryption, authorization or `Protected` status.
-The combined ClusterMesh/ztunnel guard remains closed.
 
 ## Source and image
 
@@ -70,20 +75,21 @@ They are execution evidence. Do not reset an existing ledger to rerun them.
 
 ## Probe privileges
 
-The temporary probe runs with host PID visibility, UID1000 and GID0.
+The temporary probe runs with host PID visibility, UID 1000 and GID 0.
 It drops all Linux capabilities.
 It has a read-only root filesystem and no Kubernetes API token.
 Its working directory is `/`.
-The distroless image's default `/home/nonroot` directory is not accessible to UID1000.
+The distroless image's default `/home/nonroot` directory is not accessible to UID 1000.
 
-UID1000 can traverse SPIRE's private socket directory.
-GID0 can connect to the node CRI socket.
+UID 1000 can traverse SPIRE's private socket directory.
+GID 0 can connect to the node CRI socket.
 These are trusted node privileges. A read-only socket mount still permits RPC.
 Ordinary applications receive neither socket.
 
 This probe configuration does not qualify the production proxy's socket permissions.
-The production root/GID1337 proxy still needs a narrow, tested socket access configuration.
-Do not add DAC capabilities or widen directories to bypass that gate.
+At this record the production root/GID 1337 proxy still needed a narrow socket access configuration; the
+DelegatedIdentity-only socket above is the later answer. Do not add DAC capabilities or widen directories to bypass
+that boundary.
 
 ## Failure and recovery evidence
 
@@ -119,8 +125,6 @@ It changes no kubelet certificate, node network file, signer or PVC.
 
 ## Next dependency
 
-Complete authenticated native remote workload and policy delivery.
-Bind policy and source-IP checks to actual kernel state and retained workload capture.
-Qualify the production proxy socket permissions.
-Then build the exact Cilium and ztunnel images and test real cross-cluster positive, negative and recovery traffic.
-Keep workload mTLS and WireGuard/IPsec evidence separate.
+This section is superseded. Native remote workload and policy delivery, the production proxy socket and enrolled
+cross-cluster traffic now exist in the lab. Recovery and per-connection peer-certificate evidence are open. Read
+[delivery status](docs/agile/DELIVERY_STATUS.md). Keep workload mTLS and WireGuard/IPsec evidence separate.

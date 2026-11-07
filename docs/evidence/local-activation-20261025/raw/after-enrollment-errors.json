@@ -1,0 +1,67 @@
+{
+  "at": "2026-10-25T16:39:02.231640+00:00",
+  "clusters": {
+    "cmtc-a": {
+      "cmtc-a-control-plane-istio-proxy": [
+        "2026-10-25T16:37:31.617284976Z 2026-10-25T16:37:31.617188Z\twarn\txds::client:xds{id=12}\txDS state rejected, reconnecting in 15s: xDS rejected a resource response for strict xDS update requires full snapshot resync\t",
+        "2026-10-25T16:37:31.617454226Z 2026-10-25T16:37:31.617220Z\twarn\txds::client:xds{id=12}\toutbound stream complete\t",
+        "2026-10-25T16:37:51.887009575Z 2026-10-25T16:37:51.886931Z\twarn\txds::client:xds{id=13}\tstrict xDS update revoked the session before application\tgeneration=13 type_url=type.googleapis.com/istio.workload.Address reason=\"full_snapshot_resync\"",
+        "2026-10-25T16:37:51.887015534Z 2026-10-25T16:37:51.886954Z\twarn\txds::client:xds{id=13}\txDS state rejected, reconnecting in 15s: xDS rejected a resource response for strict xDS update requires full snapshot resync\t",
+        "2026-10-25T16:37:51.887024492Z 2026-10-25T16:37:51.886959Z\twarn\txds::client:xds{id=13}\toutbound stream complete\t"
+      ],
+      "cmtc-a-worker-istio-proxy": [
+        "2026-10-25T16:37:31.617011891Z 2026-10-25T16:37:31.616933Z\twarn\txds::client:xds{id=22}\toutbound stream complete\t",
+        "2026-10-25T16:37:44.823966686Z 2026-10-25T16:37:44.823866Z\twarn\taccess\tconnection failed\tsrc.addr=10.10.1.75:60792 dst.addr=10.10.1.158:80 direction=\"outbound\" error=\"connection closed due to policy rejection: current xDS authorization snapshot unavailable\"",
+        "2026-10-25T16:37:49.621377545Z 2026-10-25T16:37:49.621154Z\twarn\txds::client:xds{id=23}\tstrict xDS update revoked the session before application\tgeneration=23 type_url=type.googleapis.com/istio.workload.Address reason=\"full_snapshot_resync\"",
+        "2026-10-25T16:37:49.621402545Z 2026-10-25T16:37:49.621174Z\twarn\txds::client:xds{id=23}\txDS state rejected, reconnecting in 15s: xDS rejected a resource response for strict xDS update requires full snapshot resync\t",
+        "2026-10-25T16:37:49.621406337Z 2026-10-25T16:37:49.621185Z\twarn\txds::client:xds{id=23}\toutbound stream complete\t"
+      ],
+      "cmtc-a-control-plane-cilium-agent": [
+        "2026-10-25T16:37:19.082521147Z time=2026-10-25T16:37:19.082461314Z level=error msg=\"error while receiving request from Delta xDS stream\" module=agent.controlplane.ztunnel.ztunnel-xds xdsStreamID=1 xdsClientNode=ztunnel~172.18.0.3~.~.svc.cluster.local error=\"context canceled\"",
+        "2026-10-25T16:37:31.617448018Z time=2026-10-25T16:37:31.617393184Z level=error msg=\"error while receiving request from Delta xDS stream\" module=agent.controlplane.ztunnel.ztunnel-xds xdsStreamID=2 xdsClientNode=ztunnel~172.18.0.3~.~.svc.cluster.local error=\"context canceled\"",
+        "2026-10-25T16:37:41.545520154Z time=2026-10-25T16:37:41.545384445Z level=error msg=\"Endpoint startup admission failed\" module=agent.controlplane.ztunnel.ztunnel-admission stage=cni-startup-admission attempt=1 elapsedDuration=2.280217ms deadline=2026-10-25T16:37:44.543Z endpointID=1878 k8sUID=66e627d1-eef4-4a7b-9c79-ac33c2d7d672 pod=server-control-plane k8sNamespace=cmtc-live-mtls namespaceUID=35956b6e-e8d0-4ade-a4f2-82039c1ab34d enrollmentRequired=true error=\"creating exact required membership: draining Pod membership cannot be reused\"",
+        "2026-10-25T16:37:41.545532654Z time=2026-10-25T16:37:41.545420362Z level=warn msg=\"Withdrawing source membership after failed revalidation\" module=agent.controlplane.ztunnel.ztunnel-admission subsys=ztunnel-membership-source stage=source-revalidation reason=endpoint_revalidation_failed workloads=2 registryRevision=61",
+        "2026-10-25T16:37:51.887200909Z time=2026-10-25T16:37:51.887112492Z level=error msg=\"error while receiving request from Delta xDS stream\" module=agent.controlplane.ztunnel.ztunnel-xds xdsStreamID=3 xdsClientNode=ztunnel~172.18.0.3~.~.svc.cluster.local error=\"context canceled\""
+      ],
+      "cmtc-a-worker-cilium-agent": [
+        "2026-10-25T16:37:45.792768997Z time=2026-10-25T16:37:45.792671705Z level=error msg=\"Endpoint regeneration failed\" ipv4=10.10.1.195 identity=4 ciliumEndpointName=/ endpointID=269 containerInterface=\"\" ipv6=\"\" containerID=\"\" k8sPodName=/ subsys=endpoint error=\"native ADD ownership unavailable: native ZDS ownership is busy\"",
+        "2026-10-25T16:37:45.792884872Z time=2026-10-25T16:37:45.792812372Z level=info msg=\"generating BPF for endpoint failed, keeping stale directory\" k8sPodName=mesh-example/rebel-base-688ff9949b-hq6g9 identity=88743 endpointID=955 containerInterface=eth0 ipv4=10.10.1.33 ipv6=\"\" ciliumEndpointName=mesh-example/rebel-base-688ff9949b-hq6g9 containerID=922f7085d0 subsys=endpoint error=\"native ADD ownership unavailable: native ZDS ownership is busy\" file-path=955_next_fail",
+        "2026-10-25T16:37:45.792972622Z time=2026-10-25T16:37:45.792842622Z level=warn msg=\"Regeneration of endpoint failed\" k8sPodName=mesh-example/rebel-base-688ff9949b-hq6g9 identity=88743 endpointID=955 containerInterface=eth0 ipv4=10.10.1.33 ipv6=\"\" ciliumEndpointName=mesh-example/rebel-base-688ff9949b-hq6g9 containerID=922f7085d0 subsys=endpoint reason=PeriodicRegeneration waitingForLock=417ns waitingForCTClean=0s proxyConfiguration=625ns waitForPolicyCompute=1.125\u00b5s prepareBuild=128.667\u00b5s total=171.917\u00b5s bpfCompilation=0s bpfLoadProg=0s endpointPolicyCalculation=3.417\u00b5s proxyPolicyCalculation=0s proxyWaitForAck=0s buildPermitAcquisition=463.669\u00b5s policyCalculation=9.25\u00b5s mapSync=0s bpfWaitForELF=0s bpfCompilation=0s bpfWaitForELF=0s bpfLoadProg=0s error=\"native ADD ownership unavailable: native ZDS ownership is busy\"",
+        "2026-10-25T16:37:45.792974956Z time=2026-10-25T16:37:45.792863872Z level=error msg=\"Endpoint regeneration failed\" k8sPodName=mesh-example/rebel-base-688ff9949b-hq6g9 identity=88743 endpointID=955 containerInterface=eth0 ipv4=10.10.1.33 ipv6=\"\" ciliumEndpointName=mesh-example/rebel-base-688ff9949b-hq6g9 containerID=922f7085d0 subsys=endpoint error=\"native ADD ownership unavailable: native ZDS ownership is busy\"",
+        "2026-10-25T16:37:49.621450004Z time=2026-10-25T16:37:49.62132317Z level=error msg=\"error while receiving request from Delta xDS stream\" module=agent.controlplane.ztunnel.ztunnel-xds xdsStreamID=3 xdsClientNode=ztunnel~172.18.0.2~.~.svc.cluster.local error=\"context canceled\""
+      ],
+      "enrollment": {
+        "namespaceUID": "35956b6e-e8d0-4ade-a4f2-82039c1ab34d",
+        "label": "true"
+      }
+    },
+    "cmtc-b": {
+      "cmtc-b-worker-istio-proxy": [
+        "2026-10-25T16:38:28.557544512Z 2026-10-25T16:38:28.557433Z\twarn\txds::client:xds{id=11}\toutbound stream complete\t",
+        "2026-10-25T16:38:38.879294447Z 2026-10-25T16:38:38.879222Z\terror\taccess\tconnection complete\tsrc.addr=10.20.1.242:40846 src.workload=\"client-worker\" src.namespace=\"cmtc-live-mtls\" src.identity=\"spiffe://cmtc-b.mesh.example/ns/cmtc-live-mtls/sa/mesh-client\" src.cluster=\"cmtc-b\" dst.addr=10.20.1.116:15008 dst.hbone_addr=10.20.1.116:80 dst.workload=\"server-worker\" dst.namespace=\"cmtc-live-mtls\" dst.identity=\"spiffe://cmtc-b.mesh.example/ns/cmtc-live-mtls/sa/rebel-base\" dst.cluster=\"cmtc-b\" direction=\"outbound\" bytes_sent=0 bytes_recv=0 duration=\"40ms\" error=\"connection closed due to connection drain\"",
+        "2026-10-25T16:38:38.882602919Z 2026-10-25T16:38:38.882313Z\twarn\txds::client:xds{id=12}\tstrict xDS update revoked the session before application\tgeneration=12 type_url=type.googleapis.com/istio.workload.Address reason=\"full_snapshot_resync\"",
+        "2026-10-25T16:38:38.882613961Z 2026-10-25T16:38:38.882335Z\twarn\txds::client:xds{id=12}\txDS state rejected, reconnecting in 15s: xDS rejected a resource response for strict xDS update requires full snapshot resync\t",
+        "2026-10-25T16:38:38.882616711Z 2026-10-25T16:38:38.882345Z\twarn\txds::client:xds{id=12}\toutbound stream complete\t"
+      ],
+      "cmtc-b-control-plane-istio-proxy": [
+        "2026-10-25T16:38:28.573001241Z 2026-10-25T16:38:28.572929Z\twarn\txds::client:xds{id=11}\txDS state rejected, reconnecting in 10.24s: xDS rejected a resource response for strict xDS update requires full snapshot resync\t",
+        "2026-10-25T16:38:28.573003825Z 2026-10-25T16:38:28.572937Z\twarn\txds::client:xds{id=11}\toutbound stream complete\t",
+        "2026-10-25T16:38:38.883495339Z 2026-10-25T16:38:38.883388Z\twarn\txds::client:xds{id=12}\tstrict xDS update revoked the session before application\tgeneration=12 type_url=type.googleapis.com/istio.workload.Address reason=\"full_snapshot_resync\"",
+        "2026-10-25T16:38:38.883503423Z 2026-10-25T16:38:38.883415Z\twarn\txds::client:xds{id=12}\txDS state rejected, reconnecting in 15s: xDS rejected a resource response for strict xDS update requires full snapshot resync\t",
+        "2026-10-25T16:38:38.883504714Z 2026-10-25T16:38:38.883421Z\twarn\txds::client:xds{id=12}\toutbound stream complete\t"
+      ],
+      "cmtc-b-worker-cilium-agent": [
+        "2026-10-25T16:38:28.557637138Z time=2026-10-25T16:38:28.557550262Z level=error msg=\"error while receiving request from Delta xDS stream\" module=agent.controlplane.ztunnel.ztunnel-xds xdsStreamID=1 xdsClientNode=ztunnel~172.18.0.5~.~.svc.cluster.local error=\"context canceled\"",
+        "2026-10-25T16:38:38.882602544Z time=2026-10-25T16:38:38.882481085Z level=error msg=\"error while receiving request from Delta xDS stream\" module=agent.controlplane.ztunnel.ztunnel-xds xdsStreamID=2 xdsClientNode=ztunnel~172.18.0.5~.~.svc.cluster.local error=\"context canceled\""
+      ],
+      "cmtc-b-control-plane-cilium-agent": [
+        "2026-10-25T16:38:28.573078617Z time=2026-10-25T16:38:28.5730202Z level=error msg=\"error while receiving request from Delta xDS stream\" module=agent.controlplane.ztunnel.ztunnel-xds xdsStreamID=1 xdsClientNode=ztunnel~172.18.0.4~.~.svc.cluster.local error=\"context canceled\"",
+        "2026-10-25T16:38:38.883705090Z time=2026-10-25T16:38:38.883642257Z level=error msg=\"error while receiving request from Delta xDS stream\" module=agent.controlplane.ztunnel.ztunnel-xds xdsStreamID=2 xdsClientNode=ztunnel~172.18.0.4~.~.svc.cluster.local error=\"context canceled\""
+      ],
+      "enrollment": {
+        "namespaceUID": "7a3d942e-3e49-4ae3-8779-73de32ec91af",
+        "label": "true"
+      }
+    }
+  }
+}

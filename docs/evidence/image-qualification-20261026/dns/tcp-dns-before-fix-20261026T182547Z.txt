@@ -1,0 +1,42 @@
+# DNS over TCP from each fixture Pod, before the TCP/53 bypass. Script: one RFC 7766 query for kubernetes.default.svc.cluster.local.
+# run 20261026T182547Z by ephico2real2
+== kind-cmtc-a cmtc-live-mtls/client-worker
+nameserver=10.11.0.10 start=18:25:47
+nc_rc=0
+reply_bytes=0 err=
+== kind-cmtc-a cmtc-live-mtls/client-control-plane
+nameserver=10.11.0.10 start=18:25:47
+nc_rc=0
+reply_bytes=0 err=
+== kind-cmtc-a cmtc-live-mtls-unauth/unregistered-worker
+nameserver=10.11.0.10 start=18:25:47
+nc_rc=0
+reply_bytes=108 err=
+ 00 6a 12 34 85 00 00 01 00 01 00 00 00 00 0a 6b
+ 75 62 65 72 6e 65 74 65 73 07 64 65 66 61 75 6c
+== kind-cmtc-a cmtc-live-mtls-unauth/unregistered-control-plane
+nameserver=10.11.0.10 start=18:25:47
+nc_rc=0
+reply_bytes=108 err=
+ 00 6a 12 34 85 00 00 01 00 01 00 00 00 00 0a 6b
+ 75 62 65 72 6e 65 74 65 73 07 64 65 66 61 75 6c
+== kind-cmtc-b cmtc-live-mtls/client-worker
+nameserver=10.21.0.10 start=18:25:47
+nc_rc=0
+reply_bytes=0 err=
+== kind-cmtc-b cmtc-live-mtls/client-control-plane
+nameserver=10.21.0.10 start=18:25:47
+nc_rc=0
+reply_bytes=0 err=
+== kind-cmtc-b cmtc-live-mtls-unauth/unregistered-worker
+nameserver=10.21.0.10 start=18:25:47
+nc_rc=0
+reply_bytes=108 err=
+ 00 6a 12 34 85 00 00 01 00 01 00 00 00 00 0a 6b
+ 75 62 65 72 6e 65 74 65 73 07 64 65 66 61 75 6c
+== kind-cmtc-b cmtc-live-mtls-unauth/unregistered-control-plane
+nameserver=10.21.0.10 start=18:25:47
+nc_rc=0
+reply_bytes=108 err=
+ 00 6a 12 34 85 00 00 01 00 01 00 00 00 00 0a 6b
+ 75 62 65 72 6e 65 74 65 73 07 64 65 66 61 75 6c

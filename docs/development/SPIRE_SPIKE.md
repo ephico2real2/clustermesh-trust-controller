@@ -4,7 +4,10 @@
 Guide scope: check current runtime and feature gates before using these instructions. Read [current delivery status](../agile/DELIVERY_STATUS.md) and [documentation terms](../../DOCUMENTATION_GUIDE.md).
 <!-- /CMTC_DOC_CONTEXT -->
 
-This is CMTC-101's single-cluster, cross-node credential/traffic fixture. It does
+**Historical record (2026-10-23 to 2026-10-24).** The isolated `cmtc-mtls` fixture is retired. Current work uses
+`cmtc-a` and `cmtc-b`; read [delivery status](../agile/DELIVERY_STATUS.md) for current state.
+
+This was CMTC-101's single-cluster, cross-node credential/traffic fixture. It does
 not establish ClusterMesh compatibility, authorization, fail-closed protection,
 WireGuard/IPsec composition or a `Protected` status. The normal Observe lab and
 its pinned image bundle remain the regression baseline.
@@ -44,6 +47,12 @@ This fixture override still needs a general Cilium installer fix before that
 profile can be qualified independently of the fixture.
 
 ## Build and run locally
+
+This section preserves the older isolated fixture. Do not run it against `cmtc-a`
+or `cmtc-b`. For the current strict ZDS profile, follow
+[installation requirements](../../INSTALLATION_REQUIREMENTS.md): only the
+SPIRE-backed node proxy needs the host PID namespace; the Cilium agent must not
+have it. Keep the root-owned proxy check and the restricted delegated API socket.
 
 Run `scripts/lab/mtls/build.sh` from the MacBook. It uses Podman, an explicit Linux
 architecture, bounded build resources, the committed image source and a Docker

@@ -1,0 +1,144 @@
+# Status: tested here with promtool 3.7.0 (rules/run-promtool.sh, tests/cilium-source-change.test.yaml);
+# returns nothing on the labs until a Cilium agent built with source-patches/cilium/0001 and 0002 runs.
+# Evaluated on the hub.
+#
+# The signals, all in pkg/ztunnel/xds (patches against the deployed Cilium fork commit a99264f008,
+# docs/agile/DELIVERY_STATUS.md:39):
+#   cilium_ztunnel_xds_effective_policy_sources_refused{origin,reason}   gauge      0001
+#       callers the last reconcile refused, by reason class (11 classes, origin cluster or peer)
+#   cilium_ztunnel_xds_effective_policy_publications_total{cause}       counter    0001
+#       effective plans published, by what changed (initial, address, native_policy,
+#       caller_removed, plan_changed); caller_removed is a narrowing: a caller left the plan
+#   cilium_ztunnel_xds_effective_policy_ack_duration_seconds{cause}     histogram  0001
+#       from a publication to ztunnel's acknowledgment of it on the same ADS stream
+#   cilium_ztunnel_xds_effective_policy_oldest_unacknowledged_timestamp_seconds   gauge   0001
+#       publication time of the oldest plan ztunnel has not acknowledged; 0 when none
+#   cilium_ztunnel_xds_effective_policy_destinations{state}             gauge      0002
+#       Required local workloads by the step they are on (11 states)
+#
+# "Released" is the control plane's verdict, never "Protected": traffic evidence comes from ztunnel
+# and the measurement plane (ADR-005, point 5).
+groups:
+- name: cmtc-cilium-proposed
+  rules:
+  # Operator question: "If a Required workload is not protected, why not?" (one reporter: the agent
+  # of the workload's node).
+  - record: cmtc:required_workloads:sum
+    expr: sum by (cluster, state) (cilium_ztunnel_xds_effective_policy_destinations{job="cilium-native"})
+
+  # Share of Required workloads the control plane released from quarantine. A prerequisite of
+  # protection, not protection. No value when a cluster has no Required workload.
+  - record: cmtc:required_workloads_released:ratio
+    expr: |-
+      (
+        sum by (cluster) (cilium_ztunnel_xds_effective_policy_destinations{job="cilium-native", state="released"})
+        or 0 * sum by (cluster) (cilium_ztunnel_xds_effective_policy_destinations{job="cilium-native"})
+      )
+      /
+      (sum by (cluster) (cilium_ztunnel_xds_effective_policy_destinations{job="cilium-native"}) > 0)
+
+  - alert: CMTCRequiredWorkloadsNotReleased
+    expr: |-
+      sum by (cluster, node, state) (cilium_ztunnel_xds_effective_policy_destinations{job="cilium-native", state!="released"}) > 0
+    for: 10m
+    labels:
+      severity: warning
+      owner: cilium-agent
+    annotations:
+      summary: '{{ $value }} Required workloads on {{ $labels.node }} ({{ $labels.cluster }}) are still quarantined: {{ $labels.state }}'
+      runbook: 'The state names the step that has not completed. The agent log line "Required workload is not an effective ztunnel policy destination" names each Pod UID and the exact reason.'
+
+  - record: cmtc:effective_policy_sources_refused:sum
+    expr: sum by (cluster, node, origin, reason) (cilium_ztunnel_xds_effective_policy_sources_refused{job="cilium-native"})
+
+  # Refusals that point at a fault. not_captured and no_egress_policy are steps every caller passes
+  # through while it starts; they are drawn, not alerted on.
+  - alert: CMTCEffectivePolicySourcesRefused
+    expr: |-
+      sum by (cluster, node, origin, reason) (
+        cilium_ztunnel_xds_effective_policy_sources_refused{job="cilium-native", reason!~"not_captured|no_egress_policy"}
+      ) > 0
+    for: 10m
+    labels:
+      severity: warning
+      owner: cilium-agent
+    annotations:
+      summary: 'The agent on {{ $labels.node }} ({{ $labels.cluster }}) refuses {{ $value }} {{ $labels.origin }} callers: {{ $labels.reason }}'
+      runbook: 'Those callers are denied by every local destination. The agent log line "Caller is not admitted as an effective ztunnel policy source" names each caller and the exact reason.'
+
+  - record: cmtc:effective_policy_publications:rate5m
+    expr: sum by (cluster, node, cause) (rate(cilium_ztunnel_xds_effective_policy_publications_total{job="cilium-native"}[5m]))
+
+  # Security reviewer question: "How long did a revocation take to reach ztunnel?" A narrowing is a
+  # publication with cause caller_removed; every other cause is drawn beside it.
+  - record: cmtc:effective_policy_ack_duration_seconds:p99_rate1h
+    expr: |-
+      histogram_quantile(0.99, sum by (cluster, cause, le) (rate(cilium_ztunnel_xds_effective_policy_ack_duration_seconds_bucket{job="cilium-native"}[1h])))
+      and on (cluster, cause) (sum by (cluster, cause) (rate(cilium_ztunnel_xds_effective_policy_ack_duration_seconds_count{job="cilium-native"}[1h])) > 0)
+
+  # A published plan that ztunnel has not acknowledged: until it does, ztunnel enforces the previous
+  # plan, so a narrowing is not in effect and a new destination stays quarantined.
+  - alert: CMTCEffectivePolicyUnacknowledged
+    expr: |-
+      (
+        time() - (max by (cluster, node) (cilium_ztunnel_xds_effective_policy_oldest_unacknowledged_timestamp_seconds{job="cilium-native"}) > 0)
+      ) > 60
+    labels:
+      severity: critical
+      owner: cilium-agent
+    annotations:
+      summary: 'ztunnel on {{ $labels.node }} ({{ $labels.cluster }}) has not acknowledged an effective policy published {{ $value | humanizeDuration }} ago'
+      runbook: 'A revoked caller can still connect to that destination until ztunnel acknowledges. Check the ztunnel xDS stream on the node (CMTCAuthorizationRejected) and the ztunnel log.'
+
+  # PROPOSED SLI "trust propagation within five minutes" (METRICS_AND_SLOS.md:37), the caller-trust
+  # half: publications acknowledged within 300 s. A plan never acknowledged never enters the
+  # histogram; CMTCEffectivePolicyUnacknowledged covers it. The issuer-trust half needs a ztunnel
+  # gauge of the profile generation it applied (docs/METRICS_AND_SLOS.md, planned).
+  - record: cmtc:slo_policy_propagation_slow:ratio_rate5m
+    expr: |-
+      1 - (
+        sum by (cluster) (rate(cilium_ztunnel_xds_effective_policy_ack_duration_seconds_bucket{job="cilium-native", le="300"}[5m]))
+        / (sum by (cluster) (rate(cilium_ztunnel_xds_effective_policy_ack_duration_seconds_count{job="cilium-native"}[5m])) > 0)
+      )
+  - record: cmtc:slo_policy_propagation_slow:ratio_rate30m
+    expr: |-
+      1 - (
+        sum by (cluster) (rate(cilium_ztunnel_xds_effective_policy_ack_duration_seconds_bucket{job="cilium-native", le="300"}[30m]))
+        / (sum by (cluster) (rate(cilium_ztunnel_xds_effective_policy_ack_duration_seconds_count{job="cilium-native"}[30m])) > 0)
+      )
+  - record: cmtc:slo_policy_propagation_slow:ratio_rate1h
+    expr: |-
+      1 - (
+        sum by (cluster) (rate(cilium_ztunnel_xds_effective_policy_ack_duration_seconds_bucket{job="cilium-native", le="300"}[1h]))
+        / (sum by (cluster) (rate(cilium_ztunnel_xds_effective_policy_ack_duration_seconds_count{job="cilium-native"}[1h])) > 0)
+      )
+  - record: cmtc:slo_policy_propagation_slow:ratio_rate6h
+    expr: |-
+      1 - (
+        sum by (cluster) (rate(cilium_ztunnel_xds_effective_policy_ack_duration_seconds_bucket{job="cilium-native", le="300"}[6h]))
+        / (sum by (cluster) (rate(cilium_ztunnel_xds_effective_policy_ack_duration_seconds_count{job="cilium-native"}[6h])) > 0)
+      )
+  - alert: CMTCPolicyPropagationErrorBudgetFastBurn
+    expr: |-
+      cmtc:slo_policy_propagation_slow:ratio_rate1h > 0.144
+      and on (cluster)
+      cmtc:slo_policy_propagation_slow:ratio_rate5m > 0.144
+    labels:
+      severity: critical
+      owner: cilium-agent
+      slo: '99'
+    annotations:
+      summary: 'Effective policies in {{ $labels.cluster }} reach ztunnel later than 5 minutes: {{ $value | humanizePercentage }} over 1h, 14.4x the rate the 99 % objective allows'
+      runbook: 'ztunnel acknowledges late. Read the acknowledgment time by cause on the security dashboard and the ztunnel xDS log; a stalled stream shows as CMTCEffectivePolicyUnacknowledged.'
+  - alert: CMTCPolicyPropagationErrorBudgetSlowBurn
+    expr: |-
+      cmtc:slo_policy_propagation_slow:ratio_rate6h > 0.06
+      and on (cluster)
+      cmtc:slo_policy_propagation_slow:ratio_rate30m > 0.06
+    labels:
+      severity: warning
+      owner: cilium-agent
+      slo: '99'
+    annotations:
+      summary: 'Effective policies in {{ $labels.cluster }} reach ztunnel later than 5 minutes: {{ $value | humanizePercentage }} over 6h, 6x the rate the 99 % objective allows'
+      runbook: 'ztunnel acknowledges late. Read the acknowledgment time by cause on the security dashboard and the ztunnel xDS log.'

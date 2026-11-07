@@ -1,0 +1,129 @@
+# Status: tested here with promtool 3.7.0 (rules/run-promtool.sh, tests/issuer-approval-source-change.test.yaml); returns
+# nothing on the labs: the gauges below need source-patches/cmtc/0001 (controller). Evaluated on the hub.
+#
+# Question: "Will workload mTLS keep working, and how long until the trust profile must change?"
+#
+# The 2026-10-25T23:55:17Z outage (docs/evidence/issuer-rebootstrap-20261026/INCIDENT.md:25) had no
+# warning: approval g1 pinned only SPIRE CA slot A (notAfter 2026-10-26T03:55:11Z), SPIRE prepared
+# slot B at 15:55:19Z and activated it at 23:55:17Z, and every ztunnel then refused its own new
+# certificate. The forecast is arithmetic on facts the controller already validates:
+#   - SPIRE prepares the next CA at notAfter - min(lifetime/2, 30 d) and activates it at
+#     notAfter - min(lifetime/6, 7 d) (spire pkg/server/ca/manager/slot.go:716-726; the lab runs the
+#     default ca_ttl of 24 h, so 12 h and 4 h before notAfter);
+#   - the CA SPIRE activates next is unpinned from the moment it is prepared, unless an approval
+#     pins it; the newest pinned issuer's lifetime decides when its successor activates.
+# Read on the lab at 2026-10-26T03:52:37Z (checks/approval_horizon.py): g1 forecasts 23:55:11Z for
+# cmtc-a (actual 23:55:17Z) and 23:55:38Z for cmtc-b (actual 23:55:44Z); g3, accepted by both
+# producers since 03:46Z, pins slot B only and forecasts 2026-10-26T11:55:19Z and 11:55:46Z.
+# The same arithmetic on the outage of #34 (read 2026-10-27T00:21Z): approval g5 pins one issuer per
+# cluster, SPIRE slot A (cmtc-a notAfter 2026-10-27T03:55:28Z, cmtc-b 03:55:54Z), and expires at
+# 03:55:28Z. It forecasts activation at 2026-10-26T23:55:28Z and 23:55:54Z; spire-server-0 logged
+# "X509 CA activated" for slot B at 23:55:37Z (cmtc-a) and 23:55:57Z (cmtc-b). CMTCIssuerSuccessionDue
+# would have fired from about 16:00Z and CMTCIssuerSuccessionImminent from about 22:00Z.
+#
+# The controller reports each approval it accepted (one reporter: the leader of each cluster's
+# controller, for that cluster's approval object). approval_cluster is a cluster ID of the approval's
+# clusters list, at most 16 entries (internal/trustprofile/profile.go:300); position is newest or
+# oldest of its at most two pinned issuers (:352). No domain, UID or key is a label
+# (internal/trustprofile/metrics.go:7-8).
+groups:
+- name: cmtc-issuer-approval-proposed
+  rules:
+  # When SPIRE of approval_cluster prepares the CA that follows the newest pinned issuer.
+  - record: cmtc:issuer_next_preparation:timestamp_seconds
+    expr: |-
+      max by (cluster, approval_cluster) (cmtc_issuer_profile_approved_issuer_not_after_timestamp_seconds{job="cmtc", component="cmtc-controller", position="newest"} > 0)
+      - clamp_max(
+          (
+            max by (cluster, approval_cluster) (cmtc_issuer_profile_approved_issuer_not_after_timestamp_seconds{job="cmtc", component="cmtc-controller", position="newest"} > 0)
+            - max by (cluster, approval_cluster) (cmtc_issuer_profile_approved_issuer_not_before_timestamp_seconds{job="cmtc", component="cmtc-controller", position="newest"} > 0)
+          ) / 2,
+          2592000
+        )
+
+  # When SPIRE of approval_cluster activates that CA: from then on, a workload certificate is signed
+  # by an issuer the approval in "cluster" does not pin, and ztunnel refuses it.
+  - record: cmtc:issuer_next_unpinned_activation:timestamp_seconds
+    expr: |-
+      max by (cluster, approval_cluster) (cmtc_issuer_profile_approved_issuer_not_after_timestamp_seconds{job="cmtc", component="cmtc-controller", position="newest"} > 0)
+      - clamp_max(
+          (
+            max by (cluster, approval_cluster) (cmtc_issuer_profile_approved_issuer_not_after_timestamp_seconds{job="cmtc", component="cmtc-controller", position="newest"} > 0)
+            - max by (cluster, approval_cluster) (cmtc_issuer_profile_approved_issuer_not_before_timestamp_seconds{job="cmtc", component="cmtc-controller", position="newest"} > 0)
+          ) / 6,
+          604800
+        )
+
+  - alert: CMTCIssuerSuccessionDue
+    expr: time() >= cmtc:issuer_next_preparation:timestamp_seconds
+    for: 5m
+    labels:
+      severity: warning
+      owner: cmtc-controller
+    annotations:
+      summary: 'SPIRE of {{ $labels.approval_cluster }} has prepared a CA that the approval in {{ $labels.cluster }} does not pin'
+      runbook: 'Add the prepared CA as the second issuer of {{ $labels.approval_cluster }} in a new approval generation before SPIRE activates it (the next alert stage, CMTCIssuerSuccessionImminent, gives the time). The SPIRE server log line "X509 CA prepared" names its slot and expiration.'
+
+  - alert: CMTCIssuerSuccessionImminent
+    expr: cmtc:issuer_next_unpinned_activation:timestamp_seconds - time() < 2 * 3600
+    for: 5m
+    labels:
+      severity: critical
+      owner: cmtc-controller
+    annotations:
+      summary: 'In {{ $value | humanizeDuration }} SPIRE of {{ $labels.approval_cluster }} activates a CA that the approval in {{ $labels.cluster }} does not pin'
+      runbook: 'Workload mTLS that depends on {{ $labels.approval_cluster }} identities fails closed at that time. Publish the approval generation that pins the prepared CA now; a negative value means the activation already happened and connections are being refused (CMTCTrustProfileRefusingConnections).'
+
+  # The approval horizon is the earliest notAfter of anything it pins, and its expiresAt
+  # (internal/trustprofile/profile.go:303, :345, :399, :423): an approval that pins the current and
+  # the next CA ends with the current one. 4 h is SPIRE's activation lead at the lab's 24 h CA life:
+  # from then on, the approval that pins only the active CA is the one to publish.
+  - alert: CMTCIssuerApprovalExpiring
+    expr: |-
+      (max by (cluster) (cmtc_issuer_profile_approval_valid_until_timestamp_seconds{job="cmtc", component="cmtc-controller"}) > 0)
+      - time() < 4 * 3600
+    for: 5m
+    labels:
+      severity: warning
+      owner: cmtc-controller
+    annotations:
+      summary: 'The issuer approval in force in {{ $labels.cluster }} ends in {{ $value | humanizeDuration }}'
+      runbook: 'At that time the producer withdraws the profile and every ztunnel of the cluster drains workload TLS. Publish the next approval generation, without the issuer that expires, before then.'
+
+  - alert: CMTCIssuerApprovalExpiryImminent
+    expr: |-
+      (max by (cluster) (cmtc_issuer_profile_approval_valid_until_timestamp_seconds{job="cmtc", component="cmtc-controller"}) > 0)
+      - time() < 3600
+    for: 1m
+    labels:
+      severity: critical
+      owner: cmtc-controller
+    annotations:
+      summary: 'The issuer approval in force in {{ $labels.cluster }} ends in {{ $value | humanizeDuration }}'
+      runbook: 'Publish the next approval generation now. After the horizon the publication reason becomes SourceExpired or SourceInvalid (CMTCIssuerProfileWithdrawn).'
+
+  # The producer is not publishing a validated profile. The reason is a closed set of eight values
+  # (internal/controller/issuer_profile.go:137-192; SourceInvalid and SourceExpired also from internal/trustprofile/profile.go Validate).
+  - alert: CMTCIssuerProfileWithdrawn
+    expr: max by (cluster, reason) (cmtc_issuer_profile_publication_reason{job="cmtc", component="cmtc-controller", reason!="Validated"}) == 1
+    for: 1m
+    labels:
+      severity: critical
+      owner: cmtc-controller
+    annotations:
+      summary: 'The issuer-profile producer in {{ $labels.cluster }} does not publish a validated profile: {{ $labels.reason }}'
+      runbook: 'SourceExpired: publish a new approval generation. SourceUIDMismatch or SourceDeleted: the approval object was replaced; the controller arguments name the old UID. GenerationRollback: an older generation was offered. Read the controller log line "approval validation rejected".'
+
+  # Two clusters accept different approval generations for longer than a rollout takes.
+  - alert: CMTCIssuerApprovalGenerationsDiffer
+    expr: |-
+      max(cmtc_issuer_profile_approval_generation{job="cmtc", component="cmtc-controller"} > 0)
+      - min(cmtc_issuer_profile_approval_generation{job="cmtc", component="cmtc-controller"} > 0)
+      > 0
+    for: 15m
+    labels:
+      severity: warning
+      owner: cmtc-controller
+    annotations:
+      summary: 'The clusters accept issuer approval generations {{ $value }} apart, for 15 minutes'
+      runbook: 'Each cluster pins the issuers its own approval lists. Compare the generations on the trust dashboard; publish the same generation in every cluster.'

@@ -1,0 +1,44 @@
+# kind-cmtc-b: the CMTC chart with the issuer approval arbiter and the node trust report (ADR-012), for the live
+# qualification in docs/development/ARBITER_QUALIFICATION_RUNBOOK.md. UIDs and pins were read from the lab on
+# 2026-10-27 (kubectl get, read-only).
+clusterName: cmtc-b
+# The image this cluster runs: images.lock.json of the images workflow, run 40580338929, source 9145ad0. A new image
+# is tested with --set image.digest=..., then written here in the commit that records its deployment.
+image:
+  repository: ghcr.io/ephico2real2/cmtc
+  digest: sha256:a99717bbba669e879caf0c48bc33f51125d77a6a499acf5a1701876bb738cbd1
+namespace:
+  create: false
+# The labs' SPIFFE trust objects (Certificate cmtc-b-spire-intermediate, Bundle cmtc-mesh-root) were created by
+# scripts/lab/pki/mesh-pki.sh and the cmtc-trust release before this chart owned them; they are not adopted here.
+trust:
+  enabled: false
+controller:
+  issuerProfile:
+    enabled: true
+    # The approval the producer published before the arbiter existed; the arbiter adopts it (adoptSource).
+    source: cmtc-issuer-approval-g6
+    sourceUID: cf026f16-e023-4d88-8dd7-30f1e1e5c1b8
+    output: cmtc-issuer-publication
+    outputUID: cb6e0317-d887-49be-b265-d24d896c35ef
+    rootSHA256: [6c12c7353967466f9177847c3c1e3c0acdb54af6eaef94b126f0449bf636275f]
+    minimumGeneration: 6
+    readers:
+      - {namespace: kube-system, name: cilium}
+  issuerApproval:
+    enabled: true
+    clusters:
+      - name: cmtc-a
+        trustDomain: cmtc-a.mesh.example
+        certificateUID: 2935a275-f8d9-4dc0-be9a-1dc05ddece31
+        peerSecret: cmtc-peer-cmtc-a
+      - name: cmtc-b
+        trustDomain: cmtc-b.mesh.example
+        certificateUID: 9e6d7081-af84-4f6d-a89f-eab1b15b8554
+    peerReader:
+      enabled: true
+nodeAgent:
+  trustReport:
+    enabled: true
+    # managePins stays off (the chart default): the administrator writes each node's pins file, outside the
+    # Kubernetes API; the agent mounts it read-only and reports ReadOnly, which the arbiter accepts.

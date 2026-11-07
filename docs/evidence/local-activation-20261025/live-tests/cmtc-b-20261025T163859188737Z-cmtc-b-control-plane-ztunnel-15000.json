@@ -1,0 +1,357 @@
+{
+  "certificates": [],
+  "config": {
+    "adminAddr": {
+      "Localhost": [
+        true,
+        15000
+      ]
+    },
+    "altCaHostname": null,
+    "altXdsHostname": null,
+    "caAddress": "https://localhost:15012",
+    "caHeaders": [],
+    "caRootCert": {
+      "File": "/etc/ztunnel/bootstrap-ca.crt"
+    },
+    "clusterDomain": "cmtc-b.mesh.example",
+    "clusterId": "cmtc-b",
+    "connectionWindowSize": 16777216,
+    "containerRuntimeSockPath": "/run/containerd/containerd.sock",
+    "crlPath": null,
+    "dnsProxy": false,
+    "dnsProxyAddr": {
+      "Localhost": [
+        true,
+        15053
+      ]
+    },
+    "dnsResolverCfg": {
+      "domain": null,
+      "name_servers": [
+        {
+          "connections": [
+            {
+              "bind_addr": null,
+              "port": 53,
+              "protocol": {
+                "type": "udp"
+              }
+            },
+            {
+              "bind_addr": null,
+              "port": 53,
+              "protocol": {
+                "type": "tcp"
+              }
+            }
+          ],
+          "ip": "192.168.5.2",
+          "trust_negative_responses": true
+        }
+      ],
+      "search": []
+    },
+    "dnsResolverOpts": {
+      "allow_answers": [],
+      "attempts": 2,
+      "avoid_local_udp_ports": [],
+      "cache_size": 4096,
+      "case_randomization": false,
+      "deny_answers": [],
+      "edns0": false,
+      "edns_payload_len": 1232,
+      "ip_strategy": "Ipv4AndIpv6",
+      "max_active_requests": 32,
+      "ndots": 0,
+      "negative_max_ttl": null,
+      "negative_min_ttl": null,
+      "num_concurrent_reqs": 2,
+      "os_port_selection": false,
+      "positive_max_ttl": null,
+      "positive_min_ttl": null,
+      "preserve_intermediates": true,
+      "recursion_desired": true,
+      "server_ordering_strategy": "QueryStatistics",
+      "timeout": 5,
+      "trust_anchor": null,
+      "try_tcp_on_error": false,
+      "use_hosts_file": "Auto"
+    },
+    "enableEnhancedBaggage": true,
+    "fakeCa": false,
+    "fakeSelfInbound": false,
+    "frameSize": 1048576,
+    "illegalPorts": [
+      15006,
+      15008,
+      15001
+    ],
+    "inboundAddr": "[::]:15008",
+    "inboundPlaintextAddr": "[::]:15006",
+    "inpodPortReuse": true,
+    "inpodUds": "/var/run/cilium/ztunnel.sock",
+    "ipv6Enabled": true,
+    "issuerProfileCheckpointBootstrap": true,
+    "issuerProfileCheckpointDir": "/var/lib/cmtc/ztunnel-issuer-checkpoint",
+    "issuerProfileProbePins": "/etc/cmtc/ztunnel-issuer-pins/pins.json",
+    "localNode": "cmtc-b-control-plane",
+    "localhostAppTunnel": true,
+    "meshEgress": {
+      "clusters": [
+        {
+          "clusterId": "cmtc-a",
+          "gatewayCidrs": [],
+          "podCidrs": [
+            "10.10.0.0/16"
+          ],
+          "serviceCidrs": [
+            "10.11.0.0/16"
+          ],
+          "trustDomain": "cmtc-a.mesh.example"
+        },
+        {
+          "clusterId": "cmtc-b",
+          "gatewayCidrs": [],
+          "podCidrs": [
+            "10.20.0.0/16"
+          ],
+          "serviceCidrs": [
+            "10.21.0.0/16"
+          ],
+          "trustDomain": "cmtc-b.mesh.example"
+        }
+      ],
+      "exceptions": []
+    },
+    "network": "",
+    "numWorkerThreads": 2,
+    "outboundAddr": "[::]:15001",
+    "packetMark": 1337,
+    "poolMaxStreamsPerConn": 100,
+    "poolUnusedReleaseTimeout": {
+      "nanos": 0,
+      "secs": 300
+    },
+    "preferedServiceNamespace": null,
+    "proxy": true,
+    "proxyArgs": "proxy-mtls ztunnel",
+    "proxyMetadata": {
+      "DNS_CAPTURE": "false",
+      "ENABLE_HBONE": "true"
+    },
+    "proxyMode": "Shared",
+    "proxyWorkloadInformation": null,
+    "readinessAddr": {
+      "SocketAddr": "[::]:15021"
+    },
+    "requireInboundMtls": true,
+    "requireMeshHbone": true,
+    "requireOriginalSource": null,
+    "secretTtl": {
+      "nanos": 0,
+      "secs": 86400
+    },
+    "selfTerminationDeadline": {
+      "nanos": 0,
+      "secs": 5
+    },
+    "socketConfig": {
+      "keepaliveEnabled": true,
+      "keepaliveInterval": {
+        "nanos": 0,
+        "secs": 180
+      },
+      "keepaliveRetries": 9,
+      "keepaliveTime": {
+        "nanos": 0,
+        "secs": 180
+      },
+      "userTimeoutEnabled": false
+    },
+    "socks5Addr": null,
+    "spireAdminSocket": "unix:///run/cmtc-spire/cmtc-b/delegated/delegated.sock",
+    "spireEnabled": true,
+    "spireTimeout": {
+      "nanos": 0,
+      "secs": 10
+    },
+    "statsAddr": {
+      "SocketAddr": "[::]:15020"
+    },
+    "tlsHandshakeTimeout": {
+      "nanos": 0,
+      "secs": 10
+    },
+    "windowSize": 4194304,
+    "xdsAddress": "https://localhost:15012",
+    "xdsHeaders": [],
+    "xdsOnDemand": false,
+    "xdsRootCert": {
+      "File": "/etc/ztunnel/bootstrap-ca.crt"
+    },
+    "ztunnelIdentity": null,
+    "ztunnelWorkload": null
+  },
+  "policies": [
+    {
+      "action": "Deny",
+      "dryRun": false,
+      "name": "cilium_require_mtls",
+      "namespace": "",
+      "rules": [
+        [
+          [
+            {
+              "notPrincipals": [
+                {
+                  "Presence": []
+                }
+              ]
+            }
+          ]
+        ]
+      ],
+      "scope": "Global"
+    },
+    {
+      "action": "Deny",
+      "dryRun": false,
+      "name": "cilium_l4_effective_67aaedf0add06f967d15629c6f262292c7e73fd0e19031e35cfdd3903a8163d1",
+      "namespace": "cmtc-live-mtls",
+      "rules": [
+        []
+      ],
+      "scope": "WorkloadSelector"
+    },
+    {
+      "action": "Deny",
+      "dryRun": false,
+      "name": "cilium_l4_effective_8c6eef8cc21d57f40fbe9c7dc233af12fd43e25c0906a661c857d3d14f4ab50b",
+      "namespace": "cmtc-live-mtls",
+      "rules": [
+        []
+      ],
+      "scope": "WorkloadSelector"
+    },
+    {
+      "action": "Deny",
+      "dryRun": false,
+      "name": "cilium_l4_effective_a15512b0715911096ae2f3fd33cd090b1c13a9bf0fcf6d06d03999eb083d980d",
+      "namespace": "cmtc-live-mtls",
+      "rules": [
+        []
+      ],
+      "scope": "WorkloadSelector"
+    },
+    {
+      "action": "Deny",
+      "dryRun": false,
+      "name": "cilium_l4_effective_ce164cb0d3a0c1b73373270e5df1f9dbb87e0b4cb47f669dc9efc7f1da8a984a",
+      "namespace": "cmtc-live-mtls",
+      "rules": [
+        []
+      ],
+      "scope": "WorkloadSelector"
+    }
+  ],
+  "services": [],
+  "stagedServices": {},
+  "staticConfig": {
+    "policies": [],
+    "services": [],
+    "workloads": []
+  },
+  "version": {
+    "buildProfile": "release",
+    "buildStatus": "Clean",
+    "cryptoProvider": "tls-aws-lc",
+    "gitRevision": "35a6c9403eb5c00b1b79aafe2851f423cd195540",
+    "istioVersion": "unknown",
+    "rustVersion": "1.90.0",
+    "version": "35a6c9403eb5c00b1b79aafe2851f423cd195540"
+  },
+  "workloadState": {},
+  "workloads": [
+    {
+      "authorizationPolicies": [
+        "cmtc-live-mtls/cilium_l4_effective_8c6eef8cc21d57f40fbe9c7dc233af12fd43e25c0906a661c857d3d14f4ab50b"
+      ],
+      "capacity": 1,
+      "clusterId": "cmtc-b",
+      "name": "server-worker",
+      "namespace": "cmtc-live-mtls",
+      "networkMode": "Standard",
+      "node": "cmtc-b-worker",
+      "protocol": "HBONE",
+      "serviceAccount": "rebel-base",
+      "status": "Healthy",
+      "trustDomain": "cmtc-b.mesh.example",
+      "uid": "65e1c69f-46ff-4c8c-a80c-5f07cb893f46",
+      "workloadIps": [
+        "10.20.1.116"
+      ],
+      "workloadType": "deployment"
+    },
+    {
+      "authorizationPolicies": [
+        "cmtc-live-mtls/cilium_l4_effective_a15512b0715911096ae2f3fd33cd090b1c13a9bf0fcf6d06d03999eb083d980d"
+      ],
+      "capacity": 1,
+      "clusterId": "cmtc-b",
+      "name": "client-control-plane",
+      "namespace": "cmtc-live-mtls",
+      "networkMode": "Standard",
+      "node": "cmtc-b-control-plane",
+      "protocol": "HBONE",
+      "serviceAccount": "mesh-client",
+      "status": "Healthy",
+      "trustDomain": "cmtc-b.mesh.example",
+      "uid": "76dd0cba-c4bd-4167-a4dd-fcb7fe552563",
+      "workloadIps": [
+        "10.20.0.198"
+      ],
+      "workloadType": "deployment"
+    },
+    {
+      "authorizationPolicies": [
+        "cmtc-live-mtls/cilium_l4_effective_ce164cb0d3a0c1b73373270e5df1f9dbb87e0b4cb47f669dc9efc7f1da8a984a"
+      ],
+      "capacity": 1,
+      "clusterId": "cmtc-b",
+      "name": "client-worker",
+      "namespace": "cmtc-live-mtls",
+      "networkMode": "Standard",
+      "node": "cmtc-b-worker",
+      "protocol": "HBONE",
+      "serviceAccount": "mesh-client",
+      "status": "Healthy",
+      "trustDomain": "cmtc-b.mesh.example",
+      "uid": "a498659f-1ce4-4c3c-bc24-0ba8f0fd475a",
+      "workloadIps": [
+        "10.20.1.242"
+      ],
+      "workloadType": "deployment"
+    },
+    {
+      "authorizationPolicies": [
+        "cmtc-live-mtls/cilium_l4_effective_67aaedf0add06f967d15629c6f262292c7e73fd0e19031e35cfdd3903a8163d1"
+      ],
+      "capacity": 1,
+      "clusterId": "cmtc-b",
+      "name": "server-control-plane",
+      "namespace": "cmtc-live-mtls",
+      "networkMode": "Standard",
+      "node": "cmtc-b-control-plane",
+      "protocol": "HBONE",
+      "serviceAccount": "rebel-base",
+      "status": "Healthy",
+      "trustDomain": "cmtc-b.mesh.example",
+      "uid": "d151761c-e30a-40a1-8aa5-6adf8295ad6d",
+      "workloadIps": [
+        "10.20.0.92"
+      ],
+      "workloadType": "deployment"
+    }
+  ]
+}

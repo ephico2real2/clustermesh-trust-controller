@@ -1,0 +1,16 @@
+# cilium drop capture: node cmtc-b-control-plane, agent Pod kube-system/cilium-cbwcp in kind-cmtc-b, cilium-dbg monitor -n -t drop for 240s
+# each line: the agent container clock (UTC) when the line arrived, then the line of the monitor
+# coverage 2026-10-26T13:42:27.123689Z 2026-10-26T13:46:26.105835Z
+2026-10-26T13:42:26.123689Z Press Ctrl-C to quit
+2026-10-26T13:43:03.148335Z time=2026-10-26T13:43:03.148196582Z level=info msg="Initializing dissection cache..."
+2026-10-26T13:43:03.148514Z xx drop (Policy denied) flow 0x8d33f04f to endpoint 2109, ifindex 99, file bpf_lxc.c:2381, , identity 131157->179695: 10.20.0.17:34152 -> 10.20.0.92:80 tcp SYN
+2026-10-26T13:43:04.150455Z xx drop (Policy denied) flow 0xc8372f04 to endpoint 2109, ifindex 99, file bpf_lxc.c:2381, , identity 131157->179695: 10.20.0.17:34152 -> 10.20.0.92:80 tcp SYN
+2026-10-26T13:43:05.173579Z xx drop (Policy denied) flow 0x345dc5b7 to endpoint 2109, ifindex 99, file bpf_lxc.c:2381, , identity 131157->179695: 10.20.0.17:34152 -> 10.20.0.92:80 tcp SYN
+2026-10-26T13:43:06.212751Z xx drop (Policy denied) flow 0x9fb7011c to endpoint 2109, ifindex 99, file bpf_lxc.c:2381, , identity 131157->179695: 10.20.0.17:50544 -> 10.20.0.92:8080 tcp SYN
+2026-10-26T13:43:07.221608Z xx drop (Policy denied) flow 0x65129bb9 to endpoint 2109, ifindex 99, file bpf_lxc.c:2381, , identity 131157->179695: 10.20.0.17:50544 -> 10.20.0.92:8080 tcp SYN
+2026-10-26T13:43:08.245566Z xx drop (Policy denied) flow 0xba022a53 to endpoint 2109, ifindex 99, file bpf_lxc.c:2381, , identity 131157->179695: 10.20.0.17:50544 -> 10.20.0.92:8080 tcp SYN
+2026-10-26T13:43:09.279572Z xx drop (Policy denied) flow 0x52d68e79 to endpoint 2109, ifindex 99, file bpf_lxc.c:2381, , identity 131157->179695: 10.20.0.17:57886 -> 10.20.0.92:31337 tcp SYN
+2026-10-26T13:43:10.293536Z xx drop (Policy denied) flow 0xf8a5325a to endpoint 2109, ifindex 99, file bpf_lxc.c:2381, , identity 131157->179695: 10.20.0.17:57886 -> 10.20.0.92:31337 tcp SYN
+2026-10-26T13:43:11.317577Z xx drop (Policy denied) flow 0xc0524d33 to endpoint 2109, ifindex 99, file bpf_lxc.c:2381, , identity 131157->179695: 10.20.0.17:57886 -> 10.20.0.92:31337 tcp SYN
+2026-10-26T13:45:19.254639Z xx drop (Unsupported L3 protocol) flow 0x0 to endpoint 0, ifindex 103, file bpf_lxc.c:1811, , identity 179695->0: fe80::3098:d9ff:fe6a:2d3d -> ff02::2 icmp RouterSolicitation
+2026-10-26T13:46:26.105835Z CMTC_MONITOR_EXIT=124

@@ -4,6 +4,12 @@
 Evidence scope: results apply to the recorded source, image and fixture. Read [current delivery status](docs/agile/DELIVERY_STATUS.md) and [documentation terms](DOCUMENTATION_GUIDE.md).
 <!-- /CMTC_DOC_CONTEXT -->
 
+**Current state (read 2026-10-25T23:07Z):** both SPIRE servers run
+`localhost/cmtc-spire-server@sha256:f57e537d42e5a8cc94fbae110b4f67a70481f391fef70171143d9a1b81cf0288`, the same digest
+this guide qualified below (source `28f6b8d84a`). The SPIRE node agents have since moved to
+`localhost/cmtc-spire-agent:delegated-0f8fe4d681`. The qualification results below are **historical** (2026-10-24).
+Exact pins are in [delivery status](docs/agile/DELIVERY_STATUS.md).
+
 CMTC uses this certificate hierarchy:
 
 Organization root → cluster CA → exact SPIRE CA → workload SVID.
@@ -17,10 +23,8 @@ Read [the illustrated PKI flow](PKI_TRUST_FLOW.md) for issuance and verification
 
 ## Preserve ClusterMesh
 
-The current ClusterMesh issuer is `cmtc-lab-intermediate`.
-Its Secret is `cert-manager/cluster-intermediate`.
-Its certificates do not allow the extra SPIRE CA level.
-Keep that issuer and Secret intact.
+Historical, until 2026-10-26: the ClusterMesh issuer was `cmtc-lab-intermediate` on Secret `cert-manager/cluster-intermediate`, whose certificates did not allow the extra SPIRE CA level.
+ClusterMesh now uses `<cluster>-clustermesh-intermediate` from the mesh root ([MESH_PKI.md](MESH_PKI.md)); SPIRE's move onto `<cluster>-spire-intermediate` is proposed.
 
 The new SPIRE cluster CA uses `cert-manager/cmtc-spire-cluster-ca`.
 The new SPIRE issuer is `cmtc-spire-issuer`.
@@ -55,8 +59,8 @@ The legacy lab path is retained. It is not used for this SPIRE installation.
 
 ## Local validation
 
-The complete ARM64 race suite passes73 top-level tests and204 subtests.
-The initializer also passes10 repetitions:180 top-level invocations and320 subtest invocations.
+The complete ARM64 race suite passes 73 top-level tests and 204 subtests.
+The initializer also passes 10 repetitions: 180 top-level invocations and 320 subtest invocations.
 Formatting and vet pass. No selected test fails or is skipped.
 [The source ledger and raw results](docs/evidence/spire-ca-initializer/opaque-correction-summary.json) retain the evidence.
 
@@ -79,7 +83,7 @@ SPIRE server source `28f6b8d84ade21c6accb32ba9689a3bdf64877ec` runs in `cilium-s
 It starts directly from current upstream `main` at `0d589ad07d7b7e7a244f5b5548bf9d2d21e9fbba` in [the personal SPIRE fork](https://github.com/ephico2real2/spire).
 The local branch is `fix/ca-journal-subject-key-id`. No branch or image was published.
 
-The original1.15.5 restart test exposed a real CA journal lookup failure.
+The original 1.15.5 restart test exposed a real CA journal lookup failure.
 Cert-manager uses an RFC7093 SHA256 subject-key identifier; non-FIPS SPIRE uses SHA1 for its native lookup.
 The fix checks the supported identifiers and rejects an ambiguous fallback.
 Fallback recovery also verifies the exact CA, signing key and upstream authority.
@@ -89,7 +93,7 @@ Fallback recovery also verifies the exact CA, signing key and upstream authority
 The exact ARM64 image is `localhost/cmtc-spire-server@sha256:f57e537d42e5a8cc94fbae110b4f67a70481f391fef70171143d9a1b81cf0288`.
 Its configuration ID is `sha256:70f8fbde787b46479d8bd22aed9005d36caa7c597fcff7108cee9bf122a6edd0`.
 The server reports `1.16.0-dev-28f6b8d84ade21c6accb32ba9689a3bdf64877ec`.
-The node agents now run the same current-fork source. [The node API guide](LOCAL_SPIRE_WORKLOAD_API.md) records their exact image and secure kubelet configuration.
+At this record the node agents ran the same fork source; they now run `0f8fe4d681`. [The node API guide](LOCAL_SPIRE_WORKLOAD_API.md) records their earlier image and secure kubelet configuration.
 
 Host Podman builds a static ARM64 server with the pinned musl builder.
 [The build script](docs/evidence/spire-recovery/build-server.sh) records the toolchain, base image, explicit platform, resource limits and source label.
@@ -100,9 +104,9 @@ The synthetic CRI archive digest is not a usable pull reference.
 Both worker image-volume CLI checks pass with the canonical reference.
 
 Before upgrade, each server stops and takes a private database/key backup inside its existing PVC.
-The backup stays in `.cmtc-preupgrade-28f6b8d84a/` with directory mode0700 and archive mode0600.
+The backup stays in `.cmtc-preupgrade-28f6b8d84a/` with directory mode 0700 and archive mode 0600.
 The archive audit checks exact regular files and copy equivalence. No backup or key leaves the PVC.
-SQLite migration tests cover the actual schema25→27 transition.
+SQLite migration tests cover the actual schema 25→27 transition.
 Do not start the old binary on the migrated database as an automatic rollback.
 
 Both servers pass two real restart rounds with the same signer and PVC UID.
@@ -111,22 +115,21 @@ The public nonce check also proves possession of each exact retained signing key
 This administrator check is not workload attestation.
 The new server's source version appears in the raw restart log; early per-round version files are empty because the CLI writes to stderr.
 
-Local ARM64 race tests pass89 top-level tests and96 subtests.
-SQLite migration tests pass4 top-level tests and29 subtests.
-Vet passes. Change-only lint reports0 issues.
+Local ARM64 race tests pass 89 top-level tests and 96 subtests.
+SQLite migration tests pass 4 top-level tests and 29 subtests.
+Vet passes. Change-only lint reports 0 issues.
 The first broad lint run retains one warning in unchanged upstream `manager_test.go:620`.
 No selected test fails or is skipped.
 
-## Remaining gates
+## Gates after this record
 
-The real issuer-profile producer is now enabled in both clusters.
-[Its guide](LOCAL_ISSUER_PROFILE.md) and [live ledger](docs/evidence/live-issuer-publication/summary.json) record the activation.
-Node Workload/Admin socket access is now enabled. Native credential qualification has separate passing evidence in [the credential guide](LOCAL_NATIVE_CREDENTIALS.md). Complete registrar withdrawal, production proxy access and native consumers remain unfinished.
+The issuer-profile producer is enabled in both clusters ([its guide](LOCAL_ISSUER_PROFILE.md),
+[live ledger](docs/evidence/live-issuer-publication/summary.json)). Native credential delivery has separate passing
+evidence ([credential guide](LOCAL_NATIVE_CREDENTIALS.md)). Ztunnel now runs in both clusters and the Cilium
+ClusterMesh/ztunnel guard was replaced by capability validation (`37d5fce0f7`).
 A public bundle, node readiness or publication ACK is not evidence of workload protection.
-
-Native remote identity, effective policy, durable admission and connection recovery remain required.
-Keep the combined ClusterMesh/ztunnel guard closed until those tests pass.
-The application regression checks cover TCP80,8080 and31337. They prove reachability only.
+Recovery on the current images and per-connection peer-certificate evidence remain open; read
+[delivery status](docs/agile/DELIVERY_STATUS.md).
 
 ## Live API correction
 
@@ -139,6 +142,6 @@ The host root, cluster key, pending CSR and public approval were preserved for t
 Temporary Jobs and permissions were removed. Cilium and ClusterMesh configuration stayed intact.
 
 The host orchestrator is [pki.py](scripts/lab/pki/pki.py).
-Its20 local tests pass with real OpenSSL cryptography and API fault fixtures.
+Its 20 local tests pass with real OpenSSL cryptography and API fault fixtures.
 It uses a private UNIX proxy and server-side metadata-only Secret reads.
 It records exact cluster/node/image pins, retains public Job logs and waits for conditional cleanup.

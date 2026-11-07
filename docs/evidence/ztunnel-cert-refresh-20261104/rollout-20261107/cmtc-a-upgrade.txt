@@ -1,0 +1,21 @@
+DaemonSet.apps/kube-system/ztunnel-cilium: .metadata.annotations.deprecated.daemonset.template.generation
+    live ="11"
+    after="12"
+DaemonSet.apps/kube-system/ztunnel-cilium: .spec.template.spec.containers[name="istio-proxy"].image
+    live ="ghcr.io/ephico2real2/cmtc-ztunnel@sha256:bc4fb925ae905f02ffd90d5bc2b65f7720af4ab5ef262607c653942c5ac87771"
+    after="ghcr.io/ephico2real2/cmtc-ztunnel@sha256:8705a64e73a63be66ae91d058b5082f338eaa6a9a111322ab6a026c85d1b43fa"
+cmtc-a: 2 change(s), 0 deletion(s); 0 kubectl manager entr(ies) left; 0 refusal(s)
+Release "cilium" has been upgraded. Happy Helming!
+NAME: cilium
+LAST DEPLOYED: Fri Nov  6 20:48:04 2026
+NAMESPACE: kube-system
+STATUS: deployed
+REVISION: 13
+DESCRIPTION: Upgrade complete
+TEST SUITE: None
+NOTES:
+You have successfully installed Cilium with Hubble Relay and Hubble UI.
+
+Your release version is 1.21.0-dev.
+
+For any further help, visit https://docs.cilium.io/en/v1.21/gettinghelp

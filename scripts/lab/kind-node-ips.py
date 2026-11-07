@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
-"""Print all Docker IPv4 addresses for nodes in one retained CMTC kind cluster."""
+"""Print all Docker IPv4 addresses for nodes in one kind cluster (DOCKER_CONTEXT selects the VM)."""
 
 import ipaddress
 import json
+import re
 import subprocess
 import sys
 
@@ -12,8 +13,8 @@ def run(*args: str) -> str:
 
 
 def main() -> None:
-    if len(sys.argv) != 2 or sys.argv[1] not in {"cmtc-a", "cmtc-b"}:
-        raise SystemExit("usage: kind-node-ips.py cmtc-a|cmtc-b")
+    if len(sys.argv) != 2 or not re.fullmatch(r"[a-z][a-z0-9-]{0,30}[a-z0-9]", sys.argv[1]):
+        raise SystemExit("usage: kind-node-ips.py <kind cluster name>")
 
     cluster = sys.argv[1]
     nodes = run("kind", "get", "nodes", "--name", cluster).splitlines()

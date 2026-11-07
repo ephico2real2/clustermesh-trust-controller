@@ -1,0 +1,24 @@
+# Recorded 2026-10-25T23:10:33Z by session b744973a; agents localhost/cilium:dev-overlay-6090aa6eff
+## Global Service by ClusterIP from enrolled client-worker (no DNS)
+cmtc-a client-worker -> server-cmtc-a 10.11.66.230:80 "cluster": "cmtc-a" RC=0 
+cmtc-a client-worker -> server-cmtc-a 10.11.66.230:8080 "cluster": "cmtc-a" RC=0 
+cmtc-a client-worker -> server-cmtc-a 10.11.66.230:31337 "cluster": "cmtc-a" RC=0 
+cmtc-a client-worker -> server-cmtc-b 10.11.176.129:80 "cluster": "cmtc-b" RC=0 
+cmtc-a client-worker -> server-cmtc-b 10.11.176.129:8080 "cluster": "cmtc-b" RC=0 
+cmtc-a client-worker -> server-cmtc-b 10.11.176.129:31337 "cluster": "cmtc-b" RC=0 
+cmtc-b client-worker -> server-cmtc-a 10.21.75.46:80 "cluster": "cmtc-a" RC=0 
+cmtc-b client-worker -> server-cmtc-a 10.21.75.46:8080 "cluster": "cmtc-a" RC=0 
+cmtc-b client-worker -> server-cmtc-a 10.21.75.46:31337 "cluster": "cmtc-a" RC=0 
+cmtc-b client-worker -> server-cmtc-b 10.21.200.70:80 "cluster": "cmtc-b" RC=0 
+cmtc-b client-worker -> server-cmtc-b 10.21.200.70:8080 "cluster": "cmtc-b" RC=0 
+cmtc-b client-worker -> server-cmtc-b 10.21.200.70:31337 "cluster": "cmtc-b" RC=0 
+## DNS: enrolled client-worker vs unenrolled Pod
+cmtc-a enrolled: ;; connection timed out; no servers could be reached  
+cmtc-a unenrolled unregistered-control-plane: Server:		10.11.0.10 Address:	10.11.0.10:53  Name:	kubernetes.default.svc.cluster.local Address: 10.11.0.1   
+cmtc-b enrolled: ;; connection timed out; no servers could be reached  
+cmtc-b unenrolled unregistered-control-plane: Server:		10.21.0.10 Address:	10.21.0.10:53  Name:	kubernetes.default.svc.cluster.local Address: 10.21.0.1   
+## Source admission gauges
+kind-cmtc-a pod/cilium-b98gm cluster=2 node=2 peer=4
+kind-cmtc-a pod/cilium-kl9gg cluster=2 node=2 peer=4
+kind-cmtc-b pod/cilium-4zgd5 cluster=2 node=2 peer=4
+kind-cmtc-b pod/cilium-lfzng cluster=2 node=2 peer=4

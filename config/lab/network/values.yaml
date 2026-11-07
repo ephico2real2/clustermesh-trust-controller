@@ -1,0 +1,7 @@
+# Both labs: every cluster's Ingress domain and address (charts/cmtc-lab-network). The addresses are on the kind
+# network 172.18.0.0/16, far above the node addresses Docker gives out from the bottom (172.18.0.2-5 on 2026-10-28),
+# and outside 172.18.255.0/24, which the cilium-implementation-poc labs use on the same network.
+coredns:
+  zones:
+    - {domain: cmtc-a.localtest.me, address: 172.18.250.10}
+    - {domain: cmtc-b.localtest.me, address: 172.18.251.10}

@@ -1,0 +1,304 @@
+# Status: tested here with promtool 3.7.0 (rules/run-promtool.sh, tests/cmtc-slo.test.yaml). Not deployed:
+# the connection and CoreDNS indicators need the ztunnel and coredns scrape jobs of deploy/. Evaluated on
+# the hub. A cluster with no source mTLS connection in the window has no connection error ratio: no
+# traffic is nothing to judge, never a ratio of 0.
+# PROPOSED service level indicators for the candidate targets of docs/architecture/METRICS_AND_SLOS.md:37.
+# None is an approved SLO. Each indicator states its denominator and exclusions; docs/METRICS_AND_SLOS.md gives
+# the error budget arithmetic.
+#
+# Burn-rate alerts (Google SRE workbook ch. 5, table 5-8): page when 2 % of a 30-day budget burns in
+# 1 h (14.4x, confirmed over 5 m) or 5 % in 6 h (6x, confirmed over 30 m). The 6 h window needs at
+# least 6 h of retention; deploy/ keeps 7 h (values prometheus.retention).
+#
+# SLI "authenticated connections succeed" (candidate: 99.9 % successful authenticated handshakes).
+#   Reporter: the source ztunnel, which counts every attempt at build time
+#   (ztunnel src/proxy/metrics.rs:752-807) and every failure with its response flag (:881-903).
+#   A handshake-based indicator is not used: a refused issuer-profile lease happens before any TCP
+#   connection and is never a handshake (src/proxy.rs:239-258, src/proxy/pool.rs:103-106), and HBONE
+#   pooling carries many connections per handshake (03:30Z page of ztunnel-cilium-g9d2p:
+#   istio_tls_handshakes_total{reporter="source",result="success"} 5 against 15 source mTLS opens).
+#   Valid events: source mTLS attempts, minus intended denials (DENY: the source's own policy;
+#   PEER_DENIED: the destination refused, source-patches/ztunnel/0001).
+#   Error events: source mTLS failures with any other flag.
+#   Without the ztunnel patch a destination's denial is CONNECT and counts as an error.
+#
+# SLI "critical dependencies available" (candidate: 99.9 % critical dependency availability).
+#   A minute is good for a cluster when every term of cmtc:dependency_available:bool is 1: a scraped
+#   controller, an issuer profile whose acknowledged lease is current, a Cilium agent and a ztunnel
+#   on every expected node, and at least one CoreDNS replica. A term without data is 0 (unavailable,
+#   never healthy). The SPIRE server joins when its scrape job exists (rules/proposed/spire-telemetry).
+#
+# SLI "CoreDNS answers" (operator scope 2026-10-26): answers that are not SERVFAIL, and answers within
+#   64 ms, from CoreDNS's own exporter. Server side only: a query dropped before it reached CoreDNS is
+#   invisible here (the measurement plane slot, rules/proposed/dns-client-source-change.rules.yaml).
+#
+# SLIs "eligible workload protection" and "trust propagation within five minutes" need source
+#   changes: rules/proposed/cilium-source-change.rules.yaml.
+groups:
+- name: cmtc-slo-connections
+  rules:
+  - record: cmtc:slo_connection_errors:ratio_rate5m
+    expr: |-
+      (
+        sum by (cluster) (rate(istio_tcp_connections_failed_total{job="ztunnel", reporter="source", connection_security_policy="mutual_tls", response_flags!~"DENY|PEER_DENIED"}[5m]))
+        or on (cluster) (0 * sum by (cluster) (rate(istio_tcp_connections_opened_total{job="ztunnel", reporter="source", connection_security_policy="mutual_tls"}[5m])))
+      )
+      /
+      (
+        (
+          sum by (cluster) (rate(istio_tcp_connections_opened_total{job="ztunnel", reporter="source", connection_security_policy="mutual_tls"}[5m]))
+          - (
+            sum by (cluster) (rate(istio_tcp_connections_failed_total{job="ztunnel", reporter="source", connection_security_policy="mutual_tls", response_flags=~"DENY|PEER_DENIED"}[5m]))
+            or on (cluster) (0 * sum by (cluster) (rate(istio_tcp_connections_opened_total{job="ztunnel", reporter="source", connection_security_policy="mutual_tls"}[5m])))
+          )
+        ) > 0
+      )
+  - record: cmtc:slo_connection_errors:ratio_rate30m
+    expr: |-
+      (
+        sum by (cluster) (rate(istio_tcp_connections_failed_total{job="ztunnel", reporter="source", connection_security_policy="mutual_tls", response_flags!~"DENY|PEER_DENIED"}[30m]))
+        or on (cluster) (0 * sum by (cluster) (rate(istio_tcp_connections_opened_total{job="ztunnel", reporter="source", connection_security_policy="mutual_tls"}[30m])))
+      )
+      /
+      (
+        (
+          sum by (cluster) (rate(istio_tcp_connections_opened_total{job="ztunnel", reporter="source", connection_security_policy="mutual_tls"}[30m]))
+          - (
+            sum by (cluster) (rate(istio_tcp_connections_failed_total{job="ztunnel", reporter="source", connection_security_policy="mutual_tls", response_flags=~"DENY|PEER_DENIED"}[30m]))
+            or on (cluster) (0 * sum by (cluster) (rate(istio_tcp_connections_opened_total{job="ztunnel", reporter="source", connection_security_policy="mutual_tls"}[30m])))
+          )
+        ) > 0
+      )
+  - record: cmtc:slo_connection_errors:ratio_rate1h
+    expr: |-
+      (
+        sum by (cluster) (rate(istio_tcp_connections_failed_total{job="ztunnel", reporter="source", connection_security_policy="mutual_tls", response_flags!~"DENY|PEER_DENIED"}[1h]))
+        or on (cluster) (0 * sum by (cluster) (rate(istio_tcp_connections_opened_total{job="ztunnel", reporter="source", connection_security_policy="mutual_tls"}[1h])))
+      )
+      /
+      (
+        (
+          sum by (cluster) (rate(istio_tcp_connections_opened_total{job="ztunnel", reporter="source", connection_security_policy="mutual_tls"}[1h]))
+          - (
+            sum by (cluster) (rate(istio_tcp_connections_failed_total{job="ztunnel", reporter="source", connection_security_policy="mutual_tls", response_flags=~"DENY|PEER_DENIED"}[1h]))
+            or on (cluster) (0 * sum by (cluster) (rate(istio_tcp_connections_opened_total{job="ztunnel", reporter="source", connection_security_policy="mutual_tls"}[1h])))
+          )
+        ) > 0
+      )
+  - record: cmtc:slo_connection_errors:ratio_rate6h
+    expr: |-
+      (
+        sum by (cluster) (rate(istio_tcp_connections_failed_total{job="ztunnel", reporter="source", connection_security_policy="mutual_tls", response_flags!~"DENY|PEER_DENIED"}[6h]))
+        or on (cluster) (0 * sum by (cluster) (rate(istio_tcp_connections_opened_total{job="ztunnel", reporter="source", connection_security_policy="mutual_tls"}[6h])))
+      )
+      /
+      (
+        (
+          sum by (cluster) (rate(istio_tcp_connections_opened_total{job="ztunnel", reporter="source", connection_security_policy="mutual_tls"}[6h]))
+          - (
+            sum by (cluster) (rate(istio_tcp_connections_failed_total{job="ztunnel", reporter="source", connection_security_policy="mutual_tls", response_flags=~"DENY|PEER_DENIED"}[6h]))
+            or on (cluster) (0 * sum by (cluster) (rate(istio_tcp_connections_opened_total{job="ztunnel", reporter="source", connection_security_policy="mutual_tls"}[6h])))
+          )
+        ) > 0
+      )
+  - alert: CMTCConnectionErrorBudgetFastBurn
+    expr: |-
+      cmtc:slo_connection_errors:ratio_rate1h > 0.0144
+      and on (cluster)
+      cmtc:slo_connection_errors:ratio_rate5m > 0.0144
+    labels:
+      severity: critical
+      owner: ztunnel
+      slo: '99.9'
+    annotations:
+      summary: 'Source mTLS connections fail in {{ $labels.cluster }}: {{ $value | humanizePercentage }} over 1h, 14.4x the rate the 99.9 % objective allows'
+      runbook: 'Read the failures by response flag on the on-call dashboard: TRUST_PROFILE points at the issuer approval, IDENTITY_ERROR at SPIRE identity issuance, CONNECT and NETWORK_POLICY at the network path.'
+  - alert: CMTCConnectionErrorBudgetSlowBurn
+    expr: |-
+      cmtc:slo_connection_errors:ratio_rate6h > 0.006
+      and on (cluster)
+      cmtc:slo_connection_errors:ratio_rate30m > 0.006
+    labels:
+      severity: warning
+      owner: ztunnel
+      slo: '99.9'
+    annotations:
+      summary: 'Source mTLS connections fail in {{ $labels.cluster }}: {{ $value | humanizePercentage }} over 6h, 6x the rate the 99.9 % objective allows'
+      runbook: 'Read the failures by response flag on the on-call dashboard: TRUST_PROFILE points at the issuer approval, IDENTITY_ERROR at SPIRE identity issuance, CONNECT and NETWORK_POLICY at the network path.'
+- name: cmtc-slo-dependencies
+  interval: 1m
+  rules:
+  - record: cmtc:dependency_available:bool
+    expr: |-
+      max by (cluster) (up{job="cmtc", component="cmtc-controller"})
+      or on (cluster) (0 * cmtc:expected_cluster:info)
+    labels:
+      dependency: cmtc-controller
+  - record: cmtc:dependency_available:bool
+    expr: |-
+      (max by (cluster) (cmtc_issuer_profile_acknowledged_valid_until_timestamp_seconds{job="cmtc", component="cmtc-controller"}) > bool time())
+      or on (cluster) (0 * cmtc:expected_cluster:info)
+    labels:
+      dependency: issuer-profile
+  - record: cmtc:dependency_available:bool
+    expr: |-
+      (count by (cluster) (up{job="cilium-native"} == 1) >= bool count by (cluster) (cmtc:expected_node:info))
+      or on (cluster) (0 * cmtc:expected_cluster:info)
+    labels:
+      dependency: cilium-agent
+  - record: cmtc:dependency_available:bool
+    expr: |-
+      (count by (cluster) (up{job="ztunnel"} == 1) >= bool count by (cluster) (cmtc:expected_node:info))
+      or on (cluster) (0 * cmtc:expected_cluster:info)
+    labels:
+      dependency: ztunnel
+  - record: cmtc:dependency_available:bool
+    expr: |-
+      max by (cluster) (up{job="coredns"})
+      or on (cluster) (0 * cmtc:expected_cluster:info)
+    labels:
+      dependency: coredns
+  - record: cmtc:slo_dependencies_available:bool
+    expr: min by (cluster) (cmtc:dependency_available:bool)
+  - record: cmtc:slo_dependency_unavailable:ratio_avg5m
+    expr: 1 - avg_over_time(cmtc:slo_dependencies_available:bool[5m])
+  - record: cmtc:slo_dependency_unavailable:ratio_avg30m
+    expr: 1 - avg_over_time(cmtc:slo_dependencies_available:bool[30m])
+  - record: cmtc:slo_dependency_unavailable:ratio_avg1h
+    expr: 1 - avg_over_time(cmtc:slo_dependencies_available:bool[1h])
+  - record: cmtc:slo_dependency_unavailable:ratio_avg6h
+    expr: 1 - avg_over_time(cmtc:slo_dependencies_available:bool[6h])
+  - alert: CMTCDependencyErrorBudgetFastBurn
+    expr: |-
+      cmtc:slo_dependency_unavailable:ratio_avg1h > 0.0144
+      and on (cluster)
+      cmtc:slo_dependency_unavailable:ratio_avg5m > 0.0144
+    labels:
+      severity: critical
+      owner: prometheus
+      slo: '99.9'
+    annotations:
+      summary: 'Critical dependencies are unavailable in {{ $labels.cluster }}: {{ $value | humanizePercentage }} over 1h, 14.4x the rate the 99.9 % objective allows'
+      runbook: 'The term of cmtc:dependency_available:bool that is 0 names the dependency; its own alert (CMTCScrapeTargetDown, CMTCIssuerProfileLapsed, CMTCZtunnelNotScraped, CoreDNSNotScraped) has the next step.'
+  - alert: CMTCDependencyErrorBudgetSlowBurn
+    expr: |-
+      cmtc:slo_dependency_unavailable:ratio_avg6h > 0.006
+      and on (cluster)
+      cmtc:slo_dependency_unavailable:ratio_avg30m > 0.006
+    labels:
+      severity: warning
+      owner: prometheus
+      slo: '99.9'
+    annotations:
+      summary: 'Critical dependencies are unavailable in {{ $labels.cluster }}: {{ $value | humanizePercentage }} over 6h, 6x the rate the 99.9 % objective allows'
+      runbook: 'The term of cmtc:dependency_available:bool that is 0 names the dependency; its own alert (CMTCScrapeTargetDown, CMTCIssuerProfileLapsed, CMTCZtunnelNotScraped, CoreDNSNotScraped) has the next step.'
+- name: cmtc-slo-coredns
+  rules:
+  - record: cmtc:slo_coredns_errors:ratio_rate5m
+    expr: |-
+      (
+        sum by (cluster) (rate(coredns_dns_responses_total{job="coredns", rcode="SERVFAIL"}[5m]))
+        or on (cluster) (0 * sum by (cluster) (rate(coredns_dns_responses_total{job="coredns"}[5m])))
+      )
+      /
+      (sum by (cluster) (rate(coredns_dns_responses_total{job="coredns"}[5m])) > 0)
+  - record: cmtc:slo_coredns_slow:ratio_rate5m
+    expr: |-
+      1 - (
+        sum by (cluster) (rate(coredns_dns_request_duration_seconds_bucket{job="coredns", le="0.064"}[5m]))
+        /
+        (sum by (cluster) (rate(coredns_dns_request_duration_seconds_count{job="coredns"}[5m])) > 0)
+      )
+  - record: cmtc:slo_coredns_errors:ratio_rate30m
+    expr: |-
+      (
+        sum by (cluster) (rate(coredns_dns_responses_total{job="coredns", rcode="SERVFAIL"}[30m]))
+        or on (cluster) (0 * sum by (cluster) (rate(coredns_dns_responses_total{job="coredns"}[30m])))
+      )
+      /
+      (sum by (cluster) (rate(coredns_dns_responses_total{job="coredns"}[30m])) > 0)
+  - record: cmtc:slo_coredns_slow:ratio_rate30m
+    expr: |-
+      1 - (
+        sum by (cluster) (rate(coredns_dns_request_duration_seconds_bucket{job="coredns", le="0.064"}[30m]))
+        /
+        (sum by (cluster) (rate(coredns_dns_request_duration_seconds_count{job="coredns"}[30m])) > 0)
+      )
+  - record: cmtc:slo_coredns_errors:ratio_rate1h
+    expr: |-
+      (
+        sum by (cluster) (rate(coredns_dns_responses_total{job="coredns", rcode="SERVFAIL"}[1h]))
+        or on (cluster) (0 * sum by (cluster) (rate(coredns_dns_responses_total{job="coredns"}[1h])))
+      )
+      /
+      (sum by (cluster) (rate(coredns_dns_responses_total{job="coredns"}[1h])) > 0)
+  - record: cmtc:slo_coredns_slow:ratio_rate1h
+    expr: |-
+      1 - (
+        sum by (cluster) (rate(coredns_dns_request_duration_seconds_bucket{job="coredns", le="0.064"}[1h]))
+        /
+        (sum by (cluster) (rate(coredns_dns_request_duration_seconds_count{job="coredns"}[1h])) > 0)
+      )
+  - record: cmtc:slo_coredns_errors:ratio_rate6h
+    expr: |-
+      (
+        sum by (cluster) (rate(coredns_dns_responses_total{job="coredns", rcode="SERVFAIL"}[6h]))
+        or on (cluster) (0 * sum by (cluster) (rate(coredns_dns_responses_total{job="coredns"}[6h])))
+      )
+      /
+      (sum by (cluster) (rate(coredns_dns_responses_total{job="coredns"}[6h])) > 0)
+  - record: cmtc:slo_coredns_slow:ratio_rate6h
+    expr: |-
+      1 - (
+        sum by (cluster) (rate(coredns_dns_request_duration_seconds_bucket{job="coredns", le="0.064"}[6h]))
+        /
+        (sum by (cluster) (rate(coredns_dns_request_duration_seconds_count{job="coredns"}[6h])) > 0)
+      )
+  - alert: CoreDNSErrorBudgetFastBurn
+    expr: |-
+      cmtc:slo_coredns_errors:ratio_rate1h > 0.0144
+      and on (cluster)
+      cmtc:slo_coredns_errors:ratio_rate5m > 0.0144
+    labels:
+      severity: critical
+      owner: coredns
+      slo: '99.9'
+    annotations:
+      summary: 'CoreDNS SERVFAIL answers in {{ $labels.cluster }}: {{ $value | humanizePercentage }} over 1h, 14.4x the rate the 99.9 % objective allows'
+      runbook: 'An upstream resolver or the kubernetes plugin is failing. Read the forward response codes on the DNS dashboard and the CoreDNS log.'
+  - alert: CoreDNSErrorBudgetSlowBurn
+    expr: |-
+      cmtc:slo_coredns_errors:ratio_rate6h > 0.006
+      and on (cluster)
+      cmtc:slo_coredns_errors:ratio_rate30m > 0.006
+    labels:
+      severity: warning
+      owner: coredns
+      slo: '99.9'
+    annotations:
+      summary: 'CoreDNS SERVFAIL answers in {{ $labels.cluster }}: {{ $value | humanizePercentage }} over 6h, 6x the rate the 99.9 % objective allows'
+      runbook: 'An upstream resolver or the kubernetes plugin is failing. Read the forward response codes on the DNS dashboard and the CoreDNS log.'
+  - alert: CoreDNSLatencyErrorBudgetFastBurn
+    expr: |-
+      cmtc:slo_coredns_slow:ratio_rate1h > 0.144
+      and on (cluster)
+      cmtc:slo_coredns_slow:ratio_rate5m > 0.144
+    labels:
+      severity: critical
+      owner: coredns
+      slo: '99'
+    annotations:
+      summary: 'CoreDNS answers slower than 64 ms in {{ $labels.cluster }}: {{ $value | humanizePercentage }} over 1h, 14.4x the rate the 99 % objective allows'
+      runbook: 'Check the forward latency by upstream on the DNS dashboard, the cache hit ratio and the CPU of the CoreDNS Pods.'
+  - alert: CoreDNSLatencyErrorBudgetSlowBurn
+    expr: |-
+      cmtc:slo_coredns_slow:ratio_rate6h > 0.06
+      and on (cluster)
+      cmtc:slo_coredns_slow:ratio_rate30m > 0.06
+    labels:
+      severity: warning
+      owner: coredns
+      slo: '99'
+    annotations:
+      summary: 'CoreDNS answers slower than 64 ms in {{ $labels.cluster }}: {{ $value | humanizePercentage }} over 6h, 6x the rate the 99 % objective allows'
+      runbook: 'Check the forward latency by upstream on the DNS dashboard, the cache hit ratio and the CPU of the CoreDNS Pods.'

@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"net"
 	"os"
-	"reflect"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -56,6 +56,41 @@ type Observer struct {
 	expected []attachment
 	cpus     int
 	closed   bool
+	// anchorName is the name of the program Cilium's link ran at Open. A
+	// replacement program on the same link must carry the same name.
+	anchorName string
+	// followed counts Cilium's in-place program replacements on its link.
+	followed uint64
+}
+
+// ciliumEndpointProgram returns the name Cilium gives its endpoint program
+// for a direction, in full and cut to the kernel's 15-byte object name.
+// ProgramInfo reports the full name only when the program carries BTF.
+func ciliumEndpointProgram(direction string) (full, truncated string) {
+	full = "cil_from_container"
+	if direction == "egress" {
+		full = "cil_to_container"
+	}
+	truncated = full
+	if len(truncated) > 15 {
+		truncated = truncated[:15]
+	}
+	return full, truncated
+}
+
+// programIdentity returns the name and type of a loaded program. The name is
+// a sanity check, not proof of ownership.
+func programIdentity(id ebpf.ProgramID) (string, ebpf.ProgramType, error) {
+	p, err := ebpf.NewProgramFromID(id)
+	if err != nil {
+		return "", ebpf.UnspecifiedProgram, err
+	}
+	pi, err := p.Info()
+	_ = p.Close()
+	if err != nil {
+		return "", ebpf.UnspecifiedProgram, err
+	}
+	return pi.Name, pi.Type, nil
 }
 
 func (c Config) attachType() (ebpf.AttachType, error) {
@@ -217,29 +252,35 @@ func Open(c Config, elf []byte) (_ *Observer, retErr error) {
 	}
 	at, _ := c.attachType()
 	ti := ai.TCX()
-	if ti == nil || ti.Ifindex != uint32(c.IfIndex) || uint32(ti.AttachType) != uint32(at) ||
-		uint32(ai.Program) != c.CiliumProgramID {
-		return nil, errors.New("configured Cilium anchor does not match device/direction/program")
+	if ti == nil || ti.Ifindex != uint32(c.IfIndex) || uint32(ti.AttachType) != uint32(at) {
+		return nil, errors.New("configured Cilium anchor does not match device/direction")
 	}
-	ap, err := ebpf.NewProgramFromID(ai.Program)
+	name, typ, err := programIdentity(ai.Program)
 	if err != nil {
 		return nil, err
 	}
-	pi, infoErr := ap.Info()
-	_ = ap.Close()
-	if infoErr != nil {
-		return nil, infoErr
-	}
-	if !strings.HasPrefix(pi.Name, "cil_") {
+	if !strings.HasPrefix(name, "cil_") || typ != ebpf.SchedCLS {
 		return nil, errors.New("anchor is not a Cilium program")
 	}
 	// Program name is an ownership sanity check, NOT cryptographic proof.
 	// Admission/config is restricted to audited owned disposable Pods.
+	// Cilium replaces the program of its retained endpoint link in place on
+	// every datapath regeneration (agent restart, ztunnel quarantine release),
+	// so the configured program ID goes stale while the link stays. The link
+	// ID is the incarnation authority. Another program is accepted only when it
+	// is the direction's Cilium endpoint program.
+	if uint32(ai.Program) != c.CiliumProgramID {
+		full, truncated := ciliumEndpointProgram(c.Direction)
+		if name != full && name != truncated {
+			return nil, errors.New("configured Cilium anchor does not match program")
+		}
+	}
+	o.anchorName = name
 	q, before, err := query(c)
 	if err != nil {
 		return nil, err
 	}
-	if len(before) == 0 || before[0] != (attachment{c.CiliumProgramID, c.CiliumLinkID}) {
+	if len(before) == 0 || before[0] != (attachment{uint32(ai.Program), c.CiliumLinkID}) {
 		return nil, errors.New("configured Cilium link must be first in baseline TCX chain")
 	}
 	spec, err := ebpf.LoadCollectionSpecFromReader(bytes.NewReader(elf))
@@ -291,6 +332,11 @@ func Open(c Config, elf []byte) (_ *Observer, retErr error) {
 	return o, nil
 }
 
+// verify checks the frozen interface and the complete TCX chain. It follows
+// one change only: Cilium replacing the program of its own link in place.
+// BPF_LINK_UPDATE keeps the link ID and its position, so this observer still
+// runs immediately before the same Cilium link. The new program must have the
+// name recorded at Open and be a SchedCLS program. Every other change stops.
 func (o *Observer) verify() error {
 	if o.closed {
 		return ErrClosed
@@ -302,10 +348,35 @@ func (o *Observer) verify() error {
 	if err != nil {
 		return err
 	}
-	if !reflect.DeepEqual(o.expected, now) {
+	if len(now) != len(o.expected) || now[0] != o.expected[0] || now[1].Link != o.expected[1].Link ||
+		!slices.Equal(now[2:], o.expected[2:]) {
 		return errors.New("TCX chain changed; stop and explicitly requalify")
 	}
+	if now[1].Program == o.expected[1].Program {
+		return nil
+	}
+	name, typ, err := programIdentity(ebpf.ProgramID(now[1].Program))
+	if err != nil {
+		return fmt.Errorf("inspect replacement program %d on Cilium link %d: %w", now[1].Program, now[1].Link, err)
+	}
+	if name != o.anchorName || typ != ebpf.SchedCLS {
+		return fmt.Errorf("replacement program on Cilium link %d is %q (%s), not %q; stop and explicitly requalify",
+			now[1].Link, name, typ, o.anchorName)
+	}
+	o.expected[1].Program = now[1].Program
+	o.followed++
 	return nil
+}
+
+// Anchor returns the program ID that Cilium's link runs now and how many
+// in-place replacements this observer has followed.
+func (o *Observer) Anchor() (programID uint32, followed uint64) {
+	o.mu.Lock()
+	defer o.mu.Unlock()
+	if len(o.expected) < 2 {
+		return 0, o.followed
+	}
+	return o.expected[1].Program, o.followed
 }
 
 // Sample returns only kernel packet/byte counts. It is never a policy or

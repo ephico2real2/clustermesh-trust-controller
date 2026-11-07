@@ -1,0 +1,21 @@
+# The mesh root (ADR-011). Rendered by scripts/lab/pki/mesh-pki.sh and applied to the control cluster only.
+# rotationPolicy Never: a renewal keeps the root key when the existing key is intact. The renewed certificate must
+# still reach every copied Secret and trust bundle before the old one expires.
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata: {name: ${PREFIX}-mesh-root-bootstrap, namespace: cert-manager}
+spec: {selfSigned: {}}
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata: {name: ${PREFIX}-mesh-root-ca, namespace: cert-manager}
+spec:
+  isCA: true
+  commonName: ${PREFIX} mesh root CA
+  # Lifetimes nest: each CA renews at least one full lifetime of what it signs before it expires, so no chain
+  # outlives its issuer (ADR-011, Lifetimes). Root 10 years, renewed 3 years early = one intermediate lifetime.
+  duration: 87600h    # 10 years
+  renewBefore: 26280h # 3 years
+  secretName: ${PREFIX}-mesh-root-ca
+  privateKey: {algorithm: ECDSA, size: 256, rotationPolicy: Never}
+  issuerRef: {name: ${PREFIX}-mesh-root-bootstrap, kind: Issuer, group: cert-manager.io}

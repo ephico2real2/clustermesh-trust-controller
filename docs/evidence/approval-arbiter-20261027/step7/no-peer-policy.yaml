@@ -1,0 +1,18 @@
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: cmtc-qualify-no-peer
+  namespace: cmtc-system
+spec:
+  description: "Qualification only (ARBITER_QUALIFICATION_RUNBOOK step 7.3): the peer cluster's API is unreachable; this cluster's API and DNS stay reachable."
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: cmtc-controller
+  egress:
+    - toEntities: [kube-apiserver]
+    - toEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: kube-system
+            k8s-app: kube-dns
+      toPorts:
+        - ports: [{port: "53", protocol: ANY}]

@@ -1,0 +1,3075 @@
+{
+  "display": {
+    "name": "CMTC workload protection"
+  },
+  "variables": [],
+  "panels": {
+    "0_0": {
+      "kind": "Panel",
+      "spec": {
+        "display": {
+          "name": "Namespace decisions, per cluster",
+          "description": "What the CMTC controller decided for each namespace, per cluster, now. Selected is policy intent; Labelled counts namespaces carrying the enrollment label from any actor. Neither is protection."
+        },
+        "plugin": {
+          "kind": "Table",
+          "spec": {
+            "columnSettings": [
+              {
+                "cellSettings": [
+                  {
+                    "backgroundColor": "#4e79a7",
+                    "condition": {
+                      "kind": "Value",
+                      "spec": {
+                        "value": "cmtc-a"
+                      }
+                    },
+                    "textColor": "#000000"
+                  },
+                  {
+                    "backgroundColor": "#e15759",
+                    "condition": {
+                      "kind": "Value",
+                      "spec": {
+                        "value": "cmtc-b"
+                      }
+                    },
+                    "textColor": "#000000"
+                  }
+                ],
+                "header": "Cluster",
+                "name": "cluster"
+              },
+              {
+                "format": {
+                  "unit": "decimal"
+                },
+                "header": "Selected",
+                "name": "value #1"
+              },
+              {
+                "format": {
+                  "unit": "decimal"
+                },
+                "header": "Labelled",
+                "name": "value #2"
+              },
+              {
+                "format": {
+                  "unit": "decimal"
+                },
+                "header": "Eligible",
+                "name": "value #3"
+              },
+              {
+                "format": {
+                  "unit": "decimal"
+                },
+                "header": "Excluded",
+                "name": "value #4"
+              },
+              {
+                "format": {
+                  "unit": "decimal"
+                },
+                "header": "Platform",
+                "name": "value #5"
+              },
+              {
+                "format": {
+                  "unit": "decimal"
+                },
+                "header": "Unselected",
+                "name": "value #6"
+              },
+              {
+                "hide": true,
+                "name": "timestamp"
+              }
+            ],
+            "density": "compact",
+            "transforms": [
+              {
+                "kind": "MergeSeries",
+                "spec": {}
+              }
+            ]
+          }
+        },
+        "queries": [
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "max by (cluster) (cmtc_namespaces_selected{job=\"cmtc\", component=\"cmtc-controller\"})",
+                  "seriesNameFormat": ""
+                }
+              }
+            }
+          },
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "max by (cluster) (cmtc_namespaces_enrolled{job=\"cmtc\", component=\"cmtc-controller\"})",
+                  "seriesNameFormat": ""
+                }
+              }
+            }
+          },
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "max by (cluster) (cmtc_namespaces_eligible{job=\"cmtc\", component=\"cmtc-controller\"})",
+                  "seriesNameFormat": ""
+                }
+              }
+            }
+          },
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "max by (cluster) (cmtc_namespace_decisions{job=\"cmtc\", component=\"cmtc-controller\", decision=\"excluded\"})",
+                  "seriesNameFormat": ""
+                }
+              }
+            }
+          },
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "max by (cluster) (cmtc_namespace_decisions{job=\"cmtc\", component=\"cmtc-controller\", decision=\"platform\"})",
+                  "seriesNameFormat": ""
+                }
+              }
+            }
+          },
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "max by (cluster) (cmtc_namespace_decisions{job=\"cmtc\", component=\"cmtc-controller\", decision=\"unselected\"})",
+                  "seriesNameFormat": ""
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "0_1": {
+      "kind": "Panel",
+      "spec": {
+        "display": {
+          "name": "Enforcement verified by CMTC",
+          "description": "Whether CMTC can verify that the datapath enforces what it selected, per cluster. It is 0 in Observe mode by design (internal/telemetry/metrics.go): enforcement evidence comes from Cilium and ztunnel below."
+        },
+        "plugin": {
+          "kind": "StatChart",
+          "spec": {
+            "calculation": "last-number",
+            "colorMode": "value",
+            "format": {
+              "unit": "decimal"
+            },
+            "mappings": [
+              {
+                "kind": "Value",
+                "spec": {
+                  "result": {
+                    "color": "#f28e2b",
+                    "value": "no: Observe"
+                  },
+                  "value": "0"
+                }
+              },
+              {
+                "kind": "Value",
+                "spec": {
+                  "result": {
+                    "color": "#59a14f",
+                    "value": "yes"
+                  },
+                  "value": "1"
+                }
+              }
+            ],
+            "thresholds": {
+              "steps": [
+                {
+                  "color": "#4e79a7",
+                  "value": 0
+                }
+              ]
+            }
+          }
+        },
+        "queries": [
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "max by (cluster) (cmtc_enforcement_available{job=\"cmtc\", component=\"cmtc-controller\", cluster=\"cmtc-a\"})",
+                  "seriesNameFormat": "{{cluster}}"
+                }
+              }
+            }
+          },
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "max by (cluster) (cmtc_enforcement_available{job=\"cmtc\", component=\"cmtc-controller\", cluster=\"cmtc-b\"})",
+                  "seriesNameFormat": "{{cluster}}"
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "0_2": {
+      "kind": "Panel",
+      "spec": {
+        "display": {
+          "name": "Pods observed on the Pod network",
+          "description": "Pods the CMTC node agents list on their nodes with Pod networking, per cluster. An inventory, not a count of protected Pods."
+        },
+        "plugin": {
+          "kind": "StatChart",
+          "spec": {
+            "calculation": "last-number",
+            "colorMode": "value",
+            "format": {
+              "unit": "decimal"
+            },
+            "thresholds": {
+              "steps": [
+                {
+                  "color": "#4e79a7",
+                  "value": 0
+                }
+              ]
+            }
+          }
+        },
+        "queries": [
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "sum by (cluster) (cmtc_pods_observed{job=\"cmtc\", component=\"cmtc-node-agent\", network=\"pod\", cluster=\"cmtc-a\"})",
+                  "seriesNameFormat": "{{cluster}}"
+                }
+              }
+            }
+          },
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "sum by (cluster) (cmtc_pods_observed{job=\"cmtc\", component=\"cmtc-node-agent\", network=\"pod\", cluster=\"cmtc-b\"})",
+                  "seriesNameFormat": "{{cluster}}"
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "0_3": {
+      "kind": "Panel",
+      "spec": {
+        "display": {
+          "name": "How to read this section"
+        },
+        "plugin": {
+          "kind": "Markdown",
+          "spec": {
+            "text": "Intent and inventory only: a selected namespace is not a protected one. The sections below follow each Required workload through the lifecycle."
+          }
+        }
+      }
+    },
+    "1_0": {
+      "kind": "Panel",
+      "spec": {
+        "display": {
+          "name": "Required workloads released \u00b7 planned",
+          "description": "Planned, a proposed source change: needs source-patches/cilium/0002 (destinations by state). Share of Required workloads released from quarantine, per cluster, now. No data: no Required workload, or no agent built with the patch."
+        },
+        "plugin": {
+          "kind": "StatChart",
+          "spec": {
+            "calculation": "last-number",
+            "colorMode": "value",
+            "format": {
+              "decimalPlaces": 0,
+              "unit": "percent-decimal"
+            },
+            "thresholds": {
+              "steps": [
+                {
+                  "color": "#e15759",
+                  "value": 0
+                },
+                {
+                  "color": "#59a14f",
+                  "value": 1
+                }
+              ]
+            }
+          }
+        },
+        "queries": [
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "(sum by (cluster) (cilium_ztunnel_xds_effective_policy_destinations{job=\"cilium-native\", state=\"released\", cluster=\"cmtc-a\"}) or 0 * sum by (cluster) (cilium_ztunnel_xds_effective_policy_destinations{job=\"cilium-native\", cluster=\"cmtc-a\"})) / (sum by (cluster) (cilium_ztunnel_xds_effective_policy_destinations{job=\"cilium-native\", cluster=\"cmtc-a\"}) > 0)",
+                  "seriesNameFormat": "{{cluster}}"
+                }
+              }
+            }
+          },
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "(sum by (cluster) (cilium_ztunnel_xds_effective_policy_destinations{job=\"cilium-native\", state=\"released\", cluster=\"cmtc-b\"}) or 0 * sum by (cluster) (cilium_ztunnel_xds_effective_policy_destinations{job=\"cilium-native\", cluster=\"cmtc-b\"})) / (sum by (cluster) (cilium_ztunnel_xds_effective_policy_destinations{job=\"cilium-native\", cluster=\"cmtc-b\"}) > 0)",
+                  "seriesNameFormat": "{{cluster}}"
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "1_1": {
+      "kind": "Panel",
+      "spec": {
+        "display": {
+          "name": "Required workloads not released \u00b7 planned",
+          "description": "Planned, a proposed source change: needs source-patches/cilium/0002 (destinations by state). Required workloads still quarantined, per cluster, now. Normal: 0 once Pods have started. The table names the step each one is on."
+        },
+        "plugin": {
+          "kind": "StatChart",
+          "spec": {
+            "calculation": "last-number",
+            "colorMode": "value",
+            "format": {
+              "unit": "decimal"
+            },
+            "thresholds": {
+              "steps": [
+                {
+                  "color": "#59a14f",
+                  "value": 0
+                },
+                {
+                  "color": "#e15759",
+                  "value": 1
+                }
+              ]
+            }
+          }
+        },
+        "queries": [
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "sum by (cluster) (cilium_ztunnel_xds_effective_policy_destinations{job=\"cilium-native\", state!=\"released\", cluster=\"cmtc-a\"})",
+                  "seriesNameFormat": "{{cluster}}"
+                }
+              }
+            }
+          },
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "sum by (cluster) (cilium_ztunnel_xds_effective_policy_destinations{job=\"cilium-native\", state!=\"released\", cluster=\"cmtc-b\"})",
+                  "seriesNameFormat": "{{cluster}}"
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "1_2": {
+      "kind": "Panel",
+      "spec": {
+        "display": {
+          "name": "Required workloads by state, per node \u00b7 planned",
+          "description": "Planned, a proposed source change: needs source-patches/cilium/0002 (destinations by state). Required local workloads by the lifecycle step they are on, from the agent of each workload's node. Everything but released is a reason it is not protected yet; the agent log line \"Required workload is not an effective ztunnel policy destination\" names each Pod UID."
+        },
+        "plugin": {
+          "kind": "Table",
+          "spec": {
+            "columnSettings": [
+              {
+                "cellSettings": [
+                  {
+                    "backgroundColor": "#4e79a7",
+                    "condition": {
+                      "kind": "Value",
+                      "spec": {
+                        "value": "cmtc-a"
+                      }
+                    },
+                    "textColor": "#000000"
+                  },
+                  {
+                    "backgroundColor": "#e15759",
+                    "condition": {
+                      "kind": "Value",
+                      "spec": {
+                        "value": "cmtc-b"
+                      }
+                    },
+                    "textColor": "#000000"
+                  }
+                ],
+                "header": "Cluster",
+                "name": "cluster"
+              },
+              {
+                "header": "Node",
+                "name": "node"
+              },
+              {
+                "header": "State",
+                "name": "state"
+              },
+              {
+                "format": {
+                  "unit": "decimal"
+                },
+                "header": "Workloads",
+                "name": "value"
+              },
+              {
+                "hide": true,
+                "name": "timestamp"
+              }
+            ],
+            "density": "compact",
+            "transforms": [
+              {
+                "kind": "MergeSeries",
+                "spec": {}
+              }
+            ]
+          }
+        },
+        "queries": [
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "sum by (cluster, node, state) (cilium_ztunnel_xds_effective_policy_destinations{job=\"cilium-native\"}) > 0",
+                  "seriesNameFormat": ""
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "1_3": {
+      "kind": "Panel",
+      "spec": {
+        "display": {
+          "name": "How to read this section"
+        },
+        "plugin": {
+          "kind": "Markdown",
+          "spec": {
+            "text": "Released is the control plane's verdict that every step completed, a prerequisite of protection. Proof comes from traffic, in the last section."
+          }
+        }
+      }
+    },
+    "2_0": {
+      "kind": "Panel",
+      "spec": {
+        "display": {
+          "name": "ZDS connection from ztunnel, per node",
+          "description": "Whether each node's Cilium agent holds a ZDS connection from that node's ztunnel, over time. Without it new Pods are not enrolled and stay quarantined. A gap is no data for the node."
+        },
+        "plugin": {
+          "kind": "StatusHistoryChart",
+          "spec": {
+            "legend": {
+              "mode": "list",
+              "position": "bottom"
+            },
+            "mappings": [
+              {
+                "kind": "Value",
+                "spec": {
+                  "result": {
+                    "color": "#e15759",
+                    "value": "no connection"
+                  },
+                  "value": "0"
+                }
+              },
+              {
+                "kind": "Value",
+                "spec": {
+                  "result": {
+                    "color": "#59a14f",
+                    "value": "connected"
+                  },
+                  "value": "1"
+                }
+              }
+            ],
+            "sorting": "asc"
+          }
+        },
+        "queries": [
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "max by (cluster, node) (cilium_ztunnel_zds_connection_active{job=\"cilium-native\"})",
+                  "seriesNameFormat": "{{node}}"
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "2_1": {
+      "kind": "Panel",
+      "spec": {
+        "display": {
+          "name": "ZDS enrollments per second",
+          "description": "Pods the Cilium agents enrolled with ztunnel over ZDS, per cluster, 5 minute rate. Steps follow Pod starts; 0 is normal when nothing starts."
+        },
+        "plugin": {
+          "kind": "TimeSeriesChart",
+          "spec": {
+            "legend": {
+              "mode": "list",
+              "position": "bottom"
+            },
+            "querySettings": [
+              {
+                "areaOpacity": 0.1,
+                "colorMode": "fixed",
+                "colorValue": "#4e79a7",
+                "queryIndex": 0
+              },
+              {
+                "areaOpacity": 0.1,
+                "colorMode": "fixed",
+                "colorValue": "#e15759",
+                "lineStyle": "dashed",
+                "queryIndex": 1
+              }
+            ],
+            "visual": {
+              "areaOpacity": 0.1,
+              "connectNulls": false,
+              "lineWidth": 1
+            },
+            "yAxis": {
+              "format": {
+                "unit": "ops/sec"
+              },
+              "min": 0
+            }
+          }
+        },
+        "queries": [
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "sum by (cluster) (rate(cilium_ztunnel_zds_enrollment_total{job=\"cilium-native\", cluster=\"cmtc-a\"}[5m]))",
+                  "seriesNameFormat": "{{cluster}}"
+                }
+              }
+            }
+          },
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "sum by (cluster) (rate(cilium_ztunnel_zds_enrollment_total{job=\"cilium-native\", cluster=\"cmtc-b\"}[5m]))",
+                  "seriesNameFormat": "{{cluster}}"
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "2_2": {
+      "kind": "Panel",
+      "spec": {
+        "display": {
+          "name": "ZDS enrollment failures, 1 hour",
+          "description": "ZDS enrollment failures over the last hour, per cluster. Normal: 0. The series is created by its first failure, so the first one after an agent start is missed until source-patches/cilium/0001."
+        },
+        "plugin": {
+          "kind": "StatChart",
+          "spec": {
+            "calculation": "last-number",
+            "colorMode": "value",
+            "format": {
+              "decimalPlaces": 0,
+              "unit": "decimal"
+            },
+            "thresholds": {
+              "steps": [
+                {
+                  "color": "#59a14f",
+                  "value": 0
+                },
+                {
+                  "color": "#e15759",
+                  "value": 1
+                }
+              ]
+            }
+          }
+        },
+        "queries": [
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "sum by (cluster) (increase(cilium_ztunnel_zds_enrollment_failures_total{job=\"cilium-native\", cluster=\"cmtc-a\"}[1h])) or 0 * max by (cluster) (up{job=\"cilium-native\", cluster=\"cmtc-a\"} == 1)",
+                  "seriesNameFormat": "{{cluster}}"
+                }
+              }
+            }
+          },
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "sum by (cluster) (increase(cilium_ztunnel_zds_enrollment_failures_total{job=\"cilium-native\", cluster=\"cmtc-b\"}[1h])) or 0 * max by (cluster) (up{job=\"cilium-native\", cluster=\"cmtc-b\"} == 1)",
+                  "seriesNameFormat": "{{cluster}}"
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "2_3": {
+      "kind": "Panel",
+      "spec": {
+        "display": {
+          "name": "In-Pod proxies waiting to start",
+          "description": "In-Pod proxies ztunnel has accepted but not started, per cluster, now. Normal: 0 (CMTCInPodProxiesPending after 5 minutes)."
+        },
+        "plugin": {
+          "kind": "StatChart",
+          "spec": {
+            "calculation": "last-number",
+            "colorMode": "value",
+            "format": {
+              "unit": "decimal"
+            },
+            "thresholds": {
+              "steps": [
+                {
+                  "color": "#59a14f",
+                  "value": 0
+                },
+                {
+                  "color": "#e15759",
+                  "value": 1
+                }
+              ]
+            }
+          }
+        },
+        "queries": [
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "sum by (cluster) (workload_manager_pending_proxy_count{job=\"ztunnel\", cluster=\"cmtc-a\"})",
+                  "seriesNameFormat": "{{cluster}}"
+                }
+              }
+            }
+          },
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "sum by (cluster) (workload_manager_pending_proxy_count{job=\"ztunnel\", cluster=\"cmtc-b\"})",
+                  "seriesNameFormat": "{{cluster}}"
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "2_4": {
+      "kind": "Panel",
+      "spec": {
+        "display": {
+          "name": "ZDS enrollment failures in the last hour, by node and status",
+          "description": "The failures above by node and status: netns_failed and iptables_failed point at the Pod network namespace, uid_mismatch at a replaced Pod, send_failed at the ztunnel connection. Empty: no failure since the agents started."
+        },
+        "plugin": {
+          "kind": "Table",
+          "spec": {
+            "columnSettings": [
+              {
+                "cellSettings": [
+                  {
+                    "backgroundColor": "#4e79a7",
+                    "condition": {
+                      "kind": "Value",
+                      "spec": {
+                        "value": "cmtc-a"
+                      }
+                    },
+                    "textColor": "#000000"
+                  },
+                  {
+                    "backgroundColor": "#e15759",
+                    "condition": {
+                      "kind": "Value",
+                      "spec": {
+                        "value": "cmtc-b"
+                      }
+                    },
+                    "textColor": "#000000"
+                  }
+                ],
+                "header": "Cluster",
+                "name": "cluster"
+              },
+              {
+                "header": "Node",
+                "name": "node"
+              },
+              {
+                "header": "Status",
+                "name": "status"
+              },
+              {
+                "format": {
+                  "unit": "decimal"
+                },
+                "header": "Failures, 1 h",
+                "name": "value"
+              },
+              {
+                "hide": true,
+                "name": "timestamp"
+              }
+            ],
+            "density": "compact",
+            "transforms": [
+              {
+                "kind": "MergeSeries",
+                "spec": {}
+              }
+            ]
+          }
+        },
+        "queries": [
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "sum by (cluster, node, status) (increase(cilium_ztunnel_zds_enrollment_failures_total{job=\"cilium-native\"}[1h])) > 0",
+                  "seriesNameFormat": ""
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "2_5": {
+      "kind": "Panel",
+      "spec": {
+        "display": {
+          "name": "In-Pod proxies running",
+          "description": "In-Pod proxies ztunnel runs, per cluster, now: one per enrolled Pod."
+        },
+        "plugin": {
+          "kind": "StatChart",
+          "spec": {
+            "calculation": "last-number",
+            "colorMode": "value",
+            "format": {
+              "unit": "decimal"
+            },
+            "thresholds": {
+              "steps": [
+                {
+                  "color": "#4e79a7",
+                  "value": 0
+                }
+              ]
+            }
+          }
+        },
+        "queries": [
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "sum by (cluster) (workload_manager_active_proxy_count{job=\"ztunnel\", cluster=\"cmtc-a\"})",
+                  "seriesNameFormat": "{{cluster}}"
+                }
+              }
+            }
+          },
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "sum by (cluster) (workload_manager_active_proxy_count{job=\"ztunnel\", cluster=\"cmtc-b\"})",
+                  "seriesNameFormat": "{{cluster}}"
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "2_6": {
+      "kind": "Panel",
+      "spec": {
+        "display": {
+          "name": "How to read this section"
+        },
+        "plugin": {
+          "kind": "Markdown",
+          "spec": {
+            "text": "Enrollment hands a Pod to ztunnel; a running in-Pod proxy is the next step. Neither proves its traffic is protected."
+          }
+        }
+      }
+    },
+    "3_0": {
+      "kind": "Panel",
+      "spec": {
+        "display": {
+          "name": "Policy sources admitted, by node and origin",
+          "description": "Callers each node's agent admitted as effective policy sources at its last reconcile, by origin: node (local workloads), cluster (other nodes of the cluster) and peer (the other cluster). Every node of a cluster should read the same."
+        },
+        "plugin": {
+          "kind": "Table",
+          "spec": {
+            "columnSettings": [
+              {
+                "cellSettings": [
+                  {
+                    "backgroundColor": "#4e79a7",
+                    "condition": {
+                      "kind": "Value",
+                      "spec": {
+                        "value": "cmtc-a"
+                      }
+                    },
+                    "textColor": "#000000"
+                  },
+                  {
+                    "backgroundColor": "#e15759",
+                    "condition": {
+                      "kind": "Value",
+                      "spec": {
+                        "value": "cmtc-b"
+                      }
+                    },
+                    "textColor": "#000000"
+                  }
+                ],
+                "format": {
+                  "unit": "decimal"
+                },
+                "header": "Cluster",
+                "name": "cluster"
+              },
+              {
+                "format": {
+                  "unit": "decimal"
+                },
+                "header": "Node",
+                "name": "node"
+              },
+              {
+                "header": "Node",
+                "name": "value #1"
+              },
+              {
+                "header": "Cluster",
+                "name": "value #2"
+              },
+              {
+                "format": {
+                  "unit": "decimal"
+                },
+                "header": "Peer",
+                "name": "value #3"
+              },
+              {
+                "hide": true,
+                "name": "timestamp"
+              }
+            ],
+            "density": "compact",
+            "transforms": [
+              {
+                "kind": "MergeSeries",
+                "spec": {}
+              }
+            ]
+          }
+        },
+        "queries": [
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "sum by (cluster, node) (cilium_ztunnel_xds_effective_policy_sources{job=\"cilium-native\", origin=\"node\"})",
+                  "seriesNameFormat": ""
+                }
+              }
+            }
+          },
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "sum by (cluster, node) (cilium_ztunnel_xds_effective_policy_sources{job=\"cilium-native\", origin=\"cluster\"})",
+                  "seriesNameFormat": ""
+                }
+              }
+            }
+          },
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "sum by (cluster, node) (cilium_ztunnel_xds_effective_policy_sources{job=\"cilium-native\", origin=\"peer\"})",
+                  "seriesNameFormat": ""
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "3_1": {
+      "kind": "Panel",
+      "spec": {
+        "display": {
+          "name": "Policy sources refused, by node, origin and reason \u00b7 planned",
+          "description": "Planned, a proposed source change: needs source-patches/cilium/0001 (refused sources). Callers the last reconcile refused, by reason class. Those callers are denied by every local destination. not_captured and no_egress_policy are normal while a caller starts."
+        },
+        "plugin": {
+          "kind": "Table",
+          "spec": {
+            "columnSettings": [
+              {
+                "cellSettings": [
+                  {
+                    "backgroundColor": "#4e79a7",
+                    "condition": {
+                      "kind": "Value",
+                      "spec": {
+                        "value": "cmtc-a"
+                      }
+                    },
+                    "textColor": "#000000"
+                  },
+                  {
+                    "backgroundColor": "#e15759",
+                    "condition": {
+                      "kind": "Value",
+                      "spec": {
+                        "value": "cmtc-b"
+                      }
+                    },
+                    "textColor": "#000000"
+                  }
+                ],
+                "header": "Cluster",
+                "name": "cluster"
+              },
+              {
+                "header": "Node",
+                "name": "node"
+              },
+              {
+                "header": "Origin",
+                "name": "origin"
+              },
+              {
+                "header": "Reason",
+                "name": "reason"
+              },
+              {
+                "format": {
+                  "unit": "decimal"
+                },
+                "header": "Callers",
+                "name": "value"
+              },
+              {
+                "hide": true,
+                "name": "timestamp"
+              }
+            ],
+            "density": "compact",
+            "transforms": [
+              {
+                "kind": "MergeSeries",
+                "spec": {}
+              }
+            ]
+          }
+        },
+        "queries": [
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "sum by (cluster, node, origin, reason) (cilium_ztunnel_xds_effective_policy_sources_refused{job=\"cilium-native\"}) > 0",
+                  "seriesNameFormat": ""
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "3_2": {
+      "kind": "Panel",
+      "spec": {
+        "display": {
+          "name": "Plans republished because a caller was removed, per second \u00b7 planned",
+          "description": "Planned, a proposed source change: needs source-patches/cilium/0001 (publications by cause). Effective plans republished because a caller left them (a narrowing: the caller's egress no longer allows the destination, or it was deleted), per cluster, 5 minute rate."
+        },
+        "plugin": {
+          "kind": "TimeSeriesChart",
+          "spec": {
+            "legend": {
+              "mode": "list",
+              "position": "bottom"
+            },
+            "querySettings": [
+              {
+                "areaOpacity": 0.1,
+                "colorMode": "fixed",
+                "colorValue": "#4e79a7",
+                "queryIndex": 0
+              },
+              {
+                "areaOpacity": 0.1,
+                "colorMode": "fixed",
+                "colorValue": "#e15759",
+                "lineStyle": "dashed",
+                "queryIndex": 1
+              }
+            ],
+            "visual": {
+              "areaOpacity": 0.1,
+              "connectNulls": false,
+              "lineWidth": 1
+            },
+            "yAxis": {
+              "format": {
+                "unit": "ops/sec"
+              },
+              "min": 0
+            }
+          }
+        },
+        "queries": [
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "sum by (cluster) (rate(cilium_ztunnel_xds_effective_policy_publications_total{job=\"cilium-native\", cause=\"caller_removed\", cluster=\"cmtc-a\"}[5m]))",
+                  "seriesNameFormat": "{{cluster}}"
+                }
+              }
+            }
+          },
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "sum by (cluster) (rate(cilium_ztunnel_xds_effective_policy_publications_total{job=\"cilium-native\", cause=\"caller_removed\", cluster=\"cmtc-b\"}[5m]))",
+                  "seriesNameFormat": "{{cluster}}"
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "3_3": {
+      "kind": "Panel",
+      "spec": {
+        "display": {
+          "name": "Plans published in the last hour, by cause \u00b7 planned",
+          "description": "Planned, a proposed source change: needs source-patches/cilium/0001 (publications by cause). Effective plans published by what changed: initial, address, native_policy, caller_removed, plan_changed."
+        },
+        "plugin": {
+          "kind": "Table",
+          "spec": {
+            "columnSettings": [
+              {
+                "cellSettings": [
+                  {
+                    "backgroundColor": "#4e79a7",
+                    "condition": {
+                      "kind": "Value",
+                      "spec": {
+                        "value": "cmtc-a"
+                      }
+                    },
+                    "textColor": "#000000"
+                  },
+                  {
+                    "backgroundColor": "#e15759",
+                    "condition": {
+                      "kind": "Value",
+                      "spec": {
+                        "value": "cmtc-b"
+                      }
+                    },
+                    "textColor": "#000000"
+                  }
+                ],
+                "header": "Cluster",
+                "name": "cluster"
+              },
+              {
+                "header": "Cause",
+                "name": "cause"
+              },
+              {
+                "format": {
+                  "unit": "decimal"
+                },
+                "header": "Plans, 1 h",
+                "name": "value"
+              },
+              {
+                "hide": true,
+                "name": "timestamp"
+              }
+            ],
+            "density": "compact",
+            "transforms": [
+              {
+                "kind": "MergeSeries",
+                "spec": {}
+              }
+            ]
+          }
+        },
+        "queries": [
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "sum by (cluster, cause) (increase(cilium_ztunnel_xds_effective_policy_publications_total{job=\"cilium-native\"}[1h])) > 0",
+                  "seriesNameFormat": ""
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "3_4": {
+      "kind": "Panel",
+      "spec": {
+        "display": {
+          "name": "How to read this section"
+        },
+        "plugin": {
+          "kind": "Markdown",
+          "spec": {
+            "text": "The admitted counts are the G1 signal deployed today. Refusals and narrowing need the Cilium patch."
+          }
+        }
+      }
+    },
+    "4_0": {
+      "kind": "Panel",
+      "spec": {
+        "display": {
+          "name": "Effective policies published per second",
+          "description": "Effective policies the agents published to ztunnel, per cluster, 5 minute rate."
+        },
+        "plugin": {
+          "kind": "TimeSeriesChart",
+          "spec": {
+            "legend": {
+              "mode": "list",
+              "position": "bottom"
+            },
+            "querySettings": [
+              {
+                "areaOpacity": 0.1,
+                "colorMode": "fixed",
+                "colorValue": "#4e79a7",
+                "queryIndex": 0
+              },
+              {
+                "areaOpacity": 0.1,
+                "colorMode": "fixed",
+                "colorValue": "#e15759",
+                "lineStyle": "dashed",
+                "queryIndex": 1
+              }
+            ],
+            "visual": {
+              "areaOpacity": 0.1,
+              "connectNulls": false,
+              "lineWidth": 1
+            },
+            "yAxis": {
+              "format": {
+                "unit": "ops/sec"
+              },
+              "min": 0
+            }
+          }
+        },
+        "queries": [
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "sum by (cluster) (rate(cilium_ztunnel_xds_effective_policy_events_total{job=\"cilium-native\", event=\"published\", cluster=\"cmtc-a\"}[5m]))",
+                  "seriesNameFormat": "{{cluster}}"
+                }
+              }
+            }
+          },
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "sum by (cluster) (rate(cilium_ztunnel_xds_effective_policy_events_total{job=\"cilium-native\", event=\"published\", cluster=\"cmtc-b\"}[5m]))",
+                  "seriesNameFormat": "{{cluster}}"
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "4_1": {
+      "kind": "Panel",
+      "spec": {
+        "display": {
+          "name": "Effective policies acknowledged per second",
+          "description": "Publications ztunnel acknowledged on the same ADS stream, per cluster, 5 minute rate. It follows the published line; a lasting gap is a plan ztunnel has not applied."
+        },
+        "plugin": {
+          "kind": "TimeSeriesChart",
+          "spec": {
+            "legend": {
+              "mode": "list",
+              "position": "bottom"
+            },
+            "querySettings": [
+              {
+                "areaOpacity": 0.1,
+                "colorMode": "fixed",
+                "colorValue": "#4e79a7",
+                "queryIndex": 0
+              },
+              {
+                "areaOpacity": 0.1,
+                "colorMode": "fixed",
+                "colorValue": "#e15759",
+                "lineStyle": "dashed",
+                "queryIndex": 1
+              }
+            ],
+            "visual": {
+              "areaOpacity": 0.1,
+              "connectNulls": false,
+              "lineWidth": 1
+            },
+            "yAxis": {
+              "format": {
+                "unit": "ops/sec"
+              },
+              "min": 0
+            }
+          }
+        },
+        "queries": [
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "sum by (cluster) (rate(cilium_ztunnel_xds_effective_policy_events_total{job=\"cilium-native\", event=\"acknowledged\", cluster=\"cmtc-a\"}[5m]))",
+                  "seriesNameFormat": "{{cluster}}"
+                }
+              }
+            }
+          },
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "sum by (cluster) (rate(cilium_ztunnel_xds_effective_policy_events_total{job=\"cilium-native\", event=\"acknowledged\", cluster=\"cmtc-b\"}[5m]))",
+                  "seriesNameFormat": "{{cluster}}"
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "4_2": {
+      "kind": "Panel",
+      "spec": {
+        "display": {
+          "name": "Effective policy events in the last hour, by event",
+          "description": "published, acknowledged, released, compile_failed and release_refused over the last hour. An event missing from the table did not happen since the agent started."
+        },
+        "plugin": {
+          "kind": "Table",
+          "spec": {
+            "columnSettings": [
+              {
+                "cellSettings": [
+                  {
+                    "backgroundColor": "#4e79a7",
+                    "condition": {
+                      "kind": "Value",
+                      "spec": {
+                        "value": "cmtc-a"
+                      }
+                    },
+                    "textColor": "#000000"
+                  },
+                  {
+                    "backgroundColor": "#e15759",
+                    "condition": {
+                      "kind": "Value",
+                      "spec": {
+                        "value": "cmtc-b"
+                      }
+                    },
+                    "textColor": "#000000"
+                  }
+                ],
+                "header": "Cluster",
+                "name": "cluster"
+              },
+              {
+                "header": "Event",
+                "name": "event"
+              },
+              {
+                "format": {
+                  "unit": "decimal"
+                },
+                "header": "Events, 1 h",
+                "name": "value"
+              },
+              {
+                "hide": true,
+                "name": "timestamp"
+              }
+            ],
+            "density": "compact",
+            "transforms": [
+              {
+                "kind": "MergeSeries",
+                "spec": {}
+              }
+            ]
+          }
+        },
+        "queries": [
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "sum by (cluster, event) (increase(cilium_ztunnel_xds_effective_policy_events_total{job=\"cilium-native\"}[1h]))",
+                  "seriesNameFormat": ""
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "4_3": {
+      "kind": "Panel",
+      "spec": {
+        "display": {
+          "name": "Authorization updates in the last hour, by status",
+          "description": "Authorization (policy) updates the agents sent ztunnel, by result: ack, cancel, nack, send_failed. nack and send_failed are rejections (CMTCAuthorizationRejected)."
+        },
+        "plugin": {
+          "kind": "Table",
+          "spec": {
+            "columnSettings": [
+              {
+                "cellSettings": [
+                  {
+                    "backgroundColor": "#4e79a7",
+                    "condition": {
+                      "kind": "Value",
+                      "spec": {
+                        "value": "cmtc-a"
+                      }
+                    },
+                    "textColor": "#000000"
+                  },
+                  {
+                    "backgroundColor": "#e15759",
+                    "condition": {
+                      "kind": "Value",
+                      "spec": {
+                        "value": "cmtc-b"
+                      }
+                    },
+                    "textColor": "#000000"
+                  }
+                ],
+                "header": "Cluster",
+                "name": "cluster"
+              },
+              {
+                "header": "Status",
+                "name": "status"
+              },
+              {
+                "format": {
+                  "unit": "decimal"
+                },
+                "header": "Updates, 1 h",
+                "name": "value"
+              },
+              {
+                "hide": true,
+                "name": "timestamp"
+              }
+            ],
+            "density": "compact",
+            "transforms": [
+              {
+                "kind": "MergeSeries",
+                "spec": {}
+              }
+            ]
+          }
+        },
+        "queries": [
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "sum by (cluster, status) (increase(cilium_ztunnel_xds_authorization_events_total{job=\"cilium-native\"}[1h]))",
+                  "seriesNameFormat": ""
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "4_4": {
+      "kind": "Panel",
+      "spec": {
+        "display": {
+          "name": "Oldest unacknowledged plan, seconds \u00b7 planned",
+          "description": "Planned, a proposed source change: needs source-patches/cilium/0001 (oldest unacknowledged). Age of the oldest published plan ztunnel has not acknowledged, per cluster. 0: none outstanding. Until ztunnel acknowledges, it enforces the previous plan (CMTCEffectivePolicyUnacknowledged above 60 s)."
+        },
+        "plugin": {
+          "kind": "StatChart",
+          "spec": {
+            "calculation": "last-number",
+            "colorMode": "value",
+            "format": {
+              "decimalPlaces": 0,
+              "unit": "seconds"
+            },
+            "thresholds": {
+              "steps": [
+                {
+                  "color": "#59a14f",
+                  "value": 0
+                },
+                {
+                  "color": "#f28e2b",
+                  "value": 10
+                },
+                {
+                  "color": "#e15759",
+                  "value": 60
+                }
+              ]
+            }
+          }
+        },
+        "queries": [
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "(time() - (max by (cluster) (cilium_ztunnel_xds_effective_policy_oldest_unacknowledged_timestamp_seconds{job=\"cilium-native\", cluster=\"cmtc-a\"}) > 0)) or 0 * max by (cluster) (cilium_ztunnel_xds_effective_policy_oldest_unacknowledged_timestamp_seconds{job=\"cilium-native\", cluster=\"cmtc-a\"})",
+                  "seriesNameFormat": "{{cluster}}"
+                }
+              }
+            }
+          },
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "(time() - (max by (cluster) (cilium_ztunnel_xds_effective_policy_oldest_unacknowledged_timestamp_seconds{job=\"cilium-native\", cluster=\"cmtc-b\"}) > 0)) or 0 * max by (cluster) (cilium_ztunnel_xds_effective_policy_oldest_unacknowledged_timestamp_seconds{job=\"cilium-native\", cluster=\"cmtc-b\"})",
+                  "seriesNameFormat": "{{cluster}}"
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "4_5": {
+      "kind": "Panel",
+      "spec": {
+        "display": {
+          "name": "Publication to acknowledgment, 99th percentile, seconds \u00b7 planned",
+          "description": "Planned, a proposed source change: needs source-patches/cilium/0001 (acknowledgment histogram). Time from a publication to ztunnel's acknowledgment of it, all causes, per cluster, from the histogram over 5 minutes. No value when nothing was acknowledged in the window."
+        },
+        "plugin": {
+          "kind": "TimeSeriesChart",
+          "spec": {
+            "legend": {
+              "mode": "list",
+              "position": "bottom"
+            },
+            "querySettings": [
+              {
+                "areaOpacity": 0.1,
+                "colorMode": "fixed",
+                "colorValue": "#4e79a7",
+                "queryIndex": 0
+              },
+              {
+                "areaOpacity": 0.1,
+                "colorMode": "fixed",
+                "colorValue": "#e15759",
+                "lineStyle": "dashed",
+                "queryIndex": 1
+              }
+            ],
+            "visual": {
+              "areaOpacity": 0.1,
+              "connectNulls": false,
+              "lineWidth": 1
+            },
+            "yAxis": {
+              "format": {
+                "unit": "seconds"
+              },
+              "min": 0
+            }
+          }
+        },
+        "queries": [
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "histogram_quantile(0.99, sum by (cluster, le) (rate(cilium_ztunnel_xds_effective_policy_ack_duration_seconds_bucket{job=\"cilium-native\", cluster=\"cmtc-a\"}[5m])))",
+                  "seriesNameFormat": "{{cluster}}"
+                }
+              }
+            }
+          },
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "histogram_quantile(0.99, sum by (cluster, le) (rate(cilium_ztunnel_xds_effective_policy_ack_duration_seconds_bucket{job=\"cilium-native\", cluster=\"cmtc-b\"}[5m])))",
+                  "seriesNameFormat": "{{cluster}}"
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "4_6": {
+      "kind": "Panel",
+      "spec": {
+        "display": {
+          "name": "How to read this section"
+        },
+        "plugin": {
+          "kind": "Markdown",
+          "spec": {
+            "text": "Published and acknowledged lines move together when ztunnel keeps up. Release follows acknowledgment."
+          }
+        }
+      }
+    },
+    "5_0": {
+      "kind": "Panel",
+      "spec": {
+        "display": {
+          "name": "Peer-cluster workloads known, by node",
+          "description": "Workloads of the peer cluster each node's agent projected to its ztunnel, now. Every node of a cluster should read the same number."
+        },
+        "plugin": {
+          "kind": "Table",
+          "spec": {
+            "columnSettings": [
+              {
+                "cellSettings": [
+                  {
+                    "backgroundColor": "#4e79a7",
+                    "condition": {
+                      "kind": "Value",
+                      "spec": {
+                        "value": "cmtc-a"
+                      }
+                    },
+                    "textColor": "#000000"
+                  },
+                  {
+                    "backgroundColor": "#e15759",
+                    "condition": {
+                      "kind": "Value",
+                      "spec": {
+                        "value": "cmtc-b"
+                      }
+                    },
+                    "textColor": "#000000"
+                  }
+                ],
+                "header": "Cluster",
+                "name": "cluster"
+              },
+              {
+                "header": "Node",
+                "name": "node"
+              },
+              {
+                "header": "Peer cluster",
+                "name": "peer_cluster"
+              },
+              {
+                "format": {
+                  "unit": "decimal"
+                },
+                "header": "Workloads",
+                "name": "value"
+              },
+              {
+                "hide": true,
+                "name": "timestamp"
+              }
+            ],
+            "density": "compact",
+            "transforms": [
+              {
+                "kind": "MergeSeries",
+                "spec": {}
+              }
+            ]
+          }
+        },
+        "queries": [
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "sum by (cluster, node, peer_cluster) (cilium_ztunnel_xds_remote_workloads{job=\"cilium-native\"})",
+                  "seriesNameFormat": ""
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "5_1": {
+      "kind": "Panel",
+      "spec": {
+        "display": {
+          "name": "Remote projection events in the last hour, by event",
+          "description": "projected, withdrawn and stream_reset_for_recovery events of the peer-workload projection."
+        },
+        "plugin": {
+          "kind": "Table",
+          "spec": {
+            "columnSettings": [
+              {
+                "cellSettings": [
+                  {
+                    "backgroundColor": "#4e79a7",
+                    "condition": {
+                      "kind": "Value",
+                      "spec": {
+                        "value": "cmtc-a"
+                      }
+                    },
+                    "textColor": "#000000"
+                  },
+                  {
+                    "backgroundColor": "#e15759",
+                    "condition": {
+                      "kind": "Value",
+                      "spec": {
+                        "value": "cmtc-b"
+                      }
+                    },
+                    "textColor": "#000000"
+                  }
+                ],
+                "header": "Cluster",
+                "name": "cluster"
+              },
+              {
+                "header": "Event",
+                "name": "event"
+              },
+              {
+                "format": {
+                  "unit": "decimal"
+                },
+                "header": "Events, 1 h",
+                "name": "value"
+              },
+              {
+                "hide": true,
+                "name": "timestamp"
+              }
+            ],
+            "density": "compact",
+            "transforms": [
+              {
+                "kind": "MergeSeries",
+                "spec": {}
+              }
+            ]
+          }
+        },
+        "queries": [
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "sum by (cluster, event) (increase(cilium_ztunnel_xds_remote_projection_events_total{job=\"cilium-native\"}[1h]))",
+                  "seriesNameFormat": ""
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "5_2": {
+      "kind": "Panel",
+      "spec": {
+        "display": {
+          "name": "How to read this section"
+        },
+        "plugin": {
+          "kind": "Markdown",
+          "spec": {
+            "text": "A node that knows fewer peer workloads than its neighbours refuses their callers."
+          }
+        }
+      }
+    },
+    "6_0": {
+      "kind": "Panel",
+      "spec": {
+        "display": {
+          "name": "Source mTLS connections attempted, 5 minutes",
+          "description": "Outbound mTLS connections the callers' ztunnels started in the last 5 minutes, per cluster. none: no workload connected, so there is nothing to judge, and no failure count below means healthy. During the outage of #34 no ztunnel of either lab counted a connection between 2026-10-27T00:01Z and 00:47Z (their /stats/prometheus pages, read twice). ztunnel counts a connection as opened when it builds its connection result, before the handshake, so every failed connection was also opened (src/proxy/metrics.rs:752-792, :881-902). Connections refused before that (unknown source workload, no route, a stale xDS generation) are only in the ztunnel access log, as \"connection failed\" (src/proxy/outbound.rs:193-226, metrics.rs:624-648)."
+        },
+        "plugin": {
+          "kind": "StatChart",
+          "spec": {
+            "calculation": "last-number",
+            "colorMode": "value",
+            "format": {
+              "decimalPlaces": 0,
+              "unit": "decimal"
+            },
+            "mappings": [
+              {
+                "kind": "Value",
+                "spec": {
+                  "result": {
+                    "color": "#f28e2b",
+                    "value": "none: nothing to judge"
+                  },
+                  "value": "0"
+                }
+              }
+            ],
+            "thresholds": {
+              "steps": [
+                {
+                  "color": "#4e79a7",
+                  "value": 0
+                }
+              ]
+            }
+          }
+        },
+        "queries": [
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "sum by (cluster) (increase(istio_tcp_connections_opened_total{job=\"ztunnel\", reporter=\"source\", connection_security_policy=\"mutual_tls\", cluster=\"cmtc-a\"}[5m])) or 0 * max by (cluster) (up{job=\"ztunnel\", cluster=\"cmtc-a\"} == 1)",
+                  "seriesNameFormat": "{{cluster}}"
+                }
+              }
+            }
+          },
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "sum by (cluster) (increase(istio_tcp_connections_opened_total{job=\"ztunnel\", reporter=\"source\", connection_security_policy=\"mutual_tls\", cluster=\"cmtc-b\"}[5m])) or 0 * max by (cluster) (up{job=\"ztunnel\", cluster=\"cmtc-b\"} == 1)",
+                  "seriesNameFormat": "{{cluster}}"
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "6_1": {
+      "kind": "Panel",
+      "spec": {
+        "display": {
+          "name": "mTLS connections opened per second, destination side",
+          "description": "Inbound mTLS connections the destination's ztunnel accepted, per cluster, 5 minute rate. Traffic evidence for the connection, not a verdict on the workload."
+        },
+        "plugin": {
+          "kind": "TimeSeriesChart",
+          "spec": {
+            "legend": {
+              "mode": "list",
+              "position": "bottom"
+            },
+            "querySettings": [
+              {
+                "areaOpacity": 0.1,
+                "colorMode": "fixed",
+                "colorValue": "#4e79a7",
+                "queryIndex": 0
+              },
+              {
+                "areaOpacity": 0.1,
+                "colorMode": "fixed",
+                "colorValue": "#e15759",
+                "lineStyle": "dashed",
+                "queryIndex": 1
+              }
+            ],
+            "visual": {
+              "areaOpacity": 0.1,
+              "connectNulls": false,
+              "lineWidth": 1
+            },
+            "yAxis": {
+              "format": {
+                "unit": "counts/sec"
+              },
+              "min": 0
+            }
+          }
+        },
+        "queries": [
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "sum by (cluster) (rate(istio_tcp_connections_opened_total{job=\"ztunnel\", reporter=\"destination\", connection_security_policy=\"mutual_tls\", cluster=\"cmtc-a\"}[5m]))",
+                  "seriesNameFormat": "{{cluster}}"
+                }
+              }
+            }
+          },
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "sum by (cluster) (rate(istio_tcp_connections_opened_total{job=\"ztunnel\", reporter=\"destination\", connection_security_policy=\"mutual_tls\", cluster=\"cmtc-b\"}[5m]))",
+                  "seriesNameFormat": "{{cluster}}"
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "6_2": {
+      "kind": "Panel",
+      "spec": {
+        "display": {
+          "name": "Failed share of source mTLS connections",
+          "description": "Outbound mTLS connections that failed, as a share of those attempted, as the caller's ztunnel counts them, per cluster, 5 minute rate. Normal: 0. No line: nothing was attempted in the window (the stat beside it reads none), or ztunnel is not scraped. The table beside it names the response flag."
+        },
+        "plugin": {
+          "kind": "TimeSeriesChart",
+          "spec": {
+            "legend": {
+              "mode": "list",
+              "position": "bottom"
+            },
+            "querySettings": [
+              {
+                "areaOpacity": 0.1,
+                "colorMode": "fixed",
+                "colorValue": "#4e79a7",
+                "queryIndex": 0
+              },
+              {
+                "areaOpacity": 0.1,
+                "colorMode": "fixed",
+                "colorValue": "#e15759",
+                "lineStyle": "dashed",
+                "queryIndex": 1
+              }
+            ],
+            "visual": {
+              "areaOpacity": 0.1,
+              "connectNulls": false,
+              "lineWidth": 1
+            },
+            "yAxis": {
+              "format": {
+                "unit": "percent-decimal"
+              },
+              "max": 1,
+              "min": 0
+            }
+          }
+        },
+        "queries": [
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "(sum by (cluster) (rate(istio_tcp_connections_failed_total{job=\"ztunnel\", reporter=\"source\", connection_security_policy=\"mutual_tls\", cluster=\"cmtc-a\"}[5m])) or 0 * sum by (cluster) (rate(istio_tcp_connections_opened_total{job=\"ztunnel\", reporter=\"source\", connection_security_policy=\"mutual_tls\", cluster=\"cmtc-a\"}[5m]))) / (sum by (cluster) (rate(istio_tcp_connections_opened_total{job=\"ztunnel\", reporter=\"source\", connection_security_policy=\"mutual_tls\", cluster=\"cmtc-a\"}[5m])) > 0)",
+                  "seriesNameFormat": "{{cluster}}"
+                }
+              }
+            }
+          },
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "(sum by (cluster) (rate(istio_tcp_connections_failed_total{job=\"ztunnel\", reporter=\"source\", connection_security_policy=\"mutual_tls\", cluster=\"cmtc-b\"}[5m])) or 0 * sum by (cluster) (rate(istio_tcp_connections_opened_total{job=\"ztunnel\", reporter=\"source\", connection_security_policy=\"mutual_tls\", cluster=\"cmtc-b\"}[5m]))) / (sum by (cluster) (rate(istio_tcp_connections_opened_total{job=\"ztunnel\", reporter=\"source\", connection_security_policy=\"mutual_tls\", cluster=\"cmtc-b\"}[5m])) > 0)",
+                  "seriesNameFormat": "{{cluster}}"
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "6_3": {
+      "kind": "Panel",
+      "spec": {
+        "display": {
+          "name": "mTLS connections in the last hour, by source and destination cluster",
+          "description": "Accepted mTLS connections by where they came from and where they landed, destination side. Both directions between the clusters should have a row while cross-cluster traffic runs."
+        },
+        "plugin": {
+          "kind": "Table",
+          "spec": {
+            "columnSettings": [
+              {
+                "cellSettings": [
+                  {
+                    "backgroundColor": "#4e79a7",
+                    "condition": {
+                      "kind": "Value",
+                      "spec": {
+                        "value": "cmtc-a"
+                      }
+                    },
+                    "textColor": "#000000"
+                  },
+                  {
+                    "backgroundColor": "#e15759",
+                    "condition": {
+                      "kind": "Value",
+                      "spec": {
+                        "value": "cmtc-b"
+                      }
+                    },
+                    "textColor": "#000000"
+                  }
+                ],
+                "header": "Cluster",
+                "name": "cluster"
+              },
+              {
+                "header": "Source cluster",
+                "name": "source_cluster"
+              },
+              {
+                "header": "Destination cluster",
+                "name": "destination_cluster"
+              },
+              {
+                "format": {
+                  "unit": "decimal"
+                },
+                "header": "Connections, 1 h",
+                "name": "value"
+              },
+              {
+                "hide": true,
+                "name": "timestamp"
+              }
+            ],
+            "density": "compact",
+            "transforms": [
+              {
+                "kind": "MergeSeries",
+                "spec": {}
+              }
+            ]
+          }
+        },
+        "queries": [
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "sum by (cluster, source_cluster, destination_cluster) (increase(istio_tcp_connections_opened_total{job=\"ztunnel\", reporter=\"destination\", connection_security_policy=\"mutual_tls\"}[1h])) > 0",
+                  "seriesNameFormat": ""
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "6_4": {
+      "kind": "Panel",
+      "spec": {
+        "display": {
+          "name": "How to read this section"
+        },
+        "plugin": {
+          "kind": "Markdown",
+          "spec": {
+            "text": "Traffic outcomes from ztunnel. **Source mTLS connections attempted** reads none when no workload connected: the failure share then has no line, and nothing proves or disproves protection. Allowed, denied and failed connections are on the security events dashboard."
+          }
+        }
+      }
+    },
+    "7_0": {
+      "kind": "Panel",
+      "spec": {
+        "display": {
+          "name": "Workload certificate subscriptions per in-Pod proxy per second \u00b7 planned",
+          "description": "Planned, a proposed source change: needs source-patches/cmtc/0002 (SPIRE agent telemetry) and the spire-agent and ztunnel scrape jobs of deploy/. Delegated-identity X.509 subscriptions the SPIRE agents served, divided by the in-Pod proxies ztunnel runs, per cluster, 5 minute rate. ztunnel fetches about one certificate a minute per workload; above 0.5 a second per proxy for 10 minutes is the storm of #42 (CMTCSVIDFetchStorm), which loads the SPIRE agent and the node CPU."
+        },
+        "plugin": {
+          "kind": "TimeSeriesChart",
+          "spec": {
+            "legend": {
+              "mode": "list",
+              "position": "bottom"
+            },
+            "querySettings": [
+              {
+                "areaOpacity": 0.1,
+                "colorMode": "fixed",
+                "colorValue": "#4e79a7",
+                "queryIndex": 0
+              },
+              {
+                "areaOpacity": 0.1,
+                "colorMode": "fixed",
+                "colorValue": "#e15759",
+                "lineStyle": "dashed",
+                "queryIndex": 1
+              }
+            ],
+            "visual": {
+              "areaOpacity": 0.1,
+              "connectNulls": false,
+              "lineWidth": 1
+            },
+            "yAxis": {
+              "format": {
+                "unit": "ops/sec"
+              },
+              "min": 0
+            }
+          }
+        },
+        "queries": [
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "sum by (cluster) (rate({__name__=~\"spire_agent_rpc_delegated_identity_subscribe_to_x509_svids(_total)?\", job=\"spire-agent\", cluster=\"cmtc-a\"}[5m])) / clamp_min(sum by (cluster) (workload_manager_active_proxy_count{job=\"ztunnel\", cluster=\"cmtc-a\"}), 1)",
+                  "seriesNameFormat": "{{cluster}}"
+                }
+              }
+            }
+          },
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "sum by (cluster) (rate({__name__=~\"spire_agent_rpc_delegated_identity_subscribe_to_x509_svids(_total)?\", job=\"spire-agent\", cluster=\"cmtc-b\"}[5m])) / clamp_min(sum by (cluster) (workload_manager_active_proxy_count{job=\"ztunnel\", cluster=\"cmtc-b\"}), 1)",
+                  "seriesNameFormat": "{{cluster}}"
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "7_1": {
+      "kind": "Panel",
+      "spec": {
+        "display": {
+          "name": "Certificate subscriptions in the last 5 minutes, by node \u00b7 planned",
+          "description": "Planned, a proposed source change: needs source-patches/cmtc/0002 (SPIRE agent telemetry) and the spire-agent and ztunnel scrape jobs of deploy/. Subscriptions per second each node's SPIRE agent served (status OK) and refused (any other status), and the in-Pod proxies on that node. An empty cell: none. On 2026-10-26 between 11:52Z and 11:57Z cmtc-a-worker fetched 3,331 certificates in one minute for 2 workloads (#42)."
+        },
+        "plugin": {
+          "kind": "Table",
+          "spec": {
+            "columnSettings": [
+              {
+                "cellSettings": [
+                  {
+                    "backgroundColor": "#4e79a7",
+                    "condition": {
+                      "kind": "Value",
+                      "spec": {
+                        "value": "cmtc-a"
+                      }
+                    },
+                    "textColor": "#000000"
+                  },
+                  {
+                    "backgroundColor": "#e15759",
+                    "condition": {
+                      "kind": "Value",
+                      "spec": {
+                        "value": "cmtc-b"
+                      }
+                    },
+                    "textColor": "#000000"
+                  }
+                ],
+                "header": "Cluster",
+                "name": "cluster"
+              },
+              {
+                "header": "Node",
+                "name": "node"
+              },
+              {
+                "format": {
+                  "unit": "ops/sec"
+                },
+                "header": "Served/s",
+                "name": "value #1"
+              },
+              {
+                "format": {
+                  "unit": "ops/sec"
+                },
+                "header": "Refused/s",
+                "name": "value #2"
+              },
+              {
+                "format": {
+                  "unit": "decimal"
+                },
+                "header": "In-Pod proxies",
+                "name": "value #3"
+              },
+              {
+                "hide": true,
+                "name": "timestamp"
+              }
+            ],
+            "density": "compact",
+            "transforms": [
+              {
+                "kind": "MergeSeries",
+                "spec": {}
+              }
+            ]
+          }
+        },
+        "queries": [
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "sum by (cluster, node) (rate({__name__=~\"spire_agent_rpc_delegated_identity_subscribe_to_x509_svids(_total)?\", job=\"spire-agent\", status=\"OK\"}[5m]))",
+                  "seriesNameFormat": ""
+                }
+              }
+            }
+          },
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "sum by (cluster, node) (rate({__name__=~\"spire_agent_rpc_delegated_identity_subscribe_to_x509_svids(_total)?\", job=\"spire-agent\", status!=\"OK\"}[5m]))",
+                  "seriesNameFormat": ""
+                }
+              }
+            }
+          },
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "max by (cluster, node) (workload_manager_active_proxy_count{job=\"ztunnel\"})",
+                  "seriesNameFormat": ""
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "7_2": {
+      "kind": "Panel",
+      "spec": {
+        "display": {
+          "name": "How to read this section"
+        },
+        "plugin": {
+          "kind": "Markdown",
+          "spec": {
+            "text": "The SPIRE agent counts its own admin API calls only with telemetry configured, which the lab's SPIRE does not have: source-patches/cmtc/0002 adds it to the configuration scripts/lab/spire/render_spire.py renders, with no SPIRE code change."
+          }
+        }
+      }
+    }
+  },
+  "layouts": [
+    {
+      "kind": "Grid",
+      "spec": {
+        "display": {
+          "title": "Which namespaces are meant to be protected?",
+          "collapse": {
+            "open": true
+          }
+        },
+        "items": [
+          {
+            "x": 0,
+            "y": 1,
+            "width": 12,
+            "height": 5,
+            "content": {
+              "$ref": "#/spec/panels/0_0"
+            }
+          },
+          {
+            "x": 12,
+            "y": 1,
+            "width": 6,
+            "height": 4,
+            "content": {
+              "$ref": "#/spec/panels/0_1"
+            }
+          },
+          {
+            "x": 18,
+            "y": 1,
+            "width": 6,
+            "height": 4,
+            "content": {
+              "$ref": "#/spec/panels/0_2"
+            }
+          },
+          {
+            "x": 0,
+            "y": 6,
+            "width": 24,
+            "height": 3,
+            "content": {
+              "$ref": "#/spec/panels/0_3"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "Grid",
+      "spec": {
+        "display": {
+          "title": "Is every Required workload released, and if not, why not? \u00b7 planned",
+          "collapse": {
+            "open": true
+          }
+        },
+        "items": [
+          {
+            "x": 0,
+            "y": 10,
+            "width": 6,
+            "height": 4,
+            "content": {
+              "$ref": "#/spec/panels/1_0"
+            }
+          },
+          {
+            "x": 6,
+            "y": 10,
+            "width": 6,
+            "height": 4,
+            "content": {
+              "$ref": "#/spec/panels/1_1"
+            }
+          },
+          {
+            "x": 12,
+            "y": 10,
+            "width": 12,
+            "height": 6,
+            "content": {
+              "$ref": "#/spec/panels/1_2"
+            }
+          },
+          {
+            "x": 0,
+            "y": 16,
+            "width": 24,
+            "height": 3,
+            "content": {
+              "$ref": "#/spec/panels/1_3"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "Grid",
+      "spec": {
+        "display": {
+          "title": "Are Pods captured and enrolled?",
+          "collapse": {
+            "open": true
+          }
+        },
+        "items": [
+          {
+            "x": 0,
+            "y": 20,
+            "width": 12,
+            "height": 8,
+            "content": {
+              "$ref": "#/spec/panels/2_0"
+            }
+          },
+          {
+            "x": 12,
+            "y": 20,
+            "width": 12,
+            "height": 8,
+            "content": {
+              "$ref": "#/spec/panels/2_1"
+            }
+          },
+          {
+            "x": 0,
+            "y": 28,
+            "width": 6,
+            "height": 4,
+            "content": {
+              "$ref": "#/spec/panels/2_2"
+            }
+          },
+          {
+            "x": 6,
+            "y": 28,
+            "width": 6,
+            "height": 4,
+            "content": {
+              "$ref": "#/spec/panels/2_3"
+            }
+          },
+          {
+            "x": 12,
+            "y": 28,
+            "width": 12,
+            "height": 6,
+            "content": {
+              "$ref": "#/spec/panels/2_4"
+            }
+          },
+          {
+            "x": 0,
+            "y": 34,
+            "width": 6,
+            "height": 4,
+            "content": {
+              "$ref": "#/spec/panels/2_5"
+            }
+          },
+          {
+            "x": 0,
+            "y": 38,
+            "width": 24,
+            "height": 3,
+            "content": {
+              "$ref": "#/spec/panels/2_6"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "Grid",
+      "spec": {
+        "display": {
+          "title": "Which callers are admitted as policy sources?",
+          "collapse": {
+            "open": true
+          }
+        },
+        "items": [
+          {
+            "x": 0,
+            "y": 42,
+            "width": 12,
+            "height": 6,
+            "content": {
+              "$ref": "#/spec/panels/3_0"
+            }
+          },
+          {
+            "x": 12,
+            "y": 42,
+            "width": 12,
+            "height": 6,
+            "content": {
+              "$ref": "#/spec/panels/3_1"
+            }
+          },
+          {
+            "x": 0,
+            "y": 48,
+            "width": 12,
+            "height": 8,
+            "content": {
+              "$ref": "#/spec/panels/3_2"
+            }
+          },
+          {
+            "x": 12,
+            "y": 48,
+            "width": 12,
+            "height": 6,
+            "content": {
+              "$ref": "#/spec/panels/3_3"
+            }
+          },
+          {
+            "x": 0,
+            "y": 56,
+            "width": 24,
+            "height": 3,
+            "content": {
+              "$ref": "#/spec/panels/3_4"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "Grid",
+      "spec": {
+        "display": {
+          "title": "Are plans published to ztunnel and acknowledged?",
+          "collapse": {
+            "open": true
+          }
+        },
+        "items": [
+          {
+            "x": 0,
+            "y": 60,
+            "width": 12,
+            "height": 8,
+            "content": {
+              "$ref": "#/spec/panels/4_0"
+            }
+          },
+          {
+            "x": 12,
+            "y": 60,
+            "width": 12,
+            "height": 8,
+            "content": {
+              "$ref": "#/spec/panels/4_1"
+            }
+          },
+          {
+            "x": 0,
+            "y": 68,
+            "width": 12,
+            "height": 6,
+            "content": {
+              "$ref": "#/spec/panels/4_2"
+            }
+          },
+          {
+            "x": 12,
+            "y": 68,
+            "width": 12,
+            "height": 6,
+            "content": {
+              "$ref": "#/spec/panels/4_3"
+            }
+          },
+          {
+            "x": 0,
+            "y": 74,
+            "width": 6,
+            "height": 4,
+            "content": {
+              "$ref": "#/spec/panels/4_4"
+            }
+          },
+          {
+            "x": 6,
+            "y": 74,
+            "width": 18,
+            "height": 8,
+            "content": {
+              "$ref": "#/spec/panels/4_5"
+            }
+          },
+          {
+            "x": 0,
+            "y": 82,
+            "width": 24,
+            "height": 3,
+            "content": {
+              "$ref": "#/spec/panels/4_6"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "Grid",
+      "spec": {
+        "display": {
+          "title": "Does every node know the peer cluster's workloads?",
+          "collapse": {
+            "open": true
+          }
+        },
+        "items": [
+          {
+            "x": 0,
+            "y": 86,
+            "width": 12,
+            "height": 6,
+            "content": {
+              "$ref": "#/spec/panels/5_0"
+            }
+          },
+          {
+            "x": 12,
+            "y": 86,
+            "width": 12,
+            "height": 6,
+            "content": {
+              "$ref": "#/spec/panels/5_1"
+            }
+          },
+          {
+            "x": 0,
+            "y": 92,
+            "width": 24,
+            "height": 3,
+            "content": {
+              "$ref": "#/spec/panels/5_2"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "Grid",
+      "spec": {
+        "display": {
+          "title": "Is protected traffic flowing?",
+          "collapse": {
+            "open": true
+          }
+        },
+        "items": [
+          {
+            "x": 0,
+            "y": 96,
+            "width": 6,
+            "height": 4,
+            "content": {
+              "$ref": "#/spec/panels/6_0"
+            }
+          },
+          {
+            "x": 6,
+            "y": 96,
+            "width": 9,
+            "height": 8,
+            "content": {
+              "$ref": "#/spec/panels/6_1"
+            }
+          },
+          {
+            "x": 15,
+            "y": 96,
+            "width": 9,
+            "height": 8,
+            "content": {
+              "$ref": "#/spec/panels/6_2"
+            }
+          },
+          {
+            "x": 0,
+            "y": 104,
+            "width": 24,
+            "height": 6,
+            "content": {
+              "$ref": "#/spec/panels/6_3"
+            }
+          },
+          {
+            "x": 0,
+            "y": 110,
+            "width": 24,
+            "height": 4,
+            "content": {
+              "$ref": "#/spec/panels/6_4"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "Grid",
+      "spec": {
+        "display": {
+          "title": "Do in-Pod proxies fetch workload certificates at a normal rate? \u00b7 planned",
+          "collapse": {
+            "open": true
+          }
+        },
+        "items": [
+          {
+            "x": 0,
+            "y": 115,
+            "width": 12,
+            "height": 8,
+            "content": {
+              "$ref": "#/spec/panels/7_0"
+            }
+          },
+          {
+            "x": 12,
+            "y": 115,
+            "width": 12,
+            "height": 6,
+            "content": {
+              "$ref": "#/spec/panels/7_1"
+            }
+          },
+          {
+            "x": 0,
+            "y": 123,
+            "width": 24,
+            "height": 4,
+            "content": {
+              "$ref": "#/spec/panels/7_2"
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "duration": "1h"
+}

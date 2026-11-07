@@ -1,0 +1,13 @@
+# kind-cmtc-b, a member: its Prometheus scrapes this cluster and remote-writes every sample to the hub.
+# Install into the namespace monitoring (NetworkPolicy cmtc-metrics of charts/cmtc, as for cmtc-a). The namespace
+# carries the label trust=enabled, so trust-manager writes the mesh root ConfigMap cmtc-mesh-root into it.
+#
+#   helm upgrade --install cmtc-obs deploy/chart --kube-context kind-cmtc-b -n monitoring -f deploy/kind/values-cmtc-b.yaml
+clusterName: cmtc-b
+remoteWrite:
+  # The hub's Ingress (values-cmtc-a.yaml), resolved by the labs' CoreDNS. The hub's certificate chains to the mesh
+  # root: a name that resolves anywhere else fails the TLS handshake, and no sample is sent.
+  url: https://prometheus.cmtc-a.localtest.me/api/v1/write
+  caConfigMap:
+    name: cmtc-mesh-root
+    key: ca.crt

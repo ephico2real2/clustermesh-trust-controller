@@ -4,25 +4,23 @@
 Design scope: proposed behavior requires the stated acceptance tests. Read [current delivery status](../agile/DELIVERY_STATUS.md) and [documentation terms](../../DOCUMENTATION_GUIDE.md).
 <!-- /CMTC_DOC_CONTEXT -->
 
-This page defines the target architecture.
-Some prerequisites now have source tests and local runtime evidence.
-The complete cross-cluster workload mTLS profile remains unqualified.
-The [2026-10-23 source audit](../research/SOURCE_AUDIT.md) is the historical baseline.
-Use [delivery status](../agile/DELIVERY_STATUS.md) for current acceptance results.
-The ADRs remain proposed unless their own records state otherwise.
-Diagram arrows describe required interactions, not verified interfaces.
-In A2, the fail-closed datapath is a target requirement.
+This page defines the target architecture. Each section marks what is **current** (deployed in `cmtc-a` and
+`cmtc-b`), **proposed** or **historical**. The ADRs remain proposed unless their own records state otherwise.
+Diagram arrows show required interactions; the current state of each is in the table below.
 
-## Current source and runtime — 2026-10-25
+## Current state — 2026-10-25
 
-| Component | Current source | Runtime boundary |
-| --- | --- | --- |
-| Cilium | `8bb97137fcc92b935171d60e59d7fb8a93714bd8` | The retained lab runs `4459d58ed3d98805f15c74298076025fc97dd540`. Later source changes need exact-image qualification. |
-| Ztunnel | `75843515d549f7928d080801ac3f7e4344f572eb` | Local qualification passes 568 full-suite tests, 2 diagnostic tests, formatting, and strict Clippy. There is no runtime activation of this candidate. |
-| Two-cluster profile | KVStoreMesh stays enabled; the compatibility guard stays closed. | Ztunnel remains disabled. ClusterMesh reachability does not prove workload mTLS. |
+| Area | State |
+| --- | --- |
+| Workload mTLS across ClusterMesh | Deployed: ztunnel runs on all four nodes with strict inbound mTLS, and the Cilium encryption mode is `Ztunnel`. Allow paths pass: same node, cross node, cross cluster by Pod IP and Global Service by ClusterIP, both directions, ports 80, 8080 and 31337. These are traffic outcomes; per-connection peer-certificate evidence is not recorded. |
+| ClusterMesh | `1/1 remote clusters ready` on every agent. Agents use CRD identity allocation (KVStore disabled); KVStoreMesh runs in the ClusterMesh API server. |
+| ClusterMesh with ztunnel | The upstream blanket rejection is replaced in our Cilium fork by a capability check: strict mTLS, SPIRE CA, effective-policy quarantine, authenticated remote workload membership and issuer-profile pins are all required at startup. |
+| Open | DNS from enrolled Pods fails (blocks Global Service by name). Recovery not run on the deployed build. ADR-010 review findings not fixed. WireGuard/IPsec not configured. Denial by policy not traffic-tested. |
 
-CI, branch pushes, and image publication remain deferred.
-Continue local acceptance work within the existing owned lab.
+No workload is `Protected`. Pins: [delivery status](../agile/DELIVERY_STATUS.md). Traffic record:
+[G1 destination sources](../evidence/g1-destination-sources/README.md). Gates:
+[security and failure test matrix](SECURITY_AND_FAILURE_TEST_MATRIX.md). The
+[2026-10-23 source audit](../research/SOURCE_AUDIT.md) is the historical baseline.
 
 ## A1: system components
 
@@ -47,7 +45,7 @@ flowchart TB
  SPIREA --> ZA[ztunnel A]
  SPIREB --> ZB[ztunnel B]
  CA <-->|ClusterMesh remote discovery| CB
- ZA <-->|Proposed HBONE mTLS| ZB
+ ZA <-->|HBONE mTLS, deployed| ZB
 ```
 
 ## A2: namespace decision order
@@ -92,7 +90,7 @@ Rotation phases: `Pending -> Distributing -> Verifying -> Switching -> Draining 
 
 ## A4: dual encryption target
 
-Primary target confirmed 2026-10-23: ztunnel supplies workload mTLS and WireGuard or IPsec supplies the node transport layer. A successful end-to-end result must verify both. See the [existing lab review](../research/EXISTING_LAB_REVIEW.md) for the reusable PoC baseline; none/mTLS-off remain explicit control profiles.
+Primary target confirmed 2026-10-23: ztunnel supplies workload mTLS and WireGuard or IPsec supplies the node transport layer. A successful end-to-end result must verify both. **Current:** only the HBONE-only row (network encryption none, mTLS on) runs in the lab. WireGuard and IPsec are not configured, so the layered profile is unqualified. See the [existing lab review](../research/EXISTING_LAB_REVIEW.md) for the reusable PoC baseline; none/mTLS-off remain explicit control profiles.
 ```mermaid
 flowchart LR
  A[Pod A] --> ZA[ztunnel A / HBONE TLS]
@@ -104,9 +102,9 @@ flowchart LR
 ```
 **Conceptual only:** actual kernel interception order, identity and network policy preservation, MTU/MSS, service translation, TCP/UDP, strict encryption, overlay/direct-routing must be proven by source investigation and captures.
 
-| Network encryption | mTLS off | mTLS on (target; requires upstream work) |
+| Network encryption | mTLS off | mTLS on (implemented in our forks) |
 |---|---|---|
-| none | Baseline ClusterMesh control | HBONE-only control; does not satisfy layered profile |
+| none | Baseline ClusterMesh control | HBONE-only control (current lab profile); does not satisfy layered profile |
 | WireGuard | Existing WG ClusterMesh if supported by pinned version | HBONE over WireGuard |
 | IPsec | Existing IPsec ClusterMesh if supported by pinned version | HBONE over IPsec |
 | Mixed incompatible modes | Reject/unsupported | Reject/fail closed |
@@ -122,9 +120,11 @@ flowchart LR
 ## A6: node-agent contract
 
 - One Go DaemonSet per eligible node provides local pod inventory, authenticated policy/bundle generation acknowledgment, Cilium/ztunnel readiness, configuration lag, bounded probes and telemetry.
-- Transitional implementation stage: evaluate a separate opt-in CMTC DaemonSet eBPF observer/deny prototype, then port the qualified production gate into the enhanced Cilium agent. Cilium remains the target owner of packet enforcement, service translation and effective policy; the prototype cannot become a permanent parallel datapath.
-- The current Observe DaemonSet remains non-root with no host mounts or BPF access. The prototype's exact hook mode, map lifecycle, CNI first-packet handshake, privilege set and rollback must be proven before enabling that profile.
-- The node agent does not mint identities, copy root keys or proxy application traffic. Evaluate the Cilium-native migration seam in ADR-005.
+- Per-node eBPF measurement plane (operator mandate 2026-10-25, [ADR-005](adr/ADR-005.md)): the CMTC DaemonSet carries permanent, observe-only eBPF programs that measure datapath, enrollment, capture, authorization, TLS shape, withdrawal and recovery on every node. Every program returns the pass verdict; none modifies, redirects or writes state Cilium or ztunnel reads. Cilium owns packet enforcement, service translation, effective policy and the native quarantine gate; ztunnel owns workload TLS and authorization.
+- The node agent container stays non-root with no host mounts or BPF access. A separate measurement loader container in the same DaemonSet holds only the BPF capabilities and mounts its hooks need. Discovery of enrolled workloads is node-wide and automatic; a frozen-identity mismatch makes that workload's data unavailable, never misattributed.
+- The CMTC fence is a lab qualification tool for deny-path tests; it is not the production gate.
+- The node agent does not mint identities, copy root keys or proxy application traffic. ADR-005 keeps porting individual signals into the Cilium agent open as an alternative.
+- **Current:** the deployed DaemonSet runs only the unprivileged node agent container. The measurement loader is not built. The single-workload eBPF observer and the fence exist in source (`internal/datapath/`) and are not deployed.
 
 ## A7: SPIRE registration ownership
 
@@ -138,8 +138,15 @@ It also identifies SPIRE controller-manager as an unverified option for investig
 A recorded decision and acceptance tests must precede production owner adoption.
 Prevent concurrent legacy and replacement writers or alternate broad entitlement.
 
+**Current (2026-10-25).**
+
+- Cilium's legacy namespace/service-account registration is switched off (`ztunnel-spire-external-exact-registrar=true` in `cilium-config`).
+- The experimental registrar helper is not deployed. The SPIRE server Pod runs the server and a container that confirms the SPIRE agent node entry (`register-agent-node`).
+- The live fixture's exact workload entries were written by the operational fixture runner with `spire-server entry create`, outside the product.
+- Ztunnel requests delegated credentials through a DelegatedIdentity-only agent socket (our SPIRE fork, `0f8fe4d681`), mounted from `/run/cmtc-spire/<cluster>/delegated`. The earlier plan to share the agent Admin socket with the proxy is superseded and was never applied.
+
+A production registration owner is still undecided.
 The experimental server Admin socket remains inside the SPIRE server Pod.
-The production proxy's node agent Admin permission migration is separate and still awaits approval.
 Entry readback, SVID validation, TLS, effective policy, and encrypted packets are separate evidence.
 The source-qualified stream correction makes explicit SPIRE errors terminate a credential request.
 Timeout remains inconclusive.
@@ -148,8 +155,9 @@ Removing registration does not revoke an existing certificate or drain an establ
 
 ## A8: observability
 
-Two consolidated Grafana pages present Operations and Workload Security.
-They preserve the nine original domains and JSON definitions in `observability/`.
+**Current:** two consolidated Grafana pages in `observability/` (v1) present Operations and Workload Security.
+They preserve the nine original domains and JSON definitions.
+**In progress:** a metrics overhaul in `observability/v2/` (contract, collectors, rules, dashboards). Until it lands, v1 stays current.
 Planned signals remain visible until their owning implementation and tests exist.
 A missing exporter or unavailable metric must not appear as a successful zero.
 

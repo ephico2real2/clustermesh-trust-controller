@@ -1,0 +1,108 @@
+
+▌ Probe join  84 probes joined to 72 ztunnel connections
+
+  CLUSTER  SCOPE         EXPECT  PROBES  RESULT
+  ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  cmtc-a   crosscluster  allow       12  mTLS proven
+  cmtc-a   crossnode     allow        6  mTLS proven
+  cmtc-a   global        allow        6  FAIL: 5 ztunnel connections from the client to this destination in the window; the probe cannot be joined to one
+  cmtc-a   global        allow        6  FAIL: 6 ztunnel connections from the client to this destination in the window; the probe cannot be joined to one
+  cmtc-a   negative      deny         6  dropped by Cilium: Policy denied at bpf_lxc.c:2381
+  cmtc-a   same          allow        6  mTLS proven
+  cmtc-b   crosscluster  allow       12  mTLS proven
+  cmtc-b   crossnode     allow        6  mTLS proven
+  cmtc-b   global        allow        6  FAIL: 5 ztunnel connections from the client to this destination in the window; the probe cannot be joined to one
+  cmtc-b   global        allow        6  FAIL: 6 ztunnel connections from the client to this destination in the window; the probe cannot be joined to one
+  cmtc-b   negative      deny         6  dropped by Cilium: Policy denied at bpf_lxc.c:2381
+  cmtc-b   same          allow        6  mTLS proven
+
+▌ Probes  one row per curl
+
+  AT            CLIENT                             TARGET                                                 SERVED BY                    PEER IDENTITY                    RESULT
+  ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  16:58:14.134  cmtc-a/client-worker               10.10.1.37:80/                                         cmtc-a/server-worker         mesh-client@cmtc-a.mesh.example  mTLS proven
+  16:58:14.191  cmtc-a/client-worker               10.10.1.37:8080/                                       cmtc-a/server-worker         mesh-client@cmtc-a.mesh.example  mTLS proven
+  16:58:14.245  cmtc-a/client-worker               10.10.1.37:31337/                                      cmtc-a/server-worker         mesh-client@cmtc-a.mesh.example  mTLS proven
+  16:58:14.314  cmtc-a/client-control-plane        10.10.0.98:80/                                         cmtc-a/server-control-plane  mesh-client@cmtc-a.mesh.example  mTLS proven
+  16:58:14.370  cmtc-a/client-control-plane        10.10.0.98:8080/                                       cmtc-a/server-control-plane  mesh-client@cmtc-a.mesh.example  mTLS proven
+  16:58:14.425  cmtc-a/client-control-plane        10.10.0.98:31337/                                      cmtc-a/server-control-plane  mesh-client@cmtc-a.mesh.example  mTLS proven
+  16:58:14.654  cmtc-a/client-worker               10.10.0.98:80/                                         cmtc-a/server-control-plane  mesh-client@cmtc-a.mesh.example  mTLS proven
+  16:58:14.711  cmtc-a/client-worker               10.10.0.98:8080/                                       cmtc-a/server-control-plane  mesh-client@cmtc-a.mesh.example  mTLS proven
+  16:58:14.769  cmtc-a/client-worker               10.10.0.98:31337/                                      cmtc-a/server-control-plane  mesh-client@cmtc-a.mesh.example  mTLS proven
+  16:58:14.827  cmtc-a/client-control-plane        10.10.1.37:80/                                         cmtc-a/server-worker         mesh-client@cmtc-a.mesh.example  mTLS proven
+  16:58:14.881  cmtc-a/client-control-plane        10.10.1.37:8080/                                       cmtc-a/server-worker         mesh-client@cmtc-a.mesh.example  mTLS proven
+  16:58:14.938  cmtc-a/client-control-plane        10.10.1.37:31337/                                      cmtc-a/server-worker         mesh-client@cmtc-a.mesh.example  mTLS proven
+  16:58:15.375  cmtc-a/client-worker               10.20.0.92:80/                                         cmtc-b/server-control-plane  mesh-client@cmtc-a.mesh.example  mTLS proven
+  16:58:15.434  cmtc-a/client-worker               10.20.0.92:8080/                                       cmtc-b/server-control-plane  mesh-client@cmtc-a.mesh.example  mTLS proven
+  16:58:15.492  cmtc-a/client-worker               10.20.0.92:31337/                                      cmtc-b/server-control-plane  mesh-client@cmtc-a.mesh.example  mTLS proven
+  16:58:15.548  cmtc-a/client-worker               10.20.1.116:80/                                        cmtc-b/server-worker         mesh-client@cmtc-a.mesh.example  mTLS proven
+  16:58:15.608  cmtc-a/client-worker               10.20.1.116:8080/                                      cmtc-b/server-worker         mesh-client@cmtc-a.mesh.example  mTLS proven
+  16:58:15.664  cmtc-a/client-worker               10.20.1.116:31337/                                     cmtc-b/server-worker         mesh-client@cmtc-a.mesh.example  mTLS proven
+  16:58:15.725  cmtc-a/client-control-plane        10.20.0.92:80/                                         cmtc-b/server-control-plane  mesh-client@cmtc-a.mesh.example  mTLS proven
+  16:58:15.783  cmtc-a/client-control-plane        10.20.0.92:8080/                                       cmtc-b/server-control-plane  mesh-client@cmtc-a.mesh.example  mTLS proven
+  16:58:15.839  cmtc-a/client-control-plane        10.20.0.92:31337/                                      cmtc-b/server-control-plane  mesh-client@cmtc-a.mesh.example  mTLS proven
+  16:58:15.895  cmtc-a/client-control-plane        10.20.1.116:80/                                        cmtc-b/server-worker         mesh-client@cmtc-a.mesh.example  mTLS proven
+  16:58:15.961  cmtc-a/client-control-plane        10.20.1.116:8080/                                      cmtc-b/server-worker         mesh-client@cmtc-a.mesh.example  mTLS proven
+  16:58:16.027  cmtc-a/client-control-plane        10.20.1.116:31337/                                     cmtc-b/server-worker         mesh-client@cmtc-a.mesh.example  mTLS proven
+  16:58:16.252  cmtc-a/client-worker               server-cmtc-a.cmtc-live-mtls.svc.cluster.local:80/                                                                   FAIL: 5 ztunnel connections from the client to this destination in the window; the probe cannot be joined to one
+  16:58:16.311  cmtc-a/client-worker               server-cmtc-a.cmtc-live-mtls.svc.cluster.local:8080/                                                                 FAIL: 5 ztunnel connections from the client to this destination in the window; the probe cannot be joined to one
+  16:58:16.367  cmtc-a/client-worker               server-cmtc-a.cmtc-live-mtls.svc.cluster.local:31337/                                                                FAIL: 5 ztunnel connections from the client to this destination in the window; the probe cannot be joined to one
+  16:58:16.427  cmtc-a/client-worker               server-cmtc-b.cmtc-live-mtls.svc.cluster.local:80/                                                                   FAIL: 6 ztunnel connections from the client to this destination in the window; the probe cannot be joined to one
+  16:58:16.500  cmtc-a/client-worker               server-cmtc-b.cmtc-live-mtls.svc.cluster.local:8080/                                                                 FAIL: 6 ztunnel connections from the client to this destination in the window; the probe cannot be joined to one
+  16:58:16.556  cmtc-a/client-worker               server-cmtc-b.cmtc-live-mtls.svc.cluster.local:31337/                                                                FAIL: 6 ztunnel connections from the client to this destination in the window; the probe cannot be joined to one
+  16:58:16.614  cmtc-a/client-control-plane        server-cmtc-a.cmtc-live-mtls.svc.cluster.local:80/                                                                   FAIL: 5 ztunnel connections from the client to this destination in the window; the probe cannot be joined to one
+  16:58:16.674  cmtc-a/client-control-plane        server-cmtc-a.cmtc-live-mtls.svc.cluster.local:8080/                                                                 FAIL: 5 ztunnel connections from the client to this destination in the window; the probe cannot be joined to one
+  16:58:16.731  cmtc-a/client-control-plane        server-cmtc-a.cmtc-live-mtls.svc.cluster.local:31337/                                                                FAIL: 5 ztunnel connections from the client to this destination in the window; the probe cannot be joined to one
+  16:58:16.789  cmtc-a/client-control-plane        server-cmtc-b.cmtc-live-mtls.svc.cluster.local:80/                                                                   FAIL: 6 ztunnel connections from the client to this destination in the window; the probe cannot be joined to one
+  16:58:16.849  cmtc-a/client-control-plane        server-cmtc-b.cmtc-live-mtls.svc.cluster.local:8080/                                                                 FAIL: 6 ztunnel connections from the client to this destination in the window; the probe cannot be joined to one
+  16:58:16.907  cmtc-a/client-control-plane        server-cmtc-b.cmtc-live-mtls.svc.cluster.local:31337/                                                                FAIL: 6 ztunnel connections from the client to this destination in the window; the probe cannot be joined to one
+  16:58:20.206  cmtc-a/unregistered-worker         10.10.1.37:80/                                                                                                       dropped by Cilium: Policy denied at bpf_lxc.c:2381
+  16:58:23.276  cmtc-a/unregistered-worker         10.10.1.37:8080/                                                                                                     dropped by Cilium: Policy denied at bpf_lxc.c:2381
+  16:58:26.337  cmtc-a/unregistered-worker         10.10.1.37:31337/                                                                                                    dropped by Cilium: Policy denied at bpf_lxc.c:2381
+  16:58:29.402  cmtc-a/unregistered-control-plane  10.10.0.98:80/                                                                                                       dropped by Cilium: Policy denied at bpf_lxc.c:2381
+  16:58:32.459  cmtc-a/unregistered-control-plane  10.10.0.98:8080/                                                                                                     dropped by Cilium: Policy denied at bpf_lxc.c:2381
+  16:58:35.523  cmtc-a/unregistered-control-plane  10.10.0.98:31337/                                                                                                    dropped by Cilium: Policy denied at bpf_lxc.c:2381
+  16:58:35.761  cmtc-b/client-worker               10.20.1.116:80/                                        cmtc-b/server-worker         mesh-client@cmtc-b.mesh.example  mTLS proven
+  16:58:35.816  cmtc-b/client-worker               10.20.1.116:8080/                                      cmtc-b/server-worker         mesh-client@cmtc-b.mesh.example  mTLS proven
+  16:58:35.873  cmtc-b/client-worker               10.20.1.116:31337/                                     cmtc-b/server-worker         mesh-client@cmtc-b.mesh.example  mTLS proven
+  16:58:35.942  cmtc-b/client-control-plane        10.20.0.92:80/                                         cmtc-b/server-control-plane  mesh-client@cmtc-b.mesh.example  mTLS proven
+  16:58:35.998  cmtc-b/client-control-plane        10.20.0.92:8080/                                       cmtc-b/server-control-plane  mesh-client@cmtc-b.mesh.example  mTLS proven
+  16:58:36.056  cmtc-b/client-control-plane        10.20.0.92:31337/                                      cmtc-b/server-control-plane  mesh-client@cmtc-b.mesh.example  mTLS proven
+  16:58:36.281  cmtc-b/client-worker               10.20.0.92:80/                                         cmtc-b/server-control-plane  mesh-client@cmtc-b.mesh.example  mTLS proven
+  16:58:36.338  cmtc-b/client-worker               10.20.0.92:8080/                                       cmtc-b/server-control-plane  mesh-client@cmtc-b.mesh.example  mTLS proven
+  16:58:36.398  cmtc-b/client-worker               10.20.0.92:31337/                                      cmtc-b/server-control-plane  mesh-client@cmtc-b.mesh.example  mTLS proven
+  16:58:36.454  cmtc-b/client-control-plane        10.20.1.116:80/                                        cmtc-b/server-worker         mesh-client@cmtc-b.mesh.example  mTLS proven
+  16:58:36.507  cmtc-b/client-control-plane        10.20.1.116:8080/                                      cmtc-b/server-worker         mesh-client@cmtc-b.mesh.example  mTLS proven
+  16:58:36.563  cmtc-b/client-control-plane        10.20.1.116:31337/                                     cmtc-b/server-worker         mesh-client@cmtc-b.mesh.example  mTLS proven
+  16:58:36.963  cmtc-b/client-worker               10.10.0.98:80/                                         cmtc-a/server-control-plane  mesh-client@cmtc-b.mesh.example  mTLS proven
+  16:58:37.017  cmtc-b/client-worker               10.10.0.98:8080/                                       cmtc-a/server-control-plane  mesh-client@cmtc-b.mesh.example  mTLS proven
+  16:58:37.071  cmtc-b/client-worker               10.10.0.98:31337/                                      cmtc-a/server-control-plane  mesh-client@cmtc-b.mesh.example  mTLS proven
+  16:58:37.130  cmtc-b/client-worker               10.10.1.37:80/                                         cmtc-a/server-worker         mesh-client@cmtc-b.mesh.example  mTLS proven
+  16:58:37.193  cmtc-b/client-worker               10.10.1.37:8080/                                       cmtc-a/server-worker         mesh-client@cmtc-b.mesh.example  mTLS proven
+  16:58:37.259  cmtc-b/client-worker               10.10.1.37:31337/                                      cmtc-a/server-worker         mesh-client@cmtc-b.mesh.example  mTLS proven
+  16:58:37.318  cmtc-b/client-control-plane        10.10.0.98:80/                                         cmtc-a/server-control-plane  mesh-client@cmtc-b.mesh.example  mTLS proven
+  16:58:37.374  cmtc-b/client-control-plane        10.10.0.98:8080/                                       cmtc-a/server-control-plane  mesh-client@cmtc-b.mesh.example  mTLS proven
+  16:58:37.428  cmtc-b/client-control-plane        10.10.0.98:31337/                                      cmtc-a/server-control-plane  mesh-client@cmtc-b.mesh.example  mTLS proven
+  16:58:37.489  cmtc-b/client-control-plane        10.10.1.37:80/                                         cmtc-a/server-worker         mesh-client@cmtc-b.mesh.example  mTLS proven
+  16:58:37.546  cmtc-b/client-control-plane        10.10.1.37:8080/                                       cmtc-a/server-worker         mesh-client@cmtc-b.mesh.example  mTLS proven
+  16:58:37.602  cmtc-b/client-control-plane        10.10.1.37:31337/                                      cmtc-a/server-worker         mesh-client@cmtc-b.mesh.example  mTLS proven
+  16:58:37.831  cmtc-b/client-worker               server-cmtc-a.cmtc-live-mtls.svc.cluster.local:80/                                                                   FAIL: 5 ztunnel connections from the client to this destination in the window; the probe cannot be joined to one
+  16:58:37.889  cmtc-b/client-worker               server-cmtc-a.cmtc-live-mtls.svc.cluster.local:8080/                                                                 FAIL: 5 ztunnel connections from the client to this destination in the window; the probe cannot be joined to one
+  16:58:37.948  cmtc-b/client-worker               server-cmtc-a.cmtc-live-mtls.svc.cluster.local:31337/                                                                FAIL: 5 ztunnel connections from the client to this destination in the window; the probe cannot be joined to one
+  16:58:38.016  cmtc-b/client-worker               server-cmtc-b.cmtc-live-mtls.svc.cluster.local:80/                                                                   FAIL: 6 ztunnel connections from the client to this destination in the window; the probe cannot be joined to one
+  16:58:38.075  cmtc-b/client-worker               server-cmtc-b.cmtc-live-mtls.svc.cluster.local:8080/                                                                 FAIL: 6 ztunnel connections from the client to this destination in the window; the probe cannot be joined to one
+  16:58:38.131  cmtc-b/client-worker               server-cmtc-b.cmtc-live-mtls.svc.cluster.local:31337/                                                                FAIL: 6 ztunnel connections from the client to this destination in the window; the probe cannot be joined to one
+  16:58:38.187  cmtc-b/client-control-plane        server-cmtc-a.cmtc-live-mtls.svc.cluster.local:80/                                                                   FAIL: 5 ztunnel connections from the client to this destination in the window; the probe cannot be joined to one
+  16:58:38.254  cmtc-b/client-control-plane        server-cmtc-a.cmtc-live-mtls.svc.cluster.local:8080/                                                                 FAIL: 5 ztunnel connections from the client to this destination in the window; the probe cannot be joined to one
+  16:58:38.309  cmtc-b/client-control-plane        server-cmtc-a.cmtc-live-mtls.svc.cluster.local:31337/                                                                FAIL: 5 ztunnel connections from the client to this destination in the window; the probe cannot be joined to one
+  16:58:38.366  cmtc-b/client-control-plane        server-cmtc-b.cmtc-live-mtls.svc.cluster.local:80/                                                                   FAIL: 6 ztunnel connections from the client to this destination in the window; the probe cannot be joined to one
+  16:58:38.419  cmtc-b/client-control-plane        server-cmtc-b.cmtc-live-mtls.svc.cluster.local:8080/                                                                 FAIL: 6 ztunnel connections from the client to this destination in the window; the probe cannot be joined to one
+  16:58:38.473  cmtc-b/client-control-plane        server-cmtc-b.cmtc-live-mtls.svc.cluster.local:31337/                                                                FAIL: 6 ztunnel connections from the client to this destination in the window; the probe cannot be joined to one
+  16:58:41.752  cmtc-b/unregistered-worker         10.20.1.116:80/                                                                                                      dropped by Cilium: Policy denied at bpf_lxc.c:2381
+  16:58:44.818  cmtc-b/unregistered-worker         10.20.1.116:8080/                                                                                                    dropped by Cilium: Policy denied at bpf_lxc.c:2381
+  16:58:47.878  cmtc-b/unregistered-worker         10.20.1.116:31337/                                                                                                   dropped by Cilium: Policy denied at bpf_lxc.c:2381
+  16:58:50.953  cmtc-b/unregistered-control-plane  10.20.0.92:80/                                                                                                       dropped by Cilium: Policy denied at bpf_lxc.c:2381
+  16:58:54.020  cmtc-b/unregistered-control-plane  10.20.0.92:8080/                                                                                                     dropped by Cilium: Policy denied at bpf_lxc.c:2381
+  16:58:57.084  cmtc-b/unregistered-control-plane  10.20.0.92:31337/                                                                                                    dropped by Cilium: Policy denied at bpf_lxc.c:2381
+
+  48 proven over mTLS · 0 unanswered with no ztunnel line · 12 dropped by Cilium · 24 failed

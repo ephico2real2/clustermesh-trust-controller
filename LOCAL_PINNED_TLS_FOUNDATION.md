@@ -4,12 +4,19 @@
 Evidence scope: results apply to the recorded source, image and fixture. Read [current delivery status](docs/agile/DELIVERY_STATUS.md) and [documentation terms](DOCUMENTATION_GUIDE.md).
 <!-- /CMTC_DOC_CONTEXT -->
 
-The ztunnel fork now has explicit inbound/outbound rustls constructors that
+**Historical record (2026-10-24 to 2026-10-25, source increments).** Ztunnel `ddb255de68`, `fc422ec` and `777b0e6`;
+Cilium `a001caa8cd` and `53c65b478e`. It does not qualify the current build. **Current state:** ztunnel runs in both
+clusters from our fork with issuer pins and a durable issuer checkpoint, and the Cilium ClusterMesh/ztunnel guard was
+replaced by capability validation (`37d5fce0f7`). Enrolled traffic outcomes are in
+[the G1 evidence](docs/evidence/g1-destination-sources/README.md); per-connection peer-certificate evidence is still
+open. Exact pins are in [delivery status](docs/agile/DELIVERY_STATUS.md).
+
+At that time, the ztunnel fork gained explicit inbound/outbound rustls constructors that
 verify each peer against the approved direct issuer for its SPIFFE trust
 domain. They require client certificates, exact expected outbound identities,
 current certificate/issuer validity and role EKU. Local SPIRE roots and the
-organizational root are not fallback peer authorities. The existing production
-proxy callers still use the earlier constructors; this increment is isolated.
+organizational root are not fallback peer authorities. At that source the
+production proxy callers still used the earlier constructors.
 
 Source is `ddb255de68cd458945f831cb1ab66f2f3f135d0c`, based on canonical
 `cilium/ztunnel` master `9a17cb0ff35c20977100de3582c1e4435360f618`.
@@ -25,17 +32,17 @@ a root, anonymous clients, malformed/duplicate identities, unknown domains,
 wrong/empty expected identities, expiry, role EKU and revocation/recovery.
 
 Pinned server configurations explicitly disable stateful and stateless session
-resumption, TLS1.3 tickets and early data. Both verifier directions reuse the
+resumption, TLS 1.3 tickets and early data. Both verifier directions reuse the
 same configuration objects across valid connections, CRL revocation and recovery
 with an issuer-signed empty CRL. A separate optional blank-file phase records the
-existing empty-CRL-manager behavior. The default test asserts TLS1.3; a separate
-process forces TLS1.2 through independent peers and asserts the negotiated
+existing empty-CRL-manager behavior. The default test asserts TLS 1.3; a separate
+process forces TLS 1.2 through independent peers and asserts the negotiated
 version at both endpoints. Both require full verification on reconnect.
 
 ## Exact build, import and execution
 
 The [recorded host Podman build](docs/evidence/pinned-tls-foundation/build-image.sh)
-uses explicit `linux/arm64`, pinned Rust1.90 test/build tooling, bounded CPU/memory,
+uses explicit `linux/arm64`, pinned Rust 1.90 test/build tooling, bounded CPU/memory,
 clean Git source and a pinned distroless base. The resulting image is
 `localhost/cmtc-ztunnel:pins-ddb255de68`, configuration ID
 `sha256:09207d73016a90518449b78879b1813e8dc134bc82eed899a66ae7ed6ff76880`.
@@ -52,7 +59,7 @@ include commands, exit status, source diff, tests, builds, CRI records and Jobs.
 The [DaemonSet qualification](LOCAL_DAEMONSET_TELEMETRY.md) remains a separate
 observation/quarantine increment.
 
-## Open integration gates
+## Integration gates at that time
 
 This addresses part of CMTC-105's issuer-verification foundation. It does not
 finish that story or CMTC-402/403. Production still needs an authenticated
@@ -67,14 +74,13 @@ configuration, and does not prove that existing configurations or flows update.
 Inherited optional CRL unknown-status/expiry behavior is not strengthened here.
 Keep those semantics explicit in the eventual production policy.
 
-The compatibility guard stays closed. The labs still prove ClusterMesh and
-application connectivity; ztunnel is disabled, and cross-cluster workload mTLS
-is not qualified. CI, pushes and registry publication remain deferred.
+At that time the compatibility guard was closed and ztunnel was disabled in the
+labs. Both have changed since (see the current state above).
 
 ## Native profile source increment
 
 Cilium source `a001caa8cd` now validates the current API publication and projects bounded public DER.
-Its10 top-level tests and20 subtests pass with race detection, vet and zero lint issues.
+Its 10 top-level tests and 20 subtests pass with race detection, vet and zero lint issues.
 The local [issuer-profile producer](LOCAL_ISSUER_PROFILE.md) is qualified separately.
 
 Ztunnel source `fc422ec` decodes the same public fixture with independent origin, root and version-floor inputs.
@@ -82,13 +88,13 @@ It retains delivery reasons. Current producer withdrawals close availability; th
 Atomic authority withdrawal and explicit restoration preserve cumulative issuer history and old-connection cutoffs.
 The caller must independently authorize permanent revocation or restoration.
 
-The final full suite passes454 tests:404 library,20 direct and30 namespace tests.
+The final full suite passes 454 tests: 404 library, 20 direct and 30 namespace tests.
 There are zero failures and zero ignored tests.
-An additional forced TLS1.2 case passes. Formatting and strict Clippy pass.
+An additional forced TLS 1.2 case passes. Formatting and strict Clippy pass.
 [Source hashes, patches and raw results](docs/evidence/native-issuer-profile/summary.json) identify the tested code.
 
-These source commits are local. They have no new runtime image or active ADS handler yet.
-The deployed Cilium image remains4459; ztunnel remains disabled.
+These source commits had no runtime image or active ADS handler at the time.
+The deployed Cilium image was then `4459d58ed3`, and ztunnel was disabled.
 Durable checkpoints, live provider transitions, peer-root CRL registration and actual socket draining remain open.
 No publication acknowledgment or parser result can open admission.
 
@@ -106,7 +112,7 @@ Atomic rename requires file and directory synchronization before a durability re
 FIFO, symlink, ownership, corrupt-state, replay and interrupted-write tests pass.
 A recovered checkpoint is history. It does not grant traffic permission.
 
-The profile subscriber still rejects activation.
-The next increment must bind this state to the actual TLS provider and drain active and idle connections on loss.
-No native image was built from these source-only commits. The deployed Cilium remains4459, and ztunnel remains disabled.
+At that source the profile subscriber still rejected activation.
+The next increment was to bind this state to the actual TLS provider and drain active and idle connections on loss.
+No native image was built from these source-only commits. The deployed Cilium was then `4459d58ed3`, and ztunnel was disabled.
 [The evidence ledger](docs/evidence/native-issuer-profile/ads-lineage-checkpoint/summary.json) retains exact sources, counts, raw results and initial failures.

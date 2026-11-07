@@ -1,0 +1,72 @@
+
+▌ Probe join  46 probes joined to 10 ztunnel connections
+
+  CLUSTER  SCOPE          EXPECT  PROBES  RESULT
+  ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  cmtc-a   crosscluster   allow        1  FAIL: curl exit 52, no connection to join
+  cmtc-a   crossnode      allow        1  FAIL: curl exit 56, no connection to join
+  cmtc-a   global         allow        1  FAIL: curl exit 56 ("Recv failure: Connection reset by peer"); the target is a DNS name; a ztunnel connection from the client to a backend on port 80 is in the window
+  cmtc-a   name           allow        1  FAIL: curl exit 56 ("Recv failure: Connection reset by peer"); the target is a DNS name; a ztunnel connection from the client to a backend on port 80 is in the window
+  cmtc-a   negative       deny         6  dropped by Cilium: Policy denied at bpf_lxc.c:2381
+  cmtc-a   negative-name  deny        12  dropped by Cilium: Policy denied at bpf_lxc.c:2381
+  cmtc-a   same           allow        1  FAIL: curl exit 56, no connection to join
+  cmtc-b   crosscluster   allow        1  FAIL: curl exit 52, no connection to join
+  cmtc-b   crossnode      allow        1  FAIL: curl exit 52, no connection to join
+  cmtc-b   global         allow        1  FAIL: curl exit 52 ("Empty reply from server"); the target is a DNS name; a ztunnel connection from the client to a backend on port 80 is in the window
+  cmtc-b   name           allow        1  FAIL: curl exit 56 ("Recv failure: Connection reset by peer"); the target is a DNS name; a ztunnel connection from the client to a backend on port 80 is in the window
+  cmtc-b   negative       deny         6  dropped by Cilium: Policy denied at bpf_lxc.c:2381
+  cmtc-b   negative-name  deny        12  dropped by Cilium: Policy denied at bpf_lxc.c:2381
+  cmtc-b   same           allow        1  FAIL: curl exit 56, no connection to join
+
+▌ Probes  one row per curl
+
+  AT            CLIENT                             TARGET                                                        SERVED BY  PEER IDENTITY  RESULT
+  ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  06:55:48.747  cmtc-a/client-worker               10.10.1.37:80/                                                                          FAIL: curl exit 56, no connection to join
+  06:55:49.034  cmtc-a/client-worker               10.10.0.98:80/                                                                          FAIL: curl exit 56, no connection to join
+  06:55:49.527  cmtc-a/client-worker               10.20.0.92:80/                                                                          FAIL: curl exit 52, no connection to join
+  06:55:49.882  cmtc-a/client-worker               server-cmtc-a.cmtc-live-mtls.svc.cluster.local:80/                                      FAIL: curl exit 56 ("Recv failure: Connection reset by peer"); the target is a DNS name; a ztunnel connection from the client to a backend on port 80 is in the window
+  06:55:50.327  cmtc-a/client-worker               server-worker.cmtc-live-mtls.svc.cluster.local:80/                                      FAIL: curl exit 56 ("Recv failure: Connection reset by peer"); the target is a DNS name; a ztunnel connection from the client to a backend on port 80 is in the window
+  06:55:53.682  cmtc-a/unregistered-worker         10.10.1.37:80/                                                                          dropped by Cilium: Policy denied at bpf_lxc.c:2381
+  06:55:56.751  cmtc-a/unregistered-worker         10.10.1.37:8080/                                                                        dropped by Cilium: Policy denied at bpf_lxc.c:2381
+  06:55:59.822  cmtc-a/unregistered-worker         10.10.1.37:31337/                                                                       dropped by Cilium: Policy denied at bpf_lxc.c:2381
+  06:56:02.919  cmtc-a/unregistered-control-plane  10.10.0.98:80/                                                                          dropped by Cilium: Policy denied at bpf_lxc.c:2381
+  06:56:05.999  cmtc-a/unregistered-control-plane  10.10.0.98:8080/                                                                        dropped by Cilium: Policy denied at bpf_lxc.c:2381
+  06:56:09.075  cmtc-a/unregistered-control-plane  10.10.0.98:31337/                                                                       dropped by Cilium: Policy denied at bpf_lxc.c:2381
+  06:56:12.602  cmtc-a/unregistered-worker         server-worker.cmtc-live-mtls.svc.cluster.local:80/                                      dropped by Cilium: Policy denied at bpf_lxc.c:2381
+  06:56:15.675  cmtc-a/unregistered-worker         server-worker.cmtc-live-mtls.svc.cluster.local:8080/                                    dropped by Cilium: Policy denied at bpf_lxc.c:2381
+  06:56:18.759  cmtc-a/unregistered-worker         server-worker.cmtc-live-mtls.svc.cluster.local:31337/                                   dropped by Cilium: Policy denied at bpf_lxc.c:2381
+  06:56:21.865  cmtc-a/unregistered-worker         server-control-plane.cmtc-live-mtls.svc.cluster.local:80/                               dropped by Cilium: Policy denied at bpf_lxc.c:2381
+  06:56:24.948  cmtc-a/unregistered-worker         server-control-plane.cmtc-live-mtls.svc.cluster.local:8080/                             dropped by Cilium: Policy denied at bpf_lxc.c:2381
+  06:56:28.051  cmtc-a/unregistered-worker         server-control-plane.cmtc-live-mtls.svc.cluster.local:31337/                            dropped by Cilium: Policy denied at bpf_lxc.c:2381
+  06:56:31.130  cmtc-a/unregistered-control-plane  server-control-plane.cmtc-live-mtls.svc.cluster.local:80/                               dropped by Cilium: Policy denied at bpf_lxc.c:2381
+  06:56:34.206  cmtc-a/unregistered-control-plane  server-control-plane.cmtc-live-mtls.svc.cluster.local:8080/                             dropped by Cilium: Policy denied at bpf_lxc.c:2381
+  06:56:37.282  cmtc-a/unregistered-control-plane  server-control-plane.cmtc-live-mtls.svc.cluster.local:31337/                            dropped by Cilium: Policy denied at bpf_lxc.c:2381
+  06:56:40.350  cmtc-a/unregistered-control-plane  server-worker.cmtc-live-mtls.svc.cluster.local:80/                                      dropped by Cilium: Policy denied at bpf_lxc.c:2381
+  06:56:43.432  cmtc-a/unregistered-control-plane  server-worker.cmtc-live-mtls.svc.cluster.local:8080/                                    dropped by Cilium: Policy denied at bpf_lxc.c:2381
+  06:56:46.512  cmtc-a/unregistered-control-plane  server-worker.cmtc-live-mtls.svc.cluster.local:31337/                                   dropped by Cilium: Policy denied at bpf_lxc.c:2381
+  06:56:46.832  cmtc-b/client-worker               10.20.1.116:80/                                                                         FAIL: curl exit 56, no connection to join
+  06:56:47.123  cmtc-b/client-worker               10.20.0.92:80/                                                                          FAIL: curl exit 52, no connection to join
+  06:56:47.654  cmtc-b/client-worker               10.10.0.98:80/                                                                          FAIL: curl exit 52, no connection to join
+  06:56:47.973  cmtc-b/client-worker               server-cmtc-a.cmtc-live-mtls.svc.cluster.local:80/                                      FAIL: curl exit 52 ("Empty reply from server"); the target is a DNS name; a ztunnel connection from the client to a backend on port 80 is in the window
+  06:56:48.445  cmtc-b/client-worker               server-worker.cmtc-live-mtls.svc.cluster.local:80/                                      FAIL: curl exit 56 ("Recv failure: Connection reset by peer"); the target is a DNS name; a ztunnel connection from the client to a backend on port 80 is in the window
+  06:56:51.835  cmtc-b/unregistered-worker         10.20.1.116:80/                                                                         dropped by Cilium: Policy denied at bpf_lxc.c:2381
+  06:56:54.910  cmtc-b/unregistered-worker         10.20.1.116:8080/                                                                       dropped by Cilium: Policy denied at bpf_lxc.c:2381
+  06:56:57.984  cmtc-b/unregistered-worker         10.20.1.116:31337/                                                                      dropped by Cilium: Policy denied at bpf_lxc.c:2381
+  06:57:01.088  cmtc-b/unregistered-control-plane  10.20.0.92:80/                                                                          dropped by Cilium: Policy denied at bpf_lxc.c:2381
+  06:57:04.160  cmtc-b/unregistered-control-plane  10.20.0.92:8080/                                                                        dropped by Cilium: Policy denied at bpf_lxc.c:2381
+  06:57:07.235  cmtc-b/unregistered-control-plane  10.20.0.92:31337/                                                                       dropped by Cilium: Policy denied at bpf_lxc.c:2381
+  06:57:10.730  cmtc-b/unregistered-worker         server-worker.cmtc-live-mtls.svc.cluster.local:80/                                      dropped by Cilium: Policy denied at bpf_lxc.c:2381
+  06:57:13.798  cmtc-b/unregistered-worker         server-worker.cmtc-live-mtls.svc.cluster.local:8080/                                    dropped by Cilium: Policy denied at bpf_lxc.c:2381
+  06:57:16.877  cmtc-b/unregistered-worker         server-worker.cmtc-live-mtls.svc.cluster.local:31337/                                   dropped by Cilium: Policy denied at bpf_lxc.c:2381
+  06:57:19.967  cmtc-b/unregistered-worker         server-control-plane.cmtc-live-mtls.svc.cluster.local:80/                               dropped by Cilium: Policy denied at bpf_lxc.c:2381
+  06:57:23.062  cmtc-b/unregistered-worker         server-control-plane.cmtc-live-mtls.svc.cluster.local:8080/                             dropped by Cilium: Policy denied at bpf_lxc.c:2381
+  06:57:26.157  cmtc-b/unregistered-worker         server-control-plane.cmtc-live-mtls.svc.cluster.local:31337/                            dropped by Cilium: Policy denied at bpf_lxc.c:2381
+  06:57:29.230  cmtc-b/unregistered-control-plane  server-control-plane.cmtc-live-mtls.svc.cluster.local:80/                               dropped by Cilium: Policy denied at bpf_lxc.c:2381
+  06:57:32.322  cmtc-b/unregistered-control-plane  server-control-plane.cmtc-live-mtls.svc.cluster.local:8080/                             dropped by Cilium: Policy denied at bpf_lxc.c:2381
+  06:57:35.400  cmtc-b/unregistered-control-plane  server-control-plane.cmtc-live-mtls.svc.cluster.local:31337/                            dropped by Cilium: Policy denied at bpf_lxc.c:2381
+  06:57:38.477  cmtc-b/unregistered-control-plane  server-worker.cmtc-live-mtls.svc.cluster.local:80/                                      dropped by Cilium: Policy denied at bpf_lxc.c:2381
+  06:57:41.563  cmtc-b/unregistered-control-plane  server-worker.cmtc-live-mtls.svc.cluster.local:8080/                                    dropped by Cilium: Policy denied at bpf_lxc.c:2381
+  06:57:44.645  cmtc-b/unregistered-control-plane  server-worker.cmtc-live-mtls.svc.cluster.local:31337/                                   dropped by Cilium: Policy denied at bpf_lxc.c:2381
+
+  0 proven over mTLS · 0 unanswered with no ztunnel line · 36 dropped by Cilium · 10 failed

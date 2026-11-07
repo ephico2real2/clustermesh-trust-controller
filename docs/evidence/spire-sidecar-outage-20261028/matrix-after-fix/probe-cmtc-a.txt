@@ -1,0 +1,72 @@
+Traceback (most recent call last):
+  File "/Users/olasumbo/gitRepos/clustermest-trust-controller/scripts/evidence/live_mtls_fixture.py", line 263, in <module>
+    if __name__=='__main__':main()
+                            ~~~~^^
+  File "/Users/olasumbo/gitRepos/clustermest-trust-controller/scripts/evidence/live_mtls_fixture.py", line 260, in main
+    if x.stage=='probe':l.probe(x.cluster,x.scope,x.expect,x.repeat)
+                        ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/olasumbo/gitRepos/clustermest-trust-controller/scripts/evidence/live_mtls_fixture.py", line 215, in probe
+    require(row['positiveMatch'] if expect=='allow'else not row['http200'],'Unexpected traffic verdict: '+json.dumps(row))
+    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/olasumbo/gitRepos/clustermest-trust-controller/scripts/evidence/live_mtls_fixture.py", line 21, in require
+    if not x: raise RuntimeError(msg)
+              ^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: Unexpected traffic verdict: {"startedAt": "2026-10-28T07:22:45.538817+00:00", "at": "2026-10-28T07:22:45.618879+00:00", "context": "kind-cmtc-a", "namespace": "cmtc-live-mtls", "client": "client-worker", "url": "http://10.10.1.37:80/?cmtc=1793172165538667000", "clientAddr": "10.10.1.205:40852", "curlRC": 56, "http200": false, "expectedCluster": "cmtc-a", "positiveMatch": false, "stdout": "\nCMTC_CLIENT_ADDR=10.10.1.205:40852\n\nCMTC_CURL_RC=56\n", "stderr": "curl: (56) Recv failure: Connection reset by peer\n", "scope": "same", "expect": "allow", "repetition": 0}
+Traceback (most recent call last):
+  File "/Users/olasumbo/gitRepos/clustermest-trust-controller/scripts/evidence/live_mtls_fixture.py", line 263, in <module>
+    if __name__=='__main__':main()
+                            ~~~~^^
+  File "/Users/olasumbo/gitRepos/clustermest-trust-controller/scripts/evidence/live_mtls_fixture.py", line 260, in main
+    if x.stage=='probe':l.probe(x.cluster,x.scope,x.expect,x.repeat)
+                        ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/olasumbo/gitRepos/clustermest-trust-controller/scripts/evidence/live_mtls_fixture.py", line 215, in probe
+    require(row['positiveMatch'] if expect=='allow'else not row['http200'],'Unexpected traffic verdict: '+json.dumps(row))
+    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/olasumbo/gitRepos/clustermest-trust-controller/scripts/evidence/live_mtls_fixture.py", line 21, in require
+    if not x: raise RuntimeError(msg)
+              ^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: Unexpected traffic verdict: {"startedAt": "2026-10-28T07:22:45.853584+00:00", "at": "2026-10-28T07:22:45.916461+00:00", "context": "kind-cmtc-a", "namespace": "cmtc-live-mtls", "client": "client-worker", "url": "http://10.10.0.98:80/?cmtc=1793172165853448000", "clientAddr": "10.10.1.205:42134", "curlRC": 56, "http200": false, "expectedCluster": "cmtc-a", "positiveMatch": false, "stdout": "\nCMTC_CLIENT_ADDR=10.10.1.205:42134\n\nCMTC_CURL_RC=56\n", "stderr": "curl: (56) Recv failure: Connection reset by peer\n", "scope": "crossnode", "expect": "allow", "repetition": 0}
+Traceback (most recent call last):
+  File "/Users/olasumbo/gitRepos/clustermest-trust-controller/scripts/evidence/live_mtls_fixture.py", line 263, in <module>
+    if __name__=='__main__':main()
+                            ~~~~^^
+  File "/Users/olasumbo/gitRepos/clustermest-trust-controller/scripts/evidence/live_mtls_fixture.py", line 260, in main
+    if x.stage=='probe':l.probe(x.cluster,x.scope,x.expect,x.repeat)
+                        ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/olasumbo/gitRepos/clustermest-trust-controller/scripts/evidence/live_mtls_fixture.py", line 215, in probe
+    require(row['positiveMatch'] if expect=='allow'else not row['http200'],'Unexpected traffic verdict: '+json.dumps(row))
+    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/olasumbo/gitRepos/clustermest-trust-controller/scripts/evidence/live_mtls_fixture.py", line 21, in require
+    if not x: raise RuntimeError(msg)
+              ^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: Unexpected traffic verdict: {"startedAt": "2026-10-28T07:22:46.331076+00:00", "at": "2026-10-28T07:22:46.393990+00:00", "context": "kind-cmtc-a", "namespace": "cmtc-live-mtls", "client": "client-worker", "url": "http://10.20.0.92:80/?cmtc=1793172166330906000", "clientAddr": "10.10.1.205:38246", "curlRC": 56, "http200": false, "expectedCluster": "cmtc-b", "positiveMatch": false, "stdout": "\nCMTC_CLIENT_ADDR=10.10.1.205:38246\n\nCMTC_CURL_RC=56\n", "stderr": "curl: (56) Recv failure: Connection reset by peer\n", "scope": "crosscluster", "expect": "allow", "repetition": 0}
+Traceback (most recent call last):
+  File "/Users/olasumbo/gitRepos/clustermest-trust-controller/scripts/evidence/live_mtls_fixture.py", line 263, in <module>
+    if __name__=='__main__':main()
+                            ~~~~^^
+  File "/Users/olasumbo/gitRepos/clustermest-trust-controller/scripts/evidence/live_mtls_fixture.py", line 260, in main
+    if x.stage=='probe':l.probe(x.cluster,x.scope,x.expect,x.repeat)
+                        ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/olasumbo/gitRepos/clustermest-trust-controller/scripts/evidence/live_mtls_fixture.py", line 215, in probe
+    require(row['positiveMatch'] if expect=='allow'else not row['http200'],'Unexpected traffic verdict: '+json.dumps(row))
+    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/olasumbo/gitRepos/clustermest-trust-controller/scripts/evidence/live_mtls_fixture.py", line 21, in require
+    if not x: raise RuntimeError(msg)
+              ^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: Unexpected traffic verdict: {"startedAt": "2026-10-28T07:22:46.588816+00:00", "at": "2026-10-28T07:22:46.651803+00:00", "context": "kind-cmtc-a", "namespace": "cmtc-live-mtls", "client": "client-worker", "url": "http://server-cmtc-a.cmtc-live-mtls.svc.cluster.local:80/?cmtc=1793172166588672000", "clientAddr": "10.10.1.205:42136", "curlRC": 56, "http200": false, "expectedCluster": "cmtc-a", "positiveMatch": false, "stdout": "\nCMTC_CLIENT_ADDR=10.10.1.205:42136\n\nCMTC_CURL_RC=56\n", "stderr": "curl: (56) Recv failure: Connection reset by peer\n", "scope": "global", "expect": "allow", "repetition": 0}
+Traceback (most recent call last):
+  File "/Users/olasumbo/gitRepos/clustermest-trust-controller/scripts/evidence/live_mtls_fixture.py", line 263, in <module>
+    if __name__=='__main__':main()
+                            ~~~~^^
+  File "/Users/olasumbo/gitRepos/clustermest-trust-controller/scripts/evidence/live_mtls_fixture.py", line 260, in main
+    if x.stage=='probe':l.probe(x.cluster,x.scope,x.expect,x.repeat)
+                        ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/olasumbo/gitRepos/clustermest-trust-controller/scripts/evidence/live_mtls_fixture.py", line 215, in probe
+    require(row['positiveMatch'] if expect=='allow'else not row['http200'],'Unexpected traffic verdict: '+json.dumps(row))
+    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/olasumbo/gitRepos/clustermest-trust-controller/scripts/evidence/live_mtls_fixture.py", line 21, in require
+    if not x: raise RuntimeError(msg)
+              ^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: Unexpected traffic verdict: {"startedAt": "2026-10-28T07:22:46.992498+00:00", "at": "2026-10-28T07:22:47.061948+00:00", "context": "kind-cmtc-a", "namespace": "cmtc-live-mtls", "client": "client-worker", "url": "http://server-worker.cmtc-live-mtls.svc.cluster.local:80/?cmtc=1793172166992327000", "clientAddr": "10.10.1.205:40858", "curlRC": 52, "http200": false, "expectedCluster": "cmtc-a", "positiveMatch": false, "stdout": "\nCMTC_CLIENT_ADDR=10.10.1.205:40858\n\nCMTC_CURL_RC=52\n", "stderr": "curl: (52) Empty reply from server\n", "scope": "name", "expect": "allow", "repetition": 0, "expectedServer": "cmtc-a/server-worker"}
+{"context": "cmtc-a", "scope": "negative", "expect": "deny", "selected": 6, "trafficChecksPassed": 6, "securityReasonVerified": false, "evidenceRequired": "peer certs, authenticated identities, policy verdict,packet/metrics correlation"}
+{"context": "cmtc-a", "scope": "negative-name", "expect": "deny", "selected": 12, "trafficChecksPassed": 12, "securityReasonVerified": false, "evidenceRequired": "peer certs, authenticated identities, policy verdict,packet/metrics correlation"}

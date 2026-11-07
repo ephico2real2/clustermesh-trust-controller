@@ -1,0 +1,121 @@
+# Status: tested here with promtool 3.7.0 (rules/run-promtool.sh, tests/cmtc-dns.test.yaml). Not deployed:
+# needs the coredns scrape job of deploy/ (CoreDNS is not scraped on the labs, 2026-10-27).
+#
+# CoreDNS (kube-dns) activity and performance in both clusters, from CoreDNS's own exporter
+# (port 9153). Needs the "coredns" scrape job of deploy/chart (not scraped on the labs, 2026-10-27),
+# which adds cluster, node and pod to every series. Evaluated on the hub.
+#
+# CoreDNS reports the server side only. A query that never reached it (dropped at the client's
+# node, as on 2026-10-25 at the Cilium source egress gate) leaves these series healthy. The client
+# side comes from the CMTC measurement plane (rules/proposed/dns-client-source-change.rules.yaml).
+groups:
+- name: cmtc-dns
+  rules:
+  # Answers by response code, per cluster and per replica.
+  - record: cmtc:coredns_responses:rate5m
+    expr: sum by (cluster, rcode) (rate(coredns_dns_responses_total{job="coredns"}[5m]))
+  - record: cmtc:coredns_responses_by_pod:rate5m
+    expr: sum by (cluster, node, pod, rcode) (rate(coredns_dns_responses_total{job="coredns"}[5m]))
+  # The share of each response code in all answers of the cluster.
+  - record: cmtc:coredns_responses:ratio_rate5m
+    expr: |-
+      sum by (cluster, rcode) (rate(coredns_dns_responses_total{job="coredns"}[5m]))
+      / on (cluster) group_left ()
+      (sum by (cluster) (rate(coredns_dns_responses_total{job="coredns"}[5m])) > 0)
+  # Requests by record type and transport, per cluster.
+  - record: cmtc:coredns_requests:rate5m
+    expr: sum by (cluster, type, proto) (rate(coredns_dns_requests_total{job="coredns"}[5m]))
+
+  # Request duration percentiles from CoreDNS's histogram (16 buckets, 0.25 ms to 8.192 s), per
+  # cluster and per replica. No value when no request was answered in the window.
+  - record: cmtc:coredns_request_duration_seconds:p50_rate5m
+    expr: |-
+      histogram_quantile(0.50, sum by (cluster, le) (rate(coredns_dns_request_duration_seconds_bucket{job="coredns"}[5m])))
+      and on (cluster) (sum by (cluster) (rate(coredns_dns_request_duration_seconds_count{job="coredns"}[5m])) > 0)
+  - record: cmtc:coredns_request_duration_seconds:p99_rate5m
+    expr: |-
+      histogram_quantile(0.99, sum by (cluster, le) (rate(coredns_dns_request_duration_seconds_bucket{job="coredns"}[5m])))
+      and on (cluster) (sum by (cluster) (rate(coredns_dns_request_duration_seconds_count{job="coredns"}[5m])) > 0)
+  - record: cmtc:coredns_request_duration_seconds_by_pod:p50_rate5m
+    expr: |-
+      histogram_quantile(0.50, sum by (cluster, node, pod, le) (rate(coredns_dns_request_duration_seconds_bucket{job="coredns"}[5m])))
+      and on (cluster, node, pod) (sum by (cluster, node, pod) (rate(coredns_dns_request_duration_seconds_count{job="coredns"}[5m])) > 0)
+  - record: cmtc:coredns_request_duration_seconds_by_pod:p99_rate5m
+    expr: |-
+      histogram_quantile(0.99, sum by (cluster, node, pod, le) (rate(coredns_dns_request_duration_seconds_bucket{job="coredns"}[5m])))
+      and on (cluster, node, pod) (sum by (cluster, node, pod) (rate(coredns_dns_request_duration_seconds_count{job="coredns"}[5m])) > 0)
+
+  # Upstream (forward plugin) answers by response code and upstream address.
+  - record: cmtc:coredns_forward_responses:rate5m
+    expr: sum by (cluster, to, rcode) (rate(coredns_proxy_request_duration_seconds_count{job="coredns"}[5m]))
+
+  # Where the replicas run. Each CoreDNS Pod is one scrape target.
+  - record: cmtc:coredns_replicas:count
+    expr: count by (cluster) (up{job="coredns"})
+  - record: cmtc:coredns_replica_nodes:count
+    expr: count by (cluster) (group by (cluster, node) (up{job="coredns"}))
+
+  - alert: CoreDNSReplicasOnOneNode
+    expr: |-
+      cmtc:coredns_replicas:count >= 2
+      and on (cluster)
+      cmtc:coredns_replica_nodes:count == 1
+    for: 10m
+    labels:
+      severity: warning
+      owner: coredns
+    annotations:
+      summary: 'All {{ $value }} CoreDNS replicas in {{ $labels.cluster }} run on one node'
+      runbook: 'A failure of that node stops name resolution for the whole cluster. Spread the replicas with a required podAntiAffinity or a topologySpreadConstraint on kubernetes.io/hostname.'
+
+  - alert: CoreDNSServfailHigh
+    expr: |-
+      sum by (cluster) (rate(coredns_dns_responses_total{job="coredns", rcode="SERVFAIL"}[5m]))
+      /
+      (sum by (cluster) (rate(coredns_dns_responses_total{job="coredns"}[5m])) > 0)
+      > 0.01
+    for: 5m
+    labels:
+      severity: warning
+      owner: coredns
+    annotations:
+      summary: '{{ $value | humanizePercentage }} of CoreDNS answers in {{ $labels.cluster }} are SERVFAIL'
+      runbook: 'CoreDNS cannot answer: an upstream is failing or the kubernetes plugin lost its API watch. The DNS dashboard shows the upstream response codes; read the CoreDNS log.'
+
+  - alert: CoreDNSForwardHealthcheckBroken
+    expr: |-
+      sum by (cluster, node, pod) (increase(coredns_forward_healthcheck_broken_total{job="coredns"}[5m])) > 0
+    labels:
+      severity: warning
+      owner: coredns
+    annotations:
+      summary: 'Every forward upstream of CoreDNS {{ $labels.pod }} in {{ $labels.cluster }} failed its health check'
+      runbook: 'Names outside the cluster do not resolve from this replica. Check the upstream resolvers in the Corefile (forward . /etc/resolv.conf) and the node''s network path to them.'
+
+  - alert: CoreDNSForwardConcurrencyRejects
+    expr: |-
+      sum by (cluster, node, pod) (increase(coredns_forward_max_concurrent_rejects_total{job="coredns"}[5m])) > 0
+    labels:
+      severity: warning
+      owner: coredns
+    annotations:
+      summary: 'CoreDNS {{ $labels.pod }} in {{ $labels.cluster }} refused {{ printf "%.0f" $value }} forwarded queries at its concurrency limit in 5 minutes'
+      runbook: 'Upstream answers are slower than the query rate. Check the forward latency on the DNS dashboard and the max_concurrent setting of the forward plugin.'
+
+  - alert: CoreDNSPanics
+    expr: sum by (cluster, node, pod) (increase(coredns_panics_total{job="coredns"}[5m])) > 0
+    labels:
+      severity: warning
+      owner: coredns
+    annotations:
+      summary: 'CoreDNS {{ $labels.pod }} in {{ $labels.cluster }} recovered from {{ printf "%.0f" $value }} panics in 5 minutes'
+      runbook: 'A plugin crashed while serving a query. The CoreDNS log has the stack trace; report it with the CoreDNS version from coredns_build_info.'
+
+  - alert: CoreDNSReloadFailed
+    expr: sum by (cluster, node, pod) (increase(coredns_reload_failed_total{job="coredns"}[5m])) > 0
+    labels:
+      severity: warning
+      owner: coredns
+    annotations:
+      summary: 'CoreDNS {{ $labels.pod }} in {{ $labels.cluster }} failed to load a changed Corefile'
+      runbook: 'The replica keeps serving the previous configuration. Read the CoreDNS log for the parse error and fix the coredns ConfigMap.'

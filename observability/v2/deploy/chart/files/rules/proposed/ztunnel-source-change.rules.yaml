@@ -1,0 +1,47 @@
+# Status: tested here with promtool 3.7.0 (rules/run-promtool.sh, tests/ztunnel-source-change.test.yaml);
+# returns nothing on the labs. Needs source-patches/ztunnel/0001 (response flags TRUST_PROFILE and
+# PEER_DENIED) and the ztunnel scrape job of deploy/. Evaluated on the hub.
+#
+# Without the patch, ztunnel 47956afb33 (deployed, docs/agile/DELIVERY_STATUS.md:42) records a refused
+# issuer profile lease and a destination's 401 alike as response_flags="CONNECT"
+# (src/proxy/metrics.rs:852-875, extract_failure_reason: proxy::Error::Anyhow and
+# proxy::Error::HttpStatus fall to the default arm), which is also what a network failure records.
+# The 23:55Z outage was this class: profile_lease() (src/proxy.rs:239-258) refused the local
+# certificate before any TCP connection, so istio_tls_handshakes_total never saw it.
+#
+# istio_tcp_connections_failed_total has no series until its first failure in the Pod's life (the
+# Rust client omits empty families: the 03:30Z page of ztunnel-cilium-g9d2p has none). The first
+# refusal of a new series is therefore counted from its full value, when ztunnel was already
+# scraped five minutes earlier (the same guard as rules/cmtc-protection.rules.yaml).
+groups:
+- name: cmtc-ztunnel-proposed
+  rules:
+  - record: cmtc:ztunnel_trust_profile_refusals:increase5m
+    expr: |-
+      sum by (cluster, node, reporter) (
+        (
+          increase(istio_tcp_connections_failed_total{job="ztunnel", response_flags="TRUST_PROFILE"}[5m])
+          unless
+          (
+            istio_tcp_connections_failed_total{job="ztunnel", response_flags="TRUST_PROFILE"}
+            unless istio_tcp_connections_failed_total{job="ztunnel", response_flags="TRUST_PROFILE"} offset 5m
+          )
+        )
+        or
+        (
+          (
+            istio_tcp_connections_failed_total{job="ztunnel", response_flags="TRUST_PROFILE"}
+            unless istio_tcp_connections_failed_total{job="ztunnel", response_flags="TRUST_PROFILE"} offset 5m
+          )
+          and on (cluster, node) (up{job="ztunnel"} offset 5m == 1)
+        )
+      )
+
+  - alert: CMTCTrustProfileRefusingConnections
+    expr: cmtc:ztunnel_trust_profile_refusals:increase5m > 0
+    labels:
+      severity: critical
+      owner: ztunnel
+    annotations:
+      summary: 'ztunnel on {{ $labels.node }} ({{ $labels.cluster }}) refused {{ printf "%.0f" $value }} connections in 5 minutes because its issuer profile does not accept a certificate ({{ $labels.reporter }} side)'
+      runbook: 'The workload certificate is signed by an issuer the approval does not pin, or the profile is expired. Read the ztunnel log for "no approved direct issuer" and compare the SPIRE CA with the approval on the trust dashboard (CMTCSPIREActiveCANotApproved).'

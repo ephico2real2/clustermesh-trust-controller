@@ -1,0 +1,35 @@
+cmtc-a-control-plane: 1949 lines kept of 238848
+cmtc-a-worker: 6838 lines kept of 195933
+cmtc-b-control-plane: 1950 lines kept of 239910
+cmtc-b-worker: 6838 lines kept of 179039
+10.10.1.127 ['a-denied'] join exit 0
+10.10.1.205 ['a-crossnode', 'a-crosscluster', 'a-same'] join exit 1
+10.20.1.242 ['b-same', 'b-crossnode', 'b-crosscluster'] join exit 0
+10.20.1.243 ['b-denied'] join exit 0
+{
+ "a-denied": {
+  "no response, no ztunnel line": 166
+ },
+ "a-crosscluster": {
+  "mTLS proven": 976
+ },
+ "a-crossnode": {
+  "FAIL: curl exit 56, no connection to join": 152,
+  "mTLS proven": 824
+ },
+ "a-same": {
+  "mTLS proven": 976
+ },
+ "b-crosscluster": {
+  "mTLS proven": 975
+ },
+ "b-crossnode": {
+  "mTLS proven": 975
+ },
+ "b-same": {
+  "mTLS proven": 976
+ },
+ "b-denied": {
+  "no response, no ztunnel line": 166
+ }
+}

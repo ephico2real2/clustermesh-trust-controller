@@ -1,0 +1,7 @@
+DaemonSet.apps/kube-system/ztunnel-cilium: .metadata.annotations.deprecated.daemonset.template.generation
+    live ="11"
+    after="12"
+DaemonSet.apps/kube-system/ztunnel-cilium: .spec.template.spec.containers[name="istio-proxy"].image
+    live ="ghcr.io/ephico2real2/cmtc-ztunnel@sha256:bc4fb925ae905f02ffd90d5bc2b65f7720af4ab5ef262607c653942c5ac87771"
+    after="ghcr.io/ephico2real2/cmtc-ztunnel@sha256:8705a64e73a63be66ae91d058b5082f338eaa6a9a111322ab6a026c85d1b43fa"
+cmtc-b: 2 change(s), 0 deletion(s); 0 kubectl manager entr(ies) left; 0 refusal(s)

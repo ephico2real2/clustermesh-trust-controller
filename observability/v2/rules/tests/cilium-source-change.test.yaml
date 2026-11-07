@@ -1,0 +1,196 @@
+# promtool test rules for rules/proposed/cilium-source-change.rules.yaml. The series are those
+# source-patches/cilium/0001 and 0002 add to the Cilium agent; every label value below is one of
+# their closed sets (pre-created at 0 by the patches).
+rule_files:
+- ../proposed/cilium-source-change.rules.yaml
+evaluation_interval: 1m
+
+tests:
+# cmtc-a: three released workloads on the worker, one waiting for ztunnel's acknowledgment, two
+# released on the control plane. cmtc-b has no Required workload.
+- name: Required workloads by state
+  interval: 1m
+  input_series:
+  - series: 'cilium_ztunnel_xds_effective_policy_destinations{job="cilium-native", component="cilium-agent", cluster="cmtc-a", node="cmtc-a-worker", instance="172.18.0.4:9962", state="released"}'
+    values: '3x12'
+  - series: 'cilium_ztunnel_xds_effective_policy_destinations{job="cilium-native", component="cilium-agent", cluster="cmtc-a", node="cmtc-a-worker", instance="172.18.0.4:9962", state="policy_unacknowledged"}'
+    values: '1x12'
+  - series: 'cilium_ztunnel_xds_effective_policy_destinations{job="cilium-native", component="cilium-agent", cluster="cmtc-a", node="cmtc-a-control-plane", instance="172.18.0.2:9962", state="released"}'
+    values: '2x12'
+  - series: 'cilium_ztunnel_xds_effective_policy_destinations{job="cilium-native", component="cilium-agent", cluster="cmtc-a", node="cmtc-a-control-plane", instance="172.18.0.2:9962", state="policy_unacknowledged"}'
+    values: '0x12'
+  - series: 'cilium_ztunnel_xds_effective_policy_destinations{job="cilium-native", component="cilium-agent", cluster="cmtc-b", node="cmtc-b-worker", instance="172.18.0.5:9962", state="released"}'
+    values: '0x12'
+  promql_expr_test:
+  - expr: cmtc:required_workloads:sum
+    eval_time: 1m
+    exp_samples:
+    - labels: 'cmtc:required_workloads:sum{cluster="cmtc-a", state="released"}'
+      value: 5
+    - labels: 'cmtc:required_workloads:sum{cluster="cmtc-a", state="policy_unacknowledged"}'
+      value: 1
+    - labels: 'cmtc:required_workloads:sum{cluster="cmtc-b", state="released"}'
+      value: 0
+  - expr: cmtc:required_workloads_released:ratio
+    eval_time: 1m
+    exp_samples:
+    - labels: 'cmtc:required_workloads_released:ratio{cluster="cmtc-a"}'
+      value: 0.8333333333333334
+  alert_rule_test:
+  - eval_time: 9m
+    alertname: CMTCRequiredWorkloadsNotReleased
+    exp_alerts: []
+  - eval_time: 10m
+    alertname: CMTCRequiredWorkloadsNotReleased
+    exp_alerts:
+    - exp_labels: {severity: warning, owner: cilium-agent, cluster: cmtc-a, node: cmtc-a-worker, state: policy_unacknowledged}
+      exp_annotations:
+        summary: '1 Required workloads on cmtc-a-worker (cmtc-a) are still quarantined: policy_unacknowledged'
+        runbook: 'The state names the step that has not completed. The agent log line "Required workload is not an effective ztunnel policy destination" names each Pod UID and the exact reason.'
+
+# Refused callers: a peer whose trust domain does not match (alerts), and a caller that is still
+# starting (not captured yet; drawn, never alerted on).
+- name: refused sources by reason class
+  interval: 1m
+  input_series:
+  - series: 'cilium_ztunnel_xds_effective_policy_sources_refused{job="cilium-native", component="cilium-agent", cluster="cmtc-a", node="cmtc-a-worker", instance="172.18.0.4:9962", origin="peer", reason="trust_domain"}'
+    values: '2x12'
+  - series: 'cilium_ztunnel_xds_effective_policy_sources_refused{job="cilium-native", component="cilium-agent", cluster="cmtc-a", node="cmtc-a-worker", instance="172.18.0.4:9962", origin="cluster", reason="not_captured"}'
+    values: '1x12'
+  - series: 'cilium_ztunnel_xds_effective_policy_sources_refused{job="cilium-native", component="cilium-agent", cluster="cmtc-a", node="cmtc-a-worker", instance="172.18.0.4:9962", origin="cluster", reason="conflict"}'
+    values: '0x12'
+  promql_expr_test:
+  - expr: cmtc:effective_policy_sources_refused:sum
+    eval_time: 1m
+    exp_samples:
+    - labels: 'cmtc:effective_policy_sources_refused:sum{cluster="cmtc-a", node="cmtc-a-worker", origin="peer", reason="trust_domain"}'
+      value: 2
+    - labels: 'cmtc:effective_policy_sources_refused:sum{cluster="cmtc-a", node="cmtc-a-worker", origin="cluster", reason="not_captured"}'
+      value: 1
+    - labels: 'cmtc:effective_policy_sources_refused:sum{cluster="cmtc-a", node="cmtc-a-worker", origin="cluster", reason="conflict"}'
+      value: 0
+  alert_rule_test:
+  - eval_time: 9m
+    alertname: CMTCEffectivePolicySourcesRefused
+    exp_alerts: []
+  - eval_time: 10m
+    alertname: CMTCEffectivePolicySourcesRefused
+    exp_alerts:
+    - exp_labels: {severity: warning, owner: cilium-agent, cluster: cmtc-a, node: cmtc-a-worker, origin: peer, reason: trust_domain}
+      exp_annotations:
+        summary: 'The agent on cmtc-a-worker (cmtc-a) refuses 2 peer callers: trust_domain'
+        runbook: 'Those callers are denied by every local destination. The agent log line "Caller is not admitted as an effective ztunnel policy source" names each caller and the exact reason.'
+
+# Publications by cause and the acknowledgment time of a narrowing (caller_removed): 50 % within
+# 50 ms, 98 % within 100 ms, every one within 300 s.
+- name: publications and acknowledgment time
+  interval: 1m
+  input_series:
+  - series: 'cilium_ztunnel_xds_effective_policy_publications_total{job="cilium-native", component="cilium-agent", cluster="cmtc-a", node="cmtc-a-worker", instance="172.18.0.4:9962", cause="caller_removed"}'
+    values: '0+2x70'
+  - series: 'cilium_ztunnel_xds_effective_policy_ack_duration_seconds_bucket{job="cilium-native", component="cilium-agent", cluster="cmtc-a", node="cmtc-a-worker", instance="172.18.0.4:9962", cause="caller_removed", le="0.05"}'
+    values: '0+50x70'
+  - series: 'cilium_ztunnel_xds_effective_policy_ack_duration_seconds_bucket{job="cilium-native", component="cilium-agent", cluster="cmtc-a", node="cmtc-a-worker", instance="172.18.0.4:9962", cause="caller_removed", le="0.1"}'
+    values: '0+98x70'
+  - series: 'cilium_ztunnel_xds_effective_policy_ack_duration_seconds_bucket{job="cilium-native", component="cilium-agent", cluster="cmtc-a", node="cmtc-a-worker", instance="172.18.0.4:9962", cause="caller_removed", le="300"}'
+    values: '0+100x70'
+  - series: 'cilium_ztunnel_xds_effective_policy_ack_duration_seconds_bucket{job="cilium-native", component="cilium-agent", cluster="cmtc-a", node="cmtc-a-worker", instance="172.18.0.4:9962", cause="caller_removed", le="+Inf"}'
+    values: '0+100x70'
+  - series: 'cilium_ztunnel_xds_effective_policy_ack_duration_seconds_count{job="cilium-native", component="cilium-agent", cluster="cmtc-a", node="cmtc-a-worker", instance="172.18.0.4:9962", cause="caller_removed"}'
+    values: '0+100x70'
+  # A cause with no acknowledgment in the hour has no quantile, not a zero.
+  - series: 'cilium_ztunnel_xds_effective_policy_ack_duration_seconds_bucket{job="cilium-native", component="cilium-agent", cluster="cmtc-a", node="cmtc-a-worker", instance="172.18.0.4:9962", cause="address", le="+Inf"}'
+    values: '0x70'
+  - series: 'cilium_ztunnel_xds_effective_policy_ack_duration_seconds_count{job="cilium-native", component="cilium-agent", cluster="cmtc-a", node="cmtc-a-worker", instance="172.18.0.4:9962", cause="address"}'
+    values: '0x70'
+  promql_expr_test:
+  - expr: cmtc:effective_policy_publications:rate5m
+    eval_time: 10m
+    exp_samples:
+    - labels: 'cmtc:effective_policy_publications:rate5m{cluster="cmtc-a", node="cmtc-a-worker", cause="caller_removed"}'
+      value: 0.03333333333333333
+  # round(): histogram_quantile interpolates in float64; the bucket arithmetic gives 150.05 s.
+  - expr: round(cmtc:effective_policy_ack_duration_seconds:p99_rate1h, 0.001)
+    eval_time: 70m
+    exp_samples:
+    - labels: '{cluster="cmtc-a", cause="caller_removed"}'
+      value: 150.05
+
+# ztunnel has not acknowledged a plan published at 5m: the alert fires once the plan is more than
+# 60 s old and clears when the acknowledgment sets the gauge back to 0 at 9m.
+- name: unacknowledged effective policy
+  interval: 1m
+  input_series:
+  - series: 'cilium_ztunnel_xds_effective_policy_oldest_unacknowledged_timestamp_seconds{job="cilium-native", component="cilium-agent", cluster="cmtc-b", node="cmtc-b-worker", instance="172.18.0.5:9962"}'
+    values: '0x4 300x3 0x4'
+  alert_rule_test:
+  - eval_time: 6m
+    alertname: CMTCEffectivePolicyUnacknowledged
+    exp_alerts: []
+  - eval_time: 7m
+    alertname: CMTCEffectivePolicyUnacknowledged
+    exp_alerts:
+    - exp_labels: {severity: critical, owner: cilium-agent, cluster: cmtc-b, node: cmtc-b-worker}
+      exp_annotations:
+        summary: 'ztunnel on cmtc-b-worker (cmtc-b) has not acknowledged an effective policy published 2m 0s ago'
+        runbook: 'A revoked caller can still connect to that destination until ztunnel acknowledges. Check the ztunnel xDS stream on the node (CMTCAuthorizationRejected) and the ztunnel log.'
+  - eval_time: 9m
+    alertname: CMTCEffectivePolicyUnacknowledged
+    exp_alerts: []
+
+# Propagation SLI: 10 publications a minute acknowledged within 300 s; from 360m only half are.
+- name: policy propagation burn rate
+  interval: 1m
+  input_series:
+  - series: 'cilium_ztunnel_xds_effective_policy_ack_duration_seconds_count{job="cilium-native", component="cilium-agent", cluster="cmtc-a", node="cmtc-a-worker", instance="172.18.0.4:9962", cause="native_policy"}'
+    values: '0+10x420'
+  - series: 'cilium_ztunnel_xds_effective_policy_ack_duration_seconds_bucket{job="cilium-native", component="cilium-agent", cluster="cmtc-a", node="cmtc-a-worker", instance="172.18.0.4:9962", cause="native_policy", le="300"}'
+    values: '0+10x360 3605+5x59'
+  promql_expr_test:
+  - expr: cmtc:slo_policy_propagation_slow:ratio_rate5m
+    eval_time: 300m
+    exp_samples:
+    - labels: 'cmtc:slo_policy_propagation_slow:ratio_rate5m{cluster="cmtc-a"}'
+      value: 0
+  # From 360m half the acknowledgments are late: 17 / 118 (1h) at 377m, 220 / 3590 (6h) at 404m.
+  - expr: round(cmtc:slo_policy_propagation_slow:ratio_rate1h * 1000000) / 1000000
+    eval_time: 377m
+    exp_samples:
+    - labels: '{cluster="cmtc-a"}'
+      value: 0.144068
+  - expr: round(cmtc:slo_policy_propagation_slow:ratio_rate5m * 1000000) / 1000000
+    eval_time: 377m
+    exp_samples:
+    - labels: '{cluster="cmtc-a"}'
+      value: 0.5
+  - expr: round(cmtc:slo_policy_propagation_slow:ratio_rate30m * 1000000) / 1000000
+    eval_time: 404m
+    exp_samples:
+    - labels: '{cluster="cmtc-a"}'
+      value: 0.5
+  - expr: round(cmtc:slo_policy_propagation_slow:ratio_rate6h * 1000000) / 1000000
+    eval_time: 404m
+    exp_samples:
+    - labels: '{cluster="cmtc-a"}'
+      value: 0.061281
+  alert_rule_test:
+  - eval_time: 376m
+    alertname: CMTCPolicyPropagationErrorBudgetFastBurn
+    exp_alerts: []
+  - eval_time: 377m
+    alertname: CMTCPolicyPropagationErrorBudgetFastBurn
+    exp_alerts:
+    - exp_labels: {severity: critical, owner: cilium-agent, slo: '99', cluster: cmtc-a}
+      exp_annotations:
+        summary: 'Effective policies in cmtc-a reach ztunnel later than 5 minutes: 14.41% over 1h, 14.4x the rate the 99 % objective allows'
+        runbook: 'ztunnel acknowledges late. Read the acknowledgment time by cause on the security dashboard and the ztunnel xDS log; a stalled stream shows as CMTCEffectivePolicyUnacknowledged.'
+  - eval_time: 403m
+    alertname: CMTCPolicyPropagationErrorBudgetSlowBurn
+    exp_alerts: []
+  - eval_time: 404m
+    alertname: CMTCPolicyPropagationErrorBudgetSlowBurn
+    exp_alerts:
+    - exp_labels: {severity: warning, owner: cilium-agent, slo: '99', cluster: cmtc-a}
+      exp_annotations:
+        summary: 'Effective policies in cmtc-a reach ztunnel later than 5 minutes: 6.128% over 6h, 6x the rate the 99 % objective allows'
+        runbook: 'ztunnel acknowledges late. Read the acknowledgment time by cause on the security dashboard and the ztunnel xDS log.'

@@ -1,0 +1,244 @@
+{{- if not .Values.global.openshift }}
+{{- $cluster := include "cmtc-obs.cluster" . }}
+{{- $j := .Values.jobs }}
+# kind: the configuration of this cluster's Prometheus. Every job stamps the target labels cluster, node, component,
+# and for Pods namespace and pod, as the Prometheus Operator does; a label the exporter sets itself under one of these
+# names is kept as exported_<name> (honor_labels false). metrics/contract.json lists each job's target_labels.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-prometheus
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "cmtc-obs.labels" . | nindent 4 }}
+data:
+  prometheus.yml: |
+    global:
+      scrape_interval: {{ .Values.prometheus.scrapeInterval }}
+      scrape_timeout: {{ .Values.prometheus.scrapeInterval }}
+      evaluation_interval: {{ .Values.prometheus.evaluationInterval }}
+      external_labels:
+        cluster: {{ $cluster }}
+    {{- if and .Values.hub.enabled .Values.rules.enabled }}
+    rule_files:
+      - /etc/prometheus/rules/*.yaml
+    {{- end }}
+    {{- if .Values.remoteWrite.url }}
+    remote_write:
+      - url: {{ .Values.remoteWrite.url }}
+        {{- if .Values.remoteWrite.caConfigMap.name }}
+        tls_config:
+          ca_file: /etc/prometheus/remote-write-ca/ca.crt
+        {{- end }}
+    {{- end }}
+    scrape_configs:
+    {{- if $j.cmtc.enabled }}
+      # CMTC controller and node agent. The component is the Pod's app.kubernetes.io/name.
+      - job_name: cmtc
+        kubernetes_sd_configs:
+          - role: pod
+            namespaces: {names: [{{ $j.cmtc.namespace }}]}
+        relabel_configs:
+          - {source_labels: [__meta_kubernetes_pod_label_security_cmtc_io_metrics], regex: "true", action: keep}
+          - {source_labels: [__meta_kubernetes_pod_container_port_name], regex: metrics, action: keep}
+          - {source_labels: [__meta_kubernetes_pod_phase], regex: Running, action: keep}
+          - {target_label: cluster, replacement: {{ $cluster }}}
+          - {source_labels: [__meta_kubernetes_pod_label_app_kubernetes_io_name], target_label: component}
+          - {source_labels: [__meta_kubernetes_pod_node_name], target_label: node}
+          - {source_labels: [__meta_kubernetes_namespace], target_label: namespace}
+          - {source_labels: [__meta_kubernetes_pod_name], target_label: pod}
+        metric_relabel_configs:
+          - {source_labels: [__name__], regex: '{{ include "cmtc-obs.keep" $j.cmtc.keep }}', action: keep}
+    {{- end }}
+    {{- if $j.ciliumAgent.enabled }}
+      # Cilium agent: hostNetwork, so the target address is the node's.
+      - job_name: cilium-native
+        kubernetes_sd_configs:
+          - role: pod
+            namespaces: {names: [{{ $j.ciliumAgent.namespace }}]}
+        relabel_configs:
+          - {source_labels: [__meta_kubernetes_pod_label_k8s_app], regex: cilium, action: keep}
+          - {source_labels: [__meta_kubernetes_pod_container_name], regex: cilium-agent, action: keep}
+          - {source_labels: [__meta_kubernetes_pod_container_port_name], regex: prometheus, action: keep}
+          - {source_labels: [__meta_kubernetes_pod_phase], regex: Running, action: keep}
+          - {target_label: cluster, replacement: {{ $cluster }}}
+          - {target_label: component, replacement: cilium-agent}
+          - {source_labels: [__meta_kubernetes_pod_node_name], target_label: node}
+          - {source_labels: [__meta_kubernetes_namespace], target_label: namespace}
+          - {source_labels: [__meta_kubernetes_pod_name], target_label: pod}
+        metric_relabel_configs:
+          - {source_labels: [__name__], regex: '{{ include "cmtc-obs.keep" $j.ciliumAgent.keep }}', action: keep}
+    {{- end }}
+    {{- if $j.hubble.enabled }}
+      # Hubble in the Cilium agent: the agent's hostNetwork port hubble-metrics, so the target address is the node's.
+      - job_name: hubble
+        kubernetes_sd_configs:
+          - role: pod
+            namespaces: {names: [{{ $j.hubble.namespace }}]}
+        relabel_configs:
+          - {source_labels: [__meta_kubernetes_pod_label_k8s_app], regex: cilium, action: keep}
+          - {source_labels: [__meta_kubernetes_pod_container_name], regex: cilium-agent, action: keep}
+          - {source_labels: [__meta_kubernetes_pod_container_port_name], regex: hubble-metrics, action: keep}
+          - {source_labels: [__meta_kubernetes_pod_phase], regex: Running, action: keep}
+          - {target_label: cluster, replacement: {{ $cluster }}}
+          - {target_label: component, replacement: hubble}
+          - {source_labels: [__meta_kubernetes_pod_node_name], target_label: node}
+          - {source_labels: [__meta_kubernetes_namespace], target_label: namespace}
+          - {source_labels: [__meta_kubernetes_pod_name], target_label: pod}
+        metric_relabel_configs:
+          - {source_labels: [__name__], regex: '{{ include "cmtc-obs.keep" $j.hubble.keep }}', action: keep}
+    {{- end }}
+    {{- if $j.hubbleRelay.enabled }}
+      # Hubble Relay: in the control cluster only; elsewhere the job finds no target.
+      - job_name: hubble-relay
+        kubernetes_sd_configs:
+          - role: pod
+            namespaces: {names: [{{ $j.hubbleRelay.namespace }}]}
+        relabel_configs:
+          - {source_labels: [__meta_kubernetes_pod_label_k8s_app], regex: hubble-relay, action: keep}
+          - {source_labels: [__meta_kubernetes_pod_container_port_name], regex: prometheus, action: keep}
+          - {source_labels: [__meta_kubernetes_pod_phase], regex: Running, action: keep}
+          - {target_label: cluster, replacement: {{ $cluster }}}
+          - {target_label: component, replacement: hubble-relay}
+          - {source_labels: [__meta_kubernetes_pod_node_name], target_label: node}
+          - {source_labels: [__meta_kubernetes_namespace], target_label: namespace}
+          - {source_labels: [__meta_kubernetes_pod_name], target_label: pod}
+        metric_relabel_configs:
+          - {source_labels: [__name__], regex: '{{ include "cmtc-obs.keep" $j.hubbleRelay.keep }}', action: keep}
+    {{- end }}
+    {{- if $j.ztunnel.enabled }}
+      # ztunnel: the istio-proxy container declares no port; its stats listener binds the wildcard address on 15020.
+      - job_name: ztunnel
+        metrics_path: /stats/prometheus
+        kubernetes_sd_configs:
+          - role: pod
+            namespaces: {names: [{{ $j.ztunnel.namespace }}]}
+        relabel_configs:
+          - {source_labels: [__meta_kubernetes_pod_label_app_kubernetes_io_name], regex: ztunnel-cilium, action: keep}
+          - {source_labels: [__meta_kubernetes_pod_container_name, __meta_kubernetes_pod_container_init], regex: istio-proxy;false, action: keep}
+          - {source_labels: [__meta_kubernetes_pod_phase], regex: Running, action: keep}
+          - {source_labels: [__meta_kubernetes_pod_ip], regex: (.+), target_label: __address__, replacement: "$1:15020"}
+          - {target_label: cluster, replacement: {{ $cluster }}}
+          - {target_label: component, replacement: ztunnel}
+          - {source_labels: [__meta_kubernetes_pod_node_name], target_label: node}
+          - {source_labels: [__meta_kubernetes_namespace], target_label: namespace}
+          - {source_labels: [__meta_kubernetes_pod_name], target_label: pod}
+        metric_relabel_configs:
+          - {source_labels: [__name__], regex: '{{ include "cmtc-obs.keep" $j.ztunnel.keep }}', action: keep}
+          # Region and zone are empty on kind; every connection series carries four of them.
+          - {regex: (source|destination)_(region|zone), action: labeldrop}
+    {{- end }}
+    {{- if $j.coredns.enabled }}
+      - job_name: coredns
+        kubernetes_sd_configs:
+          - role: pod
+            namespaces: {names: [{{ $j.coredns.namespace }}]}
+        relabel_configs:
+          - {source_labels: [__meta_kubernetes_pod_label_k8s_app], regex: kube-dns, action: keep}
+          - {source_labels: [__meta_kubernetes_pod_container_port_name], regex: metrics, action: keep}
+          - {source_labels: [__meta_kubernetes_pod_phase], regex: Running, action: keep}
+          - {target_label: cluster, replacement: {{ $cluster }}}
+          - {target_label: component, replacement: coredns}
+          - {source_labels: [__meta_kubernetes_pod_node_name], target_label: node}
+          - {source_labels: [__meta_kubernetes_namespace], target_label: namespace}
+          - {source_labels: [__meta_kubernetes_pod_name], target_label: pod}
+        metric_relabel_configs:
+          - {source_labels: [__name__], regex: '{{ include "cmtc-obs.keep" $j.coredns.keep }}', action: keep}
+    {{- end }}
+    {{- if $j.certManager.enabled }}
+      - job_name: cert-manager
+        kubernetes_sd_configs:
+          - role: pod
+            namespaces: {names: [{{ $j.certManager.namespace }}]}
+        relabel_configs:
+          - {source_labels: [__meta_kubernetes_pod_label_app_kubernetes_io_name, __meta_kubernetes_pod_label_app_kubernetes_io_component], regex: cert-manager;controller, action: keep}
+          - {source_labels: [__meta_kubernetes_pod_container_port_name], regex: http-metrics, action: keep}
+          - {source_labels: [__meta_kubernetes_pod_phase], regex: Running, action: keep}
+          - {target_label: cluster, replacement: {{ $cluster }}}
+          - {target_label: component, replacement: cert-manager}
+          - {source_labels: [__meta_kubernetes_pod_node_name], target_label: node}
+          - {source_labels: [__meta_kubernetes_namespace], target_label: namespace}
+          - {source_labels: [__meta_kubernetes_pod_name], target_label: pod}
+        metric_relabel_configs:
+          - {source_labels: [__name__], regex: '{{ include "cmtc-obs.keep" $j.certManager.keep }}', action: keep}
+    {{- end }}
+    {{- if $j.trustManager.enabled }}
+      - job_name: trust-manager
+        kubernetes_sd_configs:
+          - role: pod
+            namespaces: {names: [{{ $j.trustManager.namespace }}]}
+        relabel_configs:
+          - {source_labels: [__meta_kubernetes_pod_label_app_kubernetes_io_name], regex: trust-manager, action: keep}
+          - {source_labels: [__meta_kubernetes_pod_container_port_name], regex: metrics, action: keep}
+          - {source_labels: [__meta_kubernetes_pod_phase], regex: Running, action: keep}
+          - {target_label: cluster, replacement: {{ $cluster }}}
+          - {target_label: component, replacement: trust-manager}
+          - {source_labels: [__meta_kubernetes_pod_node_name], target_label: node}
+          - {source_labels: [__meta_kubernetes_namespace], target_label: namespace}
+          - {source_labels: [__meta_kubernetes_pod_name], target_label: pod}
+        metric_relabel_configs:
+          - {source_labels: [__name__], regex: '{{ include "cmtc-obs.keep" $j.trustManager.keep }}', action: keep}
+    {{- end }}
+    {{- if $j.cadvisor.enabled }}
+      # The kubelet's cAdvisor on every node: the node's InternalIP and kubelet port, HTTPS, the ServiceAccount token
+      # (nodes/metrics). Only containers of the mesh's namespaces are kept.
+      - job_name: cadvisor
+        scheme: https
+        metrics_path: /metrics/cadvisor
+        authorization:
+          credentials_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+        tls_config:
+          ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+          insecure_skip_verify: {{ $j.cadvisor.insecureSkipVerify }}
+        kubernetes_sd_configs:
+          - role: node
+        relabel_configs:
+          - {target_label: cluster, replacement: {{ $cluster }}}
+          - {target_label: component, replacement: kubelet}
+          - {source_labels: [__meta_kubernetes_node_name], target_label: node}
+        metric_relabel_configs:
+          - {source_labels: [__name__], regex: '{{ include "cmtc-obs.keep" $j.cadvisor.keep }}', action: keep}
+          - {source_labels: [namespace], regex: '{{ join "|" $j.cadvisor.namespaces }}', action: keep}
+          - {source_labels: [container], regex: .+, action: keep}
+          - {regex: id|image|name, action: labeldrop}
+    {{- end }}
+    {{- if $j.prometheus.enabled }}
+      # This Prometheus itself: remote-write health on the clusters that send, ingestion on the hub.
+      - job_name: prometheus
+        kubernetes_sd_configs:
+          - role: pod
+            namespaces: {names: [{{ .Release.Namespace }}]}
+        relabel_configs:
+          - {source_labels: [__meta_kubernetes_pod_label_app_kubernetes_io_component], regex: prometheus, action: keep}
+          - {source_labels: [__meta_kubernetes_pod_container_port_name], regex: web, action: keep}
+          - {target_label: cluster, replacement: {{ $cluster }}}
+          - {target_label: component, replacement: prometheus}
+          - {source_labels: [__meta_kubernetes_pod_node_name], target_label: node}
+          - {source_labels: [__meta_kubernetes_namespace], target_label: namespace}
+          - {source_labels: [__meta_kubernetes_pod_name], target_label: pod}
+        metric_relabel_configs:
+          - {source_labels: [__name__], regex: '{{ include "cmtc-obs.keep" $j.prometheus.keep }}', action: keep}
+    {{- end }}
+    {{- range $key, $name := dict "spireServer" "spire-server" "spireAgent" "spire-agent" }}
+    {{- $s := index $j $key }}
+    {{- if $s.enabled }}
+      # SPIRE {{ $name }}: Prometheus telemetry on the container port "prom", 9988 (source-patches/cmtc/0002). The
+      # agent runs with hostNetwork, so its target address is the node's.
+      - job_name: {{ $name }}
+        kubernetes_sd_configs:
+          - role: pod
+            namespaces: {names: [{{ $s.namespace }}]}
+        relabel_configs:
+          - {source_labels: [__meta_kubernetes_pod_label_app, __meta_kubernetes_pod_container_name], regex: {{ $name }};{{ $name }}, action: keep}
+          - {source_labels: [__meta_kubernetes_pod_container_port_name], regex: prom, action: keep}
+          - {source_labels: [__meta_kubernetes_pod_phase], regex: Running, action: keep}
+          - {target_label: cluster, replacement: {{ $cluster }}}
+          - {target_label: component, replacement: {{ $name }}}
+          - {source_labels: [__meta_kubernetes_pod_node_name], target_label: node}
+          - {source_labels: [__meta_kubernetes_namespace], target_label: namespace}
+          - {source_labels: [__meta_kubernetes_pod_name], target_label: pod}
+        metric_relabel_configs:
+          - {source_labels: [__name__], regex: '{{ include "cmtc-obs.keep" $s.keep }}', action: keep}
+    {{- end }}
+    {{- end }}
+{{- end }}

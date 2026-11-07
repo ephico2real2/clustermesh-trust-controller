@@ -1,0 +1,89 @@
+# Status: tested here with promtool 3.7.0 (rules/run-promtool.sh, tests/cmtc-security.test.yaml). Not
+# deployed: needs the ztunnel scrape job of deploy/.
+#
+# The denial record keeps namespaces, not principals: its series are bounded by namespace pairs (a
+# principal is one per ServiceAccount, and an attack can mint many). The dashboard's denial table reads
+# the principals from the raw counter with topk at query time.
+#
+# What was denied and what was revoked, as ztunnel reports it (job "ztunnel" of deploy/chart,
+# templates/prometheus-config.yaml). Evaluated on the hub.
+#
+# One reporter per event:
+#   - a connection that policy denied is counted by the destination ztunnel, the one that decided
+#     (istio_tcp_connections_failed_total{reporter="destination", response_flags="DENY"}); the
+#     caller's ztunnel sees the same connection as a failed CONNECT and is not counted again;
+#   - a TLS handshake is counted by the destination reporter only (ztunnel fork
+#     src/proxy/metrics.rs:278-281: a server rejection of a client is counted at the destination;
+#     the client reports success first);
+#   - a connection refused for a revoked certificate is counted by the reporter that refused it.
+#
+# Denial and revocation series are created by their first event (only the TLS handshake family is
+# pre-created, src/proxy/metrics.rs:502-510). increase() cannot see the first event of a new
+# series, so each record below adds the full value of a series that did not exist five minutes
+# earlier, provided ztunnel on that node was already scraped then.
+groups:
+- name: cmtc-security
+  rules:
+  - record: cmtc:ztunnel_denied_connections:increase5m
+    expr: |-
+      sum by (cluster, node, source_cluster, source_workload_namespace, destination_workload_namespace) (
+        (
+          increase(istio_tcp_connections_failed_total{job="ztunnel", reporter="destination", response_flags="DENY"}[5m])
+          unless
+          (
+            istio_tcp_connections_failed_total{job="ztunnel", reporter="destination", response_flags="DENY"}
+            unless istio_tcp_connections_failed_total{job="ztunnel", reporter="destination", response_flags="DENY"} offset 5m
+          )
+        )
+        or
+        (
+          (
+            istio_tcp_connections_failed_total{job="ztunnel", reporter="destination", response_flags="DENY"}
+            unless istio_tcp_connections_failed_total{job="ztunnel", reporter="destination", response_flags="DENY"} offset 5m
+          )
+          and on (cluster, node) (up{job="ztunnel"} offset 5m == 1)
+        )
+      )
+
+  - record: cmtc:ztunnel_crl_rejections:increase5m
+    expr: |-
+      sum by (cluster, node, reporter) (
+        (
+          increase(istio_crl_policy_rejections_total{job="ztunnel"}[5m])
+          unless
+          (istio_crl_policy_rejections_total{job="ztunnel"} unless istio_crl_policy_rejections_total{job="ztunnel"} offset 5m)
+        )
+        or
+        (
+          (istio_crl_policy_rejections_total{job="ztunnel"} unless istio_crl_policy_rejections_total{job="ztunnel"} offset 5m)
+          and on (cluster, node) (up{job="ztunnel"} offset 5m == 1)
+        )
+      )
+
+  - record: cmtc:ztunnel_tls_handshakes:increase5m
+    expr: |-
+      sum by (cluster, node, result) (
+        increase(istio_tls_handshakes_total{job="ztunnel", reporter="destination"}[5m])
+      )
+
+  # A revoked certificate was presented and refused. The refusal is correct; the alert exists
+  # because a revoked identity is still trying to connect.
+  - alert: CMTCRevokedCertificatePresented
+    expr: cmtc:ztunnel_crl_rejections:increase5m > 0
+    labels:
+      severity: warning
+      owner: ztunnel
+    annotations:
+      summary: 'ztunnel on {{ $labels.node }} ({{ $labels.cluster }}) refused {{ printf "%.0f" $value }} connections with a revoked certificate in 5 minutes ({{ $labels.reporter }} side)'
+      runbook: 'The refusal worked; find the caller. The ztunnel log on the node names the peer and the certificate serial. Check whether its SPIRE entry was deleted and whether the workload still holds the old SVID.'
+
+  - alert: CMTCConnectionsUntrackedForRevocation
+    expr: |-
+      sum by (cluster, node, reporter) (increase(istio_crl_untracked_connections_total{job="ztunnel"}[5m])) > 0
+    for: 5m
+    labels:
+      severity: warning
+      owner: ztunnel
+    annotations:
+      summary: 'ztunnel on {{ $labels.node }} ({{ $labels.cluster }}) accepted connections it cannot close on revocation'
+      runbook: 'A later revocation will not end these connections. Read the ztunnel log for the CRL tracking error and check the CRL file and its watcher.'

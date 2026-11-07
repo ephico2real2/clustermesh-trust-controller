@@ -1,0 +1,3422 @@
+{
+  "__inputs": [
+    {
+      "name": "DS_PROMETHEUS",
+      "label": "Prometheus",
+      "description": "",
+      "type": "datasource",
+      "pluginId": "prometheus",
+      "pluginName": "Prometheus"
+    }
+  ],
+  "__requires": [
+    {
+      "type": "datasource",
+      "id": "prometheus",
+      "name": "Prometheus",
+      "version": "1.0.0"
+    }
+  ],
+  "title": "CMTC on-call overview",
+  "uid": "cmtc-v2-on-call",
+  "description": "What is broken now, and which component owns it? Both clusters, read at the hub Prometheus (cmtc-a). Every number has an owner; a panel that says No data is unavailable, never healthy.",
+  "tags": [
+    "cmtc",
+    "cmtc-v2"
+  ],
+  "schemaVersion": 39,
+  "version": 1,
+  "editable": true,
+  "graphTooltip": 1,
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
+  "refresh": "30s",
+  "timezone": "utc",
+  "annotations": {
+    "list": []
+  },
+  "links": [
+    {
+      "type": "dashboards",
+      "tags": [
+        "cmtc-v2"
+      ],
+      "asDropdown": false,
+      "title": "CMTC v2",
+      "includeVars": false,
+      "keepTime": true
+    }
+  ],
+  "templating": {
+    "list": [
+      {
+        "name": "DS_PROMETHEUS",
+        "label": "Data source",
+        "type": "datasource",
+        "query": "prometheus",
+        "current": {},
+        "hide": 0,
+        "includeAll": false,
+        "multi": false,
+        "options": [],
+        "refresh": 1,
+        "regex": ""
+      }
+    ]
+  },
+  "panels": [
+    {
+      "type": "row",
+      "title": "Can these numbers be trusted?",
+      "id": 1,
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "panels": []
+    },
+    {
+      "type": "stat",
+      "title": "Scrape targets down",
+      "description": "Prometheus targets of the v2 jobs whose last scrape failed (up == 0), both clusters, at the hub. Normal: 0. No data: the hub has no target of these jobs at all, and every panel below is unavailable. spire-server and spire-agent have no target until source-patches/cmtc/0002 configures SPIRE's telemetry.",
+      "id": 2,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 0,
+        "y": 1
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "count(up{job=~\"cmtc|cilium-native|hubble|hubble-relay|ztunnel|coredns|cert-manager|trust-manager|cadvisor|spire-server|spire-agent|prometheus\"} == 0) or 0 * count(up{job=~\"cmtc|cilium-native|hubble|hubble-relay|ztunnel|coredns|cert-manager|trust-manager|cadvisor|spire-server|spire-agent|prometheus\"})",
+          "legendFormat": "",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "noValue": "No data: not scraped",
+          "mappings": [],
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#59a14f",
+                "value": null
+              },
+              {
+                "color": "#e15759",
+                "value": 1
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "wideLayout": true,
+        "showPercentChange": false
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Clusters with no data at the hub",
+      "description": "Expected clusters (cmtc-a, cmtc-b) without a Cilium agent target that answers at the hub. Normal: 0. 1 or 2: that cluster's Prometheus or its remote_write to the hub is down (CMTCClusterMetricsAbsent).",
+      "id": 3,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 6,
+        "y": 1
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "count((label_replace(vector(1), \"cluster\", \"cmtc-a\", \"\", \"\") or label_replace(vector(1), \"cluster\", \"cmtc-b\", \"\", \"\")) unless on (cluster) group by (cluster) (up{job=\"cilium-native\"} == 1)) or (0 * count((label_replace(vector(1), \"cluster\", \"cmtc-a\", \"\", \"\") or label_replace(vector(1), \"cluster\", \"cmtc-b\", \"\", \"\"))))",
+          "legendFormat": "",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "noValue": "No data: not scraped",
+          "mappings": [],
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#59a14f",
+                "value": null
+              },
+              {
+                "color": "#e15759",
+                "value": 1
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "wideLayout": true,
+        "showPercentChange": false
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Scrape targets up",
+      "description": "Targets of the v2 jobs that answered their last scrape, per cluster. On the lab at 2026-10-28T17:03Z: 17 on cmtc-a (3 cmtc; 2 each of cilium-native, hubble, ztunnel, coredns and cadvisor; 1 each of hubble-relay, cert-manager, trust-manager and prometheus) and 16 on cmtc-b, which runs no Hubble Relay. No data for a cluster: none of its targets answers.",
+      "id": 4,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 12,
+        "y": 1
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "count by (cluster) (up{job=~\"cmtc|cilium-native|hubble|hubble-relay|ztunnel|coredns|cert-manager|trust-manager|cadvisor|spire-server|spire-agent|prometheus\", cluster=\"cmtc-a\"} == 1)",
+          "legendFormat": "{{cluster}}",
+          "instant": true
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "count by (cluster) (up{job=~\"cmtc|cilium-native|hubble|hubble-relay|ztunnel|coredns|cert-manager|trust-manager|cadvisor|spire-server|spire-agent|prometheus\", cluster=\"cmtc-b\"} == 1)",
+          "legendFormat": "{{cluster}}",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "noValue": "No data: not scraped",
+          "mappings": [],
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#4e79a7",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "wideLayout": true,
+        "showPercentChange": false
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Newest sample age, seconds",
+      "description": "Age of the newest Cilium agent sample at the hub, per cluster: scrape interval (5 s) plus, for cmtc-b, the remote_write delay. Normal: under 15 s. Above 60 s the cluster's data is stale (CMTCClusterMetricsStale); No data: no sample in the last 5 minutes.",
+      "id": 5,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 18,
+        "y": 1
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "max by (cluster) (time() - timestamp(up{job=\"cilium-native\", cluster=\"cmtc-a\"}))",
+          "legendFormat": "{{cluster}}",
+          "instant": true
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "max by (cluster) (time() - timestamp(up{job=\"cilium-native\", cluster=\"cmtc-b\"}))",
+          "legendFormat": "{{cluster}}",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "noValue": "No data: not scraped",
+          "mappings": [],
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#59a14f",
+                "value": null
+              },
+              {
+                "color": "#f28e2b",
+                "value": 30
+              },
+              {
+                "color": "#e15759",
+                "value": 60
+              }
+            ]
+          },
+          "decimals": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "wideLayout": true,
+        "showPercentChange": false
+      }
+    },
+    {
+      "type": "table",
+      "title": "Node-local exporters, by node · planned",
+      "description": "Planned, a proposed source change: needs source-patches/cmtc/0002 for the SPIRE agent column. One row per node that has at least one node-local scrape target, at the hub. up means the last scrape answered, down that it failed. An empty cell is a node with no target for that exporter: its panels are unavailable on that node, not healthy. The spire-agent job of deploy/ is off until then (jobs.spireAgent.enabled).",
+      "id": 6,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 14,
+        "x": 0,
+        "y": 5
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "max by (cluster, node) (up{job=\"cilium-native\"})",
+          "legendFormat": "",
+          "instant": true,
+          "format": "table"
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "max by (cluster, node) (up{job=\"cmtc\", component=\"cmtc-node-agent\"})",
+          "legendFormat": "",
+          "instant": true,
+          "format": "table"
+        },
+        {
+          "refId": "C",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "max by (cluster, node) (up{job=\"ztunnel\"})",
+          "legendFormat": "",
+          "instant": true,
+          "format": "table"
+        },
+        {
+          "refId": "D",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "max by (cluster, node) (up{job=\"cadvisor\"})",
+          "legendFormat": "",
+          "instant": true,
+          "format": "table"
+        },
+        {
+          "refId": "E",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "max by (cluster, node) (up{job=\"spire-agent\"})",
+          "legendFormat": "",
+          "instant": true,
+          "format": "table"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            }
+          },
+          "noValue": "–"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Cluster"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-background",
+                  "mode": "basic"
+                }
+              },
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "cmtc-a": {
+                        "color": "#4e79a7",
+                        "index": 0
+                      },
+                      "cmtc-b": {
+                        "color": "#e15759",
+                        "index": 1
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Cilium agent"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "none"
+              },
+              {
+                "id": "decimals",
+                "value": 0
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
+                }
+              },
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "0": {
+                        "text": "down",
+                        "color": "#e15759",
+                        "index": 0
+                      },
+                      "1": {
+                        "text": "up",
+                        "color": "#59a14f",
+                        "index": 1
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "CMTC node agent"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "none"
+              },
+              {
+                "id": "decimals",
+                "value": 0
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
+                }
+              },
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "0": {
+                        "text": "down",
+                        "color": "#e15759",
+                        "index": 0
+                      },
+                      "1": {
+                        "text": "up",
+                        "color": "#59a14f",
+                        "index": 1
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "ztunnel"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "none"
+              },
+              {
+                "id": "decimals",
+                "value": 0
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
+                }
+              },
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "0": {
+                        "text": "down",
+                        "color": "#e15759",
+                        "index": 0
+                      },
+                      "1": {
+                        "text": "up",
+                        "color": "#59a14f",
+                        "index": 1
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "kubelet cAdvisor"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "none"
+              },
+              {
+                "id": "decimals",
+                "value": 0
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
+                }
+              },
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "0": {
+                        "text": "down",
+                        "color": "#e15759",
+                        "index": 0
+                      },
+                      "1": {
+                        "text": "up",
+                        "color": "#59a14f",
+                        "index": 1
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "SPIRE agent"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "none"
+              },
+              {
+                "id": "decimals",
+                "value": 0
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
+                }
+              },
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "0": {
+                        "text": "down",
+                        "color": "#e15759",
+                        "index": 0
+                      },
+                      "1": {
+                        "text": "up",
+                        "color": "#59a14f",
+                        "index": 1
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm"
+      },
+      "transformations": [
+        {
+          "id": "merge",
+          "options": {}
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true
+            },
+            "indexByName": {
+              "cluster": 0,
+              "node": 1,
+              "Value #A": 2,
+              "Value #B": 3,
+              "Value #C": 4,
+              "Value #D": 5,
+              "Value #E": 6
+            },
+            "renameByName": {
+              "cluster": "Cluster",
+              "node": "Node",
+              "Value #A": "Cilium agent",
+              "Value #B": "CMTC node agent",
+              "Value #C": "ztunnel",
+              "Value #D": "kubelet cAdvisor",
+              "Value #E": "SPIRE agent"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Newest sample age at the hub, seconds",
+      "description": "The same age over time, per cluster (5 minute lookback). A saw-tooth under 15 s is normal; a rising line is remote_write falling behind, a gap is no data at all.",
+      "id": 7,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 10,
+        "x": 14,
+        "y": 5
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "max by (cluster) (time() - timestamp(up{job=\"cilium-native\", cluster=\"cmtc-a\"}))",
+          "legendFormat": "{{cluster}}",
+          "range": true
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "max by (cluster) (time() - timestamp(up{job=\"cilium-native\", cluster=\"cmtc-b\"}))",
+          "legendFormat": "{{cluster}}",
+          "range": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "min": 0,
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "spanNulls": false
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byFrameRefID",
+              "options": "A"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#4e79a7"
+                }
+              },
+              {
+                "id": "custom.fillOpacity",
+                "value": 10
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byFrameRefID",
+              "options": "B"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#e15759"
+                }
+              },
+              {
+                "id": "custom.fillOpacity",
+                "value": 10
+              },
+              {
+                "id": "custom.lineStyle",
+                "value": {
+                  "fill": "dash",
+                  "dash": [
+                    8,
+                    6
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      }
+    },
+    {
+      "type": "text",
+      "title": "How to read this section",
+      "id": 8,
+      "transparent": true,
+      "gridPos": {
+        "h": 4,
+        "w": 24,
+        "x": 0,
+        "y": 12
+      },
+      "options": {
+        "mode": "markdown",
+        "content": "**Scrape targets down** and **Clusters with no data at the hub** read 0 when collection is whole. **Newest sample age** stays under 15 s.\nIn **Node-local exporters**, an empty cell is an exporter with no target on that node: its data is unavailable there, never a healthy zero.",
+        "code": {
+          "language": "plaintext",
+          "showLineNumbers": false,
+          "showMiniMap": false
+        }
+      }
+    },
+    {
+      "type": "row",
+      "title": "Which alerts are firing, and which component owns them?",
+      "id": 9,
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 16
+      },
+      "panels": []
+    },
+    {
+      "type": "bargauge",
+      "title": "Firing alerts per owning component",
+      "description": "Alerts in state firing, counted by their owner label (the component that has to act), longest bar first. Normal: no bar. The hub evaluates the rule files of deploy/.",
+      "id": 10,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 17
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "sort_desc(count by (owner) (ALERTS{alertstate=\"firing\"}))",
+          "legendFormat": "{{owner}}",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "min": 0,
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "#4e79a7"
+          },
+          "noValue": "Not scraped yet"
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "orientation": "horizontal",
+        "displayMode": "basic",
+        "showUnfilled": true,
+        "valueMode": "color",
+        "namePlacement": "auto",
+        "sizing": "auto"
+      }
+    },
+    {
+      "type": "table",
+      "title": "Firing alerts",
+      "description": "Every firing alert with its severity, owner and where it fires. Each alert's runbook annotation names the next step; the rules are in observability/v2/rules.",
+      "id": 11,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 17
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "max by (alertname, severity, owner, cluster, node) (ALERTS{alertstate=\"firing\"})",
+          "legendFormat": "",
+          "instant": true,
+          "format": "table"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            }
+          },
+          "noValue": "–"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Firing"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "none"
+              },
+              {
+                "id": "decimals",
+                "value": 0
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
+                }
+              },
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "critical": {
+                        "color": "#e15759",
+                        "index": 0
+                      },
+                      "warning": {
+                        "color": "#f28e2b",
+                        "index": 1
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm"
+      },
+      "transformations": [
+        {
+          "id": "merge",
+          "options": {}
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true,
+              "Value": true
+            },
+            "indexByName": {
+              "alertname": 0,
+              "severity": 1,
+              "owner": 2,
+              "cluster": 3,
+              "node": 4,
+              "Value": 5
+            },
+            "renameByName": {
+              "alertname": "Alert",
+              "severity": "Severity",
+              "owner": "Owner",
+              "cluster": "Cluster",
+              "node": "Node",
+              "Value": "Firing"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "type": "text",
+      "title": "How to read this section",
+      "id": 12,
+      "transparent": true,
+      "gridPos": {
+        "h": 3,
+        "w": 24,
+        "x": 0,
+        "y": 25
+      },
+      "options": {
+        "mode": "markdown",
+        "content": "One owner per alert: the component named here is the one that can fix it. Critical alerts page; warnings are for the working day.",
+        "code": {
+          "language": "plaintext",
+          "showLineNumbers": false,
+          "showMiniMap": false
+        }
+      }
+    },
+    {
+      "type": "row",
+      "title": "Will workload mTLS keep working?",
+      "id": 13,
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 28
+      },
+      "panels": []
+    },
+    {
+      "type": "stat",
+      "title": "Issuer profile published: lease left, seconds",
+      "description": "Seconds until the issuer profile the leader controller last published expires, per cluster. The producer renews when less than 24 s of its 30 s lease remain, checked every 5 s: 15 to 30 s is normal (15 to 27 s over the hour to 2026-10-26T04:50Z). Below 0 the profile lapsed and ztunnel drains workload TLS (CMTCIssuerProfileLapsed). No data: the controller is not scraped, or it withdrew the profile (it reports 0). A published profile is a prerequisite, not working mTLS: during the outage of #34 (workload mTLS failing closed from 2026-10-26T23:55Z) it read 24 s in both clusters at 2026-10-27T00:44Z.",
+      "id": 14,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 0,
+        "y": 29
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "max by (cluster) (cmtc_issuer_profile_acknowledged_valid_until_timestamp_seconds{job=\"cmtc\", component=\"cmtc-controller\", cluster=\"cmtc-a\"} > 0) - time()",
+          "legendFormat": "{{cluster}}",
+          "instant": true
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "max by (cluster) (cmtc_issuer_profile_acknowledged_valid_until_timestamp_seconds{job=\"cmtc\", component=\"cmtc-controller\", cluster=\"cmtc-b\"} > 0) - time()",
+          "legendFormat": "{{cluster}}",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "noValue": "No data: not scraped",
+          "mappings": [],
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#e15759",
+                "value": null
+              },
+              {
+                "color": "#f28e2b",
+                "value": 0
+              },
+              {
+                "color": "#59a14f",
+                "value": 10
+              }
+            ]
+          },
+          "decimals": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "wideLayout": true,
+        "showPercentChange": false
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Hours until the approval in force ends · planned",
+      "description": "Planned, a proposed source change: needs source-patches/cmtc/0001 (approval gauges). Hours until the earliest notAfter of anything the accepted issuer approval pins, or its expiresAt, per cluster. At 0 the producer withdraws the profile. Warning at 4 h, critical at 1 h (CMTCIssuerApprovalExpiring).",
+      "id": 15,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 6,
+        "y": 29
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "(max by (cluster) (cmtc_issuer_profile_approval_valid_until_timestamp_seconds{job=\"cmtc\", component=\"cmtc-controller\", cluster=\"cmtc-a\"} > 0) - time()) / 3600",
+          "legendFormat": "{{cluster}}",
+          "instant": true
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "(max by (cluster) (cmtc_issuer_profile_approval_valid_until_timestamp_seconds{job=\"cmtc\", component=\"cmtc-controller\", cluster=\"cmtc-b\"} > 0) - time()) / 3600",
+          "legendFormat": "{{cluster}}",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "noValue": "Planned",
+          "mappings": [],
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#e15759",
+                "value": null
+              },
+              {
+                "color": "#f28e2b",
+                "value": 1
+              },
+              {
+                "color": "#59a14f",
+                "value": 4
+              }
+            ]
+          },
+          "decimals": 1
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "wideLayout": true,
+        "showPercentChange": false
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Hours until SPIRE activates an unpinned CA · planned",
+      "description": "Planned, a proposed source change: needs source-patches/cmtc/0001 (approved issuer gauges). Hours until SPIRE activates the CA that follows the newest issuer the approval pins, the soonest over the clusters the approval lists. This is the outage of 2026-10-25T23:55:17Z and the one of #34 (2026-10-26T23:55:37Z): past 0, ztunnel refuses every new workload certificate. Critical below 2 h (CMTCIssuerSuccessionImminent).",
+      "id": 16,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 12,
+        "y": 29
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "(min by (cluster) (max by (cluster, approval_cluster) (cmtc_issuer_profile_approved_issuer_not_after_timestamp_seconds{job=\"cmtc\", component=\"cmtc-controller\", position=\"newest\", cluster=\"cmtc-a\"} > 0) - clamp_max((max by (cluster, approval_cluster) (cmtc_issuer_profile_approved_issuer_not_after_timestamp_seconds{job=\"cmtc\", component=\"cmtc-controller\", position=\"newest\", cluster=\"cmtc-a\"} > 0) - max by (cluster, approval_cluster) (cmtc_issuer_profile_approved_issuer_not_before_timestamp_seconds{job=\"cmtc\", component=\"cmtc-controller\", position=\"newest\", cluster=\"cmtc-a\"} > 0)) / 6, 604800)) - time()) / 3600",
+          "legendFormat": "{{cluster}}",
+          "instant": true
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "(min by (cluster) (max by (cluster, approval_cluster) (cmtc_issuer_profile_approved_issuer_not_after_timestamp_seconds{job=\"cmtc\", component=\"cmtc-controller\", position=\"newest\", cluster=\"cmtc-b\"} > 0) - clamp_max((max by (cluster, approval_cluster) (cmtc_issuer_profile_approved_issuer_not_after_timestamp_seconds{job=\"cmtc\", component=\"cmtc-controller\", position=\"newest\", cluster=\"cmtc-b\"} > 0) - max by (cluster, approval_cluster) (cmtc_issuer_profile_approved_issuer_not_before_timestamp_seconds{job=\"cmtc\", component=\"cmtc-controller\", position=\"newest\", cluster=\"cmtc-b\"} > 0)) / 6, 604800)) - time()) / 3600",
+          "legendFormat": "{{cluster}}",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "noValue": "Planned",
+          "mappings": [],
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#e15759",
+                "value": null
+              },
+              {
+                "color": "#f28e2b",
+                "value": 2
+              },
+              {
+                "color": "#59a14f",
+                "value": 4
+              }
+            ]
+          },
+          "decimals": 1
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "wideLayout": true,
+        "showPercentChange": false
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Connections refused over the trust profile, 5 minutes · planned",
+      "description": "Planned, a proposed source change: needs source-patches/ztunnel/0001 (TRUST_PROFILE) and the ztunnel scrape job. Connections ztunnel refused because its issuer profile does not accept a certificate, per cluster, both reporters. Normal: 0. Without the ztunnel patch these refusals read as CONNECT, like a network failure.",
+      "id": 17,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 18,
+        "y": 29
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "sum by (cluster) (increase(istio_tcp_connections_failed_total{job=\"ztunnel\", response_flags=\"TRUST_PROFILE\", cluster=\"cmtc-a\"}[5m])) or 0 * max by (cluster) (up{job=\"ztunnel\", cluster=\"cmtc-a\"} == 1)",
+          "legendFormat": "{{cluster}}",
+          "instant": true
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "sum by (cluster) (increase(istio_tcp_connections_failed_total{job=\"ztunnel\", response_flags=\"TRUST_PROFILE\", cluster=\"cmtc-b\"}[5m])) or 0 * max by (cluster) (up{job=\"ztunnel\", cluster=\"cmtc-b\"} == 1)",
+          "legendFormat": "{{cluster}}",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "noValue": "Planned",
+          "mappings": [],
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#59a14f",
+                "value": null
+              },
+              {
+                "color": "#e15759",
+                "value": 1
+              }
+            ]
+          },
+          "decimals": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "wideLayout": true,
+        "showPercentChange": false
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Source mTLS connections attempted, 5 minutes",
+      "description": "Outbound mTLS connections the callers' ztunnels started in the last 5 minutes, per cluster. none: no workload connected, so there is nothing to judge, and no failure count below means healthy. During the outage of #34 no ztunnel of either lab counted a connection between 2026-10-27T00:01Z and 00:47Z (their /stats/prometheus pages, read twice). ztunnel counts a connection as opened when it builds its connection result, before the handshake, so every failed connection was also opened (src/proxy/metrics.rs:752-792, :881-902). Connections refused before that (unknown source workload, no route, a stale xDS generation) are only in the ztunnel access log, as \"connection failed\" (src/proxy/outbound.rs:193-226, metrics.rs:624-648).",
+      "id": 18,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 0,
+        "y": 33
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "sum by (cluster) (increase(istio_tcp_connections_opened_total{job=\"ztunnel\", reporter=\"source\", connection_security_policy=\"mutual_tls\", cluster=\"cmtc-a\"}[5m])) or 0 * max by (cluster) (up{job=\"ztunnel\", cluster=\"cmtc-a\"} == 1)",
+          "legendFormat": "{{cluster}}",
+          "instant": true
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "sum by (cluster) (increase(istio_tcp_connections_opened_total{job=\"ztunnel\", reporter=\"source\", connection_security_policy=\"mutual_tls\", cluster=\"cmtc-b\"}[5m])) or 0 * max by (cluster) (up{job=\"ztunnel\", cluster=\"cmtc-b\"} == 1)",
+          "legendFormat": "{{cluster}}",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "noValue": "Not scraped yet",
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": {
+                  "text": "none: nothing to judge",
+                  "color": "#f28e2b",
+                  "index": 0
+                }
+              }
+            }
+          ],
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#4e79a7",
+                "value": null
+              }
+            ]
+          },
+          "decimals": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "wideLayout": true,
+        "showPercentChange": false
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Failed share of source mTLS connections",
+      "description": "Outbound mTLS connections that failed, as a share of those attempted, as the caller's ztunnel counts them, per cluster, 5 minute rate. Normal: 0. No line: nothing was attempted in the window (the stat beside it reads none), or ztunnel is not scraped. The table beside it names the response flag.",
+      "id": 19,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 6,
+        "y": 33
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "(sum by (cluster) (rate(istio_tcp_connections_failed_total{job=\"ztunnel\", reporter=\"source\", connection_security_policy=\"mutual_tls\", cluster=\"cmtc-a\"}[5m])) or 0 * sum by (cluster) (rate(istio_tcp_connections_opened_total{job=\"ztunnel\", reporter=\"source\", connection_security_policy=\"mutual_tls\", cluster=\"cmtc-a\"}[5m]))) / (sum by (cluster) (rate(istio_tcp_connections_opened_total{job=\"ztunnel\", reporter=\"source\", connection_security_policy=\"mutual_tls\", cluster=\"cmtc-a\"}[5m])) > 0)",
+          "legendFormat": "{{cluster}}",
+          "range": true
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "(sum by (cluster) (rate(istio_tcp_connections_failed_total{job=\"ztunnel\", reporter=\"source\", connection_security_policy=\"mutual_tls\", cluster=\"cmtc-b\"}[5m])) or 0 * sum by (cluster) (rate(istio_tcp_connections_opened_total{job=\"ztunnel\", reporter=\"source\", connection_security_policy=\"mutual_tls\", cluster=\"cmtc-b\"}[5m]))) / (sum by (cluster) (rate(istio_tcp_connections_opened_total{job=\"ztunnel\", reporter=\"source\", connection_security_policy=\"mutual_tls\", cluster=\"cmtc-b\"}[5m])) > 0)",
+          "legendFormat": "{{cluster}}",
+          "range": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "min": 0,
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "spanNulls": false
+          },
+          "max": 1
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byFrameRefID",
+              "options": "A"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#4e79a7"
+                }
+              },
+              {
+                "id": "custom.fillOpacity",
+                "value": 10
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byFrameRefID",
+              "options": "B"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#e15759"
+                }
+              },
+              {
+                "id": "custom.fillOpacity",
+                "value": 10
+              },
+              {
+                "id": "custom.lineStyle",
+                "value": {
+                  "fill": "dash",
+                  "dash": [
+                    8,
+                    6
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      }
+    },
+    {
+      "type": "table",
+      "title": "Failed source mTLS connections in the last hour, by response flag",
+      "description": "Failures by response flag over the last hour. DENY is the caller's own policy; TRUST_PROFILE the issuer approval; IDENTITY_ERROR SPIRE identity issuance; CONNECT and NETWORK_POLICY the network path. A series is created by its first failure, so the first one after a ztunnel start is not counted.",
+      "id": 20,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 41
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "sum by (cluster, response_flags) (increase(istio_tcp_connections_failed_total{job=\"ztunnel\", reporter=\"source\", connection_security_policy=\"mutual_tls\"}[1h])) > 0",
+          "legendFormat": "",
+          "instant": true,
+          "format": "table"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            }
+          },
+          "noValue": "–"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Cluster"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-background",
+                  "mode": "basic"
+                }
+              },
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "cmtc-a": {
+                        "color": "#4e79a7",
+                        "index": 0
+                      },
+                      "cmtc-b": {
+                        "color": "#e15759",
+                        "index": 1
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Failures, 1 h"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "none"
+              },
+              {
+                "id": "decimals",
+                "value": 0
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm"
+      },
+      "transformations": [
+        {
+          "id": "merge",
+          "options": {}
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true
+            },
+            "indexByName": {
+              "cluster": 0,
+              "response_flags": 1,
+              "Value": 2
+            },
+            "renameByName": {
+              "cluster": "Cluster",
+              "response_flags": "Response flag",
+              "Value": "Failures, 1 h"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "type": "text",
+      "title": "How to read this section",
+      "id": 21,
+      "transparent": true,
+      "gridPos": {
+        "h": 5,
+        "w": 24,
+        "x": 0,
+        "y": 49
+      },
+      "options": {
+        "mode": "markdown",
+        "content": "**Issuer profile published** reads 15 to 30 s while the producer renews, during an outage too: it shows that the profile is published, not that mTLS works. The two hour counters are the warning the outages of 2026-10-25 and #34 did not have: both need source-patches/cmtc/0001.\n**Source mTLS connections attempted** reads none when no workload connected in the window: the failure share then has no line, and there is nothing to judge. Connection failures are traffic evidence from ztunnel, not a verdict that a workload is protected.",
+        "code": {
+          "language": "plaintext",
+          "showLineNumbers": false,
+          "showMiniMap": false
+        }
+      }
+    },
+    {
+      "type": "row",
+      "title": "Are enrollment and policy publication working?",
+      "id": 22,
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 54
+      },
+      "panels": []
+    },
+    {
+      "type": "stat",
+      "title": "Nodes without a ZDS connection",
+      "description": "Nodes whose Cilium agent has no ZDS connection from ztunnel, per cluster. Normal: 0. Above 0, new Pods on that node cannot be enrolled and stay quarantined (CMTCZDSDisconnected).",
+      "id": 23,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 0,
+        "y": 55
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "count by (cluster) (cilium_ztunnel_zds_connection_active{job=\"cilium-native\", cluster=\"cmtc-a\"} < 1) or 0 * max by (cluster) (up{job=\"cilium-native\", cluster=\"cmtc-a\"} == 1)",
+          "legendFormat": "{{cluster}}",
+          "instant": true
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "count by (cluster) (cilium_ztunnel_zds_connection_active{job=\"cilium-native\", cluster=\"cmtc-b\"} < 1) or 0 * max by (cluster) (up{job=\"cilium-native\", cluster=\"cmtc-b\"} == 1)",
+          "legendFormat": "{{cluster}}",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "noValue": "No data: not scraped",
+          "mappings": [],
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#59a14f",
+                "value": null
+              },
+              {
+                "color": "#e15759",
+                "value": 1
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "wideLayout": true,
+        "showPercentChange": false
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Enrollment and xDS failures, 5 minutes",
+      "description": "ZDS and xDS enrollment failures and rejected Authorization updates (nack, send_failed), per cluster, 5 minute increase. Normal: 0. The series are created by their first failure, so the first one after an agent start is missed here until source-patches/cilium/0001; the alerts count it.",
+      "id": 24,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 6,
+        "y": 55
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "sum by (cluster) (increase({__name__=~\"cilium_ztunnel_(zds_enrollment_failures|xds_enrollment_failures|xds_authorization_events)_total\", job=\"cilium-native\", status!~\"ack|cancel\", cluster=\"cmtc-a\"}[5m])) or 0 * max by (cluster) (up{job=\"cilium-native\", cluster=\"cmtc-a\"} == 1)",
+          "legendFormat": "{{cluster}}",
+          "instant": true
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "sum by (cluster) (increase({__name__=~\"cilium_ztunnel_(zds_enrollment_failures|xds_enrollment_failures|xds_authorization_events)_total\", job=\"cilium-native\", status!~\"ack|cancel\", cluster=\"cmtc-b\"}[5m])) or 0 * max by (cluster) (up{job=\"cilium-native\", cluster=\"cmtc-b\"} == 1)",
+          "legendFormat": "{{cluster}}",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "noValue": "No data: not scraped",
+          "mappings": [],
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#59a14f",
+                "value": null
+              },
+              {
+                "color": "#e15759",
+                "value": 1
+              }
+            ]
+          },
+          "decimals": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "wideLayout": true,
+        "showPercentChange": false
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Policy compile failures and refused releases, 5 minutes",
+      "description": "Effective policies that failed to compile (that destination denies every caller) and quarantine release receipts the endpoint refused, per cluster, 5 minute increase. Normal: 0.",
+      "id": 25,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 12,
+        "y": 55
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "sum by (cluster) (increase(cilium_ztunnel_xds_effective_policy_events_total{job=\"cilium-native\", event=~\"compile_failed|release_refused\", cluster=\"cmtc-a\"}[5m])) or 0 * max by (cluster) (up{job=\"cilium-native\", cluster=\"cmtc-a\"} == 1)",
+          "legendFormat": "{{cluster}}",
+          "instant": true
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "sum by (cluster) (increase(cilium_ztunnel_xds_effective_policy_events_total{job=\"cilium-native\", event=~\"compile_failed|release_refused\", cluster=\"cmtc-b\"}[5m])) or 0 * max by (cluster) (up{job=\"cilium-native\", cluster=\"cmtc-b\"} == 1)",
+          "legendFormat": "{{cluster}}",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "noValue": "No data: not scraped",
+          "mappings": [],
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#59a14f",
+                "value": null
+              },
+              {
+                "color": "#e15759",
+                "value": 1
+              }
+            ]
+          },
+          "decimals": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "wideLayout": true,
+        "showPercentChange": false
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Required workloads released · planned",
+      "description": "Planned, a proposed source change: needs source-patches/cilium/0002 (destinations by state). Share of Required workloads the control plane released from quarantine, per cluster. A prerequisite of protection, not protection. No data: no Required workload in the cluster.",
+      "id": 26,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 18,
+        "y": 55
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "(sum by (cluster) (cilium_ztunnel_xds_effective_policy_destinations{job=\"cilium-native\", state=\"released\", cluster=\"cmtc-a\"}) or 0 * sum by (cluster) (cilium_ztunnel_xds_effective_policy_destinations{job=\"cilium-native\", cluster=\"cmtc-a\"})) / (sum by (cluster) (cilium_ztunnel_xds_effective_policy_destinations{job=\"cilium-native\", cluster=\"cmtc-a\"}) > 0)",
+          "legendFormat": "{{cluster}}",
+          "instant": true
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "(sum by (cluster) (cilium_ztunnel_xds_effective_policy_destinations{job=\"cilium-native\", state=\"released\", cluster=\"cmtc-b\"}) or 0 * sum by (cluster) (cilium_ztunnel_xds_effective_policy_destinations{job=\"cilium-native\", cluster=\"cmtc-b\"})) / (sum by (cluster) (cilium_ztunnel_xds_effective_policy_destinations{job=\"cilium-native\", cluster=\"cmtc-b\"}) > 0)",
+          "legendFormat": "{{cluster}}",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "noValue": "Planned",
+          "mappings": [],
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#e15759",
+                "value": null
+              },
+              {
+                "color": "#59a14f",
+                "value": 1
+              }
+            ]
+          },
+          "decimals": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "wideLayout": true,
+        "showPercentChange": false
+      }
+    },
+    {
+      "type": "text",
+      "title": "How to read this section",
+      "id": 27,
+      "transparent": true,
+      "gridPos": {
+        "h": 3,
+        "w": 24,
+        "x": 0,
+        "y": 59
+      },
+      "options": {
+        "mode": "markdown",
+        "content": "All four read 0 failures, and 100 % released, when the protection lifecycle works. The workload protection dashboard has the steps one by one.",
+        "code": {
+          "language": "plaintext",
+          "showLineNumbers": false,
+          "showMiniMap": false
+        }
+      }
+    },
+    {
+      "type": "row",
+      "title": "Is DNS working?",
+      "id": 28,
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 62
+      },
+      "panels": []
+    },
+    {
+      "type": "timeseries",
+      "title": "CoreDNS answers per second",
+      "description": "Answers CoreDNS sent, all response codes, per cluster, 5 minute rate. A drop to 0 with clients still running means CoreDNS is not reached.",
+      "id": 29,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 63
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "sum by (cluster) (rate(coredns_dns_responses_total{job=\"coredns\", cluster=\"cmtc-a\"}[5m]))",
+          "legendFormat": "{{cluster}}",
+          "range": true
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "sum by (cluster) (rate(coredns_dns_responses_total{job=\"coredns\", cluster=\"cmtc-b\"}[5m]))",
+          "legendFormat": "{{cluster}}",
+          "range": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "min": 0,
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "spanNulls": false
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byFrameRefID",
+              "options": "A"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#4e79a7"
+                }
+              },
+              {
+                "id": "custom.fillOpacity",
+                "value": 10
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byFrameRefID",
+              "options": "B"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#e15759"
+                }
+              },
+              {
+                "id": "custom.fillOpacity",
+                "value": 10
+              },
+              {
+                "id": "custom.lineStyle",
+                "value": {
+                  "fill": "dash",
+                  "dash": [
+                    8,
+                    6
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "CoreDNS SERVFAIL share of answers",
+      "description": "SERVFAIL answers as a share of all answers, per cluster, 5 minute rate. Normal: 0. Above 1 % for 5 minutes: CoreDNSServfailHigh. NXDOMAIN is normal here (search-path expansion) and is on the DNS dashboard.",
+      "id": 30,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 63
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "(sum by (cluster) (rate(coredns_dns_responses_total{job=\"coredns\", rcode=\"SERVFAIL\", cluster=\"cmtc-a\"}[5m])) or 0 * sum by (cluster) (rate(coredns_dns_responses_total{job=\"coredns\", cluster=\"cmtc-a\"}[5m]))) / (sum by (cluster) (rate(coredns_dns_responses_total{job=\"coredns\", cluster=\"cmtc-a\"}[5m])) > 0)",
+          "legendFormat": "{{cluster}}",
+          "range": true
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "(sum by (cluster) (rate(coredns_dns_responses_total{job=\"coredns\", rcode=\"SERVFAIL\", cluster=\"cmtc-b\"}[5m])) or 0 * sum by (cluster) (rate(coredns_dns_responses_total{job=\"coredns\", cluster=\"cmtc-b\"}[5m]))) / (sum by (cluster) (rate(coredns_dns_responses_total{job=\"coredns\", cluster=\"cmtc-b\"}[5m])) > 0)",
+          "legendFormat": "{{cluster}}",
+          "range": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "min": 0,
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "spanNulls": false
+          },
+          "max": 1
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byFrameRefID",
+              "options": "A"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#4e79a7"
+                }
+              },
+              {
+                "id": "custom.fillOpacity",
+                "value": 10
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byFrameRefID",
+              "options": "B"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#e15759"
+                }
+              },
+              {
+                "id": "custom.fillOpacity",
+                "value": 10
+              },
+              {
+                "id": "custom.lineStyle",
+                "value": {
+                  "fill": "dash",
+                  "dash": [
+                    8,
+                    6
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Enrolled-Pod DNS queries without an answer, share · planned",
+      "description": "Planned, a proposed source change: needs the CMTC measurement plane (#36, ADR-005; its names are in metrics/contract.json). Share of DNS queries sent by enrolled Pods that got no answer, per cluster, 5 minute rate, from the client side. This catches the 2026-10-25 failure, where queries were dropped at the source node and CoreDNS stayed healthy. UDP retries count as queries.",
+      "id": 31,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 71
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "clamp_min(1 - ((sum by (cluster) (rate(cmtc_measurement_dns_answers_total{job=\"cmtc\", cluster=\"cmtc-a\"}[5m])) or 0 * sum by (cluster) (rate(cmtc_measurement_dns_queries_total{job=\"cmtc\", cluster=\"cmtc-a\"}[5m]))) / (sum by (cluster) (rate(cmtc_measurement_dns_queries_total{job=\"cmtc\", cluster=\"cmtc-a\"}[5m])) > 0)), 0)",
+          "legendFormat": "{{cluster}}",
+          "range": true
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "clamp_min(1 - ((sum by (cluster) (rate(cmtc_measurement_dns_answers_total{job=\"cmtc\", cluster=\"cmtc-b\"}[5m])) or 0 * sum by (cluster) (rate(cmtc_measurement_dns_queries_total{job=\"cmtc\", cluster=\"cmtc-b\"}[5m]))) / (sum by (cluster) (rate(cmtc_measurement_dns_queries_total{job=\"cmtc\", cluster=\"cmtc-b\"}[5m])) > 0)), 0)",
+          "legendFormat": "{{cluster}}",
+          "range": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "min": 0,
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "spanNulls": false
+          },
+          "max": 1
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byFrameRefID",
+              "options": "A"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#4e79a7"
+                }
+              },
+              {
+                "id": "custom.fillOpacity",
+                "value": 10
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byFrameRefID",
+              "options": "B"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#e15759"
+                }
+              },
+              {
+                "id": "custom.fillOpacity",
+                "value": 10
+              },
+              {
+                "id": "custom.lineStyle",
+                "value": {
+                  "fill": "dash",
+                  "dash": [
+                    8,
+                    6
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Packets dropped by Cilium policy per second",
+      "description": "Packets the Cilium datapath dropped with reason Policy denied, both directions, per cluster, 5 minute rate. The counter has no port label: it cannot show which drops were DNS.",
+      "id": 32,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 71
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "sum by (cluster) (rate(cilium_drop_count_total{job=\"cilium-native\", reason=\"Policy denied\", cluster=\"cmtc-a\"}[5m]))",
+          "legendFormat": "{{cluster}}",
+          "range": true
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "sum by (cluster) (rate(cilium_drop_count_total{job=\"cilium-native\", reason=\"Policy denied\", cluster=\"cmtc-b\"}[5m]))",
+          "legendFormat": "{{cluster}}",
+          "range": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "pps",
+          "min": 0,
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "spanNulls": false
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byFrameRefID",
+              "options": "A"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#4e79a7"
+                }
+              },
+              {
+                "id": "custom.fillOpacity",
+                "value": 10
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byFrameRefID",
+              "options": "B"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#e15759"
+                }
+              },
+              {
+                "id": "custom.fillOpacity",
+                "value": 10
+              },
+              {
+                "id": "custom.lineStyle",
+                "value": {
+                  "fill": "dash",
+                  "dash": [
+                    8,
+                    6
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      }
+    },
+    {
+      "type": "text",
+      "title": "How to read this section",
+      "id": 33,
+      "transparent": true,
+      "gridPos": {
+        "h": 4,
+        "w": 24,
+        "x": 0,
+        "y": 79
+      },
+      "options": {
+        "mode": "markdown",
+        "content": "CoreDNS sees only the queries that reach it. **Enrolled-Pod DNS queries without an answer** is the client side; until the measurement plane exists, a rise of **Packets dropped by Cilium policy** with healthy CoreDNS is the only hint of the 2026-10-25 failure.",
+        "code": {
+          "language": "plaintext",
+          "showLineNumbers": false,
+          "showMiniMap": false
+        }
+      }
+    },
+    {
+      "type": "row",
+      "title": "Are the mesh certificates and processes healthy?",
+      "id": 34,
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 83
+      },
+      "panels": []
+    },
+    {
+      "type": "stat",
+      "title": "Mesh certificates not Ready",
+      "description": "cert-manager Certificates whose Ready condition is not True, per cluster, now: the mesh root, the ClusterMesh and SPIRE intermediates and the leaves they sign (MESH_PKI.md). Normal: 0 (CMTCCertificateNotReady after 10 minutes). The trust dashboard lists each certificate.",
+      "id": 35,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 0,
+        "y": 84
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "count by (cluster) (max by (cluster, exported_namespace, name) (certmanager_certificate_ready_status{job=\"cert-manager\", condition!=\"True\", cluster=\"cmtc-a\"}) == 1) or 0 * max by (cluster) (up{job=\"cert-manager\", cluster=\"cmtc-a\"} == 1)",
+          "legendFormat": "{{cluster}}",
+          "instant": true
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "count by (cluster) (max by (cluster, exported_namespace, name) (certmanager_certificate_ready_status{job=\"cert-manager\", condition!=\"True\", cluster=\"cmtc-b\"}) == 1) or 0 * max by (cluster) (up{job=\"cert-manager\", cluster=\"cmtc-b\"} == 1)",
+          "legendFormat": "{{cluster}}",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "noValue": "Not scraped yet",
+          "mappings": [],
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#59a14f",
+                "value": null
+              },
+              {
+                "color": "#e15759",
+                "value": 1
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "wideLayout": true,
+        "showPercentChange": false
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Certificate renewals overdue",
+      "description": "Certificates whose planned renewal time passed more than 10 minutes ago, per cluster: cert-manager failed to renew them, and they still work until they expire (CMTCCertificateRenewalOverdue). Normal: 0.",
+      "id": 36,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 6,
+        "y": 84
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "count by (cluster) (time() - max by (cluster, exported_namespace, name) (certmanager_certificate_renewal_timestamp_seconds{job=\"cert-manager\", cluster=\"cmtc-a\"} > 0) > 600) or 0 * max by (cluster) (up{job=\"cert-manager\", cluster=\"cmtc-a\"} == 1)",
+          "legendFormat": "{{cluster}}",
+          "instant": true
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "count by (cluster) (time() - max by (cluster, exported_namespace, name) (certmanager_certificate_renewal_timestamp_seconds{job=\"cert-manager\", cluster=\"cmtc-b\"} > 0) > 600) or 0 * max by (cluster) (up{job=\"cert-manager\", cluster=\"cmtc-b\"} == 1)",
+          "legendFormat": "{{cluster}}",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "noValue": "Not scraped yet",
+          "mappings": [],
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#59a14f",
+                "value": null
+              },
+              {
+                "color": "#e15759",
+                "value": 1
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "wideLayout": true,
+        "showPercentChange": false
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Containers above 90 % of their PID limit",
+      "description": "Mesh containers (namespaces cilium-spire, cmtc-system, kube-system, cert-manager) whose processes and threads use more than 90 % of their PID limit, per cluster, now (CMTCContainerPIDsNearLimit). Normal: 0. This is #41: on 2026-10-26 spire-server-0 reached its limit at 19,091 processes and was deleted.",
+      "id": 37,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 12,
+        "y": 84
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "count by (cluster) (max by (cluster, node, namespace, pod, container) (container_threads{job=\"cadvisor\", container!=\"\", cluster=\"cmtc-a\"}) / on (cluster, node, namespace, pod, container) (max by (cluster, node, namespace, pod, container) (container_threads_max{job=\"cadvisor\", container!=\"\", cluster=\"cmtc-a\"}) > 0) > 0.9) or 0 * max by (cluster) (up{job=\"cadvisor\", cluster=\"cmtc-a\"} == 1)",
+          "legendFormat": "{{cluster}}",
+          "instant": true
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "count by (cluster) (max by (cluster, node, namespace, pod, container) (container_threads{job=\"cadvisor\", container!=\"\", cluster=\"cmtc-b\"}) / on (cluster, node, namespace, pod, container) (max by (cluster, node, namespace, pod, container) (container_threads_max{job=\"cadvisor\", container!=\"\", cluster=\"cmtc-b\"}) > 0) > 0.9) or 0 * max by (cluster) (up{job=\"cadvisor\", cluster=\"cmtc-b\"} == 1)",
+          "legendFormat": "{{cluster}}",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "noValue": "Not scraped yet",
+          "mappings": [],
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#59a14f",
+                "value": null
+              },
+              {
+                "color": "#e15759",
+                "value": 1
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "wideLayout": true,
+        "showPercentChange": false
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Containers that reach their PID limit within 24 h",
+      "description": "Mesh containers whose process count, at the rate of the last 30 minutes, reaches their PID limit within 24 hours, per cluster (CMTCContainerPIDsExhaustionForecast). Normal: 0. On 2026-10-27 the register-agent-node sidecar of spire-server-0 grew by 12 a minute from 5443 (00:07:46Z) toward its limit of 19096, read through the kubelet of cmtc-a-worker.",
+      "id": 38,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 18,
+        "y": 84
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "count by (cluster) (predict_linear(container_threads{job=\"cadvisor\", container!=\"\", cluster=\"cmtc-a\"}[30m], 24 * 3600) >= on (cluster, node, namespace, pod, container) (container_threads_max{job=\"cadvisor\", container!=\"\", cluster=\"cmtc-a\"} > 0)) or 0 * max by (cluster) (up{job=\"cadvisor\", cluster=\"cmtc-a\"} == 1)",
+          "legendFormat": "{{cluster}}",
+          "instant": true
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "count by (cluster) (predict_linear(container_threads{job=\"cadvisor\", container!=\"\", cluster=\"cmtc-b\"}[30m], 24 * 3600) >= on (cluster, node, namespace, pod, container) (container_threads_max{job=\"cadvisor\", container!=\"\", cluster=\"cmtc-b\"} > 0)) or 0 * max by (cluster) (up{job=\"cadvisor\", cluster=\"cmtc-b\"} == 1)",
+          "legendFormat": "{{cluster}}",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "noValue": "Not scraped yet",
+          "mappings": [],
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#59a14f",
+                "value": null
+              },
+              {
+                "color": "#e15759",
+                "value": 1
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "wideLayout": true,
+        "showPercentChange": false
+      }
+    },
+    {
+      "type": "table",
+      "title": "Mesh containers closest to their PID limit, top 5",
+      "description": "The five mesh containers that use the largest share of their PID limit, both clusters, now. A share that grows between two reads, with a flat workload, is processes that are not reaped (zombies).",
+      "id": 39,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 24,
+        "x": 0,
+        "y": 88
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "topk(5, max by (cluster, node, namespace, pod, container) (container_threads{job=\"cadvisor\", container!=\"\"}) / on (cluster, node, namespace, pod, container) (max by (cluster, node, namespace, pod, container) (container_threads_max{job=\"cadvisor\", container!=\"\"}) > 0))",
+          "legendFormat": "",
+          "instant": true,
+          "format": "table"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            }
+          },
+          "noValue": "–"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Cluster"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-background",
+                  "mode": "basic"
+                }
+              },
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "cmtc-a": {
+                        "color": "#4e79a7",
+                        "index": 0
+                      },
+                      "cmtc-b": {
+                        "color": "#e15759",
+                        "index": 1
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "PID limit used"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percentunit"
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm"
+      },
+      "transformations": [
+        {
+          "id": "merge",
+          "options": {}
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true
+            },
+            "indexByName": {
+              "cluster": 0,
+              "node": 1,
+              "namespace": 2,
+              "pod": 3,
+              "container": 4,
+              "Value": 5
+            },
+            "renameByName": {
+              "cluster": "Cluster",
+              "node": "Node",
+              "namespace": "Namespace",
+              "pod": "Pod",
+              "container": "Container",
+              "Value": "PID limit used"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "type": "text",
+      "title": "How to read this section",
+      "id": 40,
+      "transparent": true,
+      "gridPos": {
+        "h": 3,
+        "w": 24,
+        "x": 0,
+        "y": 94
+      },
+      "options": {
+        "mode": "markdown",
+        "content": "The certificates are the mesh PKI of ADR-011; the PID limit is the kubelet's per-Pod limit (container_threads_max, the pids.max of the cgroup). Both read 0 when healthy.",
+        "code": {
+          "language": "plaintext",
+          "showLineNumbers": false,
+          "showMiniMap": false
+        }
+      }
+    },
+    {
+      "type": "row",
+      "title": "Do the service objectives hold?",
+      "id": 41,
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 97
+      },
+      "panels": []
+    },
+    {
+      "type": "timeseries",
+      "title": "Source mTLS connection errors, budget burn rate, 1 hour",
+      "description": "Error budget burn rate over the last hour, per cluster: the error ratio divided by the budget. 1 spends the 30-day budget in 30 days; 14.4 (with the 5 minute window) pages, 6 over 6 h opens a ticket (docs/METRICS_AND_SLOS.md). The lab keeps 1 h of data, so only this window is computable there. Objective: 99.9 % of source mTLS connections that policy did not deny succeed.",
+      "id": 42,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 98
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "((sum by (cluster) (rate(istio_tcp_connections_failed_total{job=\"ztunnel\", reporter=\"source\", connection_security_policy=\"mutual_tls\", response_flags!~\"DENY|PEER_DENIED\", cluster=\"cmtc-a\"}[1h])) or 0 * sum by (cluster) (rate(istio_tcp_connections_opened_total{job=\"ztunnel\", reporter=\"source\", connection_security_policy=\"mutual_tls\", cluster=\"cmtc-a\"}[1h]))) / ((sum by (cluster) (rate(istio_tcp_connections_opened_total{job=\"ztunnel\", reporter=\"source\", connection_security_policy=\"mutual_tls\", cluster=\"cmtc-a\"}[1h])) - (sum by (cluster) (rate(istio_tcp_connections_failed_total{job=\"ztunnel\", reporter=\"source\", connection_security_policy=\"mutual_tls\", response_flags=~\"DENY|PEER_DENIED\", cluster=\"cmtc-a\"}[1h])) or 0 * sum by (cluster) (rate(istio_tcp_connections_opened_total{job=\"ztunnel\", reporter=\"source\", connection_security_policy=\"mutual_tls\", cluster=\"cmtc-a\"}[1h])))) > 0)) / 0.001",
+          "legendFormat": "{{cluster}}",
+          "range": true
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "((sum by (cluster) (rate(istio_tcp_connections_failed_total{job=\"ztunnel\", reporter=\"source\", connection_security_policy=\"mutual_tls\", response_flags!~\"DENY|PEER_DENIED\", cluster=\"cmtc-b\"}[1h])) or 0 * sum by (cluster) (rate(istio_tcp_connections_opened_total{job=\"ztunnel\", reporter=\"source\", connection_security_policy=\"mutual_tls\", cluster=\"cmtc-b\"}[1h]))) / ((sum by (cluster) (rate(istio_tcp_connections_opened_total{job=\"ztunnel\", reporter=\"source\", connection_security_policy=\"mutual_tls\", cluster=\"cmtc-b\"}[1h])) - (sum by (cluster) (rate(istio_tcp_connections_failed_total{job=\"ztunnel\", reporter=\"source\", connection_security_policy=\"mutual_tls\", response_flags=~\"DENY|PEER_DENIED\", cluster=\"cmtc-b\"}[1h])) or 0 * sum by (cluster) (rate(istio_tcp_connections_opened_total{job=\"ztunnel\", reporter=\"source\", connection_security_policy=\"mutual_tls\", cluster=\"cmtc-b\"}[1h])))) > 0)) / 0.001",
+          "legendFormat": "{{cluster}}",
+          "range": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "min": 0,
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "spanNulls": false
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byFrameRefID",
+              "options": "A"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#4e79a7"
+                }
+              },
+              {
+                "id": "custom.fillOpacity",
+                "value": 10
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byFrameRefID",
+              "options": "B"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#e15759"
+                }
+              },
+              {
+                "id": "custom.fillOpacity",
+                "value": 10
+              },
+              {
+                "id": "custom.lineStyle",
+                "value": {
+                  "fill": "dash",
+                  "dash": [
+                    8,
+                    6
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "CoreDNS SERVFAIL, budget burn rate, 1 hour",
+      "description": "Error budget burn rate over the last hour, per cluster: the error ratio divided by the budget. 1 spends the 30-day budget in 30 days; 14.4 (with the 5 minute window) pages, 6 over 6 h opens a ticket (docs/METRICS_AND_SLOS.md). The lab keeps 1 h of data, so only this window is computable there. Objective: 99.9 % of CoreDNS answers are not SERVFAIL.",
+      "id": 43,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 8,
+        "y": 98
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "((sum by (cluster) (rate(coredns_dns_responses_total{job=\"coredns\", rcode=\"SERVFAIL\", cluster=\"cmtc-a\"}[1h])) or 0 * sum by (cluster) (rate(coredns_dns_responses_total{job=\"coredns\", cluster=\"cmtc-a\"}[1h]))) / (sum by (cluster) (rate(coredns_dns_responses_total{job=\"coredns\", cluster=\"cmtc-a\"}[1h])) > 0)) / 0.001",
+          "legendFormat": "{{cluster}}",
+          "range": true
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "((sum by (cluster) (rate(coredns_dns_responses_total{job=\"coredns\", rcode=\"SERVFAIL\", cluster=\"cmtc-b\"}[1h])) or 0 * sum by (cluster) (rate(coredns_dns_responses_total{job=\"coredns\", cluster=\"cmtc-b\"}[1h]))) / (sum by (cluster) (rate(coredns_dns_responses_total{job=\"coredns\", cluster=\"cmtc-b\"}[1h])) > 0)) / 0.001",
+          "legendFormat": "{{cluster}}",
+          "range": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "min": 0,
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "spanNulls": false
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byFrameRefID",
+              "options": "A"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#4e79a7"
+                }
+              },
+              {
+                "id": "custom.fillOpacity",
+                "value": 10
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byFrameRefID",
+              "options": "B"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#e15759"
+                }
+              },
+              {
+                "id": "custom.fillOpacity",
+                "value": 10
+              },
+              {
+                "id": "custom.lineStyle",
+                "value": {
+                  "fill": "dash",
+                  "dash": [
+                    8,
+                    6
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "CoreDNS answers slower than 64 ms, budget burn rate, 1 hour",
+      "description": "Error budget burn rate over the last hour, per cluster: the error ratio divided by the budget. 1 spends the 30-day budget in 30 days; 14.4 (with the 5 minute window) pages, 6 over 6 h opens a ticket (docs/METRICS_AND_SLOS.md). The lab keeps 1 h of data, so only this window is computable there. Objective: 99 % of CoreDNS answers within 64 ms.",
+      "id": 44,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 98
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "(1 - (sum by (cluster) (rate(coredns_dns_request_duration_seconds_bucket{job=\"coredns\", le=\"0.064\", cluster=\"cmtc-a\"}[1h])) / (sum by (cluster) (rate(coredns_dns_request_duration_seconds_count{job=\"coredns\", cluster=\"cmtc-a\"}[1h])) > 0))) / 0.01",
+          "legendFormat": "{{cluster}}",
+          "range": true
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "(1 - (sum by (cluster) (rate(coredns_dns_request_duration_seconds_bucket{job=\"coredns\", le=\"0.064\", cluster=\"cmtc-b\"}[1h])) / (sum by (cluster) (rate(coredns_dns_request_duration_seconds_count{job=\"coredns\", cluster=\"cmtc-b\"}[1h])) > 0))) / 0.01",
+          "legendFormat": "{{cluster}}",
+          "range": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "min": 0,
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "spanNulls": false
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byFrameRefID",
+              "options": "A"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#4e79a7"
+                }
+              },
+              {
+                "id": "custom.fillOpacity",
+                "value": 10
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byFrameRefID",
+              "options": "B"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#e15759"
+                }
+              },
+              {
+                "id": "custom.fillOpacity",
+                "value": 10
+              },
+              {
+                "id": "custom.lineStyle",
+                "value": {
+                  "fill": "dash",
+                  "dash": [
+                    8,
+                    6
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      }
+    },
+    {
+      "type": "text",
+      "title": "How to read this section",
+      "id": 45,
+      "transparent": true,
+      "gridPos": {
+        "h": 3,
+        "w": 24,
+        "x": 0,
+        "y": 106
+      },
+      "options": {
+        "mode": "markdown",
+        "content": "Burn rate 1 is on budget. The objectives are proposals (docs/METRICS_AND_SLOS.md), not approved SLOs.",
+        "code": {
+          "language": "plaintext",
+          "showLineNumbers": false,
+          "showMiniMap": false
+        }
+      }
+    }
+  ]
+}

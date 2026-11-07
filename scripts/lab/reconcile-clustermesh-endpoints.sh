@@ -68,7 +68,7 @@ then
 else
   for cluster in cmtc-a cmtc-b; do
     kubectl --context "kind-$cluster" wait nodes --all --for=condition=Ready --timeout=5m
-    kubectl --context "kind-$cluster" wait clusterissuer/cmtc-lab-intermediate --for=condition=Ready --timeout=3m
+    kubectl --context "kind-$cluster" wait "clusterissuer/$cluster-clustermesh-intermediate" --for=condition=Ready --timeout=3m
     kubectl --context "kind-$cluster" -n kube-system wait certificates --all --for=condition=Ready --timeout=3m
   done
 

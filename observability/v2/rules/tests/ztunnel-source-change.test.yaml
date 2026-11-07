@@ -1,0 +1,43 @@
+# promtool test rules for rules/proposed/ztunnel-source-change.rules.yaml. The response flag
+# TRUST_PROFILE exists only with source-patches/ztunnel/0001. The case replays the 2026-10-25
+# outage shape: the source ztunnel refuses its own new certificate before any TCP connection.
+rule_files:
+- ../proposed/ztunnel-source-change.rules.yaml
+evaluation_interval: 1m
+
+tests:
+- name: refusals by the issuer profile, first event and later events
+  interval: 1m
+  input_series:
+  - series: 'up{job="ztunnel", component="ztunnel", cluster="cmtc-a", node="cmtc-a-worker", instance="172.18.0.4:15020"}'
+    values: '1x20'
+  - series: 'istio_tcp_connections_failed_total{job="ztunnel", component="ztunnel", cluster="cmtc-a", node="cmtc-a-worker", instance="172.18.0.4:15020", reporter="source", response_flags="TRUST_PROFILE", connection_security_policy="mutual_tls", source_workload_namespace="cmtc-live-mtls", destination_workload_namespace="cmtc-live-mtls"}'
+    values: '_x6 4 7 10x13'
+  # A network failure is not an issuer-profile refusal.
+  - series: 'istio_tcp_connections_failed_total{job="ztunnel", component="ztunnel", cluster="cmtc-a", node="cmtc-a-worker", instance="172.18.0.4:15020", reporter="source", response_flags="CONNECT", connection_security_policy="mutual_tls", source_workload_namespace="cmtc-live-mtls", destination_workload_namespace="cmtc-live-mtls"}'
+    values: '0+3x20'
+  promql_expr_test:
+  - expr: cmtc:ztunnel_trust_profile_refusals:increase5m
+    eval_time: 6m
+    exp_samples:
+    - labels: 'cmtc:ztunnel_trust_profile_refusals:increase5m{cluster="cmtc-a", node="cmtc-a-worker", reporter="source"}'
+      value: 4
+  - expr: cmtc:ztunnel_trust_profile_refusals:increase5m
+    eval_time: 20m
+    exp_samples:
+    - labels: 'cmtc:ztunnel_trust_profile_refusals:increase5m{cluster="cmtc-a", node="cmtc-a-worker", reporter="source"}'
+      value: 0
+  alert_rule_test:
+  - eval_time: 5m
+    alertname: CMTCTrustProfileRefusingConnections
+    exp_alerts: []
+  - eval_time: 6m
+    alertname: CMTCTrustProfileRefusingConnections
+    exp_alerts:
+    - exp_labels: {severity: critical, owner: ztunnel, cluster: cmtc-a, node: cmtc-a-worker, reporter: source}
+      exp_annotations:
+        summary: 'ztunnel on cmtc-a-worker (cmtc-a) refused 4 connections in 5 minutes because its issuer profile does not accept a certificate (source side)'
+        runbook: 'The workload certificate is signed by an issuer the approval does not pin, or the profile is expired. Read the ztunnel log for "no approved direct issuer" and compare the SPIRE CA with the approval on the trust dashboard (CMTCSPIREActiveCANotApproved).'
+  - eval_time: 20m
+    alertname: CMTCTrustProfileRefusingConnections
+    exp_alerts: []

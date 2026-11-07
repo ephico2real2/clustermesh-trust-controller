@@ -1,0 +1,147 @@
+global:
+  # true on OpenShift. The Pods then leave runAsUser unset, so the restricted-v2 SCC assigns a UID from the namespace's
+  # range (Red Hat image guidelines; SPIFFE's helm-charts-hardened does the same). The image runs as any non-root UID.
+  # false keeps runAsUser 65532, the image's own user.
+  openshift: false
+
+# Required: the stable cluster name used in metric labels (--cluster-name).
+clusterName: ""
+
+image:
+  repository: ghcr.io/ephico2real2/cmtc
+  # Preferred: the digest from the images workflow's images.lock.json (sha256:...). Used before tag when set.
+  digest: ""
+  tag: ""
+  pullPolicy: IfNotPresent
+
+namespace:
+  # Renders the release namespace with security.cmtc.io/platform-protected=true, which keeps CMTC's own namespace out of
+  # enrollment. This suits tools that apply the rendered manifests (helm template, Argo CD). `helm install` stores its
+  # release in that namespace before it creates anything, so it fails when the namespace does not exist: create and
+  # label the namespace first and set this false (scripts/lab/up.sh does this).
+  create: true
+
+crds:
+  # Installs and upgrades the NamespaceMTLSPolicy CRD. Helm keeps it on uninstall.
+  enabled: true
+
+# Merged over the defaults: runAsNonRoot, seccompProfile RuntimeDefault, and runAsUser 65532 unless global.openshift.
+podSecurityContext: {}
+# Merged over the defaults: allowPrivilegeEscalation false, readOnlyRootFilesystem true, capabilities drop ALL.
+securityContext: {}
+
+controller:
+  replicas: 1
+  resources:
+    requests: {cpu: 25m, memory: 64Mi}
+    limits: {memory: 256Mi}
+  # The opt-in issuer-profile producer. It never enables workload enforcement. An administrator creates the source and
+  # output ConfigMaps first; their UIDs are pinned here, so a replaced object is refused.
+  issuerProfile:
+    enabled: false
+    source: cmtc-issuer-approval
+    sourceUID: ""
+    output: cmtc-issuer-publication
+    outputUID: ""
+    # Installation-approved root certificate SHA-256 pins (hex).
+    rootSHA256: []
+    minimumGeneration: 1
+    # ServiceAccounts allowed to read the source and the output, e.g. {namespace: kube-system, name: cilium}.
+    readers: []
+  # The issuer approval arbiter (ADR-012): the controller derives each cluster's SPIRE intermediate from public
+  # cert-manager objects, writes the approval into two fixed slots, keeps the old and the new intermediate during a
+  # renewal, retires the old one after the SPIRE CA bound, and renews before expiry. Needs issuerProfile.enabled; the
+  # producer then follows the arbiter's slots, issuerProfile.source names only the approval to adopt, and
+  # issuerProfile.sourceUID is unused.
+  issuerApproval:
+    enabled: false
+    # The two immutable slot ConfigMaps the arbiter alternates between; readers' Roles name them, so they never change.
+    slots: [cmtc-issuer-approval-a, cmtc-issuer-approval-b]
+    # The SPIRE server's configuration ConfigMap (key server.conf) that names the cert-manager upstream.
+    spire: {namespace: cilium-spire, configMap: spire-server}
+    # The approval lasts horizon (at most 29 days; the verifiers refuse 30), is renewed renewBefore before its end, and
+    # an issuer retires retirementMargin after its SPIRE CA bound. A node report older than reportMaxAge blocks.
+    horizon: 696h
+    renewBefore: 168h
+    retirementMargin: 1h
+    reportMaxAge: 2m
+    # Every cluster of the mesh, including this one: the long-lived identities the administrator approves. certificate
+    # defaults to <name>-spire-intermediate. certificateUID pins the cert-manager Certificate object (a recreated one
+    # is refused). peerSecret, for every cluster but this one, names a Secret in the release namespace with key
+    # kubeconfig: the read-only credential of that cluster's API (its cmtc-peer-reader).
+    clusters: []
+    #  - name: cmtc-a
+    #    trustDomain: cmtc-a.mesh.example
+    #    certificateUID: ""
+    #  - name: cmtc-b
+    #    trustDomain: cmtc-b.mesh.example
+    #    certificateUID: ""
+    #    peerSecret: cmtc-peer-cmtc-b
+    # Renders the ServiceAccount cmtc-peer-reader with the read-only access the other clusters' arbiters need here.
+    peerReader:
+      enabled: false
+
+# The SPIFFE trust of this cluster (ADR-011, MESH_PKI.md "Trust bundle"): its SPIRE intermediate, signed by the mesh
+# root, and the ConfigMap that carries the mesh root to the namespaces that verify mesh certificates. Needs cert-manager
+# and trust-manager installed first (trust-manager installed without app.targetNamespaces).
+trust:
+  enabled: false
+  # cert-manager's namespace: CA Secrets live here, and trust-manager reads Bundle sources from here (its trust
+  # namespace).
+  certManagerNamespace: cert-manager
+  # The ClusterIssuer backed by the mesh root.
+  # It must match the ClusterIssuer scripts/lab/pki/mesh-pki.sh creates: <prefix>-mesh-root (prefix cmtc by default).
+  rootIssuer: cmtc-mesh-root
+  # <clusterName>-spire-intermediate: a Certificate, its Secret and a ClusterIssuer of that name. SPIRE's UpstreamAuthority
+  # "cert-manager" requests its own X509 CA from that ClusterIssuer.
+  spireIntermediate:
+    # 3 years, renewed 1 year early, which covers the longest certificate it signs (ADR-011, Lifetimes).
+    duration: 26280h
+    renewBefore: 8760h
+  bundle:
+    # The trust-manager Bundle, and the ConfigMap it writes (key ca.crt): the mesh root, read from the intermediate
+    # Secret's ca.crt. Only that key is copied; trust-manager's watch still receives the whole Secret (ADR-011, Accepted
+    # risk).
+    name: cmtc-mesh-root
+    # A namespace opts in with these labels, in its own manifest, only when a component in it verifies mesh certificates.
+    namespaceLabels:
+      trust: enabled
+
+nodeAgent:
+  resources:
+    requests: {cpu: 10m, memory: 32Mi}
+    limits: {memory: 128Mi}
+  tolerations:
+    - operator: Exists
+  # The node trust report (ADR-012): the agent reads the node's issuer pins file and ztunnel's checkpoint and writes the
+  # NodeTrustReport named after its node; a ValidatingAdmissionPolicy lets it write no other. The pins file and the
+  # checkpoint are root-owned, so the agent then runs as uid 0 with every capability dropped; the checkpoint directory
+  # is mounted read-only. managePins adds rootSHA256 (defaults to controller.issuerProfile.rootSHA256) to the pins file;
+  # the agent never creates the file and never removes a pin.
+  trustReport:
+    enabled: false
+    pinsDir: /etc/cmtc/ztunnel-issuer-pins
+    checkpointDir: /var/lib/cmtc/ztunnel-issuer-checkpoint
+    managePins: false
+    rootSHA256: []
+  # The eBPF measurement plane (ADR-005): a second container, the loader, attaches observe-only cgroup_skb programs to
+  # the cgroups of the node's enrolled Pods, and the agent exports their counters (cmtc_measurement_*). The loader runs
+  # as root with CAP_BPF and CAP_NET_ADMIN only, with no API token, and mounts the host's cgroup tree read-only.
+  measurement:
+    # true or false. Unset (null), the plane runs on Kubernetes and not on OpenShift (global.openshift): there the
+    # loader needs an SCC that allows runAsUser 0, both capabilities and a hostPath volume, which the restricted-v2 SCC
+    # refuses and this chart does not grant (not tested on OpenShift). On Kubernetes the release namespace must admit
+    # it: Pod Security "privileged" (baseline refuses both capabilities and hostPath volumes).
+    enabled: null
+    resources:
+      requests: {cpu: 10m, memory: 64Mi}
+      # The kernel charges the programs and maps to this container: 450 KiB, and per measured Pod about 21 KiB plus
+      # 768 bytes per possible CPU (internal/measurement/contract.go).
+      limits: {memory: 256Mi}
+
+metrics:
+  networkPolicy:
+    enabled: true
+    # Namespaces allowed to scrape port 8080, besides the release namespace. Empty selects the platform's monitoring:
+    # monitoring on Kubernetes; openshift-monitoring and openshift-user-workload-monitoring on OpenShift.
+    allowedNamespaces: []

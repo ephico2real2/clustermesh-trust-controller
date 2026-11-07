@@ -1,0 +1,218 @@
+<!-- SPDX-License-Identifier: MIT-0. Started from the diagram-kit template, https://github.com/ephico2real2/diagram-kit -->
+<title>DNS For Enrolled Pods</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+:root {
+  --ground: #f5f6f8; --surface: #ffffff; --ink: #18212c; --muted: #58636f; --rule: #d7dce3;
+  --host: #a55a0b; --host-wash: #fbf1e4; --remote: #0e6f68; --remote-wash: #e3f3f1;
+  --gap: #b3261e; --gap-wash: #fbe9e7; --none: #5f6a77; --none-wash: #eef0f3;
+  --font-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --ground: #0e131a; --surface: #151c25; --ink: #e5e9ef; --muted: #9aa5b3; --rule: #2a3440;
+    --host: #f0a53c; --host-wash: #2a2014; --remote: #3fcfc0; --remote-wash: #122a28;
+    --gap: #f2857c; --gap-wash: #2d1614; --none: #9aa5b3; --none-wash: #1b232d;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --ground: #0e131a; --surface: #151c25; --ink: #e5e9ef; --muted: #9aa5b3; --rule: #2a3440;
+  --host: #f0a53c; --host-wash: #2a2014; --remote: #3fcfc0; --remote-wash: #122a28;
+  --gap: #f2857c; --gap-wash: #2d1614; --none: #9aa5b3; --none-wash: #1b232d;
+}
+* { box-sizing: border-box; }
+body { background: var(--ground); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.55; margin: 0; }
+.page { max-width: 1060px; margin: 0 auto; padding-inline: 16px; padding-block: 40px 72px; display: grid; gap: 44px; }
+header { display: grid; gap: 10px; }
+.eyebrow { font-family: var(--font-mono); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+h1 { font-size: clamp(26px, 4vw, 36px); line-height: 1.15; margin: 0; font-weight: 700; text-wrap: balance; }
+h2 { font-size: 20px; margin: 0 0 6px; font-weight: 600; text-wrap: balance; }
+p { margin: 0; max-width: 72ch; }
+.lede { font-size: 17px; max-width: 70ch; }
+code { font-family: var(--font-mono); font-size: .9em; }
+section { display: grid; gap: 14px; }
+figure { margin: 0; display: grid; gap: 10px; }
+.fig-scroll { overflow-x: auto; background: var(--surface); border: 1px solid var(--rule); border-radius: 10px; padding: 12px; }
+.fig-scroll svg { display: block; width: 100%; min-width: 760px; height: auto; color: var(--ink); }
+figcaption { font-size: 13.5px; color: var(--muted); max-width: 80ch; }
+.tbl { overflow-x: auto; background: var(--surface); border: 1px solid var(--rule); border-radius: 10px; }
+table { width: 100%; border-collapse: collapse; font-size: 14px; }
+th, td { text-align: left; vertical-align: top; padding: 10px 14px; border-bottom: 1px solid var(--rule); }
+th { font-size: 12px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); background: var(--ground); }
+tr:last-child td { border-bottom: 0; }
+.yes { color: var(--remote); font-weight: 600; } .no { color: var(--gap); font-weight: 600; } .prop { color: var(--host); font-weight: 600; }
+a { color: var(--remote); }
+:focus-visible { outline: 2px solid var(--remote); outline-offset: 2px; }
+</style>
+
+<div class="page">
+  <header>
+    <div class="eyebrow">CMTC · DNS for enrolled Pods · 2026-10-26</div>
+    <h1>DNS never waits for mTLS</h1>
+    <p class="lede">An enrolled Pod resolves names in plaintext, straight to CoreDNS, without ztunnel and without a
+      certificate. The Cilium HBONE-only gate lets that plaintext through only on port 53 and only to an approved
+      resolver identity. The request that follows the answer is the one that travels over HBONE mTLS.</p>
+  </header>
+
+  <section>
+    <h2>The DNS path from an enrolled Pod</h2>
+    <figure>
+      <div class="fig-scroll">
+        <svg viewBox="0 0 980 520" role="img" aria-label="An enrolled Pod's DNS query goes to the kube-dns address, socket-LB picks a CoreDNS Pod, UDP DNS is never redirected to ztunnel, the Cilium HBONE-only egress gate admits port 53 only to an approved resolver identity, CoreDNS answers, and the reply gate admits only source port 53 from that identity. An in-pod rule sends TCP DNS past ztunnel like UDP; without it, TCP DNS is redirected to ztunnel and refused. Any other plaintext is dropped.">
+          <defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="context-stroke"/></marker></defs>
+          <g font-family="IBM Plex Mono, monospace" font-size="12.5" font-weight="600">
+            <rect x="20" y="14" width="300" height="30" rx="6" fill="var(--host-wash)" stroke="var(--host)"/>
+            <text x="170" y="34" text-anchor="middle" fill="var(--host)">ENROLLED POD · its netns</text>
+            <rect x="340" y="14" width="300" height="30" rx="6" fill="var(--none-wash)" stroke="var(--none)"/>
+            <text x="490" y="34" text-anchor="middle" fill="var(--none)">CILIUM · BPF on the Pod veth</text>
+            <rect x="660" y="14" width="300" height="30" rx="6" fill="var(--remote-wash)" stroke="var(--remote)"/>
+            <text x="810" y="34" text-anchor="middle" fill="var(--remote)">COREDNS · outside the mesh</text>
+          </g>
+          <line x1="330" y1="14" x2="330" y2="456" stroke="var(--rule)" stroke-width="1.5" stroke-dasharray="6 5"/>
+          <line x1="650" y1="14" x2="650" y2="456" stroke="var(--rule)" stroke-width="1.5" stroke-dasharray="6 5"/>
+          <g font-family="IBM Plex Sans, sans-serif" font-size="12.5" fill="currentColor">
+            <!-- ① the query -->
+            <rect x="30" y="62" width="280" height="62" rx="6" fill="none" stroke="currentColor" stroke-width="1.2"/>
+            <text x="46" y="84" font-weight="600">① the app resolves a name</text>
+            <text x="46" y="101">nameserver 10.11.0.10, the kube-dns IP</text>
+            <text x="46" y="117" fill="var(--muted)">UDP; TCP when an answer is truncated</text>
+            <!-- ② socket-LB -->
+            <rect x="350" y="62" width="280" height="62" rx="6" fill="none" stroke="currentColor" stroke-width="1.2"/>
+            <text x="366" y="84" font-weight="600">② socket-LB picks a CoreDNS Pod</text>
+            <text x="366" y="101" font-family="IBM Plex Mono, monospace" font-size="12">10.11.0.10:53 → 10.10.0.64:53</text>
+            <text x="366" y="117" fill="var(--muted)">at connect() or send, before iptables</text>
+            <line x1="310" y1="93" x2="346" y2="93" stroke="currentColor" stroke-width="1.2" marker-end="url(#ah)"/>
+            <!-- ③ in-pod rules -->
+            <rect x="30" y="150" width="280" height="56" rx="6" fill="var(--remote-wash)" stroke="var(--remote)" stroke-width="1.5"/>
+            <text x="46" y="172" font-weight="600" fill="var(--remote)">③ UDP 53: no in-pod rule matches</text>
+            <text x="46" y="190">UDP is never redirected to ztunnel</text>
+            <rect x="30" y="220" width="280" height="62" rx="8" fill="var(--remote-wash)" stroke="var(--remote)" stroke-width="1.5"/>
+            <text x="46" y="242" font-weight="600" fill="var(--remote)">③ TCP 53: ACCEPT ahead of REDIRECT</text>
+            <text x="46" y="259" font-family="IBM Plex Mono, monospace" font-size="12">-I CILIUM_OUTPUT 1 --dport 53</text>
+            <text x="46" y="275" fill="var(--muted)">only when no per-packet service LB</text>
+            <path d="M490,124 L490,138 L170,138 L170,146" fill="none" stroke="currentColor" stroke-width="1.2" marker-end="url(#ah)"/>
+            <text x="338" y="152" fill="var(--muted)" font-size="11.5">leaves the socket</text>
+            <!-- ④ egress gate -->
+            <rect x="350" y="160" width="280" height="96" rx="8" fill="var(--remote-wash)" stroke="var(--remote)" stroke-width="1.5"/>
+            <text x="366" y="182" font-weight="600" fill="var(--remote)">④ HBONE-only egress gate</text>
+            <text x="366" y="199">passes TCP 15008, or UDP/TCP to port 53</text>
+            <text x="366" y="215">of an approved resolver identity:</text>
+            <text x="366" y="231">66322 on cmtc-a, 131449 on cmtc-b</text>
+            <text x="366" y="248" font-family="IBM Plex Mono, monospace" font-size="12" fill="var(--muted)">ztunnel_hbone_egress_verdict</text>
+            <line x1="310" y1="178" x2="346" y2="190" stroke="var(--remote)" stroke-width="1.5" marker-end="url(#ah)"/>
+            <line x1="310" y1="246" x2="346" y2="232" stroke="var(--remote)" stroke-width="1.5" marker-end="url(#ah)"/>
+            <!-- ⑤ CoreDNS -->
+            <rect x="670" y="160" width="280" height="96" rx="8" fill="var(--remote-wash)" stroke="var(--remote)" stroke-width="1.5"/>
+            <text x="686" y="182" font-weight="600" fill="var(--remote)">⑤ CoreDNS answers</text>
+            <text x="686" y="199">cmtc-a Pods 10.10.0.64, 10.10.0.193</text>
+            <text x="686" y="215">not enrolled: no ztunnel, no SVID</text>
+            <text x="686" y="231" fill="var(--muted)">must stay outside the mesh</text>
+            <line x1="630" y1="200" x2="666" y2="200" stroke="var(--remote)" stroke-width="1.5" marker-end="url(#ah)"/>
+            <text x="628" y="153" fill="var(--remote)" font-size="11.5">port 53</text>
+            <!-- failures -->
+            <rect x="30" y="300" width="280" height="62" rx="8" fill="var(--gap-wash)" stroke="var(--gap)" stroke-width="1.5"/>
+            <text x="46" y="322" font-weight="600" fill="var(--gap)">without it: TCP 53 → ztunnel 15001</text>
+            <text x="46" y="339">refused: no verified xDS workload</text>
+            <text x="46" y="355" fill="var(--muted)">4 of 4 enrolled clients, 18:25:47Z (before)</text>
+            <line x1="170" y1="282" x2="170" y2="296" stroke="var(--gap)" stroke-width="1.5" marker-end="url(#ah)"/>
+            <text x="178" y="293" fill="var(--gap)" font-size="11.5">without the rule</text>
+            <rect x="350" y="300" width="280" height="62" rx="8" fill="var(--gap-wash)" stroke="var(--gap)" stroke-width="1.5"/>
+            <text x="366" y="322" font-weight="600" fill="var(--gap)">any other plaintext: dropped</text>
+            <text x="366" y="339">DNS to 1.1.1.1 or a server Pod, UDP 80</text>
+            <text x="366" y="355" fill="var(--muted)">Policy denied, bpf_lxc.c:1630</text>
+            <line x1="490" y1="256" x2="490" y2="296" stroke="var(--gap)" stroke-width="1.5" marker-end="url(#ah)"/>
+            <text x="496" y="282" fill="var(--gap)" font-size="11.5">not approved</text>
+            <!-- ⑥ reply gate and ⑦ answer -->
+            <rect x="350" y="384" width="280" height="62" rx="8" fill="var(--remote-wash)" stroke="var(--remote)" stroke-width="1.5"/>
+            <text x="366" y="406" font-weight="600" fill="var(--remote)">⑥ reply gate (conntrack reply)</text>
+            <text x="366" y="423">source port 53 and approved identity</text>
+            <text x="366" y="439" font-family="IBM Plex Mono, monospace" font-size="12" fill="var(--muted)">ztunnel_hbone_ingress_reply_verdict</text>
+            <path d="M810,256 L810,415 L634,415" fill="none" stroke="var(--remote)" stroke-width="1.5" marker-end="url(#ah)"/>
+            <text x="818" y="340" fill="var(--remote)" font-size="11.5">the answer</text>
+            <rect x="30" y="384" width="280" height="62" rx="6" fill="none" stroke="currentColor" stroke-width="1.2"/>
+            <text x="46" y="406" font-weight="600">⑦ the app has the address</text>
+            <text x="46" y="423">then connects over HBONE mTLS</text>
+            <text x="46" y="439" fill="var(--muted)">the next figure</text>
+            <line x1="350" y1="415" x2="314" y2="415" stroke="var(--remote)" stroke-width="1.5" marker-end="url(#ah)"/>
+            <text x="30" y="482" fill="var(--muted)">DNS never passes ztunnel and needs no certificate. The only plaintext the gate passes is port 53 to an approved resolver.</text>
+            <text x="30" y="502" fill="var(--muted)">TCP 53 rule: Cilium fork a99264f008, on both labs since 2026-10-26 18:57Z; TCP DNS answered 6 of 6 per cluster.</text>
+          </g>
+        </svg>
+      </div>
+      <figcaption>Current on both labs: DNS over UDP and TCP from enrolled Pods (steps ① to ⑦) and the drop of every
+        other plaintext flow. The agent installs the TCP 53 rule only when the Pod's program does no per-packet service
+        translation, so the port the rule sees is the port the gate sees; otherwise TCP DNS goes to ztunnel and is
+        refused, as it was before the rule. Addresses and identities are cmtc-a's; cmtc-b uses 10.21.0.10 and identity
+        131449.</figcaption>
+    </figure>
+  </section>
+
+  <section>
+    <h2>A request by name, end to end</h2>
+    <figure>
+      <div class="fig-scroll">
+        <svg viewBox="0 0 980 420" role="img" aria-label="A request by name first resolves the name in plaintext DNS, then socket-LB picks the server Pod, the in-pod rule redirects the connection to the client's ztunnel, which opens an HBONE connection on port 15008 with both sides verifying certificates. The server's ztunnel checks the client identity and policy and hands plaintext to the app inside the Pod. Matrix 6 proved 48 of 48 requests by name over mTLS.">
+          <defs><marker id="ah2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="context-stroke"/></marker></defs>
+          <g font-family="IBM Plex Mono, monospace" font-size="12.5" font-weight="600">
+            <rect x="20" y="14" width="450" height="30" rx="6" fill="var(--host-wash)" stroke="var(--host)"/>
+            <text x="245" y="34" text-anchor="middle" fill="var(--host)">CLIENT · client-worker on cmtc-a-worker</text>
+            <rect x="510" y="14" width="450" height="30" rx="6" fill="var(--remote-wash)" stroke="var(--remote)"/>
+            <text x="735" y="34" text-anchor="middle" fill="var(--remote)">SERVER · server-control-plane, other node</text>
+          </g>
+          <line x1="490" y1="14" x2="490" y2="350" stroke="var(--rule)" stroke-width="1.5" stroke-dasharray="6 5"/>
+          <g font-family="IBM Plex Sans, sans-serif" font-size="12.5" fill="currentColor">
+            <rect x="30" y="62" width="430" height="50" rx="6" fill="none" stroke="currentColor" stroke-width="1.2"/>
+            <text x="46" y="82" font-weight="600">① resolve the name: plaintext DNS (the figure above)</text>
+            <text x="46" y="100" font-family="IBM Plex Mono, monospace" font-size="12">server-control-plane.cmtc-live-mtls.svc → 10.11.71.154</text>
+            <line x1="245" y1="112" x2="245" y2="124" stroke="currentColor" stroke-width="1.2" marker-end="url(#ah2)"/>
+            <rect x="30" y="128" width="430" height="50" rx="6" fill="none" stroke="currentColor" stroke-width="1.2"/>
+            <text x="46" y="148" font-weight="600">② socket-LB picks the Pod</text>
+            <text x="46" y="166" font-family="IBM Plex Mono, monospace" font-size="12">10.11.71.154:8080 → 10.10.0.98:8080, at connect()</text>
+            <line x1="245" y1="178" x2="245" y2="190" stroke="currentColor" stroke-width="1.2" marker-end="url(#ah2)"/>
+            <rect x="30" y="194" width="430" height="50" rx="6" fill="none" stroke="currentColor" stroke-width="1.2"/>
+            <text x="46" y="214" font-weight="600">③ the in-pod rule redirects it to the client's ztunnel (15001)</text>
+            <text x="46" y="232">its outbound line names the app's own socket (src.addr)</text>
+            <line x1="245" y1="244" x2="245" y2="256" stroke="currentColor" stroke-width="1.2" marker-end="url(#ah2)"/>
+            <rect x="30" y="260" width="430" height="66" rx="8" fill="var(--remote-wash)" stroke="var(--remote)" stroke-width="1.5"/>
+            <text x="46" y="280" font-weight="600" fill="var(--remote)">④ HBONE CONNECT to 10.10.0.98:15008</text>
+            <text x="46" y="298">both ends present an SVID and verify the other</text>
+            <text x="46" y="316" fill="var(--muted)">client mesh-client in trust domain cmtc-a.mesh.example</text>
+            <line x1="460" y1="293" x2="526" y2="293" stroke="var(--remote)" stroke-width="1.5" marker-end="url(#ah2)"/>
+            <text x="466" y="285" fill="var(--remote)" font-size="11.5">mTLS</text>
+            <rect x="530" y="260" width="420" height="66" rx="8" fill="var(--remote-wash)" stroke="var(--remote)" stroke-width="1.5"/>
+            <text x="546" y="280" font-weight="600" fill="var(--remote)">⑤ the server's ztunnel checks the client SVID</text>
+            <text x="546" y="298">and the allow policy, then hands the request to nginx</text>
+            <text x="546" y="316" fill="var(--muted)">plaintext only inside the server Pod · HTTP 200</text>
+            <text x="30" y="376" fill="var(--muted)">Matrix 6, 17:55–17:57Z: 48 of 48 requests by name proven over mTLS (24 per-Pod names, 24 Global Service names);</text>
+            <text x="30" y="394" fill="var(--muted)">24 of 24 by name from unregistered callers dropped by Cilium. mTLS protects the request; it never sits on the DNS path.</text>
+          </g>
+        </svg>
+      </div>
+      <figcaption>Current and measured on both labs with the published images: the name resolves in plaintext DNS, then
+        the request travels over HBONE mTLS. The figure shows the cross-node per-Pod name on cmtc-a; the Global Service
+        names follow the same steps, with a backend in either cluster.</figcaption>
+    </figure>
+  </section>
+
+  <section>
+    <h2>What each query meets</h2>
+    <div class="tbl">
+      <table>
+        <thead><tr><th>Query from an enrolled Pod</th><th>In-pod rule</th><th>Cilium gate</th><th>Result, measured 2026-10-26</th></tr></thead>
+        <tbody>
+          <tr><td>UDP 53 to the kube-dns address</td><td>none</td><td>approved resolver</td><td class="yes">answered, both clusters</td></tr>
+          <tr><td>TCP 53 to the kube-dns address</td><td>ACCEPT, ahead of the REDIRECT</td><td>approved resolver</td><td class="yes">answered, 6 of 6 per cluster</td></tr>
+          <tr><td>TCP 53 before the rule (agent 64a07d46a6)</td><td>REDIRECT to ztunnel 15001</td><td>not reached</td><td class="no">refused by ztunnel, 4 of 4 clients</td></tr>
+          <tr><td>TCP 53, socket-LB off or host-namespace only, L7 LB or SCTP on</td><td>REDIRECT (no ACCEPT installed)</td><td>not reached</td><td>refused by ztunnel; the agent logs why (unit tests)</td></tr>
+          <tr><td>UDP or TCP 53 to 1.1.1.1 or to a server Pod</td><td>none, or the TCP 53 ACCEPT</td><td>not a resolver</td><td class="yes">dropped, bpf_lxc.c:1630</td></tr>
+          <tr><td>Any DNS while the Pod is quarantined</td><td>any</td><td>quarantine</td><td class="yes">dropped (BPF tests)</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+</div>

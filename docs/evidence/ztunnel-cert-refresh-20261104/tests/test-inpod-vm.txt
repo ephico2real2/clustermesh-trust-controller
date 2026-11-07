@@ -1,0 +1,20 @@
+== HEAD d5f24b5: lib without inpod
+REST_EXIT=0
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 563 filtered out; finished in 0.00s
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 563 filtered out; finished in 0.00s
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 563 filtered out; finished in 0.00s
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 563 filtered out; finished in 0.00s
+test result: ok. 526 passed; 0 failed; 1 ignored; 0 measured; 37 filtered out; finished in 7.67s
+== HEAD d5f24b5: inpod only
+INPOD_NEW_EXIT=101
+test result: FAILED. 12 passed; 25 failed; 0 ignored; 0 measured; 527 filtered out; finished in 0.28s
+thread 'inpod::config::test::test_inpod_config_port_reuse' panicked at src/inpod/test_helpers.rs:130:5:
+assertion failed: lo_up
+thread 'inpod::config::test::test_inpod_config_outbound_sockets' panicked at src/inpod/test_helpers.rs:130:5:
+assertion failed: lo_up
+thread 'inpod::config::test::test_inpod_config_no_port_reuse' panicked at src/inpod/test_helpers.rs:130:5:
+assertion failed: lo_up
+== HEAD 68c0282: inpod only (baseline)
+INPOD_OLD_EXIT=101
+test result: FAILED. 12 passed; 25 failed; 0 ignored; 0 measured; 525 filtered out; finished in 0.30s
+== diff of failing sets (old vs new)

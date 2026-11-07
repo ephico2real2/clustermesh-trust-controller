@@ -44,6 +44,14 @@ crd = {"apiVersion": "apiextensions.k8s.io/v1", "kind": "CustomResourceDefinitio
         "additionalPrinterColumns": [{"name": "Selected", "type": "integer", "jsonPath": ".status.selected"}, {"name": "Evaluation", "type": "string", "jsonPath": ".status.conditions[?(@.type=='EvaluationReady')].status"}, {"name": "Enforcement", "type": "string", "jsonPath": ".status.conditions[?(@.type=='EnforcementVerified')].status"}],
     }],
 }}
-path = Path(__file__).resolve().parents[1] / "config/crd/security.cmtc.io_namespacemtlspolicies.yaml"
+root = Path(__file__).resolve().parents[1]
+path = root / "config/crd/security.cmtc.io_namespacemtlspolicies.yaml"
 path.parent.mkdir(parents=True, exist_ok=True)
 path.write_text(json.dumps(crd, indent=2) + "\n")
+
+# The chart's copy. Helm keeps the CRD on uninstall, because deleting it deletes every NamespaceMTLSPolicy.
+chart_crd = json.loads(json.dumps(crd))
+chart_crd["metadata"]["annotations"] = {"helm.sh/resource-policy": "keep"}
+chart_path = root / "charts/cmtc/templates/crd-namespacemtlspolicies.yaml"
+chart_path.parent.mkdir(parents=True, exist_ok=True)
+chart_path.write_text("{{- if .Values.crds.enabled }}\n" + json.dumps(chart_crd, indent=2) + "\n{{- end }}\n")

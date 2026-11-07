@@ -1,0 +1,17 @@
+2026-10-26T18:48:05.824+00:00 agents
+{"at": "2026-10-26T18:48:05.991884+00:00", "event": "image-patched", "cluster": "cmtc-a", "object": "kube-system/ds/cilium", "uid": "f0090c8d-29ca-41de-a42a-761f07248e98", "fromResourceVersion": "495946", "generationBefore": 20, "from": "ghcr.io/ephico2real2/cilium-dev@sha256:1eee77b4fed5cc344e4292990a43aa3450639ce8d1d8162772c5d3352f9b1d51", "to": "ghcr.io/ephico2real2/cilium-dev@sha256:708656877bb256a20972ec4b29ac6cddac853a67d9fb2243f9d2276aa5961518", "containers": ["initContainers/config", "initContainers/mount-cgroup", "initContainers/apply-sysctl-overwrites", "initContainers/mount-bpf-fs", "initContainers/clean-cilium-state", "initContainers/install-cni-binaries", "containers/cilium-agent"], "pullPolicy": "IfNotPresent", "strategyBefore": {"rollingUpdate": {"maxSurge": 0, "maxUnavailable": 1}, "type": "RollingUpdate"}, "strategyAfter": {"rollingUpdate": {"maxSurge": 0, "maxUnavailable": 1}, "type": "RollingUpdate"}}
+Waiting for daemon set "cilium" rollout to finish: 0 out of 2 new pods have been updated...
+Waiting for daemon set "cilium" rollout to finish: 1 out of 2 new pods have been updated...
+Waiting for daemon set "cilium" rollout to finish: 1 out of 2 new pods have been updated...
+Waiting for daemon set "cilium" rollout to finish: 1 of 2 updated pods are available...
+daemon set "cilium" successfully rolled out
+cmtc-a cmtc-a-worker cilium-dl9f8/cilium-agent ready=True restarts=0 config=sha256:546fb0f16d87 ok
+cmtc-a cmtc-a-control-plane cilium-grsvc/cilium-agent ready=True restarts=0 config=sha256:546fb0f16d87 ok
+cmtc-a kube-system k8s-app=cilium: 2 pod(s), want 2 -> PASS
+2026-10-26T18:48:33.306+00:00 done
+== pod/cilium-dl9f8
+OK
+time=2026-10-26T18:48:26.522111782Z level=info msg="TCP DNS from enrolled Pods" module=agent.controlplane.ztunnel.cilium-zds-server enabled=true reason="approved resolvers and socket-LB in every Pod: the port the rule sees is the port on the wire"
+== pod/cilium-grsvc
+OK
+time=2026-10-26T18:48:14.139016068Z level=info msg="TCP DNS from enrolled Pods" module=agent.controlplane.ztunnel.cilium-zds-server enabled=true reason="approved resolvers and socket-LB in every Pod: the port the rule sees is the port on the wire"

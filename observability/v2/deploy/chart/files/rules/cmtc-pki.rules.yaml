@@ -1,0 +1,115 @@
+# Status: tested here with promtool 3.7.0 (rules/run-promtool.sh, tests/cmtc-pki.test.yaml). Not deployed:
+# needs the cert-manager and trust-manager scrape jobs of deploy/ (neither is scraped on the labs,
+# 2026-10-27). Evaluated on the hub.
+#
+# Question: "Will the mesh certificates stay valid, and does the mesh root reach the namespaces that use it?"
+#
+# The mesh PKI (ADR-011, MESH_PKI.md): cert-manager Certificate cmtc-mesh-root-ca (10 years, control
+# cluster only), <cluster>-clustermesh-intermediate and <cluster>-spire-intermediate (1 year, in namespace
+# cert-manager), and the short-lived ClusterMesh and ztunnel certificates they sign (1 day, in
+# kube-system). trust-manager v0.25.0 copies the mesh root into ConfigMap cmtc-mesh-root (Bundle
+# cmtc-mesh-root) in the namespaces labelled trust: enabled.
+#
+# cert-manager v1.21.1 exports one series per Certificate and issuer reference
+# (internal/collectors/certificate_collector.go:30-34): its ready condition (True, False, Unknown; 1 on
+# the current one), notAfter, notBefore and the time it plans to renew. The expiration is 0 until the
+# first certificate is issued (:156-162), hence "> 0" below. The Certificate's namespace is the
+# exporter's own "namespace" label; every v2 scrape also sets "namespace" to the Pod's namespace, as the
+# Prometheus Operator does, so Prometheus renames the exporter's label to exported_namespace on kind and
+# on OpenShift alike.
+#
+# trust-manager is a controller-runtime manager: its Bundle reconciler is controller="bundles".
+# Read on the labs at 2026-10-27T00:06:53Z (review inventory live-20261027/pages): every Certificate
+# Ready, intermediates valid to 2027-10-26T12:49Z, ClusterMesh leaves to 2026-10-27T13:47Z-13:51Z;
+# 6 successful and 0 failed Bundle reconciles on cmtc-a.
+groups:
+- name: cmtc-pki
+  rules:
+  # Seconds left on each certificate.
+  - record: cmtc:certificate_expiry:seconds
+    expr: |-
+      max by (cluster, exported_namespace, name, issuer_name) (certmanager_certificate_expiration_timestamp_seconds{job="cert-manager"} > 0)
+      - time()
+
+  - alert: CMTCCertificateNotReady
+    expr: |-
+      max by (cluster, exported_namespace, name, condition) (certmanager_certificate_ready_status{job="cert-manager", condition!="True"}) == 1
+    for: 10m
+    labels:
+      severity: warning
+      owner: cert-manager
+    annotations:
+      summary: 'Certificate {{ $labels.exported_namespace }}/{{ $labels.name }} in {{ $labels.cluster }} is not Ready ({{ $labels.condition }}) for 10 minutes'
+      runbook: 'cert-manager cannot issue or renew it. Read the Certificate''s Ready condition and its latest CertificateRequest (kubectl describe certificate); check that its issuer is Ready (CMTCClusterIssuerNotReady).'
+
+  # cert-manager renews at the time it reports (renewBefore, or 2/3 of the life). A renewed certificate
+  # reports a new, later time, so a renewal time 10 minutes in the past means the renewal failed.
+  - alert: CMTCCertificateRenewalOverdue
+    expr: |-
+      time() > max by (cluster, exported_namespace, name) (certmanager_certificate_renewal_timestamp_seconds{job="cert-manager"} > 0)
+    for: 10m
+    labels:
+      severity: warning
+      owner: cert-manager
+    annotations:
+      summary: 'cert-manager in {{ $labels.cluster }} has not renewed {{ $labels.exported_namespace }}/{{ $labels.name }}, due since {{ $value | humanizeTimestamp }}'
+      runbook: 'The certificate still works until it expires (the trust dashboard shows the time left). Read the Certificate''s events and the cert-manager log for the failed CertificateRequest.'
+
+  - alert: CMTCCertificateExpiring
+    expr: cmtc:certificate_expiry:seconds < 900
+    for: 1m
+    labels:
+      severity: critical
+      owner: cert-manager
+    annotations:
+      summary: 'Certificate {{ $labels.exported_namespace }}/{{ $labels.name }} in {{ $labels.cluster }} expires in {{ $value | humanizeDuration }}'
+      runbook: 'A negative value means it has expired: every TLS connection that presents it fails. Renew it now (cmctl renew), then find why the renewal failed (CMTCCertificateRenewalOverdue).'
+
+  - alert: CMTCClusterIssuerNotReady
+    expr: |-
+      max by (cluster, name, condition) (certmanager_clusterissuer_ready_status{job="cert-manager", condition!="True"}) == 1
+    for: 10m
+    labels:
+      severity: warning
+      owner: cert-manager
+    annotations:
+      summary: 'ClusterIssuer {{ $labels.name }} in {{ $labels.cluster }} is not Ready ({{ $labels.condition }})'
+      runbook: 'Certificates and SPIRE CA requests signed by it cannot be issued. Check the issuer''s CA Secret in namespace cert-manager (MESH_PKI.md names each one) and its Ready condition.'
+
+  # The Bundle reconciler keeps failing: the ConfigMap cmtc-mesh-root is not updated.
+  - alert: CMTCTrustBundleReconcileFailing
+    expr: |-
+      sum by (cluster) (rate(controller_runtime_reconcile_errors_total{job="trust-manager", controller="bundles"}[5m])) > 0
+    for: 15m
+    labels:
+      severity: warning
+      owner: trust-manager
+    annotations:
+      summary: 'trust-manager in {{ $labels.cluster }} has failed to reconcile Bundles for 15 minutes'
+      runbook: 'The mesh root ConfigMap cmtc-mesh-root may be missing or stale in the namespaces labelled trust: enabled. Read the trust-manager log and the Bundle cmtc-mesh-root status.'
+
+  - alert: CMTCCertManagerNotScraped
+    expr: |-
+      cmtc:expected_cluster:info
+      unless on (cluster)
+      group by (cluster) (up{job="cert-manager"})
+    for: 5m
+    labels:
+      severity: warning
+      owner: cert-manager
+    annotations:
+      summary: 'No cert-manager scrape target in {{ $labels.cluster }}'
+      runbook: 'Certificate expiry and readiness panels are unavailable for this cluster, not healthy. Check the cert-manager controller Pod (port http-metrics 9402) and the cert-manager scrape job.'
+
+  - alert: CMTCTrustManagerNotScraped
+    expr: |-
+      cmtc:expected_cluster:info
+      unless on (cluster)
+      group by (cluster) (up{job="trust-manager"})
+    for: 5m
+    labels:
+      severity: warning
+      owner: trust-manager
+    annotations:
+      summary: 'No trust-manager scrape target in {{ $labels.cluster }}'
+      runbook: 'The Bundle reconcile panel is unavailable for this cluster, not healthy. Check the trust-manager Pod (port metrics 9402) and the trust-manager scrape job.'

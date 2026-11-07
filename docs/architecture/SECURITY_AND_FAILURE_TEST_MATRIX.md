@@ -4,134 +4,180 @@
 Design scope: proposed behavior requires the stated acceptance tests. Read [current delivery status](../agile/DELIVERY_STATUS.md) and [documentation terms](../../DOCUMENTATION_GUIDE.md).
 <!-- /CMTC_DOC_CONTEXT -->
 
-**Acceptance targets; none executed in the initial source audit.** Use the [pinned baseline and gaps](../research/SOURCE_AUDIT.md), [threat model](THREAT_MODEL.md) and [implementation gates](IMPLEMENTATION_PLAN.md). A test result must record exact versions, topology, identity/policy expectations and independent packet/transport evidence before a row can pass.
+This matrix is the acceptance contract for workload mTLS across ClusterMesh. Revised 2026-10-25 with the first live
+traffic results. A row passes only with recorded versions, topology, identity and policy expectations, and
+independent packet or transport evidence. Unit tests and live tests are separate results.
 
-The primary profile requires workload mTLS plus WG or IPsec transport on the same cross-cluster flow. The [existing lab review](../research/EXISTING_LAB_REVIEW.md) identifies topology/evidence patterns and historical failures to reproduce. A demo report that exits zero while printing trouble is not a passing assertion; required negative checks and the multi-cluster suite must fail the qualification job on failure.
+## Current results (2026-10-25, 23:00–23:10Z)
 
-| Scenario | Expected behavior | Evidence |
-|---|---|---|
-| App A -> App B across clusters with no WireGuard/IPsec | Valid SPIFFE identities and HBONE TLS; policy enforced | TLS peer identity, traffic trace, denial tests |
-| Same path over WireGuard | mTLS plus node encryption, no plaintext fallback | ztunnel metrics, WG peer state and packet capture |
-| Same path over IPsec | mTLS plus XFRM transport protection | TLS metrics, XFRM state, packet capture |
-| mTLS disabled, WireGuard/IPsec on/off | Existing supported ClusterMesh behavior unchanged | Baseline connectivity suite |
-| Unknown remote identity | Reject protected connection | Auth failure, denied flow |
-| Forged foreign-cluster SPIFFE URI | Reject unauthorized identity despite common root | Negative SVID test |
-| Excluded namespace -> protected namespace | Deny unless explicit compatible authorization | Packet capture and policy verdict |
-| Newly created/relabelled pod before ztunnel ready | No unprotected connection | Race stress test |
-| Missing SVID or SPIRE down | No new unauthenticated protected connections | Chaos test |
-| Hub partition / trust bundle drift | Cached verified trust where safe; no unsafe CA retirement | Digest, readiness, partition test |
-| Root rotation old+new overlap | New SVIDs work everywhere before old root removed | End-to-end handshake matrix |
-| WireGuard key missing / IPsec XFRM stale | No silent transport downgrade when required | Kernel/flow inspection |
-| DNS UDP/TCP, API, webhook, kubelet | Control-plane communication remains functional | Probes, cluster health |
-| OpenShift operator upgrades / hosted control plane | No unsafe enrollment or degradation | ClusterOperator conditions, operator tests |
-| Node reboot / Cilium upgrade / ztunnel crash | Safe reconvergence and fail-closed posture | Restart tests |
-| MTU and service translation | No hidden fragmentation/routing regressions | p95/p99 latency, MTU captures |
+**Scope.** Clusters `kind-cmtc-a` and `kind-cmtc-b`. Cilium agents built from our fork at `6090aa6eff`, ztunnel from
+our fork at `f221f29b59`, SPIRE node agent from our fork at `0f8fe4d681`. Exact image pins are in
+[delivery status](../agile/DELIVERY_STATUS.md). The fixture is the enrolled namespace `cmtc-live-mtls` (two clients
+and two servers per cluster, one of each per node) and the negative namespace `cmtc-live-mtls-unauth`. No
+CiliumNetworkPolicy applies, so both native policy maps allow all peers. Ports: 80, 8080 and 31337.
 
-**Release gate:** An end-to-end encrypted connection is not proof of correct authorization. A namespace label is not proof of enforcement. No production support claims without negative security tests.
+Evidence: [G1 destination sources](../evidence/g1-destination-sources/README.md) (probe rows in `probes/`,
+ClusterIP, DNS and gauge reads in `clusterip-dns-gauges.txt`).
 
-## Two-cluster application and ztunnel test design
+| From | Same node | Cross node | Cross cluster (Pod IP) | Global Service by ClusterIP | Global Service by name | Unregistered caller |
+| --- | --- | --- | --- | --- | --- | --- |
+| cmtc-a | 6/6 allowed | 6/6 allowed | 12/12 allowed | 6/6 allowed | **Fail:** DNS timeout | 6/6 no response |
+| cmtc-b | 6/6 allowed | 6/6 allowed | 12/12 allowed | 6/6 allowed | **Fail:** DNS timeout | 6/6 no response |
 
-The user's October 24 architecture blueprint is a test-design input, not source-of-truth for the active implementation. Its ownership split is retained: CMTC coordinates enrollment and trust lifecycle; the user's enhanced `ephico2real2/cilium` fork owns endpoint discovery, interception, policy and xDS; ztunnel authenticates and protects workload connections. Recheck every interface against the active fork and ztunnel source pins, and build/deploy the exact fork image used for each test. The blueprint's Cilium v1.20.4 / `beb276d2f38d4aadfda14710acf8d14a0f1ba723` pin does not describe the current fork work.
+- Every allowed reply named the expected serving cluster.
+- The unregistered caller's six attempts per cluster ended in a curl connect timeout (rc 28). No per-request policy
+  verdict was correlated, so the explicit-denial row below stays open.
+- Admission state: after convergence (23:00:08Z) every agent's
+  `cilium_ztunnel_xds_effective_policy_sources` gauge reads node=2, cluster=2, peer=4. Each destination plan has 7
+  rules. No plan was republished afterwards.
+
+**Before the change** (agents at `6a00282808`, 22:57Z): same-node 6/6 allowed; cross-node and cross-cluster reset
+(curl rc 56). The destination ztunnel logged `no allow policies matched`. [ADR-010](adr/ADR-010.md) describes the
+cause and the fix.
+
+**What these results prove.** Traffic outcomes for the allow paths, and the agents' admission state from logs and
+metrics.
+
+**What they do not prove.**
+
+- Per-connection peer-certificate evidence. The runner prints `securityReasonVerified: false`; ztunnel logs and
+  certificates were not correlated per request.
+- WireGuard or IPsec transport encryption. Neither is configured.
+- Any recovery behavior.
+- Denial by policy. The fixture runs with default allow.
+- `Protected` status for any workload.
+
+## Open gates
+
+Each gate stays open until its own evidence passes on the deployed build.
+
+1. **DNS from enrolled Pods fails, in both clusters.** From the enrolled `client-worker`, `nslookup` to kube-dns
+   (`10.11.0.10`, `10.21.0.10`) returns "no servers could be reached"; unenrolled Pods in both clusters resolve
+   ([record](../evidence/g1-destination-sources/clusterip-dns-gauges.txt)). Diagnosed: `cilium-dbg monitor` shows
+   the query dropped at the source endpoint's egress (`bpf_lxc.c:1626`, UDP to a CoreDNS backend on port 53), by the
+   HBONE-only gate, which has no resolver exception. A fix is in progress and not deployed. It blocks the Global
+   Service by name.
+2. **Recovery on `6090aa6eff` not run:** agent restart, ztunnel restart, node reboot, drain and F1 lost-ACK recovery.
+   Risk to test: after an agent restart the destination can publish a plan before it reads the external sources
+   again, which could close established cross-cluster connections.
+3. **ADR-010 review findings (OB3), not fixed:**
+   - C2: one compromised agent can make every reader invalid (a forged duplicate Pod UID; 33 epochs or 1,024 node
+     names).
+   - C3: expiry starts when the record is received, so a reader restart plus a partition allows up to two lease
+     TTLs. Floors are never pruned.
+   - C4: narrowed egress takes up to 30 s, not 5 s, because egress is sampled after serial revalidation.
+   - C6: an agent that crash-loops past 32 epochs leaves readers invalid until each restarts. More than 64 sources,
+     512 cuts or 4,096 ports makes a destination deny every caller.
+   - C7: size bounds stay plan-fatal.
+   - C8: risks only. The record worst case is 888,391 of 1,048,576 bytes. Each 5 s refresh rewrites the whole record,
+     so etcd history grows (estimate, not measured).
+4. **Transport encryption.** WireGuard or IPsec beneath workload TLS is not configured or qualified.
+5. **Policy shapes.** A source whose egress denies the destination, and live port narrowing, are unit-tested only
+   (`pkg/ztunnel/xds/effective_sources_test.go` in the Cilium fork).
+6. **Per-connection evidence.** Correlate each allowed request with the verified client and server SPIFFE IDs.
+7. **Every row marked "Not run" in the matrix below.**
+
+## Scenario matrix
+
+The primary profile requires workload mTLS plus WireGuard or IPsec on the same cross-cluster flow. The
+[existing lab review](../research/EXISTING_LAB_REVIEW.md) records historical failures to reproduce. A report that
+exits zero while printing trouble is not a pass: negative checks fail the qualification job.
+
+| Scenario | Expected behavior | Evidence | State, 2026-10-25 |
+| --- | --- | --- | --- |
+| App A → App B across clusters, no WireGuard/IPsec | Valid SPIFFE identities, HBONE TLS, policy enforced | TLS peer identity, traffic trace, denial tests | Allow paths pass both directions; peer identity per request and denials not recorded |
+| Same path over WireGuard | mTLS plus node encryption, no plaintext fallback | ztunnel metrics, WireGuard peer state, packet capture | Not run |
+| Same path over IPsec | mTLS plus XFRM transport protection | TLS metrics, XFRM state, packet capture | Not run |
+| mTLS off, WireGuard/IPsec on or off | Supported ClusterMesh behavior unchanged | Baseline connectivity suite | Not run on the current build |
+| Unknown remote identity | Protected connection refused | Authentication failure, denied flow | Not run |
+| Forged foreign-cluster SPIFFE URI | Unauthorized identity refused despite the common root | Negative SVID test | Source tests only |
+| Excluded namespace → protected namespace | Denied unless explicitly authorized | Packet capture and policy verdict | Unregistered caller: no response; verdict not correlated |
+| New or relabelled Pod before ztunnel is ready | No unprotected connection | Race stress test | Not run on the current build |
+| Missing SVID or SPIRE down | No new unauthenticated protected connection | Chaos test | Not run on the current build |
+| Hub partition or trust bundle drift | Cached verified trust where safe; no unsafe CA retirement | Digest, readiness, partition test | Not run |
+| Root rotation, old and new overlap | New SVIDs work everywhere before the old root is removed | End-to-end handshake matrix | Not run |
+| WireGuard key missing or IPsec XFRM stale | No silent transport downgrade when required | Kernel and flow inspection | Not applicable until the transport is configured |
+| DNS UDP/TCP, API, webhook, kubelet | Control-plane communication stays functional | Probes, cluster health | **Fail:** DNS from enrolled Pods |
+| OpenShift operator upgrades, hosted control plane | No unsafe enrollment or degradation | ClusterOperator conditions, operator tests | Not run |
+| Node reboot, Cilium upgrade, ztunnel crash | Safe reconvergence, fail-closed posture | Restart tests | Not run on `6090aa6eff` |
+| MTU and service translation | No hidden fragmentation or routing regression | p95/p99 latency, MTU captures | Not run |
+
+**Release gate.** An encrypted connection is not proof of authorization. A namespace label is not proof of
+enforcement. No production support claim without negative security tests.
+
+## Two-cluster test design
 
 ### Topology and positive path
 
-Install the same application identity (namespace, service account, labels and image) in both mesh clusters, with a local client in each cluster. Give the two backend instances distinguishable responses so evidence identifies which cluster served each request. Assert, separately:
+Install the same application identity (namespace, service account, labels and image) in both clusters, with a local
+client in each. Give the backends distinguishable responses, so each reply names the serving cluster. The
+`cmtc-live-mtls` fixture does this with the `X-CMTC-Cluster` response header. Assert separately:
 
-| Caller | Destination | Expected result |
-|---|---|---|
-| Cluster A client | A backend | Local baseline succeeds. |
-| Cluster A client | B backend | Cross-cluster authenticated request succeeds. |
-| Cluster B client | B backend | Local baseline succeeds. |
-| Cluster B client | A backend | Reverse cross-cluster authenticated request succeeds. |
+| Caller | Destination | Expected result | State |
+| --- | --- | --- | --- |
+| Cluster A client | A backend | Local path succeeds | Passes |
+| Cluster A client | B backend | Cross-cluster authenticated request succeeds | Passes (outcome; peer identity per request not recorded) |
+| Cluster B client | B backend | Local path succeeds | Passes |
+| Cluster B client | A backend | Reverse cross-cluster request succeeds | Passes (outcome; peer identity per request not recorded) |
 
-Keep service VIP and direct Pod-IP tests distinct. Exercise TCP/80, TCP/8080 and an arbitrary high port such as TCP/31337; the high port is a port-independence probe, not a prescribed allowlist. Policy must attach to workload identity and the original application tuple, not a guessed port list or HBONE port. During load, retain per-direction request totals and responses, verified client/server SPIFFE IDs, the ztunnel TLS/HBONE decision, xDS resource state, and packet captures from the same run.
+Keep Service VIP and direct Pod IP tests separate. Exercise TCP 80, 8080 and a high port such as 31337. The high port
+probes port independence; it is not an allowlist. Policy attaches to workload identity and the original application
+tuple, never to a guessed port list or the HBONE port. Under load, keep per-direction request totals, the verified
+client and server SPIFFE IDs, the ztunnel decision, xDS resource state and packet captures from the same run.
 
 ### Negative and recovery path
 
-For both directions, try a non-enrolled or invalid-SVID client, an unauthorized cluster identity, an allowed identity on a denied application port, missing or stale policy, xDS NACK/disconnect, trust-bundle mismatch, and proxy/Cilium restart. Require an explicit identity or policy denial and zero application response where protection is required. Restore the dependency and prove that the authorized request recovers. A timeout without a correlated proxy/policy verdict is inconclusive. Test an unknown destination inside the protected mesh range on 80, 8080 and a high port: the current ztunnel outbound path can fall back to raw TCP passthrough when no workload/upstream resolves, so this must be changed to an explicit deny (with carefully scoped external/platform exceptions) before claiming that all protected traffic traverses authenticated ztunnel. Also test an empty effective ALLOW set: the inspected ztunnel policy semantics allow when no ALLOW policy exists, so requiring a client certificate alone does not implement authenticated-only authorization. Keep capture of inner payload separate from encrypted inter-node transport evidence; WireGuard/IPsec cannot substitute for workload mTLS.
+For both directions, test:
+
+- a non-enrolled client and an invalid-SVID client;
+- an unauthorized cluster identity;
+- an allowed identity on a denied application port;
+- a source whose egress denies the destination;
+- missing or stale policy, xDS NACK and disconnect;
+- a trust-bundle mismatch;
+- proxy and Cilium restart.
+
+Each case needs an explicit identity or policy denial and no application response. A timeout without a correlated
+proxy or policy verdict is inconclusive. Restore the dependency and prove that the authorized request recovers.
+
+Two upstream ztunnel behaviors are changed in our fork and must be tested live:
+
+- **Unknown destination inside the mesh.** Upstream can fall back to raw TCP passthrough. With
+  `REQUIRE_MESH_HBONE=true`, the fork refuses an unknown protected destination and any egress without an explicit
+  exception (`src/proxy/outbound.rs:787-803`). Test 80, 8080 and a high port.
+- **Empty effective ALLOW set.** Upstream allows when no ALLOW policy exists. With `REQUIRE_INBOUND_MTLS=true`, the
+  fork denies a protected workload that has no effective ALLOW policy (`src/state.rs:762-768`).
+
+Keep inner-payload capture separate from inter-node transport evidence. WireGuard or IPsec cannot replace workload
+mTLS.
 
 ### Evidence and test-double boundary
 
-Record the source SHA and image ID actually running in each cluster, runtime architecture, test selection/pass/skip counts, request outcomes, authenticated peer identities, policy verdicts, xDS ACK/NACK state, and packet evidence. A packet trace must show the expected cross-node HBONE/TLS flow and must not expose application plaintext; a Grafana screenshot is taken only after load and supports, but never replaces, machine assertions. Keep failures and recovery output.
+Record the source SHA and image ID running in each cluster, the architecture, test selection, pass and skip counts,
+request outcomes, authenticated peer identities, policy verdicts, xDS ACK/NACK state and packet evidence. A packet
+trace shows the expected HBONE/TLS flow and no application plaintext. A Grafana screenshot is taken after load; it
+supports, but never replaces, machine assertions. Keep failures and recovery output.
 
-Synthetic remote-workload injection is permitted only as an isolated unit/integration diagnostic for mapper, stream and metric behavior. It must not be delivered through a production side channel, replace SPIRE/bundle/ClusterMesh provenance, or establish authorization or `Protected`. The remote xDS and policy path must be exercised using authenticated records from the native integration boundary. ACK, certificate issuance, namespace labels and dashboard values remain separate observations.
+Synthetic remote-workload injection is allowed only as an isolated unit or integration diagnostic. It never uses a
+production side channel, never replaces SPIRE, bundle or ClusterMesh provenance, and never establishes authorization
+or `Protected`. The remote xDS and policy path is exercised with authenticated records from the native integration
+boundary.
 
-### Current enhanced-fork implementation gates
+### WireGuard and IPsec composition
 
-The active data-plane work is in the user's enhanced [`ephico2real2/cilium`](https://github.com/ephico2real2/cilium) fork, checkout `/private/tmp/cilium-ztunnel-authorization-runtime`, branch `feat/ztunnel-spire-credentials`, based on `f142e58d06a458b72cf7ea27999c093ca87c9c2b`. The source is currently dirty; record the exact final tree/commit before building an image. The currently deployed Observe image is an older fork build and must not be confused with this candidate.
+Only after the workload-mTLS profile passes, a separate matrix composes WireGuard and then IPsec with the same flow.
+Verify workload TLS identity and node-layer encryption independently in each run. Never infer one layer from the
+other, from a successful request or from a dashboard.
 
-The fork already has meaningful local ztunnel, ACK, lifecycle and authorization-transport enhancements, but this does not mean cross-cluster workload mTLS is complete. Source review found the ClusterMesh/ztunnel compatibility guard still rejects the combined profile; the current endpoint source wraps local CiliumEndpoint/CiliumEndpointSlice watchers; ClusterMesh connection lifecycle does not itself provide a remote workload record with authoritative Pod UID, service account and labels; and workload resource naming still needs cluster-qualified identity to prevent collisions. The new authorization xDS store transports compiled resources and records ACK metrics; it does not compile Cilium policy or provide an effective-policy admission barrier. Keep the guard until authenticated remote snapshots and deltas, cluster-qualified lifecycle, cryptographic cluster binding, effective policy, fail-closed unknown-destination handling and recovery tests are implemented against the fork's native interfaces.
+## History
 
-The companion ztunnel candidate is `/private/tmp/cmtc-ztunnel-enforcement`, branch `feat/persistent-inbound-mtls`, with local edits based on `376218cf6f662b1c00fd9407ff8ee27b889cd56c`. Keep its local proxy fixes separate from upstream and pin the source actually used. Existing Rust tests confirm that no effective ALLOW policy means allow; this behavior must be changed or safely constrained for the authenticated-only mesh profile. Cilium remote identity publication, an ACK, and inbound certificate validation each prove different gates; no one result substitutes for the others.
-
-### Refined implementation and qualification sequence for the enhanced fork
-
-The fork is an active implementation, not a stock-Cilium test target. Build on its existing CNI admission, endpoint lifecycle, ZDS acknowledgment, strict live-enrollment and xDS work; do not re-create those controls in CMTC or replace them with a mock bridge. The current two-cluster Observe run is a separate baseline and used an older fork image. The dirty strict-xDS candidate at `f142e58d06a458b72cf7ea27999c093ca87c9c2b` has not been built into an image or deployed, so its passing package tests are not end-to-end evidence.
-
-Implement the mesh path through the fork's native Cilium boundaries, in this order:
-
-1. **Finish the current xDS contract.** Keep `pkg/ztunnel/xds.EndpointSource` as the local source and its strict complete-snapshot/event validation as the input contract. Add remote discovery through a native Cilium ClusterMesh endpoint source; do not accept endpoint records from a CMTC-to-agent or CMTC-to-ztunnel production injection API. First verify the actual ClusterMesh cache/API provides Pod UID, namespace, service account, labels, addresses, cluster identity and delete/recreation provenance. If it does not, extend that native source contract rather than treating a service endpoint slice as authoritative workload identity.
-2. **Make origin and resource identity unambiguous.** Obtain cluster identity from the authenticated local ClusterMesh peer/configuration, never from a remote workload payload. Derive the allowed SPIFFE trust domain from an explicit cluster-to-domain map. Key xDS resources and policy references by cluster plus Pod UID/incarnation; preserve the exact same key on update, removal, reconnect and recreation. Reject duplicate addresses, unknown cluster IDs, stale source revisions, incomplete snapshots and any workload missing required identity fields.
-3. **Make synchronization atomic and recoverable.** Do not send the first usable remote Address snapshot until the local source and every configured peer have completed an authenticated initial sync. Sequence updates per peer. On disconnect, trust-domain change, stale epoch, failed snapshot or NACK, withdraw that peer's resources and keep affected protected destinations unavailable. Reconnect must install a fresh complete snapshot before restoring routes. An ACK metric is observability; an admission barrier must be tied to the exact stream, version, peer and complete Address plus Authorization state.
-4. **Use the Cilium policy result, not a second policy language.** The fork's `AuthorizationPolicies` xDS store transports resources and observes protocol ACK/NACK; it does not by itself compile CiliumNetworkPolicy/CCNP or establish effective authorization. Project the already-resolved Cilium endpoint L4 policy into an immutable, workload-incarnation-bound Authorization resource at the native policy-resolution boundary. Preserve original application protocol/port and the intended source identity. Until that producer and ztunnel's enforcement semantics are proven, a missing, empty, stale or NACKed required policy must deny protected mesh traffic. Do not assume mTLS authentication alone means the peer is authorized.
-5. **Keep the compatibility guard until every prerequisite is present.** Feature validation may allow ClusterMesh plus ztunnel only when authenticated remote workload discovery, per-peer trust binding, atomic synchronization, effective fail-closed policy and unknown-mesh-destination denial are all enabled. Unknown protected mesh IPs must not fall back to raw TCP, at port 80, 8080, 31337 or any other application port. External and Kubernetes platform paths must have explicit, separately tested behavior.
-6. **Build and qualify the exact paired images locally.** Record clean source commits (or, for diagnostics, a complete dirty-diff hash), Podman architecture, build inputs and image IDs for the enhanced Cilium fork and matching ztunnel source. Import those exact images into the existing Colima kind clusters and verify each running node's image ID/version before traffic. Do not label the older GHCR Observe image as the candidate. CI stays deferred until local qualification is complete and the user changes that instruction.
-
-The candidate xDS source boundary is `pkg/ztunnel/xds.EndpointSource` / `StreamProcessorParams`; the native ClusterMesh record and observer must be added at the authenticated ClusterMesh boundary before adapting that source. A candidate event contract is:
-
-```go
-type WorkloadOrigin struct {
-	ClusterName string // assigned from the authenticated local ClusterMesh peer
-	ClusterID   uint32
-}
-
-type EndpointEvent struct {
-	Type EndpointEventType
-	*types.CiliumEndpoint
-	Origin   WorkloadOrigin
-	Revision uint64 // monotonic within the authenticated peer session
-	Err      error
-}
-
-type ClusterTrust struct {
-	ClusterID  uint32
-	TrustDomain string
-}
-
-type ClusterTrustMap map[string]ClusterTrust
-
-func (m ClusterTrustMap) DomainFor(origin WorkloadOrigin) (string, error) {
-	trust, ok := m[origin.ClusterName]
-	if !ok || trust.ClusterID != origin.ClusterID || trust.TrustDomain == "" {
-		return "", fmt.Errorf("untrusted or stale workload origin %q", origin.ClusterName)
-	}
-	return trust.TrustDomain, nil
-}
-
-func workloadResourceName(cluster, podUID string) string {
-	return cluster + "/core/v1/Pod/" + podUID
-}
-```
-
-Treat this as a source-boundary sketch to adapt to the actual native ClusterMesh record, not a CMTC injection API. On `CREATE`, validate the peer session and trust map, then use the same cluster-qualified key for the xDS `Resource.Name`, `Workload.Uid`, and policy reference; set the workload's cluster identity and derive `TrustDomain` from `ClusterTrustMap`. On `REMOVED`, use that same key. Coalesce updates by qualified key, reject conflicting operations in a complete snapshot, and reject globally duplicated Pod addresses because ztunnel cannot route an ambiguous address. Before fixing the key format, verify the paired ztunnel treats resource names as opaque and preserves `Workload.Uid`/cluster identity consistently.
-
-The policy API also needs a barrier whose state is bound to a particular ztunnel stream and version. The existing `AuthorizationPolicies.Apply` plus ACK/NACK observer is not that barrier. The required contract is:
-
-```go
-type PolicyAckBarrier interface {
-	Wait(ctx context.Context, clientID, typeURL string, version uint64) error
-	ClientDisconnected(clientID string)
-}
-```
-
-After publishing an authorization update, wait with a bounded deadline for the exact connected client and version. On timeout, NACK, or stream replacement, close policy admission for that workload/stream; a reconnect must invalidate the previous ACK and receive the complete current snapshot before admission reopens. If the first supported profile uses Cilium BPF as the L4 authority instead of ztunnel policy, state that boundary and still require workload TLS authentication at ztunnel. Do not advertise CiliumNetworkPolicy enforcement by ztunnel until the effective policy projection is implemented.
-
-The acceptance run starts with local same-cluster controls and then tests A→B and B→A both through Global Services and direct Pod IP. Use the same application identity in both clusters but cluster-distinguishing backend responses. Exercise port 80, 8080 and a high port as probes of port-independent capture, not as a port allowlist. For every positive flow, correlate the response with the verified client/server SPIFFE IDs, source-cluster binding, effective policy decision, current xDS resource/version, ztunnel connection state, and a cross-node packet capture. Under representative reciprocal load, the capture must show the workload TLS/HBONE path and must not expose the application canary in plaintext.
-
-Negative coverage must include an unenrolled client, absent/expired or malformed SVID, wrong issuer or trust domain, spoofed origin cluster, duplicate Pod UID across clusters, unauthorized policy, missing/empty/stale/NACKed policy, incomplete remote snapshot, stale/out-of-order update, remote disconnect, proxy/Cilium restart, and an unresolved destination inside the protected mesh CIDR. Each case needs an explicit denial correlated to the same flow and no application response; timeout-only evidence is inconclusive. Restore the exact failed dependency and prove a fresh snapshot/policy is accepted and the authorized flow recovers. Exercise DNS, API, webhook, kubelet and external traffic independently to show that the mesh deny boundary does not break platform dependencies.
-
-Only after the workload-mTLS profile passes should a separate matrix compose WireGuard and IPsec with the same workload flow. Verify the workload TLS identity and the node-layer encryption independently in each run. Never infer either layer from the other, from a successful request, or from a dashboard screenshot.
-
-### Review of the submitted architecture blueprint
-
-Accepted: separate control-plane trust orchestration from native Cilium datapath/xDS; recognize that remote identity publication alone does not provide effective L4 authorization; test trust and policy failures closed; use the two-cluster mesh as an end-to-end fixture. Refined: first trace the existing native discovery and policy interfaces, then use mocks only for narrow diagnostics; do not add a CMTC-to-ztunnel injection path to avoid building the real integration. Verify SPIFFE federation and cluster binding against the selected trust-domain and issuer model rather than assuming that a common root or URI string distinguishes clusters. The blueprint's suggested PR order is advisory and remains subordinate to these security dependencies and the canonical agile backlog.
+- **2026-10-23:** this page listed acceptance targets only; none had run.
+- **2026-10-24:** it added the enhanced-fork implementation sequence (finish the xDS contract, make origin and
+  resource identity unambiguous, atomic synchronization, use the Cilium policy result, keep the compatibility guard,
+  build exact paired images) and Go sketches for `WorkloadOrigin`, `ClusterTrustMap` and `PolicyAckBarrier`. Those
+  steps are now implemented in the forks in their own form: the blanket ClusterMesh/ztunnel rejection is replaced by
+  a capability check (`pkg/ztunnel/cell.go:73` in the Cilium fork), and quarantine release is tied to ACKs on the
+  current ADS stream. The checkouts and pins that section named (`f142e58d06`, `376218cf6f`) are historical. Read
+  the earlier text in git history.
+- **2026-10-24, blueprint review:** the user's architecture blueprint was accepted as a test-design input. Its
+  ownership split stands. Its Cilium v1.20.4 pin does not describe the fork work.

@@ -1,0 +1,25 @@
+DaemonSet.apps/kube-system/cilium: .metadata.annotations.deprecated.daemonset.template.generation
+    live ="27"
+    after="28"
+DaemonSet.apps/kube-system/cilium: .spec.template.spec.containers[name="cilium-agent"].image
+    live ="ghcr.io/ephico2real2/cilium-dev@sha256:369090126600bc5f9b8b2630781cb8d476ad07c2c53d4571da71e16795dafa60"
+    after="ghcr.io/ephico2real2/cilium-dev@sha256:c77bdc52d2f35afa6d4b31673743602b0674c2de8e6843d401a4a1747ac8a447"
+DaemonSet.apps/kube-system/cilium: .spec.template.spec.initContainers[name="config"].image
+    live ="ghcr.io/ephico2real2/cilium-dev@sha256:369090126600bc5f9b8b2630781cb8d476ad07c2c53d4571da71e16795dafa60"
+    after="ghcr.io/ephico2real2/cilium-dev@sha256:c77bdc52d2f35afa6d4b31673743602b0674c2de8e6843d401a4a1747ac8a447"
+DaemonSet.apps/kube-system/cilium: .spec.template.spec.initContainers[name="mount-cgroup"].image
+    live ="ghcr.io/ephico2real2/cilium-dev@sha256:369090126600bc5f9b8b2630781cb8d476ad07c2c53d4571da71e16795dafa60"
+    after="ghcr.io/ephico2real2/cilium-dev@sha256:c77bdc52d2f35afa6d4b31673743602b0674c2de8e6843d401a4a1747ac8a447"
+DaemonSet.apps/kube-system/cilium: .spec.template.spec.initContainers[name="apply-sysctl-overwrites"].image
+    live ="ghcr.io/ephico2real2/cilium-dev@sha256:369090126600bc5f9b8b2630781cb8d476ad07c2c53d4571da71e16795dafa60"
+    after="ghcr.io/ephico2real2/cilium-dev@sha256:c77bdc52d2f35afa6d4b31673743602b0674c2de8e6843d401a4a1747ac8a447"
+DaemonSet.apps/kube-system/cilium: .spec.template.spec.initContainers[name="mount-bpf-fs"].image
+    live ="ghcr.io/ephico2real2/cilium-dev@sha256:369090126600bc5f9b8b2630781cb8d476ad07c2c53d4571da71e16795dafa60"
+    after="ghcr.io/ephico2real2/cilium-dev@sha256:c77bdc52d2f35afa6d4b31673743602b0674c2de8e6843d401a4a1747ac8a447"
+DaemonSet.apps/kube-system/cilium: .spec.template.spec.initContainers[name="clean-cilium-state"].image
+    live ="ghcr.io/ephico2real2/cilium-dev@sha256:369090126600bc5f9b8b2630781cb8d476ad07c2c53d4571da71e16795dafa60"
+    after="ghcr.io/ephico2real2/cilium-dev@sha256:c77bdc52d2f35afa6d4b31673743602b0674c2de8e6843d401a4a1747ac8a447"
+DaemonSet.apps/kube-system/cilium: .spec.template.spec.initContainers[name="install-cni-binaries"].image
+    live ="ghcr.io/ephico2real2/cilium-dev@sha256:369090126600bc5f9b8b2630781cb8d476ad07c2c53d4571da71e16795dafa60"
+    after="ghcr.io/ephico2real2/cilium-dev@sha256:c77bdc52d2f35afa6d4b31673743602b0674c2de8e6843d401a4a1747ac8a447"
+cmtc-a: 8 change(s), 0 deletion(s); 0 kubectl manager entr(ies) left; 0 refusal(s)

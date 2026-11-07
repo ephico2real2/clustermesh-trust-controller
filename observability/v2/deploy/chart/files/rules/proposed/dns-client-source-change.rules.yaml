@@ -1,0 +1,88 @@
+# Status: tested here with promtool 3.7.0 (rules/run-promtool.sh, tests/dns-client-source-change.test.yaml);
+# returns nothing on the labs: the measurement plane (#36) is not merged or deployed.
+#
+# Question: "Do enrolled Pods get answers to their DNS queries?" (client side)
+#
+# Client-side DNS from the observe-only measurement plane of ADR-005, exported by the CMTC node agent
+# (job "cmtc", component "cmtc-node-agent"). The names, labels and buckets are those the plane defines
+# once, in internal/measurement/contract.go of the #36 worktree (read 2026-10-27T00:50Z, not merged):
+#   - cmtc_measurement_dns_queries_total{namespace, transport, locality};
+#   - cmtc_measurement_dns_answers_total{namespace, transport, locality, rcode};
+#   - cmtc_measurement_dns_answer_duration_seconds{transport, locality}, node-wide;
+#   - cmtc_measurement_ready and cmtc_measurement_workloads{state}.
+# transport is udp or tcp; locality is where the server is: in_pod (an in-Pod proxy on loopback),
+# same_node or off_node; rcode is noerror, formerr, servfail, nxdomain, notimp, refused or other.
+#
+# Every v2 scrape sets the namespace label to the scraped Pod's namespace (cmtc-system), as the
+# Prometheus Operator does, so the plane's own namespace label reads exported_namespace here.
+# ADR-005 (docs/architecture/adr/ADR-005.md:44) keeps per-Pod detail out of metric labels: the series
+# are per cluster, node and namespace, so "for an enrolled Pod" is evaluated per namespace on a node.
+#
+# Series appear only while the plane's last snapshot is fresh (3 s on the monotonic clock,
+# SnapshotMaxAge); a stopped or unattached plane makes them disappear, which CMTCMeasurementPlaneNotReady
+# reports. It never reads as zero queries.
+groups:
+- name: cmtc-dns-client-proposed
+  rules:
+  - record: cmtc:measurement_dns_queries:rate5m
+    expr: sum by (cluster, node, exported_namespace, transport, locality) (rate(cmtc_measurement_dns_queries_total{job="cmtc"}[5m]))
+  - record: cmtc:measurement_dns_answers:rate5m
+    expr: sum by (cluster, node, exported_namespace, rcode) (rate(cmtc_measurement_dns_answers_total{job="cmtc"}[5m]))
+  # Queries without an answer, as a share of queries. UDP retries count as queries, so a query
+  # answered on its second attempt shows as half unanswered.
+  - record: cmtc:measurement_dns_unanswered:ratio_rate5m
+    expr: |-
+      clamp_min(
+        1 - (
+          (sum by (cluster, exported_namespace) (rate(cmtc_measurement_dns_answers_total{job="cmtc"}[5m])) or 0 * sum by (cluster, exported_namespace) (rate(cmtc_measurement_dns_queries_total{job="cmtc"}[5m])))
+          /
+          (sum by (cluster, exported_namespace) (rate(cmtc_measurement_dns_queries_total{job="cmtc"}[5m])) > 0)
+        ),
+        0
+      )
+  - record: cmtc:measurement_dns_answer_duration_seconds:p50_rate5m
+    expr: |-
+      histogram_quantile(0.50, sum by (cluster, locality, le) (rate(cmtc_measurement_dns_answer_duration_seconds_bucket{job="cmtc"}[5m])))
+      and on (cluster, locality) (sum by (cluster, locality) (rate(cmtc_measurement_dns_answer_duration_seconds_count{job="cmtc"}[5m])) > 0)
+  - record: cmtc:measurement_dns_answer_duration_seconds:p99_rate5m
+    expr: |-
+      histogram_quantile(0.99, sum by (cluster, locality, le) (rate(cmtc_measurement_dns_answer_duration_seconds_bucket{job="cmtc"}[5m])))
+      and on (cluster, locality) (sum by (cluster, locality) (rate(cmtc_measurement_dns_answer_duration_seconds_count{job="cmtc"}[5m])) > 0)
+
+  # The operator's rule (2026-10-25): queries sent and no answer received over 1 minute. On
+  # 2026-10-25 an enrolled Pod's queries were dropped at its own node's Cilium egress gate
+  # (bpf_lxc.c:1626, 10.10.1.205 -> 10.10.0.193:53/udp) while CoreDNS stayed healthy: this rule
+  # fires on that node and namespace. The condition must hold on two evaluations in a row, so a
+  # single query whose answer lands in the next window does not fire it.
+  - alert: CMTCEnrolledPodDNSUnanswered
+    expr: |-
+      sum by (cluster, node, exported_namespace) (increase(cmtc_measurement_dns_queries_total{job="cmtc"}[1m])) > 0
+      unless on (cluster, node, exported_namespace)
+      sum by (cluster, node, exported_namespace) (increase(cmtc_measurement_dns_answers_total{job="cmtc"}[1m])) > 0
+    for: 1m
+    labels:
+      severity: critical
+      owner: cilium-agent
+    annotations:
+      summary: 'Enrolled Pods in {{ $labels.exported_namespace }} on {{ $labels.node }} ({{ $labels.cluster }}) sent DNS queries and received no answer for 1 minute'
+      runbook: 'If the CoreDNS alerts are quiet, the queries were dropped before CoreDNS: check cilium_drop_count_total on the node (reason "Policy denied", direction EGRESS) and the approved-resolver exception of the Cilium egress gate. The plane''s event stream names each Pod (ADR-005).'
+
+  - alert: CMTCMeasurementPlaneNotReady
+    expr: cmtc_measurement_ready{job="cmtc"} == 0
+    for: 5m
+    labels:
+      severity: warning
+      owner: cmtc-node-agent
+    annotations:
+      summary: 'The CMTC measurement plane on {{ $labels.node }} ({{ $labels.cluster }}) is not ready'
+      runbook: 'Client DNS panels for this node are unavailable, not zero. cmtc_measurement_hook_available names the hook that did not load; read the loader log.'
+
+  - alert: CMTCMeasurementWorkloadsUnavailable
+    expr: cmtc_measurement_workloads{job="cmtc", state="unavailable"} > 0
+    for: 5m
+    labels:
+      severity: warning
+      owner: cmtc-node-agent
+    annotations:
+      summary: '{{ $value }} enrolled Pods on {{ $labels.node }} ({{ $labels.cluster }}) are not measured'
+      runbook: 'The plane could not attach to those Pods; their data is unavailable. Read the loader log for the reason.'

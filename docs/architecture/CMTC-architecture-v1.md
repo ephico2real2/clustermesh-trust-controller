@@ -4,9 +4,20 @@
 Design scope: proposed behavior requires the stated acceptance tests. Read [current delivery status](../agile/DELIVERY_STATUS.md) and [documentation terms](../../DOCUMENTATION_GUIDE.md).
 <!-- /CMTC_DOC_CONTEXT -->
 
-Status: Design proposal; no implementation or upstream Cilium compatibility is implied.
+**Historical design input, 2026-10-23.** This v1.1 draft is kept unchanged except for this header and the
+node-agent bullet, which now points to the measurement-plane decision. It does not describe the current
+implementation or runtime.
 
-**Historical design input.** Use [END_TO_END_DESIGN.md](END_TO_END_DESIGN.md), the [nine ADR files](adr/ADR-001.md), [canonical backlog](../agile/BACKLOG.md) and [pinned source audit](../research/SOURCE_AUDIT.md) for current work. Story/ADR identifiers in this older draft conflict with the canonical files; its mention of ADR-010 does not create an approved tenth ADR. Native Cilium ztunnel is a Rust dependency; Go applies to CMTC and the Cilium control-plane extensions.
+For current work, read:
+
+- [the end-to-end design](END_TO_END_DESIGN.md) for the target and the current state;
+- [the ADRs](adr/ADR-001.md) for decisions (all Proposed);
+- [the canonical backlog](../agile/BACKLOG.md) for story IDs;
+- [delivery status](../agile/DELIVERY_STATUS.md) for pins and runtime.
+
+Story and ADR numbers in this draft conflict with the canonical files. Its "ADR-010 service routing and HBONE
+interception" is not the repository's [ADR-010](adr/ADR-010.md), which delivers source egress to the destination.
+Native Cilium ztunnel is a Rust dependency; Go applies to CMTC and the Cilium control-plane extensions.
 
 ## System boundary
 CMTC Hub coordinates trust and policy across registered clusters. Per-cluster controller reconciles namespace policy and native Cilium enrollment labels. Node agent (Go DaemonSet) observes local workload coverage and reports signed/versioned configuration acknowledgments. Cilium agent and ztunnel enforce transport authentication. SPIRE issues X.509-SVIDs using per-cluster intermediate CAs under a common protected root. cert-manager manages intermediate CA lifecycle where SPIRE upstream authority integration is validated; trust-manager publishes public trust bundles.
@@ -80,7 +91,7 @@ The Cilium label `io.cilium/mtls-enabled: "true"` is fixed in code, not user-con
 - Deploy one Go agent per eligible node, with bounded cache and least-privilege access.
 - Consume versioned desired state from cluster controller; observe local pods and Cilium/ztunnel readiness using supported interfaces.
 - Report observed generation, applied bundle digest, pod coverage, config lag, probe results, and node health.
-- Do not mint identities, distribute private CA keys or act as a second TLS proxy. The current Observe agent has no BPF access. A separately gated CMTC DaemonSet may host the requested eBPF prototype, but the qualified production datapath must move into Cilium's agent; it must not become an independent permanent policy/service datapath.
+- Do not mint identities, distribute private CA keys or act as a second TLS proxy. The node agent container has no BPF access. The DaemonSet's separate measurement loader container runs the permanent, observe-only eBPF measurement plane ([ADR-005](adr/ADR-005.md)); it never decides a verdict, and packet enforcement, policy and service translation stay in Cilium.
 - Prefer Cilium Hive integration if upstream APIs allow it; separate DaemonSet remains a design decision pending source review.
 
 ## Trust rotation state machine

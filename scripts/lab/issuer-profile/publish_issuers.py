@@ -31,6 +31,9 @@ DEP='cmtc-controller'
 OUT='cmtc-issuer-publication'
 ACCESS='cmtc-issuer-profile-access'
 ROLLBACK='security.cmtc.io/live-issuer-rollback'
+# The Cilium agent's Role for the issuer profile; the lab bring-up made it and labelled it.
+AGENT_ROLE='cilium-ztunnel-issuer-profile'
+AGENT_ROLE_LABEL=('app.kubernetes.io/managed-by','cmtc-local-qualification')
 MAX=256*1024
 class Refusal(RuntimeError):pass
 
@@ -101,11 +104,52 @@ class State:
         if self.lock is not None:os.close(self.lock);self.lock=None
         if self.fd is not None:os.close(self.fd);self.fd=None
 
-def build_approval(proofs,parents,q,generation,now,horizon):
+def derived_key_identifiers(cert):
+    """The key identifiers a signer derives from this key: RFC 5280 4.2.1.2 (1) and RFC 7093 2 (1)."""
+    from cryptography.hazmat.primitives import serialization
+    from cryptography.hazmat.primitives.asymmetric import ec,rsa
+    k=cert.public_key()
+    if isinstance(k,rsa.RSAPublicKey):bits=k.public_bytes(serialization.Encoding.DER,serialization.PublicFormat.PKCS1)
+    elif isinstance(k,ec.EllipticCurvePublicKey):bits=k.public_bytes(serialization.Encoding.X962,serialization.PublicFormat.UncompressedPoint)
+    else:raise Refusal('prepared issuer key type unsupported')
+    return {hashlib.sha1(bits).hexdigest(),hashlib.sha256(bits).hexdigest()[:40]}
+
+def prepared_identity(q,cluster,raw,ski):
+    """The prepared CA of a chain [prepared CA, parent], bound to SPIRE's record without the API.
+
+    The fresh proof shows only the active signer. SPIRE logs the prepared CA's key identifier
+    as the local_authority_id of "X509 CA prepared". A signer may write any identifier, so it
+    binds the key only when it is derived from that key: then the CA holds SPIRE's prepared key.
+    """
+    from cryptography import x509
+    from cryptography.x509.oid import ExtensionOID
+    chain=q.certs(raw)
+    if len(chain)!=2:raise Refusal('prepared issuer chain must be exactly [prepared CA, approved parent]')
+    c=chain[0]
+    if list(q.ext(c,x509.SubjectAlternativeName).value)!=[x509.UniformResourceIdentifier('spiffe://'+q.DOMAINS[cluster])]:raise Refusal('prepared issuer domain mismatch')
+    if q.ext(c,x509.SubjectKeyIdentifier).value.digest.hex()!=ski:raise Refusal('prepared issuer key identifier differs from the SPIRE prepared authority')
+    if ski not in derived_key_identifiers(c):raise Refusal('prepared issuer key identifier is not derived from its key')
+    # Go's certificate parser refuses these critical, so the controller would refuse the approval.
+    if any(e.critical for e in c.extensions if e.oid in (ExtensionOID.SUBJECT_KEY_IDENTIFIER,ExtensionOID.AUTHORITY_KEY_IDENTIFIER)):raise Refusal('prepared issuer marks its key identifiers critical')
+    return chain
+
+def prepared_issuer(q,cluster,raw,ski,parent,now):
+    """SPIRE's prepared X509 CA, approved before SPIRE activates it, in the exact lineage of the active one."""
+    chain=prepared_identity(q,cluster,raw,ski)
+    if q.der(chain[1])!=q.der(parent):raise Refusal('prepared issuer chain must be exactly [prepared CA, approved parent]')
+    c=chain[0]
+    q.ca(c,'signer',now,True);q.issued(c,parent)
+    if c.not_valid_before_utc<parent.not_valid_before_utc or c.not_valid_after_utc>parent.not_valid_after_utc:raise Refusal('prepared issuer validity exceeds its parent')
+    return c
+
+def build_approval(proofs,parents,q,generation,now,horizon,prepared=None):
+    """Each cluster's active signer from its fresh proof, plus SPIRE's prepared CA where one is given."""
+    prepared=prepared or {}
     if type(generation)is not int or not 1<=generation<2**64 or not 120<=horizon<=86400:raise Refusal('invalid administered generation/horizon')
     if set(proofs)!={'cmtc-a','cmtc-b'} or set(parents)!=set(proofs):raise Refusal('both exact clusters required')
+    if not set(prepared)<=set(proofs):raise Refusal('prepared issuer for an unknown cluster')
     roots={};clusters=[];keys=set();rolekeys=set()
-    expiry=now+dt.timedelta(seconds=horizon)
+    certificates=dt.datetime.max.replace(tzinfo=dt.timezone.utc)
     for cluster in sorted(proofs):
         p=proofs[cluster];parent,root=parents[cluster]
         if p['cluster']!=cluster or p['domain']!=q.DOMAINS[cluster] or p['protected'] is not False or p['workloadAttestation'] is not False or p['source']!='authenticated-kubernetes-exec-local-SPIRE-admin-API-nonce-mint':raise Refusal('wrong public proof source/binding')
@@ -122,12 +166,91 @@ def build_approval(proofs,parents,q,generation,now,horizon):
         if k in keys or k in rolekeys or pk in keys or pk in rolekeys or rk in keys or len({k,pk,rk})!=3:raise Refusal('cross-cluster issuer/parent key reuse')
         keys.add(k);rolekeys.add(pk);rolekeys.add(rk)
         pin=q.sha(q.der(root));roots[pin]={'certificatePEM':q.pem(root),'sha256':pin}
-        expiry=min(expiry,signer.not_valid_after_utc,parent.not_valid_after_utc,root.not_valid_after_utc)
-        clusters.append({'clusterID':cluster,'trustDomain':q.DOMAINS[cluster],'issuers':[{'certificatePEM':q.pem(signer),'chainPEM':q.pem(parent),'spkiSHA256':k,'rootSHA256':pin}]})
+        certificates=min(certificates,signer.not_valid_after_utc,parent.not_valid_after_utc,root.not_valid_after_utc)
+        issuers=[{'certificatePEM':q.pem(signer),'chainPEM':q.pem(parent),'spkiSHA256':k,'rootSHA256':pin}]
+        if cluster in prepared:
+            c=prepared_issuer(q,cluster,*prepared[cluster],parent,now);nk=q.sha(q.spki(c))
+            # The same key as the active signer means SPIRE has already activated it.
+            if nk in keys or nk in rolekeys:raise Refusal('prepared issuer key is already an approved issuer, parent or root')
+            keys.add(nk);certificates=min(certificates,c.not_valid_after_utc)
+            issuers.append({'certificatePEM':q.pem(c),'chainPEM':q.pem(parent),'spkiSHA256':nk,'rootSHA256':pin})
+        # The controller canonicalizes issuers by key; build them in that order so the material compares equal.
+        issuers.sort(key=lambda i:i['spkiSHA256'])
+        clusters.append({'clusterID':cluster,'trustDomain':q.DOMAINS[cluster],'issuers':issuers})
+    expiry=min(certificates,now+dt.timedelta(seconds=horizon))
+    # A prepared issuer exists to outlast SPIRE's activation; a horizon that ends first brings the outage back.
+    if prepared and expiry<certificates:raise Refusal('the horizon ends the approval before its certificates; pass --horizon to cover the issuer overlap')
     if len(roots)!=1 or (expiry-now).total_seconds()<120:raise Refusal('one common approved root and at least120seconds remaining required')
     approval={'schemaVersion':1,'generation':generation,'expiresAt':stamp(expiry),'roots':list(roots.values()),'clusters':clusters}
     if len(compact(approval).encode())>65536:raise Refusal('approval size bound')
     return approval
+
+INTERMEDIATE='spire-intermediate'
+CA_EXTENSIONS=('2.5.29.19','2.5.29.15','2.5.29.14','2.5.29.35')
+MAX_INTERMEDIATE_HORIZON=30*86400
+def controller_ca(cert,below,now):
+    """The controller's and ztunnel's CA rules (internal/trustprofile caCurrentForDomain, caDepthAllows;
+    ztunnel ca_material, ca_depth_allows): critical basic constraints with CA set, Cert Sign, only these
+    extensions, and a path length that leaves room for `below` CAs. CRL Sign is not required."""
+    from cryptography import x509
+    if not cert.not_valid_before_utc<=now<cert.not_valid_after_utc:raise Refusal('CA certificate is not current')
+    if any(e.oid.dotted_string not in CA_EXTENSIONS for e in cert.extensions):raise Refusal('CA extension outside the verifier profile')
+    try:bc=cert.extensions.get_extension_for_class(x509.BasicConstraints);ku=cert.extensions.get_extension_for_class(x509.KeyUsage)
+    except x509.ExtensionNotFound as e:raise Refusal('CA basic constraints or key usage absent') from e
+    if not bc.critical or not bc.value.ca or not ku.value.key_cert_sign:raise Refusal('not an explicit signing CA')
+    if bc.value.path_length is not None and bc.value.path_length<below:raise Refusal('CA path length leaves no room for the CAs below it')
+
+def spire_intermediate_issuer(q,cluster,intermediate,root,now):
+    """A cluster's SPIRE intermediate, signed by the mesh root, approved to sign exactly one rotating SPIRE CA."""
+    from cryptography.x509.oid import NameOID
+    controller_ca(root,2,now);controller_ca(intermediate,1,now)
+    if root.subject!=root.issuer:raise Refusal('mesh root is not self-issued')
+    q.issued(root,root);q.issued(intermediate,root)
+    names=intermediate.subject.get_attributes_for_oid(NameOID.COMMON_NAME)
+    if [n.value for n in names]!=[cluster+' SPIRE intermediate CA']:raise Refusal('SPIRE intermediate common name differs from its cluster')
+    if q.spki(intermediate)==q.spki(root):raise Refusal('SPIRE intermediate reuses the root key')
+    return {'certificatePEM':q.pem(intermediate),'spkiSHA256':q.sha(q.spki(intermediate)),'rootSHA256':q.sha(q.der(root)),'signsSPIRECA':True}
+
+def build_intermediate_approval(evidence,q,generation,now,horizon):
+    """Each cluster's SPIRE intermediate as its one issuer, under one common mesh root (issue #34).
+
+    No chain and no SPIRE CA: the verifiers accept exactly one CA below the intermediate, for the cluster's
+    trust domain, so SPIRE's 24-hour CA rotations need no new approval."""
+    if type(generation)is not int or not 1<=generation<2**64 or not 120<=horizon<=MAX_INTERMEDIATE_HORIZON:raise Refusal('invalid administered generation/horizon')
+    if set(evidence)!={'cmtc-a','cmtc-b'}:raise Refusal('both exact clusters required')
+    roots={};clusters=[];keys=set()
+    certificates=dt.datetime.max.replace(tzinfo=dt.timezone.utc)
+    for cluster in sorted(evidence):
+        e=evidence[cluster]
+        if e.get('cluster')!=cluster or e.get('source')!='kubernetes-api-public-certificate-objects' or e.get('protected') is not False:raise Refusal('wrong public evidence source/binding')
+        observed=dt.datetime.fromisoformat(e['observedAt'])
+        if not -2<=(now-observed).total_seconds()<=90:raise Refusal('intermediate evidence is not fresh')
+        intermediate=q.certs(e['intermediatePEM']);root=q.certs(e['rootPEM'])
+        if len(intermediate)!=1 or len(root)!=1:raise Refusal('evidence must hold exactly one intermediate and one root')
+        intermediate,root=intermediate[0],root[0]
+        issuer=spire_intermediate_issuer(q,cluster,intermediate,root,now)
+        if issuer['spkiSHA256'] in keys:raise Refusal('cross-cluster intermediate key reuse')
+        keys.add(issuer['spkiSHA256']);roots[issuer['rootSHA256']]={'certificatePEM':q.pem(root),'sha256':issuer['rootSHA256']}
+        certificates=min(certificates,intermediate.not_valid_after_utc,root.not_valid_after_utc)
+        clusters.append({'clusterID':cluster,'trustDomain':q.DOMAINS[cluster],'issuers':[issuer]})
+    if any(q.sha(q.spki(q.certs(r['certificatePEM'])[0])) in keys for r in roots.values()):raise Refusal('an intermediate key is also the root key')
+    expiry=min(certificates,now+dt.timedelta(seconds=horizon))
+    if len(roots)!=1 or (expiry-now).total_seconds()<120:raise Refusal('one common approved root and at least120seconds remaining required')
+    approval={'schemaVersion':1,'generation':generation,'expiresAt':stamp(expiry),'roots':list(roots.values()),'clusters':clusters}
+    if len(compact(approval).encode())>65536:raise Refusal('approval size bound')
+    return approval
+
+def pem_text(raw):
+    """Public PEM text, ending in one newline: trust-manager writes ca.crt without the last one. The strict parse
+    (public_proof.certs) then accepts only canonical certificate blocks."""
+    text=public(raw).decode()
+    return text if text.endswith('\n') else text+'\n'
+
+def spire_issuer_name(conf):
+    """The issuer_name of SPIRE's UpstreamAuthority "cert-manager" in server.conf, or a refusal."""
+    names=re.findall(r'^\s*issuer_name\s*=\s*"([^"]*)"\s*$',conf,re.M)
+    if len(re.findall(r'UpstreamAuthority\s+"cert-manager"',conf))!=1 or len(names)!=1:raise Refusal('SPIRE server.conf must name exactly one cert-manager upstream issuer')
+    return names[0]
 
 def same_material(a,b):
     return {k:a[k] for k in ('schemaVersion','generation','roots','clusters')}=={k:b[k] for k in ('schemaVersion','generation','roots','clusters')}
@@ -139,6 +262,49 @@ def enabled_template(baseline,owner,cluster,source,source_uid,output_uid,root_pi
     t.setdefault('metadata',{}).setdefault('annotations',{})[OWNER]=owner
     cs[0]['args']=list(cs[0].get('args',[]))+['--issuer-profile-producer=true','--issuer-profile-namespace='+NS,'--issuer-profile-source='+source,'--issuer-profile-output='+OUT,'--issuer-profile-source-uid='+source_uid,'--issuer-profile-output-uid='+output_uid,'--issuer-profile-root-sha256='+root_pin,'--issuer-profile-minimum-generation='+str(generation)]
     return t
+
+def producer_disabled(template,owner):
+    """Return the live template with only this tool's producer args and owner annotation removed.
+
+    An advance derives the rollback baseline from the live owned template, never from the
+    ledger's first-activation baseline: the controller image may have been upgraded since.
+    """
+    t=copy.deepcopy(template);cs=t.get('spec',{}).get('containers',[])
+    if len(cs)!=1 or cs[0].get('name')!='controller':raise Refusal('unexpected controller topology')
+    annotations=t.get('metadata',{}).get('annotations',{})
+    if annotations.get(OWNER)!=owner:raise Refusal('controller template is not owned by this ledger')
+    annotations.pop(OWNER)
+    cs[0]['args']=[x for x in cs[0].get('args',[]) if not x.startswith('--issuer-profile')]
+    return t
+
+ADVANCE_FIELDS=('generation','image','imageConfig','sourceRevision')
+# The one-time move from SPIRE's 24-hour signer to the cluster's SPIRE intermediate (issue #34) also moves the root
+# (Lab Organization Root -> mesh root) and drops the in-pod SPIRE proof pins, which that mode does not use.
+SUCCESSION_FIELDS=('rootSHA256','approvalPins','spireServerImage','issuerMode','intermediatePins')
+def advanced_identity(old,new):
+    """An advance may change only the administered generation (+1) and the verified controller image, and once,
+    from the signer mode to the intermediate mode, the root and the evidence pins."""
+    fields=ADVANCE_FIELDS
+    if new.get('issuerMode')==INTERMEDIATE and old.get('issuerMode')!=INTERMEDIATE:fields+=SUCCESSION_FIELDS
+    keep=lambda i:{k:v for k,v in i.items() if k not in fields}
+    if keep(old)!=keep(new) or new['generation']!=old['generation']+1:raise Refusal('advance changes only generation (+1) and the verified controller image')
+
+def source_name(generation):return 'cmtc-issuer-approval-g'+str(generation)
+
+def access_rules(sources):
+    return [{'apiGroups':[''],'resources':['configmaps'],'resourceNames':list(sources),'verbs':['get']},{'apiGroups':[''],'resources':['configmaps'],'resourceNames':[OUT],'verbs':['get','update']}]
+
+def agent_access_rules(sources):
+    return [{'apiGroups':[''],'resources':['configmaps'],'resourceNames':list(sources)+[OUT],'verbs':['get']}]
+
+def runtime_image_ids(cri):
+    """Content digests a running container may report for this exact CRI image.
+
+    A registry pull records manifest repoDigests. An archive import (kind/ctr) records
+    none, and the kubelet then reports the image config digest itself as imageID.
+    """
+    digests={x.rsplit('@',1)[-1] for x in cri.get('repoDigests',[])}
+    return digests or {cri.get('id')}
 
 def template_patch(deployment,uid,expected,desired):
     if meta(deployment)['uid']!=uid or deployment['spec']['template']!=expected:raise Refusal('Deployment identity/template drift; no takeover')
@@ -227,24 +393,62 @@ class Publisher:
             c.update(baseline=baseline,deploymentUID=meta(d)['uid']);self.s.save()
         if d['spec']['template'] not in (c['baseline'],c.get('active')):raise Refusal('unowned Deployment template')
         return d
-    def fresh_proofs(self):
+    def intermediate_evidence(self,cluster):
+        """Public evidence that SPIRE signs under this exact SPIRE intermediate: no Secret is read.
+
+        The pinned Certificate is Ready; its CertificateRequest of the current revision holds the certificate
+        and the mesh root ConfigMap holds the pinned root; the ClusterIssuer signs from that Certificate's
+        Secret; SPIRE's server.conf names that ClusterIssuer."""
+        api=self.apis[cluster];name=cluster+'-spire-intermediate';cm=self.a.cert_manager_namespace
+        c=api.get('/apis/cert-manager.io/v1/namespaces/'+cm+'/certificates/'+name);m=meta(c);st=c.get('status',{})
+        if m['uid']!=self.a.intermediate_pins[cluster]:raise Refusal('SPIRE intermediate Certificate UID differs from its pin')
+        ref=c['spec'].get('issuerRef',{})
+        if c['spec'].get('isCA') is not True or ref!={'name':self.a.root_issuer,'kind':'ClusterIssuer','group':'cert-manager.io'}:raise Refusal('SPIRE intermediate is not a CA from the mesh root issuer')
+        if not any(x.get('type')=='Ready' and x.get('status')=='True' for x in st.get('conditions',[])) or type(st.get('revision')) is not int:raise Refusal('SPIRE intermediate Certificate is not Ready')
+        crs=[r for r in api.get('/apis/cert-manager.io/v1/namespaces/'+cm+'/certificaterequests')['items']
+             if any(o.get('kind')=='Certificate' and o.get('uid')==m['uid'] and o.get('controller') for o in r['metadata'].get('ownerReferences',[]))
+             and r['metadata'].get('annotations',{}).get('cert-manager.io/certificate-revision')==str(st['revision'])]
+        if len(crs)!=1:raise Refusal('expected exactly one CertificateRequest for the current intermediate revision')
+        cr=crs[0];meta(cr)
+        if cr['spec'].get('issuerRef')!=ref or not all(any(x.get('type')==t and x.get('status')=='True' for x in cr.get('status',{}).get('conditions',[])) for t in ('Approved','Ready')):raise Refusal('intermediate CertificateRequest is not approved and issued by the mesh root issuer')
+        import base64
+        intermediate=pem_text(base64.b64decode(cr['status']['certificate'],validate=True))
+        chain=self.q.certs(intermediate)
+        if len(chain)!=1 or stamp(chain[0].not_valid_after_utc)!=st.get('notAfter'):raise Refusal('issued intermediate differs from the Certificate status')
+        issuer=api.get('/apis/cert-manager.io/v1/clusterissuers/'+name);meta(issuer)
+        if issuer.get('spec')!={'ca':{'secretName':c['spec'].get('secretName')}}:raise Refusal('SPIRE intermediate ClusterIssuer does not sign from that Certificate')
+        root_cm=api.get('/api/v1/namespaces/'+NS+'/configmaps/'+self.a.root_configmap);meta(root_cm)
+        root=pem_text(root_cm.get('data',{}).get('ca.crt',''));roots=self.q.certs(root)
+        if len(roots)!=1 or self.q.sha(self.q.der(roots[0]))!=self.a.root_sha256:raise Refusal('mesh root ConfigMap differs from the root pin')
+        spire=api.get('/api/v1/namespaces/cilium-spire/configmaps/spire-server');meta(spire)
+        if spire_issuer_name(spire.get('data',{}).get('server.conf',''))!=name:raise Refusal('SPIRE does not request its CA from this intermediate')
+        return {'cluster':cluster,'source':'kubernetes-api-public-certificate-objects','protected':False,'observedAt':dt.datetime.now(dt.timezone.utc).isoformat(),
+                'certificateUID':m['uid'],'revision':st['revision'],'certificateRequestUID':meta(cr)['uid'],'intermediatePEM':intermediate,'rootPEM':root}
+    def current_approval(self,check):
+        """Mint fresh public proofs from both exact SPIRE servers and build the administered approval."""
+        if getattr(self.a,'issuer_mode',None)==INTERMEDIATE:
+            evidence={}
+            for cluster in sorted(self.apis):check(cluster);evidence[cluster]=self.intermediate_evidence(cluster)
+            return evidence,build_intermediate_approval(evidence,self.q,self.a.generation,dt.datetime.now(dt.timezone.utc),self.a.horizon)
         server_image=self.q.approved_server_image(getattr(self.a,'spire_server_image',self.q.SERVER_IMAGE))
         proofs={};parents={}
         for cluster in sorted(self.apis):
-            api=self.apis[cluster];self.preflight(cluster)
+            api=self.apis[cluster];check(cluster)
             pod=api.get('/api/v1/namespaces/cilium-spire/pods/spire-server-0')
             proofs[cluster]=self.q.execute_proof(api,cluster=cluster,cluster_uid=self.a.cluster_pins[cluster],pod_uid=meta(pod)['uid'],approval_uid=self.a.approval_pins[cluster],root_pin=self.a.root_sha256,server_image=server_image)
             if proofs[cluster].get('approvedServerImage')!=server_image:raise Refusal('proof did not retain the independent approved server image pin')
             approval=api.get('/api/v1/namespaces/cert-manager/configmaps/cmtc-spire-cluster-ca-approval')
             parents[cluster]=self.q.approved_parent(approval,uid=self.a.approval_pins[cluster],cluster=cluster,root_pin=self.a.root_sha256,now=dt.datetime.now(dt.timezone.utc))
-        approval=build_approval(proofs,parents,self.q,self.a.generation,dt.datetime.now(dt.timezone.utc),self.a.horizon)
+        return proofs,build_approval(proofs,parents,self.q,self.a.generation,dt.datetime.now(dt.timezone.utc),self.a.horizon,getattr(self.a,'prepared',None))
+    def fresh_proofs(self):
+        proofs,approval=self.current_approval(self.preflight)
         old=self.s.data.get('approval')
         if old:
             if not same_material(old,approval) or dt.datetime.fromisoformat(old['expiresAt'].replace('Z','+00:00'))<=dt.datetime.now(dt.timezone.utc)+dt.timedelta(seconds=120):raise Refusal('recorded approval expired/material changed; explicit higher-generation workflow required')
         else:self.s.data['approval']=approval
         self.s.data['freshProofs']=proofs;self.s.save()
     def rbac(self,cluster,source):
-        body={'rules':[{'apiGroups':[''],'resources':['configmaps'],'resourceNames':[source],'verbs':['get']},{'apiGroups':[''],'resources':['configmaps'],'resourceNames':[OUT],'verbs':['get','update']}]}
+        body={'rules':access_rules([source])}
         self.owned_object(cluster,'Role',ACCESS,body)
         self.owned_object(cluster,'RoleBinding',ACCESS,{'roleRef':{'apiGroup':'rbac.authorization.k8s.io','kind':'Role','name':ACCESS},'subjects':[{'kind':'ServiceAccount','name':'cmtc-controller','namespace':NS}]})
         api=self.apis[cluster];checks=[('get','configmap/'+source,True),('get','configmap/'+OUT,True),('update','configmap/'+OUT,True),('update','configmap/'+source,False),('update','configmap/cmtc-live-issuer-foreign',False),('list','configmaps',False),('watch','configmaps',False),('create','configmaps',False),('delete','configmap/'+OUT,False),('patch','configmap/'+source,False),('patch','configmap/'+OUT,False),('patch','configmap/cmtc-live-issuer-foreign',False),('deletecollection','configmaps',False),('get','secret/cmtc-live-issuer-never-created',False),('list','secrets',False),('watch','secrets',False),('create','secrets',False),('update','secret/cmtc-live-issuer-never-created',False),('patch','secret/cmtc-live-issuer-never-created',False),('delete','secret/cmtc-live-issuer-never-created',False),('deletecollection','secrets',False)]
@@ -255,10 +459,22 @@ class Publisher:
             if p.stdout.strip()!=(b'yes' if want else b'no') or p.returncode not in (0,1):raise Refusal('effective SA permission differs from exact contract: '+verb+' '+res)
             results.append({'verb':verb,'resource':res,'allowed':want})
         self.s.data['clusters'][cluster]['rbac']=results;self.s.save()
-    def patch_template(self,cluster,expected,desired):
+    def patch_template(self,cluster,expected,desired,attempts=5):
         api=self.apis[cluster];c=self.s.data['clusters'][cluster];path='/apis/apps/v1/namespaces/'+NS+'/deployments/'+DEP
-        d=api.get(path);ops=template_patch(d,c['deploymentUID'],expected,desired)
-        self.command(api.argv+['-n',NS,'patch','deployment',DEP,'--type=json','-p',compact(ops),'--request-timeout=12s'])
+        for attempt in range(attempts):
+            d=api.get(path);ops=template_patch(d,c['deploymentUID'],expected,desired)
+            try:
+                self.command(api.argv+['-n',NS,'patch','deployment',DEP,'--type=json','-p',compact(ops),'--request-timeout=12s'])
+                break
+            except Refusal:
+                # The Deployment controller writes status right after every template
+                # change, so the resourceVersion test can lose that race. Retry only
+                # while the template is still exactly the expected one.
+                again=api.get(path)
+                if meta(again)['uid']!=c['deploymentUID']:raise
+                if again['spec']['template']==desired:break
+                if again['spec']['template']!=expected or attempt==attempts-1:raise
+                time.sleep(0.5)
         again=api.get(path)
         if meta(again)['uid']!=c['deploymentUID'] or again['spec']['template']!=desired:raise Refusal('Deployment patch acknowledgment differs')
     def runtime(self,cluster,template):
@@ -285,7 +501,7 @@ class Publisher:
                 image=json.loads(raw);spec=image.get('info',{}).get('imageSpec',{});cri=image['status']
                 if cri.get('id')!=self.a.image_config or spec.get('architecture')!='arm64' or spec.get('config',{}).get('Labels',{}).get('org.opencontainers.image.revision')!=self.a.source_sha:raise Refusal('actual running image config/source/architecture differs')
                 running=p['status']['containerStatuses'][0]['imageID'].split('://',1)[-1].rsplit('@',1)[-1]
-                if running not in {x.rsplit('@',1)[-1] for x in cri.get('repoDigests',[])} or not re.fullmatch('sha256:[0-9a-f]{64}',running):raise Refusal('runtime imageID is not a manifest of exact CRI image')
+                if running not in runtime_image_ids(cri) or not re.fullmatch('sha256:[0-9a-f]{64}',running):raise Refusal('runtime imageID is not a manifest of exact CRI image')
                 c['runtime']={'podUID':meta(p)['uid'],'podName':p['metadata']['name'],'podIP':p['status']['podIP'],'containerID':p['status']['containerStatuses'][0]['containerID'],'imageID':p['status']['containerStatuses'][0]['imageID'],'imageConfig':cri['id'],'sourceRevision':self.a.source_sha,'nodeUID':nodeuid};self.s.save();return p
             time.sleep(1)
         raise Refusal('exact existing controller rollout timed out')
@@ -389,6 +605,121 @@ class Publisher:
         c.pop('rollbackTemplate',None);c['phase']='disabled-after-failure'
         if not self.s.poison:self.s.save()
         if ledger_error:raise Refusal('controller disabled but rollback ledger commit failed: '+ledger_error)
+    def identity_check(self,cluster):
+        if meta(self.apis[cluster].get('/api/v1/namespaces/kube-system'))['uid']!=self.a.cluster_pins[cluster]:raise Refusal('cluster UID mismatch')
+    def set_access(self,cluster,sources):
+        """CAS-replace the owned Role's source names; output access is unchanged."""
+        api=self.apis[cluster];c=self.s.data['clusters'][cluster];path='/apis/rbac.authorization.k8s.io/v1/namespaces/'+NS+'/roles/'+ACCESS
+        role=owned(api.get(path),self.s.data['owner'],c['uids']['Role/'+ACCESS]);desired=access_rules(sources)
+        if role.get('rules')==desired:return
+        ops=tests(role)+[{'op':'test','path':'/rules','value':role.get('rules')},{'op':'replace','path':'/rules','value':desired}]
+        self.command(api.argv+['-n',NS,'patch','role',ACCESS,'--type=json','-p',compact(ops),'--request-timeout=12s'])
+        again=owned(api.get(path),self.s.data['owner'],c['uids']['Role/'+ACCESS])
+        if again.get('rules')!=desired:raise Refusal('Role patch acknowledgment differs')
+    def set_agent_access(self,cluster,sources):
+        """CAS-replace the source names in the Cilium agent's Role.
+
+        The agent reads the approval object that the publication names, by name, so the new source must be
+        readable before the producer publishes from it; otherwise the agent logs 'forbidden' and serves no profile."""
+        api=self.apis[cluster];path='/apis/rbac.authorization.k8s.io/v1/namespaces/'+NS+'/roles/'+AGENT_ROLE
+        role=api.get(path);meta(role);desired=agent_access_rules(sources)
+        if role['metadata'].get('labels',{}).get(AGENT_ROLE_LABEL[0])!=AGENT_ROLE_LABEL[1]:raise Refusal('Cilium agent issuer Role is not the lab-managed Role')
+        if role.get('rules')==desired:return
+        ops=tests(role)+[{'op':'test','path':'/rules','value':role.get('rules')},{'op':'replace','path':'/rules','value':desired}]
+        self.command(api.argv+['-n',NS,'patch','role',AGENT_ROLE,'--type=json','-p',compact(ops),'--request-timeout=12s'])
+        again=api.get(path)
+        if meta(again)['uid']!=meta(role)['uid'] or again.get('rules')!=desired:raise Refusal('Cilium agent Role patch acknowledgment differs')
+    def advance_preflight(self,cluster,previous):
+        """Pin the live producer to exactly the ledger's previous generation before any write."""
+        api=self.apis[cluster];c=self.s.data['clusters'][cluster];self.identity_check(cluster)
+        for node in (cluster+'-worker',cluster+'-control-plane'):self.inspect_image(cluster,node)
+        d=api.get('/apis/apps/v1/namespaces/'+NS+'/deployments/'+DEP)
+        if meta(d)['uid']!=c['deploymentUID'] or d['spec'].get('replicas',1)!=1:raise Refusal('controller Deployment UID/topology mismatch')
+        if meta(api.get('/api/v1/namespaces/'+NS+'/serviceaccounts/cmtc-controller'))['uid']!=c['saUID']:raise Refusal('controller SA replaced')
+        live=d['spec']['template']
+        if live['spec']['containers'][0].get('image')!=self.a.image:raise Refusal('running controller image differs from the verified image pin')
+        step=c.get('advance')
+        if step and step['generation']==self.a.generation:
+            if live not in (step['from'],step.get('to'),step.get('fence')):raise Refusal('controller template drifted during an unfinished advance')
+            return
+        disabled=producer_disabled(live,self.s.data['owner'])
+        # The live producer still pins the previous generation's root; a succession advance changes it.
+        expected=enabled_template(disabled,self.s.data['owner'],cluster,source_name(previous),c['uids']['ConfigMap/'+source_name(previous)],c['uids']['ConfigMap/'+OUT],getattr(self.a,'previous_root_sha256',self.a.root_sha256),previous)
+        if live!=expected:raise Refusal('live producer is not exactly the ledger previous generation')
+        c['advance']={'generation':self.a.generation,'from':live,'disabled':disabled,'phase':'preflighted'};self.s.save()
+    def advance_cluster(self,cluster,previous):
+        api=self.apis[cluster];c=self.s.data['clusters'][cluster];step=c['advance'];source=source_name(self.a.generation);owner=self.s.data['owner']
+        src=self.owned_object(cluster,'ConfigMap',source,{'immutable':True,'data':{'approval.json':compact(self.s.data['approval'])}})
+        out=self.owned_object(cluster,'ConfigMap',OUT,{'metadata':{'labels':{OUTPUT:'true'}},'data':{}})
+        # Both names stay readable until the new generation is published, so the
+        # running producer never loses its source mid-transition.
+        self.set_access(cluster,[source_name(previous),source]);self.set_agent_access(cluster,[source_name(previous),source])
+        # A SPIRE rotation between proof and patch would publish a stale signer.
+        _,current=self.current_approval(self.identity_check)
+        if not same_material(current,self.s.data['approval']):raise Refusal('SPIRE signer changed during advance; explicit recovery required')
+        desired=enabled_template(step['disabled'],owner,cluster,source,meta(src)['uid'],meta(out)['uid'],self.a.root_sha256,self.a.generation)
+        # Record intent BEFORE the patch so an unknown acknowledgment is recoverable.
+        step.update(to=desired,phase='patch-intended');c['active']=desired;c['baseline']=step['disabled'];self.s.save()
+        live=api.get('/apis/apps/v1/namespaces/'+NS+'/deployments/'+DEP)['spec']['template']
+        # An interrupted restore leaves its fence template; advancing from it is the recorded intent.
+        if live in (step['from'],step.get('fence')):self.patch_template(cluster,live,desired)
+        elif live!=desired:raise Refusal('controller template drifted before the advance patch')
+        self.runtime(cluster,desired);self.await_source(cluster,source);self.publications(cluster,source);self.metrics_logs(cluster)
+        self.set_access(cluster,[source]);self.set_agent_access(cluster,[source]);self.rbac(cluster,source)
+        step['phase']='qualified';c['phase']='publication-qualified-no-consumer';self.s.save()
+    def await_source(self,cluster,source,timeout=90):
+        """Wait until the output names the new source.
+
+        A Ready new controller still has to win leader election before it writes, so
+        the output keeps the previous generation's publication for a while.
+        """
+        api=self.apis[cluster];c=self.s.data['clusters'][cluster];deadline=time.monotonic()+timeout
+        while time.monotonic()<deadline:
+            out=owned(api.get(self.cm_path(OUT)),self.s.data['owner'],c['uids']['ConfigMap/'+OUT])
+            raw=out.get('data',{}).get('profile.json')
+            if raw and self.pki.strict_json(raw).get('source',{}).get('name')==source:return
+            time.sleep(1)
+        raise Refusal('new source was not published before the deadline')
+    def restore_advance(self,cluster):
+        """Conditionally return an unfinished advance to the exact previous-generation template."""
+        c=self.s.data['clusters'][cluster];step=c.get('advance')
+        if not step or step.get('phase') in ('preflighted','qualified') or 'to' not in step:return
+        api=self.apis[cluster];d=api.get('/apis/apps/v1/namespaces/'+NS+'/deployments/'+DEP)
+        if meta(d)['uid']!=c['deploymentUID']:raise Refusal('cannot restore replaced Deployment')
+        current=d['spec']['template']
+        if current not in (step['from'],step['to'],step.get('fence')):raise Refusal('cannot restore foreign Deployment template')
+        # A resourceVersion-changing fence stops a timed-out advance PATCH from committing later.
+        fence=copy.deepcopy(step['from']);fence['metadata']['annotations'][ROLLBACK]=uuid.uuid4().hex
+        step.update(fence=fence,phase='restore-intended')
+        if not self.s.poison:self.s.save()
+        self.patch_template(cluster,current,fence);self.patch_template(cluster,fence,step['from']);self.runtime(cluster,step['from'])
+        c['active']=step['from'];step.pop('fence',None);step['phase']='restored-after-failure'
+        if not self.s.poison:self.s.save()
+    def advance(self):
+        """Move the live producer from generation N-1 to N, keeping the ledger owner, output UID and floors."""
+        d=self.s.data;previous=self.a.generation-1;resume=d.get('advancing')==self.a.generation
+        if not resume and (not d.get('success') or d['approval']['generation']!=previous):raise Refusal('advance requires a qualified ledger at generation N-1')
+        if any(c.get('rollbackTemplate') or c.get('pendingCreate') for c in d['clusters'].values()):raise Refusal('unfinished owned operation; explicit recovery required')
+        try:
+            for cluster in sorted(self.apis):self.advance_preflight(cluster,previous)
+            if not resume:
+                proofs,approval=self.current_approval(self.identity_check)
+                d.setdefault('approvalHistory',[]).append(d['approval'])
+                d.update(approval=approval,freshProofs=proofs,advancing=self.a.generation,success=False);self.s.save()
+            elif dt.datetime.fromisoformat(d['approval']['expiresAt'].replace('Z','+00:00'))<=dt.datetime.now(dt.timezone.utc)+dt.timedelta(seconds=120):raise Refusal('recorded advance approval expired; explicit recovery required')
+            for cluster in sorted(self.apis):
+                if d['clusters'][cluster]['advance'].get('phase')!='qualified':self.advance_cluster(cluster,previous)
+            d.pop('advancing',None);d.update(success=True,scope='public issuer mapping publication only; no TLS/Protected');self.s.save()
+        except BaseException as error:
+            cleanup=[]
+            for cluster in sorted(self.apis):
+                try:self.restore_advance(cluster)
+                except Exception as failure:cleanup.append({'cluster':cluster,'failure':type(failure).__name__})
+            if not self.s.poison:
+                try:d.update(failure=type(error).__name__,conditionalRestoreFailures=cleanup);self.s.save()
+                except Exception as failure:cleanup.append({'stage':'failure-ledger','failure':type(failure).__name__})
+            if cleanup:error.add_note('Conditional restore failures: '+compact(cleanup))
+            raise
     def run(self):
         try:
             self.s.data['success']=False
@@ -421,24 +752,65 @@ def pairs(values,expected):
     if set(result)!=set(expected):raise Refusal('exact pin set required')
     return result
 
+def prepared_pins(files,skis,clusters):
+    """--prepared-issuer CLUSTER=PEMFILE, each with --prepared-issuer-ski CLUSTER=HEX from SPIRE's log."""
+    paths,keys={},{}
+    for values,out in ((files,paths),(skis,keys)):
+        for value in values:
+            k,sep,v=value.partition('=')
+            if not sep or not v or k in out or k not in clusters:raise Refusal('duplicate/invalid prepared issuer pin')
+            out[k]=v
+    if set(paths)!=set(keys) or any(not re.fullmatch('[0-9a-f]{40}',v) for v in keys.values()):raise Refusal('each prepared issuer needs its SPIRE key identifier (40 lowercase hex)')
+    return {c:(public(Path(paths[c]).read_bytes()).decode(),keys[c]) for c in paths}
+
 def main():
     p=argparse.ArgumentParser(description=__doc__)
     for name in ('kubeconfig','state-dir','root-sha256','image','image-config','source-sha','pki-module','proof-module','publication-module'):p.add_argument('--'+name,required=True)
-    for name in ('cluster-pin','approval-pin','deployment-pin','node-pin'):p.add_argument('--'+name,action='append',required=True)
+    for name in ('cluster-pin','deployment-pin','node-pin'):p.add_argument('--'+name,action='append',required=True)
+    p.add_argument('--approval-pin',action='append',default=[],help='CLUSTER=UID of cert-manager/cmtc-spire-cluster-ca-approval (signer mode)')
+    p.add_argument('--spire-intermediate',action='store_true',help="Approve each cluster's <cluster>-spire-intermediate under the mesh root instead of SPIRE's active signer (issue #34)")
+    p.add_argument('--intermediate-pin',action='append',default=[],help='CLUSTER=UID of the Certificate cert-manager/<cluster>-spire-intermediate (with --spire-intermediate)')
+    p.add_argument('--root-issuer',default='cmtc-mesh-root');p.add_argument('--root-configmap',default='cmtc-mesh-root');p.add_argument('--cert-manager-namespace',default='cert-manager')
     p.add_argument('--server-image',dest='spire_server_image',default=None,help='Independent approved digest-qualified SPIRE server/CLI image; first verify source/config and all-node CRI imports')
     p.add_argument('--generation',type=int,required=True);p.add_argument('--horizon',type=int,default=3600)
+    p.add_argument('--advance',action='store_true',help='Move the qualified live producer from generation N-1 to N; keeps the ledger owner, output and floors')
+    p.add_argument('--prepared-issuer',action='append',default=[],metavar='CLUSTER=PEMFILE',help="Public chain [SPIRE prepared X509 CA, approved parent]; approved as the cluster's second issuer")
+    p.add_argument('--prepared-issuer-ski',action='append',default=[],metavar='CLUSTER=HEX',help='Key identifier of that CA: the local_authority_id of SPIRE\'s "X509 CA prepared" log line')
     p.add_argument('--colima-profile',default='cmtc-cilium');p.add_argument('--prometheus-a',default='http://127.0.0.1:13000/api/datasources/proxy/uid/cmtc-prom');p.add_argument('--prometheus-b',default='http://127.0.0.1:19091')
     a=p.parse_args();clusters=['cmtc-a','cmtc-b']
-    a.cluster_pins=pairs(a.cluster_pin,clusters);a.approval_pins=pairs(a.approval_pin,clusters);a.deployment_pins=pairs(a.deployment_pin,clusters)
+    a.cluster_pins=pairs(a.cluster_pin,clusters);a.deployment_pins=pairs(a.deployment_pin,clusters)
+    if a.spire_intermediate:
+        if a.approval_pin or a.prepared_issuer or a.spire_server_image is not None:p.error('--spire-intermediate uses no SPIRE proof: no --approval-pin, --prepared-issuer or --server-image')
+        a.issuer_mode=INTERMEDIATE;a.intermediate_pins=pairs(a.intermediate_pin,clusters)
+    else:
+        if a.intermediate_pin:p.error('--intermediate-pin needs --spire-intermediate')
+        a.issuer_mode=None;a.approval_pins=pairs(a.approval_pin,clusters)
     a.node_pins=pairs(a.node_pin,[c+'/'+c+'-'+n for c in clusters for n in ('worker','control-plane')]);a.prometheus={'cmtc-a':a.prometheus_a,'cmtc-b':a.prometheus_b}
+    a.prepared=prepared_pins(a.prepared_issuer,a.prepared_issuer_ski,clusters)
     if not re.fullmatch('[0-9a-f]{64}',a.root_sha256) or not re.fullmatch('sha256:[0-9a-f]{64}',a.image_config) or not re.fullmatch('[0-9a-f]{40}',a.source_sha):p.error('exact root/config/source pins required')
     pki=load(a.pki_module,'accepted_pki');q=load(a.proof_module,'accepted_public_proof');lab=load(a.publication_module,'accepted_publication_parser')
-    a.spire_server_image=q.approved_server_image(a.spire_server_image if a.spire_server_image is not None else q.SERVER_IMAGE)
-    identity={'spireServerImage':a.spire_server_image,'schemaVersion':1,'rootSHA256':a.root_sha256,'generation':a.generation,'clusterPins':a.cluster_pins,'approvalPins':a.approval_pins,'deploymentPins':a.deployment_pins,'nodePins':a.node_pins,'image':a.image,'imageConfig':a.image_config,'sourceRevision':a.source_sha}
+    # Refuse a wrong file or identifier before the ledger or the API is touched.
+    for cluster,(raw,ski) in a.prepared.items():prepared_identity(q,cluster,raw,ski)
+    identity={'schemaVersion':1,'rootSHA256':a.root_sha256,'generation':a.generation,'clusterPins':a.cluster_pins,'deploymentPins':a.deployment_pins,'nodePins':a.node_pins,'image':a.image,'imageConfig':a.image_config,'sourceRevision':a.source_sha}
+    if a.issuer_mode==INTERMEDIATE:identity.update(issuerMode=INTERMEDIATE,intermediatePins=a.intermediate_pins)
+    else:
+        a.spire_server_image=q.approved_server_image(a.spire_server_image if a.spire_server_image is not None else q.SERVER_IMAGE)
+        identity.update(spireServerImage=a.spire_server_image,approvalPins=a.approval_pins)
     with State(a.state_dir,pki) as state,contextlib.ExitStack() as stack:
-        if state.data is None:state.data={'identity':identity,'owner':uuid.uuid4().hex,'clusters':{c:{'uids':{}} for c in clusters}};state.save()
+        if a.advance:
+            if state.data is None:raise Refusal('advance requires an existing qualified ledger')
+            # The previous generation's root, for the preflight: from the identity this advance replaces, or, on a
+            # resume after the identity was recorded, from the one before it.
+            recorded=state.data['identity']
+            before=recorded if recorded.get('generation')!=a.generation else (state.data.get('identityHistory') or [recorded])[-1]
+            a.previous_root_sha256=before['rootSHA256']
+            if state.data.get('identity')!=identity:
+                advanced_identity(state.data['identity'],identity)
+                state.data.setdefault('identityHistory',[]).append(state.data['identity']);state.data['identity']=identity;state.save()
+        elif state.data is None:state.data={'identity':identity,'owner':uuid.uuid4().hex,'clusters':{c:{'uids':{}} for c in clusters}};state.save()
         elif state.data.get('identity')!=identity:raise Refusal('ledger identity differs; no automatic rotation/reassignment')
         apis={c:stack.enter_context(pki.Proxy(a.kubeconfig,'kind-'+c)) for c in clusters}
-        Publisher(a,pki,q,lab.publication,state,apis).run()
+        publisher=Publisher(a,pki,q,lab.publication,state,apis)
+        publisher.advance() if a.advance else publisher.run()
     print(json.dumps({'success':True,'ledger':str(Path(a.state_dir)/'ledger.json'),'scope':'public mapping publication only; consumer remains disabled'},indent=2))
 if __name__=='__main__':main()

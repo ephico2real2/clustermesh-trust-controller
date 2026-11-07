@@ -1,0 +1,19 @@
+# Apply on kind-cmtc-a only (the control cluster). cert-manager mints the 10-year mesh root here.
+# rotationPolicy Never: a renewal keeps the root key when the existing key is intact. The renewed certificate must
+# still reach every copied Secret and trust bundle before the old one expires.
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata: {name: cmtc-mesh-root-bootstrap, namespace: cert-manager}
+spec: {selfSigned: {}}
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata: {name: cmtc-mesh-root-ca, namespace: cert-manager}
+spec:
+  isCA: true
+  commonName: CMTC Mesh Root CA
+  duration: 87600h    # 10 years
+  renewBefore: 720h   # 30 days
+  secretName: cmtc-mesh-root-ca
+  privateKey: {algorithm: ECDSA, size: 256, rotationPolicy: Never}
+  issuerRef: {name: cmtc-mesh-root-bootstrap, kind: Issuer, group: cert-manager.io}

@@ -1,0 +1,75 @@
+{{- if not .Values.global.openshift }}
+# kind: the Prometheus ServiceAccount and the least it needs. Pod discovery is limited to the namespaces of the
+# enabled jobs (kubernetes_sd_configs namespaces.names), so a Role in each is enough; only the cAdvisor job, which
+# discovers nodes and reads the kubelet, needs a ClusterRole.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ .Release.Name }}-prometheus
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "cmtc-obs.labels" . | nindent 4 }}
+{{- range $namespace := include "cmtc-obs.podNamespaces" . | fromYamlArray }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ $.Release.Name }}-prometheus
+  namespace: {{ $namespace }}
+  labels:
+    {{- include "cmtc-obs.labels" $ | nindent 4 }}
+rules:
+  - apiGroups: [""]
+    resources: [pods]
+    verbs: [get, list, watch]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ $.Release.Name }}-prometheus
+  namespace: {{ $namespace }}
+  labels:
+    {{- include "cmtc-obs.labels" $ | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: {{ $.Release.Name }}-prometheus
+subjects:
+  - kind: ServiceAccount
+    name: {{ $.Release.Name }}-prometheus
+    namespace: {{ $.Release.Namespace }}
+{{- end }}
+{{- if .Values.jobs.cadvisor.enabled }}
+---
+# Node discovery, and the kubelet's /metrics/cadvisor: the kubelet authorizes that path as the subresource
+# nodes/metrics.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ .Release.Namespace }}-{{ .Release.Name }}-prometheus
+  labels:
+    {{- include "cmtc-obs.labels" . | nindent 4 }}
+rules:
+  - apiGroups: [""]
+    resources: [nodes]
+    verbs: [get, list, watch]
+  - apiGroups: [""]
+    resources: [nodes/metrics]
+    verbs: [get]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ .Release.Namespace }}-{{ .Release.Name }}-prometheus
+  labels:
+    {{- include "cmtc-obs.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ .Release.Namespace }}-{{ .Release.Name }}-prometheus
+subjects:
+  - kind: ServiceAccount
+    name: {{ .Release.Name }}-prometheus
+    namespace: {{ .Release.Namespace }}
+{{- end }}
+{{- end }}

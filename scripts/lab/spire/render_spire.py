@@ -17,7 +17,6 @@ OWNER = "cmtc-lab-pki"
 NAMESPACE = "cilium-spire"
 SERVER_ACCOUNT = "spire-server"
 AGENT_ACCOUNT = "spire-agent"
-ISSUER_NAME = "cmtc-spire-issuer"
 STORAGE_CLASS = "standard"
 STORAGE_PROVISIONER = "rancher.io/local-path"
 SERVER_IMAGE = "ghcr.io/spiffe/spire-server:1.15.5@sha256:584a9c5cc95b9457f5033e7e4488d603fffe5ec48a80c4dba14b05c5e1c2c384"
@@ -151,9 +150,26 @@ finish() {
   code=$1
   if [ "$code" -ne 0 ]; then rm -f "$ack"; exit "$code"; fi
   if [ "$hold" = "1" ]; then
-    exec tail -f /dev/null
+    hold
   fi
   exit "$code"
+}
+
+# This shell is PID 1 of the container, and PID 1 must reap. The kernel reparents every orphan
+# in the container to PID 1, and an orphan stays a zombie until PID 1 waits for it. busybox
+# timeout leaves one orphan per call (coreutils/timeout.c: its watcher is a daemonized
+# grandchild), and the readiness probe calls it every period. `exec tail -f /dev/null` never
+# waits: 19,091 zombies in 26 h, then the PID limit (#41). ash blocked in `wait` calls
+# waitpid(-1) (shell/ash.c waitproc) and so reaps every child, orphans included. The trap makes
+# SIGTERM end the container at once; PID 1 ignores a signal it has no handler for.
+hold() {
+  sleeper=
+  trap 'kill "$sleeper" 2>/dev/null; exit 0' TERM INT
+  while :; do
+    sleep 3600 &
+    sleeper=$!
+    wait "$sleeper"
+  done
 }
 
 cli() {
@@ -518,7 +534,8 @@ plugins {{
   UpstreamAuthority "cert-manager" {{
     plugin_data {{
       namespace = "{NAMESPACE}"
-      issuer_name = "{ISSUER_NAME}"
+      # The CMTC chart (charts/cmtc, trust.*) creates this ClusterIssuer.
+      issuer_name = "{cluster}-spire-intermediate"
       issuer_kind = "ClusterIssuer"
       issuer_group = "cert-manager.io"
     }}
@@ -924,8 +941,11 @@ def render(cluster, domain=None, images=None, *, server_image=SERVER_IMAGE):
     images = require_images(images, server_image=server_image)
     server_role = server_cluster_role_name(cluster)
     agent_role = agent_cluster_role_name(cluster)
+    namespace = resource("v1", "Namespace", NAMESPACE, cluster, "namespace", namespace=None)
+    # Opts in to the mesh root ConfigMap (charts/cmtc trust.bundle): SPIRE verifies with the mesh root.
+    namespace["metadata"]["labels"]["trust"] = "enabled"
     docs = [
-        resource("v1", "Namespace", NAMESPACE, cluster, "namespace", namespace=None),
+        namespace,
         resource("v1", "ServiceAccount", SERVER_ACCOUNT, cluster, "spire-server-account"),
         resource("v1", "ServiceAccount", AGENT_ACCOUNT, cluster, "spire-agent-account"),
         resource(

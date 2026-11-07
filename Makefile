@@ -15,7 +15,8 @@ image:
 capture-image:
 	docker build -f scripts/capture/Dockerfile -t $(CAPTURE_IMAGE) .
 lab-up:
-	CMTC_IMAGE=$(IMAGE) bash scripts/lab/up.sh
+	bash scripts/lab/local-registry.sh start
+	CMTC_IMAGE=$$(bash scripts/lab/local-registry.sh push $(IMAGE) cmtc) bash scripts/lab/up.sh
 lab-test:
 	bash scripts/lab/test.sh
 lab-evidence:

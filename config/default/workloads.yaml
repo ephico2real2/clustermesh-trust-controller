@@ -43,13 +43,19 @@ spec:
         security.cmtc.io/metrics: "true"
     spec:
       serviceAccountName: cmtc-node-agent
+      # Only the agent gets an API token, through the api-token volume; the measurement loader has none (ADR-005).
+      automountServiceAccountToken: false
       tolerations: [{operator: Exists}]
       securityContext: {runAsNonRoot: true, runAsUser: 65532, seccompProfile: {type: RuntimeDefault}}
       containers:
         - name: agent
           image: cmtc:dev
           imagePullPolicy: IfNotPresent
-          args: [--mode=node, --cluster-name=CLUSTER_NAME]
+          args:
+            - --mode=node
+            - --cluster-name=CLUSTER_NAME
+            - --measurement-desired-dir=/run/cmtc/desired
+            - --measurement-snapshot-dir=/run/cmtc/snapshot
           env:
             - name: NODE_NAME
               valueFrom: {fieldRef: {fieldPath: spec.nodeName}}
@@ -62,6 +68,47 @@ spec:
           securityContext: {allowPrivilegeEscalation: false, readOnlyRootFilesystem: true, capabilities: {drop: [ALL]}}
           readinessProbe: {httpGet: {path: /readyz, port: health}}
           livenessProbe: {httpGet: {path: /healthz, port: health}}
+          volumeMounts:
+            - {name: api-token, mountPath: /var/run/secrets/kubernetes.io/serviceaccount, readOnly: true}
+            - {name: measurement-desired, mountPath: /run/cmtc/desired}
+            - {name: measurement-snapshot, mountPath: /run/cmtc/snapshot, readOnly: true}
+        # The eBPF measurement loader (ADR-005): root with CAP_BPF and CAP_NET_ADMIN only, no API token and no
+        # listener; it refuses to start with anything more. Its readiness is the agent's cmtc_measurement_ready metric.
+        - name: measurement-loader
+          image: cmtc:dev
+          imagePullPolicy: IfNotPresent
+          command: [/cmtc-measure]
+          args: [--cgroup-root=/host/cgroup, --desired-dir=/run/cmtc/desired, --snapshot-dir=/run/cmtc/snapshot]
+          resources:
+            requests: {cpu: 10m, memory: 64Mi}
+            # The kernel charges the programs and maps to this container: 450 KiB, and per measured Pod about 21 KiB
+            # plus 768 bytes per possible CPU (internal/measurement/contract.go).
+            limits: {memory: 256Mi}
+          securityContext:
+            runAsUser: 0
+            runAsNonRoot: false
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: {drop: [ALL], add: [BPF, NET_ADMIN]}
+          volumeMounts:
+            - {name: host-cgroup, mountPath: /host/cgroup, readOnly: true}
+            - {name: measurement-desired, mountPath: /run/cmtc/desired, readOnly: true}
+            - {name: measurement-snapshot, mountPath: /run/cmtc/snapshot}
+      volumes:
+        # The token, CA and namespace that kubelet would mount into every container, for the agent alone.
+        - name: api-token
+          projected:
+            sources:
+              - serviceAccountToken: {path: token, expirationSeconds: 3607}
+              - configMap: {name: kube-root-ca.crt, items: [{key: ca.crt, path: ca.crt}]}
+              - downwardAPI: {items: [{path: namespace, fieldRef: {apiVersion: v1, fieldPath: metadata.namespace}}]}
+        - name: host-cgroup
+          hostPath: {path: /sys/fs/cgroup, type: Directory}
+        # The agent writes the desired list into one and the loader writes its snapshot into the other.
+        - name: measurement-desired
+          emptyDir: {medium: Memory, sizeLimit: 8Mi}
+        - name: measurement-snapshot
+          emptyDir: {medium: Memory, sizeLimit: 8Mi}
 ---
 apiVersion: v1
 kind: Service

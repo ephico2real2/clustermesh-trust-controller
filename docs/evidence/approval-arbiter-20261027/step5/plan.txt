@@ -1,0 +1,25 @@
+ConfigMap/cmtc-system/cmtc-issuer-approval-config: created
+ClusterRole.rbac.authorization.k8s.io/cmtc-issuer-approval-evidence: created
+ClusterRoleBinding.rbac.authorization.k8s.io/cmtc-issuer-approval-evidence: created
+Role.rbac.authorization.k8s.io/cmtc-system/cmtc-issuer-approval-arbiter: created
+Role.rbac.authorization.k8s.io/cilium-spire/cmtc-issuer-approval-spire-config: created
+Role.rbac.authorization.k8s.io/cmtc-system/cmtc-issuer-profile-access: .rules[0].resourceNames
+    live =["cmtc-issuer-approval-g6"]
+    after=["cmtc-issuer-approval-g6", "cmtc-issuer-approval-a", "cmtc-issuer-approval-b"]
+Role.rbac.authorization.k8s.io/cmtc-system/cmtc-issuer-profile-readers: .rules[0].resourceNames
+    live =["cmtc-issuer-approval-g6", "cmtc-issuer-publication"]
+    after=["cmtc-issuer-approval-g6", "cmtc-issuer-approval-a", "cmtc-issuer-approval-b", "cmtc-issuer-publication"]
+RoleBinding.rbac.authorization.k8s.io/cmtc-system/cmtc-issuer-approval-arbiter: created
+RoleBinding.rbac.authorization.k8s.io/cilium-spire/cmtc-issuer-approval-spire-config: created
+Deployment.apps/cmtc-system/cmtc-controller: .spec.template.spec.containers[name="controller"].args
+    live =["--mode=controller", "--cluster-name=cmtc-a", "--issuer-profile-producer=true", "--issuer-profile-namespace=cmtc-system", "--issuer-profile-source=cmtc-issuer-approval-g6", "--issuer-profile-output=cmtc-issuer-publication", "--issuer-profile-source-uid=e8320c32-79ff-4382-8702-78da8ef14567", "--issu
+    after=["--mode=controller", "--cluster-name=cmtc-a", "--issuer-profile-producer=true", "--issuer-profile-namespace=cmtc-system", "--issuer-profile-output=cmtc-issuer-publication", "--issuer-profile-output-uid=fbc7b3c2-00f1-4787-a149-fca76e274c4e", "--issuer-profile-root-sha256=6c12c7353967466f9177847c3c1e
+Deployment.apps/cmtc-system/cmtc-controller: .spec.template.spec.containers[name="controller"].volumeMounts
+    live ="<absent>"
+    after=[{"mountPath": "/etc/cmtc/issuer-approval", "name": "issuer-approval-config", "readOnly": true}, {"mountPath": "/etc/cmtc/peers/cmtc-b", "name": "peer-cmtc-b", "readOnly": true}]
+Deployment.apps/cmtc-system/cmtc-controller: .spec.template.spec.volumes
+    live ="<absent>"
+    after=[{"configMap": {"defaultMode": 420, "name": "cmtc-issuer-approval-config"}, "name": "issuer-approval-config"}, {"name": "peer-cmtc-b", "secret": {"defaultMode": 420, "items": [{"key": "kubeconfig", "path": "kubeconfig"}], "secretName": "cmtc-peer-cmtc-b"}}]
+ValidatingAdmissionPolicy.admissionregistration.k8s.io/cmtc-issuer-approval-slots: created
+ValidatingAdmissionPolicyBinding.admissionregistration.k8s.io/cmtc-issuer-approval-slots: created
+cmtc-a: 14 change(s); 0 kubectl manager entr(ies) left; 0 refusal(s)

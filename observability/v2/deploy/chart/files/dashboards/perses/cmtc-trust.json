@@ -1,0 +1,2110 @@
+{
+  "display": {
+    "name": "CMTC trust profile and issuer succession"
+  },
+  "variables": [],
+  "panels": {
+    "0_0": {
+      "kind": "Panel",
+      "spec": {
+        "display": {
+          "name": "Profile lease left, seconds",
+          "description": "Seconds until the published profile expires, per cluster. 15 to 30 s while the producer renews (15 to 27 s over the hour to 2026-10-26T04:50Z); below 10 s renewals are failing; below 0 the profile lapsed (CMTCIssuerProfileLapsed). No data: no scraped controller, or a withdrawn profile."
+        },
+        "plugin": {
+          "kind": "StatChart",
+          "spec": {
+            "calculation": "last-number",
+            "colorMode": "value",
+            "format": {
+              "decimalPlaces": 0,
+              "unit": "seconds"
+            },
+            "thresholds": {
+              "steps": [
+                {
+                  "color": "#e15759",
+                  "value": 0
+                },
+                {
+                  "color": "#f28e2b",
+                  "value": 0
+                },
+                {
+                  "color": "#59a14f",
+                  "value": 10
+                }
+              ]
+            }
+          }
+        },
+        "queries": [
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "max by (cluster) (cmtc_issuer_profile_acknowledged_valid_until_timestamp_seconds{job=\"cmtc\", component=\"cmtc-controller\", cluster=\"cmtc-a\"} > 0) - time()",
+                  "seriesNameFormat": "{{cluster}}"
+                }
+              }
+            }
+          },
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "max by (cluster) (cmtc_issuer_profile_acknowledged_valid_until_timestamp_seconds{job=\"cmtc\", component=\"cmtc-controller\", cluster=\"cmtc-b\"} > 0) - time()",
+                  "seriesNameFormat": "{{cluster}}"
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "0_1": {
+      "kind": "Panel",
+      "spec": {
+        "display": {
+          "name": "Approval source read, seconds ago",
+          "description": "Seconds since the leader last read its approval source, per cluster. It reads every 5 s (at most 10 s over the hour to 2026-10-26T04:50Z); above 60 s the producer cannot read it (CMTCIssuerProfileSourceStale)."
+        },
+        "plugin": {
+          "kind": "StatChart",
+          "spec": {
+            "calculation": "last-number",
+            "colorMode": "value",
+            "format": {
+              "decimalPlaces": 0,
+              "unit": "seconds"
+            },
+            "thresholds": {
+              "steps": [
+                {
+                  "color": "#59a14f",
+                  "value": 0
+                },
+                {
+                  "color": "#f28e2b",
+                  "value": 30
+                },
+                {
+                  "color": "#e15759",
+                  "value": 60
+                }
+              ]
+            }
+          }
+        },
+        "queries": [
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "time() - max by (cluster) (cmtc_issuer_profile_source_checked_timestamp_seconds{job=\"cmtc\", component=\"cmtc-controller\", cluster=\"cmtc-a\"} > 0)",
+                  "seriesNameFormat": "{{cluster}}"
+                }
+              }
+            }
+          },
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "time() - max by (cluster) (cmtc_issuer_profile_source_checked_timestamp_seconds{job=\"cmtc\", component=\"cmtc-controller\", cluster=\"cmtc-b\"} > 0)",
+                  "seriesNameFormat": "{{cluster}}"
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "0_2": {
+      "kind": "Panel",
+      "spec": {
+        "display": {
+          "name": "Source validations not accepted, 1 hour",
+          "description": "Approval source reads that were rejected or unavailable in the last hour, per cluster. 0 is normal; the controller log line \"approval validation rejected\" has the reason."
+        },
+        "plugin": {
+          "kind": "StatChart",
+          "spec": {
+            "calculation": "last-number",
+            "colorMode": "value",
+            "format": {
+              "decimalPlaces": 0,
+              "unit": "decimal"
+            },
+            "thresholds": {
+              "steps": [
+                {
+                  "color": "#59a14f",
+                  "value": 0
+                },
+                {
+                  "color": "#e15759",
+                  "value": 1
+                }
+              ]
+            }
+          }
+        },
+        "queries": [
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "sum by (cluster) (increase(cmtc_issuer_profile_validation_attempts_total{job=\"cmtc\", component=\"cmtc-controller\", result!=\"accepted\", cluster=\"cmtc-a\"}[1h])) or 0 * max by (cluster) (up{job=\"cmtc\", component=\"cmtc-controller\", cluster=\"cmtc-a\"} == 1)",
+                  "seriesNameFormat": "{{cluster}}"
+                }
+              }
+            }
+          },
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "sum by (cluster) (increase(cmtc_issuer_profile_validation_attempts_total{job=\"cmtc\", component=\"cmtc-controller\", result!=\"accepted\", cluster=\"cmtc-b\"}[1h])) or 0 * max by (cluster) (up{job=\"cmtc\", component=\"cmtc-controller\", cluster=\"cmtc-b\"} == 1)",
+                  "seriesNameFormat": "{{cluster}}"
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "0_3": {
+      "kind": "Panel",
+      "spec": {
+        "display": {
+          "name": "Publication writes failed, 1 hour",
+          "description": "Publication writes the API server did not acknowledge in the last hour, per cluster. 0 is normal."
+        },
+        "plugin": {
+          "kind": "StatChart",
+          "spec": {
+            "calculation": "last-number",
+            "colorMode": "value",
+            "format": {
+              "decimalPlaces": 0,
+              "unit": "decimal"
+            },
+            "thresholds": {
+              "steps": [
+                {
+                  "color": "#59a14f",
+                  "value": 0
+                },
+                {
+                  "color": "#e15759",
+                  "value": 1
+                }
+              ]
+            }
+          }
+        },
+        "queries": [
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "sum by (cluster) (increase(cmtc_issuer_profile_publication_writes_total{job=\"cmtc\", component=\"cmtc-controller\", result=\"error\", cluster=\"cmtc-a\"}[1h])) or 0 * max by (cluster) (up{job=\"cmtc\", component=\"cmtc-controller\", cluster=\"cmtc-a\"} == 1)",
+                  "seriesNameFormat": "{{cluster}}"
+                }
+              }
+            }
+          },
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "sum by (cluster) (increase(cmtc_issuer_profile_publication_writes_total{job=\"cmtc\", component=\"cmtc-controller\", result=\"error\", cluster=\"cmtc-b\"}[1h])) or 0 * max by (cluster) (up{job=\"cmtc\", component=\"cmtc-controller\", cluster=\"cmtc-b\"} == 1)",
+                  "seriesNameFormat": "{{cluster}}"
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "0_4": {
+      "kind": "Panel",
+      "spec": {
+        "display": {
+          "name": "Profile lease left, seconds",
+          "description": "The lease over time, per cluster: a saw-tooth between about 15 and 30 s. A line falling through 0 is a lapse."
+        },
+        "plugin": {
+          "kind": "TimeSeriesChart",
+          "spec": {
+            "legend": {
+              "mode": "list",
+              "position": "bottom"
+            },
+            "querySettings": [
+              {
+                "areaOpacity": 0.1,
+                "colorMode": "fixed",
+                "colorValue": "#4e79a7",
+                "queryIndex": 0
+              },
+              {
+                "areaOpacity": 0.1,
+                "colorMode": "fixed",
+                "colorValue": "#e15759",
+                "lineStyle": "dashed",
+                "queryIndex": 1
+              }
+            ],
+            "visual": {
+              "areaOpacity": 0.1,
+              "connectNulls": false,
+              "lineWidth": 1
+            },
+            "yAxis": {
+              "format": {
+                "unit": "seconds"
+              }
+            }
+          }
+        },
+        "queries": [
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "max by (cluster) (cmtc_issuer_profile_acknowledged_valid_until_timestamp_seconds{job=\"cmtc\", component=\"cmtc-controller\", cluster=\"cmtc-a\"} > 0) - time()",
+                  "seriesNameFormat": "{{cluster}}"
+                }
+              }
+            }
+          },
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "max by (cluster) (cmtc_issuer_profile_acknowledged_valid_until_timestamp_seconds{job=\"cmtc\", component=\"cmtc-controller\", cluster=\"cmtc-b\"} > 0) - time()",
+                  "seriesNameFormat": "{{cluster}}"
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "0_5": {
+      "kind": "Panel",
+      "spec": {
+        "display": {
+          "name": "Publication writes per second",
+          "description": "Acknowledged and failed publication writes, per cluster, 5 minute rate: about one every 10 s while the producer renews (361 and 360 in the hour to 2026-10-26T04:50Z)."
+        },
+        "plugin": {
+          "kind": "TimeSeriesChart",
+          "spec": {
+            "legend": {
+              "mode": "list",
+              "position": "bottom"
+            },
+            "querySettings": [
+              {
+                "areaOpacity": 0.1,
+                "colorMode": "fixed",
+                "colorValue": "#4e79a7",
+                "queryIndex": 0
+              },
+              {
+                "areaOpacity": 0.1,
+                "colorMode": "fixed",
+                "colorValue": "#e15759",
+                "lineStyle": "dashed",
+                "queryIndex": 1
+              }
+            ],
+            "visual": {
+              "areaOpacity": 0.1,
+              "connectNulls": false,
+              "lineWidth": 1
+            },
+            "yAxis": {
+              "format": {
+                "unit": "writes/sec"
+              },
+              "min": 0
+            }
+          }
+        },
+        "queries": [
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "sum by (cluster) (rate(cmtc_issuer_profile_publication_writes_total{job=\"cmtc\", component=\"cmtc-controller\", cluster=\"cmtc-a\"}[5m]))",
+                  "seriesNameFormat": "{{cluster}}"
+                }
+              }
+            }
+          },
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "sum by (cluster) (rate(cmtc_issuer_profile_publication_writes_total{job=\"cmtc\", component=\"cmtc-controller\", cluster=\"cmtc-b\"}[5m]))",
+                  "seriesNameFormat": "{{cluster}}"
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "0_6": {
+      "kind": "Panel",
+      "spec": {
+        "display": {
+          "name": "How to read this section"
+        },
+        "plugin": {
+          "kind": "Markdown",
+          "spec": {
+            "text": "The producer works when the lease saw-tooth stays above 0 and every read and write is accepted. This is the publication; whether ztunnel applied it is the last section."
+          }
+        }
+      }
+    },
+    "1_0": {
+      "kind": "Panel",
+      "spec": {
+        "display": {
+          "name": "Approval in force, per cluster \u00b7 planned",
+          "description": "Planned, a proposed source change: needs source-patches/cmtc/0001 (approval and approved issuer gauges). The approval generation each cluster's producer accepted and the hours until it ends (the earliest notAfter it pins, or its expiresAt). Both clusters should accept the same generation (CMTCIssuerApprovalGenerationsDiffer)."
+        },
+        "plugin": {
+          "kind": "Table",
+          "spec": {
+            "columnSettings": [
+              {
+                "cellSettings": [
+                  {
+                    "backgroundColor": "#4e79a7",
+                    "condition": {
+                      "kind": "Value",
+                      "spec": {
+                        "value": "cmtc-a"
+                      }
+                    },
+                    "textColor": "#000000"
+                  },
+                  {
+                    "backgroundColor": "#e15759",
+                    "condition": {
+                      "kind": "Value",
+                      "spec": {
+                        "value": "cmtc-b"
+                      }
+                    },
+                    "textColor": "#000000"
+                  }
+                ],
+                "header": "Cluster",
+                "name": "cluster"
+              },
+              {
+                "format": {
+                  "unit": "decimal"
+                },
+                "header": "Generation",
+                "name": "value #1"
+              },
+              {
+                "format": {
+                  "unit": "decimal"
+                },
+                "header": "Ends in, hours",
+                "name": "value #2"
+              },
+              {
+                "hide": true,
+                "name": "timestamp"
+              }
+            ],
+            "density": "compact",
+            "transforms": [
+              {
+                "kind": "MergeSeries",
+                "spec": {}
+              }
+            ]
+          }
+        },
+        "queries": [
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "max by (cluster) (cmtc_issuer_profile_approval_generation{job=\"cmtc\", component=\"cmtc-controller\"} > 0)",
+                  "seriesNameFormat": ""
+                }
+              }
+            }
+          },
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "(max by (cluster) (cmtc_issuer_profile_approval_valid_until_timestamp_seconds{job=\"cmtc\", component=\"cmtc-controller\"} > 0) - time()) / 3600",
+                  "seriesNameFormat": ""
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "1_1": {
+      "kind": "Panel",
+      "spec": {
+        "display": {
+          "name": "Pinned issuers, per approval cluster \u00b7 planned",
+          "description": "Planned, a proposed source change: needs source-patches/cmtc/0001 (approval and approved issuer gauges). For each cluster the approval lists: hours until its newest and oldest pinned issuer end, and until SPIRE prepares and activates the CA that follows the newest. Negative hours: already happened."
+        },
+        "plugin": {
+          "kind": "Table",
+          "spec": {
+            "columnSettings": [
+              {
+                "cellSettings": [
+                  {
+                    "backgroundColor": "#4e79a7",
+                    "condition": {
+                      "kind": "Value",
+                      "spec": {
+                        "value": "cmtc-a"
+                      }
+                    },
+                    "textColor": "#000000"
+                  },
+                  {
+                    "backgroundColor": "#e15759",
+                    "condition": {
+                      "kind": "Value",
+                      "spec": {
+                        "value": "cmtc-b"
+                      }
+                    },
+                    "textColor": "#000000"
+                  }
+                ],
+                "header": "Cluster",
+                "name": "cluster"
+              },
+              {
+                "header": "Approval cluster",
+                "name": "approval_cluster"
+              },
+              {
+                "format": {
+                  "unit": "decimal"
+                },
+                "header": "Newest pin ends, h",
+                "name": "value #1"
+              },
+              {
+                "format": {
+                  "unit": "decimal"
+                },
+                "header": "Oldest pin ends, h",
+                "name": "value #2"
+              },
+              {
+                "format": {
+                  "unit": "decimal"
+                },
+                "header": "Next CA prepared, h",
+                "name": "value #3"
+              },
+              {
+                "format": {
+                  "unit": "decimal"
+                },
+                "header": "Next CA activates, h",
+                "name": "value #4"
+              },
+              {
+                "hide": true,
+                "name": "timestamp"
+              }
+            ],
+            "density": "compact",
+            "transforms": [
+              {
+                "kind": "MergeSeries",
+                "spec": {}
+              }
+            ]
+          }
+        },
+        "queries": [
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "(max by (cluster, approval_cluster) (cmtc_issuer_profile_approved_issuer_not_after_timestamp_seconds{job=\"cmtc\", component=\"cmtc-controller\", position=\"newest\"} > 0) - time()) / 3600",
+                  "seriesNameFormat": ""
+                }
+              }
+            }
+          },
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "(max by (cluster, approval_cluster) (cmtc_issuer_profile_approved_issuer_not_after_timestamp_seconds{job=\"cmtc\", component=\"cmtc-controller\", position=\"oldest\"} > 0) - time()) / 3600",
+                  "seriesNameFormat": ""
+                }
+              }
+            }
+          },
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "(max by (cluster, approval_cluster) (cmtc_issuer_profile_approved_issuer_not_after_timestamp_seconds{job=\"cmtc\", component=\"cmtc-controller\", position=\"newest\"} > 0) - clamp_max((max by (cluster, approval_cluster) (cmtc_issuer_profile_approved_issuer_not_after_timestamp_seconds{job=\"cmtc\", component=\"cmtc-controller\", position=\"newest\"} > 0) - max by (cluster, approval_cluster) (cmtc_issuer_profile_approved_issuer_not_before_timestamp_seconds{job=\"cmtc\", component=\"cmtc-controller\", position=\"newest\"} > 0)) / 2, 2592000) - time()) / 3600",
+                  "seriesNameFormat": ""
+                }
+              }
+            }
+          },
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "(max by (cluster, approval_cluster) (cmtc_issuer_profile_approved_issuer_not_after_timestamp_seconds{job=\"cmtc\", component=\"cmtc-controller\", position=\"newest\"} > 0) - clamp_max((max by (cluster, approval_cluster) (cmtc_issuer_profile_approved_issuer_not_after_timestamp_seconds{job=\"cmtc\", component=\"cmtc-controller\", position=\"newest\"} > 0) - max by (cluster, approval_cluster) (cmtc_issuer_profile_approved_issuer_not_before_timestamp_seconds{job=\"cmtc\", component=\"cmtc-controller\", position=\"newest\"} > 0)) / 6, 604800) - time()) / 3600",
+                  "seriesNameFormat": ""
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "1_2": {
+      "kind": "Panel",
+      "spec": {
+        "display": {
+          "name": "Profile withdrawn, per cluster \u00b7 planned",
+          "description": "Planned, a proposed source change: needs source-patches/cmtc/0001 (approval and approved issuer gauges). Whether each producer publishes a validated profile (validated) or withdrew it (withdrawn), over time. The table names the reason."
+        },
+        "plugin": {
+          "kind": "StatusHistoryChart",
+          "spec": {
+            "legend": {
+              "mode": "list",
+              "position": "bottom"
+            },
+            "mappings": [
+              {
+                "kind": "Value",
+                "spec": {
+                  "result": {
+                    "color": "#59a14f",
+                    "value": "validated"
+                  },
+                  "value": "0"
+                }
+              },
+              {
+                "kind": "Value",
+                "spec": {
+                  "result": {
+                    "color": "#e15759",
+                    "value": "withdrawn"
+                  },
+                  "value": "1"
+                }
+              }
+            ],
+            "sorting": "asc"
+          }
+        },
+        "queries": [
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "max by (cluster) (cmtc_issuer_profile_publication_reason{job=\"cmtc\", component=\"cmtc-controller\", reason!=\"Validated\"})",
+                  "seriesNameFormat": "{{cluster}}"
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "1_3": {
+      "kind": "Panel",
+      "spec": {
+        "display": {
+          "name": "Publication reason now \u00b7 planned",
+          "description": "Planned, a proposed source change: needs source-patches/cmtc/0001 (approval and approved issuer gauges). The reason each producer gives for its publication: Validated, or why it withdrew the profile (SourceExpired, SourceInvalid, SourceDeleted, SourceUnavailable, SourceUIDMismatch, SourceChanged, GenerationRollback)."
+        },
+        "plugin": {
+          "kind": "Table",
+          "spec": {
+            "columnSettings": [
+              {
+                "cellSettings": [
+                  {
+                    "backgroundColor": "#4e79a7",
+                    "condition": {
+                      "kind": "Value",
+                      "spec": {
+                        "value": "cmtc-a"
+                      }
+                    },
+                    "textColor": "#000000"
+                  },
+                  {
+                    "backgroundColor": "#e15759",
+                    "condition": {
+                      "kind": "Value",
+                      "spec": {
+                        "value": "cmtc-b"
+                      }
+                    },
+                    "textColor": "#000000"
+                  }
+                ],
+                "header": "Cluster",
+                "name": "cluster"
+              },
+              {
+                "header": "Reason",
+                "name": "reason"
+              },
+              {
+                "format": {
+                  "unit": "decimal"
+                },
+                "header": "Now",
+                "hide": true,
+                "name": "value"
+              },
+              {
+                "hide": true,
+                "name": "timestamp"
+              }
+            ],
+            "density": "compact",
+            "transforms": [
+              {
+                "kind": "MergeSeries",
+                "spec": {}
+              }
+            ]
+          }
+        },
+        "queries": [
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "max by (cluster, reason) (cmtc_issuer_profile_publication_reason{job=\"cmtc\", component=\"cmtc-controller\"} == 1)",
+                  "seriesNameFormat": ""
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "1_4": {
+      "kind": "Panel",
+      "spec": {
+        "display": {
+          "name": "How to read this section"
+        },
+        "plugin": {
+          "kind": "Markdown",
+          "spec": {
+            "text": "The approval pins at most two issuers per cluster. While SPIRE holds a CA it does not pin, the next CA activation is a deadline."
+          }
+        }
+      }
+    },
+    "2_0": {
+      "kind": "Panel",
+      "spec": {
+        "display": {
+          "name": "Hours until SPIRE activates an unpinned CA \u00b7 planned",
+          "description": "Planned, a proposed source change: needs source-patches/cmtc/0001 (approval and approved issuer gauges). The soonest activation, over the clusters the approval lists, of a CA it does not pin, per cluster. Critical below 2 h; past 0 the activation happened and ztunnel refuses new certificates."
+        },
+        "plugin": {
+          "kind": "StatChart",
+          "spec": {
+            "calculation": "last-number",
+            "colorMode": "value",
+            "format": {
+              "decimalPlaces": 1,
+              "unit": "decimal"
+            },
+            "thresholds": {
+              "steps": [
+                {
+                  "color": "#e15759",
+                  "value": 0
+                },
+                {
+                  "color": "#f28e2b",
+                  "value": 2
+                },
+                {
+                  "color": "#59a14f",
+                  "value": 4
+                }
+              ]
+            }
+          }
+        },
+        "queries": [
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "(min by (cluster) (max by (cluster, approval_cluster) (cmtc_issuer_profile_approved_issuer_not_after_timestamp_seconds{job=\"cmtc\", component=\"cmtc-controller\", position=\"newest\", cluster=\"cmtc-a\"} > 0) - clamp_max((max by (cluster, approval_cluster) (cmtc_issuer_profile_approved_issuer_not_after_timestamp_seconds{job=\"cmtc\", component=\"cmtc-controller\", position=\"newest\", cluster=\"cmtc-a\"} > 0) - max by (cluster, approval_cluster) (cmtc_issuer_profile_approved_issuer_not_before_timestamp_seconds{job=\"cmtc\", component=\"cmtc-controller\", position=\"newest\", cluster=\"cmtc-a\"} > 0)) / 6, 604800)) - time()) / 3600",
+                  "seriesNameFormat": "{{cluster}}"
+                }
+              }
+            }
+          },
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "(min by (cluster) (max by (cluster, approval_cluster) (cmtc_issuer_profile_approved_issuer_not_after_timestamp_seconds{job=\"cmtc\", component=\"cmtc-controller\", position=\"newest\", cluster=\"cmtc-b\"} > 0) - clamp_max((max by (cluster, approval_cluster) (cmtc_issuer_profile_approved_issuer_not_after_timestamp_seconds{job=\"cmtc\", component=\"cmtc-controller\", position=\"newest\", cluster=\"cmtc-b\"} > 0) - max by (cluster, approval_cluster) (cmtc_issuer_profile_approved_issuer_not_before_timestamp_seconds{job=\"cmtc\", component=\"cmtc-controller\", position=\"newest\", cluster=\"cmtc-b\"} > 0)) / 6, 604800)) - time()) / 3600",
+                  "seriesNameFormat": "{{cluster}}"
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "2_1": {
+      "kind": "Panel",
+      "spec": {
+        "display": {
+          "name": "Hours until SPIRE prepares the next CA \u00b7 planned",
+          "description": "Planned, a proposed source change: needs source-patches/cmtc/0001 (approval and approved issuer gauges). The soonest preparation of the CA that follows the newest pin, per cluster. Negative: SPIRE has prepared it and it must be added to a new approval generation (CMTCIssuerSuccessionDue)."
+        },
+        "plugin": {
+          "kind": "StatChart",
+          "spec": {
+            "calculation": "last-number",
+            "colorMode": "value",
+            "format": {
+              "decimalPlaces": 1,
+              "unit": "decimal"
+            },
+            "thresholds": {
+              "steps": [
+                {
+                  "color": "#f28e2b",
+                  "value": 0
+                },
+                {
+                  "color": "#59a14f",
+                  "value": 0
+                }
+              ]
+            }
+          }
+        },
+        "queries": [
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "(min by (cluster) (max by (cluster, approval_cluster) (cmtc_issuer_profile_approved_issuer_not_after_timestamp_seconds{job=\"cmtc\", component=\"cmtc-controller\", position=\"newest\", cluster=\"cmtc-a\"} > 0) - clamp_max((max by (cluster, approval_cluster) (cmtc_issuer_profile_approved_issuer_not_after_timestamp_seconds{job=\"cmtc\", component=\"cmtc-controller\", position=\"newest\", cluster=\"cmtc-a\"} > 0) - max by (cluster, approval_cluster) (cmtc_issuer_profile_approved_issuer_not_before_timestamp_seconds{job=\"cmtc\", component=\"cmtc-controller\", position=\"newest\", cluster=\"cmtc-a\"} > 0)) / 2, 2592000)) - time()) / 3600",
+                  "seriesNameFormat": "{{cluster}}"
+                }
+              }
+            }
+          },
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "(min by (cluster) (max by (cluster, approval_cluster) (cmtc_issuer_profile_approved_issuer_not_after_timestamp_seconds{job=\"cmtc\", component=\"cmtc-controller\", position=\"newest\", cluster=\"cmtc-b\"} > 0) - clamp_max((max by (cluster, approval_cluster) (cmtc_issuer_profile_approved_issuer_not_after_timestamp_seconds{job=\"cmtc\", component=\"cmtc-controller\", position=\"newest\", cluster=\"cmtc-b\"} > 0) - max by (cluster, approval_cluster) (cmtc_issuer_profile_approved_issuer_not_before_timestamp_seconds{job=\"cmtc\", component=\"cmtc-controller\", position=\"newest\", cluster=\"cmtc-b\"} > 0)) / 2, 2592000)) - time()) / 3600",
+                  "seriesNameFormat": "{{cluster}}"
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "2_2": {
+      "kind": "Panel",
+      "spec": {
+        "display": {
+          "name": "Hours until SPIRE activates an unpinned CA \u00b7 planned",
+          "description": "Planned, a proposed source change: needs source-patches/cmtc/0001 (approval and approved issuer gauges). The same countdown over time, per cluster. A new approval generation that pins the prepared CA moves the line up by the CA's lifetime."
+        },
+        "plugin": {
+          "kind": "TimeSeriesChart",
+          "spec": {
+            "legend": {
+              "mode": "list",
+              "position": "bottom"
+            },
+            "querySettings": [
+              {
+                "areaOpacity": 0.1,
+                "colorMode": "fixed",
+                "colorValue": "#4e79a7",
+                "queryIndex": 0
+              },
+              {
+                "areaOpacity": 0.1,
+                "colorMode": "fixed",
+                "colorValue": "#e15759",
+                "lineStyle": "dashed",
+                "queryIndex": 1
+              }
+            ],
+            "visual": {
+              "areaOpacity": 0.1,
+              "connectNulls": false,
+              "lineWidth": 1
+            },
+            "yAxis": {
+              "format": {
+                "unit": "decimal"
+              }
+            }
+          }
+        },
+        "queries": [
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "(min by (cluster) (max by (cluster, approval_cluster) (cmtc_issuer_profile_approved_issuer_not_after_timestamp_seconds{job=\"cmtc\", component=\"cmtc-controller\", position=\"newest\", cluster=\"cmtc-a\"} > 0) - clamp_max((max by (cluster, approval_cluster) (cmtc_issuer_profile_approved_issuer_not_after_timestamp_seconds{job=\"cmtc\", component=\"cmtc-controller\", position=\"newest\", cluster=\"cmtc-a\"} > 0) - max by (cluster, approval_cluster) (cmtc_issuer_profile_approved_issuer_not_before_timestamp_seconds{job=\"cmtc\", component=\"cmtc-controller\", position=\"newest\", cluster=\"cmtc-a\"} > 0)) / 6, 604800)) - time()) / 3600",
+                  "seriesNameFormat": "{{cluster}}"
+                }
+              }
+            }
+          },
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "(min by (cluster) (max by (cluster, approval_cluster) (cmtc_issuer_profile_approved_issuer_not_after_timestamp_seconds{job=\"cmtc\", component=\"cmtc-controller\", position=\"newest\", cluster=\"cmtc-b\"} > 0) - clamp_max((max by (cluster, approval_cluster) (cmtc_issuer_profile_approved_issuer_not_after_timestamp_seconds{job=\"cmtc\", component=\"cmtc-controller\", position=\"newest\", cluster=\"cmtc-b\"} > 0) - max by (cluster, approval_cluster) (cmtc_issuer_profile_approved_issuer_not_before_timestamp_seconds{job=\"cmtc\", component=\"cmtc-controller\", position=\"newest\", cluster=\"cmtc-b\"} > 0)) / 6, 604800)) - time()) / 3600",
+                  "seriesNameFormat": "{{cluster}}"
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "2_3": {
+      "kind": "Panel",
+      "spec": {
+        "display": {
+          "name": "SPIRE CA times, per cluster \u00b7 planned",
+          "description": "Planned, a proposed source change: needs source-patches/cmtc/0002 (SPIRE telemetry) and the spire-server scrape job of deploy/. Hours until SPIRE's active CA ends, and until the latest CA it holds (active or prepared) ends, per cluster SPIRE runs in. A latest CA beyond every pin is a prepared CA the approval does not pin (CMTCSPIRECANotApproved)."
+        },
+        "plugin": {
+          "kind": "Table",
+          "spec": {
+            "columnSettings": [
+              {
+                "cellSettings": [
+                  {
+                    "backgroundColor": "#4e79a7",
+                    "condition": {
+                      "kind": "Value",
+                      "spec": {
+                        "value": "cmtc-a"
+                      }
+                    },
+                    "textColor": "#000000"
+                  },
+                  {
+                    "backgroundColor": "#e15759",
+                    "condition": {
+                      "kind": "Value",
+                      "spec": {
+                        "value": "cmtc-b"
+                      }
+                    },
+                    "textColor": "#000000"
+                  }
+                ],
+                "header": "Cluster",
+                "name": "cluster"
+              },
+              {
+                "format": {
+                  "unit": "decimal"
+                },
+                "header": "Active CA ends, h",
+                "name": "value #1"
+              },
+              {
+                "format": {
+                  "unit": "decimal"
+                },
+                "header": "Latest CA ends, h",
+                "name": "value #2"
+              },
+              {
+                "hide": true,
+                "name": "timestamp"
+              }
+            ],
+            "density": "compact",
+            "transforms": [
+              {
+                "kind": "MergeSeries",
+                "spec": {}
+              }
+            ]
+          }
+        },
+        "queries": [
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "(max by (cluster) (spire_server_manager_x509_ca_rotate_expiration{job=\"spire-server\"}) - time()) / 3600",
+                  "seriesNameFormat": ""
+                }
+              }
+            }
+          },
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "(max by (cluster) (spire_server_manager_x509_ca_rotate_max_expiration{job=\"spire-server\"}) - time()) / 3600",
+                  "seriesNameFormat": ""
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "2_4": {
+      "kind": "Panel",
+      "spec": {
+        "display": {
+          "name": "How to read this section"
+        },
+        "plugin": {
+          "kind": "Markdown",
+          "spec": {
+            "text": "On 2026-10-25, SPIRE prepared slot B at 15:55:19Z and activated it at 23:55:17Z: an 8 hour window these panels would have counted down.\n#34, 2026-10-26: approval generation 5 pinned SPIRE slot A only. The same arithmetic forecasts the activation at 23:55:28Z (cmtc-a) and 23:55:54Z (cmtc-b); spire-server-0 logged it at 23:55:37Z and 23:55:57Z (rules/proposed/issuer-approval-source-change.rules.yaml)."
+          }
+        }
+      }
+    },
+    "3_0": {
+      "kind": "Panel",
+      "spec": {
+        "display": {
+          "name": "Issuer profile messages received by ztunnel per second",
+          "description": "IssuerProfile xDS messages each cluster's ztunnels received, per cluster, 5 minute rate. A flat 0 while the producer renews means ztunnel is not receiving its profile."
+        },
+        "plugin": {
+          "kind": "TimeSeriesChart",
+          "spec": {
+            "legend": {
+              "mode": "list",
+              "position": "bottom"
+            },
+            "querySettings": [
+              {
+                "areaOpacity": 0.1,
+                "colorMode": "fixed",
+                "colorValue": "#4e79a7",
+                "queryIndex": 0
+              },
+              {
+                "areaOpacity": 0.1,
+                "colorMode": "fixed",
+                "colorValue": "#e15759",
+                "lineStyle": "dashed",
+                "queryIndex": 1
+              }
+            ],
+            "visual": {
+              "areaOpacity": 0.1,
+              "connectNulls": false,
+              "lineWidth": 1
+            },
+            "yAxis": {
+              "format": {
+                "unit": "ops/sec"
+              },
+              "min": 0
+            }
+          }
+        },
+        "queries": [
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "sum by (cluster) (rate(istio_xds_message_total{job=\"ztunnel\", url=\"type.googleapis.com/cilium.ztunnel.v1.IssuerProfile\", cluster=\"cmtc-a\"}[5m]))",
+                  "seriesNameFormat": "{{cluster}}"
+                }
+              }
+            }
+          },
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "sum by (cluster) (rate(istio_xds_message_total{job=\"ztunnel\", url=\"type.googleapis.com/cilium.ztunnel.v1.IssuerProfile\", cluster=\"cmtc-b\"}[5m]))",
+                  "seriesNameFormat": "{{cluster}}"
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "3_1": {
+      "kind": "Panel",
+      "spec": {
+        "display": {
+          "name": "Connections refused over the trust profile per second \u00b7 planned",
+          "description": "Planned, a proposed source change: needs source-patches/ztunnel/0001 (TRUST_PROFILE) and the ztunnel scrape job. Connections ztunnel refused because its profile does not accept a certificate, per cluster, 5 minute rate (CMTCTrustProfileRefusingConnections)."
+        },
+        "plugin": {
+          "kind": "TimeSeriesChart",
+          "spec": {
+            "legend": {
+              "mode": "list",
+              "position": "bottom"
+            },
+            "querySettings": [
+              {
+                "areaOpacity": 0.1,
+                "colorMode": "fixed",
+                "colorValue": "#4e79a7",
+                "queryIndex": 0
+              },
+              {
+                "areaOpacity": 0.1,
+                "colorMode": "fixed",
+                "colorValue": "#e15759",
+                "lineStyle": "dashed",
+                "queryIndex": 1
+              }
+            ],
+            "visual": {
+              "areaOpacity": 0.1,
+              "connectNulls": false,
+              "lineWidth": 1
+            },
+            "yAxis": {
+              "format": {
+                "unit": "counts/sec"
+              },
+              "min": 0
+            }
+          }
+        },
+        "queries": [
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "sum by (cluster) (rate(istio_tcp_connections_failed_total{job=\"ztunnel\", response_flags=\"TRUST_PROFILE\", cluster=\"cmtc-a\"}[5m]))",
+                  "seriesNameFormat": "{{cluster}}"
+                }
+              }
+            }
+          },
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "sum by (cluster) (rate(istio_tcp_connections_failed_total{job=\"ztunnel\", response_flags=\"TRUST_PROFILE\", cluster=\"cmtc-b\"}[5m]))",
+                  "seriesNameFormat": "{{cluster}}"
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "3_2": {
+      "kind": "Panel",
+      "spec": {
+        "display": {
+          "name": "Connections failed for want of a workload identity per second",
+          "description": "Connections that failed because ztunnel had no certificate for the workload (IDENTITY_ERROR), per cluster, 5 minute rate: SPIRE identity issuance is failing."
+        },
+        "plugin": {
+          "kind": "TimeSeriesChart",
+          "spec": {
+            "legend": {
+              "mode": "list",
+              "position": "bottom"
+            },
+            "querySettings": [
+              {
+                "areaOpacity": 0.1,
+                "colorMode": "fixed",
+                "colorValue": "#4e79a7",
+                "queryIndex": 0
+              },
+              {
+                "areaOpacity": 0.1,
+                "colorMode": "fixed",
+                "colorValue": "#e15759",
+                "lineStyle": "dashed",
+                "queryIndex": 1
+              }
+            ],
+            "visual": {
+              "areaOpacity": 0.1,
+              "connectNulls": false,
+              "lineWidth": 1
+            },
+            "yAxis": {
+              "format": {
+                "unit": "counts/sec"
+              },
+              "min": 0
+            }
+          }
+        },
+        "queries": [
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "sum by (cluster) (rate(istio_tcp_connections_failed_total{job=\"ztunnel\", response_flags=\"IDENTITY_ERROR\", cluster=\"cmtc-a\"}[5m]))",
+                  "seriesNameFormat": "{{cluster}}"
+                }
+              }
+            }
+          },
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "sum by (cluster) (rate(istio_tcp_connections_failed_total{job=\"ztunnel\", response_flags=\"IDENTITY_ERROR\", cluster=\"cmtc-b\"}[5m]))",
+                  "seriesNameFormat": "{{cluster}}"
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "3_3": {
+      "kind": "Panel",
+      "spec": {
+        "display": {
+          "name": "How to read this section"
+        },
+        "plugin": {
+          "kind": "Markdown",
+          "spec": {
+            "text": "The profile reaches ztunnel over xDS. Refusals over the profile are the outage of 2026-10-25; IDENTITY_ERROR is SPIRE not issuing."
+          }
+        }
+      }
+    },
+    "4_0": {
+      "kind": "Panel",
+      "spec": {
+        "display": {
+          "name": "Mesh certificates, per cluster",
+          "description": "Each cert-manager Certificate: its issuer, hours until it expires and until cert-manager renews it, and its Ready condition, now. The mesh root cmtc-mesh-root-ca lives 10 years in the control cluster only, the ClusterMesh and SPIRE intermediates 1 year, the ClusterMesh and ztunnel leaves 1 day (MESH_PKI.md). Negative hours to renewal: the renewal is overdue (CMTCCertificateRenewalOverdue)."
+        },
+        "plugin": {
+          "kind": "Table",
+          "spec": {
+            "columnSettings": [
+              {
+                "cellSettings": [
+                  {
+                    "backgroundColor": "#4e79a7",
+                    "condition": {
+                      "kind": "Value",
+                      "spec": {
+                        "value": "cmtc-a"
+                      }
+                    },
+                    "textColor": "#000000"
+                  },
+                  {
+                    "backgroundColor": "#e15759",
+                    "condition": {
+                      "kind": "Value",
+                      "spec": {
+                        "value": "cmtc-b"
+                      }
+                    },
+                    "textColor": "#000000"
+                  }
+                ],
+                "header": "Cluster",
+                "name": "cluster"
+              },
+              {
+                "header": "Namespace",
+                "name": "exported_namespace"
+              },
+              {
+                "header": "Certificate",
+                "name": "name"
+              },
+              {
+                "header": "Issuer",
+                "name": "issuer_name"
+              },
+              {
+                "format": {
+                  "unit": "decimal"
+                },
+                "header": "Expires in, h",
+                "name": "value #1"
+              },
+              {
+                "format": {
+                  "unit": "decimal"
+                },
+                "header": "Renews in, h",
+                "name": "value #2"
+              },
+              {
+                "cellSettings": [
+                  {
+                    "backgroundColor": "#e15759",
+                    "condition": {
+                      "kind": "Value",
+                      "spec": {
+                        "value": "0"
+                      }
+                    },
+                    "text": "not Ready",
+                    "textColor": "#000000"
+                  },
+                  {
+                    "backgroundColor": "#59a14f",
+                    "condition": {
+                      "kind": "Value",
+                      "spec": {
+                        "value": "1"
+                      }
+                    },
+                    "text": "Ready",
+                    "textColor": "#000000"
+                  }
+                ],
+                "format": {
+                  "unit": "decimal"
+                },
+                "header": "Ready",
+                "name": "value #3"
+              },
+              {
+                "hide": true,
+                "name": "timestamp"
+              }
+            ],
+            "density": "compact",
+            "transforms": [
+              {
+                "kind": "MergeSeries",
+                "spec": {}
+              }
+            ]
+          }
+        },
+        "queries": [
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "(max by (cluster, exported_namespace, name, issuer_name) (certmanager_certificate_expiration_timestamp_seconds{job=\"cert-manager\"} > 0) - time()) / 3600",
+                  "seriesNameFormat": ""
+                }
+              }
+            }
+          },
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "(max by (cluster, exported_namespace, name, issuer_name) (certmanager_certificate_renewal_timestamp_seconds{job=\"cert-manager\"} > 0) - time()) / 3600",
+                  "seriesNameFormat": ""
+                }
+              }
+            }
+          },
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "max by (cluster, exported_namespace, name, issuer_name) (certmanager_certificate_ready_status{job=\"cert-manager\", condition=\"True\"})",
+                  "seriesNameFormat": ""
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "4_1": {
+      "kind": "Panel",
+      "spec": {
+        "display": {
+          "name": "ClusterIssuers not Ready",
+          "description": "ClusterIssuers whose Ready condition is not True, per cluster, now: the mesh root, the per-cluster intermediates and the SPIRE issuer. Normal: 0 (CMTCClusterIssuerNotReady)."
+        },
+        "plugin": {
+          "kind": "StatChart",
+          "spec": {
+            "calculation": "last-number",
+            "colorMode": "value",
+            "format": {
+              "unit": "decimal"
+            },
+            "thresholds": {
+              "steps": [
+                {
+                  "color": "#59a14f",
+                  "value": 0
+                },
+                {
+                  "color": "#e15759",
+                  "value": 1
+                }
+              ]
+            }
+          }
+        },
+        "queries": [
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "count by (cluster) (max by (cluster, name) (certmanager_clusterissuer_ready_status{job=\"cert-manager\", condition!=\"True\", cluster=\"cmtc-a\"}) == 1) or 0 * max by (cluster) (up{job=\"cert-manager\", cluster=\"cmtc-a\"} == 1)",
+                  "seriesNameFormat": "{{cluster}}"
+                }
+              }
+            }
+          },
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "count by (cluster) (max by (cluster, name) (certmanager_clusterissuer_ready_status{job=\"cert-manager\", condition!=\"True\", cluster=\"cmtc-b\"}) == 1) or 0 * max by (cluster) (up{job=\"cert-manager\", cluster=\"cmtc-b\"} == 1)",
+                  "seriesNameFormat": "{{cluster}}"
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "4_2": {
+      "kind": "Panel",
+      "spec": {
+        "display": {
+          "name": "Hours until the soonest intermediate expires",
+          "description": "Hours until the first of the cluster's ClusterMesh and SPIRE intermediate certificates expires, per cluster. They were issued for 1 year on 2026-10-26 and renew 30 days before they end."
+        },
+        "plugin": {
+          "kind": "StatChart",
+          "spec": {
+            "calculation": "last-number",
+            "colorMode": "value",
+            "format": {
+              "decimalPlaces": 0,
+              "unit": "decimal"
+            },
+            "thresholds": {
+              "steps": [
+                {
+                  "color": "#e15759",
+                  "value": 0
+                },
+                {
+                  "color": "#f28e2b",
+                  "value": 24
+                },
+                {
+                  "color": "#59a14f",
+                  "value": 720
+                }
+              ]
+            }
+          }
+        },
+        "queries": [
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "(min by (cluster) (certmanager_certificate_expiration_timestamp_seconds{job=\"cert-manager\", name=~\".+-(clustermesh|spire)-intermediate\", cluster=\"cmtc-a\"} > 0) - time()) / 3600",
+                  "seriesNameFormat": "{{cluster}}"
+                }
+              }
+            }
+          },
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "(min by (cluster) (certmanager_certificate_expiration_timestamp_seconds{job=\"cert-manager\", name=~\".+-(clustermesh|spire)-intermediate\", cluster=\"cmtc-b\"} > 0) - time()) / 3600",
+                  "seriesNameFormat": "{{cluster}}"
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "4_3": {
+      "kind": "Panel",
+      "spec": {
+        "display": {
+          "name": "Bundle reconcile errors, 1 hour",
+          "description": "Failed reconciles of trust-manager's Bundle controller in the last hour, per cluster. The Bundle cmtc-mesh-root copies the mesh root into ConfigMap cmtc-mesh-root of every namespace labelled trust: enabled. Normal: 0 (CMTCTrustBundleReconcileFailing)."
+        },
+        "plugin": {
+          "kind": "StatChart",
+          "spec": {
+            "calculation": "last-number",
+            "colorMode": "value",
+            "format": {
+              "decimalPlaces": 0,
+              "unit": "decimal"
+            },
+            "thresholds": {
+              "steps": [
+                {
+                  "color": "#59a14f",
+                  "value": 0
+                },
+                {
+                  "color": "#e15759",
+                  "value": 1
+                }
+              ]
+            }
+          }
+        },
+        "queries": [
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "sum by (cluster) (increase(controller_runtime_reconcile_errors_total{job=\"trust-manager\", controller=\"bundles\", cluster=\"cmtc-a\"}[1h])) or 0 * max by (cluster) (up{job=\"trust-manager\", cluster=\"cmtc-a\"} == 1)",
+                  "seriesNameFormat": "{{cluster}}"
+                }
+              }
+            }
+          },
+          {
+            "kind": "TimeSeriesQuery",
+            "spec": {
+              "plugin": {
+                "kind": "PrometheusTimeSeriesQuery",
+                "spec": {
+                  "datasource": {
+                    "kind": "PrometheusDatasource",
+                    "name": "cmtc-thanos"
+                  },
+                  "query": "sum by (cluster) (increase(controller_runtime_reconcile_errors_total{job=\"trust-manager\", controller=\"bundles\", cluster=\"cmtc-b\"}[1h])) or 0 * max by (cluster) (up{job=\"trust-manager\", cluster=\"cmtc-b\"} == 1)",
+                  "seriesNameFormat": "{{cluster}}"
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "4_4": {
+      "kind": "Panel",
+      "spec": {
+        "display": {
+          "name": "How to read this section"
+        },
+        "plugin": {
+          "kind": "Markdown",
+          "spec": {
+            "text": "Read on the labs at 2026-10-27T00:06:53Z: every Certificate Ready; the four intermediates end 2027-10-26T12:49Z, cmtc-mesh-root-ca 2036-10-23T12:49Z; 6 Bundle reconciles and 0 errors on cmtc-a.\ncert-manager's metrics describe the certificates it manages, not the ones SPIRE issues: SPIRE's CA times are in the section above."
+          }
+        }
+      }
+    }
+  },
+  "layouts": [
+    {
+      "kind": "Grid",
+      "spec": {
+        "display": {
+          "title": "Is the issuer profile published and renewed?",
+          "collapse": {
+            "open": true
+          }
+        },
+        "items": [
+          {
+            "x": 0,
+            "y": 1,
+            "width": 6,
+            "height": 4,
+            "content": {
+              "$ref": "#/spec/panels/0_0"
+            }
+          },
+          {
+            "x": 6,
+            "y": 1,
+            "width": 6,
+            "height": 4,
+            "content": {
+              "$ref": "#/spec/panels/0_1"
+            }
+          },
+          {
+            "x": 12,
+            "y": 1,
+            "width": 6,
+            "height": 4,
+            "content": {
+              "$ref": "#/spec/panels/0_2"
+            }
+          },
+          {
+            "x": 18,
+            "y": 1,
+            "width": 6,
+            "height": 4,
+            "content": {
+              "$ref": "#/spec/panels/0_3"
+            }
+          },
+          {
+            "x": 0,
+            "y": 5,
+            "width": 12,
+            "height": 8,
+            "content": {
+              "$ref": "#/spec/panels/0_4"
+            }
+          },
+          {
+            "x": 12,
+            "y": 5,
+            "width": 12,
+            "height": 8,
+            "content": {
+              "$ref": "#/spec/panels/0_5"
+            }
+          },
+          {
+            "x": 0,
+            "y": 13,
+            "width": 24,
+            "height": 3,
+            "content": {
+              "$ref": "#/spec/panels/0_6"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "Grid",
+      "spec": {
+        "display": {
+          "title": "Which issuers does each approval pin, and until when? \u00b7 planned",
+          "collapse": {
+            "open": true
+          }
+        },
+        "items": [
+          {
+            "x": 0,
+            "y": 17,
+            "width": 12,
+            "height": 5,
+            "content": {
+              "$ref": "#/spec/panels/1_0"
+            }
+          },
+          {
+            "x": 0,
+            "y": 22,
+            "width": 24,
+            "height": 6,
+            "content": {
+              "$ref": "#/spec/panels/1_1"
+            }
+          },
+          {
+            "x": 0,
+            "y": 28,
+            "width": 12,
+            "height": 8,
+            "content": {
+              "$ref": "#/spec/panels/1_2"
+            }
+          },
+          {
+            "x": 12,
+            "y": 28,
+            "width": 12,
+            "height": 6,
+            "content": {
+              "$ref": "#/spec/panels/1_3"
+            }
+          },
+          {
+            "x": 0,
+            "y": 36,
+            "width": 24,
+            "height": 3,
+            "content": {
+              "$ref": "#/spec/panels/1_4"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "Grid",
+      "spec": {
+        "display": {
+          "title": "When does SPIRE switch to a CA the approval does not pin? \u00b7 planned",
+          "collapse": {
+            "open": true
+          }
+        },
+        "items": [
+          {
+            "x": 0,
+            "y": 40,
+            "width": 12,
+            "height": 4,
+            "content": {
+              "$ref": "#/spec/panels/2_0"
+            }
+          },
+          {
+            "x": 12,
+            "y": 40,
+            "width": 12,
+            "height": 4,
+            "content": {
+              "$ref": "#/spec/panels/2_1"
+            }
+          },
+          {
+            "x": 0,
+            "y": 44,
+            "width": 12,
+            "height": 8,
+            "content": {
+              "$ref": "#/spec/panels/2_2"
+            }
+          },
+          {
+            "x": 12,
+            "y": 44,
+            "width": 12,
+            "height": 6,
+            "content": {
+              "$ref": "#/spec/panels/2_3"
+            }
+          },
+          {
+            "x": 0,
+            "y": 52,
+            "width": 24,
+            "height": 5,
+            "content": {
+              "$ref": "#/spec/panels/2_4"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "Grid",
+      "spec": {
+        "display": {
+          "title": "Did ztunnel apply the profile, or refuse connections over it?",
+          "collapse": {
+            "open": true
+          }
+        },
+        "items": [
+          {
+            "x": 0,
+            "y": 58,
+            "width": 8,
+            "height": 8,
+            "content": {
+              "$ref": "#/spec/panels/3_0"
+            }
+          },
+          {
+            "x": 8,
+            "y": 58,
+            "width": 8,
+            "height": 8,
+            "content": {
+              "$ref": "#/spec/panels/3_1"
+            }
+          },
+          {
+            "x": 16,
+            "y": 58,
+            "width": 8,
+            "height": 8,
+            "content": {
+              "$ref": "#/spec/panels/3_2"
+            }
+          },
+          {
+            "x": 0,
+            "y": 66,
+            "width": 24,
+            "height": 3,
+            "content": {
+              "$ref": "#/spec/panels/3_3"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "Grid",
+      "spec": {
+        "display": {
+          "title": "Will the mesh certificates stay valid, and does the mesh root reach its namespaces?",
+          "collapse": {
+            "open": true
+          }
+        },
+        "items": [
+          {
+            "x": 0,
+            "y": 70,
+            "width": 24,
+            "height": 9,
+            "content": {
+              "$ref": "#/spec/panels/4_0"
+            }
+          },
+          {
+            "x": 0,
+            "y": 79,
+            "width": 8,
+            "height": 4,
+            "content": {
+              "$ref": "#/spec/panels/4_1"
+            }
+          },
+          {
+            "x": 8,
+            "y": 79,
+            "width": 8,
+            "height": 4,
+            "content": {
+              "$ref": "#/spec/panels/4_2"
+            }
+          },
+          {
+            "x": 16,
+            "y": 79,
+            "width": 8,
+            "height": 4,
+            "content": {
+              "$ref": "#/spec/panels/4_3"
+            }
+          },
+          {
+            "x": 0,
+            "y": 83,
+            "width": 24,
+            "height": 5,
+            "content": {
+              "$ref": "#/spec/panels/4_4"
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "duration": "1h"
+}

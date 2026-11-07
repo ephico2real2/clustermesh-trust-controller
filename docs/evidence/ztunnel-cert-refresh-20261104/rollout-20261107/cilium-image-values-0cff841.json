@@ -1,0 +1,47 @@
+{
+  "image": {
+    "override": "ghcr.io/ephico2real2/cilium-dev@sha256:369090126600bc5f9b8b2630781cb8d476ad07c2c53d4571da71e16795dafa60",
+    "pullPolicy": "IfNotPresent"
+  },
+  "operator": {
+    "image": {
+      "override": "ghcr.io/ephico2real2/cilium-dev@sha256:533e8ff5483ab6128ca11f23d974a161dbca7440161bb7b97ab02eccc640cb38",
+      "pullPolicy": "IfNotPresent"
+    }
+  },
+  "preflight": {
+    "image": {
+      "override": "ghcr.io/ephico2real2/cilium-dev@sha256:369090126600bc5f9b8b2630781cb8d476ad07c2c53d4571da71e16795dafa60"
+    }
+  },
+  "clustermesh": {
+    "apiserver": {
+      "image": {
+        "override": "ghcr.io/ephico2real2/cilium-dev@sha256:1e3fc5a8f272dd554c565e45b52854a336632a3d66ae4417133fbaa3813cffc6",
+        "pullPolicy": "IfNotPresent"
+      }
+    }
+  },
+  "hubble": {
+    "relay": {
+      "image": {
+        "override": "ghcr.io/ephico2real2/cilium-dev@sha256:bbda6e67ddb987ff81b6746c76d22a262c6baf6062c475ce384db0256c6b0413",
+        "pullPolicy": "IfNotPresent"
+      }
+    },
+    "ui": {
+      "frontend": {
+        "image": {
+          "override": "quay.io/cilium/hubble-ui@sha256:049a80a03585c043d0c3121bdc518c72b0fd42bae07e4bcce0fdb8f1e88041d0",
+          "pullPolicy": "IfNotPresent"
+        }
+      },
+      "backend": {
+        "image": {
+          "override": "quay.io/cilium/hubble-ui-backend@sha256:83b3fc763f3d49948c306bf49b08277383e195904b9ca5c0c0022b2112628787",
+          "pullPolicy": "IfNotPresent"
+        }
+      }
+    }
+  }
+}

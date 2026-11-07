@@ -1,0 +1,23 @@
+{"context": "cmtc-b", "scope": "same", "expect": "allow", "selected": 6, "trafficChecksPassed": 6, "securityReasonVerified": false, "evidenceRequired": "peer certs, authenticated identities, policy verdict,packet/metrics correlation"}
+{"context": "cmtc-b", "scope": "crossnode", "expect": "allow", "selected": 6, "trafficChecksPassed": 6, "securityReasonVerified": false, "evidenceRequired": "peer certs, authenticated identities, policy verdict,packet/metrics correlation"}
+{"context": "cmtc-b", "scope": "crosscluster", "expect": "allow", "selected": 12, "trafficChecksPassed": 12, "securityReasonVerified": false, "evidenceRequired": "peer certs, authenticated identities, policy verdict,packet/metrics correlation"}
+{"context": "cmtc-b", "scope": "global", "expect": "allow", "selected": 12, "trafficChecksPassed": 12, "securityReasonVerified": false, "evidenceRequired": "peer certs, authenticated identities, policy verdict,packet/metrics correlation"}
+{"context": "cmtc-b", "scope": "name", "expect": "allow", "selected": 12, "trafficChecksPassed": 12, "securityReasonVerified": false, "evidenceRequired": "peer certs, authenticated identities, policy verdict,packet/metrics correlation"}
+{"context": "cmtc-b", "scope": "negative", "expect": "deny", "selected": 6, "trafficChecksPassed": 6, "securityReasonVerified": false, "evidenceRequired": "peer certs, authenticated identities, policy verdict,packet/metrics correlation"}
+Traceback (most recent call last):
+  File "/private/tmp/claude-501/-Users-olasumbo-gitRepos-clustermest-trust-controller/b744973a-790d-4002-b391-59c175420e0c/scratchpad/cmtc-p2/scripts/evidence/live_mtls_fixture.py", line 263, in <module>
+    if __name__=='__main__':main()
+                            ~~~~^^
+  File "/private/tmp/claude-501/-Users-olasumbo-gitRepos-clustermest-trust-controller/b744973a-790d-4002-b391-59c175420e0c/scratchpad/cmtc-p2/scripts/evidence/live_mtls_fixture.py", line 260, in main
+    if x.stage=='probe':l.probe(x.cluster,x.scope,x.expect,x.repeat)
+                        ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/private/tmp/claude-501/-Users-olasumbo-gitRepos-clustermest-trust-controller/b744973a-790d-4002-b391-59c175420e0c/scratchpad/cmtc-p2/scripts/evidence/live_mtls_fixture.py", line 210, in probe
+    row=self.curl(c,ns,client,f'http://{target}:{port}/?cmtc={time.time_ns()}',dest if expect=='allow'else None)
+  File "/private/tmp/claude-501/-Users-olasumbo-gitRepos-clustermest-trust-controller/b744973a-790d-4002-b391-59c175420e0c/scratchpad/cmtc-p2/scripts/evidence/live_mtls_fixture.py", line 177, in curl
+    require(r.returncode==0,'Exec failed; cannot count as traffic rejection: '+r.stderr)
+    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/private/tmp/claude-501/-Users-olasumbo-gitRepos-clustermest-trust-controller/b744973a-790d-4002-b391-59c175420e0c/scratchpad/cmtc-p2/scripts/evidence/live_mtls_fixture.py", line 21, in require
+    if not x: raise RuntimeError(msg)
+              ^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: Exec failed; cannot count as traffic rejection: command terminated with exit code 137
+

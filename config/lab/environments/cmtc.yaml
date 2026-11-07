@@ -1,0 +1,18 @@
+# The CMTC development labs: kind-cmtc-a and kind-cmtc-b in the Colima VM "cmtc-cilium".
+# scripts/lab/cilium_cluster_values.py derives each cluster's Cilium values from this file (MESH_PKI.md names).
+name: cmtc
+dockerContext: colima-cmtc-cilium
+# The cluster whose cert-manager holds the mesh root (ADR-011).
+controlCluster: cmtc-a
+clusters:
+  - name: cmtc-a
+    id: 1
+    podCIDR: 10.10.0.0/16
+    serviceCIDR: 10.11.0.0/16
+  - name: cmtc-b
+    id: 2
+    podCIDR: 10.20.0.0/16
+    serviceCIDR: 10.21.0.0/16
+# Applied after the shared files: the labs' one deliberate difference (24-hour ClusterMesh leaves).
+extraCiliumValues:
+  - config/lab/cilium/live-labs.yaml

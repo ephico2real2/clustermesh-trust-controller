@@ -1,0 +1,174 @@
+# promtool test rules for rules/proposed/issuer-approval-source-change.rules.yaml, on the real timeline of the
+# 2026-10-25 outage.
+#
+# Test clock. promtool 3.7.0, the version the lab runs, starts every test at time 0 (start_timestamp exists
+# only from v3.9.0). This file counts time from 2026-10-25T00:00:00Z = 1792886400: a real timestamp t is
+# written as t - 1792886400, and eval_time 900m is 2026-10-25T15:00:00Z.
+#
+# Sources of every number: docs/evidence/issuer-rebootstrap-20261026/INCIDENT.md:21-25 and the approvals
+# read at 2026-10-26T03:52:37Z (review inventory approvals/approval-horizon-0352.json):
+#   approval g1, cmtc-a: one issuer, SPIRE slot A, notBefore 2026-10-25T03:55:11Z (1792900511 -> 14111),
+#                        notAfter 2026-10-26T03:55:11Z (1792986911 -> 100511); expiresAt the same.
+#   approval g1, cmtc-b: one issuer, notBefore 2026-10-25T03:55:38Z (-> 14138),
+#                        notAfter 2026-10-26T03:55:38Z (-> 100538).
+#   SPIRE activated slot B at 23:55:17Z (cmtc-a) and 23:55:44Z (cmtc-b); the warning below fires at
+#   16:01:00Z, the critical stage at 22:01:00Z, both before the outage.
+rule_files:
+- ../proposed/issuer-approval-source-change.rules.yaml
+evaluation_interval: 1m
+
+tests:
+- name: approval g1 forecasts the 23:55Z activation and warns from 15:55Z
+  interval: 1m
+  input_series:
+  - series: 'cmtc_issuer_profile_approved_issuer_not_after_timestamp_seconds{job="cmtc", component="cmtc-controller", cluster="cmtc-a", exported_cluster="cmtc-a", node="cmtc-a-worker", approval_cluster="cmtc-a", position="newest"}'
+    values: '100511x1620'
+  - series: 'cmtc_issuer_profile_approved_issuer_not_after_timestamp_seconds{job="cmtc", component="cmtc-controller", cluster="cmtc-a", exported_cluster="cmtc-a", node="cmtc-a-worker", approval_cluster="cmtc-a", position="oldest"}'
+    values: '100511x1620'
+  - series: 'cmtc_issuer_profile_approved_issuer_not_before_timestamp_seconds{job="cmtc", component="cmtc-controller", cluster="cmtc-a", exported_cluster="cmtc-a", node="cmtc-a-worker", approval_cluster="cmtc-a", position="newest"}'
+    values: '14111x1620'
+  - series: 'cmtc_issuer_profile_approved_issuer_not_after_timestamp_seconds{job="cmtc", component="cmtc-controller", cluster="cmtc-a", exported_cluster="cmtc-a", node="cmtc-a-worker", approval_cluster="cmtc-b", position="newest"}'
+    values: '100538x1620'
+  - series: 'cmtc_issuer_profile_approved_issuer_not_before_timestamp_seconds{job="cmtc", component="cmtc-controller", cluster="cmtc-a", exported_cluster="cmtc-a", node="cmtc-a-worker", approval_cluster="cmtc-b", position="newest"}'
+    values: '14138x1620'
+  - series: 'cmtc_issuer_profile_approval_valid_until_timestamp_seconds{job="cmtc", component="cmtc-controller", cluster="cmtc-a", exported_cluster="cmtc-a", node="cmtc-a-worker"}'
+    values: '100511x1620'
+  promql_expr_test:
+  # Preparation at notAfter - 24 h / 2 = 2026-10-25T15:55:11Z (-> 57311); cmtc-b 15:55:38Z (-> 57338).
+  - expr: cmtc:issuer_next_preparation:timestamp_seconds
+    eval_time: 901m
+    exp_samples:
+    - labels: 'cmtc:issuer_next_preparation:timestamp_seconds{cluster="cmtc-a", approval_cluster="cmtc-a"}'
+      value: 57311
+    - labels: 'cmtc:issuer_next_preparation:timestamp_seconds{cluster="cmtc-a", approval_cluster="cmtc-b"}'
+      value: 57338
+  # Activation at notAfter - 24 h / 6 = 2026-10-25T23:55:11Z (-> 86111); cmtc-b 23:55:38Z (-> 86138).
+  - expr: cmtc:issuer_next_unpinned_activation:timestamp_seconds
+    eval_time: 901m
+    exp_samples:
+    - labels: 'cmtc:issuer_next_unpinned_activation:timestamp_seconds{cluster="cmtc-a", approval_cluster="cmtc-a"}'
+      value: 86111
+    - labels: 'cmtc:issuer_next_unpinned_activation:timestamp_seconds{cluster="cmtc-a", approval_cluster="cmtc-b"}'
+      value: 86138
+  alert_rule_test:
+  # 15:55:00Z: SPIRE has not prepared slot B yet (it did at 15:55:19Z).
+  - eval_time: 955m
+    alertname: CMTCIssuerSuccessionDue
+    exp_alerts: []
+  # Pending from 15:56:00Z; not yet firing at 16:00:00Z.
+  - eval_time: 960m
+    alertname: CMTCIssuerSuccessionDue
+    exp_alerts: []
+  - eval_time: 961m
+    alertname: CMTCIssuerSuccessionDue
+    exp_alerts:
+    - exp_labels: {severity: warning, owner: cmtc-controller, cluster: cmtc-a, approval_cluster: cmtc-a}
+      exp_annotations:
+        summary: 'SPIRE of cmtc-a has prepared a CA that the approval in cmtc-a does not pin'
+        runbook: 'Add the prepared CA as the second issuer of cmtc-a in a new approval generation before SPIRE activates it (the next alert stage, CMTCIssuerSuccessionImminent, gives the time). The SPIRE server log line "X509 CA prepared" names its slot and expiration.'
+    - exp_labels: {severity: warning, owner: cmtc-controller, cluster: cmtc-a, approval_cluster: cmtc-b}
+      exp_annotations:
+        summary: 'SPIRE of cmtc-b has prepared a CA that the approval in cmtc-a does not pin'
+        runbook: 'Add the prepared CA as the second issuer of cmtc-b in a new approval generation before SPIRE activates it (the next alert stage, CMTCIssuerSuccessionImminent, gives the time). The SPIRE server log line "X509 CA prepared" names its slot and expiration.'
+  # 21:55:00Z: more than 2 h left.
+  - eval_time: 1315m
+    alertname: CMTCIssuerSuccessionImminent
+    exp_alerts: []
+  # 22:01:00Z: firing, 1h 54m before SPIRE activates slot B.
+  - eval_time: 1321m
+    alertname: CMTCIssuerSuccessionImminent
+    exp_alerts:
+    - exp_labels: {severity: critical, owner: cmtc-controller, cluster: cmtc-a, approval_cluster: cmtc-a}
+      exp_annotations:
+        summary: 'In 1h 54m 11s SPIRE of cmtc-a activates a CA that the approval in cmtc-a does not pin'
+        runbook: 'Workload mTLS that depends on cmtc-a identities fails closed at that time. Publish the approval generation that pins the prepared CA now; a negative value means the activation already happened and connections are being refused (CMTCTrustProfileRefusingConnections).'
+    - exp_labels: {severity: critical, owner: cmtc-controller, cluster: cmtc-a, approval_cluster: cmtc-b}
+      exp_annotations:
+        summary: 'In 1h 54m 38s SPIRE of cmtc-b activates a CA that the approval in cmtc-a does not pin'
+        runbook: 'Workload mTLS that depends on cmtc-b identities fails closed at that time. Publish the approval generation that pins the prepared CA now; a negative value means the activation already happened and connections are being refused (CMTCTrustProfileRefusingConnections).'
+  # The approval itself ends at 03:55:11Z: warning from 00:01Z, critical from 02:57Z.
+  - eval_time: 1435m
+    alertname: CMTCIssuerApprovalExpiring
+    exp_alerts: []
+  - eval_time: 1441m
+    alertname: CMTCIssuerApprovalExpiring
+    exp_alerts:
+    - exp_labels: {severity: warning, owner: cmtc-controller, cluster: cmtc-a}
+      exp_annotations:
+        summary: 'The issuer approval in force in cmtc-a ends in 3h 54m 11s'
+        runbook: 'At that time the producer withdraws the profile and every ztunnel of the cluster drains workload TLS. Publish the next approval generation, without the issuer that expires, before then.'
+  - eval_time: 1616m
+    alertname: CMTCIssuerApprovalExpiryImminent
+    exp_alerts: []
+  - eval_time: 1617m
+    alertname: CMTCIssuerApprovalExpiryImminent
+    exp_alerts:
+    - exp_labels: {severity: critical, owner: cmtc-controller, cluster: cmtc-a}
+      exp_annotations:
+        summary: 'The issuer approval in force in cmtc-a ends in 58m 11s'
+        runbook: 'Publish the next approval generation now. After the horizon the publication reason becomes SourceExpired or SourceInvalid (CMTCIssuerProfileWithdrawn).'
+
+- name: an approval that pins the prepared CA moves the forecast by 12 hours
+  interval: 1m
+  input_series:
+  # Slot A and slot B pinned: the newest issuer is slot B (notBefore 2026-10-25T15:55:19Z -> 57319,
+  # notAfter 2026-10-26T15:55:19Z -> 143719).
+  - series: 'cmtc_issuer_profile_approved_issuer_not_after_timestamp_seconds{job="cmtc", component="cmtc-controller", cluster="cmtc-a", approval_cluster="cmtc-a", position="newest"}'
+    values: '143719x1400'
+  - series: 'cmtc_issuer_profile_approved_issuer_not_before_timestamp_seconds{job="cmtc", component="cmtc-controller", cluster="cmtc-a", approval_cluster="cmtc-a", position="newest"}'
+    values: '57319x1400'
+  - series: 'cmtc_issuer_profile_approved_issuer_not_after_timestamp_seconds{job="cmtc", component="cmtc-controller", cluster="cmtc-a", approval_cluster="cmtc-a", position="oldest"}'
+    values: '100511x1400'
+  promql_expr_test:
+  # Activation of the CA after slot B: 2026-10-26T11:55:19Z (-> 129319).
+  - expr: cmtc:issuer_next_unpinned_activation:timestamp_seconds
+    eval_time: 901m
+    exp_samples:
+    - labels: 'cmtc:issuer_next_unpinned_activation:timestamp_seconds{cluster="cmtc-a", approval_cluster="cmtc-a"}'
+      value: 129319
+  alert_rule_test:
+  - eval_time: 961m
+    alertname: CMTCIssuerSuccessionDue
+    exp_alerts: []
+  - eval_time: 1380m
+    alertname: CMTCIssuerSuccessionImminent
+    exp_alerts: []
+
+# The two tests below compare gauge values only; their rules do not read time(), so the test clock does not matter.
+- name: the producer withdraws the profile when the approval expired
+  interval: 1m
+  input_series:
+  - series: 'cmtc_issuer_profile_publication_reason{job="cmtc", component="cmtc-controller", cluster="cmtc-a", exported_cluster="cmtc-a", reason="Validated"}'
+    values: '1 1 1 1 1 1 0 0 0 0 0 0'
+  - series: 'cmtc_issuer_profile_publication_reason{job="cmtc", component="cmtc-controller", cluster="cmtc-a", exported_cluster="cmtc-a", reason="SourceExpired"}'
+    values: '0 0 0 0 0 0 1 1 1 1 1 1'
+  alert_rule_test:
+  - eval_time: 6m
+    alertname: CMTCIssuerProfileWithdrawn
+    exp_alerts: []
+  - eval_time: 7m
+    alertname: CMTCIssuerProfileWithdrawn
+    exp_alerts:
+    - exp_labels: {severity: critical, owner: cmtc-controller, cluster: cmtc-a, reason: SourceExpired}
+      exp_annotations:
+        summary: 'The issuer-profile producer in cmtc-a does not publish a validated profile: SourceExpired'
+        runbook: 'SourceExpired: publish a new approval generation. SourceUIDMismatch or SourceDeleted: the approval object was replaced; the controller arguments name the old UID. GenerationRollback: an older generation was offered. Read the controller log line "approval validation rejected".'
+
+- name: the clusters accept different approval generations
+  interval: 1m
+  input_series:
+  - series: 'cmtc_issuer_profile_approval_generation{job="cmtc", component="cmtc-controller", cluster="cmtc-a"}'
+    values: '3x30'
+  - series: 'cmtc_issuer_profile_approval_generation{job="cmtc", component="cmtc-controller", cluster="cmtc-b"}'
+    values: '3 3 3 3 3 2x25'
+  alert_rule_test:
+  - eval_time: 19m
+    alertname: CMTCIssuerApprovalGenerationsDiffer
+    exp_alerts: []
+  - eval_time: 20m
+    alertname: CMTCIssuerApprovalGenerationsDiffer
+    exp_alerts:
+    - exp_labels: {severity: warning, owner: cmtc-controller}
+      exp_annotations:
+        summary: 'The clusters accept issuer approval generations 1 apart, for 15 minutes'
+        runbook: 'Each cluster pins the issuers its own approval lists. Compare the generations on the trust dashboard; publish the same generation in every cluster.'

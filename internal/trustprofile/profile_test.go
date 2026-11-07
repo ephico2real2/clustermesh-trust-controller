@@ -414,3 +414,87 @@ func TestPublicationEnvelopeLimitAndWithdrawnFloorShape(t *testing.T) {
 		})
 	}
 }
+
+// Approvals are immutable, so each new approval generation is a new object.
+// Expected binds its source object only at MinimumGeneration: a successor in
+// the pinned namespace, under the pinned roots, with a strictly greater
+// generation is current under the unchanged pins. Another object at the floor
+// generation, a foreign namespace, the output object and an unpinned root are
+// not. Once a consumer's floors advance, they bind the successor instead.
+func TestVerifyCurrentFollowsApprovalSourceSuccession(t *testing.T) {
+	a, pins, now := approvalFixture(t)
+	predecessor, err := Validate(encodeApproval(t, a), pins, "cmtc-a", now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	a.Generation = 2
+	valid, err := Validate(encodeApproval(t, a), pins, "cmtc-a", now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	expected := Expected{OutputUID: "output-v1", SourceUID: "source-v1", SourceNamespace: "cmtc-system", SourceName: "approval", Cluster: "cmtc-a", MinimumGeneration: 1, MinimumSequence: 1, RootPins: pins}
+	successor := func(change func(*Publication)) []byte {
+		t.Helper()
+		p := publicationFor(valid, now)
+		p.Sequence = 2
+		p.ExpectedSourceUID, p.AcceptedSourceUID = "source-v2", "source-v2"
+		p.Source.Name, p.Source.UID = "approval-g2", "source-v2"
+		if change != nil {
+			change(&p)
+		}
+		body, err := Encode(p)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return body
+	}
+	if _, err := VerifyCurrent(successor(nil), expected, now); err != nil {
+		t.Fatalf("successor with a greater generation rejected under unchanged pins: %v", err)
+	}
+	for name, change := range map[string]func(*Publication){
+		"foreign-namespace": func(p *Publication) { p.Source.Namespace = "other-system" },
+		"output-object": func(p *Publication) {
+			p.ExpectedSourceUID, p.AcceptedSourceUID, p.Source.UID = "output-v1", "output-v1", "output-v1"
+		},
+		"invalid-name": func(p *Publication) { p.Source.Name = "Not_An_Object" },
+	} {
+		if _, err := VerifyCurrent(successor(change), expected, now); err == nil {
+			t.Fatalf("%s accepted", name)
+		}
+	}
+	unpinned := expected
+	unpinned.RootPins = []string{SHA([]byte("other root"))}
+	if _, err := VerifyCurrent(successor(nil), unpinned, now); err == nil {
+		t.Fatal("successor under an unpinned root accepted")
+	}
+	floor := expected
+	floor.MinimumGeneration = 2
+	if _, err := VerifyCurrent(successor(nil), floor, now); err == nil {
+		t.Fatal("another object supplied the floor generation")
+	}
+	same := publicationFor(predecessor, now)
+	same.Sequence = 2
+	same.ExpectedSourceUID, same.AcceptedSourceUID = "source-v2", "source-v2"
+	same.Source.Name, same.Source.UID = "approval-g2", "source-v2"
+	body, err := Encode(same)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := VerifyCurrent(body, expected, now); err == nil {
+		t.Fatal("identical content from another object at the floor generation accepted")
+	}
+	advanced := expected
+	advanced.SourceName, advanced.SourceUID, advanced.MinimumGeneration, advanced.MinimumSequence = "approval-g2", "source-v2", 2, 2
+	if _, err := VerifyCurrent(successor(nil), advanced, now); err != nil {
+		t.Fatalf("successor rejected at its own floor: %v", err)
+	}
+	rollback := publicationFor(predecessor, now)
+	rollback.Sequence = 3
+	body, err = Encode(rollback)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := VerifyCurrent(body, advanced, now); err == nil {
+		t.Fatal("predecessor generation accepted after the succession")
+	}
+}

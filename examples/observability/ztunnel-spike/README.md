@@ -4,10 +4,14 @@
 Guide scope: check current runtime and feature gates before using these instructions. Read [current delivery status](../../../docs/agile/DELIVERY_STATUS.md) and [documentation terms](../../../DOCUMENTATION_GUIDE.md).
 <!-- /CMTC_DOC_CONTEXT -->
 
+**Historical fixture.** The views and measurements here come from the retired isolated `cmtc-mtls` fixture
+(2026-10-24). They do not describe `cmtc-a` or `cmtc-b`. The v1 dashboards under `observability/` stay current until
+the metrics overhaul in `observability/v2/` lands.
+
 `authenticated-only.json` is the qualified 12-panel native source. `observability/build.py` incorporates it into the active Workload Security page alongside the planned TLS, trust, transport and violation sections; Operations is the other active page. All nine original domain JSONs remain unchanged in `observability/dashboards/`. The earlier `dashboard.json` and walk are retained under `historical/` for reproducibility; their duplicate live view is retired. Both active dashboards use the lab's `cmtc-prom` data source. These
 native ztunnel TCP metrics are not CMTC protection or TLS handshake metrics.
 
-The local two-node SPIRE fixture supplies real traffic. Add a Prometheus scrape
+The retired two-node SPIRE fixture supplied real traffic. Add a Prometheus scrape
 job named `cmtc-spire-ztunnel`, path `/stats/prometheus`, with each owned node's
 reachable port 15020 and explicit `cluster=cmtc-mtls` and `node` labels. Resolve
 addresses from the current lab; do not reuse another machine's node IPs.

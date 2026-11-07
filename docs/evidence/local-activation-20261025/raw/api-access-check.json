@@ -1,0 +1,46 @@
+{
+  "recordedAtUTC": "2026-10-25T17:10:20Z",
+  "method": "Read-only kubectl cluster-info, get --raw=/readyz, namespace UID and node inventory from the MacBook using the existing explicit kubeconfig/contexts",
+  "credentialsReadOrExported": false,
+  "clusterResourcesChanged": false,
+  "clusters": {
+    "kind-cmtc-a": {
+      "endpoint": "https://127.0.0.1:54193",
+      "readyz": "ok",
+      "kubeSystemUID": "bb7182c7-de95-4e70-816a-a1400d755794",
+      "nodes": [
+        {
+          "name": "cmtc-a-control-plane",
+          "ready": true,
+          "internalIP": "172.18.0.3"
+        },
+        {
+          "name": "cmtc-a-worker",
+          "ready": true,
+          "internalIP": "172.18.0.2"
+        }
+      ]
+    },
+    "kind-cmtc-b": {
+      "endpoint": "https://127.0.0.1:54247",
+      "readyz": "ok",
+      "kubeSystemUID": "f2687af6-bd96-45a3-98a2-d1397a3ee244",
+      "nodes": [
+        {
+          "name": "cmtc-b-control-plane",
+          "ready": true,
+          "internalIP": "172.18.0.4"
+        },
+        {
+          "name": "cmtc-b-worker",
+          "ready": true,
+          "internalIP": "172.18.0.5"
+        }
+      ]
+    }
+  },
+  "limits": [
+    "API readiness is not ClusterMesh health or workload-mTLS evidence",
+    "Loopback ports and node addresses are snapshots; rediscover on resume"
+  ]
+}

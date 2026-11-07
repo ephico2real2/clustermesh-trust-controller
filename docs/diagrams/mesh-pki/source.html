@@ -1,0 +1,325 @@
+<!-- SPDX-License-Identifier: MIT-0. Started from the diagram-kit template, https://github.com/ephico2real2/diagram-kit -->
+<title>Mesh PKI Chain</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+:root {
+  --ground: #f5f6f8; --surface: #ffffff; --ink: #18212c; --muted: #58636f; --rule: #d7dce3;
+  --host: #a55a0b; --host-wash: #fbf1e4; --remote: #0e6f68; --remote-wash: #e3f3f1;
+  --gap: #b3261e; --gap-wash: #fbe9e7; --none: #5f6a77; --none-wash: #eef0f3;
+  --font-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --ground: #0e131a; --surface: #151c25; --ink: #e5e9ef; --muted: #9aa5b3; --rule: #2a3440;
+    --host: #f0a53c; --host-wash: #2a2014; --remote: #3fcfc0; --remote-wash: #122a28;
+    --gap: #f2857c; --gap-wash: #2d1614; --none: #9aa5b3; --none-wash: #1b232d;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --ground: #0e131a; --surface: #151c25; --ink: #e5e9ef; --muted: #9aa5b3; --rule: #2a3440;
+  --host: #f0a53c; --host-wash: #2a2014; --remote: #3fcfc0; --remote-wash: #122a28;
+  --gap: #f2857c; --gap-wash: #2d1614; --none: #9aa5b3; --none-wash: #1b232d;
+}
+* { box-sizing: border-box; }
+body { background: var(--ground); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.55; margin: 0; }
+.page { max-width: 1060px; margin: 0 auto; padding-inline: 16px; padding-block: 40px 72px; display: grid; gap: 44px; }
+header { display: grid; gap: 10px; }
+.eyebrow { font-family: var(--font-mono); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+h1 { font-size: clamp(26px, 4vw, 36px); line-height: 1.15; margin: 0; font-weight: 700; text-wrap: balance; }
+h2 { font-size: 20px; margin: 0 0 6px; font-weight: 600; text-wrap: balance; }
+p { margin: 0; max-width: 72ch; }
+.lede { font-size: 17px; max-width: 70ch; }
+section { display: grid; gap: 14px; }
+figure { margin: 0; display: grid; gap: 10px; }
+.fig-scroll { overflow-x: auto; background: var(--surface); border: 1px solid var(--rule); border-radius: 10px; padding: 12px; }
+.fig-scroll svg { display: block; width: 100%; min-width: 760px; height: auto; color: var(--ink); }
+figcaption { font-size: 13.5px; color: var(--muted); max-width: 80ch; }
+</style>
+
+<div class="page">
+  <header>
+    <div class="eyebrow">clustermest-trust-controller · mesh PKI · 2026-10-26</div>
+    <h1>One mesh root, an intermediate per cluster and purpose</h1>
+    <p class="lede">cert-manager in the control cluster mints the 10-year mesh root. Its Secret is copied to every member.
+      Each cluster signs its own ClusterMesh and SPIRE intermediates, named after the cluster, so every certificate
+      shows which cluster signed it.</p>
+  </header>
+
+  <section>
+    <h2>The chain</h2>
+    <figure>
+      <div class="fig-scroll">
+        <svg viewBox="0 0 980 470" role="img" aria-label="cmtc-a mints the mesh root and copies its Secret to cmtc-b. Each cluster's ClusterIssuer cmtc-mesh-root signs that cluster's ClusterMesh and SPIRE intermediates. The ClusterMesh intermediate signs the seven ClusterMesh and ztunnel leaves. SPIRE moving onto its intermediate is proposed, issue 34.">
+          <defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="context-stroke"/></marker></defs>
+          <g font-family="IBM Plex Mono, monospace" font-size="13" font-weight="600">
+            <rect x="20" y="14" width="450" height="30" rx="6" fill="var(--host-wash)" stroke="var(--host)"/>
+            <text x="245" y="34" text-anchor="middle" fill="var(--host)">cmtc-a  ·  control cluster</text>
+            <rect x="510" y="14" width="450" height="30" rx="6" fill="var(--remote-wash)" stroke="var(--remote)"/>
+            <text x="735" y="34" text-anchor="middle" fill="var(--remote)">cmtc-b  ·  member cluster (and cmtc-c, …)</text>
+          </g>
+          <line x1="490" y1="14" x2="490" y2="400" stroke="var(--rule)" stroke-width="1.5" stroke-dasharray="6 5"/>
+          <g font-family="IBM Plex Sans, sans-serif" font-size="12.5" fill="currentColor">
+            <!-- Row 1: the root and its copy -->
+            <rect x="30" y="60" width="430" height="64" rx="6" fill="var(--host-wash)" stroke="var(--host)" stroke-width="1.5"/>
+            <text x="46" y="81" font-weight="600" fill="var(--host)">cmtc-mesh-root-ca · 10 years, key kept on renewal</text>
+            <text x="46" y="98">selfSigned Issuer → Certificate (isCA, ECDSA P-256)</text>
+            <text x="46" y="115" fill="var(--muted)">Secret cert-manager/cmtc-mesh-root-ca, key included</text>
+            <rect x="520" y="60" width="430" height="64" rx="6" fill="none" stroke="currentColor" stroke-width="1.2"/>
+            <text x="536" y="81" font-weight="600">copy of cmtc-mesh-root-ca</text>
+            <text x="536" y="98">same certificate and key, as Cilium copies cilium-ca</text>
+            <text x="536" y="115" fill="var(--muted)">not renewed here: re-copied by mesh-pki.sh</text>
+            <line x1="460" y1="92" x2="516" y2="92" stroke="currentColor" stroke-width="1.2" marker-end="url(#ah)"/>
+            <text x="463" y="140" fill="var(--muted)">copied once, through a pipe</text>
+            <!-- Row 2: the ClusterIssuer on the root, in every cluster -->
+            <rect x="30" y="156" width="430" height="46" rx="6" fill="none" stroke="currentColor" stroke-width="1.2"/>
+            <text x="46" y="176" font-weight="600">ClusterIssuer cmtc-mesh-root</text>
+            <text x="46" y="193" fill="var(--muted)">signs only this cluster's two intermediates</text>
+            <rect x="520" y="156" width="430" height="46" rx="6" fill="none" stroke="currentColor" stroke-width="1.2"/>
+            <text x="536" y="176" font-weight="600">ClusterIssuer cmtc-mesh-root</text>
+            <text x="536" y="193" fill="var(--muted)">signs only this cluster's two intermediates</text>
+            <line x1="245" y1="124" x2="245" y2="152" stroke="currentColor" stroke-width="1.2" marker-end="url(#ah)"/>
+            <line x1="735" y1="124" x2="735" y2="152" stroke="currentColor" stroke-width="1.2" marker-end="url(#ah)"/>
+            <!-- Row 3: per-cluster intermediates -->
+            <rect x="30" y="236" width="210" height="64" rx="6" fill="var(--remote-wash)" stroke="var(--remote)" stroke-width="1.5"/>
+            <text x="135" y="257" text-anchor="middle" font-weight="600" fill="var(--remote)">cmtc-a-clustermesh-</text>
+            <text x="135" y="273" text-anchor="middle" font-weight="600" fill="var(--remote)">intermediate</text>
+            <text x="135" y="291" text-anchor="middle" fill="var(--muted)">live 1 year · repo 3 years</text>
+            <rect x="250" y="236" width="210" height="64" rx="6" fill="var(--remote-wash)" stroke="var(--remote)" stroke-width="1.5"/>
+            <text x="355" y="257" text-anchor="middle" font-weight="600" fill="var(--remote)">cmtc-a-spire-</text>
+            <text x="355" y="273" text-anchor="middle" font-weight="600" fill="var(--remote)">intermediate</text>
+            <text x="355" y="291" text-anchor="middle" fill="var(--muted)">live 1 year · chart 3 years</text>
+            <rect x="520" y="236" width="210" height="64" rx="6" fill="var(--remote-wash)" stroke="var(--remote)" stroke-width="1.5"/>
+            <text x="625" y="257" text-anchor="middle" font-weight="600" fill="var(--remote)">cmtc-b-clustermesh-</text>
+            <text x="625" y="273" text-anchor="middle" font-weight="600" fill="var(--remote)">intermediate</text>
+            <text x="625" y="291" text-anchor="middle" fill="var(--muted)">live 1 year · repo 3 years</text>
+            <rect x="740" y="236" width="210" height="64" rx="6" fill="var(--remote-wash)" stroke="var(--remote)" stroke-width="1.5"/>
+            <text x="845" y="257" text-anchor="middle" font-weight="600" fill="var(--remote)">cmtc-b-spire-</text>
+            <text x="845" y="273" text-anchor="middle" font-weight="600" fill="var(--remote)">intermediate</text>
+            <text x="845" y="291" text-anchor="middle" fill="var(--muted)">live 1 year · chart 3 years</text>
+            <line x1="135" y1="202" x2="135" y2="232" stroke="currentColor" stroke-width="1.2" marker-end="url(#ah)"/>
+            <line x1="355" y1="202" x2="355" y2="232" stroke="currentColor" stroke-width="1.2" marker-end="url(#ah)"/>
+            <line x1="625" y1="202" x2="625" y2="232" stroke="currentColor" stroke-width="1.2" marker-end="url(#ah)"/>
+            <line x1="845" y1="202" x2="845" y2="232" stroke="currentColor" stroke-width="1.2" marker-end="url(#ah)"/>
+            <!-- Row 4: what each intermediate signs -->
+            <rect x="30" y="330" width="210" height="64" rx="6" fill="none" stroke="currentColor" stroke-width="1.2"/>
+            <text x="135" y="351" text-anchor="middle" font-weight="600">7 ClusterMesh, ztunnel leaves</text>
+            <text x="135" y="368" text-anchor="middle">365 days in CI · server key kept</text>
+            <text x="135" y="385" text-anchor="middle" fill="var(--muted)">issuer CN names cmtc-a</text>
+            <rect x="250" y="330" width="210" height="64" rx="8" fill="var(--host-wash)" stroke="var(--host)" stroke-width="1.5" stroke-dasharray="5 4"/>
+            <text x="355" y="351" text-anchor="middle" font-weight="600" fill="var(--host)">SPIRE X509 CA → SVIDs</text>
+            <text x="355" y="368" text-anchor="middle">proposed (#34); today</text>
+            <text x="355" y="385" text-anchor="middle" fill="var(--muted)">from cmtc-spire-issuer</text>
+            <rect x="520" y="330" width="210" height="64" rx="6" fill="none" stroke="currentColor" stroke-width="1.2"/>
+            <text x="625" y="351" text-anchor="middle" font-weight="600">7 ClusterMesh, ztunnel leaves</text>
+            <text x="625" y="368" text-anchor="middle">365 days in CI · server key kept</text>
+            <text x="625" y="385" text-anchor="middle" fill="var(--muted)">issuer CN names cmtc-b</text>
+            <rect x="740" y="330" width="210" height="64" rx="8" fill="var(--host-wash)" stroke="var(--host)" stroke-width="1.5" stroke-dasharray="5 4"/>
+            <text x="845" y="351" text-anchor="middle" font-weight="600" fill="var(--host)">SPIRE X509 CA → SVIDs</text>
+            <text x="845" y="368" text-anchor="middle">proposed (#34); today</text>
+            <text x="845" y="385" text-anchor="middle" fill="var(--muted)">from cmtc-spire-issuer</text>
+            <line x1="135" y1="300" x2="135" y2="326" stroke="currentColor" stroke-width="1.2" marker-end="url(#ah)"/>
+            <line x1="625" y1="300" x2="625" y2="326" stroke="currentColor" stroke-width="1.2" marker-end="url(#ah)"/>
+            <line x1="355" y1="300" x2="355" y2="326" stroke="var(--host)" stroke-width="1.2" stroke-dasharray="5 4" marker-end="url(#ah)"/>
+            <text x="362" y="318" fill="var(--host)">proposed</text>
+            <line x1="845" y1="300" x2="845" y2="326" stroke="var(--host)" stroke-width="1.2" stroke-dasharray="5 4" marker-end="url(#ah)"/>
+            <text x="852" y="318" fill="var(--host)">proposed</text>
+            <text x="30" y="430" fill="var(--muted)">Every ClusterMesh verifier trusts one input: the root certificate in kube-system/cmtc-public-root (ca.crt).</text>
+            <text x="30" y="452" fill="var(--host)" font-weight="600">Dashed = proposed (#34): SPIRE gets its CA from &lt;cluster&gt;-spire-intermediate; verifiers pin root and intermediate.</text>
+          </g>
+        </svg>
+      </div>
+      <figcaption>Deployed on cmtc-a and cmtc-b on 2026-10-26: the root, its copy, both intermediates per cluster and the
+        seven leaves on each cluster's ClusterMesh intermediate. The live intermediates have 1-year lifetimes; the
+        repository sets 3 years. The SPIRE intermediates are Ready but sign nothing yet: SPIRE still gets its CA from
+        ClusterIssuer cmtc-spire-issuer (measured 2026-10-26T23:27Z).</figcaption>
+    </figure>
+  </section>
+
+  <section>
+    <h2>What each mTLS peer presents</h2>
+    <figure>
+      <div class="fig-scroll">
+        <svg viewBox="0 0 980 380" role="img" aria-label="Each TLS peer sends its leaf and its cluster's intermediate; the verifier checks the chain against the root it trusts. ClusterMesh etcd and ztunnel ADS chain to the mesh root today. Workload SVIDs chain to the host organization root today; the proposed chain ends at the mesh root through the cluster's SPIRE intermediate, and the pins move from the 24-hour SPIRE CA to the intermediate and the root.">
+          <defs><marker id="ah2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="context-stroke"/></marker></defs>
+          <g font-family="IBM Plex Mono, monospace" font-size="12" font-weight="600" fill="var(--muted)">
+            <text x="30" y="30">CONNECTION</text><text x="210" y="30">LEAF SENT</text><text x="410" y="30">SPIRE CA</text><text x="610" y="30">INTERMEDIATE</text><text x="810" y="30">ROOT TRUSTED</text>
+          </g>
+          <g font-family="IBM Plex Sans, sans-serif" font-size="12.5" fill="currentColor">
+            <text x="30" y="68" font-weight="600">ClusterMesh etcd</text>
+            <text x="30" y="85" fill="var(--muted)">peer → clustermesh-apiserver</text>
+            <rect x="210" y="46" width="150" height="54" rx="6" fill="none" stroke="currentColor" stroke-width="1.2"/>
+            <text x="285" y="68" text-anchor="middle" font-weight="600">server leaf</text>
+            <text x="285" y="85" text-anchor="middle" fill="var(--muted)">key pinned by peers</text>
+            <rect x="610" y="46" width="150" height="54" rx="6" fill="var(--remote-wash)" stroke="var(--remote)" stroke-width="1.5"/>
+            <text x="685" y="68" text-anchor="middle" font-weight="600" fill="var(--remote)">cmtc-a ClusterMesh</text>
+            <text x="685" y="85" text-anchor="middle" fill="var(--remote)">intermediate CA</text>
+            <rect x="810" y="46" width="155" height="54" rx="6" fill="var(--host-wash)" stroke="var(--host)" stroke-width="1.5"/>
+            <text x="887.5" y="68" text-anchor="middle" font-weight="600" fill="var(--host)">cmtc mesh root CA</text>
+            <text x="887.5" y="85" text-anchor="middle" fill="var(--muted)">cmtc-public-root</text>
+            <line x1="360" y1="73" x2="606" y2="73" stroke="var(--muted)" stroke-width="1.2" stroke-dasharray="5 4" marker-end="url(#ah2)"/>
+            <text x="483" y="67" text-anchor="middle" font-size="11" fill="var(--muted)">signed</text>
+            <line x1="760" y1="73" x2="806" y2="73" stroke="var(--muted)" stroke-width="1.2" stroke-dasharray="5 4" marker-end="url(#ah2)"/>
+            <text x="783" y="67" text-anchor="middle" font-size="11" fill="var(--muted)">signed</text>
+            <text x="30" y="146" font-weight="600">ztunnel ADS</text>
+            <text x="30" y="163" fill="var(--muted)">ztunnel → agent :15012</text>
+            <rect x="210" y="124" width="150" height="54" rx="6" fill="none" stroke="currentColor" stroke-width="1.2"/>
+            <text x="285" y="146" text-anchor="middle" font-weight="600">ADS server leaf</text>
+            <text x="285" y="163" text-anchor="middle" fill="var(--muted)">loaded once per agent</text>
+            <rect x="610" y="124" width="150" height="54" rx="6" fill="var(--remote-wash)" stroke="var(--remote)" stroke-width="1.5"/>
+            <text x="685" y="146" text-anchor="middle" font-weight="600" fill="var(--remote)">cmtc-a ClusterMesh</text>
+            <text x="685" y="163" text-anchor="middle" fill="var(--remote)">intermediate CA</text>
+            <rect x="810" y="124" width="155" height="54" rx="6" fill="var(--host-wash)" stroke="var(--host)" stroke-width="1.5"/>
+            <text x="887.5" y="146" text-anchor="middle" font-weight="600" fill="var(--host)">cmtc mesh root CA</text>
+            <text x="887.5" y="163" text-anchor="middle" fill="var(--muted)">bootstrap-ca.crt</text>
+            <line x1="360" y1="151" x2="606" y2="151" stroke="var(--muted)" stroke-width="1.2" stroke-dasharray="5 4" marker-end="url(#ah2)"/>
+            <text x="483" y="145" text-anchor="middle" font-size="11" fill="var(--muted)">signed</text>
+            <line x1="760" y1="151" x2="806" y2="151" stroke="var(--muted)" stroke-width="1.2" stroke-dasharray="5 4" marker-end="url(#ah2)"/>
+            <text x="783" y="145" text-anchor="middle" font-size="11" fill="var(--muted)">signed</text>
+            <text x="30" y="224" font-weight="600">Workload HBONE, today</text>
+            <text x="30" y="241" fill="var(--muted)">ztunnel ↔ ztunnel</text>
+            <rect x="210" y="202" width="150" height="54" rx="6" fill="none" stroke="currentColor" stroke-width="1.2"/>
+            <text x="285" y="224" text-anchor="middle" font-weight="600">SVID</text>
+            <text x="285" y="241" text-anchor="middle" fill="var(--muted)">cmtc-a.mesh.example</text>
+            <rect x="410" y="202" width="150" height="54" rx="6" fill="none" stroke="currentColor" stroke-width="1.2"/>
+            <text x="485" y="224" text-anchor="middle" font-weight="600">SPIRE X509 CA</text>
+            <text x="485" y="241" text-anchor="middle" fill="var(--muted)">24 h, pinned by gN</text>
+            <rect x="610" y="202" width="150" height="54" rx="6" fill="none" stroke="currentColor" stroke-width="1.2"/>
+            <text x="685" y="224" text-anchor="middle" font-weight="600">cmtc-a SPIRE</text>
+            <text x="685" y="241" text-anchor="middle" fill="var(--muted)">cluster CA (today)</text>
+            <rect x="810" y="202" width="155" height="54" rx="6" fill="none" stroke="currentColor" stroke-width="1.2"/>
+            <text x="887.5" y="224" text-anchor="middle" font-weight="600">CMTC Lab Org Root</text>
+            <text x="887.5" y="241" text-anchor="middle" fill="var(--muted)">host key, rootPins</text>
+            <line x1="360" y1="229" x2="406" y2="229" stroke="var(--muted)" stroke-width="1.2" stroke-dasharray="5 4" marker-end="url(#ah2)"/>
+            <text x="383" y="223" text-anchor="middle" font-size="11" fill="var(--muted)">signed</text>
+            <line x1="560" y1="229" x2="606" y2="229" stroke="var(--muted)" stroke-width="1.2" stroke-dasharray="5 4" marker-end="url(#ah2)"/>
+            <text x="583" y="223" text-anchor="middle" font-size="11" fill="var(--muted)">signed</text>
+            <line x1="760" y1="229" x2="806" y2="229" stroke="var(--muted)" stroke-width="1.2" stroke-dasharray="5 4" marker-end="url(#ah2)"/>
+            <text x="783" y="223" text-anchor="middle" font-size="11" fill="var(--muted)">signed</text>
+            <text x="30" y="308" font-weight="600" fill="var(--host)">Workload HBONE, proposed</text>
+            <text x="30" y="325" fill="var(--muted)">same peers, new chain</text>
+            <rect x="210" y="286" width="150" height="54" rx="8" fill="var(--host-wash)" stroke="var(--host)" stroke-width="1.5" stroke-dasharray="5 4"/>
+            <text x="285" y="308" text-anchor="middle" font-weight="600" fill="var(--host)">SVID</text>
+            <text x="285" y="325" text-anchor="middle" fill="var(--muted)">same identity</text>
+            <rect x="410" y="286" width="150" height="54" rx="8" fill="var(--host-wash)" stroke="var(--host)" stroke-width="1.5" stroke-dasharray="5 4"/>
+            <text x="485" y="308" text-anchor="middle" font-weight="600" fill="var(--host)">SPIRE X509 CA</text>
+            <text x="485" y="325" text-anchor="middle" fill="var(--muted)">24 h, not pinned</text>
+            <rect x="610" y="286" width="150" height="54" rx="8" fill="var(--host-wash)" stroke="var(--host)" stroke-width="1.5" stroke-dasharray="5 4"/>
+            <text x="685" y="308" text-anchor="middle" font-weight="600" fill="var(--host)">cmtc-a SPIRE</text>
+            <text x="685" y="325" text-anchor="middle" fill="var(--muted)">intermediate, pinned</text>
+            <rect x="810" y="286" width="155" height="54" rx="8" fill="var(--host-wash)" stroke="var(--host)" stroke-width="1.5" stroke-dasharray="5 4"/>
+            <text x="887.5" y="308" text-anchor="middle" font-weight="600" fill="var(--host)">cmtc mesh root CA</text>
+            <text x="887.5" y="325" text-anchor="middle" fill="var(--muted)">pinned, by succession</text>
+            <line x1="360" y1="313" x2="406" y2="313" stroke="var(--host)" stroke-width="1.2" stroke-dasharray="5 4" marker-end="url(#ah2)"/>
+            <text x="383" y="307" text-anchor="middle" font-size="11" fill="var(--host)">signed</text>
+            <line x1="560" y1="313" x2="606" y2="313" stroke="var(--host)" stroke-width="1.2" stroke-dasharray="5 4" marker-end="url(#ah2)"/>
+            <text x="583" y="307" text-anchor="middle" font-size="11" fill="var(--host)">signed</text>
+            <line x1="760" y1="313" x2="806" y2="313" stroke="var(--host)" stroke-width="1.2" stroke-dasharray="5 4" marker-end="url(#ah2)"/>
+            <text x="783" y="307" text-anchor="middle" font-size="11" fill="var(--host)">signed</text>
+            <text x="30" y="368" fill="var(--host)" font-weight="600">Dashed boxes = proposed (#34). Each dashed arrow reads "signed by". Only the workload chain changes.</text>
+          </g>
+        </svg>
+      </div>
+      <figcaption>Each peer sends its leaf and its cluster's intermediate, and the verifier checks the chain against the
+        root it trusts, so the issuer names the signing cluster. The ClusterMesh rows are deployed. Today the issuer
+        approval pins the 24-hour SPIRE CA, so each SPIRE CA activation needs a new approval generation. The proposed
+        row (#34) pins the cluster's SPIRE intermediate and the mesh root instead.</figcaption>
+    </figure>
+  </section>
+
+  <section>
+    <h2>SPIRE certificates and SVIDs</h2>
+    <figure>
+      <div class="fig-scroll">
+        <svg viewBox="0 0 980 656" role="img" aria-label="In each cluster, ClusterIssuer cmtc-mesh-root signs the Certificate cluster-spire-intermediate, and a ClusterIssuer of the same name signs from its Secret. trust-manager reads the mesh root from that Secret and copies it into ConfigMap cmtc-mesh-root in every namespace labelled trust: enabled. Proposed, issue 34: the SPIRE server's cert-manager UpstreamAuthority gets its 24-hour X509 CA from the SPIRE intermediate instead of cmtc-spire-issuer, and the issuer approval pins the mesh root and the intermediate instead of the 24-hour SPIRE CA. The SPIRE CA signs the workload SVIDs; ztunnel fetches them as a delegate and the peer ztunnel checks them against the approved pins.">
+          <defs><marker id="ah3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="context-stroke"/></marker></defs>
+          <g font-family="IBM Plex Mono, monospace" font-size="13" font-weight="600" fill="currentColor">
+            <rect x="20" y="14" width="270" height="30" rx="6" fill="var(--none-wash)" stroke="var(--rule)"/>
+            <text x="155" y="34" text-anchor="middle">cert-manager namespace</text>
+            <rect x="340" y="14" width="270" height="30" rx="6" fill="var(--none-wash)" stroke="var(--rule)"/>
+            <text x="475" y="34" text-anchor="middle">SPIRE and ztunnel</text>
+            <rect x="690" y="14" width="270" height="30" rx="6" fill="var(--none-wash)" stroke="var(--rule)"/>
+            <text x="825" y="34" text-anchor="middle">what the verifiers trust</text>
+          </g>
+          <g font-family="IBM Plex Sans, sans-serif" font-size="12.5" fill="currentColor">
+            <!-- Column 1: the SPIRE intermediate, made by cert-manager -->
+            <rect x="20" y="60" width="270" height="64" rx="6" fill="var(--host-wash)" stroke="var(--host)" stroke-width="1.5"/>
+            <text x="36" y="81" font-weight="600" fill="var(--host)">ClusterIssuer cmtc-mesh-root</text>
+            <text x="36" y="98">signs with the 10-year mesh root</text>
+            <text x="36" y="115" fill="var(--muted)">root Secret copied from cmtc-a</text>
+            <line x1="155" y1="124" x2="155" y2="148" stroke="currentColor" stroke-width="1.2" marker-end="url(#ah3)"/>
+            <rect x="20" y="152" width="270" height="64" rx="6" fill="var(--remote-wash)" stroke="var(--remote)" stroke-width="1.5"/>
+            <text x="36" y="173" font-weight="600" fill="var(--remote)">&lt;cluster&gt;-spire-intermediate</text>
+            <text x="36" y="190">Certificate · isCA · ECDSA P-256</text>
+            <text x="36" y="207" fill="var(--muted)">live 1 year; in the chart 3 years</text>
+            <line x1="155" y1="216" x2="155" y2="240" stroke="currentColor" stroke-width="1.2" marker-end="url(#ah3)"/>
+            <rect x="20" y="244" width="270" height="64" rx="6" fill="none" stroke="currentColor" stroke-width="1.2"/>
+            <text x="36" y="265" font-weight="600">ClusterIssuer of the same name</text>
+            <text x="36" y="282">CA issuer on the intermediate's key</text>
+            <text x="36" y="299" fill="var(--muted)">Ready on both labs; signs nothing yet</text>
+            <!-- Proposed: SPIRE's CA from the intermediate -->
+            <path d="M290,276 H475 V332" fill="none" stroke="var(--host)" stroke-width="1.2" stroke-dasharray="5 4" marker-end="url(#ah3)"/>
+            <text x="300" y="268" font-size="11" fill="var(--host)">proposed: signs SPIRE's CA</text>
+            <!-- Column 2: SPIRE issues, ztunnel presents -->
+            <rect x="340" y="336" width="270" height="64" rx="6" fill="none" stroke="currentColor" stroke-width="1.2"/>
+            <text x="356" y="357" font-weight="600">SPIRE server</text>
+            <text x="356" y="374">UpstreamAuthority cert-manager</text>
+            <text x="356" y="391" fill="var(--host)">today issuer_name cmtc-spire-issuer</text>
+            <line x1="475" y1="400" x2="475" y2="424" stroke="currentColor" stroke-width="1.2" marker-end="url(#ah3)"/>
+            <rect x="340" y="428" width="270" height="64" rx="6" fill="none" stroke="currentColor" stroke-width="1.2"/>
+            <text x="356" y="449" font-weight="600">SPIRE X509 CA</text>
+            <text x="356" y="466">24 h · next one active at 20 h</text>
+            <text x="356" y="483" fill="var(--muted)">signs the workload SVIDs</text>
+            <line x1="475" y1="492" x2="475" y2="516" stroke="currentColor" stroke-width="1.2" marker-end="url(#ah3)"/>
+            <rect x="340" y="520" width="270" height="64" rx="6" fill="none" stroke="currentColor" stroke-width="1.2"/>
+            <text x="356" y="541" font-weight="600">ztunnel, on each node</text>
+            <text x="356" y="558">delegated SVIDs from the SPIRE agent</text>
+            <text x="356" y="575" fill="var(--muted)">needs its SPIRE delegate entry</text>
+            <line x1="610" y1="552" x2="686" y2="552" stroke="currentColor" stroke-width="1.2" marker-end="url(#ah3)"/>
+            <text x="648" y="545" text-anchor="middle" font-size="11" fill="var(--muted)">HBONE mTLS</text>
+            <!-- Column 3: the trust bundle and the pins -->
+            <line x1="290" y1="184" x2="686" y2="184" stroke="var(--muted)" stroke-width="1.2" stroke-dasharray="5 4" marker-end="url(#ah3)"/>
+            <text x="488" y="177" text-anchor="middle" font-size="11" fill="var(--muted)">trust-manager reads ca.crt: the mesh root</text>
+            <rect x="690" y="152" width="270" height="64" rx="6" fill="none" stroke="currentColor" stroke-width="1.2"/>
+            <text x="706" y="173" font-weight="600">Bundle cmtc-mesh-root</text>
+            <text x="706" y="190">trust-manager v0.25.0, cmtc-trust</text>
+            <text x="706" y="207" fill="var(--muted)">deployed 2026-10-26, Synced</text>
+            <line x1="825" y1="216" x2="825" y2="240" stroke="currentColor" stroke-width="1.2" marker-end="url(#ah3)"/>
+            <rect x="690" y="244" width="270" height="64" rx="6" fill="none" stroke="currentColor" stroke-width="1.2"/>
+            <text x="706" y="265" font-weight="600">ConfigMap cmtc-mesh-root</text>
+            <text x="706" y="282">in each namespace with trust: enabled</text>
+            <text x="706" y="299" fill="var(--muted)">nothing reads it yet</text>
+            <line x1="825" y1="308" x2="825" y2="332" stroke="var(--host)" stroke-width="1.2" stroke-dasharray="5 4" marker-end="url(#ah3)"/>
+            <text x="832" y="324" font-size="11" fill="var(--host)">proposed</text>
+            <rect x="690" y="336" width="270" height="64" rx="8" fill="var(--host-wash)" stroke="var(--host)" stroke-width="1.5" stroke-dasharray="5 4"/>
+            <text x="706" y="357" font-weight="600" fill="var(--host)">Issuer approval, proposed</text>
+            <text x="706" y="374">pins the mesh root and the</text>
+            <text x="706" y="391">cluster's SPIRE intermediate</text>
+            <line x1="825" y1="400" x2="825" y2="424" stroke="var(--host)" stroke-width="1.2" stroke-dasharray="5 4" marker-end="url(#ah3)"/>
+            <text x="832" y="416" font-size="11" fill="var(--host)">replaces (#34)</text>
+            <rect x="690" y="428" width="270" height="64" rx="6" fill="none" stroke="currentColor" stroke-width="1.2"/>
+            <text x="706" y="449" font-weight="600">Issuer approval gN, today</text>
+            <text x="706" y="466">pins the 24 h SPIRE CA itself</text>
+            <text x="706" y="483" fill="var(--muted)">a new generation per CA activation</text>
+            <line x1="825" y1="492" x2="825" y2="516" stroke="currentColor" stroke-width="1.2" marker-end="url(#ah3)"/>
+            <rect x="690" y="520" width="270" height="64" rx="6" fill="none" stroke="currentColor" stroke-width="1.2"/>
+            <text x="706" y="541" font-weight="600">Peer ztunnel</text>
+            <text x="706" y="558">checks the SVID against the pins</text>
+            <text x="706" y="575" fill="var(--muted)">a valid SVID alone is not Protected</text>
+            <text x="20" y="616" fill="var(--muted)">Solid = deployed on cmtc-a and cmtc-b. A grey dashed arrow is a relationship, not traffic.</text>
+            <text x="20" y="638" fill="var(--host)" font-weight="600">Dashed amber = proposed (#34): SPIRE's CA from the intermediate; the pins move to the root and the intermediate.</text>
+          </g>
+        </svg>
+      </div>
+      <figcaption>Measured on 2026-10-26T23:27Z. The SPIRE intermediate, its ClusterIssuer, the Bundle and the ConfigMap
+        are deployed on both labs. SPIRE still gets its 24-hour CA from ClusterIssuer cmtc-spire-issuer, and the issuer
+        approval still pins that CA. The repository already points SPIRE at &lt;cluster&gt;-spire-intermediate
+        (scripts/lab/spire/render_spire.py) and the CMTC chart owns the intermediate and the Bundle (trust.*). The
+        approval and ztunnel changes are issue #34.</figcaption>
+    </figure>
+  </section>
+</div>

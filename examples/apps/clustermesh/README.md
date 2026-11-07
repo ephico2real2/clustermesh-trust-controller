@@ -39,12 +39,10 @@ unique Job names and an immutable `artifacts/load/<run-id>/` evidence directory;
 screenshots after the load is active using the configured capture workflow, and
 retain them beside that run's query evidence.
 
-This is ClusterMesh reachability evidence in the current Observe profile. That
-profile still disables ztunnel encryption. The user's enhanced
-`ephico2real2/cilium` fork is the intended data plane, but the current source
-still retains the ClusterMesh/ztunnel compatibility guard and has not yet
-qualified remote workload discovery or effective policy. The same workloads
-and service identities are intended for that profile; it must also verify
-SPIFFE identities, both cross-cluster directions, unauthenticated and
-unauthorized negative cases, encrypted inter-node packets and real traffic
-metrics before it can claim end-to-end mTLS.
+This is plaintext ClusterMesh reachability evidence. The `mesh-example` namespace is not enrolled, so this traffic
+does not pass through ztunnel even though ztunnel now runs in both clusters. The Cilium fork replaced its static
+ClusterMesh/ztunnel rejection with capability validation (`37d5fce0f7`), and enrolled cross-cluster traffic is tested
+with the separate `cmtc-live-mtls` fixture ([G1 evidence](../../../docs/evidence/g1-destination-sources/README.md)).
+An end-to-end mTLS claim for these workloads would still need enrollment, SPIFFE identity checks in both
+cross-cluster directions, unauthenticated and unauthorized negative cases, per-connection peer-certificate evidence,
+recovery and real traffic metrics.

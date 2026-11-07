@@ -1,0 +1,38 @@
+# rc= is the exit status of the grep filter, not of nslookup.
+# BusyBox nslookup short name vs full name, enrolled and unenrolled Pods. run 20261026T182625Z
+== kind-cmtc-a cmtc-live-mtls/client-worker nslookup kubernetes.default
+** server can't find kubernetes.default: NXDOMAIN
+rc=0
+== kind-cmtc-a cmtc-live-mtls/client-worker nslookup kubernetes.default.svc.cluster.local
+Name:	kubernetes.default.svc.cluster.local
+Address: 10.11.0.1
+rc=0
+== kind-cmtc-a cmtc-live-mtls-unauth/unregistered-worker nslookup kubernetes.default
+** server can't find kubernetes.default: NXDOMAIN
+rc=0
+== kind-cmtc-a cmtc-live-mtls-unauth/unregistered-worker nslookup kubernetes.default.svc.cluster.local
+Name:	kubernetes.default.svc.cluster.local
+Address: 10.11.0.1
+rc=0
+== kind-cmtc-a client-worker: busybox banner and search list
+BusyBox v1.37.0 (2025-05-26 20:04:45 UTC) multi-call binary.
+search cmtc-live-mtls.svc.cluster.local svc.cluster.local cluster.local
+options ndots:5
+== kind-cmtc-b cmtc-live-mtls/client-worker nslookup kubernetes.default
+** server can't find kubernetes.default: NXDOMAIN
+rc=0
+== kind-cmtc-b cmtc-live-mtls/client-worker nslookup kubernetes.default.svc.cluster.local
+Name:	kubernetes.default.svc.cluster.local
+Address: 10.21.0.1
+rc=0
+== kind-cmtc-b cmtc-live-mtls-unauth/unregistered-worker nslookup kubernetes.default
+** server can't find kubernetes.default: NXDOMAIN
+rc=0
+== kind-cmtc-b cmtc-live-mtls-unauth/unregistered-worker nslookup kubernetes.default.svc.cluster.local
+Name:	kubernetes.default.svc.cluster.local
+Address: 10.21.0.1
+rc=0
+== kind-cmtc-b client-worker: busybox banner and search list
+BusyBox v1.37.0 (2025-05-26 20:04:45 UTC) multi-call binary.
+search cmtc-live-mtls.svc.cluster.local svc.cluster.local cluster.local
+options ndots:5

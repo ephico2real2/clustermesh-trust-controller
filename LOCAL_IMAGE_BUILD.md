@@ -2,7 +2,12 @@
 
 Build images with **Podman from the MacBook host**. Target `linux/arm64`. Transfer each image to the existing Colima kind runtime by archive.
 
-Building an image, importing an image and deploying an image are separate actions. Verify each result. Feature-branch pushes are authorized. Manual CI dispatch and registry publication remain deferred.
+Building an image, importing an image and deploying an image are separate actions. Verify each result. Pushes that
+trigger CI, manual CI dispatch and registry publication are deferred ([AGENTS.md](AGENTS.md)).
+
+Follow the loop **edit → run against `cmtc-a`/`cmtc-b` → test traffic, failures and recovery → package**. Build an
+image only after the live path works. One compiler and one live writer act at a time; check the build and lab leases
+before you start. Current source and image pins are in [delivery status](docs/agile/DELIVERY_STATUS.md).
 
 ## Select the component
 
@@ -10,12 +15,12 @@ Building an image, importing an image and deploying an image are separate action
 | --- | --- | --- |
 | CMTC | Controller, node inventory process and PKI helper commands | [Dockerfile](Dockerfile), [producer build arguments](docs/evidence/approved-issuer-lineage/build-command.json) |
 | Experimental registrar | Exact SPIRE registration helper | [Containerfile](build/Containerfile.spire-registrar), [registrar guide](LOCAL_SPIRE_REGISTRAR.md) |
-| CMTC observer or fence | Go loader and compiled eBPF object | [Exact prototype build and transfer](LOCAL_DAEMONSET_TELEMETRY.md#exact-build-and-transfer) |
-| Cilium agent | Native agent binary and its selected runtime base | [Agent build procedure](docs/development/PODMAN_LOCAL_VALIDATION.md#2-build-a-cilium-agent-image-with-podman) |
+| CMTC observer or fence | Go loader and compiled eBPF object | [Exact build and transfer (2026-10-24)](LOCAL_DAEMONSET_TELEMETRY.md#exact-build-and-transfer) |
+| Cilium agent, operator, ClusterMesh API server | Overlay binaries on the selected runtime base | [Agent build procedure](docs/development/PODMAN_LOCAL_VALIDATION.md#2-build-a-cilium-agent-image-with-podman); the 2026-10-25 scripts `build_agent_overlay.sh`, `build_operator_current.sh`, `build_apiserver_overlay.sh` in [the activation operations](docs/evidence/local-activation-20261025/operations/) |
 | SPIRE server | Modified SPIRE server binary | [Recorded build script](docs/evidence/spire-recovery/build-server.sh) |
-| SPIRE agent | Modified SPIRE node agent binary | [Recorded build script](docs/evidence/spire-workload-api/build-agent.sh) |
+| SPIRE agent | Modified SPIRE node agent binary | [Recorded build script](docs/evidence/spire-workload-api/build-agent.sh) (2026-10-24); `build_spire_agent_overlay.sh` in [the activation operations](docs/evidence/local-activation-20261025/operations/) (2026-10-25) |
 | Native SVID diagnostic | Public-output native credential check; no proxy | [Recorded build script](docs/evidence/spire-native-credentials/image/build.sh) |
-| Ztunnel | Workload TLS proxy binary | [TLS image build](docs/evidence/pinned-tls-foundation/build-image.sh) |
+| Ztunnel | Workload TLS proxy binary | `build_ztunnel_image.sh` in [the activation operations](docs/evidence/local-activation-20261025/operations/); earlier [TLS image build](docs/evidence/pinned-tls-foundation/build-image.sh) |
 
 The PKI initializer/completer is part of the CMTC image. It is not a new certificate authority service. The registrar image is a separate experiment. Read [the registration ownership review](SPIRE_REGISTRATION_DESIGN.md).
 
@@ -123,7 +128,10 @@ Some archive imports produce a synthetic CRI digest. Do not assume that digest i
 
 Use the owning component's reviewed deployment helper. It must pin the existing object UID and template. It must preserve signers, PVCs, service accounts, permissions and unrelated applications.
 
-Do not replace the persistent labs. Do not enable ztunnel or change agent Admin permissions as a generic build step. The separate permission migration still needs its pending approval.
+Do not replace the persistent labs. A build step never changes ztunnel, SPIRE socket or Admin permissions. The Cilium
+agent and ztunnel DaemonSets use `OnDelete`: change only the image fields, then replace one Pod at a time with a UID
+precondition ([lab scripts, section 4](docs/development/LAB_SCRIPTS.md#4-update-the-mesh-images-on-the-running-lab)).
+Keep `hostPID` absent on the Cilium agent and `true` on ztunnel ([installation requirements](INSTALLATION_REQUIREMENTS.md)).
 
 After rollout, verify the actual running binary and image. Run the owning positive, negative, restart and recovery tests. Save traffic, identity, packet and dashboard evidence where applicable. A version-only Job proves execution of that image; it does not prove mTLS.
 

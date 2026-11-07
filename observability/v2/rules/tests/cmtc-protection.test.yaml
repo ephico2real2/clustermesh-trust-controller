@@ -1,0 +1,195 @@
+# promtool test rules for rules/cmtc-protection.rules.yaml. Label shapes are those of the Cilium
+# agent page of cmtc-a-worker captured on 2026-10-26T03:04:55Z (the review inventory,
+# live-20261026/pages/cmtc-a__cilium-agent__cilium-l6ztf__9962.prom). The event counters of the
+# deployed agent have no series until their first event, so each event alert is tested once on a
+# series that appears and once on a series that increases.
+rule_files:
+- ../cmtc-protection.rules.yaml
+evaluation_interval: 1m
+
+tests:
+- name: lifecycle records, admitted sources and datapath outcomes
+  interval: 1m
+  input_series:
+  - series: 'cilium_ztunnel_xds_effective_policy_events_total{job="cilium-native", component="cilium-agent", cluster="cmtc-a", node="cmtc-a-worker", instance="172.18.0.4:9962", event="published"}'
+    values: '0+6x10'
+  - series: 'cilium_ztunnel_xds_effective_policy_sources{job="cilium-native", component="cilium-agent", cluster="cmtc-a", node="cmtc-a-worker", instance="172.18.0.4:9962", origin="peer"}'
+    values: '4x10'
+  - series: 'cilium_ztunnel_xds_effective_policy_sources{job="cilium-native", component="cilium-agent", cluster="cmtc-a", node="cmtc-a-control-plane", instance="172.18.0.2:9962", origin="peer"}'
+    values: '4x10'
+  - series: 'cilium_ztunnel_xds_effective_policy_sources{job="cilium-native", component="cilium-agent", cluster="cmtc-a", node="cmtc-a-worker", instance="172.18.0.4:9962", origin="node"}'
+    values: '2x10'
+  - series: 'cilium_drop_count_total{job="cilium-native", component="cilium-agent", cluster="cmtc-a", node="cmtc-a-worker", instance="172.18.0.4:9962", direction="EGRESS", reason="Policy denied"}'
+    values: '0+60x10'
+  - series: 'cilium_forward_count_total{job="cilium-native", component="cilium-agent", cluster="cmtc-a", node="cmtc-a-worker", instance="172.18.0.4:9962", direction="INGRESS"}'
+    values: '0+600x10'
+  promql_expr_test:
+  - expr: cmtc:effective_policy_events:increase5m
+    eval_time: 10m
+    exp_samples:
+    - labels: 'cmtc:effective_policy_events:increase5m{cluster="cmtc-a", node="cmtc-a-worker", event="published"}'
+      value: 30
+  - expr: cmtc:effective_policy_sources:sum
+    eval_time: 10m
+    exp_samples:
+    - labels: 'cmtc:effective_policy_sources:sum{cluster="cmtc-a", origin="peer"}'
+      value: 8
+    - labels: 'cmtc:effective_policy_sources:sum{cluster="cmtc-a", origin="node"}'
+      value: 2
+  - expr: cmtc:cilium_drops:rate5m
+    eval_time: 10m
+    exp_samples:
+    - labels: 'cmtc:cilium_drops:rate5m{cluster="cmtc-a", node="cmtc-a-worker", direction="EGRESS", reason="Policy denied"}'
+      value: 1
+  - expr: cmtc:cilium_forwarded:rate5m
+    eval_time: 10m
+    exp_samples:
+    - labels: 'cmtc:cilium_forwarded:rate5m{cluster="cmtc-a", node="cmtc-a-worker", direction="INGRESS"}'
+      value: 10
+
+- name: ZDS connection lost
+  interval: 1m
+  input_series:
+  - series: 'cilium_ztunnel_zds_connection_active{job="cilium-native", component="cilium-agent", cluster="cmtc-b", node="cmtc-b-worker", instance="172.18.0.5:9962"}'
+    values: '1 1 0x6'
+  - series: 'cilium_ztunnel_zds_connection_active{job="cilium-native", component="cilium-agent", cluster="cmtc-b", node="cmtc-b-control-plane", instance="172.18.0.3:9962"}'
+    values: '1x8'
+  alert_rule_test:
+  - eval_time: 3m
+    alertname: CMTCZDSDisconnected
+    exp_alerts: []
+  - eval_time: 4m
+    alertname: CMTCZDSDisconnected
+    exp_alerts:
+    - exp_labels: {severity: warning, owner: cilium-agent, cluster: cmtc-b, node: cmtc-b-worker}
+      exp_annotations:
+        summary: 'The Cilium agent on cmtc-b-worker (cmtc-b) has no ZDS connection from ztunnel'
+        runbook: 'New Pods on this node cannot be enrolled and stay quarantined. Check the ztunnel-cilium pod on the node and the agent log for the ZDS socket /var/run/cilium/ztunnel.sock.'
+
+- name: enrollment and authorization failures, first event and later events
+  interval: 1m
+  input_series:
+  - series: 'up{job="cilium-native", component="cilium-agent", cluster="cmtc-a", node="cmtc-a-worker", instance="172.18.0.4:9962"}'
+    values: '1x14'
+  # ZDS: the first failure creates the series at 6m; one more at 8m.
+  - series: 'cilium_ztunnel_zds_enrollment_failures_total{job="cilium-native", component="cilium-agent", cluster="cmtc-a", node="cmtc-a-worker", instance="172.18.0.4:9962", status="netns_failed"}'
+    values: '_x6 1 1 2x6'
+  # xDS: a pre-created series (source-patches/cilium/0001) that increases at 5m.
+  - series: 'cilium_ztunnel_xds_enrollment_failures_total{job="cilium-native", component="cilium-agent", cluster="cmtc-a", node="cmtc-a-worker", instance="172.18.0.4:9962", status="nack_received"}'
+    values: '0x4 1x9'
+  # Authorization: a NACK appears at 6m; ACKs never alert. A new series counts as an event for
+  # 5 minutes, like an increase inside the window.
+  - series: 'cilium_ztunnel_xds_authorization_events_total{job="cilium-native", component="cilium-agent", cluster="cmtc-a", node="cmtc-a-worker", instance="172.18.0.4:9962", status="nack"}'
+    values: '_x6 1x8'
+  - series: 'cilium_ztunnel_xds_authorization_events_total{job="cilium-native", component="cilium-agent", cluster="cmtc-a", node="cmtc-a-worker", instance="172.18.0.4:9962", status="ack"}'
+    values: '0+5x14'
+  alert_rule_test:
+  - eval_time: 5m
+    alertname: CMTCZDSEnrollmentFailing
+    exp_alerts: []
+  - eval_time: 6m
+    alertname: CMTCZDSEnrollmentFailing
+    exp_alerts:
+    - exp_labels: {severity: warning, owner: cilium-agent, cluster: cmtc-a, node: cmtc-a-worker, status: netns_failed}
+      exp_annotations:
+        summary: 'ZDS enrollment failed on cmtc-a-worker (cmtc-a): netns_failed'
+        runbook: 'The Pod stays quarantined. netns_failed and iptables_failed point at the Pod network namespace; uid_mismatch at a replaced Pod; send_failed at the ztunnel connection. Read the agent log at the same minute.'
+  # 11m: the series is no longer new; the failure at 8m is still inside the 5 minute window.
+  - eval_time: 11m
+    alertname: CMTCZDSEnrollmentFailing
+    exp_alerts:
+    - exp_labels: {severity: warning, owner: cilium-agent, cluster: cmtc-a, node: cmtc-a-worker, status: netns_failed}
+      exp_annotations:
+        summary: 'ZDS enrollment failed on cmtc-a-worker (cmtc-a): netns_failed'
+        runbook: 'The Pod stays quarantined. netns_failed and iptables_failed point at the Pod network namespace; uid_mismatch at a replaced Pod; send_failed at the ztunnel connection. Read the agent log at the same minute.'
+  - eval_time: 14m
+    alertname: CMTCZDSEnrollmentFailing
+    exp_alerts: []
+  - eval_time: 4m
+    alertname: CMTCXDSEnrollmentFailing
+    exp_alerts: []
+  - eval_time: 5m
+    alertname: CMTCXDSEnrollmentFailing
+    exp_alerts:
+    - exp_labels: {severity: warning, owner: cilium-agent, cluster: cmtc-a, node: cmtc-a-worker, status: nack_received}
+      exp_annotations:
+        summary: 'xDS workload publication to ztunnel failed on cmtc-a-worker (cmtc-a): nack_received'
+        runbook: 'nack_received means ztunnel rejected the Address snapshot; invalid_workload_* means the agent refused to build one. The workload keeps its quarantine until the Address is acknowledged.'
+  - eval_time: 5m
+    alertname: CMTCAuthorizationRejected
+    exp_alerts: []
+  - eval_time: 6m
+    alertname: CMTCAuthorizationRejected
+    exp_alerts:
+    - exp_labels: {severity: warning, owner: cilium-agent, cluster: cmtc-a, node: cmtc-a-worker, status: nack}
+      exp_annotations:
+        summary: 'ztunnel on cmtc-a-worker (cmtc-a) did not apply an Authorization update: nack'
+        runbook: 'The effective policy is not acknowledged, so the destination stays quarantined or keeps its previous plan. Compare with CMTCEffectivePolicyCompileFailed and the ztunnel log.'
+  - eval_time: 11m
+    alertname: CMTCAuthorizationRejected
+    exp_alerts: []
+
+- name: effective policy compile failure and refused release
+  interval: 1m
+  input_series:
+  - series: 'up{job="cilium-native", component="cilium-agent", cluster="cmtc-b", node="cmtc-b-worker", instance="172.18.0.5:9962"}'
+    values: '1x12'
+  - series: 'cilium_ztunnel_xds_effective_policy_events_total{job="cilium-native", component="cilium-agent", cluster="cmtc-b", node="cmtc-b-worker", instance="172.18.0.5:9962", event="compile_failed"}'
+    values: '_x7 1x5'
+  - series: 'cilium_ztunnel_xds_effective_policy_events_total{job="cilium-native", component="cilium-agent", cluster="cmtc-b", node="cmtc-b-worker", instance="172.18.0.5:9962", event="release_refused"}'
+    values: '2x5 3x6'
+  - series: 'cilium_ztunnel_xds_effective_policy_events_total{job="cilium-native", component="cilium-agent", cluster="cmtc-b", node="cmtc-b-worker", instance="172.18.0.5:9962", event="published"}'
+    values: '0+3x12'
+  alert_rule_test:
+  - eval_time: 7m
+    alertname: CMTCEffectivePolicyCompileFailed
+    exp_alerts:
+    - exp_labels: {severity: warning, owner: cilium-agent, cluster: cmtc-b, node: cmtc-b-worker}
+      exp_annotations:
+        summary: 'An effective ztunnel policy failed to compile on cmtc-b-worker (cmtc-b)'
+        runbook: 'That destination now denies every caller (fail closed). The agent log line "Effective ztunnel policy compilation failed" names the Pod UID and the error, for example more than 64 sources.'
+  - eval_time: 5m
+    alertname: CMTCQuarantineReleaseRefused
+    exp_alerts: []
+  - eval_time: 6m
+    alertname: CMTCQuarantineReleaseRefused
+    exp_alerts:
+    - exp_labels: {severity: warning, owner: cilium-agent, cluster: cmtc-b, node: cmtc-b-worker}
+      exp_annotations:
+        summary: 'The endpoint refused a quarantine release receipt on cmtc-b-worker (cmtc-b)'
+        runbook: 'The receipt did not match the endpoint''s own state (binding, membership, policy digest or identity changed). The workload stays quarantined until the next consistent publication.'
+
+# A series that exists when its target is first scraped is not an event.
+- name: a counter seen for the first time with its target is not an event
+  interval: 1m
+  input_series:
+  - series: 'up{job="cilium-native", component="cilium-agent", cluster="cmtc-b", node="cmtc-b-worker", instance="172.18.0.5:9962"}'
+    values: '_x4 1x6'
+  - series: 'cilium_ztunnel_xds_effective_policy_events_total{job="cilium-native", component="cilium-agent", cluster="cmtc-b", node="cmtc-b-worker", instance="172.18.0.5:9962", event="compile_failed"}'
+    values: '_x4 3x6'
+  alert_rule_test:
+  - eval_time: 4m
+    alertname: CMTCEffectivePolicyCompileFailed
+    exp_alerts: []
+  - eval_time: 8m
+    alertname: CMTCEffectivePolicyCompileFailed
+    exp_alerts: []
+
+- name: in-Pod proxies waiting to start
+  interval: 1m
+  input_series:
+  - series: 'workload_manager_pending_proxy_count{job="ztunnel", component="ztunnel", cluster="cmtc-a", node="cmtc-a-worker", instance="172.18.0.4:15020"}'
+    values: '0 0 1x8'
+  - series: 'workload_manager_pending_proxy_count{job="ztunnel", component="ztunnel", cluster="cmtc-a", node="cmtc-a-control-plane", instance="172.18.0.2:15020"}'
+    values: '0x10'
+  alert_rule_test:
+  - eval_time: 6m
+    alertname: CMTCInPodProxiesPending
+    exp_alerts: []
+  - eval_time: 7m
+    alertname: CMTCInPodProxiesPending
+    exp_alerts:
+    - exp_labels: {severity: warning, owner: ztunnel, cluster: cmtc-a, node: cmtc-a-worker}
+      exp_annotations:
+        summary: 'ztunnel on cmtc-a-worker (cmtc-a) has 1 in-Pod proxies waiting to start'
+        runbook: 'An enrolled Pod has no running in-Pod proxy, so its traffic is not carried. Check the ztunnel log for the Pod network namespace and its workload certificate.'

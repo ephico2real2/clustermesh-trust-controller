@@ -1,0 +1,18 @@
+{"context": "cmtc-a", "scope": "same", "expect": "allow", "selected": 6, "trafficChecksPassed": 6, "securityReasonVerified": false, "evidenceRequired": "peer certs, authenticated identities, policy verdict,packet/metrics correlation"}
+{"context": "cmtc-a", "scope": "crossnode", "expect": "allow", "selected": 6, "trafficChecksPassed": 6, "securityReasonVerified": false, "evidenceRequired": "peer certs, authenticated identities, policy verdict,packet/metrics correlation"}
+{"context": "cmtc-a", "scope": "crosscluster", "expect": "allow", "selected": 12, "trafficChecksPassed": 12, "securityReasonVerified": false, "evidenceRequired": "peer certs, authenticated identities, policy verdict,packet/metrics correlation"}
+Traceback (most recent call last):
+  File "/private/tmp/cmtc-opus-final-20261025/review/live_mtls_fixture_runner.py", line 213, in <module>
+    if __name__=='__main__':main()
+                            ~~~~^^
+  File "/private/tmp/cmtc-opus-final-20261025/review/live_mtls_fixture_runner.py", line 210, in main
+    if x.stage=='probe':l.probe(x.cluster,x.scope,x.expect,x.repeat)
+                        ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/private/tmp/cmtc-opus-final-20261025/review/live_mtls_fixture_runner.py", line 165, in probe
+    require(row['positiveMatch'] if expect=='allow'else not row['http200'],'Unexpected traffic verdict: '+json.dumps(row))
+    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/private/tmp/cmtc-opus-final-20261025/review/live_mtls_fixture_runner.py", line 14, in require
+    if not x: raise RuntimeError(msg)
+              ^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: Unexpected traffic verdict: {"at": "2026-10-26T03:09:46.615244+00:00", "context": "kind-cmtc-a", "namespace": "cmtc-live-mtls", "client": "client-worker", "url": "http://server-cmtc-a.cmtc-live-mtls.svc.cluster.local:80/?cmtc=1792984183548898000", "curlRC": 28, "http200": false, "expectedCluster": "cmtc-a", "positiveMatch": false, "stdout": "\nCMTC_CURL_RC=28\n", "stderr": "curl: (28) Resolving timed out after 3001 milliseconds\n", "scope": "global", "expect": "allow", "repetition": 0}
+{"context": "cmtc-a", "scope": "negative", "expect": "deny", "selected": 6, "trafficChecksPassed": 6, "securityReasonVerified": false, "evidenceRequired": "peer certs, authenticated identities, policy verdict,packet/metrics correlation"}

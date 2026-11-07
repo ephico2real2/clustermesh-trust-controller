@@ -1,0 +1,26 @@
+# nat CILIUM_OUTPUT of each enrolled Pod after the cmtc-b agents moved to a99264f008 (2026-10-26T19:03:43Z); Pods not restarted
+# The labs are IPv4-only: the Pods have no IPv6 nat CILIUM_OUTPUT chain, so only iptables is listed.
+== cmtc-b client-worker (cmtc-b-worker) pod uid a498659f-1ce4-4c3c-bc24-0ba8f0fd475a
+-N CILIUM_OUTPUT
+-A CILIUM_OUTPUT -p tcp -m tcp --dport 53 -j ACCEPT
+-A CILIUM_OUTPUT -p tcp -m mark --mark 0x111/0xfff -j ACCEPT
+-A CILIUM_OUTPUT ! -d 127.0.0.1/32 -o lo -j ACCEPT
+-A CILIUM_OUTPUT ! -d 127.0.0.1/32 -p tcp -m mark ! --mark 0x539/0xfff -j REDIRECT --to-ports 15001
+== cmtc-b client-control-plane (cmtc-b-control-plane) pod uid 76dd0cba-c4bd-4167-a4dd-fcb7fe552563
+-N CILIUM_OUTPUT
+-A CILIUM_OUTPUT -p tcp -m tcp --dport 53 -j ACCEPT
+-A CILIUM_OUTPUT -p tcp -m mark --mark 0x111/0xfff -j ACCEPT
+-A CILIUM_OUTPUT ! -d 127.0.0.1/32 -o lo -j ACCEPT
+-A CILIUM_OUTPUT ! -d 127.0.0.1/32 -p tcp -m mark ! --mark 0x539/0xfff -j REDIRECT --to-ports 15001
+== cmtc-b server-worker (cmtc-b-worker) pod uid 65e1c69f-46ff-4c8c-a80c-5f07cb893f46
+-N CILIUM_OUTPUT
+-A CILIUM_OUTPUT -p tcp -m tcp --dport 53 -j ACCEPT
+-A CILIUM_OUTPUT -p tcp -m mark --mark 0x111/0xfff -j ACCEPT
+-A CILIUM_OUTPUT ! -d 127.0.0.1/32 -o lo -j ACCEPT
+-A CILIUM_OUTPUT ! -d 127.0.0.1/32 -p tcp -m mark ! --mark 0x539/0xfff -j REDIRECT --to-ports 15001
+== cmtc-b server-control-plane (cmtc-b-control-plane) pod uid d151761c-e30a-40a1-8aa5-6adf8295ad6d
+-N CILIUM_OUTPUT
+-A CILIUM_OUTPUT -p tcp -m tcp --dport 53 -j ACCEPT
+-A CILIUM_OUTPUT -p tcp -m mark --mark 0x111/0xfff -j ACCEPT
+-A CILIUM_OUTPUT ! -d 127.0.0.1/32 -o lo -j ACCEPT
+-A CILIUM_OUTPUT ! -d 127.0.0.1/32 -p tcp -m mark ! --mark 0x539/0xfff -j REDIRECT --to-ports 15001

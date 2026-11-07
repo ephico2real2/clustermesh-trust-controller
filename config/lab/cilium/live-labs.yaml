@@ -1,0 +1,8 @@
+# The one deliberate difference of the two current labs from base.yaml. Remove it when they move to 365-day
+# ClusterMesh leaves: that changes the Certificates, so cert-manager reissues them, and an origin-reader reissue
+# interrupts cross-cluster traffic (MESH_PKI.md, finding 08). Qualify that move on its own.
+clustermesh:
+  apiserver:
+    tls:
+      auto:
+        certValidityDuration: 1

@@ -1,0 +1,27 @@
+# openssl settings for the manual mesh PKI (scripts/lab/pki/manual/README.md). The same names and lifetimes as the
+# cert-manager path (ADR-011): one root, and per cluster a ClusterMesh intermediate and a SPIRE intermediate.
+# The scripts pass the subject with -subj, so the [dn] section stays empty.
+[req]
+distinguished_name = dn
+
+[dn]
+
+# The mesh root. No path length limit: it signs intermediates, and the SPIRE intermediate signs SPIRE's own CA.
+[root]
+basicConstraints = critical, CA:TRUE
+keyUsage = critical, keyCertSign, cRLSign
+subjectKeyIdentifier = hash
+
+# Signs Cilium ClusterMesh and ztunnel leaves directly, so no CA may sit below it.
+[clustermesh]
+basicConstraints = critical, CA:TRUE, pathlen:0
+keyUsage = critical, keyCertSign, cRLSign, digitalSignature
+subjectKeyIdentifier = hash
+authorityKeyIdentifier = keyid:always
+
+# Signs SPIRE's X509 CA, which signs the SVIDs: exactly one CA may sit below it.
+[spire]
+basicConstraints = critical, CA:TRUE, pathlen:1
+keyUsage = critical, keyCertSign, cRLSign, digitalSignature
+subjectKeyIdentifier = hash
+authorityKeyIdentifier = keyid:always

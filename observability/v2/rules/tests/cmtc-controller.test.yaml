@@ -1,0 +1,107 @@
+# promtool test rules for rules/cmtc-controller.rules.yaml. Every rule has a case that fires (or
+# records) and a case that must not. Label shapes are those the hub stores on 2026-10-26 (target
+# labels cluster and node; the exporter's own become exported_cluster and exported_node).
+rule_files:
+- ../cmtc-controller.rules.yaml
+evaluation_interval: 1m
+
+tests:
+# Namespace intent per cluster and decision; a leader in cmtc-b, none in cmtc-a.
+- interval: 1m
+  input_series:
+  - series: 'cmtc_namespace_decisions{job="cmtc", component="cmtc-controller", cluster="cmtc-a", exported_cluster="cmtc-a", node="cmtc-a-worker", instance="10.10.1.197:8080", decision="selected"}'
+    values: '4x5'
+  - series: 'cmtc_namespace_decisions{job="cmtc", component="cmtc-controller", cluster="cmtc-a", exported_cluster="cmtc-a", node="cmtc-a-worker", instance="10.10.1.197:8080", decision="platform"}'
+    values: '10x5'
+  - series: 'up{job="cmtc", component="cmtc-controller", cluster="cmtc-a", node="cmtc-a-worker", instance="10.10.1.197:8080"}'
+    values: '1x5'
+  - series: 'leader_election_master_status{job="cmtc", component="cmtc-controller", cluster="cmtc-a", node="cmtc-a-worker", instance="10.10.1.197:8080", name="cmtc-controller.security.cmtc.io"}'
+    values: '0x5'
+  - series: 'up{job="cmtc", component="cmtc-controller", cluster="cmtc-b", node="cmtc-b-worker", instance="10.20.1.18:8080"}'
+    values: '1x5'
+  - series: 'leader_election_master_status{job="cmtc", component="cmtc-controller", cluster="cmtc-b", node="cmtc-b-worker", instance="10.20.1.18:8080", name="cmtc-controller.security.cmtc.io"}'
+    values: '1x5'
+  promql_expr_test:
+  - expr: cmtc:namespace_decisions:sum
+    eval_time: 1m
+    exp_samples:
+    - labels: 'cmtc:namespace_decisions:sum{cluster="cmtc-a", decision="selected"}'
+      value: 4
+    - labels: 'cmtc:namespace_decisions:sum{cluster="cmtc-a", decision="platform"}'
+      value: 10
+  alert_rule_test:
+  - eval_time: 1m
+    alertname: CMTCControllerNoLeader
+    exp_alerts: []
+  - eval_time: 2m
+    alertname: CMTCControllerNoLeader
+    exp_alerts:
+    - exp_labels: {severity: warning, owner: cmtc-controller, cluster: cmtc-a}
+      exp_annotations:
+        summary: 'No CMTC controller replica in cmtc-a holds the leader lease'
+        runbook: 'Namespace decisions and issuer-profile publication have stopped. A handover takes at most 9 seconds after a crash (internal/controller/issuer_profile.go:23, :31-33); check the Lease cmtc-controller.security.cmtc.io in cmtc-system and the controller log.'
+
+# Reconcile errors from 5m on: pending for 15 minutes, then firing. A reconciler without errors
+# stays quiet.
+- interval: 1m
+  input_series:
+  - series: 'controller_runtime_reconcile_errors_total{job="cmtc", component="cmtc-controller", cluster="cmtc-a", node="cmtc-a-worker", instance="10.10.1.197:8080", controller="namespacemtlspolicy"}'
+    values: '0 0 0 0 0 1+1x25'
+  - series: 'controller_runtime_reconcile_errors_total{job="cmtc", component="cmtc-controller", cluster="cmtc-b", node="cmtc-b-worker", instance="10.20.1.18:8080", controller="namespacemtlspolicy"}'
+    values: '0x30'
+  alert_rule_test:
+  - eval_time: 19m
+    alertname: CMTCReconcileErrors
+    exp_alerts: []
+  - eval_time: 20m
+    alertname: CMTCReconcileErrors
+    exp_alerts:
+    - exp_labels: {severity: warning, owner: cmtc-controller, cluster: cmtc-a, component: cmtc-controller, controller: namespacemtlspolicy}
+      exp_annotations:
+        summary: 'The namespacemtlspolicy reconciler of cmtc-controller in cmtc-a has failed for 15 minutes'
+        runbook: 'Retries are not recovering. Read the controller log for the reconcile error; namespace decisions and issuer-profile publication may be out of date.'
+
+# A node agent that cannot read its node's Pods, beside one that can.
+- interval: 1m
+  input_series:
+  - series: 'cmtc_node_agent_ready{job="cmtc", component="cmtc-node-agent", cluster="cmtc-b", exported_cluster="cmtc-b", node="cmtc-b-worker", exported_node="cmtc-b-worker", instance="10.20.1.5:8080"}'
+    values: '1 1 0x10'
+  - series: 'cmtc_node_agent_ready{job="cmtc", component="cmtc-node-agent", cluster="cmtc-b", exported_cluster="cmtc-b", node="cmtc-b-control-plane", exported_node="cmtc-b-control-plane", instance="10.20.0.7:8080"}'
+    values: '1x12'
+  alert_rule_test:
+  - eval_time: 6m
+    alertname: CMTCNodeAgentNotReady
+    exp_alerts: []
+  - eval_time: 7m
+    alertname: CMTCNodeAgentNotReady
+    exp_alerts:
+    - exp_labels: {severity: warning, owner: cmtc-node-agent, job: cmtc, component: cmtc-node-agent, cluster: cmtc-b, exported_cluster: cmtc-b, node: cmtc-b-worker, exported_node: cmtc-b-worker, instance: '10.20.1.5:8080'}
+      exp_annotations:
+        summary: 'The CMTC node agent on cmtc-b-worker (cmtc-b) cannot read its node''s Pods'
+        runbook: 'Pod inventory for this node is stale. The agent observes only; enforcement is not affected. Check the agent log for API errors and its RBAC (list Pods with a spec.nodeName field selector).'
+
+# A node agent started with the wrong --node-name and a controller started with the wrong
+# --cluster-name; the correctly named agent stays quiet.
+- interval: 1m
+  input_series:
+  - series: 'cmtc_node_agent_ready{job="cmtc", component="cmtc-node-agent", cluster="cmtc-a", exported_cluster="cmtc-a", node="cmtc-a-worker", exported_node="cmtc-a-control-plane", instance="10.10.1.5:8080"}'
+    values: '1x8'
+  - series: 'cmtc_node_agent_ready{job="cmtc", component="cmtc-node-agent", cluster="cmtc-a", exported_cluster="cmtc-a", node="cmtc-a-control-plane", exported_node="cmtc-a-control-plane", instance="10.10.0.7:8080"}'
+    values: '1x8'
+  - series: 'cmtc_enforcement_available{job="cmtc", component="cmtc-controller", cluster="cmtc-b", exported_cluster="cmtc-a", node="cmtc-b-worker", instance="10.20.1.18:8080"}'
+    values: '1x8'
+  alert_rule_test:
+  - eval_time: 4m
+    alertname: CMTCClusterNameMismatch
+    exp_alerts: []
+  - eval_time: 5m
+    alertname: CMTCClusterNameMismatch
+    exp_alerts:
+    - exp_labels: {severity: warning, owner: cmtc-node-agent, job: cmtc, component: cmtc-node-agent, cluster: cmtc-a, exported_cluster: cmtc-a, node: cmtc-a-worker, exported_node: cmtc-a-control-plane, instance: '10.10.1.5:8080'}
+      exp_annotations:
+        summary: 'cmtc-node-agent scraped in cmtc-a on node cmtc-a-worker reports itself as cluster cmtc-a, node cmtc-a-control-plane'
+        runbook: 'The process was started with the wrong --cluster-name or --node-name. Fix the Deployment or DaemonSet arguments; its metrics and its issuer-profile cluster are wrong until then.'
+    - exp_labels: {severity: warning, owner: cmtc-controller, job: cmtc, component: cmtc-controller, cluster: cmtc-b, exported_cluster: cmtc-a, node: cmtc-b-worker, instance: '10.20.1.18:8080'}
+      exp_annotations:
+        summary: 'cmtc-controller scraped in cmtc-b on node cmtc-b-worker reports itself as cluster cmtc-a'
+        runbook: 'The process was started with the wrong --cluster-name or --node-name. Fix the Deployment or DaemonSet arguments; its metrics and its issuer-profile cluster are wrong until then.'
